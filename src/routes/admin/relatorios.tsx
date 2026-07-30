@@ -1,0 +1,1139 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { 
+  Package, 
+  Ticket, 
+  DollarSign, 
+  Sparkles, 
+  TrendingUp,
+  Calendar as CalendarIcon,
+  Filter,
+  Search,
+  ChevronDown,
+  FileSpreadsheet,
+  ArrowLeft,
+  Users,
+  Box,
+  ShoppingCart,
+  LineChart as LineChartIcon,
+  BarChart2 as BarChartIcon,
+  FileText,
+  Percent,
+  Store,
+  Clock,
+  Wallet,
+  HeartPulse,
+  AlertTriangle,
+  Printer,
+  Activity
+} from "lucide-react";
+import { useAdmin } from "@/stores/admin";
+import { useOrders } from "@/stores/orders";
+import { 
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area
+} from "recharts";
+import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+export const Route = createFileRoute("/admin/relatorios")({
+  component: Relatorios,
+});
+
+function Relatorios() {
+  const [activeReport, setActiveReport] = useState<string | null>(null);
+  const [abcRegion, setAbcRegion] = useState<string>("Todas");
+
+  const { pharmacies, activeStoreId, currentUser, grupos } = useAdmin();
+
+  const can = (permissionId: string) => {
+    if (currentUser?.proprietario) return true;
+    const userGroup = grupos.find(g => g.id === currentUser?.grupoId);
+    return userGroup?.permissoes?.includes(permissionId) || false;
+  };
+
+  const vendasProdutoTitulo = activeStoreId ? "Vendas por produto da loja" : "Vendas por produto";
+  const repasseTitulo = activeStoreId ? "Repasse Financeiro da loja" : "Repasse Financeiro";
+  const retiradaTitulo = activeStoreId ? "Retirada vs Entrega da unidade" : "Retirada vs Entrega";
+  const medControladosTitulo = activeStoreId ? "Medicamentos Controlados da unidade" : "Medicamentos Controlados";
+  const medControladosDesc = activeStoreId 
+    ? "Medicamentos controlados exigem retenção de receita somente desta unidade."
+    : "Relatório de vendas que exigiram retenção de receita presencial.";
+
+  const gruposRelatoriosRaw = [
+    {
+      categoria: "Vendas e Conversão",
+      itens: [
+        {
+          id: "vendas-produto",
+          titulo: vendasProdutoTitulo,
+          descricao: "Acompanhe as vendas dos seus produtos e faça comparativos.",
+          icon: <Package className="h-5 w-5 text-emerald-600" />,
+          bgColor: "bg-emerald-100",
+          permission: "rel_vendas_produto"
+        },
+        {
+          id: "vendas-canais",
+          titulo: "Vendas por canal",
+          descricao: "Desempenho por Vendas Orgânicas e Vendas Campanhas.",
+          icon: <BarChartIcon className="h-5 w-5 text-indigo-600" />,
+          bgColor: "bg-indigo-100",
+          permission: "rel_vendas_canal"
+        },
+        {
+          id: "campanhas-internas",
+          titulo: "Campanhas internas por loja",
+          descricao: "Produtos vendidos nas campanhas exclusivas de cada unidade.",
+          icon: <Activity className="h-5 w-5 text-pink-600" />,
+          bgColor: "bg-pink-100",
+          permission: "rel_campanhas_internas"
+        }
+      ]
+    },
+    {
+      categoria: "Rede de Farmácias e Repasses",
+      itens: [
+        {
+          id: "desempenho-loja",
+          titulo: "Desempenho por Unidade",
+          descricao: "Vendas, volume de pedidos e taxa de conversão por farmácia da rede.",
+          icon: <Store className="h-5 w-5 text-orange-600" />,
+          bgColor: "bg-orange-100",
+          permission: "rel_desempenho"
+        },
+        {
+          id: "repasses-financeiros",
+          titulo: repasseTitulo,
+          descricao: "Valores devidos e liquidados para cada loja parceira.",
+          icon: <Wallet className="h-5 w-5 text-emerald-600" />,
+          bgColor: "bg-emerald-100",
+          permission: "rel_financeiro"
+        }
+      ]
+    },
+    {
+      categoria: "Logística e Entrega",
+      itens: [
+        {
+          id: "retirada-vs-entrega",
+          titulo: retiradaTitulo,
+          descricao: "Comparativo de volume entre as duas modalidades de logística.",
+          icon: <ShoppingCart className="h-5 w-5 text-purple-600" />,
+          bgColor: "bg-purple-100",
+          permission: "rel_logistica_retirada"
+        },
+        {
+          id: "sla-entrega",
+          titulo: "SLA de Entrega e Atrasos",
+          descricao: "Métricas de tempo de separação e entrega por loja ou região.",
+          icon: <Clock className="h-5 w-5 text-teal-600" />,
+          bgColor: "bg-teal-100",
+          permission: "rel_logistica_sla"
+        }
+      ]
+    },
+    {
+      categoria: "Estoque e Produtos Críticos",
+      itens: [
+        {
+          id: "medicamentos-controlados",
+          titulo: medControladosTitulo,
+          descricao: medControladosDesc,
+          icon: <HeartPulse className="h-5 w-5 text-rose-600" />,
+          bgColor: "bg-rose-100",
+          permission: "rel_estoque_controlados"
+        },
+        {
+          id: "estoque-curva-abc",
+          titulo: "Curva ABC de Produtos",
+          descricao: "Ranking dos 100 produtos mais vendidos por região.",
+          icon: <Box className="h-5 w-5 text-amber-600" />,
+          bgColor: "bg-amber-100",
+          permission: "rel_estoque_abc"
+        }
+      ]
+    }
+  ];
+
+  const gruposRelatorios = gruposRelatoriosRaw.map(grupo => ({
+    ...grupo,
+    itens: grupo.itens.filter(item => can(item.permission))
+  })).filter(grupo => grupo.itens.length > 0);
+
+  const { orders: rawOrders } = useOrders();
+  const orders = useMemo(() => {
+    let filtered = rawOrders.filter(o => {
+      const status = o.status.toUpperCase();
+      return status !== "AGUARDANDO PAGAMENTO" && status !== "CANCELADO";
+    });
+    if (activeStoreId) {
+      filtered = filtered.filter(o => o.lojaId === activeStoreId);
+    }
+    return filtered;
+  }, [rawOrders, activeStoreId]);
+
+  // SLA Stats Calculation
+  const slaStats = useMemo(() => {
+    const stats: Record<string, { qtdPedidos: number, tempoMin: number | null }> = {};
+    let totalSoma = 0;
+    let totalCount = 0;
+
+    const filteredRawOrders = activeStoreId ? rawOrders.filter(o => o.lojaId === activeStoreId) : rawOrders;
+
+    pharmacies.forEach(loja => {
+      const lojaOrders = filteredRawOrders.filter(o => o.lojaId === loja.id && o.status.toLowerCase() !== "cancelado");
+      let somaMin = 0;
+      let count = 0;
+
+      lojaOrders.forEach(pedido => {
+        const separacao = pedido.historico?.find(h => h.situacao.toLowerCase() === "em separação");
+        const conclusao = pedido.historico?.find(h => 
+          h.situacao.toLowerCase() === "pronta para retirada" || 
+          h.situacao.toLowerCase() === "enviado" || 
+          h.situacao.toLowerCase() === "entregue"
+        );
+        
+        if (separacao && conclusao) {
+          const ms = new Date(conclusao.data).getTime() - new Date(separacao.data).getTime();
+          const min = Math.max(1, Math.round(ms / 60000));
+          somaMin += min;
+          count++;
+        }
+      });
+
+      stats[loja.id] = {
+        qtdPedidos: count,
+        tempoMin: count > 0 ? Math.round(somaMin / count) : null
+      };
+
+      if (count > 0) {
+        totalSoma += somaMin;
+        totalCount += count;
+      }
+    });
+
+    let globalAtrasados = 0;
+    filteredRawOrders.forEach(pedido => {
+      if (pedido.status.toLowerCase() === "cancelado") return;
+      const separacao = pedido.historico?.find(h => h.situacao.toLowerCase() === "em separação");
+      const conclusao = pedido.historico?.find(h => 
+        h.situacao.toLowerCase() === "pronta para retirada" || 
+        h.situacao.toLowerCase() === "enviado" || 
+        h.situacao.toLowerCase() === "entregue"
+      );
+      if (separacao && conclusao) {
+        const ms = new Date(conclusao.data).getTime() - new Date(separacao.data).getTime();
+        const min = Math.max(1, Math.round(ms / 60000));
+        if (min > 20) globalAtrasados++;
+      }
+    });
+
+    const tempoMedioGlobal = totalCount > 0 ? Math.round(totalSoma / totalCount) : 0;
+    const porcAtrasados = totalCount > 0 ? Math.round((globalAtrasados / totalCount) * 100) : 0;
+    const porcNoPrazo = totalCount > 0 ? 100 - porcAtrasados : 100;
+
+    return { stats, tempoMedioGlobal, porcAtrasados, porcNoPrazo, totalCount };
+  }, [rawOrders, pharmacies, activeStoreId]);
+
+  // Calculations for charts based on real data
+  
+  // 1. Repasses e Desempenho (grouped by Loja)
+  const lojasMap: Record<string, { faturamento: number, repasse: number, qtdVendas: number }> = {};
+  let faturamentoGeral = 0;
+  orders.forEach(o => {
+    const total = o.valores.total;
+    faturamentoGeral += total;
+    
+    let taxa = 0;
+    const metodo = o.pagamento?.metodo?.toLowerCase() || "";
+    
+    if (metodo.includes("pix")) {
+      taxa = 0.99;
+    } else if (metodo.includes("cartão") || metodo.includes("cartao") || metodo.includes("crédito")) {
+      let parcelas = 1;
+      const match = metodo.match(/(\d+)x/);
+      if (match) parcelas = parseInt(match[1]);
+      
+      let percentual = 0.0299; // 1x
+      if (parcelas >= 2 && parcelas <= 6) percentual = 0.0349;
+      else if (parcelas >= 7 && parcelas <= 12) percentual = 0.0399;
+      else if (parcelas >= 13 && parcelas <= 21) percentual = 0.0429;
+      
+      taxa = 0.49 + (total * percentual);
+    }
+
+    const isOffline = metodo.includes("maquininha") || metodo.includes("dinheiro") || metodo.includes("crediário") || metodo.includes("convênio") || metodo.includes("presencial");
+    
+    if (!isOffline) {
+      const repasseLiquido = total - taxa;
+
+      if (!lojasMap[o.lojaId || "unknown"]) lojasMap[o.lojaId || "unknown"] = { faturamento: 0, repasse: 0, qtdVendas: 0 };
+      lojasMap[o.lojaId || "unknown"].faturamento += total;
+      lojasMap[o.lojaId || "unknown"].repasse += repasseLiquido > 0 ? repasseLiquido : 0;
+      lojasMap[o.lojaId || "unknown"].qtdVendas += 1;
+    }
+  });
+  
+  const barChartData = Object.entries(lojasMap).map(([id, data]) => {
+    const nome = pharmacies.find(p => p.id === id)?.nome || id;
+    return {
+      name: nome,
+      faturamento: data.faturamento,
+      repasse: data.repasse,
+      qtdVendas: data.qtdVendas
+    };
+  }).sort((a, b) => b.faturamento - a.faturamento);
+
+  const ticketMedioGeral = orders.length > 0 ? faturamentoGeral / orders.length : 0;
+
+  // 2. Vendas ao longo do tempo (grouped by Date)
+  const dateMap: Record<string, number> = {};
+  orders.forEach(o => {
+    const datePart = o.data.split(" ")[0] || o.data;
+    dateMap[datePart] = (dateMap[datePart] || 0) + o.valores.total;
+  });
+  const areaChartData = Object.entries(dateMap).map(([date, total]) => ({
+    name: date.slice(0, 5), // '18/02'
+    atual: total,
+    anterior: total * 0.8 // Dummy historical comparison
+  })).reverse(); // Order by dates ideally, keeping it simple
+
+  // 3. Retirada vs Entrega
+  const envioMap: Record<string, number> = {};
+  orders.forEach(o => {
+    const met = o.envio?.metodo || "Desconhecido";
+    envioMap[met] = (envioMap[met] || 0) + 1;
+  });
+  const pieEnvioData = Object.entries(envioMap).map(([name, value]) => ({ name, value }));
+
+  // 4. Clientes Recorrentes
+  const clientesMap: Record<string, number> = {};
+  orders.forEach(o => {
+    const email = o.cliente?.email || "anon";
+    clientesMap[email] = (clientesMap[email] || 0) + 1;
+  });
+  let recorrentes = 0;
+  let novos = 0;
+  Object.values(clientesMap).forEach(qtd => {
+    if (qtd > 1) recorrentes++;
+    else novos++;
+  });
+  const pieClientesData = [
+    { name: 'Recorrentes', value: recorrentes },
+    { name: 'Novos', value: novos },
+  ];
+
+  // 5. Vendas por Produto (Ranking Top 100 & Competitividade)
+  const produtosMap: Record<string, { nome: string, sku: string, qtd: number, faturamento: number }> = {};
+  orders.forEach(o => {
+    o.produtos.forEach(p => {
+      if (!produtosMap[p.sku]) {
+        produtosMap[p.sku] = { nome: p.nome, sku: p.sku, qtd: 0, faturamento: 0 };
+      }
+      produtosMap[p.sku].qtd += p.qtd;
+      produtosMap[p.sku].faturamento += p.qtd * p.valorUnitario;
+    });
+  });
+
+  const produtosRanking = Object.values(produtosMap)
+    .sort((a, b) => b.faturamento - a.faturamento)
+    .slice(0, 100);
+
+  // 6. Vendas por Canais
+  const canaisMap: Record<string, { faturamento: number, qtd: number }> = {
+    "Vendas Orgânicas": { faturamento: 0, qtd: 0 },
+    "Vendas Campanhas": { faturamento: 0, qtd: 0 }
+  };
+  
+  orders.forEach((o, index) => {
+    let canal = "Vendas Orgânicas";
+    
+    if (o.utm && o.utm.source?.toLowerCase().includes("google")) {
+      canal = "Vendas Campanhas";
+    } else {
+      const canaisMock = ["Vendas Orgânicas", "Vendas Campanhas"];
+      canal = canaisMock[index % canaisMock.length];
+    }
+    
+    if (!canaisMap[canal]) canaisMap[canal] = { faturamento: 0, qtd: 0 };
+    canaisMap[canal].faturamento += o.valores.total;
+    canaisMap[canal].qtd += 1;
+  });
+
+  const canaisRanking = Object.entries(canaisMap).map(([nome, data]) => ({
+    nome,
+    faturamento: data.faturamento,
+    qtd: data.qtd
+  })).sort((a, b) => b.faturamento - a.faturamento);
+
+  // 7. Curva ABC de Produtos por Região
+  const regioesMap: Record<string, Record<string, { nome: string, sku: string, qtd: number, faturamento: number }>> = {};
+  
+  orders.forEach(o => {
+    let regiao = o.envio?.cidade || "Desconhecida";
+    if (regiao.includes(" - ")) {
+       regiao = regiao.split(" - ")[1].trim(); 
+    }
+    
+    if (!regioesMap[regiao]) regioesMap[regiao] = {};
+    if (!regioesMap["Todas"]) regioesMap["Todas"] = {};
+
+    o.produtos.forEach(p => {
+      if (!regioesMap[regiao][p.sku]) regioesMap[regiao][p.sku] = { nome: p.nome, sku: p.sku, qtd: 0, faturamento: 0 };
+      regioesMap[regiao][p.sku].qtd += p.qtd;
+      regioesMap[regiao][p.sku].faturamento += (p.qtd * p.valorUnitario);
+      
+      if (!regioesMap["Todas"][p.sku]) regioesMap["Todas"][p.sku] = { nome: p.nome, sku: p.sku, qtd: 0, faturamento: 0 };
+      regioesMap["Todas"][p.sku].qtd += p.qtd;
+      regioesMap["Todas"][p.sku].faturamento += (p.qtd * p.valorUnitario);
+    });
+  });
+
+  const regioesDisponiveis = Object.keys(regioesMap).sort((a, b) => a === "Todas" ? -1 : b === "Todas" ? 1 : a.localeCompare(b));
+  const abcRanking = Object.values(regioesMap[abcRegion] || {}).sort((a, b) => b.qtd - a.qtd).slice(0, 100);
+
+  if (activeReport) {
+    return (
+      <div className="space-y-6 max-w-6xl pb-10">
+        <div className="flex items-center gap-4 bg-white p-4 rounded-xl border shadow-sm print:hidden">
+          <Button variant="ghost" onClick={() => setActiveReport(null)} className="h-10 px-4 rounded-lg hover:bg-slate-100 flex items-center gap-2 font-bold text-slate-600">
+            <ArrowLeft className="h-5 w-5" />
+            Voltar para Relatórios
+          </Button>
+          <div className="border-l border-slate-200 pl-4">
+            <h2 className="text-xl font-black text-slate-800 tracking-tight capitalize">
+              {activeReport.replace(/-/g, ' ')}
+            </h2>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border shadow-sm print:hidden">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">Período</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="h-10 px-4 flex items-center gap-2 bg-slate-50 text-sm font-semibold border-slate-200 text-slate-700 hover:bg-slate-100">
+                  <CalendarIcon className="h-4 w-4 text-slate-500" />
+                  01/06/2026 até 25/06/2026
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[600px] p-0 border-slate-200 shadow-xl rounded-xl" align="start">
+                <div className="flex">
+                  <div className="w-40 border-r border-slate-100 py-2 bg-slate-50/50 rounded-l-xl">
+                    {["Hoje", "Ontem", "Últimos 7 dias", "Mês atual", "Mês passado"].map((opt) => (
+                      <button key={opt} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex-1 p-6 flex items-center justify-center bg-white rounded-r-xl">
+                    <p className="text-sm font-medium text-slate-400">Calendário completo aqui...</p>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          
+          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-6" onClick={() => window.print()}>
+            <Printer className="h-4 w-4 mr-2" /> Gerar Relatório
+          </Button>
+        </div>
+
+        <div className="bg-white rounded-xl border shadow-sm">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50/50 rounded-t-xl print:hidden">
+            <div className="flex items-center gap-3">
+              <Button variant="outline" className="h-10 px-4 text-sm font-bold bg-white">
+                <Filter className="h-4 w-4 mr-2 text-slate-400" />
+                Filtros Avançados
+              </Button>
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="buscar no relatório..." 
+                  className="pl-9 h-10 placeholder:text-slate-400 bg-white border-slate-200 font-medium"
+                />
+              </div>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="h-10 px-4 text-sm font-bold bg-white">
+                  Ações <ChevronDown className="h-4 w-4 ml-2 text-slate-400" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border-slate-100">
+                <DropdownMenuItem className="cursor-pointer font-bold text-slate-600 py-2">
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
+                  Exportar para Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer font-bold text-slate-600 py-2">
+                  <FileText className="h-4 w-4 mr-2 text-red-600" />
+                  Exportar para PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          {activeReport === "repasses-financeiros" ? (
+            <div className="p-6">
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                  <p className="text-slate-500 text-sm font-bold">Total Faturado</p>
+                  <p className="text-2xl font-black text-slate-800">{faturamentoGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                  <p className="text-slate-500 text-sm font-bold">Lojas com Vendas</p>
+                  <p className="text-2xl font-black text-slate-800">{Object.keys(lojasMap).length} unidades</p>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                  <p className="text-slate-500 text-sm font-bold">Ticket Médio Geral</p>
+                  <p className="text-2xl font-black text-slate-800">{ticketMedioGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                </div>
+              </div>
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => typeof value === 'number' ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : value} />
+                    <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} formatter={(value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} />
+                    <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontWeight: 600, color: '#475569'}} />
+                    <Bar dataKey="faturamento" name="Faturamento Bruto" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+                    <Bar dataKey="repasse" name="Repasse Líquido" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="mt-8">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Detalhamento por Unidade</h3>
+                <div className="overflow-x-auto border rounded-xl">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead>
+                      <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
+                        <th className="p-4 w-16 text-center">Pos</th>
+                        <th className="p-4">Farmácia / Unidade</th>
+                        <th className="p-4 text-right">Faturamento Bruto</th>
+                        <th className="p-4 text-right">Repasse Líquido (Descontadas as Taxas)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {barChartData.length === 0 && (
+                        <tr><td colSpan={4} className="p-6 text-center text-slate-500 font-medium">Nenhuma venda registrada.</td></tr>
+                      )}
+                      {barChartData.map((loja, idx) => (
+                        <tr key={loja.name} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4 text-center font-bold text-slate-400">{idx + 1}º</td>
+                          <td className="p-4 font-bold text-slate-700">{loja.name}</td>
+                          <td className="p-4 text-right font-black text-emerald-600">
+                            {loja.faturamento.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </td>
+                          <td className="p-4 text-right font-black text-sky-600">
+                            {loja.repasse.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : activeReport === "desempenho-loja" ? (
+            <div className="p-6">
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                  <p className="text-slate-500 text-sm font-bold">Total Faturado</p>
+                  <p className="text-2xl font-black text-slate-800">{faturamentoGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                  <p className="text-slate-500 text-sm font-bold">Lojas com Vendas</p>
+                  <p className="text-2xl font-black text-slate-800">{Object.keys(lojasMap).length} unidades</p>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                  <p className="text-slate-500 text-sm font-bold">Ticket Médio Geral</p>
+                  <p className="text-2xl font-black text-slate-800">{ticketMedioGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                </div>
+              </div>
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} />
+                    <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => typeof value === 'number' ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : value} />
+                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                    <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} formatter={(value: number, name: string) => name === "Faturamento Bruto" ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : value} />
+                    <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontWeight: 600, color: '#475569'}} />
+                    <Bar yAxisId="left" dataKey="faturamento" name="Faturamento Bruto" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+                    <Bar yAxisId="right" dataKey="qtdVendas" name="Número de Vendas" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="mt-8">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Detalhamento por Unidade</h3>
+                <div className="overflow-x-auto border rounded-xl">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead>
+                      <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
+                        <th className="p-4 w-16 text-center">Pos</th>
+                        <th className="p-4">Farmácia / Unidade</th>
+                        <th className="p-4 text-center">Número de Vendas</th>
+                        <th className="p-4 text-right">Faturamento Bruto</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {barChartData.length === 0 && (
+                        <tr><td colSpan={4} className="p-6 text-center text-slate-500 font-medium">Nenhuma venda registrada.</td></tr>
+                      )}
+                      {barChartData.map((loja, idx) => (
+                        <tr key={loja.name} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4 text-center font-bold text-slate-400">{idx + 1}º</td>
+                          <td className="p-4 font-bold text-slate-700">{loja.name}</td>
+                          <td className="p-4 text-center font-black text-sky-600">
+                            {loja.qtdVendas}
+                          </td>
+                          <td className="p-4 text-right font-black text-emerald-600">
+                            {loja.faturamento.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : activeReport === "vendas-produto" ? (
+            <div className="p-6 space-y-8">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Gráfico de Competitividade</h3>
+                <p className="text-sm text-slate-500 mb-6">Comparativo entre Faturamento (Receita Gerada) e Volume de Vendas (Quantidade).</p>
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={produtosRanking.slice(0, 10)}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="nome" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}} tickFormatter={(v) => v.length > 15 ? v.substring(0, 15) + '...' : v} />
+                      <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => typeof value === 'number' ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : value} />
+                      <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                      <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} formatter={(value: number, name: string) => name === "Faturamento Bruto" ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : value} />
+                      <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontWeight: 600, color: '#475569'}} />
+                      <Bar yAxisId="left" dataKey="faturamento" name="Faturamento Bruto" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar yAxisId="right" dataKey="qtd" name="Unidades Vendidas" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Ranking Top 100 Produtos</h3>
+                <div className="overflow-x-auto border rounded-xl">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead>
+                      <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
+                        <th className="p-4 w-16 text-center">Pos</th>
+                        <th className="p-4">Produto</th>
+                        <th className="p-4">SKU</th>
+                        <th className="p-4 text-center">Qtd. Vendida</th>
+                        <th className="p-4 text-right">Faturamento Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {produtosRanking.length === 0 && (
+                        <tr><td colSpan={5} className="p-6 text-center text-slate-500 font-medium">Nenhuma venda registrada.</td></tr>
+                      )}
+                      {produtosRanking.map((prod, idx) => (
+                        <tr key={prod.sku} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4 text-center font-bold text-slate-400">{idx + 1}º</td>
+                          <td className="p-4 font-bold text-slate-700">{prod.nome}</td>
+                          <td className="p-4 text-slate-500 font-medium">{prod.sku}</td>
+                          <td className="p-4 text-center font-bold text-slate-800">{prod.qtd}</td>
+                          <td className="p-4 text-right font-black text-emerald-600">
+                            {prod.faturamento.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : activeReport === "vendas-canais" ? (
+            <div className="p-6 space-y-8">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Competitividade de Canais de Venda</h3>
+                <p className="text-sm text-slate-500 mb-6">Comparativo entre Faturamento (Receita Gerada) e Número de Pedidos por Canal.</p>
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={canaisRanking}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="nome" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} />
+                      <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => typeof value === 'number' ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : value} />
+                      <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                      <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} formatter={(value: number, name: string) => name === "Faturamento Bruto" ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : value} />
+                      <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontWeight: 600, color: '#475569'}} />
+                      <Bar yAxisId="left" dataKey="faturamento" name="Faturamento Bruto" fill="#10b981" radius={[4, 4, 0, 0]} barSize={50} />
+                      <Bar yAxisId="right" dataKey="qtd" name="Número de Pedidos" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={50} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          ) : activeReport === "campanhas-internas" ? (
+            <div className="p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">Campanhas Internas por Loja</h3>
+                  <p className="text-sm text-slate-500">Relatório de produtos vendidos em campanhas específicas de cada loja.</p>
+                </div>
+                <Button variant="outline" className="gap-2 bg-white">
+                  <Printer className="h-4 w-4" />
+                  Imprimir Relatório
+                </Button>
+              </div>
+              
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-left text-sm text-slate-600">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
+                    <tr>
+                      <th className="px-4 py-3">Loja</th>
+                      <th className="px-4 py-3">Produto</th>
+                      <th className="px-4 py-3">Valor da Campanha</th>
+                      <th className="px-4 py-3">Quantidade Vendida</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-800">Farmácia São João - Filial Centro</td>
+                      <td className="px-4 py-3">Vitamina C 1g</td>
+                      <td className="px-4 py-3 text-emerald-600 font-medium">R$ 15,90</td>
+                      <td className="px-4 py-3">124 unid.</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-800">Farmácia São João - Filial Bairro</td>
+                      <td className="px-4 py-3">Protetor Solar FPS 50</td>
+                      <td className="px-4 py-3 text-emerald-600 font-medium">R$ 49,90</td>
+                      <td className="px-4 py-3">89 unid.</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-800">Drogaria Mais Saúde</td>
+                      <td className="px-4 py-3">Fralda Pampers M</td>
+                      <td className="px-4 py-3 text-emerald-600 font-medium">R$ 39,90</td>
+                      <td className="px-4 py-3">56 unid.</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-800">Farmácia Preço Popular</td>
+                      <td className="px-4 py-3">Kit Shampoo + Condicionador</td>
+                      <td className="px-4 py-3 text-emerald-600 font-medium">R$ 29,90</td>
+                      <td className="px-4 py-3">45 unid.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : activeReport === "vendas-upsell" ? (
+            <div className="p-6">
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={areaChartData}>
+                    <defs>
+                      <linearGradient id="colorAtual" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => typeof value === 'number' ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : value} />
+                    <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} formatter={(value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} />
+                    <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontWeight: 600, color: '#475569'}} />
+                    <Area type="monotone" dataKey="atual" name="Período Atual" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorAtual)" />
+                    <Area type="monotone" dataKey="anterior" name="Período Anterior" stroke="#cbd5e1" strokeDasharray="5 5" strokeWidth={2} fill="none" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ) : activeReport === "retirada-vs-entrega" ? (
+            <div className="p-6 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Total de Pedidos</p>
+                  <p className="text-4xl font-black text-slate-800">{orders.length}</p>
+                </div>
+                <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 shadow-sm text-center">
+                  <p className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-1">Retirada na Loja</p>
+                  <p className="text-4xl font-black text-emerald-700">{envioMap["Retirada na Loja"] || 0}</p>
+                </div>
+                <div className="bg-sky-50 p-6 rounded-2xl border border-sky-100 shadow-sm text-center">
+                  <p className="text-xs font-black text-sky-600 uppercase tracking-widest mb-1">Entrega em Domicílio</p>
+                  <p className="text-4xl font-black text-sky-700">{envioMap["Entrega em Domicílio"] || (orders.length - (envioMap["Retirada na Loja"] || 0))}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div className="h-[350px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieEnvioData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={90}
+                        outerRadius={120}
+                        fill="#8884d8"
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({percent}) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}
+                      >
+                        {pieEnvioData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.name.includes("Retirada") ? "#10b981" : "#0ea5e9"} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
+                      <Legend iconType="circle" verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead>
+                      <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
+                        <th className="p-4">Método de Envio</th>
+                        <th className="p-4 text-center">Quantidade</th>
+                        <th className="p-4 text-center">Representatividade</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {pieEnvioData.map((d, i) => (
+                        <tr key={i} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4 font-bold text-slate-700 flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full" style={{backgroundColor: d.name.includes("Retirada") ? "#10b981" : "#0ea5e9"}}></span>
+                            {d.name}
+                          </td>
+                          <td className="p-4 text-center font-bold text-slate-800">{d.value}</td>
+                          <td className="p-4 text-center text-slate-500 font-medium">
+                            {orders.length > 0 ? ((d.value / orders.length) * 100).toFixed(1) : 0}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : activeReport === "clientes-novos-recorrentes" ? (
+            <div className="p-6 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Total de Clientes</p>
+                  <p className="text-4xl font-black text-slate-800">{novos + recorrentes}</p>
+                </div>
+                <div className="bg-violet-50 p-6 rounded-2xl border border-violet-100 shadow-sm text-center">
+                  <p className="text-xs font-black text-violet-600 uppercase tracking-widest mb-1">Clientes Recorrentes</p>
+                  <p className="text-4xl font-black text-violet-700">{recorrentes}</p>
+                </div>
+                <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100 shadow-sm text-center">
+                  <p className="text-xs font-black text-orange-600 uppercase tracking-widest mb-1">Clientes Novos</p>
+                  <p className="text-4xl font-black text-orange-700">{novos}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div className="h-[350px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieClientesData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={90}
+                        outerRadius={120}
+                        fill="#8884d8"
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({percent}) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}
+                      >
+                        {pieClientesData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.name === "Recorrentes" ? "#8b5cf6" : "#f97316"} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
+                      <Legend iconType="circle" verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead>
+                      <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
+                        <th className="p-4">Tipo de Cliente</th>
+                        <th className="p-4 text-center">Quantidade</th>
+                        <th className="p-4 text-center">Representatividade</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {pieClientesData.map((d, i) => (
+                        <tr key={i} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4 font-bold text-slate-700 flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full" style={{backgroundColor: d.name === "Recorrentes" ? "#8b5cf6" : "#f97316"}}></span>
+                            {d.name}
+                          </td>
+                          <td className="p-4 text-center font-bold text-slate-800">{d.value}</td>
+                          <td className="p-4 text-center text-slate-500 font-medium">
+                            {(novos + recorrentes) > 0 ? ((d.value / (novos + recorrentes)) * 100).toFixed(1) : 0}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : activeReport === "sla-entrega" ? (
+            <div className="p-6">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
+                <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                  <Clock className="w-8 h-8 text-teal-600" />
+                </div>
+                <h3 className="text-xl font-black text-slate-800 mb-2">Monitoramento de SLA de Separação</h3>
+                <p className="text-slate-500 font-medium mb-8 max-w-2xl mx-auto">
+                  O tempo de separação é calculado a partir do momento em que o pedido é registrado como <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Em separação</span> até o momento em que a loja altera seu status para <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Pronto para retirada</span> ou <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Entregue</span>.
+                </p>
+                
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-left relative overflow-hidden group hover:border-emerald-300 transition-colors">
+                     <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                     <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10">Pedidos no Prazo</p>
+                     <p className="text-4xl font-black text-emerald-600 relative z-10">{slaStats.totalCount > 0 ? slaStats.porcNoPrazo : 0}%</p>
+                     <p className="text-sm font-bold text-emerald-600/70 mt-2 relative z-10">Meta: &gt; 90%</p>
+                   </div>
+                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-left relative overflow-hidden group hover:border-sky-300 transition-colors">
+                     <div className="absolute top-0 right-0 w-24 h-24 bg-sky-50 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                     <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10">Tempo Médio Separação</p>
+                     <p className="text-4xl font-black text-sky-600 relative z-10">{slaStats.tempoMedioGlobal > 0 ? `${slaStats.tempoMedioGlobal}m` : '-'}</p>
+                     <p className="text-sm font-bold text-sky-600/70 mt-2 relative z-10">Meta: &lt; 20 min</p>
+                   </div>
+                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-left relative overflow-hidden group hover:border-rose-300 transition-colors">
+                     <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                     <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10">Pedidos Atrasados</p>
+                     <p className="text-4xl font-black text-rose-600 relative z-10">{slaStats.totalCount > 0 ? slaStats.porcAtrasados : 0}%</p>
+                     <p className="text-sm font-bold text-rose-600/70 mt-2 relative z-10">Estouraram o SLA</p>
+                   </div>
+                </div>
+                
+                 <div className="mt-12 border rounded-xl overflow-x-auto w-full mx-auto text-left shadow-sm">
+                   <table className="w-full text-left text-sm bg-white">
+                     <thead>
+                       <tr className="border-b text-slate-500 text-[11px] font-black uppercase tracking-wider bg-slate-50">
+                         <th className="p-4">Loja</th>
+                         <th className="p-4 text-center">Pedidos Avaliados</th>
+                         <th className="p-4 text-center">Tempo Médio de Separação</th>
+                         <th className="p-4 text-center">Status SLA</th>
+                       </tr>
+                     </thead>
+                     <tbody className="divide-y divide-slate-100">
+                       {pharmacies.map((loja) => {
+                         const s = slaStats.stats[loja.id];
+                         const qtdPedidos = s?.qtdPedidos || 0;
+                         const tempoMin = s?.tempoMin;
+                         const noPrazo = tempoMin !== null ? tempoMin <= 20 : true;
+                         return (
+                           <tr key={loja.id} className="hover:bg-slate-50 transition-colors">
+                             <td className="p-4">
+                                <div className="font-bold text-slate-800 text-base">{(loja as any).nomeFantasia || loja.nome}</div>
+                                <div className="text-[11px] text-slate-500">Filial #{loja.id}</div>
+                             </td>
+                             <td className="p-4 text-center font-bold text-slate-600">{qtdPedidos > 0 ? qtdPedidos : '-'}</td>
+                             <td className="p-4 text-center">
+                               {tempoMin !== null ? (
+                                 <span className={`font-black text-base ${noPrazo ? 'text-sky-600' : 'text-rose-600'}`}>
+                                   {tempoMin} min
+                                 </span>
+                               ) : (
+                                 <span className="text-slate-400">-</span>
+                               )}
+                             </td>
+                             <td className="p-4 text-center">
+                               {tempoMin !== null ? (
+                                 noPrazo ? (
+                                   <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-black text-xs">No Prazo</span>
+                                 ) : (
+                                   <span className="bg-rose-100 text-rose-700 px-2 py-1 rounded font-black text-xs">Atrasado</span>
+                                 )
+                               ) : (
+                                 <span className="text-slate-400 text-xs">-</span>
+                               )}
+                             </td>
+                           </tr>
+                         );
+                       })}
+                     </tbody>
+                   </table>
+                 </div>
+
+              </div>
+            </div>
+          ) : activeReport === "estoque-curva-abc" ? (
+            <div className="p-6 space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-1">Curva ABC de Produtos</h3>
+                  <p className="text-sm text-slate-500">Ranking dos 100 produtos com maior giro de estoque.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Região:</span>
+                  <Select value={abcRegion} onValueChange={setAbcRegion}>
+                    <SelectTrigger className="w-56 h-10 bg-white font-bold border-slate-200">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regioesDisponiveis.map(reg => (
+                        <SelectItem key={reg} value={reg} className="font-bold">{reg}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto border rounded-xl">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead>
+                    <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
+                      <th className="p-4 w-16 text-center">Pos</th>
+                      <th className="p-4">Produto</th>
+                      <th className="p-4">SKU</th>
+                      <th className="p-4 text-center">Unidades Vendidas</th>
+                      <th className="p-4 text-right">Faturamento</th>
+                      <th className="p-4 text-center">Classificação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {abcRanking.length === 0 && (
+                      <tr><td colSpan={6} className="p-6 text-center text-slate-500 font-medium">Nenhum produto registrado nesta região.</td></tr>
+                    )}
+                    {abcRanking.map((prod, idx) => {
+                      const isA = idx < 20; // top 20%
+                      const isB = idx >= 20 && idx < 50; // next 30%
+                      return (
+                        <tr key={prod.sku} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4 text-center font-bold text-slate-400">{idx + 1}º</td>
+                          <td className="p-4 font-bold text-slate-700">{prod.nome}</td>
+                          <td className="p-4 text-slate-500 font-medium">{prod.sku}</td>
+                          <td className="p-4 text-center font-black text-amber-600">{prod.qtd}</td>
+                          <td className="p-4 text-right font-bold text-emerald-600">
+                            {prod.faturamento.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </td>
+                          <td className="p-4 text-center">
+                            {isA ? (
+                              <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-black text-xs">Curva A</span>
+                            ) : isB ? (
+                              <span className="bg-sky-100 text-sky-700 px-2 py-1 rounded font-black text-xs">Curva B</span>
+                            ) : (
+                              <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded font-black text-xs">Curva C</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="p-12 flex flex-col items-center justify-center min-h-[300px] text-center">
+               <div className="bg-slate-50 p-4 rounded-full mb-4">
+                 <LineChartIcon className="h-8 w-8 text-slate-300" />
+               </div>
+              <p className="font-bold text-slate-500 text-lg">Relatório em Processamento</p>
+              <p className="text-sm font-medium text-slate-400 mt-1 max-w-sm">Os dados para este relatório estão sendo compilados pelo nosso motor de IA.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-3">
+            <Select defaultValue="30">
+              <SelectTrigger className="w-24 h-10 bg-white font-bold border-slate-200">
+                <SelectValue placeholder="30" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30" className="font-bold">30</SelectItem>
+                <SelectItem value="50" className="font-bold">50</SelectItem>
+                <SelectItem value="100" className="font-bold">100</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Itens por página</span>
+          </div>
+          <div className="flex items-center gap-2 text-slate-500 font-bold">
+            <div className="h-10 w-10 border-2 border-emerald-500 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-700">1</div>
+            <div className="h-10 w-10 rounded-lg flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600">2</div>
+            <div className="h-10 w-10 rounded-lg flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600">3</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 max-w-6xl pb-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-br from-emerald-50 via-white to-teal-50/30 p-6 sm:p-8 rounded-xl border border-emerald-100 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/50 rounded-full blur-3xl -mr-20 -mt-20"></div>
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="bg-emerald-500 text-white p-3 rounded-xl shadow-md shadow-emerald-200">
+            <LineChartIcon className="h-8 w-8" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Central de Relatórios</h2>
+            <p className="text-sm font-medium text-slate-500 mt-1">Acesse todas as análises e extrações de dados da sua loja em um só lugar.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-10">
+        {gruposRelatorios.map((grupo, idx) => (
+          <div key={idx} className="space-y-4">
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              {grupo.categoria}
+              <div className="h-px bg-slate-200 flex-1 ml-4"></div>
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {grupo.itens.map((relatorio) => {
+                const isDisabled = relatorio.id === "vendas-upsell";
+                return (
+                  <div 
+                    key={relatorio.id} 
+                    className={`bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col relative ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group'}`}
+                    onClick={() => !isDisabled && setActiveReport(relatorio.id)}
+                  >
+                    {isDisabled && (
+                      <div className="absolute top-4 right-4 bg-slate-100 text-slate-500 text-xs font-bold px-2 py-1 rounded-md">
+                        Em breve
+                      </div>
+                    )}
+                    <div className={`mb-5 w-12 h-12 rounded-xl flex items-center justify-center ${relatorio.bgColor} ${!isDisabled ? 'transition-transform group-hover:scale-110 group-hover:shadow-sm' : ''}`}>
+                      {relatorio.icon}
+                    </div>
+                    <h4 className={`font-black text-slate-800 mb-2 ${!isDisabled ? 'group-hover:text-emerald-700 transition-colors' : ''}`}>{relatorio.titulo}</h4>
+                    <p className="text-sm font-medium text-slate-500 leading-relaxed">{relatorio.descricao}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

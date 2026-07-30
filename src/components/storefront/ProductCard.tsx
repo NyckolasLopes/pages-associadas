@@ -1,0 +1,554 @@
+import { Link } from "@tanstack/react-router";
+import { Heart, ShoppingBasket, Zap, Star, StarHalf, Calendar, Stethoscope, Truck, Bell, Flame, Gift, ShoppingBag, Youtube } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import type { Produto } from "@/types";
+import { brl, getInstallmentText, productImage, tarjaColor, checkIsGenerico, formatPbmName } from "@/lib/format";
+import { useCart } from "@/stores/cart";
+import { useWaitlist } from "@/stores/waitlist";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useFavorites } from "@/stores/favorites";
+import { useAuth } from "@/stores/auth";
+import { useGeoCep } from "@/stores/cart";
+import { isPbmEligible } from "@/lib/pbm";
+import { useAdmin } from "@/stores/admin";
+import { useAdminProducts } from "@/stores/products";
+import { useReviews } from "@/stores/reviews";
+import { useSelos } from "@/stores/selos";
+import { getDeterministicStock } from "@/lib/stock";
+import { getCityFromCep, isCampanhaAtiva, calculateCepDistanceAsync, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion } from "@/lib/utils";
+import { useRegionsStore } from "@/stores/regions";
+import { useMarketing } from "@/stores/marketing";
+
+// Removed isSameDayDeliveryWindow
+
+const WHATSAPP_PHONE = "5551999999999"; // mock
+
+const PromoIcon = ({ id, className }: { id: string, className?: string }) => {
+  if (id === 'gift') return <Gift className={className} />;
+  if (id === 'star') return <Star className={className} />;
+  if (id === 'zap') return <Zap className={className} />;
+  if (id === 'shopping-bag') return <ShoppingBag className={className} />;
+  return <Flame className={className} />;
+};
+
+interface ProductCardProps {
+  p: Produto;
+  layout?: "grid" | "list";
+  hideCartButton?: boolean;
+  hideDiscountBadge?: boolean;
+  forceDiscountValue?: number | null;
+  forceStock?: number | null;
+  availablePharmacies?: any[];
+  selectedStoreId?: string | null;
+}
+
+export function ProductCard({
+  p: initialProduct,
+  layout = "grid",
+  hideCartButton = false,
+  hideDiscountBadge = false,
+  forceDiscountValue = null,
+  forceStock = null,
+  availablePharmacies: propPharmacies,
+  selectedStoreId,
+}: ProductCardProps) {
+  // Bridge static SSR/loader product with live admin edits
+  const customProducts = useAdminProducts(s => s.customProducts);
+  const p = customProducts?.find(c => c.id === initialProduct.id) || initialProduct;
+  const { prices: regionalPrices } = useRegionsStore();
+  const setPharmacyDrawerOpen = useCart((s) => s.setPharmacyDrawerOpen);
+  const user = useAuth((s) => s.user);
+  const setLoginOpen = useAuth((s) => s.setLoginOpen);
+  
+  const marketingState = useMarketing();
+  const promocoes = marketingState.promocoes;
+  const recentlyAdded = isRecentlyAdded(p);
+  
+  const add = useCart((s) => s.add);
+  const pbm = isPbmEligible(p);
+  const cep = useGeoCep((s) => s.cep);
+  
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [wlName, setWlName] = useState("");
+  const [wlPhone, setWlPhone] = useState("");
+  const addWaitlistEntry = useWaitlist((s) => s.addEntry);
+  
+  const handleWaitlistSubmit = () => {
+    if (!wlName || !wlPhone) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    addWaitlistEntry({
+      produtoId: p.id,
+      clienteNome: wlName,
+      whatsapp: wlPhone
+    });
+    toast.success("Avisaremos você quando o produto chegar!");
+    setWaitlistOpen(false);
+    setWlName("");
+    setWlPhone("");
+  };
+  const [distances, setDistances] = useState<Record<string, number>>({});
+  const globalCity = useGeoCep((s) => s.city);
+  const pharmacies = useAdmin((s) => s.pharmacies);
+  const fornecedores = useAdminProducts((s) => s.fornecedores);
+
+  useEffect(() => {
+    if (!cep || pharmacies.length === 0) return;
+    let mounted = true;
+    Promise.all(pharmacies.map(async (ph) => {
+      const d = await calculateCepDistanceAsync(cep, ph.cep);
+      return { id: ph.id, d };
+    })).then(results => {
+      if (!mounted) return;
+      const dists: Record<string, number> = {};
+      results.forEach(r => dists[r.id] = r.d);
+      setDistances(dists);
+    });
+    return () => { mounted = false; };
+  }, [cep, pharmacies]);
+  
+  let maxStock = 0;
+  let activeStoreId: string | null = null;
+  let activeFornecedor = null;
+  let isLocalStock = false;
+
+  if (cep && Object.keys(distances).length > 0) {
+    const rawCity = globalCity || getCityFromCep(cep, pharmacies);
+    const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+    const citySearch = normalize(rawCity);
+    
+    const eligiblePharmacies = pharmacies.filter(f => {
+      const dist = distances[f.id];
+      if (dist === undefined) return false;
+      const canDeliver = f.aceitaEntrega && (f.raiosEntrega || []).some(r => dist <= r.ateKm);
+      const canPickup = f.aceitaRetirada;
+      // Active for this product
+      const productActive = p.precosPorLoja?.[f.id]?.ativo !== false;
+      return (canDeliver || canPickup) && productActive;
+    }).map(f => {
+      return {
+        ...f,
+        stock: getDeterministicStock(p, f.id),
+        isSameCity: normalize(f.cidade).includes(citySearch) || normalize(f.endereco).includes(citySearch)
+      };
+    });
+
+    // Sort priority: Same city + has stock > Other city + has stock
+    const availablePharmacies = eligiblePharmacies.filter(f => f.stock > 0);
+    
+    if (availablePharmacies.length > 0) {
+      // Prioritize by same city, then by distance
+      availablePharmacies.sort((a, b) => {
+        if (a.isSameCity && !b.isSameCity) return -1;
+        if (!a.isSameCity && b.isSameCity) return 1;
+        return (distances[a.id] || 0) - (distances[b.id] || 0);
+      });
+      activeStoreId = availablePharmacies[0].id;
+      maxStock = availablePharmacies[0].stock;
+    } else {
+      maxStock = 0;
+    }
+
+    isLocalStock = maxStock > 0;
+
+    // Prateleira Infinita Fallback
+    if (!isLocalStock && fornecedores && fornecedores.length > 0) {
+      const citySuppliers = fornecedores.filter(f => normalize(f.cidade).includes(citySearch));
+      activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
+      
+      const supplierStock = getDeterministicStock(p.id, String(activeFornecedor.id) + "supp");
+      maxStock = supplierStock > 0 ? supplierStock : 10;
+    }
+  } else if (!cep) {
+    // Find the first pharmacy in the region that has stock
+    const storeWithStock = pharmacies.find(pharm => getDeterministicStock(p, pharm.id) > 0);
+    
+    if (storeWithStock) {
+      maxStock = getDeterministicStock(p, storeWithStock.id);
+      activeStoreId = storeWithStock.id;
+    } else {
+      // If no pharmacy has stock, just use the first one (stock will be 0)
+      maxStock = 0;
+      activeStoreId = pharmacies.length > 0 ? pharmacies[0].id : null;
+    }
+  }
+
+  const isCampanha = isCampanhaAtiva(p);
+  let finalPrecoPor = p.precoPor;
+  let finalPrecoDe = p.precoDe;
+
+  if (isCampanha) {
+    finalPrecoPor = p.precoCampanha || p.precoPor;
+  } else if (activeStoreId) {
+    // 1. Base table price
+    const activePharm = pharmacies.find(f => f.id === activeStoreId);
+    if (activePharm) {
+      const activeTabela = activePharm.tabelaPrecoId || "poa";
+      const regPrice = regionalPrices[`${activeTabela}-${p.id}`];
+      if (regPrice !== undefined) finalPrecoPor = regPrice;
+    }
+    
+    // 2. Specific store override
+    if (p.precosPorLoja?.[activeStoreId]) {
+      finalPrecoPor = p.precosPorLoja[activeStoreId].precoPor;
+      finalPrecoDe = p.precosPorLoja[activeStoreId].precoDe;
+    }
+  }
+
+  // 3. Store-specific Oferta do Mês
+  const lojaPromocoes = activeStoreId ? marketingState.lojaPromocoes[activeStoreId] || [] : [];
+  const storeOferta = lojaPromocoes.find(promo => promo.ativa && promo.tipoCampanha === 'padrao' && promo.alvosId.includes(p.id));
+  if (storeOferta && storeOferta.levePague_precoPorItem) {
+    finalPrecoDe = finalPrecoPor;
+    finalPrecoPor = storeOferta.levePague_precoPorItem;
+  }
+
+  const levePaguePromo = getLevePaguePromotion(p, promocoes, lojaPromocoes);
+
+  const desconto =
+    finalPrecoDe > finalPrecoPor ? Math.round((1 - finalPrecoPor / finalPrecoDe) * 100) : 0;
+
+  const fav = useFavorites((s) => s.ids.includes(p.id));
+  const toggleFav = useFavorites((s) => s.toggle);
+
+  const [mounted, setMounted] = useState(false);  const { getAvaliacoesPorProduto } = useReviews();
+  
+  useEffect(() => {
+    setMounted(true);
+    useFavorites.persist.rehydrate();
+  }, []);
+
+  const isGenerico = checkIsGenerico(p);
+  const wppText = encodeURIComponent(
+    `Olá! Quero comprar: ${p.nome} (EAN ${p.ean}) — ${brl(p.precoPor)}`,
+  );
+  
+  const isService = p.tipoProduto === "servico" || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
+  const isMedicamento = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142"));
+  const isAvailable = maxStock > 0 || isService;
+  
+  const allSelos = useSelos((s) => s.selos);
+  const activeSelos = allSelos.filter(s => s.ativo && p.selosIds?.includes(s.id));
+  const servicoSelo = allSelos.find(s => s.id === "servico");
+
+  return (
+    <article className="group bg-card rounded-xl border hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative h-full w-full">
+      {/* Floating Actions */}
+      <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-2">
+        {p.youtubeVideoUrl && (
+          <div className="bg-black/80 backdrop-blur text-white text-[10px] font-bold px-2 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
+            <Youtube className="h-3.5 w-3.5 text-red-500 fill-current" />
+            <span className="tracking-wide">Vídeo do Produto</span>
+          </div>
+        )}
+        <button
+          type="button"
+          aria-label={fav ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+          onClick={(e) => {
+            e.preventDefault();
+            if (!user) {
+              toast.info("Por favor, faça login para adicionar aos favoritos.");
+              setLoginOpen(true);
+              return;
+            }
+            toggleFav(p.id, finalPrecoPor);
+          }}
+          className="h-8 w-8 rounded-full bg-white/90 backdrop-blur border shadow-sm flex items-center justify-center hover:bg-white text-muted-foreground"
+        >
+          <Heart className={`h-4 w-4 transition ${mounted && fav ? "fill-red-500 text-red-500" : ""}`} />
+        </button>
+        <button
+          type="button"
+          aria-label={isService ? "Agendar serviço" : "Adicionar à cesta"}
+          onClick={(e) => {
+            e.preventDefault();
+            add({ ...p, estoque: maxStock });
+          }}
+          className="h-8 w-8 rounded-full bg-white/90 backdrop-blur border shadow-sm flex items-center justify-center hover:bg-white text-muted-foreground relative"
+        >
+          {isService ? <Calendar className="h-4 w-4 text-teal-600" /> : <ShoppingBasket className="h-4 w-4" />}
+          {!isService && <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-primary text-white flex items-center justify-center rounded-full text-[9px] font-bold">+</span>}
+        </button>
+      </div>
+
+
+
+      <Link
+        to="/p/$slug"
+        preload="intent"
+        params={{ slug: p.url || p.id }}
+        className="relative aspect-square bg-white p-4 block"
+      >
+        <img
+          src={productImage(p)}
+          alt={p.nome}
+          loading="lazy"
+          decoding="async"
+          width={400}
+          height={400}
+          className={`w-full h-full object-contain transition-transform duration-500 md:group-hover:scale-110 ${maxStock === 0 && !isService ? 'grayscale opacity-75' : ''}`}
+        />
+        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none items-start">
+          {recentlyAdded && (
+            <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max">
+              ACABOU DE CHEGAR
+            </span>
+          )}
+
+          {isCampanha && (
+            <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 w-max">
+              <Calendar className="h-3 w-3" /> Oferta de {new Date().toLocaleString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
+            </span>
+          )}
+          {isService && servicoSelo?.ativo && (
+            <span style={{ backgroundColor: servicoSelo?.corFundo, color: servicoSelo?.corTexto }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 w-max">
+              <Stethoscope className="h-3 w-3" /> {servicoSelo?.nome?.toUpperCase() || "SERVIÇO"}
+            </span>
+          )}
+          {!isService && isGenerico && (
+            <span className="bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max">
+              GENÉRICO
+            </span>
+          )}
+          {activeSelos.map(selo => (
+            <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max">
+              {selo.nome}
+            </span>
+          ))}
+        </div>
+      </Link>
+
+      <div className="p-3 flex-1 flex flex-col">
+        {/* Marca em negrito */}
+        <div className="text-[11px] uppercase font-bold text-muted-foreground truncate mb-1">
+          {p.fabricante}
+        </div>
+        <Link
+          to="/p/$slug"
+          preload="intent"
+          params={{ slug: p.url || p.id }}
+          className="text-sm md:text-[15px] font-bold line-clamp-4 h-[5em] hover:text-primary-dark leading-tight overflow-hidden"
+        >
+          {p.nome}
+        </Link>
+        
+        {levePaguePromo && (
+          <div className="mt-1">
+            <span style={{ backgroundColor: levePaguePromo.corBotao || levePaguePromo.corSelo || '#ea580c', color: levePaguePromo.corTextoBotao || '#ffffff' }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max flex items-center gap-1">
+              <PromoIcon id={levePaguePromo.icone} className="h-3 w-3" style={{ color: levePaguePromo.corIcone || 'inherit' }} />
+              LEVE {levePaguePromo.levePague_quantidade} PAGUE {brl(levePaguePromo.levePague_precoPorItem!)} CADA
+            </span>
+          </div>
+        )}
+        
+        {(() => {
+          if (isMedicamento || isService) return null;
+
+          const avaliacoes = getAvaliacoesPorProduto(p.id);
+          const hasReviews = avaliacoes.length > 0;
+          
+          let rating = 0;
+          if (hasReviews) {
+            rating = avaliacoes.reduce((acc, curr) => acc + curr.nota, 0) / avaliacoes.length;
+          }
+
+          return (
+            <div className="flex flex-col mt-1.5 mb-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <Star 
+                      key={i} 
+                      className={`h-3 w-3 ${i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} 
+                    />
+                  ))}
+                </div>
+                {hasReviews ? (
+                  <span className="text-[10px] text-muted-foreground font-medium">{rating.toFixed(1)} ({avaliacoes.length})</span>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground font-medium">0</span>
+                )}
+              </div>
+              {!hasReviews && (
+                <span className="text-[9px] text-slate-400 italic mt-0.5 leading-tight">Esse produto ainda não teve avaliação seja o primeiro.</span>
+              )}
+            </div>
+          );
+        })()}
+
+        <div className="mt-auto pt-3 flex flex-col gap-1">
+          {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (
+            <span className="inline-block self-start text-[10px] font-bold bg-accent text-accent-foreground px-2 py-0.5 rounded">
+              {formatPbmName(p.selo)}
+            </span>
+          )}
+          
+          <div className="flex flex-col mt-1">
+            {p.precoSobConsulta ? (
+              <div className="text-lg sm:text-xl font-bold text-slate-700 min-h-[50px] flex items-center">
+                Preço sob consulta
+              </div>
+            ) : levePaguePromo ? (
+              <div className="flex flex-col justify-center min-h-[50px] border-l-2 border-primary px-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-bold text-primary">{levePaguePromo.levePague_quantidade} por</span>
+                  <div className="text-lg sm:text-2xl font-bold text-foreground">
+                    {brl(levePaguePromo.levePague_precoPorItem || 0)}
+                  </div>
+                  <span className="text-sm font-medium text-primary">cada</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground font-semibold mt-0.5">
+                  1 por {brl(finalPrecoPor)}
+                </div>
+              </div>
+            ) : (
+              <>
+                {finalPrecoDe > finalPrecoPor ? (
+                  <div className="text-xs sm:text-sm text-muted-foreground line-through decoration-red-500/50 min-h-[20px]">
+                    {brl(finalPrecoDe)}
+                  </div>
+                ) : (
+                  <div className="min-h-[20px]" aria-hidden="true" />
+                )}
+                <div className="flex items-center gap-2">
+                  <div className="text-lg sm:text-2xl font-bold text-foreground truncate">{brl(finalPrecoPor)}</div>
+                  {desconto > 0 && (
+                    <span className="inline-flex shrink-0 items-center bg-[#e6f4ea] text-[#137333] text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
+                      -{desconto}%
+                    </span>
+                  )}
+                </div>
+
+                {getInstallmentText(finalPrecoPor) && (
+                  <div className="text-[10px] text-slate-500 font-medium h-[15px]">
+                    {getInstallmentText(finalPrecoPor)}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {isLocalStock && activeStoreId && maxStock > 0 && !isService && (() => {
+            const activePharmacy = pharmacies.find(f => f.id === activeStoreId);
+            const est = getDeliveryEstimation(activePharmacy);
+            if (!est) return null;
+            return (
+              <div className={`text-[11px] ${est.color} font-bold mt-1 inline-flex items-center gap-1`}>
+                {est.text}
+                {est.hasLightning && <Zap className="h-3 w-3 fill-current" />}
+              </div>
+            );
+          })()}
+
+          {!isLocalStock && activeFornecedor && maxStock > 0 && !isService && (
+            <div className="text-[11px] text-orange-600 font-bold mt-1">
+              Chegará em {activeFornecedor.prazo} dias úteis
+            </div>
+          )}
+          
+          {isService && (
+            <div className="text-[11px] text-primary font-bold mt-1 inline-flex items-center gap-1">
+              Agendamento rápido <Zap className="h-3 w-3 fill-primary text-primary" />
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-1 mt-1 mb-3 min-h-[18px]">
+            {p.tarja && p.tarja !== "none" && (
+              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm ${tarjaColor(p.tarja)}`}>
+                {p.tarja === "Vermelha" || p.tarja === "Preta" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
+              </span>
+            )}
+            {p.retemReceita ? (
+              <span className="text-[9px] px-1.5 py-0.5 rounded shadow-sm bg-red-600 text-white font-bold">
+                Retém receita
+              </span>
+            ) : (p.retemReceita === false ? (
+              <span className="text-[9px] px-1.5 py-0.5 rounded shadow-sm bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                Não retém receita
+              </span>
+            ) : null)}
+          </div>
+
+          <div className="flex flex-col gap-2 mt-auto">
+            {isAvailable ? (
+              <button 
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  if (!p.precoSobConsulta) {
+                    add({ ...p, estoque: Math.max(1, maxStock) }); 
+                  } else {
+                    window.location.href = `/p/${p.url || p.id}`;
+                  }
+                }}
+                className={`w-full font-bold text-xs py-2.5 rounded transition flex items-center justify-center gap-2 ${isService ? 'bg-teal-600 hover:bg-teal-700 text-white' : (p.precoSobConsulta ? 'bg-slate-800 hover:bg-slate-900 text-white' : 'bg-primary hover:bg-primary-dark text-white')}`}
+              >
+                {isService ? "AGENDAR" : (p.precoSobConsulta ? "CONSULTAR PREÇO" : (
+                  <>
+                    <ShoppingBasket className="h-4 w-4" /> COMPRAR
+                  </>
+                ))}
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2 w-full mt-auto">
+                <span className="w-full bg-slate-200 text-slate-500 font-bold text-xs py-1.5 rounded text-center">
+                  INDISPONÍVEL
+                </span>
+                <button 
+                  onClick={(e) => { e.preventDefault(); setWaitlistOpen(true); }}
+                  className="w-full bg-white border-2 border-slate-200 hover:border-primary hover:text-primary text-slate-600 font-bold text-xs py-2 rounded flex items-center justify-center gap-1.5 transition"
+                >
+                  <Bell className="h-3.5 w-3.5" />
+                  AVISE-ME
+                </button>
+              </div>
+            )}
+            {(isAvailable || maxStock > 0) && (
+              <a 
+                href={`https://wa.me/${WHATSAPP_PHONE}?text=${wppText}`}
+                target="_blank" rel="noreferrer"
+                className={`w-full border py-2 px-2 rounded transition flex items-center justify-center gap-1 text-center leading-none font-bold text-[9px] sm:text-[10px] ${
+                  isService 
+                    ? "bg-white border-teal-600 text-teal-600 hover:bg-teal-50" 
+                    : "bg-white border-primary text-primary hover:bg-primary/5"
+                }`}
+              >
+                <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+                </svg>
+                <span>{isService ? "AGENDAR PELO WHATSAPP" : "COMPRE PELO WHATSAPP"}</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={waitlistOpen} onOpenChange={setWaitlistOpen}>
+        <DialogContent className="max-w-md" onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Avise-me quando chegar</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-slate-500">Deixe seus dados e entraremos em contato via WhatsApp assim que este produto voltar ao estoque.</p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nome completo</label>
+              <Input placeholder="Seu nome" value={wlName} onChange={(e) => setWlName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">WhatsApp</label>
+              <Input placeholder="(00) 00000-0000" value={wlPhone} onChange={(e) => setWlPhone(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex gap-3 justify-end mt-2">
+            <Button variant="outline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setWaitlistOpen(false); }}>Cancelar</Button>
+            <Button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleWaitlistSubmit(); }}>Avisar-me</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </article>
+  );
+}
+

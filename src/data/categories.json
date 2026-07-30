@@ -1,0 +1,632 @@
+[
+  {
+    "id": "142",
+    "nome": "Medicamentos",
+    "slug": "medicamentos",
+    "parentId": null,
+    "descricaoHtml": "<p>Encontre os melhores produtos de <strong>Medicamentos</strong> com entrega rápida e segurança. Compare preços, marcas e fabricantes para escolher o produto certo para você e sua família.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "143",
+    "nome": "Higiene e Cuidados",
+    "slug": "higiene-e-cuidados",
+    "parentId": null,
+    "descricaoHtml": "<p>Encontre os melhores produtos de <strong>Higiene e Cuidados</strong> com entrega rápida e segurança. Compare preços, marcas e fabricantes para escolher o produto certo para você e sua família.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "146",
+    "nome": "Vitaminas e Suplementos",
+    "slug": "vitaminas-e-suplementos",
+    "parentId": null,
+    "descricaoHtml": "<p>Encontre os melhores produtos de <strong>Vitaminas e Suplementos</strong> com entrega rápida e segurança. Compare preços, marcas e fabricantes para escolher o produto certo para você e sua família.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "147",
+    "nome": "Saúde e Aparelhos",
+    "slug": "sa-de-e-aparelhos",
+    "parentId": null,
+    "descricaoHtml": "<p>Encontre os melhores produtos de <strong>Saúde e Aparelhos</strong> com entrega rápida e segurança. Compare preços, marcas e fabricantes para escolher o produto certo para você e sua família.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "144",
+    "nome": "Mamãe e Bebê",
+    "slug": "mam-e-e-beb",
+    "parentId": null,
+    "descricaoHtml": "<p>Encontre os melhores produtos de <strong>Mamãe e Bebê</strong> com entrega rápida e segurança. Compare preços, marcas e fabricantes para escolher o produto certo para você e sua família.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "145",
+    "nome": "Dermocosméticos e Beleza",
+    "slug": "dermocosm-ticos-e-beleza",
+    "parentId": null,
+    "descricaoHtml": "<p>Encontre os melhores produtos de <strong>Dermocosméticos e Beleza</strong> com entrega rápida e segurança. Compare preços, marcas e fabricantes para escolher o produto certo para você e sua família.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "148",
+    "nome": "Conveniência",
+    "slug": "conveni-ncia",
+    "parentId": null,
+    "descricaoHtml": "<p>Encontre os melhores produtos de <strong>Conveniência</strong> com entrega rápida e segurança. Compare preços, marcas e fabricantes para escolher o produto certo para você e sua família.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "882",
+    "nome": "Remédios para Dor e Febre",
+    "slug": "rem-dios-para-dor-e-febre",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Remédios para Dor e Febre</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "887",
+    "nome": "Remédios para Sistema Nervoso",
+    "slug": "rem-dios-para-sistema-nervoso",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Remédios para Sistema Nervoso</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "897",
+    "nome": "Pastas de Dente e Higiene Bucal",
+    "slug": "pastas-de-dente-e-higiene-bucal",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Pastas de Dente e Higiene Bucal</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "898",
+    "nome": "Sabonetes e Produtos para Banho",
+    "slug": "sabonetes-e-produtos-para-banho",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Sabonetes e Produtos para Banho</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "918",
+    "nome": "Multivitamínicos e Minerais",
+    "slug": "multivitam-nicos-e-minerais",
+    "parentId": "146",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Multivitamínicos e Minerais</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "895",
+    "nome": "Shampoos e Tratamentos Capilares",
+    "slug": "shampoos-e-tratamentos-capilares",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Shampoos e Tratamentos Capilares</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "899",
+    "nome": "Desodorantes e Antitranspirantes",
+    "slug": "desodorantes-e-antitranspirantes",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Desodorantes e Antitranspirantes</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "902",
+    "nome": "Sabonetes Íntimos e Cuidado Íntimo",
+    "slug": "sabonetes-ntimos-e-cuidado-ntimo",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Sabonetes Íntimos e Cuidado Íntimo</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "883",
+    "nome": "Remédios para Gripe e Resfriado",
+    "slug": "rem-dios-para-gripe-e-resfriado",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Remédios para Gripe e Resfriado</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "919",
+    "nome": "Suplementos para Imunidade",
+    "slug": "suplementos-para-imunidade",
+    "parentId": "146",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Suplementos para Imunidade</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "920",
+    "nome": "Whey Protein e Suplementos Esportivos",
+    "slug": "whey-protein-e-suplementos-esportivos",
+    "parentId": "146",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Whey Protein e Suplementos Esportivos</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "921",
+    "nome": "Termogênicos e Pré-Treino",
+    "slug": "termog-nicos-e-pr-treino",
+    "parentId": "146",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Termogênicos e Pré-Treino</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "922",
+    "nome": "Colágeno e Nutricosméticos",
+    "slug": "col-geno-e-nutricosm-ticos",
+    "parentId": "146",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Colágeno e Nutricosméticos</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "923",
+    "nome": "Suplementos para Ossos e Articulações",
+    "slug": "suplementos-para-ossos-e-articula-es",
+    "parentId": "146",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Suplementos para Ossos e Articulações</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "894",
+    "nome": "Calmantes Naturais e Remédios Fitoterápicos",
+    "slug": "calmantes-naturais-e-rem-dios-fitoter-picos",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Calmantes Naturais e Remédios Fitoterápicos</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "927",
+    "nome": "Primeiros Socorros e Curativos",
+    "slug": "primeiros-socorros-e-curativos",
+    "parentId": "147",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Primeiros Socorros e Curativos</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "907",
+    "nome": "Sabonetes e Higiene do Bebê",
+    "slug": "sabonetes-e-higiene-do-beb",
+    "parentId": "144",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Sabonetes e Higiene do Bebê</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "915",
+    "nome": "Protetores Solares e Bronzeadores",
+    "slug": "protetores-solares-e-bronzeadores",
+    "parentId": "145",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Protetores Solares e Bronzeadores</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "901",
+    "nome": "Esmaltes e Cuidados com as Unhas",
+    "slug": "esmaltes-e-cuidados-com-as-unhas",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Esmaltes e Cuidados com as Unhas</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "931",
+    "nome": "Testes Rápidos",
+    "slug": "testes-r-pidos",
+    "parentId": "147",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Testes Rápidos</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "914",
+    "nome": "Cremes Anti-Idade e Rejuvenescedores",
+    "slug": "cremes-anti-idade-e-rejuvenescedores",
+    "parentId": "145",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Cremes Anti-Idade e Rejuvenescedores</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "906",
+    "nome": "Fraldas Infantis e Lenços Umedecidos",
+    "slug": "fraldas-infantis-e-len-os-umedecidos",
+    "parentId": "144",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Fraldas Infantis e Lenços Umedecidos</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "900",
+    "nome": "Lâminas, Barba e Depilação",
+    "slug": "l-minas-barba-e-depila-o",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Lâminas, Barba e Depilação</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "913",
+    "nome": "Loções e Hidratação Corporal",
+    "slug": "lo-es-e-hidrata-o-corporal",
+    "parentId": "145",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Loções e Hidratação Corporal</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "903",
+    "nome": "Acessórios de Beleza e Skincare",
+    "slug": "acess-rios-de-beleza-e-skincare",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Acessórios de Beleza e Skincare</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "910",
+    "nome": "Cuidados para Gestantes e Lactantes",
+    "slug": "cuidados-para-gestantes-e-lactantes",
+    "parentId": "144",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Cuidados para Gestantes e Lactantes</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "905",
+    "nome": "Fraldas Geriátricas e Incontinência",
+    "slug": "fraldas-geri-tricas-e-incontin-ncia",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Fraldas Geriátricas e Incontinência</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "891",
+    "nome": "Pomadas e Remédios para Pele",
+    "slug": "pomadas-e-rem-dios-para-pele",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Pomadas e Remédios para Pele</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "885",
+    "nome": "Remédios para Estômago e Má Digestão",
+    "slug": "rem-dios-para-est-mago-e-m-digest-o",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Remédios para Estômago e Má Digestão</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "884",
+    "nome": "Remédios para Alergias e Infecções",
+    "slug": "rem-dios-para-alergias-e-infec-es",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Remédios para Alergias e Infecções</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "888",
+    "nome": "Medicamentos para Diabetes e Tireoide",
+    "slug": "medicamentos-para-diabetes-e-tireoide",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Medicamentos para Diabetes e Tireoide</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "889",
+    "nome": "Saúde da Mulher e Ginecologia",
+    "slug": "sa-de-da-mulher-e-ginecologia",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Saúde da Mulher e Ginecologia</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "886",
+    "nome": "Remédios para Coração e Pressão Alta",
+    "slug": "rem-dios-para-cora-o-e-press-o-alta",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Remédios para Coração e Pressão Alta</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "924",
+    "nome": "Aparelhos e Monitores de Pressão",
+    "slug": "aparelhos-e-monitores-de-press-o",
+    "parentId": "147",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Aparelhos e Monitores de Pressão</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "928",
+    "nome": "Alimentos e Bebidas",
+    "slug": "alimentos-e-bebidas",
+    "parentId": "148",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Alimentos e Bebidas</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "896",
+    "nome": "Tinturas e Colorações Capilares",
+    "slug": "tinturas-e-colora-es-capilares",
+    "parentId": "143",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Tinturas e Colorações Capilares</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "911",
+    "nome": "Sabonetes e Limpeza de Pele",
+    "slug": "sabonetes-e-limpeza-de-pele",
+    "parentId": "145",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Sabonetes e Limpeza de Pele</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "916",
+    "nome": "Maquiagem e Cosméticos",
+    "slug": "maquiagem-e-cosm-ticos",
+    "parentId": "145",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Maquiagem e Cosméticos</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "890",
+    "nome": "Saúde do Homem e Urologia",
+    "slug": "sa-de-do-homem-e-urologia",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Saúde do Homem e Urologia</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "893",
+    "nome": "Remédios para Emagrecer e Controle de Peso",
+    "slug": "rem-dios-para-emagrecer-e-controle-de-peso",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Remédios para Emagrecer e Controle de Peso</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "892",
+    "nome": "Colírios e Cuidados Oculares",
+    "slug": "col-rios-e-cuidados-oculares",
+    "parentId": "142",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Colírios e Cuidados Oculares</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "917",
+    "nome": "Produtos e Tratamento para Acne",
+    "slug": "produtos-e-tratamento-para-acne",
+    "parentId": "145",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Produtos e Tratamento para Acne</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "909",
+    "nome": "Chupetas, Mamadeiras e Acessórios",
+    "slug": "chupetas-mamadeiras-e-acess-rios",
+    "parentId": "144",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Chupetas, Mamadeiras e Acessórios</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "908",
+    "nome": "Papinhas e Fórmulas Infantis",
+    "slug": "papinhas-e-f-rmulas-infantis",
+    "parentId": "144",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Papinhas e Fórmulas Infantis</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "930",
+    "nome": "Chinelos e Calçados",
+    "slug": "chinelos-e-cal-ados",
+    "parentId": "148",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Chinelos e Calçados</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "926",
+    "nome": "Materiais Médicos e Hospitalares",
+    "slug": "materiais-m-dicos-e-hospitalares",
+    "parentId": "147",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Materiais Médicos e Hospitalares</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "912",
+    "nome": "Cremes e Hidratação Facial",
+    "slug": "cremes-e-hidrata-o-facial",
+    "parentId": "145",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Cremes e Hidratação Facial</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "929",
+    "nome": "Repelentes de Insetos",
+    "slug": "repelentes-de-insetos",
+    "parentId": "148",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Repelentes de Insetos</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "932",
+    "nome": "Termómetros e Oxímetros",
+    "slug": "term-metros-e-ox-metros",
+    "parentId": "147",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Termómetros e Oxímetros</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "925",
+    "nome": "Medidores de Glicose e Diabetes",
+    "slug": "medidores-de-glicose-e-diabetes",
+    "parentId": "147",
+    "descricaoHtml": "<p>Confira nossa seleção de <strong>Medidores de Glicose e Diabetes</strong>. Produtos com procedência garantida, registro ANVISA e farmacêutico responsável disponível.</p>",
+    "ativa": true,
+    "destaque": false
+  },
+  {
+    "id": "200",
+    "nome": "Serviços de Saúde",
+    "slug": "servicos-de-saude",
+    "parentId": null,
+    "descricaoHtml": "<p>Encontre <strong>Serviços de Saúde</strong> como vacinas, testes e acompanhamento com nossos farmacêuticos.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "201",
+    "nome": "Vacinas",
+    "slug": "vacinas",
+    "parentId": "200",
+    "descricaoHtml": "<p>Agende suas vacinas na farmácia.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "202",
+    "nome": "Testes Rápidos",
+    "slug": "testes-rapidos",
+    "parentId": "200",
+    "descricaoHtml": "<p>Testes rápidos com resultado na hora.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "203",
+    "nome": "Manipulação",
+    "slug": "manipulacao",
+    "parentId": "200",
+    "descricaoHtml": "<p>Fórmulas manipuladas com qualidade.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "204",
+    "nome": "Aferição",
+    "slug": "afericao",
+    "parentId": "200",
+    "descricaoHtml": "<p>Aferição de pressão e glicemia.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "205",
+    "nome": "Atendimento",
+    "slug": "atendimento",
+    "parentId": "200",
+    "descricaoHtml": "<p>Atendimento farmacêutico especializado.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "300",
+    "nome": "Nossas Marcas",
+    "slug": "nossas-marcas",
+    "parentId": null,
+    "descricaoHtml": "<p>Marcas exclusivas com qualidade garantida.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "301",
+    "nome": "Revitart",
+    "slug": "revitart",
+    "parentId": "300",
+    "descricaoHtml": "<p>Produtos da linha Revitart.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "302",
+    "nome": "Santo Hábito",
+    "slug": "santo-habito",
+    "parentId": "300",
+    "descricaoHtml": "<p>Produtos da linha Santo Hábito.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "303",
+    "nome": "Revigore",
+    "slug": "revigore",
+    "parentId": "300",
+    "descricaoHtml": "<p>Produtos da linha Revigore.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "304",
+    "nome": "Revimel",
+    "slug": "revimel",
+    "parentId": "300",
+    "descricaoHtml": "<p>Produtos da linha Revimel.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "305",
+    "nome": "Crescendo",
+    "slug": "crescendo",
+    "parentId": "300",
+    "descricaoHtml": "<p>Produtos da linha Crescendo.</p>",
+    "ativa": true,
+    "destaque": true
+  },
+  {
+    "id": "306",
+    "nome": "Vita Magna",
+    "slug": "vita-magna",
+    "parentId": "300",
+    "descricaoHtml": "<p>Produtos da linha Vita Magna.</p>",
+    "ativa": true,
+    "destaque": true
+  }
+]

@@ -1,0 +1,187 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Farmácias Associadas — Design System
+ * Primary: Verde #00b5ad
+ * Secondary/Accent: Laranja #f37021
+ * Typography: Museo (loaded via <link> in __root.tsx; fallback to system sans).
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-dark: var(--primary-dark);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: "Museo", "Museo Sans", "Nunito Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Museo", "Museo Sans", "Nunito Sans", system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 12px rgb(0 0 0 / 0.06);
+  --shadow-elevated: 0 8px 24px -8px color-mix(in oklab, var(--primary) 25%, transparent);
+
+  /* Override Emerald with Brand Green (#00b5ad) */
+  --color-emerald-50: color-mix(in srgb, #00b5ad 10%, white);
+  --color-emerald-100: color-mix(in srgb, #00b5ad 20%, white);
+  --color-emerald-200: color-mix(in srgb, #00b5ad 40%, white);
+  --color-emerald-300: color-mix(in srgb, #00b5ad 60%, white);
+  --color-emerald-400: color-mix(in srgb, #00b5ad 80%, white);
+  --color-emerald-500: #00b5ad;
+  --color-emerald-600: color-mix(in srgb, #00b5ad 80%, black);
+  --color-emerald-700: color-mix(in srgb, #00b5ad 60%, black);
+  --color-emerald-800: color-mix(in srgb, #00b5ad 40%, black);
+  --color-emerald-900: color-mix(in srgb, #00b5ad 20%, black);
+
+  /* Override Orange with Brand Orange (#f37021) */
+  --color-orange-50: color-mix(in srgb, #f37021 10%, white);
+  --color-orange-100: color-mix(in srgb, #f37021 20%, white);
+  --color-orange-200: color-mix(in srgb, #f37021 40%, white);
+  --color-orange-300: color-mix(in srgb, #f37021 60%, white);
+  --color-orange-400: color-mix(in srgb, #f37021 80%, white);
+  --color-orange-500: #f37021;
+  --color-orange-600: color-mix(in srgb, #f37021 80%, black);
+  --color-orange-700: color-mix(in srgb, #f37021 60%, black);
+  --color-orange-800: color-mix(in srgb, #f37021 40%, black);
+  --color-orange-900: color-mix(in srgb, #f37021 20%, black);
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.18 0.02 220);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 220);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 220);
+
+  /* Primary: Verde #00b5ad */
+  --primary: #00b5ad;
+  --primary-foreground: #ffffff;
+  --primary-dark: #00938c;
+
+  /* Secondary: Laranja #f37021 */
+  --secondary: #f37021;
+  --secondary-foreground: #ffffff;
+
+  --muted: oklch(0.97 0.005 220);
+  --muted-foreground: oklch(0.5 0.015 220);
+
+  /* Accent: Laranja #f37021 */
+  --accent: #f37021;
+  --accent-foreground: #ffffff;
+
+  --destructive: oklch(0.62 0.22 27);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.68 0.14 155);
+  --success-foreground: oklch(1 0 0);
+
+  --border: oklch(0.92 0.008 220);
+  --input: oklch(0.92 0.008 220);
+  --ring: oklch(0.69 0.115 188);
+
+  --sidebar: oklch(0.985 0.005 220);
+  --sidebar-foreground: oklch(0.2 0.02 220);
+  --sidebar-primary: #00b5ad;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f37021;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: oklch(0.92 0.008 220);
+  --sidebar-ring: #00b5ad;
+}
+
+.dark {
+  --background: oklch(0.18 0.02 220);
+  --foreground: oklch(0.98 0.005 220);
+  --card: oklch(0.22 0.02 220);
+  --card-foreground: oklch(0.98 0.005 220);
+  --popover: oklch(0.22 0.02 220);
+  --popover-foreground: oklch(0.98 0.005 220);
+  --primary: #00b5ad;
+  --primary-foreground: #ffffff;
+  --primary-dark: #00938c;
+  --secondary: #f37021;
+  --secondary-foreground: #ffffff;
+  --muted: oklch(0.25 0.02 220);
+  --muted-foreground: oklch(0.65 0.02 220);
+  --accent: #f37021;
+  --accent-foreground: #ffffff;
+  --destructive: oklch(0.4 0.2 27);
+  --destructive-foreground: oklch(0.98 0.005 220);
+  --success: oklch(0.45 0.15 155);
+  --success-foreground: oklch(0.98 0.005 220);
+  --border: oklch(0.25 0.02 220);
+  --input: oklch(0.25 0.02 220);
+  --ring: oklch(0.69 0.115 188);
+
+  --sidebar: oklch(0.18 0.02 220);
+  --sidebar-foreground: oklch(0.98 0.005 220);
+  --sidebar-primary: #00b5ad;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f37021;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: oklch(0.25 0.02 220);
+  --sidebar-ring: #00b5ad;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .container-fa {
+    width: 100%;
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  @media (min-width: 768px) {
+    .container-fa {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+}

@@ -1,0 +1,592 @@
+import Fuse from "fuse.js";
+import productsJson from "../data/products.json";
+import { useAdminCategories } from "@/stores/categories";
+import { useMarcasStore } from "@/stores/marcas";
+
+import { useAdmin } from "@/stores/admin";
+import type { Produto, Categoria, Loja } from "@/types";
+import { removeAccents } from "@/lib/utils";
+import { checkIsGenerico } from "@/lib/format";
+
+const getSafeProducts = () => Array.isArray(productsJson) ? productsJson : (productsJson as any)?.default || [];
+
+const getCategorias = () => {
+  const baseCats = useAdminCategories.getState().categories;
+  const marcas = useMarcasStore.getState().marcas.filter(m => m.ativo);
+  
+  // Transform marcas into categories (parentId: "300")
+  const marcasCats = marcas.map(m => ({
+    id: m.id,
+    nome: m.nome,
+    slug: m.seoUrl || m.slug,
+    parentId: "300",
+    descricaoHtml: `<p>${m.descricao}</p>`,
+    ativa: m.ativo,
+    destaque: m.destaque
+  }));
+
+  // Remove old hardcoded marcas (id 301-306) and any custom ones under 300
+  const filteredBase = baseCats.filter(c => c.parentId !== "300");
+  
+  return [...filteredBase, ...marcasCats];
+};
+
+const baseProdutos = getSafeProducts() as Produto[];
+
+// Helper to format product names (Sentence case)
+function formatProductName(name: any): string {
+  if (!name || typeof name !== 'string') return String(name || '');
+  const lower = name.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+// Helper to inject variations and fix properties dynamically
+function enhanceProduct(p: Produto): Produto {
+  if (!p) return p;
+  const newP = { ...p, nome: formatProductName(p?.nome) };
+
+  // Create search variations
+  const tags: string[] = Array.isArray(newP.internalTags) ? [...newP.internalTags] : [];
+  const n = String(newP.nome || "").toLowerCase();
+
+  // Variations dictionary (can be expanded easily)
+  const variations: Record<string, string[]> = {
+    "mounjaro": ["caneta emagrecedora", "emagrecer", "emagrecimento", "diabetes"],
+    "ozempic": ["caneta emagrecedora", "emagrecer", "emagrecimento", "diabetes"],
+    "saxenda": ["caneta emagrecedora", "emagrecer", "emagrecimento"],
+    "wegovy": ["caneta emagrecedora", "emagrecer", "emagrecimento"],
+    "neosoro": ["nariz entupido", "descongestionante nasal", "solução nasal"],
+    "naridrin": ["nariz entupido", "descongestionante nasal", "solução nasal"],
+    "aerolin": ["falta de ar", "asma", "bombinha", "salbutamol", "bronquite"],
+    "dipirona": ["dor de cabeca", "febre", "analgesico", "dor no corpo"],
+    "dorflex": ["dor muscular", "relaxante muscular", "dor nas costas"],
+    "epocler": ["figado", "ressaca", "digestao", "estomago"],
+  };
+
+  for (const [key, aliases] of Object.entries(variations)) {
+    if (n.includes(key)) {
+      tags.push(...aliases);
+    }
+  }
+
+  newP.internalTags = Array.from(new Set(tags));
+
+  // Fix Mounjaro properties (Tarja Vermelha e Retenção)
+  if (n.includes("mounjaro")) {
+    newP.tarja = "Vermelha";
+    newP.retemReceita = true;
+  }
+
+  if (newP.url === "energy-guarana-santo-habito-com-60-saches-de-5g-42882620792") {
+    newP.videoUrl = "https://cdn.awsli.com.br/2289/2289034/arquivos/saveclip-app_aqol6trxb9k_tgxhjtuskvxokt9bbfjzc2nyrr21fzq1u22-sihbqpia2hzq68evzkb.webm";
+    newP.imagens = [
+      "/produtos/energy-guarana-1.webp",
+      "/produtos/energy-guarana-2.webp",
+      "/produtos/energy-guarana-3.webp"
+    ];
+  }
+
+  // --- Mapeamento para Filtros Dinâmicos ---
+  const dynamicFiltrosValores = Array.isArray(newP.filtrosValores) ? [...newP.filtrosValores] : [];
+  
+  // Genérico
+  if (newP.generico !== undefined) {
+    if (newP.generico === true) {
+      if (!dynamicFiltrosValores.some(f => f.filtroId === 'gen')) dynamicFiltrosValores.push({ filtroId: 'gen', opcaoId: 'gen-sim' });
+    } else {
+      if (!dynamicFiltrosValores.some(f => f.filtroId === 'gen')) dynamicFiltrosValores.push({ filtroId: 'gen', opcaoId: 'gen-nao' });
+    }
+  }
+
+  // Receita Médica
+  if (newP.retemReceita !== undefined) {
+    if (newP.retemReceita === true) {
+      if (!dynamicFiltrosValores.some(f => f.filtroId === 'rec')) dynamicFiltrosValores.push({ filtroId: 'rec', opcaoId: 'rec-retem' });
+    } else {
+      if (!dynamicFiltrosValores.some(f => f.filtroId === 'rec')) dynamicFiltrosValores.push({ filtroId: 'rec', opcaoId: 'rec-naoretem' });
+    }
+  }
+
+  // Tarja
+  if (newP.tarja) {
+    const tLow = newP.tarja.toLowerCase().trim();
+    if (!dynamicFiltrosValores.some(f => f.filtroId === 'tarja')) {
+      if (tLow.includes('vermelha')) dynamicFiltrosValores.push({ filtroId: 'tarja', opcaoId: 'tarja-verm' });
+      else if (tLow.includes('preta')) dynamicFiltrosValores.push({ filtroId: 'tarja', opcaoId: 'tarja-preta' });
+      else if (tLow.includes('amarela')) dynamicFiltrosValores.push({ filtroId: 'tarja', opcaoId: 'tarja-amar' });
+      else if (tLow === 'n' || tLow.includes('sem tarja')) dynamicFiltrosValores.push({ filtroId: 'tarja', opcaoId: 'tarja-sem' });
+    }
+  } else if (!dynamicFiltrosValores.some(f => f.filtroId === 'tarja')) {
+    dynamicFiltrosValores.push({ filtroId: 'tarja', opcaoId: 'tarja-sem' });
+  }
+
+  newP.filtrosValores = dynamicFiltrosValores;
+
+  return newP;
+}
+
+// Helper to enforce Health Services logic on ANY product
+function enforceHealthServicesCategory(p: Produto): Produto {
+  if (!p || !p.nome) return p;
+  const n = String(p.nome).toLowerCase();
+  
+  if ((n.includes("covid") || n.includes("vacina") || (/\bteste\b/.test(n) && !n.includes("gravidez") && !n.includes("(teste)"))) && !n.includes("aparelho") && !n.includes("medidor")) {
+    p.categoriaId = "200";
+    if (n.includes("vacina")) {
+      p.subcategoriaId = "201";
+    } else if (/\bteste\b/.test(n) || n.includes("covid")) {
+      p.subcategoriaId = "202";
+    }
+  }
+  return p;
+}
+
+import { useAdminProducts } from "@/stores/products";
+
+// Await hydration helper
+async function ensureHydrated() {
+  if (useAdminProducts.persist.hasHydrated()) return;
+  return new Promise<void>((resolve) => {
+    const unsub = useAdminProducts.persist.onFinishHydration(() => {
+      resolve();
+      unsub();
+    });
+    // Fallback in case it hangs
+    setTimeout(() => {
+      resolve();
+      unsub();
+    }, 500);
+  });
+}
+
+let cachedProdutos: Produto[] | null = null;
+let cachedFuse: Fuse<Produto> | null = null;
+let lastCustomProductsRef: any = null;
+
+// Helper to get all merged products dynamically
+export const getAllProdutos = (): Produto[] => {
+  const customProducts = useAdminProducts.getState().customProducts || [];
+  
+  if (cachedProdutos && lastCustomProductsRef === customProducts) {
+    return cachedProdutos;
+  }
+  
+  lastCustomProductsRef = customProducts;
+  
+  // Merge them (custom overrides base if IDs match)
+  const map = new Map(baseProdutos.filter(Boolean).map(p => {
+    const newP = enhanceProduct(p);
+    return [newP?.id || "", enforceHealthServicesCategory(newP)];
+  }));
+  
+  // Do NOT enhance customProducts with variations, but DO enforce health services rules
+  customProducts.filter(Boolean).forEach(p => {
+    map.set(p.id, enforceHealthServicesCategory({ ...p }));
+  });
+  
+  const merged = Array.from(map.values()).filter(p => p && p.id);
+  
+  // Pre-calculate search strings for faster exact matching
+  merged.forEach((p: any) => {
+    const n = removeAccents(String(p.nome || "").toLowerCase());
+    const tags = (p.internalTags || []).map((t: string) => removeAccents(String(t || "").toLowerCase()));
+    const pa = removeAccents(String(p.principiosAtivos || "").toLowerCase());
+    const fab = removeAccents(String(p.fabricante || "").toLowerCase());
+    p._searchString = [n, ...tags, pa, fab].join(" ");
+  });
+  
+  cachedProdutos = merged;
+  cachedFuse = null; // Invalidate fuse when products change
+  
+  return cachedProdutos;
+};
+
+const wait = <T,>(v: T, ms = 0) => new Promise<T>((r) => setTimeout(() => r(v), ms));
+
+// Fuzzy search index — typo-tolerant
+const getFuse = () => {
+  const produtos = getAllProdutos();
+  if (cachedFuse) return cachedFuse;
+
+  cachedFuse = new Fuse(produtos, {
+    keys: [
+      { name: "nome", weight: 2.0 },
+      { name: "ean", weight: 1.5 },
+      { name: "principiosAtivos", weight: 1.2 },
+      { name: "internalTags", weight: 1.0 },
+      { name: "descricao", weight: 0.5 },
+      { name: "fabricante", weight: 0.5 },
+    ],
+    threshold: 0.35, // Tighter tolerance to avoid completely unrelated results
+    ignoreLocation: true,
+    ignoreFieldNorm: true, // Don't penalize long descriptions/names
+    minMatchCharLength: 2,
+  });
+  return cachedFuse;
+};
+
+export interface FilterOptions {
+  marcas?: string[];
+  generico?: string; // "sim" or "nao"
+  receita?: string; // "retem" or "nao_retem"
+  tarjas?: string[]; // "Preta", "Vermelha", "Sem Tarja", etc.
+  minPrice?: number;
+  maxPrice?: number;
+  dinamicos?: Record<string, string[]>; // { filtroId: [opcaoId1, opcaoId2] }
+}
+
+function applyFilters(produtos: Produto[], filters?: FilterOptions): Produto[] {
+  if (!filters) return produtos;
+
+  return produtos.filter((p) => {
+    // 1. Marca
+    if (filters.marcas && filters.marcas.length > 0) {
+      const pMarca = String(p.fabricante || p.marca || "").toLowerCase().trim();
+      const matchBrand = filters.marcas.some(m => pMarca === String(m).toLowerCase().trim());
+      if (!matchBrand) return false;
+    }
+
+    // 2. Genérico
+    if (filters.generico) {
+      if (filters.generico === "sim" && !checkIsGenerico(p)) return false;
+      if (filters.generico === "nao" && checkIsGenerico(p)) return false;
+    }
+
+    // 3. Receita
+    if (filters.receita) {
+      if (filters.receita === "retem" && !p.retemReceita) return false;
+      if (filters.receita === "nao_retem" && p.retemReceita) return false;
+    }
+
+    // 4. Tarja
+    if (filters.tarjas && filters.tarjas.length > 0) {
+      const pTarja = String(p.tarja || "Sem Tarja").toLowerCase().trim();
+      const matchTarja = filters.tarjas.some(t => {
+        const tLow = String(t).toLowerCase().trim();
+        if (tLow === "sem tarja" && (pTarja === "n" || pTarja === "sem tarja" || pTarja === "")) return true;
+        return pTarja.includes(tLow);
+      });
+      if (!matchTarja) return false;
+    }
+
+    // 5. Preço
+    if (filters.minPrice !== undefined && p.precoPor < filters.minPrice) return false;
+    if (filters.maxPrice !== undefined && p.precoPor > filters.maxPrice) return false;
+
+    // 6. Filtros Dinâmicos
+    if (filters.dinamicos) {
+      for (const [filtroId, opcoesSelecionadas] of Object.entries(filters.dinamicos)) {
+        if (!opcoesSelecionadas || opcoesSelecionadas.length === 0) continue;
+        
+        // Verifica se o produto tem alguma das opcoes selecionadas para este filtroId
+        const matchDynamic = (p.filtrosValores || []).some(fv => 
+          fv.filtroId === filtroId && opcoesSelecionadas.includes(fv.opcaoId)
+        );
+        
+        if (!matchDynamic) return false;
+      }
+    }
+
+    return true;
+  });
+}
+
+export const catalog = {
+  listProducts: async (filters?: FilterOptions) => {
+    await ensureHydrated();
+    return wait(applyFilters(getAllProdutos(), filters));
+  },
+  async listCategories(includeEmpty = true): Promise<Categoria[]> {
+    await ensureHydrated();
+    const categorias = getCategorias();
+    if (includeEmpty) return wait(categorias);
+    const usedIds = new Set(catalog.getUsedCategoriesIds());
+    return wait(categorias.filter((c) => usedIds.has(c.id)));
+  },
+  async listMainCategories(includeEmpty = true): Promise<Categoria[]> {
+    await ensureHydrated();
+    const categorias = getCategorias();
+    if (includeEmpty) return wait(categorias.filter((c) => !c.parentId));
+    const usedIds = new Set(catalog.getUsedCategoriesIds());
+    return wait(categorias.filter((c) => !c.parentId && usedIds.has(c.id)));
+  },
+  async listSubcategories(parentId: string, includeEmpty = true): Promise<Categoria[]> {
+    await ensureHydrated();
+    const categorias = getCategorias();
+    if (includeEmpty) return wait(categorias.filter((c) => c.parentId === parentId));
+    const usedIds = new Set(catalog.getUsedCategoriesIds());
+    return wait(categorias.filter((c) => c.parentId === parentId && usedIds.has(c.id)));
+  },
+  async getCategoryBySlug(slug: string): Promise<Categoria | null> {
+    await ensureHydrated();
+    const categorias = getCategorias();
+    return wait(categorias.find((c) => c && c.slug === slug) ?? null);
+  },
+  async getCategoryById(id: string): Promise<Categoria | null> {
+    await ensureHydrated();
+    const categorias = getCategorias();
+    return wait(categorias.find((c) => c && c.id === id) ?? null);
+  },
+  getProductBySlug: async (slugOrId: string) => {
+    await ensureHydrated();
+    const produtos = getAllProdutos();
+    const p = produtos.find(
+      (x) =>
+        x.id === slugOrId ||
+        x.url === slugOrId ||
+        String(x.nome || "").toLowerCase().replace(/\s+/g, "-") === slugOrId,
+    );
+    return p ? { ...p } : null;
+  },
+  productsByCategory: async (categoryId: string, filters?: FilterOptions) => {
+    await ensureHydrated();
+    const categorias = getCategorias();
+    const cat = categorias.find(c => c.id === categoryId);
+    if (!cat) return wait([]);
+
+    const all = getAllProdutos();
+
+    let results: Produto[] = [];
+
+    const isOfertas = String(cat.nome || "").toLowerCase().includes("oferta") || String(cat.nome || "").toLowerCase().includes("promoç");
+
+    // Custom logic for "Nossas Marcas" (id: "300") and its subcategories
+    if (categoryId === "300") {
+      const subCategorias = categorias.filter(c => c.parentId === "300");
+      const namesToMatch = subCategorias.map(c => removeAccents(c.nome.toLowerCase()));
+      results = all.filter(p => {
+        const nome = removeAccents(String(p.nome).toLowerCase());
+        return namesToMatch.some(brand => nome.includes(brand));
+      });
+    } else if (cat.parentId === "300") {
+      const brandName = removeAccents(cat.nome.toLowerCase());
+      results = all.filter(p => removeAccents(String(p.nome).toLowerCase()).includes(brandName));
+    } else {
+      // Default matching logic
+      // Gather categoryId and all its subcategories
+      const validCategoryIds = [categoryId, ...categorias.filter(c => c.parentId === categoryId).map(c => c.id)];
+      // Gather names in case of legacy data that saved names instead of IDs
+      const validCategoryNames = [cat.nome.toLowerCase(), ...categorias.filter(c => c.parentId === categoryId).map(c => c.nome.toLowerCase())];
+
+      results = all.filter(
+        (p) => {
+          const rawCat = String(p.categoriaId || "").toLowerCase();
+          const rawSubcat = String(p.subcategoriaId || "").toLowerCase();
+          let matchesCategory = validCategoryIds.includes(p.categoriaId) || 
+                 validCategoryNames.includes(rawCat) ||
+                 (p.subcategoriaId && validCategoryIds.includes(p.subcategoriaId)) || 
+                 (rawSubcat && validCategoryNames.includes(rawSubcat)) ||
+                 (Array.isArray(p.categoriasIds) && p.categoriasIds.some(id => validCategoryIds.includes(id))) ||
+                 (Array.isArray(p.subcategoriasIds) && p.subcategoriasIds.some(id => validCategoryIds.includes(id))) ||
+                 (Array.isArray(p.categoriasAdicionais) && p.categoriasAdicionais.some(id => validCategoryIds.includes(id)));
+                 
+          if (!matchesCategory && isOfertas) {
+            if (p.emCampanha) {
+              const now = new Date().toISOString().split('T')[0];
+              if (!p.campanhaFim || p.campanhaFim >= now) {
+                matchesCategory = true;
+              }
+            }
+          }
+          
+          return matchesCategory;
+        }
+      );
+    }
+
+    return wait(applyFilters(results, filters));
+  },
+  productsByVitrine: async (vitrineId: string, categoriaId: string, filters?: FilterOptions, produtoIds?: string[]) => {
+    await ensureHydrated();
+    const all = getAllProdutos();
+    
+    // If manual product IDs are provided, use those
+    if (produtoIds && produtoIds.length > 0) {
+      const idSet = new Set(produtoIds);
+      const results = all.filter(p => idSet.has(p.id));
+      return wait(applyFilters(results, filters));
+    }
+
+    let results = [];
+    
+    if (categoriaId === "all") {
+      results = all;
+    } else if (categoriaId === "ofertas") {
+      results = [...all].reverse();
+    } else if (categoriaId === "novidades") {
+      results = all.filter(p => p.isNovo);
+      if (results.length === 0) results = all.slice(0, 10);
+    } else if (categoriaId === "protetores") {
+      results = all.filter(p => String(p.nome).toLowerCase().includes("protetor") || String(p.nome).toLowerCase().includes("solar"));
+      if (results.length === 0) results = all.slice(0, 10);
+    } else {
+      const categorias = getCategorias();
+      const validCategoryIds = [categoriaId, ...categorias.filter(c => c.parentId === categoriaId).map(c => c.id)];
+      
+      results = all.filter(
+        (p) => validCategoryIds.includes(p.categoriaId) || 
+               (p.subcategoriaId && validCategoryIds.includes(p.subcategoriaId)) || 
+               (Array.isArray(p.categoriasIds) && p.categoriasIds.some(id => validCategoryIds.includes(id))) ||
+               (Array.isArray(p.subcategoriasIds) && p.subcategoriasIds.some(id => validCategoryIds.includes(id))) ||
+               (Array.isArray(p.categoriasAdicionais) && p.categoriasAdicionais.some(id => validCategoryIds.includes(id))) ||
+               (Array.isArray(p.vitrines) && p.vitrines.includes(vitrineId))
+      );
+    }
+
+    return wait(applyFilters(results, filters));
+  },
+  productsByBrand: async (brandName: string) => {
+    await ensureHydrated();
+    return wait(
+      getAllProdutos().filter(
+        (p) => p.fabricante && String(p.fabricante).toLowerCase() === brandName.toLowerCase(),
+      ),
+    );
+  },
+  // Uses deterministic seed so results are stable across re-renders
+  crossSell: async (cartIds: string[], limit = 4, referenceCategoryId?: string) => {
+    await ensureHydrated();
+    const settings = useAdmin.getState().compreJuntoSettings;
+    
+    if (settings && !settings.active) {
+      return wait([]);
+    }
+
+    const produtos = getAllProdutos();
+    let others = produtos.filter((p) => p && !cartIds.includes(p.id));
+    
+    if (settings) {
+      others = others.filter(p => (p.precoPor || p.preco || 0) <= settings.maxPrice);
+      
+      if (settings.categoryId !== "all") {
+        others = others.filter(p => p.categoriaId === settings.categoryId || String(p.subcategoriaId).startsWith(settings.categoryId));
+      } else if (referenceCategoryId) {
+        others = others.filter(p => p.categoriaId === referenceCategoryId);
+      }
+    } else {
+      others = others.filter(p => p.categoriaId !== "142");
+    }
+
+    const seedStr = cartIds.sort().join(",");
+    let seed = 0;
+    for (let i = 0; i < seedStr.length; i++) {
+      seed = seedStr.charCodeAt(i) + ((seed << 5) - seed);
+    }
+    const seededRandom = () => {
+      seed = (seed * 16807 + 0) % 2147483647;
+      return (seed & 0x7fffffff) / 0x7fffffff;
+    };
+    for (let i = others.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom() * (i + 1));
+      [others[i], others[j]] = [others[j], others[i]];
+    }
+    return wait(others.slice(0, limit));
+  },
+  getOrderBumps: async (): Promise<Produto[]> => {
+    await ensureHydrated();
+    const all = getAllProdutos();
+    const tagged = all.filter(p => p.orderBump === true);
+    if (tagged.length > 0) return wait(tagged.slice(0, 4));
+
+    const settings = useAdmin.getState().orderBumpSettings;
+    if (settings && settings.active) {
+      const pList = all.filter((p) => {
+        const price = p.precoPor || p.preco || 0;
+        return (p.categoriaId === settings.categoryId || String(p.subcategoriaId).startsWith(settings.categoryId)) &&
+               price > 0 && price <= settings.maxPrice;
+      });
+      return wait(pList);
+    }
+    
+    return wait([]);
+  },
+  search: async (q: string, filters?: FilterOptions) => {
+    await ensureHydrated();
+    if (!q || q.length < 2) {
+      if (filters && Object.keys(filters).length > 0) {
+        return wait(applyFilters(getAllProdutos(), filters).slice(0, 40));
+      }
+      return wait([] as Produto[]);
+    }
+    const produtos = getAllProdutos();
+
+    let results: Produto[] = [];
+
+    // Exact number search (EAN or ID)
+    if (/^\d+$/.test(q)) {
+      const exactMatch = produtos.filter(p => String(p.ean) === q || String(p.id) === q);
+      if (exactMatch.length > 0) results = exactMatch;
+    }
+
+    if (results.length === 0) {
+      const cleanQ = removeAccents(q.toLowerCase()).trim();
+      const queryWords = cleanQ.split(/\s+/);
+      
+      // Exact word matching (high priority)
+      const exactMatches = produtos.filter((p: any) => {
+        const searchString = p._searchString || "";
+        return queryWords.every(word => searchString.includes(word));
+      });
+
+      // Fuzzy search for fallbacks and typos
+      const fuse = getFuse();
+      const hits = fuse.search(q, { limit: 20 }).map((r) => r.item);
+
+      // Merge and deduplicate (exact matches first)
+      const resultMap = new Map<string, Produto>();
+      exactMatches.forEach(p => resultMap.set(p.id, p));
+      hits.forEach(p => {
+        if (!resultMap.has(p.id)) resultMap.set(p.id, p);
+      });
+      
+      results = Array.from(resultMap.values()).slice(0, 20);
+    }
+
+    return wait(applyFilters(results, filters));
+  },
+  featured: async () => {
+    await ensureHydrated();
+    const todos = getAllProdutos();
+    const comDestaque = todos.filter(p => p.destaque).reverse();
+    
+    // Fill up to 12 slots with fallback products if needed
+    if (comDestaque.length < 12) {
+      const fallback = todos.filter((p) => !p.destaque && p.precoDe > p.precoPor);
+      const needed = 12 - comDestaque.length;
+      return wait([...comDestaque, ...fallback.slice(0, needed)]);
+    }
+    
+    return wait(comDestaque.slice(0, 12));
+  },
+  getUsedCategoriesIds: async (): Promise<string[]> => {
+    await ensureHydrated();
+    const todos = getAllProdutos();
+    const ids = new Set<string>();
+    for (const p of todos) {
+      if (p.categoriaId) ids.add(p.categoriaId);
+      if (p.subcategoriaId) ids.add(p.subcategoriaId);
+      if (Array.isArray(p.categoriasIds)) {
+        p.categoriasIds.forEach(id => ids.add(id));
+      }
+      if (Array.isArray(p.subcategoriasIds)) {
+        p.subcategoriasIds.forEach(id => ids.add(id));
+      }
+      if (Array.isArray(p.categoriasAdicionais)) {
+        p.categoriasAdicionais.forEach(id => ids.add(id));
+      }
+    }
+    return Array.from(ids);
+  },
+  listStores: (): Promise<Loja[]> => {
+    // Typecast from Pharmacy to Loja is mostly compatible for the mockup purposes,
+    // but they might have slight differences.
+    const pharmacies = useAdmin.getState().pharmacies;
+    const active = pharmacies.filter((p: any) => p.ativo !== false) as unknown as Loja[];
+    return wait(active);
+  },
+  activeStore: (): Promise<Loja> => {
+    const pharmacies = useAdmin.getState().pharmacies;
+    const active = pharmacies.filter((p: any) => p.ativo !== false) as unknown as Loja[];
+    return wait(active[0] || (pharmacies[0] as unknown as Loja));
+  },
+};
