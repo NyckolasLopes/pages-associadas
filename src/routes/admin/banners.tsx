@@ -191,8 +191,8 @@ function AdminBanners() {
     <div className="max-w-6xl space-y-6 pb-20">
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <h2 className="text-[22px] font-bold text-[#1a1a1a]">Banners</h2>
-          <span className="text-sm font-medium text-slate-500">Gerencie os banners da sua loja por posição</span>
+          <h2 className="text-[22px] font-bold text-[#1a1a1a]">Personalizar Minha Loja</h2>
+          <span className="text-sm font-medium text-slate-500">Gerencie os banners e destaques visuais da sua loja por posição</span>
         </div>
         <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
           <Plus className="w-4 h-4 mr-2" /> Novo banner
