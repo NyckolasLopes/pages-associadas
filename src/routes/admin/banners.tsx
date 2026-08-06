@@ -221,9 +221,15 @@ function AdminBanners() {
       {/* Top Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col">
-          <h2 className="text-[22px] font-bold text-[#1a1a1a]">Personalizar Minha Loja</h2>
+          <h2 className="text-[22px] font-bold text-[#1a1a1a]">
+            {activeTab === "estrutura" ? "Estrutura da Minha Loja" : activeTab === "vitrines" ? "Minhas Vitrines" : "Banners"}
+          </h2>
           <span className="text-sm font-medium text-slate-500">
-            Gerencie o visual da sua loja, banners promocionais e vitrines de produtos
+            {activeTab === "estrutura" 
+              ? "Panorama geral de todas as seções e blocos da sua loja" 
+              : activeTab === "vitrines" 
+              ? "Gerencie e organize as vitrines e carrosséis de produtos" 
+              : "Gerencie os banners promocionais e visuais da sua loja"}
           </span>
         </div>
         {activeTab === "banners" && (
@@ -231,60 +237,6 @@ function AdminBanners() {
             <Plus className="w-4 h-4 mr-2" /> Novo banner
           </Button>
         )}
-      </div>
-
-      {/* Modern Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
-        <button
-          onClick={() => handleTabChange("banners")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
-            activeTab === "banners"
-              ? "bg-[#00B5AD] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <ImageIcon className="w-4 h-4" />
-          Banners
-          <span className={`text-xs px-2 py-0.5 rounded-full ${
-            activeTab === "banners" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-          }`}>
-            {totalBannersCount}
-          </span>
-        </button>
-
-        <button
-          onClick={() => handleTabChange("estrutura")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
-            activeTab === "estrutura"
-              ? "bg-[#00B5AD] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <LayoutTemplate className="w-4 h-4" />
-          Estrutura da Minha Loja
-          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-            activeTab === "estrutura" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"
-          }`}>
-            Panorama Geral
-          </span>
-        </button>
-
-        <button
-          onClick={() => handleTabChange("vitrines")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
-            activeTab === "vitrines"
-              ? "bg-[#00B5AD] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <ShoppingBag className="w-4 h-4" />
-          Minhas Vitrines
-          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-            activeTab === "vitrines" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-800"
-          }`}>
-            Produtos
-          </span>
-        </button>
       </div>
 
       {/* Tab 1: Banners Content */}

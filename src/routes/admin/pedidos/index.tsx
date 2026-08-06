@@ -6,124 +6,75 @@ import {
   Download,
   Printer,
   ChevronLeft,
-  ChevronRight,
-  Info,
   Package,
   MapPin,
   CreditCard,
-  History,
-  MoreVertical,
   Check,
-  Truck,
   Mail,
   MessageSquare,
   AlertCircle,
   Store,
   Trash2,
-  QrCode,
-  Banknote,
   Code,
-  Copy
+  Copy,
+  ShoppingCart,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useOrders, Pedido } from "@/stores/orders";
+import { useAdmin } from "@/stores/admin";
+import { useAbandonedCartsStore, AbandonedCart } from "@/stores/abandoned-carts";
+import { useCart } from "@/stores/cart";
+import { useAuth } from "@/stores/auth";
 
 export const Route = createFileRoute("/admin/pedidos/")({
   component: PedidosAdmin,
 });
 
-const STATUS_OPTIONS = [
-  "Aguardando pagamento",
-  "Pago",
-  "Em separação",
-  "Enviado",
-  "Aguardando retirada",
-  "Entregue",
-  "Cancelado",
-];
-
-const STATUS_COLORS: Record<string, string> = {
-  "Aguardando pagamento": "bg-amber-100 text-amber-700 border-amber-200",
-  "Pago": "bg-emerald-100 text-emerald-700 border-emerald-200",
-  "Em separação": "bg-blue-100 text-blue-700 border-blue-200",
-  "Enviado": "bg-indigo-100 text-indigo-700 border-indigo-200",
-  "Aguardando retirada": "bg-orange-100 text-orange-700 border-orange-200",
-  "Entregue": "bg-teal-100 text-teal-700 border-teal-200",
-  "Cancelado": "bg-red-100 text-red-700 border-red-200",
-};
-
-const STATUS_DOTS: Record<string, string> = {
-  "Aguardando pagamento": "bg-amber-500",
-  "Pago": "bg-emerald-500",
-  "Em separação": "bg-blue-500",
-  "Enviado": "bg-indigo-500",
-  "Aguardando retirada": "bg-orange-500",
-  "Entregue": "bg-teal-500",
-  "Cancelado": "bg-red-500",
-};
-
-// Progresso do Pedido
-const STATUS_STAGES = [
-  "Aguardando pagamento",
-  "Pago",
-  "Em separação",
-  "Enviado",
-  "Entregue"
-];
-
-import { useOrders, Pedido } from "@/stores/orders";
-import { useAdmin } from "@/stores/admin";
-
-const JSON_EXAMPLE = `{
-  "id": "504",
-  "lojaId": "loja-poa-centro",
-  "data": "10/07/2026 10:09",
-  "cliente": {
-    "nome": "Nyckolas Lopes",
-    "email": "nyckolas.lopes@gmail.com",
-    "telefone": "(51) 98173-1656",
-    "cpf": "600.117.090-81"
-  },
-  "pagamento": {
-    "metodo": "Pix",
-    "idTransacao": "J9DSOWDGCO"
-  },
-  "envio": {
-    "metodo": "Entrega Expressa",
-    "endereco": "Rua Dos Andradas, 59",
-    "cidade": "Porto Alegre / RS",
-    "cep": "90020-015"
-  },
-  "status": "Pago",
-  "produtos": [
-    {
-      "sku": "7896523207360",
-      "nome": "NEVRALGEX 300MG + 50MG + 35MG C/10 COMP",
-      "qtd": 2,
-      "valorUnitario": 4.99
-    }
-  ],
-  "valores": {
-    "produtos": 9.98,
-    "desconto": 0,
-    "frete": 10.00,
-    "total": 19.98
-  }
-}`;
-
-function PedidosAdmin() {
-
+export function PedidosAdmin() {
   const { orders, updateOrderStatus, updateOrderTracking, deleteOrder } = useOrders();
   const { pharmacies, currentUser, grupos } = useAdmin();
   
+  // Carrinhos abandonados / itens de clientes logados
+  const { carts: storeCarts, removeCart: removeStoreCart } = useAbandonedCartsStore();
+  const cartItems = useCart(s => s.items);
+  const cartTotal = useCart(s => s.total());
+  const clearCart = useCart(s => s.clear);
+  const user = useAuth(s => s.user);
+  const lastUpdatedAt = useCart(s => (s as any).lastUpdatedAt);
+  const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
+
+  const liveCarts: AbandonedCart[] = [];
+  if (user && cartItems.length > 0) {
+    liveCarts.push({
+      id: "#807099",
+      createdAt: new Date(lastUpdatedAt || Date.now()).toLocaleDateString('pt-BR') + " " + new Date(lastUpdatedAt || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      client: user.name,
+      email: user.email,
+      phone: (user as any).phone || "(51) 99999-9999",
+      address: "Não informado",
+      abandonedAt: "Há pouco tempo",
+      recoveryStatus: "Aguardando disparo autom.",
+      total: cartTotal,
+      type: 'sem_transacao',
+      lojaId: selectedPharmacyId || undefined,
+      items: cartItems.map(i => ({
+        nome: i.nome,
+        qtd: i.qty,
+        valorUnitario: i.preco,
+        foto: "https://placehold.co/100"
+      }))
+    });
+  }
+  const allAbandonedCarts = [...liveCarts, ...storeCarts];
+
   const isGlobalAdmin = () => {
     if (currentUser?.proprietario) return true;
     const userGroup = grupos.find(g => g.id === currentUser?.grupoId);
@@ -131,36 +82,18 @@ function PedidosAdmin() {
   };
 
   const [selectedOrder, setSelectedOrder] = useState<Pedido | null>(null);
-  const [stagedStatus, setStagedStatus] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("Resumo");
-  const [rastreioCode, setRastreioCode] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("status") === "aguardando") return "Aguardando pagamento";
-    }
-    return "Todas";
-  });
-  const [paymentFilter, setPaymentFilter] = useState("Todos");
   const [dateStartFilter, setDateStartFilter] = useState("");
   const [dateEndFilter, setDateEndFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
-
-  const handleUpdateStatus = (id: string, newStatus: string) => {
-    updateOrderStatus(id, newStatus);
-    if (selectedOrder && selectedOrder.id === id) {
-      setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
-      toast.success("Status do pedido atualizado!");
-    }
-  };
+  const [mainView, setMainView] = useState<"todos" | "concluidos" | "carrinhos">("todos");
 
   const handleDelete = (id: string) => {
     setItemToDelete(id);
     setConfirmOpen(true);
-  }
+  };
 
   const confirmDelete = () => {
     if (itemToDelete) {
@@ -171,20 +104,8 @@ function PedidosAdmin() {
     }
   };
 
-  const handleSaveRastreio = () => {
-    if (!rastreioCode) return;
-    toast.success("Código de rastreio atualizado com sucesso!");
-    if (selectedOrder) {
-       setSelectedOrder({
-         ...selectedOrder,
-         envio: { ...selectedOrder.envio, rastreio: rastreioCode }
-       });
-       updateOrderTracking(selectedOrder.id, rastreioCode);
-    }
-  };
-
   const getLojaName = (id?: string) => {
-    if (!id) return "Loja não identificada";
+    if (!id) return "Loja Principal";
     const p = pharmacies.find(ph => ph.id === id);
     return p ? p.nome : id;
   };
@@ -195,17 +116,15 @@ function PedidosAdmin() {
   };
 
   const exportToExcel = () => {
-    const headers = ["ID", "Data", "Status", "Cliente", "Email", "CPF", "Telefone", "Loja", "Pagamento", "Produtos", "Frete", "Total"];
+    const headers = ["ID", "Data", "Cliente", "Email", "CPF", "Telefone", "Loja", "Produtos", "Frete", "Total"];
     const rows = filteredOrders.map(o => [
       o.id,
       o.data,
-      o.status,
       o.cliente.nome,
       o.cliente.email,
       o.cliente.cpf,
       o.cliente.telefone,
       getLojaName(o.lojaId),
-      o.pagamento.metodo,
       o.valores.produtos.toString().replace('.', ','),
       o.valores.frete.toString().replace('.', ','),
       o.valores.total.toString().replace('.', ',')
@@ -232,14 +151,6 @@ function PedidosAdmin() {
       }
     }
     
-    if (statusFilter !== "Todas" && o.status !== statusFilter) {
-      return false;
-    }
-    
-    if (paymentFilter !== "Todos" && !o.pagamento.metodo.toLowerCase().includes(paymentFilter.toLowerCase())) {
-      return false;
-    }
-    
     if (dateStartFilter || dateEndFilter) {
        const orderDateStr = o.data.split(" ")[0]; 
        if (orderDateStr && orderDateStr.includes("/")) {
@@ -252,29 +163,31 @@ function PedidosAdmin() {
     return true;
   });
 
+  const filteredAbandonedCarts = allAbandonedCarts.filter(c => {
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      if (!c.id.toLowerCase().includes(term) && !c.client.toLowerCase().includes(term)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
   const kpis = {
     total: orders.length,
-    pago: orders.filter(o => o.status === "Pago").length,
-    aguardandoPagamento: orders.filter(o => o.status === "Aguardando pagamento").length,
-    emSeparacao: orders.filter(o => o.status === "Em separação").length,
-    concluidos: orders.filter(o => o.status === "Entregue").length
+    concluidos: orders.length,
+    carrinhosARecuperar: allAbandonedCarts.length,
   };
 
   if (selectedOrder) {
     // --- DETAILS VIEW ---
-    const currentStageIndex = STATUS_STAGES.indexOf(selectedOrder.status);
-    const isCancelled = selectedOrder.status === "Cancelado";
     const isPickup = selectedOrder.envio.metodo.includes("Retirada");
 
     return (
       <div className="min-h-screen bg-slate-50/50 p-6 font-sans">
-        {/* Header */}
         <div className="max-w-6xl mx-auto space-y-6">
           <button 
-            onClick={() => {
-              setSelectedOrder(null);
-              setStagedStatus(null);
-            }}
+            onClick={() => setSelectedOrder(null)}
             className="flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-emerald-600 transition-colors print:hidden"
           >
             <ChevronLeft className="h-4 w-4" /> Voltar para lista de pedidos
@@ -284,8 +197,9 @@ function PedidosAdmin() {
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-black text-slate-800 tracking-tight">Pedido #{selectedOrder.id}</h1>
-                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${STATUS_COLORS[selectedOrder.status]}`}>
-                  {selectedOrder.status}
+                <div className="px-3 py-1 rounded-full text-xs font-bold border bg-emerald-100 text-emerald-700 border-emerald-200 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Concluído (WhatsApp)
                 </div>
               </div>
               <span className="text-slate-500 font-medium text-sm flex items-center gap-2">
@@ -295,6 +209,17 @@ function PedidosAdmin() {
               </span>
             </div>
             <div className="flex items-center gap-3 print:hidden">
+               <Button 
+                 className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
+                 onClick={() => {
+                    const cleanPhone = (selectedOrder.cliente.telefone || "").replace(/\D/g, "");
+                    const text = `Olá ${selectedOrder.cliente.nome.split(" ")[0]}, estamos em contato sobre o seu pedido #${selectedOrder.id} realizado na Farmácias Associadas!`;
+                    window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+                 }}
+               >
+                 <MessageSquare className="h-4 w-4" />
+                 Falar no WhatsApp
+               </Button>
                <Button variant="outline" className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2" onClick={() => handleDelete(selectedOrder.id)}>
                 <Trash2 className="h-4 w-4" />
                 Excluir
@@ -307,11 +232,11 @@ function PedidosAdmin() {
           </div>
 
           {/* Info Blocks Grid */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
                 <MapPin className="h-5 w-5" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Logística</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Entrega / Logística</h3>
               </div>
               <div>
                 <div className="font-bold text-slate-800">{selectedOrder.envio.metodo}</div>
@@ -324,61 +249,24 @@ function PedidosAdmin() {
                 )}
                 {isPickup && (
                   <>
-                    <div className="text-sm text-emerald-600 mt-1 font-bold">Retirada na loja.</div>
-                    {selectedOrder.anotacoes && selectedOrder.anotacoes.includes("Autorizado para retirada") ? (
-                      <div className="mt-3 pt-2 border-t space-y-1">
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Pessoa Autorizada</div>
-                        <div className="text-sm font-semibold text-slate-700">{selectedOrder.anotacoes.replace("Autorizado para retirada: ", "")}</div>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-slate-500 mt-1 font-medium">O próprio cliente irá retirar.</div>
-                    )}
+                    <div className="text-sm text-emerald-600 mt-1 font-bold">Retirada no balcão da loja.</div>
+                    <div className="text-sm text-slate-500 mt-1 font-medium">O cliente fará a retirada na unidade informada.</div>
                   </>
                 )}
               </div>
             </div>
-            
+
             <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <CreditCard className="h-5 w-5" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pagamento</h3>
-              </div>
-              <div>
-                <div className="font-bold text-slate-800">
-                  {selectedOrder.pagamento.metodo}
-                  {selectedOrder.pagamento.cartaoFinal && (
-                    <span className="text-slate-400 font-medium ml-1 text-sm">
-                      (**** {selectedOrder.pagamento.cartaoFinal})
-                    </span>
-                  )}
-                </div>
-                <div className="text-sm text-slate-500 mt-1">Status: <span className="font-semibold text-slate-700">{selectedOrder.status === 'Aguardando pagamento' ? 'Pendente' : 'Confirmado'}</span></div>
-                {selectedOrder.pagamento.idTransacao && (
-                  <div className="text-xs text-slate-400 mt-2 font-mono bg-slate-50 p-1.5 rounded truncate">ID: {selectedOrder.pagamento.idTransacao}</div>
-                )}
-              </div>
-            </div>
-
-             <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
-              <div className="flex items-center gap-2 text-slate-400 mb-2">
                 <Store className="h-5 w-5" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Origem</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Loja de Atendimento</h3>
               </div>
               <div>
                 <div className="font-bold text-slate-800">{getLojaName(selectedOrder.lojaId)}</div>
-                <div className="text-sm text-slate-500 mt-1">Loja de faturamento</div>
-                <div className="text-xs text-slate-400 mt-2 font-mono bg-slate-50 p-1.5 rounded truncate">IP: {selectedOrder.cliente.ip}</div>
-                
-                {selectedOrder.utm && selectedOrder.utm.source?.toLowerCase().includes('google') && (
-                  <div className="mt-3 pt-3 border-t">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-500 mb-1">UTM (Google Shopping)</div>
-                    <div className="text-xs text-slate-600 flex flex-col gap-0.5 font-mono bg-indigo-50/50 p-2 rounded">
-                      {selectedOrder.utm.source && <div><span className="font-semibold text-indigo-700">Source:</span> {selectedOrder.utm.source}</div>}
-                      {selectedOrder.utm.medium && <div><span className="font-semibold text-indigo-700">Medium:</span> {selectedOrder.utm.medium}</div>}
-                      {selectedOrder.utm.campaign && <div><span className="font-semibold text-indigo-700">Campaign:</span> {selectedOrder.utm.campaign}</div>}
-                    </div>
-                  </div>
-                )}
+                <div className="text-sm text-slate-500 mt-1">Pedido direcionado para atendimento via WhatsApp</div>
+                <div className="text-xs text-emerald-700 bg-emerald-50 font-bold p-2 rounded-lg mt-3 border border-emerald-100 flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5" /> Concluído pelo carrinho da loja
+                </div>
               </div>
             </div>
 
@@ -391,7 +279,7 @@ function PedidosAdmin() {
               </div>
               <div className="space-y-1.5 pt-3 border-t border-emerald-200/50">
                 <div className="flex justify-between text-sm font-medium text-slate-600">
-                  <span>Produtos</span>
+                  <span>Subtotal Produtos</span>
                   <span className="font-bold">{selectedOrder.valores.produtos.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
                 </div>
                 <div className="flex justify-between text-sm font-medium text-slate-600">
@@ -402,89 +290,13 @@ function PedidosAdmin() {
             </div>
           </div>
 
-          {/* Timeline Card */}
-          <div className="bg-white border shadow-sm rounded-2xl p-8">
-             <div className="flex items-center w-full relative">
-                {STATUS_STAGES.map((stage, idx) => {
-                  const isActive = isCancelled ? false : currentStageIndex >= idx;
-                  const isPast = isCancelled ? false : currentStageIndex > idx;
-                  const isLast = idx === STATUS_STAGES.length - 1;
-                  return (
-                    <div key={stage} className="flex flex-col items-center flex-1 relative">
-                      {/* Connecting Line */}
-                      {!isLast && (
-                        <div className={`absolute top-4 left-1/2 w-full h-1.5 rounded-full ${isPast ? 'bg-emerald-500' : 'bg-slate-100'} ${isCancelled ? 'bg-slate-100' : ''}`}></div>
-                      )}
-                      
-                      {/* Dot */}
-                      <div className={`relative z-10 w-9 h-9 rounded-full flex items-center justify-center border-[3px] transition-all bg-white ${isActive ? 'border-emerald-500 shadow-md shadow-emerald-100' : 'border-slate-200'} ${isCancelled ? 'border-slate-200' : ''}`}>
-                        {isPast ? <Check className="h-5 w-5 text-emerald-500" /> : isActive ? <div className="w-3 h-3 rounded-full bg-emerald-500" /> : null}
-                      </div>
-                      
-                      {/* Label */}
-                      <div className={`mt-3 px-2 text-center text-xs font-bold leading-tight ${isActive ? 'text-emerald-700' : 'text-slate-400'}`}>
-                        {stage}
-                      </div>
-                    </div>
-                  );
-                })}
-                
-                {isCancelled && (
-                  <div className="flex flex-col items-center absolute right-0">
-                    <div className="relative z-10 w-9 h-9 rounded-full flex items-center justify-center border-[3px] border-red-500 bg-red-50">
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                    </div>
-                    <div className="absolute top-12 w-32 text-center text-xs font-bold text-red-600">
-                      Cancelado
-                    </div>
-                  </div>
-                )}
-             </div>
-          </div>
-
-          {/* Status Update Section */}
-          <div className="bg-white border shadow-sm rounded-2xl p-6">
-            <div>
-              <h3 className="text-sm font-bold text-slate-700 mb-3">Mudar situação do pedido</h3>
-              <div className="flex gap-2 items-center">
-                 <Select value={stagedStatus || selectedOrder.status} onValueChange={(v) => setStagedStatus(v)}>
-                    <SelectTrigger className={`h-10 font-bold w-[240px] ${STATUS_COLORS[stagedStatus || selectedOrder.status]} border-transparent`}>
-                      <SelectValue placeholder="Status..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map(opt => (
-                        <SelectItem key={opt} value={opt} className="font-bold">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2.5 h-2.5 rounded-full ${STATUS_DOTS[opt]}`} />
-                            {opt}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                 </Select>
-                 {stagedStatus && stagedStatus !== selectedOrder.status && (
-                   <Button 
-                     className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                     onClick={() => {
-                        updateOrderStatus(selectedOrder.id, stagedStatus);
-                        setSelectedOrder({ ...selectedOrder, status: stagedStatus });
-                        toast.success("Alteração salva com sucesso");
-                     }}
-                   >
-                     Confirmar
-                   </Button>
-                 )}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-[2fr_1fr] gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6">
             {/* Products List */}
             <div className="bg-white border shadow-sm rounded-2xl overflow-hidden h-fit">
               <div className="p-5 border-b flex items-center justify-between bg-slate-50/50">
                 <h3 className="font-bold text-slate-700 text-lg flex items-center gap-2">
                   <Package className="h-5 w-5 text-emerald-600" />
-                  Produtos <Badge variant="secondary" className="ml-1 bg-white">{selectedOrder.produtos.length}</Badge>
+                  Itens do Pedido <Badge variant="secondary" className="ml-1 bg-white">{selectedOrder.produtos.length}</Badge>
                 </h3>
               </div>
               <div className="p-2 space-y-2">
@@ -513,14 +325,14 @@ function PedidosAdmin() {
             {/* Client Profile */}
             <div className="bg-white border shadow-sm rounded-2xl p-6 h-fit space-y-6">
                <div>
-                  <h3 className="font-bold text-slate-800 mb-4 text-lg">Perfil do Cliente</h3>
+                  <h3 className="font-bold text-slate-800 mb-4 text-lg">Dados do Cliente</h3>
                   <div className="flex items-center gap-3">
                      <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 font-black text-lg flex items-center justify-center">
                         {selectedOrder.cliente.nome.charAt(0)}
                      </div>
                      <div>
                         <div className="font-bold text-slate-800 leading-tight">{selectedOrder.cliente.nome}</div>
-                        <div className="text-xs font-bold text-slate-500 mt-1">Cliente {selectedOrder.cliente.tipo}</div>
+                        <div className="text-xs font-bold text-slate-500 mt-1">Cliente WhatsApp</div>
                      </div>
                   </div>
                </div>
@@ -531,13 +343,15 @@ function PedidosAdmin() {
                     <span className="font-medium hover:text-emerald-600 cursor-pointer">{selectedOrder.cliente.email}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-green-500 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
-                    <span className="font-bold">{selectedOrder.cliente.telefone}</span>
+                    <MessageSquare className="h-4 w-4 text-green-500" />
+                    <span className="font-bold text-slate-800">{selectedOrder.cliente.telefone}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <span className="text-xs font-bold text-slate-400 uppercase w-4 text-center">CPF</span>
-                    <span className="font-medium">{selectedOrder.cliente.cpf}</span>
-                  </div>
+                  {selectedOrder.cliente.cpf && (
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <span className="text-xs font-bold text-slate-400 uppercase w-4 text-center">CPF</span>
+                      <span className="font-medium">{selectedOrder.cliente.cpf}</span>
+                    </div>
+                  )}
                </div>
             </div>
           </div>
@@ -554,8 +368,8 @@ function PedidosAdmin() {
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Pedidos</h1>
-            <span className="text-slate-500 font-medium text-sm">Gerencie todos os pedidos realizados na sua rede.</span>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Meus Pedidos</h1>
+            <span className="text-slate-500 font-medium text-sm">Gerencie os pedidos concluídos via WhatsApp e os carrinhos a recuperar.</span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {isGlobalAdmin() && (
@@ -571,239 +385,321 @@ function PedidosAdmin() {
           </div>
         </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-5 gap-4">
-           <div className="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
+        {/* 3 KPIs Principais: TOTAL DE PEDIDOS, CONCLUIDO, CARRINHOS A RECUPERAR */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           {/* TOTAL DE PEDIDOS */}
+           <div 
+             onClick={() => setMainView("todos")}
+             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+               mainView === "todos" ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20" : ""
+             }`}
+           >
               <div>
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Total</p>
-                <p className="text-2xl font-black text-slate-800">{kpis.total}</p>
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">TOTAL DE PEDIDOS</p>
+                <p className="text-3xl font-black text-slate-800">{kpis.total}</p>
+                <span className="text-[12px] text-slate-400 font-medium">Todos os pedidos registrados</span>
               </div>
-              <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center">
                 <Package className="h-6 w-6" />
               </div>
            </div>
-           <div className="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
+
+           {/* CONCLUÍDO (WHATSAPP) */}
+           <div 
+             onClick={() => setMainView("concluidos")}
+             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+               mainView === "concluidos" ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20" : ""
+             }`}
+           >
               <div>
-                <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Pago</p>
-                <p className="text-2xl font-black text-emerald-700">{kpis.pago}</p>
+                <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">CONCLUÍDO</p>
+                <p className="text-3xl font-black text-emerald-700">{kpis.concluidos}</p>
+                <span className="text-[12px] text-emerald-600 font-semibold">Finalizados no WhatsApp</span>
               </div>
-              <div className="w-12 h-12 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center">
-                <CreditCard className="h-6 w-6" />
+              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6" />
               </div>
            </div>
-           <div className="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
+
+           {/* CARRINHOS A RECUPERAR */}
+           <div 
+             onClick={() => setMainView("carrinhos")}
+             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+               mainView === "carrinhos" ? "ring-2 ring-amber-500 border-amber-500 bg-amber-50/20" : ""
+             }`}
+           >
               <div>
-                <p className="text-amber-600 text-xs font-bold uppercase tracking-wider mb-1">Aguardando</p>
-                <p className="text-2xl font-black text-amber-700">{kpis.aguardandoPagamento}</p>
+                <p className="text-amber-600 text-xs font-bold uppercase tracking-wider mb-1">CARRINHOS A RECUPERAR</p>
+                <p className="text-3xl font-black text-amber-700">{kpis.carrinhosARecuperar}</p>
+                <span className="text-[12px] text-amber-600 font-semibold">Clientes com itens no carrinho</span>
               </div>
-              <div className="w-12 h-12 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center">
-                <CreditCard className="h-6 w-6" />
-              </div>
-           </div>
-           <div className="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">Pendente Envio</p>
-                <p className="text-2xl font-black text-blue-700">{kpis.emSeparacao}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center">
-                <Truck className="h-6 w-6" />
-              </div>
-           </div>
-           <div className="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-teal-600 text-xs font-bold uppercase tracking-wider mb-1">Concluídos</p>
-                <p className="text-2xl font-black text-teal-700">{kpis.concluidos}</p>
-              </div>
-              <div className="w-12 h-12 bg-teal-100 text-teal-500 rounded-full flex items-center justify-center">
-                <Check className="h-6 w-6" />
+              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
+                <ShoppingCart className="h-6 w-6" />
               </div>
            </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
           {/* Top Bar */}
-          <div className="p-4 border-b flex items-center justify-between gap-4 bg-slate-50/50">
+          <div className="p-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
             <div className="flex flex-1 items-center gap-2 max-w-md">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
-                  placeholder="Buscar por ID, Cliente..." 
-                  className="pl-9 h-10 w-full bg-white border-slate-200"
+                  placeholder={mainView === "carrinhos" ? "Buscar por cliente ou ID do carrinho..." : "Buscar por ID, Cliente..."} 
+                  className="pl-9 h-10 w-full bg-white border-slate-200 font-medium"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-10 w-[160px] bg-white font-bold border-slate-200 text-slate-600">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Todas" className="font-bold">Todos Status</SelectItem>
-                  {STATUS_OPTIONS.map(opt => (
-                    <SelectItem key={opt} value={opt} className="font-bold">
-                       <div className="flex items-center gap-2">
-                         <div className={`w-2 h-2 rounded-full ${STATUS_DOTS[opt]}`} />
-                         {opt}
-                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="h-10 font-bold gap-2 bg-white text-slate-600 border-slate-200">
-                    <Filter className="h-4 w-4" /> Mais Filtros
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-4 rounded-xl border-slate-200 shadow-xl" align="end">
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-slate-800">Mais opções de busca</h4>
-                    
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Método de Pagamento</label>
-                      <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                        <SelectTrigger className="font-bold bg-slate-50">
-                          <SelectValue placeholder="Todos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Todos">Todos</SelectItem>
-                          <SelectItem value="Pix">Pix</SelectItem>
-                          <SelectItem value="Cartão">Cartão de Crédito</SelectItem>
-                          <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período de Data</label>
-                      <div className="flex items-center gap-2">
-                         <Input type="date" className="h-8 text-xs font-bold" value={dateStartFilter} onChange={e => setDateStartFilter(e.target.value)} />
-                         <span className="text-slate-400 font-medium">a</span>
-                         <Input type="date" className="h-8 text-xs font-bold" value={dateEndFilter} onChange={e => setDateEndFilter(e.target.value)} />
-                      </div>
-                    </div>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex bg-slate-100 p-1 rounded-xl">
+                <button
+                  onClick={() => setMainView("todos")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    mainView === "todos" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Pedidos ({orders.length})
+                </button>
+                <button
+                  onClick={() => setMainView("carrinhos")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    mainView === "carrinhos" ? "bg-white text-amber-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Carrinhos a Recuperar ({allAbandonedCarts.length})
+                </button>
+              </div>
 
-                    <Button className="w-full font-bold h-9 bg-slate-100 hover:bg-slate-200 text-slate-700" onClick={() => {
-                        setPaymentFilter("Todos");
-                        setDateStartFilter("");
-                        setDateEndFilter("");
-                        setStatusFilter("Todas");
-                    }} variant="ghost">
-                      Limpar Filtros
+              {mainView !== "carrinhos" && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="h-10 font-bold gap-2 bg-white text-slate-600 border-slate-200">
+                      <Filter className="h-4 w-4" /> Período
                     </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-4 rounded-xl border-slate-200 shadow-xl" align="end">
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-slate-800">Filtrar por data</h4>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período</label>
+                        <div className="flex items-center gap-2">
+                           <Input type="date" className="h-8 text-xs font-bold" value={dateStartFilter} onChange={e => setDateStartFilter(e.target.value)} />
+                           <span className="text-slate-400 font-medium">a</span>
+                           <Input type="date" className="h-8 text-xs font-bold" value={dateEndFilter} onChange={e => setDateEndFilter(e.target.value)} />
+                        </div>
+                      </div>
+
+                      <Button className="w-full font-bold h-9 bg-slate-100 hover:bg-slate-200 text-slate-700" onClick={() => {
+                          setDateStartFilter("");
+                          setDateEndFilter("");
+                      }} variant="ghost">
+                        Limpar Filtro de Data
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto min-h-[400px]">
-            <table className="w-full text-left text-[13px] min-w-[800px]">
-              <thead>
-                <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
-                  <th className="px-2 py-3 w-10 text-center"><Checkbox /></th>
-                  <th className="px-2 py-3 whitespace-nowrap">Pedido</th>
-                  <th className="px-2 py-3">Cliente</th>
-                  <th className="px-2 py-3 whitespace-nowrap">Status</th>
-                  <th className="px-2 py-3">Loja Faturamento</th>
-                  <th className="px-2 py-3">Pagamento</th>
-                  <th className="px-2 py-3 text-right whitespace-nowrap">Total / Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="p-12 text-center text-slate-500 font-medium">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <AlertCircle className="w-8 h-8 text-slate-300 mb-2" />
-                        <span className="text-lg font-bold text-slate-700">Nenhum pedido encontrado.</span>
-                        <span className="text-sm font-medium text-slate-500">Não encontramos nenhuma opção com esses filtros.</span>
-                      </div>
-                    </td>
+          {/* Table Pedidos (sem coluna STATUS e sem coluna PAGAMENTO) */}
+          {mainView !== "carrinhos" ? (
+            <div className="overflow-x-auto min-h-[400px]">
+              <table className="w-full text-left text-[13px] min-w-[800px]">
+                <thead>
+                  <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
+                    <th className="px-3 py-3 w-10 text-center"><Checkbox /></th>
+                    <th className="px-3 py-3 whitespace-nowrap">Pedido</th>
+                    <th className="px-3 py-3">Cliente</th>
+                    <th className="px-3 py-3">Loja Faturamento</th>
+                    <th className="px-3 py-3">Itens</th>
+                    <th className="px-3 py-3 text-right whitespace-nowrap">Total / Ações</th>
                   </tr>
-                ) : null}
-                {filteredOrders.map(order => {
-                  const isCancelled = order.status === "Cancelado";
-                  return (
-                    <tr 
-                      key={order.id} 
-                      className={`hover:bg-slate-50 transition-colors cursor-pointer group ${isCancelled ? 'bg-red-50/20 opacity-70' : ''}`}
-                      onClick={() => {
-                        setSelectedOrder(order);
-                        setStagedStatus(null);
-                      }}
-                    >
-                      <td className="px-2 py-3 text-center" onClick={e => e.stopPropagation()}>
-                        <Checkbox />
-                      </td>
-                      <td className="px-2 py-3 whitespace-nowrap">
-                        <div className="font-bold text-slate-800 text-[15px]">#{order.id}</div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">{order.data}</div>
-                      </td>
-                      <td className="px-2 py-3">
-                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-110 transition-transform">
-                               {order.cliente.nome.charAt(0)}
-                            </div>
-                            <div className="max-w-[160px]">
-                               <div className="font-bold text-slate-700 truncate">{order.cliente.nome}</div>
-                               <div className="text-[11px] text-slate-500 truncate">{order.cliente.email}</div>
-                            </div>
-                         </div>
-                      </td>
-                      <td className="px-2 py-3 whitespace-nowrap">
-                         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border ${STATUS_COLORS[order.status]}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${STATUS_DOTS[order.status]}`} />
-                            {order.status}
-                         </div>
-                      </td>
-                      <td className="px-2 py-3">
-                         <div className="flex items-center gap-2">
-                           <Store className="h-4 w-4 text-slate-400 shrink-0" />
-                           <span className="font-black text-slate-800 text-[13px] leading-tight break-words">{getLojaName(order.lojaId)}</span>
-                         </div>
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-start gap-2 font-bold text-slate-700 text-[13px]">
-                            {order.pagamento.metodo.toLowerCase().includes('pix') ? (
-                               <QrCode className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                            ) : order.pagamento.metodo.toLowerCase().includes('dinheiro') ? (
-                               <Banknote className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                            ) : (
-                               <CreditCard className="h-4 w-4 text-sky-500 shrink-0 mt-0.5" />
-                            )}
-                            <div className="leading-tight">
-                              {order.pagamento.metodo}
-                              {order.pagamento.cartaoFinal && (
-                                <span className="text-slate-400 font-medium ml-1">
-                                  (**** {order.pagamento.cartaoFinal})
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-12 text-center text-slate-500 font-medium">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <AlertCircle className="w-8 h-8 text-slate-300 mb-2" />
+                          <span className="text-lg font-bold text-slate-700">Nenhum pedido encontrado.</span>
+                          <span className="text-sm font-medium text-slate-500">Não encontramos nenhum pedido com os critérios de busca.</span>
                         </div>
                       </td>
-                      <td className="px-2 py-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-3">
-                          <div className="font-black text-slate-800 text-[15px]">
-                            {order.valores.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </tr>
+                  ) : null}
+                  {filteredOrders.map(order => {
+                    return (
+                      <tr 
+                        key={order.id} 
+                        className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                        onClick={() => setSelectedOrder(order)}
+                      >
+                        <td className="px-3 py-3 text-center" onClick={e => e.stopPropagation()}>
+                          <Checkbox />
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="font-bold text-slate-800 text-[15px]">#{order.id}</div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">{order.data}</div>
+                        </td>
+                        <td className="px-3 py-3">
+                           <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-110 transition-transform">
+                                 {order.cliente.nome.charAt(0)}
+                              </div>
+                              <div className="max-w-[180px]">
+                                 <div className="font-bold text-slate-700 truncate">{order.cliente.nome}</div>
+                                 <div className="text-[11px] text-slate-500 truncate flex items-center gap-1">
+                                    <MessageSquare className="w-3 h-3 text-green-500 shrink-0" />
+                                    {order.cliente.telefone}
+                                 </div>
+                              </div>
+                           </div>
+                        </td>
+                        <td className="px-3 py-3">
+                           <div className="flex items-center gap-2">
+                             <Store className="h-4 w-4 text-slate-400 shrink-0" />
+                             <span className="font-bold text-slate-800 text-[13px] leading-tight break-words">{getLojaName(order.lojaId)}</span>
+                           </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="text-slate-700 text-xs">
+                            <span className="font-bold text-slate-800">{order.produtos?.reduce((acc, p) => acc + p.qtd, 0) || order.produtos?.length || 1} item(s)</span>
+                            <div className="text-slate-400 text-[11px] truncate max-w-[220px]">
+                              {order.produtos?.map(p => `${p.qtd}x ${p.nome}`).join(", ")}
+                            </div>
                           </div>
-                          <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0" onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}>
+                        </td>
+                        <td className="px-3 py-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="font-black text-slate-800 text-[15px] mr-2">
+                              {order.valores.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 px-2.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold gap-1 rounded-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const cleanPhone = (order.cliente.telefone || "").replace(/\D/g, "");
+                                const text = `Olá ${order.cliente.nome.split(" ")[0]}, tudo bem? Estamos em contato sobre o seu pedido #${order.id} na Farmácias Associadas!`;
+                                window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+                              }}
+                            >
+                              <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
+                              WhatsApp
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg" onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* Table Carrinhos a Recuperar */
+            <div className="overflow-x-auto min-h-[400px]">
+              <table className="w-full text-left text-[13px] min-w-[800px]">
+                <thead>
+                  <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
+                    <th className="px-3 py-3 w-10 text-center"><Checkbox /></th>
+                    <th className="px-3 py-3 whitespace-nowrap">Cliente / Carrinho</th>
+                    <th className="px-3 py-3">Contato</th>
+                    <th className="px-3 py-3">Produtos no Carrinho</th>
+                    <th className="px-3 py-3">Loja</th>
+                    <th className="px-3 py-3 text-right whitespace-nowrap">Total / Recuperação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredAbandonedCarts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-12 text-center text-slate-500 font-medium">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <ShoppingCart className="w-8 h-8 text-slate-300 mb-2" />
+                          <span className="text-lg font-bold text-slate-700">Nenhum carrinho pendente de recuperação.</span>
+                          <span className="text-sm font-medium text-slate-500">Quando clientes logados deixarem itens no carrinho sem finalizar, eles aparecerão aqui para recuperação.</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                  {filteredAbandonedCarts.map(cart => (
+                    <tr key={cart.id} className="hover:bg-amber-50/20 transition-colors">
+                      <td className="px-3 py-3 text-center">
+                        <Checkbox />
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="font-bold text-slate-800 text-[14px]">{cart.client}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">{cart.abandonedAt} • {cart.createdAt}</div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+                          <MessageSquare className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                          {cart.phone}
+                        </div>
+                        {cart.email && <div className="text-[11px] text-slate-400">{cart.email}</div>}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="text-slate-700 text-xs">
+                          <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 mr-2">
+                            {cart.items.reduce((acc, i) => acc + i.qtd, 0)} item(s)
+                          </span>
+                          <span className="text-slate-600 truncate inline-block max-w-[220px] align-middle">
+                            {cart.items.map(i => `${i.qtd}x ${i.nome}`).join(", ")}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-semibold text-slate-700 text-xs">{getLojaName(cart.lojaId)}</span>
+                      </td>
+                      <td className="px-3 py-3 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="font-black text-slate-800 text-[15px] mr-2">
+                            {cart.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </div>
+                          <Button 
+                            className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow-sm rounded-lg text-xs"
+                            onClick={() => {
+                              const cleanPhone = (cart.phone || "").replace(/\D/g, "");
+                              const firstName = cart.client.split(" ")[0];
+                              const itemsList = cart.items.map(i => `• ${i.qtd}x ${i.nome}`).join("\n");
+                              const text = `Olá ${firstName}, tudo bem? 👋\n\nVimos que você deixou alguns itens no seu carrinho na Farmácias Associadas:\n${itemsList}\n\nTotal: R$ ${cart.total.toFixed(2).replace(".", ",")}\n\nPodemos te ajudar a concluir o seu pedido com entrega rápida ou retirada na loja? 😊`;
+                              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+                            }}
+                          >
+                            <MessageSquare className="h-3.5 w-3.5 text-white" />
+                            Recuperar no WhatsApp
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg"
+                            onClick={() => {
+                              if (cart.id === "#807099") {
+                                clearCart();
+                              } else {
+                                removeStoreCart(cart.id);
+                              }
+                              toast.success("Carrinho removido!");
+                            }}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
       </div>
@@ -843,56 +739,12 @@ function PedidosAdmin() {
 
             <div className="space-y-3">
               <h3 className="font-bold text-slate-800">2. Webhook: Receber Novos Pedidos</h3>
-              <p className="text-sm text-slate-500">Cadastre a URL do seu ERP para receber um POST (JSON) toda vez que um pedido for pago/aprovado.</p>
+              <p className="text-sm text-slate-500">Cadastre a URL do seu ERP para receber um POST (JSON) toda vez que um pedido for concluído.</p>
               <div className="flex gap-2">
                 <Input placeholder="https://seu-erp.com.br/api/receber-pedido" className="flex-1" />
                 <Button className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white">Salvar Webhook</Button>
               </div>
             </div>
-
-            <div className="space-y-3">
-              <h3 className="font-bold text-slate-800">3. Endpoints Disponíveis</h3>
-              <div className="space-y-2">
-                <div className="border rounded-lg p-3 bg-white flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200 uppercase font-bold text-xs">GET</Badge>
-                    <code className="text-sm font-bold text-slate-700">/api/v1/orders</code>
-                  </div>
-                  <p className="text-xs text-slate-500">Retorna uma lista paginada dos últimos pedidos.</p>
-                </div>
-                
-                <div className="border rounded-lg p-3 bg-white flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200 uppercase font-bold text-xs">GET</Badge>
-                    <code className="text-sm font-bold text-slate-700">/api/v1/orders/:id</code>
-                  </div>
-                  <p className="text-xs text-slate-500">Retorna os detalhes de um pedido específico (itens, cliente, pagamento).</p>
-                </div>
-
-                <div className="border rounded-lg p-3 bg-white flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200 uppercase font-bold text-xs">PUT</Badge>
-                    <code className="text-sm font-bold text-slate-700">/api/v1/orders/:id/status</code>
-                  </div>
-                  <p className="text-xs text-slate-500">Atualiza o status do pedido (ex: de "Pago" para "Em separação").</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <h3 className="font-bold text-slate-800">4. Formato do Payload (Exemplo JSON)</h3>
-              <p className="text-sm text-slate-500">Este é o formato de dados que sua aplicação irá receber via Webhook ou retornar nas requisições GET.</p>
-              <div className="bg-slate-900 text-slate-300 p-4 rounded-lg overflow-x-auto relative group">
-                <Button variant="ghost" size="sm" className="absolute top-2 right-2 h-8 hover:bg-slate-800 text-slate-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(JSON_EXAMPLE)}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <pre className="text-xs font-mono">{JSON_EXAMPLE}</pre>
-              </div>
-            </div>
-            
-          </div>
-          <div className="mt-2 flex justify-end">
-            <Button variant="outline" onClick={() => setIsApiModalOpen(false)}>Fechar</Button>
           </div>
         </DialogContent>
       </Dialog>
