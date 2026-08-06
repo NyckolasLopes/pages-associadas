@@ -356,7 +356,7 @@ function AdminLayout() {
           {/* ---- PEDIDOS ---- */}
           {can('vendas_pedidos') && (
             <NavSection icon={<Inbox className="h-4 w-4" />} label="Pedidos" open={openNavSection === "Pedidos" || openNavSection === "Vendas"} onToggle={() => setOpenNavSection(openNavSection === "Pedidos" ? "" : "Pedidos")}>
-              <Link to="/admin/pedidos" className={subLinkClass} activeOptions={{ exact: true }}>Pedidos</Link>
+              <Link to="/admin/pedidos" className={subLinkClass} activeOptions={{ exact: true }}>Meus pedidos</Link>
             </NavSection>
           )}
 
