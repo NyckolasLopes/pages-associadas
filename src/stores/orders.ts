@@ -4,14 +4,18 @@ import { persist } from 'zustand/middleware';
 export interface Pedido {
   id: string;
   lojaId?: string;
+  lojaNome?: string;
   data: string;
+  origem?: "whatsapp" | "site";
+  cupomAplicado?: string;
+  observacoes?: string;
   cliente: {
     nome: string;
-    email: string;
+    email?: string;
     telefone: string;
-    cpf: string;
-    ip: string;
-    tipo: string;
+    cpf?: string;
+    ip?: string;
+    tipo?: string;
   };
   pagamento: {
     metodo: string;
@@ -25,22 +29,26 @@ export interface Pedido {
     campaign?: string;
   };
   envio: {
-    metodo: string;
+    metodo: "entrega" | "retirada" | string;
     rastreio?: string;
     prazo: string;
     endereco: string;
+    numero?: string;
+    bairro?: string;
     cidade: string;
     cep: string;
   };
   status: string;
   produtos: Array<{
+    id?: string;
     nome: string;
-    sku: string;
-    cores: string;
-    disponibilidade: string;
+    sku?: string;
+    ean?: string;
+    cores?: string;
+    disponibilidade?: string;
     qtd: number;
     valorUnitario: number;
-    foto: string;
+    foto?: string;
   }>;
   valores: {
     produtos: number;
@@ -56,7 +64,11 @@ export interface Pedido {
   anotacoes: string;
 }
 
-const hojeDateStr = new Date().toLocaleDateString('pt-BR');
+export function generateOrderNumber(): string {
+  const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  return `FA-${dateStr}-${randomSuffix}`;
+}
 
 const INITIAL_ORDERS: Pedido[] = [];
 

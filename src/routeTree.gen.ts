@@ -85,6 +85,7 @@ import { Route as StoreVSlugRouteImport } from './routes/_store/v/$slug'
 import { Route as StorePaginaSlugRouteImport } from './routes/_store.pagina.$slug'
 import { Route as StorePSlugRouteImport } from './routes/_store/p/$slug'
 import { Route as StoreMSlugRouteImport } from './routes/_store/m/$slug'
+import { Route as StoreLojaLojaIdRouteImport } from './routes/_store.loja.$lojaId'
 import { Route as StoreCSlugRouteImport } from './routes/_store/c/$slug'
 import { Route as StoreAjudaPageRouteImport } from './routes/_store.ajuda.$page'
 import { Route as AdminMarketingPromocoesIndexRouteImport } from './routes/admin/marketing.promocoes.index'
@@ -481,6 +482,11 @@ const StoreMSlugRoute = StoreMSlugRouteImport.update({
   path: '/m/$slug',
   getParentRoute: () => StoreRoute,
 } as any)
+const StoreLojaLojaIdRoute = StoreLojaLojaIdRouteImport.update({
+  id: '/loja/$lojaId',
+  path: '/loja/$lojaId',
+  getParentRoute: () => StoreRoute,
+} as any)
 const StoreCSlugRoute = StoreCSlugRouteImport.update({
   id: '/c/$slug',
   path: '/c/$slug',
@@ -554,6 +560,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/ajuda/$page': typeof StoreAjudaPageRoute
   '/c/$slug': typeof StoreCSlugRoute
+  '/loja/$lojaId': typeof StoreLojaLojaIdRoute
   '/m/$slug': typeof StoreMSlugRoute
   '/p/$slug': typeof StorePSlugRoute
   '/pagina/$slug': typeof StorePaginaSlugRoute
@@ -636,6 +643,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/ajuda/$page': typeof StoreAjudaPageRoute
   '/c/$slug': typeof StoreCSlugRoute
+  '/loja/$lojaId': typeof StoreLojaLojaIdRoute
   '/m/$slug': typeof StoreMSlugRoute
   '/p/$slug': typeof StorePSlugRoute
   '/pagina/$slug': typeof StorePaginaSlugRoute
@@ -721,6 +729,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/_store/ajuda/$page': typeof StoreAjudaPageRoute
   '/_store/c/$slug': typeof StoreCSlugRoute
+  '/_store/loja/$lojaId': typeof StoreLojaLojaIdRoute
   '/_store/m/$slug': typeof StoreMSlugRoute
   '/_store/p/$slug': typeof StorePSlugRoute
   '/_store/pagina/$slug': typeof StorePaginaSlugRoute
@@ -806,6 +815,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/ajuda/$page'
     | '/c/$slug'
+    | '/loja/$lojaId'
     | '/m/$slug'
     | '/p/$slug'
     | '/pagina/$slug'
@@ -888,6 +898,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ajuda/$page'
     | '/c/$slug'
+    | '/loja/$lojaId'
     | '/m/$slug'
     | '/p/$slug'
     | '/pagina/$slug'
@@ -972,6 +983,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/_store/ajuda/$page'
     | '/_store/c/$slug'
+    | '/_store/loja/$lojaId'
     | '/_store/m/$slug'
     | '/_store/p/$slug'
     | '/_store/pagina/$slug'
@@ -1560,6 +1572,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreMSlugRouteImport
       parentRoute: typeof StoreRoute
     }
+    '/_store/loja/$lojaId': {
+      id: '/_store/loja/$lojaId'
+      path: '/loja/$lojaId'
+      fullPath: '/loja/$lojaId'
+      preLoaderRoute: typeof StoreLojaLojaIdRouteImport
+      parentRoute: typeof StoreRoute
+    }
     '/_store/c/$slug': {
       id: '/_store/c/$slug'
       path: '/c/$slug'
@@ -1618,6 +1637,7 @@ interface StoreRouteChildren {
   StorePerfilRoute: typeof StorePerfilRoute
   StoreAjudaPageRoute: typeof StoreAjudaPageRoute
   StoreCSlugRoute: typeof StoreCSlugRoute
+  StoreLojaLojaIdRoute: typeof StoreLojaLojaIdRoute
   StoreMSlugRoute: typeof StoreMSlugRoute
   StorePSlugRoute: typeof StorePSlugRoute
   StorePaginaSlugRoute: typeof StorePaginaSlugRoute
@@ -1637,6 +1657,7 @@ const StoreRouteChildren: StoreRouteChildren = {
   StorePerfilRoute: StorePerfilRoute,
   StoreAjudaPageRoute: StoreAjudaPageRoute,
   StoreCSlugRoute: StoreCSlugRoute,
+  StoreLojaLojaIdRoute: StoreLojaLojaIdRoute,
   StoreMSlugRoute: StoreMSlugRoute,
   StorePSlugRoute: StorePSlugRoute,
   StorePaginaSlugRoute: StorePaginaSlugRoute,

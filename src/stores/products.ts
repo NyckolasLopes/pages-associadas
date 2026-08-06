@@ -77,6 +77,16 @@ export interface Fornecedor {
   apiUrl: string;
 }
 
+export interface StorePriceItem {
+  ean?: string;
+  sku?: string;
+  id?: string;
+  precoDe?: number;
+  precoPor: number;
+  estoque?: number;
+  ativo?: boolean;
+}
+
 interface ProductsState {
   customProducts: Produto[];
   fornecedores: Fornecedor[];
@@ -95,11 +105,13 @@ interface ProductsState {
   toggleVitrine: (id: number) => void;
   updateProductDescriptions: (updates: { ean: string; descricao: string }[]) => void;
   bulkUpdateProducts: (productIds: string[], updates: Partial<Produto>) => void;
+  updateStoreProductPrice: (lojaId: string, productId: string, precoPor: number, precoDe?: number, estoque?: number, ativo?: boolean) => void;
+  importStoreSpreadsheet: (lojaId: string, items: StorePriceItem[]) => { updated: number; notFound: number; total: number };
 }
 
 export const useAdminProducts = create<ProductsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       customProducts: ((productsJson as unknown) as Produto[]).map(p => ({ ...p, nome: toTitleCase(p.nome) })),
       addOrUpdateProduct: (p) => set((s) => {
         const formattedProduct = { ...p, nome: toTitleCase(p.nome) };
@@ -189,7 +201,104 @@ export const useAdminProducts = create<ProductsState>()(
             return p;
           })
         };
-      })
+      }),
+      updateStoreProductPrice: (lojaId, productId, precoPor, precoDe, estoque, ativo = true) => set((s) => {
+        return {
+          customProducts: s.customProducts.map(p => {
+            if (p.id === productId) {
+              const prevStore = p.precosPorLoja || {};
+              const prevStock = p.estoquesPorLoja || {};
+              return {
+                ...p,
+                precosPorLoja: {
+                  ...prevStore,
+                  [lojaId]: {
+                    precoDe: precoDe !== undefined ? precoDe : p.precoDe,
+                    precoPor: precoPor,
+                    ativo: ativo
+                  }
+                },
+                estoquesPorLoja: estoque !== undefined ? {
+                  ...prevStock,
+                  [lojaId]: estoque
+                } : prevStock
+              };
+            }
+            return p;
+          })
+        };
+      }),
+      importStoreSpreadsheet: (lojaId, items) => {
+        const state = get();
+        let updatedCount = 0;
+        let notFoundCount = 0;
+
+        // Build fast lookup maps by EAN, SKU, and ID
+        const eanMap = new Map<string, Produto>();
+        const skuMap = new Map<string, Produto>();
+        const idMap = new Map<string, Produto>();
+
+        state.customProducts.forEach(p => {
+          if (p.ean) eanMap.set(p.ean.trim(), p);
+          if (p.sku) skuMap.set(p.sku.trim(), p);
+          if (p.id) idMap.set(p.id.trim(), p);
+        });
+
+        const updatesToApply = new Map<string, { precoDe?: number; precoPor: number; estoque?: number; ativo?: boolean }>();
+
+        items.forEach(item => {
+          let matched: Produto | undefined;
+          const cleanEan = item.ean ? String(item.ean).trim() : "";
+          const cleanSku = item.sku ? String(item.sku).trim() : "";
+          const cleanId = item.id ? String(item.id).trim() : "";
+
+          if (cleanEan && eanMap.has(cleanEan)) matched = eanMap.get(cleanEan);
+          else if (cleanSku && skuMap.has(cleanSku)) matched = skuMap.get(cleanSku);
+          else if (cleanId && idMap.has(cleanId)) matched = idMap.get(cleanId);
+
+          if (matched) {
+            updatesToApply.set(matched.id, {
+              precoDe: item.precoDe !== undefined ? item.precoDe : matched.precoDe,
+              precoPor: item.precoPor,
+              estoque: item.estoque,
+              ativo: item.ativo !== undefined ? item.ativo : true
+            });
+            updatedCount++;
+          } else {
+            notFoundCount++;
+          }
+        });
+
+        if (updatesToApply.size > 0) {
+          set({
+            customProducts: state.customProducts.map(p => {
+              const up = updatesToApply.get(p.id);
+              if (up) {
+                const prevStore = p.precosPorLoja || {};
+                const prevStock = p.estoquesPorLoja || {};
+                return {
+                  ...p,
+                  precosPorLoja: {
+                    ...prevStore,
+                    [lojaId]: {
+                      precoDe: up.precoDe !== undefined ? up.precoDe : p.precoDe,
+                      precoPor: up.precoPor,
+                      ativo: up.ativo !== undefined ? up.ativo : true
+                    }
+                  },
+                  estoquesPorLoja: up.estoque !== undefined ? {
+                    ...prevStock,
+                    [lojaId]: up.estoque
+                  } : prevStock
+                };
+              }
+              return p;
+            })
+          });
+        }
+
+        return { updated: updatedCount, notFound: notFoundCount, total: items.length };
+      }
     }),
     {
       name: "fa-admin-products-store-v2",

@@ -5,6 +5,7 @@ import { useAuth } from "@/stores/auth";
 import { useAdmin } from "@/stores/admin";
 import { useAdminProducts } from "@/stores/products";
 import { useMarketing } from "@/stores/marketing";
+import { useOrders, generateOrderNumber, type Pedido } from "@/stores/orders";
 import { isPbmEligible } from "@/lib/pbm";
 import { getDeterministicStock } from "@/lib/stock";
 import { getLevePaguePromotion } from "@/lib/utils";
@@ -14,7 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Flame, Store, Truck, X, MapPin, AlertTriangle, Bike } from "lucide-react";
+import { 
+  Flame, Store, Truck, X, MapPin, AlertTriangle, Bike, 
+  MessageCircle, Send, CheckCircle2, Tag, Sparkles, DollarSign, CreditCard, ShoppingBag 
+} from "lucide-react";
+import { toast } from "sonner";
+import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
+import { sanitizeText, validatePhone, validateCPF, validateEmail, sanitizeCouponCode } from "@/lib/security";
 import type { Produto } from "@/types";
 import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates } from "@/lib/utils";
 
@@ -38,7 +45,6 @@ function CartPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
-    // Note: useAuth is already hydrated in __root.tsx
   }, []);
 
   const items = useCart((s) => s.items);
@@ -46,9 +52,14 @@ function CartPage() {
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);
   const add = useCart((s) => s.add);
+  const clear = useCart((s) => s.clear);
   const subtotal = useCart((s) => s.subtotal());
   const storeDiscount = useCart((s) => s.storeDiscount());
   const pbmDisc = useCart((s) => s.pbmDiscount());
+  const couponDisc = useCart((s) => s.couponDiscount());
+  const appliedCoupon = useCart((s) => s.appliedCoupon);
+  const applyCoupon = useCart((s) => s.applyCoupon);
+  const removeCoupon = useCart((s) => s.removeCoupon);
   const pbm = useCart((s) => s.pbm);
   const total = useCart((s) => s.total());
   const user = useAuth((s) => s.user);
@@ -84,8 +95,29 @@ function CartPage() {
   const [noPharmacyAlertOpen, setNoPharmacyAlertOpen] = useState(false);
   const [noFreightAlertOpen, setNoFreightAlertOpen] = useState(false);
   const [crossSell, setCrossSell] = useState<Produto[]>([]);
-  // Distâncias reais calculadas via API (CEP → coordenadas)
   const [pharmDistances, setPharmDistances] = useState<Record<string, number | null>>({});
+
+  // WhatsApp Order State
+  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponFeedback, setCouponFeedback] = useState<string | null>(null);
+
+  // Form details
+  const [clientName, setClientName] = useState(user?.name || "");
+  const [clientPhone, setClientPhone] = useState(user?.phone || "");
+  const [clientCpf, setClientCpf] = useState(user?.cpf || "");
+  const [clientEmail, setClientEmail] = useState(user?.email || "");
+  const [deliveryMethod, setDeliveryMethod] = useState<"entrega" | "retirada">("retirada");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryNumber, setDeliveryNumber] = useState("");
+  const [deliveryComplement, setDeliveryComplement] = useState("");
+  const [deliveryBairro, setDeliveryBairro] = useState("");
+  const [deliveryCity, setDeliveryCity] = useState(selectedPharmacy?.cidade || "");
+  const [deliveryCep, setDeliveryCep] = useState(geoCep || "");
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "cartao_credito" | "cartao_debito" | "dinheiro">("pix");
+  const [trocoPara, setTrocoPara] = useState("");
+  const [orderNotes, setOrderNotes] = useState("");
 
   // Auto-fill and calculate freight if geoCep is present
   useEffect(() => {
@@ -290,11 +322,21 @@ function CartPage() {
     return closestId;
   }, [availablePharmacies, geoLat, geoLng, pharmDistances]);
 
-  const proceedToCheckout = () => {
-    if (!user) {
-      navigate({ to: "/login", search: { redirect: "/checkout" } });
-    } else {
-      navigate({ to: "/checkout" });
+  const handleApplyCoupon = () => {
+    try {
+      checkRateLimitOrThrow("apply_coupon", RATE_LIMIT_PRESETS.COUPON_APPLY);
+      const sanitized = sanitizeCouponCode(couponInput);
+      if (!sanitized) {
+        setCouponFeedback("Digite um código de cupom válido.");
+        return;
+      }
+      const res = applyCoupon(sanitized);
+      setCouponFeedback(res.message);
+      if (res.success) {
+        setCouponInput("");
+      }
+    } catch (err: any) {
+      setCouponFeedback(err.message || "Erro ao aplicar cupom.");
     }
   };
 
@@ -313,6 +355,11 @@ function CartPage() {
 
     if (forcePickup && selected !== "pickup") {
       setSelected("pickup");
+      setDeliveryMethod("retirada");
+    } else if (selected === "pickup") {
+      setDeliveryMethod("retirada");
+    } else {
+      setDeliveryMethod("entrega");
     }
 
     if (selected !== "pickup" && cep && !forcePickup) {
@@ -320,7 +367,175 @@ function CartPage() {
       return;
     }
 
-    proceedToCheckout();
+    setWhatsAppModalOpen(true);
+  };
+
+  const handleConfirmWhatsAppOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPharmacy) return;
+
+    try {
+      setIsSubmittingOrder(true);
+      checkRateLimitOrThrow("whatsapp_order_submit", RATE_LIMIT_PRESETS.ORDER_SUBMIT);
+
+      // Validação de Entrada Estrita (Security & Anti-XSS)
+      const cleanName = sanitizeText(clientName, 100);
+      if (!cleanName || cleanName.length < 3) {
+        toast.error("Por favor, digite seu nome completo (mínimo 3 caracteres).");
+        setIsSubmittingOrder(false);
+        return;
+      }
+
+      const cleanPhone = clientPhone.replace(/\D/g, "");
+      if (!validatePhone(cleanPhone)) {
+        toast.error("Por favor, digite um número de WhatsApp válido com DDD.");
+        setIsSubmittingOrder(false);
+        return;
+      }
+
+      if (clientCpf && !validateCPF(clientCpf)) {
+        toast.error("CPF informado é inválido. Por favor, verifique.");
+        setIsSubmittingOrder(false);
+        return;
+      }
+
+      if (clientEmail && !validateEmail(clientEmail)) {
+        toast.error("E-mail informado é inválido. Por favor, verifique.");
+        setIsSubmittingOrder(false);
+        return;
+      }
+
+      if (deliveryMethod === "entrega") {
+        if (!deliveryAddress.trim() || !deliveryNumber.trim() || !deliveryBairro.trim()) {
+          toast.error("Preencha o endereço completo (Rua, Número e Bairro) para a entrega.");
+          setIsSubmittingOrder(false);
+          return;
+        }
+      }
+
+      // Sanitização de campos
+      const cleanAddress = sanitizeText(deliveryAddress, 150);
+      const cleanNumber = sanitizeText(deliveryNumber, 20);
+      const cleanComplement = sanitizeText(deliveryComplement, 60);
+      const cleanBairro = sanitizeText(deliveryBairro, 80);
+      const cleanNotes = sanitizeText(orderNotes, 300);
+
+      // Gerar ID seguro de pedido
+      const orderId = generateOrderNumber();
+      const nowIso = new Date().toISOString();
+      const dateFormatted = new Date().toLocaleString("pt-BR");
+
+      // Mapeamento de forma de pagamento amigável
+      const paymentLabels: Record<string, string> = {
+        pix: "PIX",
+        cartao_credito: "Cartão de Crédito (na entrega/retirada)",
+        cartao_debito: "Cartão de Débito (na entrega/retirada)",
+        dinheiro: "Dinheiro em espécie",
+      };
+      const paymentLabel = paymentLabels[paymentMethod] || paymentMethod;
+
+      // Criação do Pedido no estado global
+      const newOrder: Pedido = {
+        id: orderId,
+        data: nowIso,
+        lojaId: selectedPharmacy.id,
+        lojaNome: selectedPharmacy.nome,
+        cliente: {
+          nome: cleanName,
+          telefone: cleanPhone,
+          email: clientEmail ? sanitizeText(clientEmail, 100) : undefined,
+          cpf: clientCpf ? clientCpf.replace(/\D/g, "") : undefined,
+          endereco: deliveryMethod === "entrega" ? {
+            rua: cleanAddress,
+            numero: cleanNumber,
+            complemento: cleanComplement,
+            bairro: cleanBairro,
+            cidade: deliveryCity || selectedPharmacy.cidade,
+            cep: deliveryCep || cep,
+          } : undefined,
+        },
+        itens: items.map((item) => {
+          const ep = getEffectivePrice(item, selectedPharmacy.id);
+          return {
+            id: item.id,
+            nome: item.nome,
+            preco: ep.precoPor,
+            precoRegular: ep.precoDe || ep.precoPor,
+            quantidade: item.qty,
+            ean: item.ean,
+            imagem: item.possuiImagem ? productImage(item.id) : undefined,
+          };
+        }),
+        valores: {
+          subtotal,
+          descontos: storeDiscount + pbmDisc + couponDisc,
+          frete: deliveryMethod === "entrega" ? freightPrice : 0,
+          total: grandTotal,
+        },
+        pagamento: {
+          metodo: paymentMethod,
+          trocoPara: paymentMethod === "dinheiro" && trocoPara ? sanitizeText(trocoPara, 30) : undefined,
+        },
+        status: "Pendente",
+        modalidade: deliveryMethod === "entrega" ? "Entrega" : "Retirada",
+        origem: "whatsapp",
+        cupomAplicado: appliedCoupon || undefined,
+        observacoes: cleanNotes || undefined,
+      };
+
+      // Adiciona pedido
+      useOrders.getState().addOrder(newOrder);
+
+      // Monta mensagem amigável para o WhatsApp
+      const itemsListText = items.map((i) => {
+        const ep = getEffectivePrice(i, selectedPharmacy.id);
+        return `• ${i.qty}x *${i.nome}* — R$ ${(ep.precoPor * i.qty).toFixed(2)}`;
+      }).join("\n");
+
+      const deliveryInfoText = deliveryMethod === "entrega"
+        ? `🛵 *ENTREGA EM DOMICÍLIO:*\n${cleanAddress}, Nº ${cleanNumber} ${cleanComplement ? `(${cleanComplement})` : ""}\nBairro: ${cleanBairro} - ${deliveryCity || selectedPharmacy.cidade}/${selectedPharmacy.uf}\nCEP: ${deliveryCep || cep}`
+        : `🏬 *RETIRADA NO BALCÃO:*\nFarmácia: ${selectedPharmacy.nome}\nEndereço: ${selectedPharmacy.endereco}, ${selectedPharmacy.bairro} - ${selectedPharmacy.cidade}`;
+
+      const whatsappText = `💊 *NOVO PEDIDO - FARMÁCIAS ASSOCIADAS*\n` +
+        `🏬 *Unidade:* ${selectedPharmacy.nome} (${selectedPharmacy.cidade}/${selectedPharmacy.uf})\n` +
+        `🔢 *Pedido:* #${orderId}\n` +
+        `📅 *Data:* ${dateFormatted}\n\n` +
+        `👤 *CLIENTE:*\n• *Nome:* ${cleanName}\n• *Telefone:* ${cleanPhone}\n` +
+        (clientCpf ? `• *CPF:* ${clientCpf}\n` : "") +
+        `\n${deliveryInfoText}\n\n` +
+        `💳 *FORMA DE PAGAMENTO:*\n• ${paymentLabel}` +
+        (paymentMethod === "dinheiro" && trocoPara ? ` (Troco para ${trocoPara})` : "") +
+        `\n\n🛒 *ITENS DO PEDIDO:*\n${itemsListText}\n\n` +
+        `───────────────\n` +
+        `💵 *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
+        (storeDiscount > 0 ? `🏷️ *Desconto Produtos:* -R$ ${storeDiscount.toFixed(2)}\n` : "") +
+        (couponDisc > 0 ? `🎟️ *Cupom (${appliedCoupon}):* -R$ ${couponDisc.toFixed(2)}\n` : "") +
+        (deliveryMethod === "entrega" ? `🚚 *Taxa de Entrega:* ${freightPrice === 0 ? "Grátis" : `R$ ${freightPrice.toFixed(2)}`}\n` : "") +
+        `💰 *TOTAL: R$ ${grandTotal.toFixed(2)}*\n` +
+        (cleanNotes ? `\n📝 *Observações:* ${cleanNotes}\n` : "") +
+        `\n🔍 *Acompanhe em tempo real pelo link:*\nhttps://farmaciasassociadas.com.br/pedidos?id=${orderId}`;
+
+      // Determina telefone de destino da farmácia
+      const rawStorePhone = selectedPharmacy.whatsapp || selectedPharmacy.telefone || "51999999999";
+      const cleanStorePhone = rawStorePhone.replace(/\D/g, "");
+      const targetPhone = cleanStorePhone.startsWith("55") ? cleanStorePhone : `55${cleanStorePhone}`;
+
+      // Abre WhatsApp
+      const waUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(whatsappText)}`;
+      window.open(waUrl, "_blank");
+
+      // Limpa carrinho
+      clear();
+      setWhatsAppModalOpen(false);
+      toast.success("Pedido gerado com sucesso! Redirecionando...");
+
+      // Redireciona para página de acompanhamento
+      navigate({ to: "/pedidos", search: { id: orderId, novo: "true" } });
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao processar pedido.");
+    } finally {
+      setIsSubmittingOrder(false);
+    }
   };
 
   if (mounted && items.length === 0) {
@@ -747,48 +962,105 @@ function CartPage() {
         </div>
 
         <aside className="lg:sticky lg:top-32 h-fit space-y-4">
-          <div className="bg-card border rounded-xl p-5">
-            <h2 className="font-bold mb-3">Resumo</h2>
-            <div className="flex justify-between text-sm">
+          <div className="bg-card border rounded-xl p-5 shadow-sm">
+            <h2 className="font-bold mb-3 flex items-center gap-2 text-base">
+              <ShoppingBag className="h-5 w-5 text-primary" /> Resumo do Pedido
+            </h2>
+            <div className="flex justify-between text-sm py-1">
               <span className="text-muted-foreground">Subtotal</span>
               <span>{brl(subtotal)}</span>
             </div>
             {storeDiscount > 0 && (
-              <div className="flex justify-between text-sm text-green-600 font-bold">
-                <span>Desconto</span>
+              <div className="flex justify-between text-sm text-green-600 font-bold py-1">
+                <span>Desconto Produtos</span>
                 <span>−{brl(storeDiscount)}</span>
               </div>
             )}
             {pbmDisc > 0 && (
-              <div className="flex justify-between text-sm text-accent font-bold">
+              <div className="flex justify-between text-sm text-accent font-bold py-1">
                 <span>Desconto {pbm ? pbm.provider : "Laboratório"}</span>
                 <span>−{brl(pbmDisc)}</span>
               </div>
             )}
-            <div className="flex justify-between text-sm mt-1">
-              <span className="text-muted-foreground">Frete</span>
-              <span>{selectedFreight ? (freightPrice === 0 ? "Grátis" : brl(freightPrice)) : "—"}</span>
-            </div>
-            <div className="border-t mt-3 pt-3 flex flex-col">
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span className="text-foreground">{brl(grandTotal)}</span>
+            {couponDisc > 0 && (
+              <div className="flex justify-between text-sm text-emerald-600 font-bold py-1">
+                <span className="flex items-center gap-1"><Tag className="h-3.5 w-3.5"/> Cupom ({appliedCoupon})</span>
+                <span>−{brl(couponDisc)}</span>
               </div>
-              {(storeDiscount > 0 || pbmDisc > 0) && (
+            )}
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-muted-foreground">Entrega / Retirada</span>
+              <span>{selectedFreight ? (freightPrice === 0 ? "Grátis" : brl(freightPrice)) : "A calcular"}</span>
+            </div>
+
+            {/* Cupom de Desconto */}
+            <div className="border-t my-3 pt-3">
+              <div className="text-xs font-bold text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5 text-primary" /> Cupom de Desconto
+              </div>
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg px-3 py-2 text-xs">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>{appliedCoupon}</span>
+                    <span className="text-emerald-700 font-normal">(-{brl(couponDisc)})</span>
+                  </div>
+                  <button onClick={removeCoupon} className="text-emerald-900 hover:text-red-600 font-bold ml-2">
+                    Remover
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ex: 10OFF"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    className="h-9 text-xs uppercase"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 font-bold px-3 text-xs"
+                    onClick={handleApplyCoupon}
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+              )}
+              {couponFeedback && (
+                <p className={`text-[11px] mt-1.5 font-medium ${couponFeedback.includes("sucesso") ? "text-emerald-600" : "text-destructive"}`}>
+                  {couponFeedback}
+                </p>
+              )}
+            </div>
+
+            <div className="border-t pt-3 flex flex-col">
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total Estimado</span>
+                <span className="text-primary text-xl">{brl(grandTotal)}</span>
+              </div>
+              {(storeDiscount > 0 || pbmDisc > 0 || couponDisc > 0) && (
                 <div className="text-right text-xs text-green-600 font-bold mt-1">
-                  Você está economizando {brl(storeDiscount + pbmDisc)}
+                  Você está economizando {brl(storeDiscount + pbmDisc + couponDisc)}
                 </div>
               )}
             </div>
-            <Button className="w-full mt-4" size="lg" onClick={goToCheckout}>
-              Ir para o pagamento
+
+            <Button
+              className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-6 text-base shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+              size="lg"
+              onClick={goToCheckout}
+            >
+              <MessageCircle className="h-5 w-5" /> Finalizar Pedido no WhatsApp
             </Button>
-            <p className="text-[11px] text-muted-foreground text-center mt-2">
-              É necessário entrar na conta para finalizar a compra.
+            <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+              Atendimento direto e imediato com a farmácia
             </p>
           </div>
-          <div className="bg-card border rounded-xl p-5">
-            <h3 className="font-bold mb-2">{items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Local do Atendimento:" : "Opções de Frete:"}</h3>
+
+          <div className="bg-card border rounded-xl p-5 shadow-sm">
+            <h3 className="font-bold mb-2">{items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Local do Atendimento:" : "Opções de Frete & Entrega:"}</h3>
             {!selectedPharmacy ? (
               <p className="text-sm text-muted-foreground bg-slate-50 p-3 rounded text-center font-medium border border-slate-100">
                 Por favor, selecione uma farmácia para ver as opções disponíveis para o seu carrinho.
@@ -801,7 +1073,7 @@ function CartPage() {
                     {isCalcLoading ? "Calculando..." : items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Buscar unidades" : "Calcular"}
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground mb-3">O endereço completo será solicitado no momento do login ou pagamento.</p>
+                <p className="text-[10px] text-muted-foreground mb-3">Preencha seu CEP para estimar o valor e o prazo de entrega.</p>
                 <div className="mt-3 space-y-2">
                   {items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) && (
                     <div className="bg-blue-50 text-blue-800 text-xs font-bold p-3 rounded border border-blue-200">
@@ -853,6 +1125,211 @@ function CartPage() {
         </aside>
       </div>
 
+      {/* Modal de Finalização via WhatsApp */}
+      <Dialog open={whatsAppModalOpen} onOpenChange={setWhatsAppModalOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2.5 text-emerald-700">
+              <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                <MessageCircle className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold">Enviar Pedido para a Loja</DialogTitle>
+                <p className="text-xs text-muted-foreground">
+                  Unidade: <strong>{selectedPharmacy?.nome}</strong> ({selectedPharmacy?.cidade}/{selectedPharmacy?.uf})
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleConfirmWhatsAppOrder} className="space-y-4 pt-2">
+            {/* Seção 1: Dados do Cliente */}
+            <div className="bg-slate-50 border rounded-lg p-3.5 space-y-3">
+              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">1. Seus Dados</div>
+              <div>
+                <Label className="text-xs">Seu Nome Completo *</Label>
+                <Input
+                  required
+                  placeholder="Ex: Maria Silva"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  className="mt-1 bg-white h-9"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">WhatsApp para Contato *</Label>
+                  <Input
+                    required
+                    placeholder="(99) 99999-9999"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(e.target.value)}
+                    className="mt-1 bg-white h-9"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">CPF (Opcional p/ Nota)</Label>
+                  <Input
+                    placeholder="000.000.000-00"
+                    value={clientCpf}
+                    onChange={(e) => setClientCpf(e.target.value)}
+                    className="mt-1 bg-white h-9"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Seção 2: Modalidade de Entrega */}
+            <div className="bg-slate-50 border rounded-lg p-3.5 space-y-3">
+              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">2. Entrega ou Retirada</div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMethod("entrega")}
+                  disabled={items.some(i => i.retemReceita)}
+                  className={`border rounded-lg p-2.5 text-xs font-bold flex flex-col items-center gap-1 transition-all ${deliveryMethod === "entrega" ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20" : "bg-white text-slate-700 hover:bg-slate-100"}`}
+                >
+                  <Bike className="h-4 w-4 text-emerald-600" />
+                  <span>Entrega em Domicílio</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMethod("retirada")}
+                  className={`border rounded-lg p-2.5 text-xs font-bold flex flex-col items-center gap-1 transition-all ${deliveryMethod === "retirada" ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20" : "bg-white text-slate-700 hover:bg-slate-100"}`}
+                >
+                  <Store className="h-4 w-4 text-emerald-600" />
+                  <span>Retirar na Farmácia</span>
+                </button>
+              </div>
+
+              {deliveryMethod === "retirada" ? (
+                <div className="text-xs text-muted-foreground bg-white p-2.5 rounded border">
+                  📍 <strong>Endereço de retirada:</strong> {selectedPharmacy?.endereco}, {selectedPharmacy?.bairro} - {selectedPharmacy?.cidade}/{selectedPharmacy?.uf}
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2">
+                      <Label className="text-xs">Endereço (Rua / Av.) *</Label>
+                      <Input
+                        required
+                        placeholder="Ex: Av. Central"
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        className="mt-1 bg-white h-9"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Número *</Label>
+                      <Input
+                        required
+                        placeholder="123"
+                        value={deliveryNumber}
+                        onChange={(e) => setDeliveryNumber(e.target.value)}
+                        className="mt-1 bg-white h-9"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Bairro *</Label>
+                      <Input
+                        required
+                        placeholder="Centro"
+                        value={deliveryBairro}
+                        onChange={(e) => setDeliveryBairro(e.target.value)}
+                        className="mt-1 bg-white h-9"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Complemento</Label>
+                      <Input
+                        placeholder="Apto 101, Bloco B"
+                        value={deliveryComplement}
+                        onChange={(e) => setDeliveryComplement(e.target.value)}
+                        className="mt-1 bg-white h-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Seção 3: Forma de Pagamento */}
+            <div className="bg-slate-50 border rounded-lg p-3.5 space-y-2.5">
+              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">3. Como prefere pagar?</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: "pix", label: "PIX", icon: Sparkles },
+                  { id: "cartao_credito", label: "Crédito", icon: CreditCard },
+                  { id: "cartao_debito", label: "Débito", icon: CreditCard },
+                  { id: "dinheiro", label: "Dinheiro", icon: DollarSign },
+                ].map((pm) => {
+                  const Icon = pm.icon;
+                  const active = paymentMethod === pm.id;
+                  return (
+                    <button
+                      key={pm.id}
+                      type="button"
+                      onClick={() => setPaymentMethod(pm.id as any)}
+                      className={`border rounded-lg p-2 text-xs font-bold flex flex-col items-center gap-1 transition-all ${active ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20" : "bg-white text-slate-700 hover:bg-slate-100"}`}
+                    >
+                      <Icon className="h-4 w-4 text-emerald-600" />
+                      <span>{pm.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {paymentMethod === "dinheiro" && (
+                <div className="mt-2">
+                  <Label className="text-xs">Precisa de troco para quanto?</Label>
+                  <Input
+                    placeholder="Ex: R$ 50,00 ou Não preciso"
+                    value={trocoPara}
+                    onChange={(e) => setTrocoPara(e.target.value)}
+                    className="mt-1 bg-white h-9 text-xs"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Seção 4: Observações */}
+            <div>
+              <Label className="text-xs font-bold text-slate-800">Observações adicionais (opcional)</Label>
+              <Input
+                placeholder="Ex: Campainha não funciona / Ligar ao chegar"
+                value={orderNotes}
+                onChange={(e) => setOrderNotes(e.target.value)}
+                className="mt-1 h-9 text-xs"
+              />
+            </div>
+
+            {/* Resumo do Valor */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex justify-between items-center">
+              <div>
+                <span className="text-xs text-emerald-800 font-bold block">{items.length} produto(s) no carrinho</span>
+                <span className="text-[11px] text-emerald-700">Pagamento acertado na entrega ou retirada</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-emerald-800 block">Total</span>
+                <span className="text-lg font-bold text-emerald-900">{brl(grandTotal)}</span>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isSubmittingOrder}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-6 text-base shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
+            >
+              <Send className="h-5 w-5" />
+              {isSubmittingOrder ? "Gerando Pedido..." : "Confirmar e Abrir no WhatsApp 💬"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={noPharmacyAlertOpen} onOpenChange={setNoPharmacyAlertOpen}>
         <DialogContent className="max-w-sm text-center">
           <div className="flex flex-col items-center justify-center gap-4 py-4">
@@ -863,13 +1340,16 @@ function CartPage() {
               <DialogTitle className="text-xl font-bold text-slate-800 text-center">Atenção</DialogTitle>
             </DialogHeader>
             <p className="text-muted-foreground text-sm">
-              Você deve selecionar uma farmácia antes de prosseguir para o pagamento.
+              Você deve selecionar uma farmácia antes de prosseguir com o pedido.
             </p>
             <Button 
               className="w-full mt-2 font-bold" 
-              onClick={() => setNoPharmacyAlertOpen(false)}
+              onClick={() => {
+                setNoPharmacyAlertOpen(false);
+                setPharmacyDialogOpen(true);
+              }}
             >
-              Entendi
+              Selecionar Farmácia
             </Button>
           </div>
         </DialogContent>
@@ -885,7 +1365,7 @@ function CartPage() {
               <DialogTitle className="text-xl font-bold text-slate-800 text-center">Opção de Entrega</DialogTitle>
             </DialogHeader>
             <p className="text-muted-foreground text-sm">
-              Para prosseguir para o pagamento, você deve escolher um meio de entrega ou selecionar a retirada na farmácia.
+              Para prosseguir, escolha um meio de entrega ou selecione a retirada na farmácia.
             </p>
             <Button 
               className="w-full mt-2 font-bold" 
@@ -910,7 +1390,10 @@ function CartPage() {
             <Button variant="outline" onClick={() => setConfirmDeliveryOpen(false)}>
               Alterar CEP
             </Button>
-            <Button onClick={proceedToCheckout}>
+            <Button onClick={() => {
+              setConfirmDeliveryOpen(false);
+              setWhatsAppModalOpen(true);
+            }}>
               Sim, continuar
             </Button>
           </div>

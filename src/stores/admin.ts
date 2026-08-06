@@ -37,6 +37,7 @@ export interface AdminBanner {
   active: boolean;
   startDate?: string;
   endDate?: string;
+  lojaId?: string; // Se preenchido, banner exclusivo da loja do associado
   // Extra fields for Banner Extra below Vitrines
   vitrineVinculada?: string;
   bannerVinculado?: string;
@@ -91,6 +92,7 @@ export interface Pharmacy {
   tabelaPrecoId?: string; // Tabela de Preços Regional
   email: string;
   telefone: string;
+  whatsapp?: string; // WhatsApp oficial da unidade para pedidos
   horarioFuncionamento: string;
   respTecnico: string; // Nome do Farmacêutico
   inscricaoFarmaceutico: string; // CRF
@@ -106,6 +108,11 @@ export interface Pharmacy {
   complemento: string;
   lat?: number;
   lng?: number;
+  // SEO Local e AEO / GEO
+  bairrosAtendidos?: string[];
+  descricaoSeo?: string;
+  palavrasChave?: string;
+  faqLocal?: Array<{ pergunta: string; resposta: string }>;
   // Dados de Entrega
   aceitaEntrega: boolean;
   modeloFrete: "cep" | "fixo" | "raio";

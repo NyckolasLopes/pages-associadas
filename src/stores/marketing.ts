@@ -19,6 +19,7 @@ export interface Coupon {
   usoUnico: boolean;
   cupomPrimeiraCompra: boolean;
   numeroUtilizacoes: number; // for display
+  lojaId?: string; // Se preenchido, cupom exclusivo da loja
 }
 
 export interface Promocao {

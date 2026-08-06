@@ -48,7 +48,8 @@ function createSupabaseClient() {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
     },
     auth: {
-      storage: typeof window !== 'undefined' ? localStorage : undefined,
+      // Security: Usar sessionStorage para nunca persistir tokens de autenticação no localStorage permanente
+      storage: typeof window !== 'undefined' ? sessionStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
     }

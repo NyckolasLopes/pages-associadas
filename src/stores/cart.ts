@@ -75,6 +75,7 @@ interface CartState {
   drawerOpen: boolean;
   pbm: PBMCredential | null;
   lastUpdatedAt: number | null;
+  appliedCoupon: string | null;
   add: (p: Produto, qty?: number, silent?: boolean) => void;
   remove: (id: string) => void;
   setQty: (id: string, qty: number) => void;
@@ -86,7 +87,10 @@ interface CartState {
   subtotal: () => number;
   storeDiscount: () => number;
   pbmDiscount: () => number;
+  couponDiscount: () => number;
   total: () => number;
+  applyCoupon: (code: string) => { success: boolean; message: string };
+  removeCoupon: () => void;
   selectedPharmacyId: string | null;
   selectedFreight: string;
   freightOptions: any[];
@@ -146,6 +150,7 @@ export const useCart = create<CartState>()(
       drawerOpen: false,
       pbm: null,
       lastUpdatedAt: null,
+      appliedCoupon: null,
       selectedPharmacyId: null,
       selectedFreight: "pickup",
       freightOptions: [],
@@ -215,7 +220,7 @@ export const useCart = create<CartState>()(
           return { notifications: [{ id, oldPrice, newPrice, storeName }, ...filtered] };
         }),
       clearNotifications: () => set({ notifications: [] }),
-      clear: () => set({ items: [], lastUpdatedAt: null }),
+      clear: () => set({ items: [], appliedCoupon: null, lastUpdatedAt: null }),
       setDrawer: (open) => set({ drawerOpen: open }),
       connectPbm: (c) => set({ pbm: c }),
       disconnectPbm: () => set({ pbm: null }),
@@ -259,9 +264,48 @@ export const useCart = create<CartState>()(
         const prov = get().pbm?.provider ?? null;
         return get().items.reduce((a, i) => a + pbmDiscountForItem(i, prov), 0);
       },
+      couponDiscount: () => {
+        const code = get().appliedCoupon;
+        if (!code) return 0;
+        const cupons = useMarketing.getState().cupons;
+        const pid = get().selectedPharmacyId;
+        const coupon = cupons.find(c => c.codigo.toUpperCase() === code.toUpperCase() && c.ativo);
+        if (!coupon) return 0;
+        if (coupon.lojaId && coupon.lojaId !== pid) return 0;
+        
+        const sub = get().subtotal() - get().storeDiscount() - get().pbmDiscount();
+        if (sub <= 0) return 0;
+        if (coupon.valorMinimo && sub < coupon.valorMinimo) return 0;
+        
+        if (coupon.tipoDesconto === "percentual") {
+          return (sub * coupon.valorDesconto) / 100;
+        } else {
+          return Math.min(sub, coupon.valorDesconto);
+        }
+      },
+      applyCoupon: (rawCode: string) => {
+        const clean = rawCode.trim().toUpperCase();
+        if (!clean) return { success: false, message: "Digite um código de cupom válido." };
+        const cupons = useMarketing.getState().cupons;
+        const pid = get().selectedPharmacyId;
+        const coupon = cupons.find(c => c.codigo.toUpperCase() === clean);
+        if (!coupon || !coupon.ativo) {
+          return { success: false, message: "Cupom inválido ou expirado." };
+        }
+        if (coupon.lojaId && coupon.lojaId !== pid) {
+          return { success: false, message: "Este cupom é exclusivo de outra unidade." };
+        }
+        const sub = get().subtotal() - get().storeDiscount() - get().pbmDiscount();
+        if (coupon.valorMinimo && sub < coupon.valorMinimo) {
+          return { success: false, message: `Valor mínimo para este cupom: R$ ${coupon.valorMinimo.toFixed(2)}` };
+        }
+        set({ appliedCoupon: clean });
+        return { success: true, message: `Cupom ${clean} aplicado com sucesso!` };
+      },
+      removeCoupon: () => set({ appliedCoupon: null }),
       total: () => {
         const s = get();
-        return Math.max(0, s.subtotal() - s.storeDiscount() - s.pbmDiscount());
+        return Math.max(0, s.subtotal() - s.storeDiscount() - s.pbmDiscount() - s.couponDiscount());
       },
     }),
     { name: "fa-cart", skipHydration: true },

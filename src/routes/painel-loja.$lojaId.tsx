@@ -18,12 +18,19 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Pedido } from "@/stores/orders";
+import { secureSession } from "@/lib/secureStorage";
+import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
+import { sanitizeText, sanitizeSpreadsheetValue, sanitizeCouponCode } from "@/lib/security";
 
 export const Route = createFileRoute("/painel-loja/$lojaId")({
   component: PainelLoja,
 });
 
 import { LojaPromocoesTab } from "@/components/admin/LojaPromocoesTab";
+import { LojaBannersTab } from "@/components/admin/LojaBannersTab";
+import { LojaCuponsTab } from "@/components/admin/LojaCuponsTab";
+import { LojaSeoTab } from "@/components/admin/LojaSeoTab";
+import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "Aguardando pagamento",
@@ -58,7 +65,7 @@ function PainelLoja() {
   const [selectedPedidoInfo, setSelectedPedidoInfo] = useState<Pedido | null>(null);
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem(`auth_painel_${lojaId}`) === "true";
+    return secureSession.get(`auth_painel_${lojaId}`) === "true";
   });
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -229,12 +236,22 @@ function PainelLoja() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (panelInfo.email === loginEmail && panelInfo.password === loginPassword) {
-      sessionStorage.setItem(`auth_painel_${lojaId}`, "true");
-      setIsAuthenticated(true);
-      toast.success("Acesso liberado");
-    } else {
-      toast.error("E-mail ou senha incorretos");
+    try {
+      checkRateLimitOrThrow(`login_painel_${lojaId}`, RATE_LIMIT_PRESETS.AUTH_LOGIN);
+      
+      const cleanEmail = sanitizeText(loginEmail, 100).trim();
+      const cleanPass = loginPassword.trim();
+
+      if (panelInfo.email === cleanEmail && panelInfo.password === cleanPass) {
+        secureSession.set(`auth_painel_${lojaId}`, "true");
+        setIsAuthenticated(true);
+        rateLimiter.reset(`login_painel_${lojaId}`);
+        toast.success("Acesso liberado com sucesso");
+      } else {
+        toast.error("E-mail ou senha incorretos");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Muitas tentativas. Aguarde um momento.");
     }
   };
 
@@ -376,29 +393,70 @@ function PainelLoja() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">{loja.nome}</h1>
-            <p className="text-slate-500 mt-1">Dashboard de Acompanhamento da Loja</p>
+            <p className="text-slate-500 mt-1">
+              Painel do Associado • {loja.cidade}/{loja.uf}
+            </p>
           </div>
-          <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Painel Ativo
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Painel Ativo
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                secureSession.remove(`auth_painel_${lojaId}`);
+                setIsAuthenticated(false);
+                toast.success("Sessão encerrada com segurança.");
+              }}
+              className="text-xs font-bold gap-1.5 text-slate-600 hover:text-red-600 hover:border-red-200"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Encerrar Sessão
+            </Button>
           </div>
         </div>
 
         <Tabs defaultValue="pedidos" className="space-y-6">
-          <TabsList className="bg-white border border-slate-200 p-1">
-            <TabsTrigger value="pedidos" className="data-[state=active]:bg-slate-100">
-              <ListOrdered className="w-4 h-4 mr-2" />
-              Gestão de Pedidos
+          <TabsList className="bg-white border border-slate-200 p-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
+            <TabsTrigger value="pedidos" className="data-[state=active]:bg-slate-100 py-2">
+              <ListOrdered className="w-4 h-4 mr-1.5 shrink-0" />
+              Pedidos
             </TabsTrigger>
-            <TabsTrigger value="metricas" className="data-[state=active]:bg-slate-100">
-              <Activity className="w-4 h-4 mr-2" />
+            <TabsTrigger value="promocoes" className="data-[state=active]:bg-slate-100 py-2">
+              <Megaphone className="w-4 h-4 mr-1.5 shrink-0" />
+              Preços & Ofertas
+            </TabsTrigger>
+            <TabsTrigger value="banners" className="data-[state=active]:bg-slate-100 py-2">
+              <ImageIcon className="w-4 h-4 mr-1.5 shrink-0" />
+              Banners
+            </TabsTrigger>
+            <TabsTrigger value="cupons" className="data-[state=active]:bg-slate-100 py-2">
+              <TagIcon className="w-4 h-4 mr-1.5 shrink-0" />
+              Cupons
+            </TabsTrigger>
+            <TabsTrigger value="seo" className="data-[state=active]:bg-slate-100 py-2">
+              <Compass className="w-4 h-4 mr-1.5 shrink-0" />
+              SEO & GEO
+            </TabsTrigger>
+            <TabsTrigger value="metricas" className="data-[state=active]:bg-slate-100 py-2">
+              <Activity className="w-4 h-4 mr-1.5 shrink-0" />
               Métricas
             </TabsTrigger>
-            <TabsTrigger value="promocoes" className="data-[state=active]:bg-slate-100">
-              <Megaphone className="w-4 h-4 mr-2" />
-              Promoções
-            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="banners" className="space-y-6">
+            <LojaBannersTab lojaId={lojaId} />
+          </TabsContent>
+
+          <TabsContent value="cupons" className="space-y-6">
+            <LojaCuponsTab lojaId={lojaId} />
+          </TabsContent>
+
+          <TabsContent value="seo" className="space-y-6">
+            <LojaSeoTab lojaId={lojaId} />
+          </TabsContent>
 
           <TabsContent value="promocoes" className="space-y-6">
             <LojaPromocoesTab lojaId={lojaId} />
