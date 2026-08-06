@@ -439,25 +439,12 @@ function LojasAdmin() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 sm:col-span-2">
                 <FieldLabel required>Nome Fantasia</FieldLabel>
                 <Input
                   value={form.nome}
                   onChange={(e) => update({ nome: e.target.value })}
                 />
-              </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Tabela de Preços Regional</FieldLabel>
-                <Select value={form.tabelaPrecoId} onValueChange={(val) => update({ tabelaPrecoId: val })}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Selecione a tabela..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {regions.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
