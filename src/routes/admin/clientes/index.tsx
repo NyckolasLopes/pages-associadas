@@ -177,7 +177,6 @@ function ClientesAdmin() {
               <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
                 <th className="px-4 py-3 w-10 text-center"><Checkbox /></th>
                 <th className="px-4 py-3">Cliente</th>
-                <th className="px-4 py-3">Cadastro via</th>
                 <th className="px-4 py-3">Telefone</th>
                 <th className="px-4 py-3">Pedidos</th>
                 <th className="px-4 py-3 text-center">Ações</th>
@@ -186,7 +185,7 @@ function ClientesAdmin() {
             <tbody className="divide-y divide-slate-100">
               {filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-slate-500 font-medium">
+                  <td colSpan={5} className="p-12 text-center text-slate-500 font-medium">
                     Nenhum cliente encontrado.
                   </td>
                 </tr>
@@ -210,9 +209,6 @@ function ClientesAdmin() {
                         <div className="text-[12px] text-slate-500">{customer.email}</div>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    {getLoginBadge(customer.metodoLogin)}
                   </td>
                   <td className="px-4 py-4">
                     <div className="font-medium text-slate-700">{customer.telefone}</div>
