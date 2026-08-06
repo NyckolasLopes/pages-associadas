@@ -59,9 +59,6 @@ const PERMISSION_CATEGORIES = [
     permissions: [
       { id: "lojas_todas", label: "Ver todas" },
       { id: "lojas_nova", label: "Nova Loja" },
-      { id: "lojas_tabelas", label: "Tabelas de Preços" },
-      { id: "lojas_precos", label: "Preços por loja (Meus Preços)" },
-      { id: "lojas_paineis", label: "Gestor de Painéis (Meu painel da loja)" },
     ]
   },
   {
@@ -69,15 +66,7 @@ const PERMISSION_CATEGORIES = [
     permissions: [
       { id: "prod_todos", label: "Ver todos" },
       { id: "prod_novo", label: "Novo Produto" },
-      { id: "prod_estoque", label: "Estoques" },
-      { id: "prod_avaliacoes", label: "Avaliações" },
       { id: "prod_categorias", label: "Categorias" },
-      { id: "prod_colecoes", label: "Vitrine de Produtos" },
-      { id: "prod_filtros", label: "Filtros" },
-      { id: "prod_espera", label: "Lista de espera" },
-      { id: "prod_marcas", label: "Marcas" },
-      { id: "prod_perguntas", label: "Perguntas" },
-      { id: "prod_selos", label: "Selos" },
     ]
   },
   {
@@ -128,14 +117,8 @@ const PERMISSION_CATEGORIES = [
     category: "Relatórios e Métricas",
     permissions: [
       { id: "rel_vendas_produto", label: "Vendas por produto loja" },
-      { id: "rel_vendas_canal", label: "Vendas por canal" },
-      { id: "rel_campanhas_internas", label: "Campanhas internas por loja" },
       { id: "rel_desempenho", label: "Desempenho por unidade" },
-      { id: "rel_financeiro", label: "Repasse financeiro da loja" },
       { id: "rel_logistica_retirada", label: "Retirada vs entrega da unidade" },
-      { id: "rel_logistica_sla", label: "SLA de Entregas e Atrasos" },
-      { id: "rel_estoque_controlados", label: "Medicamentos controlados por unidade" },
-      { id: "rel_estoque_abc", label: "Curva abc de produtos" },
       { id: "rel_aovivo", label: "Ao vivo" },
     ]
   },

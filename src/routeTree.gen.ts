@@ -64,6 +64,7 @@ import { Route as AdminLojasTabelasPrecosRouteImport } from './routes/admin/loja
 import { Route as AdminLojasPaineisRouteImport } from './routes/admin/lojas.paineis'
 import { Route as AdminLojasNovaRouteImport } from './routes/admin/lojas.nova'
 import { Route as AdminLojasLinkInscricaoRouteImport } from './routes/admin/lojas.link-inscricao'
+import { Route as AdminLojasGerarRouteImport } from './routes/admin/lojas.gerar'
 import { Route as AdminIntegracoesWebhooksRouteImport } from './routes/admin/integracoes.webhooks'
 import { Route as AdminIntegracoesCofreRouteImport } from './routes/admin/integracoes.cofre'
 import { Route as AdminIntegracoesApiRouteImport } from './routes/admin/integracoes.api'
@@ -371,6 +372,11 @@ const AdminLojasLinkInscricaoRoute = AdminLojasLinkInscricaoRouteImport.update({
   path: '/lojas/link-inscricao',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLojasGerarRoute = AdminLojasGerarRouteImport.update({
+  id: '/lojas/gerar',
+  path: '/lojas/gerar',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminIntegracoesWebhooksRoute =
   AdminIntegracoesWebhooksRouteImport.update({
     id: '/webhooks',
@@ -582,6 +588,7 @@ export interface FileRoutesByFullPath {
   '/admin/integracoes/api': typeof AdminIntegracoesApiRoute
   '/admin/integracoes/cofre': typeof AdminIntegracoesCofreRoute
   '/admin/integracoes/webhooks': typeof AdminIntegracoesWebhooksRoute
+  '/admin/lojas/gerar': typeof AdminLojasGerarRoute
   '/admin/lojas/link-inscricao': typeof AdminLojasLinkInscricaoRoute
   '/admin/lojas/nova': typeof AdminLojasNovaRoute
   '/admin/lojas/paineis': typeof AdminLojasPaineisRoute
@@ -665,6 +672,7 @@ export interface FileRoutesByTo {
   '/admin/integracoes/api': typeof AdminIntegracoesApiRoute
   '/admin/integracoes/cofre': typeof AdminIntegracoesCofreRoute
   '/admin/integracoes/webhooks': typeof AdminIntegracoesWebhooksRoute
+  '/admin/lojas/gerar': typeof AdminLojasGerarRoute
   '/admin/lojas/link-inscricao': typeof AdminLojasLinkInscricaoRoute
   '/admin/lojas/nova': typeof AdminLojasNovaRoute
   '/admin/lojas/paineis': typeof AdminLojasPaineisRoute
@@ -751,6 +759,7 @@ export interface FileRoutesById {
   '/admin/integracoes/api': typeof AdminIntegracoesApiRoute
   '/admin/integracoes/cofre': typeof AdminIntegracoesCofreRoute
   '/admin/integracoes/webhooks': typeof AdminIntegracoesWebhooksRoute
+  '/admin/lojas/gerar': typeof AdminLojasGerarRoute
   '/admin/lojas/link-inscricao': typeof AdminLojasLinkInscricaoRoute
   '/admin/lojas/nova': typeof AdminLojasNovaRoute
   '/admin/lojas/paineis': typeof AdminLojasPaineisRoute
@@ -837,6 +846,7 @@ export interface FileRouteTypes {
     | '/admin/integracoes/api'
     | '/admin/integracoes/cofre'
     | '/admin/integracoes/webhooks'
+    | '/admin/lojas/gerar'
     | '/admin/lojas/link-inscricao'
     | '/admin/lojas/nova'
     | '/admin/lojas/paineis'
@@ -920,6 +930,7 @@ export interface FileRouteTypes {
     | '/admin/integracoes/api'
     | '/admin/integracoes/cofre'
     | '/admin/integracoes/webhooks'
+    | '/admin/lojas/gerar'
     | '/admin/lojas/link-inscricao'
     | '/admin/lojas/nova'
     | '/admin/lojas/paineis'
@@ -1005,6 +1016,7 @@ export interface FileRouteTypes {
     | '/admin/integracoes/api'
     | '/admin/integracoes/cofre'
     | '/admin/integracoes/webhooks'
+    | '/admin/lojas/gerar'
     | '/admin/lojas/link-inscricao'
     | '/admin/lojas/nova'
     | '/admin/lojas/paineis'
@@ -1425,6 +1437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLojasLinkInscricaoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/lojas/gerar': {
+      id: '/admin/lojas/gerar'
+      path: '/lojas/gerar'
+      fullPath: '/admin/lojas/gerar'
+      preLoaderRoute: typeof AdminLojasGerarRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/integracoes/webhooks': {
       id: '/admin/integracoes/webhooks'
       path: '/webhooks'
@@ -1769,6 +1788,7 @@ interface AdminRouteChildren {
   AdminDesignRedesRoute: typeof AdminDesignRedesRoute
   AdminDesignScriptsRoute: typeof AdminDesignScriptsRoute
   AdminDesignVisualRoute: typeof AdminDesignVisualRoute
+  AdminLojasGerarRoute: typeof AdminLojasGerarRoute
   AdminLojasLinkInscricaoRoute: typeof AdminLojasLinkInscricaoRoute
   AdminLojasNovaRoute: typeof AdminLojasNovaRoute
   AdminLojasPaineisRoute: typeof AdminLojasPaineisRoute
@@ -1824,6 +1844,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDesignRedesRoute: AdminDesignRedesRoute,
   AdminDesignScriptsRoute: AdminDesignScriptsRoute,
   AdminDesignVisualRoute: AdminDesignVisualRoute,
+  AdminLojasGerarRoute: AdminLojasGerarRoute,
   AdminLojasLinkInscricaoRoute: AdminLojasLinkInscricaoRoute,
   AdminLojasNovaRoute: AdminLojasNovaRoute,
   AdminLojasPaineisRoute: AdminLojasPaineisRoute,

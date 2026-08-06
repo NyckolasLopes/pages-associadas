@@ -872,6 +872,7 @@ function AdminProdutos() {
             )}
           </>
         )}
+      </div>
       
       <SubirDadosLojaModal open={subirDadosOpen} onOpenChange={setSubirDadosOpen} />
       
