@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles } from "lucide-react";
+import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -21,6 +21,8 @@ import { useAdmin, AdminBanner } from "@/stores/admin";
 import { useAdminProducts } from "@/stores/products";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { StoreStructureViewer } from "@/components/admin/StoreStructureViewer";
+import { StoreVitrinesConfig } from "@/components/admin/StoreVitrinesConfig";
 
 export const Route = createFileRoute("/admin/banners")({
   component: AdminBanners,
@@ -131,6 +133,9 @@ function AdminBanners() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Partial<AdminBanner> | null>(null);
+  const [activeTab, setActiveTab] = useState<"banners" | "estrutura" | "vitrines">("banners");
+
+  const totalBannersCount = banners.length;
 
   const groupedBanners = BANNER_POSITIONS.map(pos => {
     return {
@@ -189,28 +194,89 @@ function AdminBanners() {
 
   return (
     <div className="max-w-6xl space-y-6 pb-20">
-      <div className="flex items-center justify-between">
+      {/* Top Header & Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col">
           <h2 className="text-[22px] font-bold text-[#1a1a1a]">Personalizar Minha Loja</h2>
-          <span className="text-sm font-medium text-slate-500">Gerencie os banners e destaques visuais da sua loja por posição</span>
+          <span className="text-sm font-medium text-slate-500">
+            Gerencie o visual da sua loja, banners promocionais e vitrines de produtos
+          </span>
         </div>
-        <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
-          <Plus className="w-4 h-4 mr-2" /> Novo banner
-        </Button>
+        {activeTab === "banners" && (
+          <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
+            <Plus className="w-4 h-4 mr-2" /> Novo banner
+          </Button>
+        )}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Buscar banner por nome..." 
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 h-10 bg-white border-slate-200"
-            />
+      {/* Modern Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab("banners")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
+            activeTab === "banners"
+              ? "bg-[#00B5AD] text-white shadow-sm"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" />
+          Banners
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
+            activeTab === "banners" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+          }`}>
+            {totalBannersCount}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("estrutura")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
+            activeTab === "estrutura"
+              ? "bg-[#00B5AD] text-white shadow-sm"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <LayoutTemplate className="w-4 h-4" />
+          Estrutura da Minha Loja
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+            activeTab === "estrutura" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"
+          }`}>
+            Panorama Geral
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("vitrines")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
+            activeTab === "vitrines"
+              ? "bg-[#00B5AD] text-white shadow-sm"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          Minhas Vitrines
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+            activeTab === "vitrines" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-800"
+          }`}>
+            Produtos
+          </span>
+        </button>
+      </div>
+
+      {/* Tab 1: Banners Content */}
+      {activeTab === "banners" && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input 
+                placeholder="Buscar banner por nome..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 h-10 bg-white border-slate-200"
+              />
+            </div>
           </div>
-        </div>
         
         <div className="p-6 space-y-10">
           {groupedBanners.map((group, groupIdx) => (
@@ -310,6 +376,20 @@ function AdminBanners() {
           ))}
         </div>
       </div>
+      )}
+
+      {/* Tab 2: Estrutura da Minha Loja (Panorama Geral) */}
+      {activeTab === "estrutura" && (
+        <StoreStructureViewer 
+          onNavigateTab={setActiveTab} 
+          onOpenNewBannerModal={openNewModal} 
+        />
+      )}
+
+      {/* Tab 3: Minhas Vitrines (Configuração & Produtos) */}
+      {activeTab === "vitrines" && (
+        <StoreVitrinesConfig />
+      )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-[700px] p-0 overflow-hidden flex flex-col max-h-[90vh] bg-slate-50">

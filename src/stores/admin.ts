@@ -162,6 +162,17 @@ export interface CompreJuntoSettings {
   maxPrice: number;
 }
 
+export interface StorefrontVitrineConfig {
+  lancamentos: boolean;
+  maisVendidos: boolean;
+  destaques: boolean;
+  destaquesOrdem: 'alfabetica' | 'recentes' | 'mais_vendidos' | 'menor_preco' | 'maior_preco';
+  porCategoria: boolean;
+  porCategoriaOrdem: 'recentes' | 'alfabetica' | 'desconto' | 'menor_preco';
+  vazia: boolean;
+  produtosPorVitrine: number;
+}
+
 interface AdminState {
   // Authentication & Authorization
   users: AdminUser[];
@@ -234,7 +245,9 @@ interface AdminState {
   orderBumpSettings: OrderBumpSettings;
   setOrderBumpSettings: (settings: OrderBumpSettings) => void;
   compreJuntoSettings: CompreJuntoSettings;
-  setCompreJuntoSettings: (settings: CompreJuntoSettings) => void;
+  // Vitrines da Loja
+  storefrontVitrineConfig: StorefrontVitrineConfig;
+  setStorefrontVitrineConfig: (config: Partial<StorefrontVitrineConfig>) => void;
 
   // Link Inscrição
   registrationTokens: RegistrationToken[];
@@ -649,6 +662,21 @@ export const useAdmin = create<AdminState>()(
       deletePanel: (lojaId) => set((s) => ({
         storePanels: s.storePanels.filter((p) => p.lojaId !== lojaId)
       })),
+
+      // Vitrines da Loja
+      storefrontVitrineConfig: {
+        lancamentos: true,
+        maisVendidos: true,
+        destaques: true,
+        destaquesOrdem: 'alfabetica',
+        porCategoria: true,
+        porCategoriaOrdem: 'recentes',
+        vazia: false,
+        produtosPorVitrine: 8,
+      },
+      setStorefrontVitrineConfig: (config) => set((state) => ({
+        storefrontVitrineConfig: { ...state.storefrontVitrineConfig, ...config }
+      })),
     }),
     {
       name: "fa-admin-store-v4",
@@ -674,9 +702,23 @@ export const useAdmin = create<AdminState>()(
             persistedState.compreJuntoSettings = { active: true, categoryId: "all", maxPrice: 9999 };
           }
         }
+        if (version < 8) {
+          if (!persistedState.storefrontVitrineConfig) {
+            persistedState.storefrontVitrineConfig = {
+              lancamentos: true,
+              maisVendidos: true,
+              destaques: true,
+              destaquesOrdem: 'alfabetica',
+              porCategoria: true,
+              porCategoriaOrdem: 'recentes',
+              vazia: false,
+              produtosPorVitrine: 8,
+            };
+          }
+        }
         return persistedState;
       },
-      version: 7,
+      version: 8,
     }
   )
 );
