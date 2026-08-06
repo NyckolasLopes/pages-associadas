@@ -360,14 +360,6 @@ function AdminLayout() {
             </NavSection>
           )}
 
-          {/* ---- PERSONALIZAR MINHA LOJA ---- */}
-          <Link
-            to="/admin/banners"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary"
-          >
-            <Store className="h-4 w-4" /> Personalizar Minha Loja
-          </Link>
-
           {/* ---- LOJAS ---- */}
           {(can('lojas_todas') || can('lojas_nova') || can('lojas_tabelas') || can('lojas_precos') || can('lojas_paineis')) && (
             <NavSection 
@@ -475,6 +467,14 @@ function AdminLayout() {
               <Settings className="h-4 w-4" /> Configurações
             </Link>
           )}
+
+          {/* ---- PERSONALIZAR MINHA LOJA ---- */}
+          <Link
+            to="/admin/banners"
+            className="flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary"
+          >
+            <Store className="h-4 w-4" /> Personalizar Minha Loja
+          </Link>
         </nav>
 
         <div className="p-4 border-t">
