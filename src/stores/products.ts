@@ -469,7 +469,7 @@ export const useAdminProducts = create<ProductsState>()(
       }
     }),
     {
-      name: "fa-admin-products-store-v2",
+      name: "fa-admin-products-store-v3",
       storage: createJSONStorage(() => idbStorage),
       skipHydration: true,
       onRehydrateStorage: () => (state) => {
