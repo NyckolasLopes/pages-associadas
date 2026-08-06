@@ -401,17 +401,7 @@ function AdminLayout() {
           )}
 
 
-          {/* ---- PERSONALIZE SUA LOJA ---- */}
-          {(can('pers_logo') || can('pers_cores') || can('pers_banners') || can('pers_redes') || can('pers_paginas') || can('pers_scripts')) && (
-            <NavSection icon={<Palette className="h-4 w-4" />} label="Personalize sua loja" open={openNavSection === "Personalize"} onToggle={() => setOpenNavSection(openNavSection === "Personalize" ? "" : "Personalize")}>
-              {can('pers_logo') && <Link to="/admin/design/logo" className={subLinkClass} activeOptions={{ exact: true }}>Logo</Link>}
-              {can('pers_cores') && <Link to="/admin/design/cores" className={subLinkClass} activeOptions={{ exact: true }}>Cores</Link>}
-              {can('pers_banners') && <Link to="/admin/banners" className={subLinkClass} activeOptions={{ exact: true }}>Banners</Link>}
-              {can('pers_redes') && <Link to="/admin/design/redes" className={subLinkClass} activeOptions={{ exact: true }}>Redes Sociais</Link>}
-              {can('pers_paginas') && <Link to="/admin/design/paginas" className={subLinkClass} activeOptions={{ exact: true }}>Páginas de conteúdo</Link>}
-              {can('pers_scripts') && <Link to="/admin/design/scripts" className={subLinkClass} activeOptions={{ exact: true }}>Meta Tags e Scripts</Link>}
-            </NavSection>
-          )}
+
 
 
 

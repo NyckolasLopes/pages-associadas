@@ -73,16 +73,7 @@ const PERMISSION_CATEGORIES = [
       { id: "cli_todos", label: "Ver todos" },
     ]
   },
-  {
-    category: "Personalize sua loja",
-    permissions: [
-      { id: "pers_logo", label: "Logo" },
-      { id: "pers_cores", label: "Cores" },
-      { id: "pers_banners", label: "Banners" },
-      { id: "pers_redes", label: "Redes Sociais" },
-      { id: "pers_paginas", label: "Páginas de conteúdo" },
-    ]
-  },
+
   {
     category: "Marketing",
     permissions: [
