@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
-import { Store, Search, DollarSign, Package, Upload } from "lucide-react";
+import { 
+  Store, Search, DollarSign, Package, Upload, 
+  FileSpreadsheet, AlertCircle, CheckCircle2, FileText, ArrowRight, Check 
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,7 +30,7 @@ export const Route = createFileRoute("/admin/produtos/precos")({
 });
 
 function AdminProdutosPrecos() {
-  const { customProducts, addOrUpdateProduct } = useAdminProducts();
+  const { customProducts, addOrUpdateProduct, importStoreSpreadsheet } = useAdminProducts();
   const { pharmacies, currentUser, grupos } = useAdmin();
 
   const isGlobalAdmin = () => {
@@ -45,6 +48,17 @@ function AdminProdutosPrecos() {
   const [search, setSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // States for "Importar meus preços" Modal (CSV & Excel)
+  const [isImportMeusPrecosOpen, setIsImportMeusPrecosOpen] = useState(false);
+  const [importFileName, setImportFileName] = useState("");
+  const [spreadsheetHeaders, setSpreadsheetHeaders] = useState<string[]>([]);
+  const [spreadsheetRows, setSpreadsheetRows] = useState<any[]>([]);
+  const [selectedIdentifierCol, setSelectedIdentifierCol] = useState("");
+  const [selectedPriceCol, setSelectedPriceCol] = useState("");
+  const [targetPharmacyId, setTargetPharmacyId] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const meusPrecosFileInputRef = useRef<HTMLInputElement>(null);
+
   // States for Encarte Import
   const [pendingImportData, setPendingImportData] = useState<any[] | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -61,6 +75,127 @@ function AdminProdutosPrecos() {
   const [campanhaSearch, setCampanhaSearch] = useState("");
   const [selectedCampanhaProducts, setSelectedCampanhaProducts] = useState<string[]>([]);
   const [campanhaPrices, setCampanhaPrices] = useState<Record<string, number>>({});
+
+  const handleMeusPrecosFileUpload = (file: File) => {
+    if (!file) return;
+    setImportFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const rawJson: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+        if (!rawJson || rawJson.length === 0) {
+          toast.error("A planilha selecionada está vazia.");
+          return;
+        }
+
+        const headers = Object.keys(rawJson[0] || {});
+        setSpreadsheetHeaders(headers);
+        setSpreadsheetRows(rawJson);
+
+        // Auto detect identifier column
+        const idCol = headers.find(h => {
+          const lower = h.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
+          return ["ean", "codigodebarras", "codbarras", "codigo", "cod", "sku", "id", "nome", "produto"].includes(lower);
+        }) || headers[0] || "";
+        setSelectedIdentifierCol(idCol);
+
+        // Auto detect price column (somente o campo preço)
+        const priceCol = headers.find(h => {
+          const lower = h.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
+          return [
+            "preco", "preço", "precofinal", "preçofinal", "precopor", "preçopor",
+            "valor", "valorfinal", "precovenda", "precodevenda", "precoloja", "novopreco", "precovarejo"
+          ].includes(lower);
+        }) || headers.find(h => h.toLowerCase().includes("pre") || h.toLowerCase().includes("val")) || headers[1] || "";
+        setSelectedPriceCol(priceCol);
+
+        toast.success(`Planilha "${file.name}" carregada com ${rawJson.length} itens!`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Erro ao ler o arquivo. Certifique-se de que é um formato válido (.xlsx, .xls ou .csv).");
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleConfirmImportMeusPrecos = () => {
+    const targetStore = targetPharmacyId || (selectedPharmacyId !== "global" ? selectedPharmacyId : (userStores[0]?.id || pharmacies[0]?.id));
+    if (!targetStore || targetStore === "global") {
+      toast.error("Selecione uma loja específica de destino para aplicar os preços.");
+      return;
+    }
+
+    if (!selectedIdentifierCol || !selectedPriceCol) {
+      toast.error("Selecione as colunas de identificador e de preço.");
+      return;
+    }
+
+    const itemsToImport: any[] = [];
+    let invalidCount = 0;
+
+    spreadsheetRows.forEach(row => {
+      const idRaw = String(row[selectedIdentifierCol] ?? "").trim();
+      const priceRaw = row[selectedPriceCol];
+
+      if (!idRaw || priceRaw === undefined || priceRaw === null || priceRaw === "") {
+        invalidCount++;
+        return;
+      }
+
+      let priceNum = 0;
+      if (typeof priceRaw === "number") {
+        priceNum = priceRaw;
+      } else {
+        const cleanStr = String(priceRaw)
+          .replace("R$", "")
+          .replace(/\s/g, "")
+          .replace(/\./g, "")
+          .replace(",", ".");
+        priceNum = parseFloat(cleanStr);
+      }
+
+      if (isNaN(priceNum) || priceNum <= 0) {
+        invalidCount++;
+        return;
+      }
+
+      const item: any = {
+        precoPor: priceNum,
+        ativo: true
+      };
+
+      if (/^\d{7,14}$/.test(idRaw)) {
+        item.ean = idRaw;
+      } else {
+        item.sku = idRaw;
+        item.id = idRaw;
+        item.nome = idRaw;
+      }
+
+      itemsToImport.push(item);
+    });
+
+    if (itemsToImport.length === 0) {
+      toast.error("Nenhum preço válido foi identificado na coluna selecionada.");
+      return;
+    }
+
+    const result = importStoreSpreadsheet(targetStore, itemsToImport);
+    const storeObj = pharmacies.find(p => p.id === targetStore);
+    const storeName = storeObj?.nome || targetStore;
+
+    toast.success(`🎉 ${result.updated} preços de produtos atualizados com sucesso para "${storeName}"!`);
+    setIsImportMeusPrecosOpen(false);
+    setSpreadsheetRows([]);
+    setSpreadsheetHeaders([]);
+    setImportFileName("");
+  };
 
   const filtered = useMemo(() => {
     let result = customProducts;
@@ -277,15 +412,32 @@ function AdminProdutosPrecos() {
     <div className="space-y-6 max-w-6xl pb-12">
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-800">Preços por Loja</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-800">
+            {isGlobalAdmin() ? "Preços por Loja" : "Meus Preços"}
+          </h2>
           <p className="text-muted-foreground mt-1 text-sm">
-            Configure preços diferentes para cada unidade física. Se não configurado, o produto herda o preço global.
+            {isGlobalAdmin() 
+              ? "Configure preços diferentes para cada unidade física ou importe planilhas de preços."
+              : "Defina seus preços exclusivos para a sua loja ou importe sua planilha de preços."}
           </p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={() => {
+              setTargetPharmacyId(selectedPharmacyId !== "global" ? selectedPharmacyId : (userStores[0]?.id || ""));
+              setIsImportMeusPrecosOpen(true);
+              setSpreadsheetRows([]);
+              setSpreadsheetHeaders([]);
+              setImportFileName("");
+            }}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-4 rounded-lg shadow-sm flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" /> Importar meus preços
+          </Button>
+
           {isGlobalAdmin() && (
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800">
-              <Upload className="mr-2 h-4 w-4" /> Importar Planilha Encarte
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 h-10">
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> Planilha Encarte
             </Button>
           )}
           <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={(e) => {
@@ -738,6 +890,238 @@ function AdminProdutosPrecos() {
                 </div>
               </>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- MODAL: IMPORTAR MEUS PREÇOS (EXCEL / CSV) ---- */}
+      <Dialog open={isImportMeusPrecosOpen} onOpenChange={setIsImportMeusPrecosOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-800 flex items-center gap-2">
+              <Upload className="h-5 w-5 text-emerald-600" />
+              Importar Meus Preços
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Anexe sua planilha em formato <strong>Excel (.xlsx, .xls)</strong> ou <strong>CSV (.csv)</strong>. Apenas o campo de preço da planilha será importado para os produtos da sua loja.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto pr-1 py-4 space-y-4">
+            {/* Seleção da Loja de Destino */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block">Loja de Destino</label>
+                <p className="text-[11px] text-slate-500">Os preços da planilha serão aplicados a esta unidade</p>
+              </div>
+              <Select 
+                value={targetPharmacyId || (selectedPharmacyId !== "global" ? selectedPharmacyId : (userStores[0]?.id || ""))} 
+                onValueChange={setTargetPharmacyId}
+              >
+                <SelectTrigger className="w-full sm:w-64 h-9 bg-white text-xs font-semibold">
+                  <Store className="h-3.5 w-3.5 text-emerald-600 mr-1.5 shrink-0" />
+                  <SelectValue placeholder="Selecione a loja..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {userStores.map(p => (
+                    <SelectItem key={p.id} value={p.id} className="text-xs">
+                      {p.nome} ({p.cidade}/{p.uf})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Input Oculto de Arquivo */}
+            <input 
+              type="file" 
+              ref={meusPrecosFileInputRef} 
+              className="hidden" 
+              accept=".xlsx, .xls, .csv" 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleMeusPrecosFileUpload(file);
+                if (meusPrecosFileInputRef.current) meusPrecosFileInputRef.current.value = "";
+              }} 
+            />
+
+            {/* Zona de Upload / Drag and Drop */}
+            {!importFileName ? (
+              <div 
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleMeusPrecosFileUpload(file);
+                }}
+                onClick={() => meusPrecosFileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
+                  isDragging 
+                    ? "border-emerald-500 bg-emerald-50/50" 
+                    : "border-slate-300 hover:border-emerald-400 bg-slate-50/50 hover:bg-slate-50"
+                }`}
+              >
+                <div className="p-4 rounded-full bg-emerald-100 text-emerald-700">
+                  <FileSpreadsheet className="h-8 w-8" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">
+                    Clique para selecionar ou arraste sua planilha aqui
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Formatos aceitos: <strong>.XLSX, .XLS ou .CSV</strong>
+                  </p>
+                </div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100/70 px-3 py-1 rounded-full mt-1">
+                  <Check className="h-3.5 w-3.5" />
+                  Importação exclusiva da coluna de Preço
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Cartão do Arquivo Carregado */}
+                <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                      <FileSpreadsheet className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate" title={importFileName}>
+                        {importFileName}
+                      </p>
+                      <p className="text-xs text-emerald-700 font-medium">
+                        {spreadsheetRows.length} linhas identificadas na planilha
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => meusPrecosFileInputRef.current?.click()}
+                    className="text-xs border-emerald-300 text-emerald-800 hover:bg-emerald-100 shrink-0"
+                  >
+                    Trocar Arquivo
+                  </Button>
+                </div>
+
+                {/* Mapeamento de Colunas */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Mapeamento das Colunas da Planilha
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                        <span>Identificador do Produto</span>
+                        <span className="text-slate-400 font-normal">(EAN, Código ou Nome)</span>
+                      </label>
+                      <Select value={selectedIdentifierCol} onValueChange={setSelectedIdentifierCol}>
+                        <SelectTrigger className="h-9 bg-white text-xs">
+                          <SelectValue placeholder="Selecione a coluna..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {spreadsheetHeaders.map(header => (
+                            <SelectItem key={header} value={header} className="text-xs">
+                              {header}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                        <span>Coluna de Preço</span>
+                        <span className="text-emerald-600 font-bold">(Somente Preço)</span>
+                      </label>
+                      <Select value={selectedPriceCol} onValueChange={setSelectedPriceCol}>
+                        <SelectTrigger className="h-9 bg-white text-xs border-emerald-300 focus:ring-emerald-500">
+                          <SelectValue placeholder="Selecione a coluna de preço..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {spreadsheetHeaders.map(header => (
+                            <SelectItem key={header} value={header} className="text-xs font-medium">
+                              {header}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Prévia dos Dados */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="bg-slate-100/80 px-3.5 py-2 border-b border-slate-200 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700">Prévia da Importação (Primeiras 5 linhas)</span>
+                    <Badge variant="outline" className="text-[10px] bg-white font-semibold">
+                      {spreadsheetRows.length} itens no total
+                    </Badge>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 border-b text-slate-500 font-medium">
+                        <tr>
+                          <th className="p-2.5 pl-3.5">#</th>
+                          <th className="p-2.5">Identificador ({selectedIdentifierCol || "—"})</th>
+                          <th className="p-2.5 text-right pr-3.5">Preço Importado ({selectedPriceCol || "—"})</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {spreadsheetRows.slice(0, 5).map((row, idx) => {
+                          const idVal = row[selectedIdentifierCol] ?? "—";
+                          const priceVal = row[selectedPriceCol];
+                          let formattedPrice = "—";
+                          if (priceVal !== undefined && priceVal !== null && priceVal !== "") {
+                            if (typeof priceVal === "number") {
+                              formattedPrice = priceVal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+                            } else {
+                              const cleanStr = String(priceVal).replace("R$", "").trim().replace(/\./g, "").replace(",", ".");
+                              const n = parseFloat(cleanStr);
+                              formattedPrice = !isNaN(n) ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : String(priceVal);
+                            }
+                          }
+
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50/60">
+                              <td className="p-2.5 pl-3.5 font-mono text-slate-400">{idx + 1}</td>
+                              <td className="p-2.5 font-medium text-slate-800">{String(idVal)}</td>
+                              <td className="p-2.5 pr-3.5 text-right font-bold text-emerald-700">{formattedPrice}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-2 pt-3 border-t border-slate-100">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsImportMeusPrecosOpen(false);
+                setSpreadsheetRows([]);
+                setSpreadsheetHeaders([]);
+                setImportFileName("");
+              }}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleConfirmImportMeusPrecos} 
+              disabled={!importFileName || spreadsheetRows.length === 0 || !selectedPriceCol || !selectedIdentifierCol}
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+            >
+              <Check className="h-4 w-4 mr-1.5" />
+              Confirmar e Importar Preços
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -233,15 +233,17 @@ export const useAdminProducts = create<ProductsState>()(
         let updatedCount = 0;
         let notFoundCount = 0;
 
-        // Build fast lookup maps by EAN, SKU, and ID
+        // Build fast lookup maps by EAN, SKU, ID, and Name
         const eanMap = new Map<string, Produto>();
         const skuMap = new Map<string, Produto>();
         const idMap = new Map<string, Produto>();
+        const nameMap = new Map<string, Produto>();
 
         state.customProducts.forEach(p => {
           if (p.ean) eanMap.set(p.ean.trim(), p);
           if (p.sku) skuMap.set(p.sku.trim(), p);
           if (p.id) idMap.set(p.id.trim(), p);
+          if (p.nome) nameMap.set(p.nome.trim().toLowerCase(), p);
         });
 
         const updatesToApply = new Map<string, { precoDe?: number; precoPor: number; estoque?: number; ativo?: boolean }>();
@@ -251,10 +253,12 @@ export const useAdminProducts = create<ProductsState>()(
           const cleanEan = item.ean ? String(item.ean).trim() : "";
           const cleanSku = item.sku ? String(item.sku).trim() : "";
           const cleanId = item.id ? String(item.id).trim() : "";
+          const cleanNome = (item as any).nome ? String((item as any).nome).trim().toLowerCase() : "";
 
           if (cleanEan && eanMap.has(cleanEan)) matched = eanMap.get(cleanEan);
           else if (cleanSku && skuMap.has(cleanSku)) matched = skuMap.get(cleanSku);
           else if (cleanId && idMap.has(cleanId)) matched = idMap.get(cleanId);
+          else if (cleanNome && nameMap.has(cleanNome)) matched = nameMap.get(cleanNome);
 
           if (matched) {
             updatesToApply.set(matched.id, {
