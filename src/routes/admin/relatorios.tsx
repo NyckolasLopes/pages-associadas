@@ -89,22 +89,6 @@ function Relatorios() {
           icon: <Package className="h-5 w-5 text-emerald-600" />,
           bgColor: "bg-emerald-100",
           permission: "rel_vendas_produto"
-        },
-        {
-          id: "vendas-canais",
-          titulo: "Vendas por canal",
-          descricao: "Desempenho por Vendas Orgânicas e Vendas Campanhas.",
-          icon: <BarChartIcon className="h-5 w-5 text-indigo-600" />,
-          bgColor: "bg-indigo-100",
-          permission: "rel_vendas_canal"
-        },
-        {
-          id: "campanhas-internas",
-          titulo: "Campanhas internas por loja",
-          descricao: "Produtos vendidos nas campanhas exclusivas de cada unidade.",
-          icon: <Activity className="h-5 w-5 text-pink-600" />,
-          bgColor: "bg-pink-100",
-          permission: "rel_campanhas_internas"
         }
       ]
     },
@@ -118,14 +102,6 @@ function Relatorios() {
           icon: <Store className="h-5 w-5 text-orange-600" />,
           bgColor: "bg-orange-100",
           permission: "rel_desempenho"
-        },
-        {
-          id: "repasses-financeiros",
-          titulo: repasseTitulo,
-          descricao: "Valores devidos e liquidados para cada loja parceira.",
-          icon: <Wallet className="h-5 w-5 text-emerald-600" />,
-          bgColor: "bg-emerald-100",
-          permission: "rel_financeiro"
         }
       ]
     },
@@ -139,35 +115,6 @@ function Relatorios() {
           icon: <ShoppingCart className="h-5 w-5 text-purple-600" />,
           bgColor: "bg-purple-100",
           permission: "rel_logistica_retirada"
-        },
-        {
-          id: "sla-entrega",
-          titulo: "SLA de Entrega e Atrasos",
-          descricao: "Métricas de tempo de separação e entrega por loja ou região.",
-          icon: <Clock className="h-5 w-5 text-teal-600" />,
-          bgColor: "bg-teal-100",
-          permission: "rel_logistica_sla"
-        }
-      ]
-    },
-    {
-      categoria: "Estoque e Produtos Críticos",
-      itens: [
-        {
-          id: "medicamentos-controlados",
-          titulo: medControladosTitulo,
-          descricao: medControladosDesc,
-          icon: <HeartPulse className="h-5 w-5 text-rose-600" />,
-          bgColor: "bg-rose-100",
-          permission: "rel_estoque_controlados"
-        },
-        {
-          id: "estoque-curva-abc",
-          titulo: "Curva ABC de Produtos",
-          descricao: "Ranking dos 100 produtos mais vendidos por região.",
-          icon: <Box className="h-5 w-5 text-amber-600" />,
-          bgColor: "bg-amber-100",
-          permission: "rel_estoque_abc"
         }
       ]
     }
@@ -175,21 +122,7 @@ function Relatorios() {
 
   const gruposRelatorios = gruposRelatoriosRaw.map(grupo => ({
     ...grupo,
-    itens: grupo.itens.filter(item => {
-      // Filtrar relatórios que não devem aparecer no painel geral
-      if (isGlobalAdmin && !activeStoreId) {
-        const excludedInGlobal = [
-          "vendas-canais", 
-          "campanhas-internas", 
-          "repasses-financeiros", 
-          "sla-entrega", 
-          "medicamentos-controlados", 
-          "estoque-curva-abc"
-        ];
-        if (excludedInGlobal.includes(item.id)) return false;
-      }
-      return can(item.permission);
-    })
+    itens: grupo.itens.filter(item => can(item.permission))
   })).filter(grupo => grupo.itens.length > 0);
 
   const { orders: rawOrders } = useOrders();
