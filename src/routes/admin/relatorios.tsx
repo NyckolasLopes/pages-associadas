@@ -62,6 +62,7 @@ function Relatorios() {
   const [abcRegion, setAbcRegion] = useState<string>("Todas");
 
   const { pharmacies, activeStoreId, currentUser, grupos } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
 
   const can = (permissionId: string) => {
     if (currentUser?.proprietario) return true;
@@ -174,7 +175,21 @@ function Relatorios() {
 
   const gruposRelatorios = gruposRelatoriosRaw.map(grupo => ({
     ...grupo,
-    itens: grupo.itens.filter(item => can(item.permission))
+    itens: grupo.itens.filter(item => {
+      // Filtrar relatórios que não devem aparecer no painel geral
+      if (isGlobalAdmin && !activeStoreId) {
+        const excludedInGlobal = [
+          "vendas-canais", 
+          "campanhas-internas", 
+          "repasses-financeiros", 
+          "sla-entrega", 
+          "medicamentos-controlados", 
+          "estoque-curva-abc"
+        ];
+        if (excludedInGlobal.includes(item.id)) return false;
+      }
+      return can(item.permission);
+    })
   })).filter(grupo => grupo.itens.length > 0);
 
   const { orders: rawOrders } = useOrders();
