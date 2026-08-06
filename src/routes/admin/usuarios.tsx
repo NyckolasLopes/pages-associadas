@@ -49,9 +49,7 @@ const PERMISSION_CATEGORIES = [
     category: "Vendas",
     permissions: [
       { id: "vendas_pedidos", label: "Pedidos" },
-      { id: "vendas_criar", label: "Criar Pedido" },
       { id: "vendas_carrinhos", label: "Carrinhos Abandonados" },
-      { id: "vendas_links", label: "Links de Carrinho" },
     ]
   },
   {
@@ -73,20 +71,7 @@ const PERMISSION_CATEGORIES = [
     category: "Clientes",
     permissions: [
       { id: "cli_todos", label: "Ver todos" },
-      { id: "cli_leads", label: "Leads da Newsletter" },
     ]
-  },
-  {
-    category: "Canais de Venda",
-    permissions: [
-      { id: "canais_google", label: "Google Shopping" },
-      { id: "canais_ifood", label: "iFood" },
-      { id: "canais_farmaciasapp", label: "FarmaciasAPP" },
-    ]
-  },
-  {
-    category: "PBMs",
-    permissions: [{ id: "pbms_view", label: "PBMs" }]
   },
   {
     category: "Personalize sua loja",
@@ -99,18 +84,9 @@ const PERMISSION_CATEGORIES = [
     ]
   },
   {
-    category: "Conexões e Integrações",
-    permissions: [
-      { id: "int_api", label: "API" },
-      { id: "int_cofre", label: "Cofre API" },
-    ]
-  },
-  {
     category: "Marketing",
     permissions: [
       { id: "mkt_cupons", label: "Cupons" },
-      { id: "mkt_orderbumps", label: "Order bumps" },
-      { id: "mkt_comprejunto", label: "Compre junto" },
     ]
   },
   {
@@ -121,10 +97,6 @@ const PERMISSION_CATEGORIES = [
       { id: "rel_logistica_retirada", label: "Retirada vs entrega da unidade" },
       { id: "rel_aovivo", label: "Ao vivo" },
     ]
-  },
-  {
-    category: "Soluções",
-    permissions: [{ id: "sol_apps", label: "Aplicativos" }]
   },
   {
     category: "Configurações",

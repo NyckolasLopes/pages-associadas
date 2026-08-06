@@ -400,24 +400,6 @@ function AdminLayout() {
             </NavSection>
           )}
 
-          {/* ---- CANAIS DE VENDAS ---- */}
-          {(can('canais_google') || can('canais_ifood') || can('canais_farmaciasapp')) && (
-            <NavSection icon={<Globe className="h-4 w-4" />} label="Canais de vendas" open={openNavSection === "Canais de vendas"} onToggle={() => setOpenNavSection(openNavSection === "Canais de vendas" ? "" : "Canais de vendas")}>
-              {/* @ts-ignore */}
-              {can('canais_google') && <Link to="/admin/canais/google-shopping" className={subLinkClass}>Google Shopping</Link>}
-              {/* @ts-ignore */}
-              {can('canais_ifood') && <Link to="/admin/canais/ifood" className={subLinkClass}>iFood</Link>}
-              {/* @ts-ignore */}
-              {can('canais_farmaciasapp') && <Link to="/admin/canais/farmaciasapp" className={subLinkClass}>FarmaciasAPP</Link>}
-            </NavSection>
-          )}
-
-          {/* ---- PBMs ---- */}
-          {can('pbms_view') && (
-            <a href="/admin/pbms" className="flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
-              <HeartPulse className="w-5 h-5" /> PBMs
-            </a>
-          )}
 
           {/* ---- PERSONALIZE SUA LOJA ---- */}
           {(can('pers_logo') || can('pers_cores') || can('pers_banners') || can('pers_redes') || can('pers_paginas') || can('pers_scripts')) && (
@@ -431,33 +413,16 @@ function AdminLayout() {
             </NavSection>
           )}
 
-          {/* ---- CONEXÕES E INTEGRAÇÕES ---- */}
-          {(can('int_api') || can('int_cofre')) && (
-            <NavSection icon={<Cable className="h-4 w-4" />} label="Conexões e Integrações" open={openNavSection === "Conexoes"} onToggle={() => setOpenNavSection(openNavSection === "Conexoes" ? "" : "Conexoes")}>
-              {/* @ts-ignore */}
-              {can('int_api') && <Link to="/admin/integracoes/api" className={subLinkClass}>API</Link>}
-              {/* @ts-ignore */}
-              {can('int_cofre') && <Link to="/admin/integracoes/cofre" className={subLinkClass}>Cofre de APIs</Link>}
-            </NavSection>
-          )}
+
 
           {/* ---- MARKETING ---- */}
-          {(can('mkt_cupons') || can('mkt_orderbumps') || can('mkt_comprejunto')) && (
+          {can('mkt_cupons') && (
             <NavSection icon={<Megaphone className="h-4 w-4" />} label="Marketing" open={openNavSection === "Marketing"} onToggle={() => setOpenNavSection(openNavSection === "Marketing" ? "" : "Marketing")}>
               {can('mkt_cupons') && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>Meus cupons</Link>}
-              {can('mkt_orderbumps') && <Link to="/admin/marketing/order-bumps" className={subLinkClass} activeOptions={{ exact: true }}>Order bumps</Link>}
-              {can('mkt_comprejunto') && <Link to="/admin/marketing/compre-junto" className={subLinkClass} activeOptions={{ exact: true }}>Compre junto</Link>}
               {can('mkt_cupons') && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
             </NavSection>
           )}
 
-          {/* ---- SOLUÇÕES ---- */}
-          {can('sol_apps') && (
-            <NavSection icon={<Layers className="h-4 w-4" />} label="Soluções" open={openNavSection === "Solucoes"} onToggle={() => setOpenNavSection(openNavSection === "Solucoes" ? "" : "Solucoes")}>
-              {/* @ts-ignore */}
-              <Link to="/admin/solucoes/aplicativos" className={subLinkClass} activeOptions={{ exact: true }}>Aplicativos</Link>
-            </NavSection>
-          )}
 
           {/* ---- CONFIGURAÇÕES ---- */}
           {(can('conf_dados') || can('conf_dominios') || can('conf_pagamentos') || can('conf_usuarios')) && (
