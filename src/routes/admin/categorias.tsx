@@ -197,7 +197,7 @@ function AdminCategorias() {
             <p className="leading-relaxed opacity-90">
               {isStoreCustom 
                 ? "As alterações, criações, edições e exclusões feitas nesta tela são exclusivas para a sua loja e NÃO refletem no cadastro geral da rede."
-                : "Clique em 'Ter Categorização da Rede' para criar uma cópia independente das categorias da rede e poder editá-las livremente sem alterar o painel central."}
+                : "Clique em 'Ter Categorização da Rede' para criar uma cópia independente das categorias da rede e poder editá-las livremente."}
             </p>
           </div>
         </div>
