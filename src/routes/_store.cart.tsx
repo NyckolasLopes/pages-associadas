@@ -454,6 +454,30 @@ function CartPage() {
             cep: deliveryCep || cep,
           } : undefined,
         },
+        envio: {
+          metodo: deliveryMethod === "entrega" ? "entrega" : "retirada",
+          prazo: deliveryMethod === "entrega" ? (selectedFreight?.eta || "Em até 3 horas") : "A partir de 30 minutos",
+          endereco: deliveryMethod === "entrega" ? cleanAddress : selectedPharmacy.endereco,
+          numero: deliveryMethod === "entrega" ? cleanNumber : "",
+          bairro: deliveryMethod === "entrega" ? cleanBairro : selectedPharmacy.bairro,
+          cidade: deliveryCity || selectedPharmacy.cidade,
+          cep: deliveryCep || cep,
+        },
+        produtos: items.map((item) => {
+          const ep = getEffectivePrice(item, selectedPharmacy.id);
+          return {
+            id: item.id,
+            nome: item.nome,
+            preco: ep.precoPor,
+            precoRegular: ep.precoDe || ep.precoPor,
+            valorUnitario: ep.precoPor,
+            quantidade: item.qty,
+            qtd: item.qty,
+            ean: item.ean,
+            foto: item.possuiImagem ? productImage(item.id) : undefined,
+            imagem: item.possuiImagem ? productImage(item.id) : undefined,
+          };
+        }),
         itens: items.map((item) => {
           const ep = getEffectivePrice(item, selectedPharmacy.id);
           return {
@@ -461,13 +485,18 @@ function CartPage() {
             nome: item.nome,
             preco: ep.precoPor,
             precoRegular: ep.precoDe || ep.precoPor,
+            valorUnitario: ep.precoPor,
             quantidade: item.qty,
+            qtd: item.qty,
             ean: item.ean,
+            foto: item.possuiImagem ? productImage(item.id) : undefined,
             imagem: item.possuiImagem ? productImage(item.id) : undefined,
           };
         }),
         valores: {
           subtotal,
+          produtos: subtotal,
+          desconto: storeDiscount + pbmDisc + couponDisc,
           descontos: storeDiscount + pbmDisc + couponDisc,
           frete: deliveryMethod === "entrega" ? freightPrice : 0,
           total: grandTotal,
@@ -481,6 +510,13 @@ function CartPage() {
         origem: "whatsapp",
         cupomAplicado: appliedCoupon || undefined,
         observacoes: cleanNotes || undefined,
+        historico: [
+          {
+            data: nowIso,
+            situacao: "Pedido Realizado via WhatsApp",
+            autor: "Cliente",
+          }
+        ],
       };
 
       // Adiciona pedido

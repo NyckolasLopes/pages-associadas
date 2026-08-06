@@ -2,30 +2,28 @@ import { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useLive } from "@/stores/live";
-import { useAdminProducts } from "@/stores/products";
 import { useOrders } from "@/stores/orders";
 import { useCart } from "@/stores/cart";
 import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
-  Users,
   DollarSign,
   ShoppingBag,
   ShoppingCart,
-  Clock,
-  AlertTriangle,
-  XCircle,
-  PackageX,
-  PackageMinus,
   Info,
-  User,
   Eye,
-  Package,
   Store,
   TrendingUp,
   TrendingDown,
-  Bell
+  Bell,
+  MessageCircle,
+  Clock,
+  CheckCircle2,
+  PackageCheck,
+  Truck,
+  ExternalLink
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
@@ -33,22 +31,19 @@ export const Route = createFileRoute("/admin/")({
 });
 
 function AdminDashboard() {
-  const { currentUser, users, pharmacies, activeStoreId } = useAdmin();
+  const { currentUser, pharmacies, activeStoreId } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const { visitors, totalAcessos } = useLive();
-  const { customProducts } = useAdminProducts();
   const { orders: rawOrders } = useOrders();
+  
   const orders = useMemo(() => {
     if (!activeStoreId) return rawOrders;
     return rawOrders.filter(o => o.lojaId === activeStoreId);
   }, [rawOrders, activeStoreId]);
   
   const { items: cartItems } = useCart();
-  const firstName = currentUser?.name?.split(" ")[0] || "Admin";
 
   const pad = (n: number) => n.toString().padStart(2, '0');
-  const formatBr = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-  const getMesAnoStr = (d: Date) => `${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 
   const [filtroPeriodo, setFiltroPeriodo] = useState("mes");
   const [dataCustom, setDataCustom] = useState(() => {
@@ -117,14 +112,22 @@ function AdminDashboard() {
   };
 
   const parseOrderDate = (dStr: string) => {
+    if (!dStr) return new Date();
+    if (dStr.includes("T") || dStr.includes("-")) {
+      const parsed = new Date(dStr);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
     const [datePart] = dStr.split(' ');
-    const [day, month, year] = datePart.split('/');
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (datePart && datePart.includes('/')) {
+      const [day, month, year] = datePart.split('/');
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    return new Date();
   };
 
   const isValidSale = (status: string) => {
-    const s = status.toUpperCase();
-    return s !== "AGUARDANDO PAGAMENTO" && s !== "CANCELADO";
+    const s = (status || "").toUpperCase();
+    return s !== "CANCELADO";
   };
 
   const pedidosAtual = orders.filter(o => {
@@ -137,11 +140,11 @@ function AdminDashboard() {
     return d >= periodos.startAnterior && d <= periodos.endAnterior && isValidSale(o.status);
   });
 
-  const valorAtual = pedidosAtual.reduce((acc, o) => acc + o.valores.total, 0);
+  const valorAtual = pedidosAtual.reduce((acc, o) => acc + (o.valores?.total || 0), 0);
   const qtdAtual = pedidosAtual.length;
   const ticketAtual = qtdAtual > 0 ? valorAtual / qtdAtual : 0;
 
-  const valorAnterior = pedidosAnterior.reduce((acc, o) => acc + o.valores.total, 0);
+  const valorAnterior = pedidosAnterior.reduce((acc, o) => acc + (o.valores?.total || 0), 0);
   const qtdAnterior = pedidosAnterior.length;
   const ticketAnterior = qtdAnterior > 0 ? valorAnterior / qtdAnterior : 0;
 
@@ -149,28 +152,47 @@ function AdminDashboard() {
   const crescPedidos = calcCrescimento(qtdAtual, qtdAnterior);
   const crescTicket = calcCrescimento(ticketAtual, ticketAnterior);
   
-  // Novas regras de negócio
-  const produtosSemEstoque = customProducts.filter(p => p.estoque === 0).length;
-  const produtosEstoqueBaixo = customProducts.filter(p => p.estoque > 0 && p.estoque <= 5).length;
-  const produtosAtivos = customProducts.filter(p => p.ativo !== false).length;
-  const pagamentosPendentes = orders.filter(o => o.status.toLowerCase().includes("aguardando")).length;
   const storeCarts = useAbandonedCartsStore(s => s.carts);
   const carrinhosRecuperar = storeCarts.length + (cartItems.length > 0 ? 1 : 0);
+
+  const formatDataHora = (dataStr: string) => {
+    if (!dataStr) return "";
+    try {
+      const date = new Date(dataStr);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+    } catch {
+      // fallback
+    }
+    return dataStr;
+  };
 
   return (
     <div className="space-y-8 max-w-5xl pb-10">
       {/* ---- Greeting ---- */}
-      <div>
-        <h2 className="text-[26px] font-semibold text-slate-800">
-          Olá, {currentUser?.name || "Nyckolas Lopes"}!
-        </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 className="text-2xl sm:text-[26px] font-bold text-slate-800 tracking-tight">
+            Olá, {currentUser?.name || "Administrador"}! 👋
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Painel Geral da Rede de Farmácias Associadas
+          </p>
+        </div>
       </div>
 
       {/* ---- Faturamento ---- */}
       <div className="bg-gradient-to-br from-emerald-50 via-white to-teal-50/30 rounded-xl border border-emerald-100 shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/50 rounded-full blur-3xl -mr-20 -mt-20"></div>
         <div className="relative z-10">
-          <h3 className="text-sm font-bold text-emerald-800/70 mb-2 uppercase tracking-wider">Faturamento ({periodos.label})</h3>
+          <h3 className="text-sm font-bold text-emerald-800/70 mb-2 uppercase tracking-wider">Faturamento Total ({periodos.label})</h3>
           <div className="flex items-center gap-4">
             <div className="bg-emerald-500 text-white p-3 rounded-xl shadow-md shadow-emerald-200">
               <DollarSign className="h-8 w-8" />
@@ -216,6 +238,7 @@ function AdminDashboard() {
         </div>
       </div>
 
+      {/* ---- Linha 1 de KPIs ---- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link to="/admin/ao-vivo" className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-full hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between gap-2">
@@ -278,58 +301,26 @@ function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4 text-emerald-500" />
-            <span className="text-xl font-bold text-slate-800">{carrinhosRecuperar}</span>
-          </div>
-          <div className="text-xs text-slate-500 font-medium leading-tight">
-            Carrinhos a recuperar
-          </div>
-        </Link>
-
-        <Link to="/admin/pedidos" search={{ status: 'aguardando' }} className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-amber-500" />
-            <span className="text-xl font-bold text-slate-800">{pagamentosPendentes}</span>
-          </div>
-          <div className="text-xs text-slate-500 font-medium leading-tight">
-            Pagamentos pendentes
-          </div>
-        </Link>
-
-        <Link to="/admin/produtos" search={{ estoque: 'zerado' }} className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-2">
-            <XCircle className="h-4 w-4 text-red-500" />
-            <span className="text-xl font-bold text-slate-800">{produtosSemEstoque}</span>
-          </div>
-          <div className="text-xs text-slate-500 font-medium leading-tight">
-            Produtos sem estoque
-          </div>
-        </Link>
-
-        <Link to="/admin/produtos" search={{ estoque: 'baixo' }} className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-2">
-            <PackageMinus className="h-4 w-4 text-orange-500" />
-            <span className="text-xl font-bold text-slate-800">{produtosEstoqueBaixo}</span>
-          </div>
-          <div className="text-xs text-slate-500 font-medium leading-tight">
-            Com estoque baixo
-          </div>
-        </Link>
-      </div>
-
-      {/* ---- Third Row KPIs (Global Only) ---- */}
+      {/* ---- Linha 2 de KPIs Globais ---- */}
       {isGlobalAdmin && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Link to="/admin/configuracoes" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-slate-400" />
-              <span className="text-xl font-bold text-slate-800">{users?.length || 1}</span>
+              <ShoppingCart className="h-4 w-4 text-emerald-500" />
+              <span className="text-xl font-bold text-slate-800">{carrinhosRecuperar}</span>
+            </div>
+            <div className="text-xs text-slate-500 font-medium leading-tight">
+              Carrinhos a recuperar
+            </div>
+          </Link>
+
+          <Link to="/admin/lojas" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2">
+              <Store className="h-4 w-4 text-slate-400" />
+              <span className="text-xl font-bold text-slate-800">{pharmacies?.length || 0}</span>
             </div>
             <div className="text-xs text-muted-foreground font-medium leading-tight">
-              Total de usuários cadastrados
+              Lojas associadas na rede
             </div>
           </Link>
 
@@ -342,75 +333,136 @@ function AdminDashboard() {
               Número de visitas no mês
             </div>
           </div>
-
-          <Link to="/admin/produtos" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-slate-400" />
-              <span className="text-xl font-bold text-slate-800">{produtosAtivos}</span>
-            </div>
-            <div className="text-xs text-muted-foreground font-medium leading-tight">
-              Produtos ativos
-            </div>
-          </Link>
-
-          <Link to="/admin/lojas" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-2">
-              <Store className="h-4 w-4 text-slate-400" />
-              <span className="text-xl font-bold text-slate-800">{pharmacies?.length || 0}</span>
-            </div>
-            <div className="text-xs text-muted-foreground font-medium leading-tight">
-              Lojas cadastradas
-            </div>
-          </Link>
         </div>
       )}
 
-      {/* ---- Notificações de Vendas ---- */}
+      {/* ---- Notificações de Pedidos ---- */}
       <div className="mt-8">
-        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <Bell className="h-5 w-5 text-emerald-500" />
-          Notificações de Vendas
-        </h3>
-        <div className="bg-white rounded-xl border shadow-sm p-4 flex flex-col gap-3">
-          {orders.slice(0, 5).map((order) => (
-            <div key={order.id} className="flex flex-col sm:flex-row sm:items-start justify-between p-4 rounded-lg bg-slate-50 border border-slate-100 gap-4">
-              <div className="flex items-start gap-3">
-                <div className="bg-emerald-100 p-2 rounded-full text-emerald-600 shrink-0">
-                  <Store className="h-5 w-5" />
-                </div>
-                <div>
-                  {(() => {
-                    const statusLower = order.status.toLowerCase();
-                    let colorClass = "bg-slate-100 text-slate-700";
-                    if (statusLower.includes("aguardando")) {
-                      colorClass = "bg-amber-100 text-amber-800";
-                    } else if (statusLower.includes("pago") || statusLower.includes("separação") || statusLower.includes("separando") || statusLower.includes("pronto")) {
-                      colorClass = "bg-emerald-100 text-emerald-800";
-                    } else if (statusLower.includes("cancelado")) {
-                      colorClass = "bg-red-100 text-red-800";
-                    }
-                    
-                    const lojaNome = pharmacies.find(p => p.id === order.lojaId)?.nome || order.lojaId || "Desconhecida";
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Bell className="h-5 w-5 text-emerald-500" />
+              Notificações de Pedidos
+              {orders.length > 0 && (
+                <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-xs font-bold px-2 py-0.5 border-emerald-200">
+                  {orders.length} pedido(s)
+                </Badge>
+              )}
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Acompanhe em tempo real os pedidos finalizados via WhatsApp e e-commerce pelas lojas da rede.
+            </p>
+          </div>
+          <Link 
+            to="/admin/pedidos" 
+            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1"
+          >
+            Ver todos <ExternalLink className="h-3 w-3" />
+          </Link>
+        </div>
 
-                    return (
-                      <p className="text-sm text-slate-700 font-medium leading-relaxed flex flex-wrap items-center gap-1.5">
-                        A loja <span className="font-bold">{lojaNome}</span> tem um novo pedido <span className={`font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider ${colorClass}`}>{order.status}</span>
-                      </p>
-                    );
-                  })()}
-                  <p className="text-xs text-slate-400 mt-1">{order.data}</p>
+        <div className="bg-white rounded-xl border shadow-sm p-4 flex flex-col gap-3">
+          {orders.slice(0, 8).map((order) => {
+            const statusLower = (order.status || "").toLowerCase();
+            let statusBadge = "bg-slate-100 text-slate-700 border-slate-200";
+            let StatusIcon = Clock;
+
+            if (statusLower.includes("pendente") || statusLower.includes("aguardando")) {
+              statusBadge = "bg-amber-50 text-amber-800 border-amber-200";
+              StatusIcon = Clock;
+            } else if (statusLower.includes("separação") || statusLower.includes("separando")) {
+              statusBadge = "bg-blue-50 text-blue-800 border-blue-200";
+              StatusIcon = PackageCheck;
+            } else if (statusLower.includes("pronto") || statusLower.includes("enviado") || statusLower.includes("rota")) {
+              statusBadge = "bg-purple-50 text-purple-800 border-purple-200";
+              StatusIcon = Truck;
+            } else if (statusLower.includes("entregue") || statusLower.includes("pago") || statusLower.includes("finalizado")) {
+              statusBadge = "bg-emerald-50 text-emerald-800 border-emerald-200";
+              StatusIcon = CheckCircle2;
+            }
+
+            const lojaObj = pharmacies.find(p => p.id === order.lojaId);
+            const lojaNome = lojaObj?.nome || order.lojaNome || order.lojaId || "Farmácia Associada";
+            const lojaCidade = lojaObj?.cidade ? `${lojaObj.cidade}/${lojaObj.uf}` : "";
+            
+            const isWhatsApp = order.origem === "whatsapp" || (!order.origem && order.cliente?.telefone);
+            const cleanClientPhone = order.cliente?.telefone ? order.cliente.telefone.replace(/\D/g, "") : "";
+            const clientWaUrl = cleanClientPhone ? `https://wa.me/55${cleanClientPhone}` : null;
+
+            const itensCount = order.produtos?.length || (order as any).itens?.length || 1;
+            const totalValor = order.valores?.total || 0;
+
+            return (
+              <div key={order.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl bg-slate-50/70 border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/20 transition-colors gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-emerald-100 p-2.5 rounded-xl text-emerald-700 shrink-0 mt-0.5">
+                    <Store className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-bold text-slate-900 text-sm">{lojaNome}</span>
+                      {lojaCidade && (
+                        <span className="text-[11px] text-slate-400 font-medium">({lojaCidade})</span>
+                      )}
+                      <span className="text-xs font-mono font-bold text-slate-500 bg-white px-2 py-0.5 rounded border">
+                        #{order.id}
+                      </span>
+                      {isWhatsApp && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                          <MessageCircle className="h-3 w-3 fill-emerald-600 text-white" />
+                          WhatsApp
+                        </span>
+                      )}
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${statusBadge}`}>
+                        <StatusIcon className="h-3 w-3" />
+                        {order.status}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span>👤 <strong>Cliente:</strong> {order.cliente?.nome || "Cliente"}</span>
+                      {order.cliente?.telefone && (
+                        <span>📞 {order.cliente.telefone}</span>
+                      )}
+                      <span>🛒 {itensCount} produto(s) • <strong className="text-emerald-700">{totalValor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></span>
+                    </p>
+
+                    <p className="text-[11px] text-slate-400 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatDataHora(order.data)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start md:self-center shrink-0">
+                  {clientWaUrl && (
+                    <a
+                      href={clientWaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-3 py-2 rounded-lg transition-colors flex items-center gap-1"
+                      title="Conversar com o cliente no WhatsApp"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      WhatsApp
+                    </a>
+                  )}
+                  <Link 
+                    to="/admin/pedidos" 
+                    className="text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border px-3 py-2 rounded-lg transition-colors"
+                  >
+                    Ver Pedido
+                  </Link>
                 </div>
               </div>
-              <Link 
-                to="/admin/pedidos" 
-                className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 hover:underline px-3 py-2 bg-emerald-50 rounded-md whitespace-nowrap self-start sm:self-auto border border-emerald-100 transition-colors"
-              >
-                Clique aqui para visualizar mais informações
-              </Link>
-            </div>
-          ))}
+            );
+          })}
+
           {orders.length === 0 && (
-            <div className="text-center py-6 text-sm text-slate-500">Nenhuma notificação recente.</div>
+            <div className="text-center py-8 text-sm text-slate-500 flex flex-col items-center gap-2">
+              <Bell className="h-8 w-8 text-slate-300" />
+              <span>Nenhum pedido registrado no momento.</span>
+            </div>
           )}
         </div>
       </div>

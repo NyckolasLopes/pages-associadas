@@ -1,14 +1,31 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface PedidoItem {
+  id?: string;
+  nome: string;
+  sku?: string;
+  ean?: string;
+  cores?: string;
+  disponibilidade?: string;
+  qtd?: number;
+  quantidade?: number;
+  valorUnitario?: number;
+  preco?: number;
+  precoRegular?: number;
+  foto?: string;
+  imagem?: string;
+}
+
 export interface Pedido {
   id: string;
   lojaId?: string;
   lojaNome?: string;
   data: string;
-  origem?: "whatsapp" | "site";
+  origem?: "whatsapp" | "site" | string;
   cupomAplicado?: string;
   observacoes?: string;
+  modalidade?: "Entrega" | "Retirada" | string;
   cliente: {
     nome: string;
     email?: string;
@@ -16,9 +33,18 @@ export interface Pedido {
     cpf?: string;
     ip?: string;
     tipo?: string;
+    endereco?: {
+      rua: string;
+      numero: string;
+      complemento?: string;
+      bairro: string;
+      cidade: string;
+      cep: string;
+    };
   };
   pagamento: {
     metodo: string;
+    trocoPara?: string;
     idTransacao?: string;
     cartaoFinal?: string;
     parcelas?: number;
@@ -28,40 +54,33 @@ export interface Pedido {
     medium?: string;
     campaign?: string;
   };
-  envio: {
+  envio?: {
     metodo: "entrega" | "retirada" | string;
     rastreio?: string;
-    prazo: string;
-    endereco: string;
+    prazo?: string;
+    endereco?: string;
     numero?: string;
     bairro?: string;
-    cidade: string;
-    cep: string;
+    cidade?: string;
+    cep?: string;
   };
   status: string;
-  produtos: Array<{
-    id?: string;
-    nome: string;
-    sku?: string;
-    ean?: string;
-    cores?: string;
-    disponibilidade?: string;
-    qtd: number;
-    valorUnitario: number;
-    foto?: string;
-  }>;
+  produtos?: PedidoItem[];
+  itens?: PedidoItem[];
   valores: {
-    produtos: number;
-    desconto: number;
+    produtos?: number;
+    subtotal?: number;
+    desconto?: number;
+    descontos?: number;
     frete: number;
     total: number;
   };
-  historico: Array<{
+  historico?: Array<{
     data: string;
     situacao: string;
     autor: string;
   }>;
-  anotacoes: string;
+  anotacoes?: string;
 }
 
 export function generateOrderNumber(): string {
