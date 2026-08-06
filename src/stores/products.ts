@@ -89,13 +89,18 @@ export interface StorePriceItem {
 
 interface ProductsState {
   customProducts: Produto[];
+  storeCustomProducts: Record<string, Produto[]>;
+  storeProductOverrides: Record<string, Record<string, Partial<Produto>>>;
+  storeRemovedProductIds: Record<string, string[]>;
   fornecedores: Fornecedor[];
   vitrines: Vitrine[];
-  addOrUpdateProduct: (p: Produto) => void;
-  removeProduct: (id: string) => void;
-  importProducts: (products: Produto[]) => void;
+  addOrUpdateProduct: (p: Produto, lojaId?: string | null) => void;
+  removeProduct: (id: string, lojaId?: string | null) => void;
+  getStoreEffectiveProducts: (lojaId?: string | null) => Produto[];
+  resetStoreProductsToGeneral: (lojaId: string) => void;
+  importProducts: (products: Produto[], lojaId?: string | null) => void;
   applyBadgeToProducts: (badgeId: string, productIds: string[]) => void;
-  clearProducts: () => void;
+  clearProducts: (lojaId?: string | null) => void;
   formatAllTitles: () => void;
   setFornecedores: (fornecedores: Fornecedor[]) => void;
   removeFornecedor: (id: number) => void;
@@ -104,7 +109,7 @@ interface ProductsState {
   removeVitrine: (id: number) => void;
   toggleVitrine: (id: number) => void;
   updateProductDescriptions: (updates: { ean: string; descricao: string }[]) => void;
-  bulkUpdateProducts: (productIds: string[], updates: Partial<Produto>) => void;
+  bulkUpdateProducts: (productIds: string[], updates: Partial<Produto>, lojaId?: string | null) => void;
   updateStoreProductPrice: (lojaId: string, productId: string, precoPor: number, precoDe?: number, estoque?: number, ativo?: boolean) => void;
   importStoreSpreadsheet: (lojaId: string, items: StorePriceItem[]) => { updated: number; notFound: number; total: number };
 }
@@ -113,19 +118,138 @@ export const useAdminProducts = create<ProductsState>()(
   persist(
     (set, get) => ({
       customProducts: ((productsJson as unknown) as Produto[]).map(p => ({ ...p, nome: toTitleCase(p.nome) })),
-      addOrUpdateProduct: (p) => set((s) => {
+      storeCustomProducts: {},
+      storeProductOverrides: {},
+      storeRemovedProductIds: {},
+      addOrUpdateProduct: (p, lojaId) => set((s) => {
         const formattedProduct = { ...p, nome: toTitleCase(p.nome) };
+        
+        // If editing/creating in the context of a specific store:
+        if (lojaId) {
+          const currentStoreProducts = s.storeCustomProducts[lojaId] || [];
+          const isStoreExclusive = p.lojaId === lojaId || p.isIndividualLoja || currentStoreProducts.some(x => x.id === p.id) || !s.customProducts.some(x => x.id === p.id);
+
+          if (isStoreExclusive) {
+            const storeProd = { ...formattedProduct, lojaId, isIndividualLoja: true, origem: "Loja Individual" };
+            const exists = currentStoreProducts.find(x => x.id === p.id);
+            const updatedList = exists 
+              ? currentStoreProducts.map(x => x.id === p.id ? storeProd : x)
+              : [storeProd, ...currentStoreProducts];
+            
+            return {
+              storeCustomProducts: {
+                ...s.storeCustomProducts,
+                [lojaId]: updatedList
+              }
+            };
+          } else {
+            // It is a network product being customized for this store only
+            const prevStoreOverrides = s.storeProductOverrides[lojaId] || {};
+            return {
+              storeProductOverrides: {
+                ...s.storeProductOverrides,
+                [lojaId]: {
+                  ...prevStoreOverrides,
+                  [p.id]: formattedProduct
+                }
+              }
+            };
+          }
+        }
+
+        // Master / General Admin base
         const exists = s.customProducts.find(x => x.id === p.id);
         if (exists) {
           return { customProducts: s.customProducts.map(x => x.id === p.id ? formattedProduct : x) };
         }
-        return { customProducts: [...s.customProducts, formattedProduct] };
+        return { customProducts: [formattedProduct, ...s.customProducts] };
       }),
-      removeProduct: (id) => set((s) => ({
-        customProducts: s.customProducts.filter(x => x.id !== id)
-      })),
-      importProducts: (products) => set((s) => {
-        // Merge without duplicates based on ID
+      removeProduct: (id, lojaId) => set((s) => {
+        if (lojaId) {
+          const currentStoreProducts = s.storeCustomProducts[lojaId] || [];
+          const isStoreExclusive = currentStoreProducts.some(x => x.id === id);
+
+          if (isStoreExclusive) {
+            return {
+              storeCustomProducts: {
+                ...s.storeCustomProducts,
+                [lojaId]: currentStoreProducts.filter(x => x.id !== id)
+              }
+            };
+          } else {
+            // Hide network product from this store only
+            const currentRemoved = s.storeRemovedProductIds[lojaId] || [];
+            if (!currentRemoved.includes(id)) {
+              return {
+                storeRemovedProductIds: {
+                  ...s.storeRemovedProductIds,
+                  [lojaId]: [...currentRemoved, id]
+                }
+              };
+            }
+            return {};
+          }
+        }
+
+        // Master / General Admin
+        return {
+          customProducts: s.customProducts.filter(x => x.id !== id)
+        };
+      }),
+      getStoreEffectiveProducts: (lojaId) => {
+        const state = get();
+        if (!lojaId) {
+          return state.customProducts || [];
+        }
+
+        const removedIds = new Set(state.storeRemovedProductIds?.[lojaId] || []);
+        const overrides = state.storeProductOverrides?.[lojaId] || {};
+        const storeCreated = state.storeCustomProducts?.[lojaId] || [];
+
+        const baseMerged = (state.customProducts || [])
+          .filter(p => !removedIds.has(p.id))
+          .map(p => {
+            const ov = overrides[p.id] || {};
+            const storePrice = p.precosPorLoja?.[lojaId];
+            const storeStock = p.estoquesPorLoja?.[lojaId];
+            return {
+              ...p,
+              ...ov,
+              precoPor: storePrice?.precoPor !== undefined ? storePrice.precoPor : (ov.precoPor !== undefined ? ov.precoPor : p.precoPor),
+              precoDe: storePrice?.precoDe !== undefined ? storePrice.precoDe : (ov.precoDe !== undefined ? ov.precoDe : p.precoDe),
+              estoque: storeStock !== undefined ? storeStock : (ov.estoque !== undefined ? ov.estoque : p.estoque),
+              ativo: storePrice?.ativo !== undefined ? storePrice.ativo : (ov.ativo !== undefined ? ov.ativo : (p.ativo ?? true)),
+            };
+          });
+
+        return [...storeCreated, ...baseMerged];
+      },
+      resetStoreProductsToGeneral: (lojaId) => set((s) => {
+        const newOverrides = { ...s.storeProductOverrides };
+        delete newOverrides[lojaId];
+        const newRemoved = { ...s.storeRemovedProductIds };
+        delete newRemoved[lojaId];
+        return {
+          storeProductOverrides: newOverrides,
+          storeRemovedProductIds: newRemoved
+        };
+      }),
+      importProducts: (products, lojaId) => set((s) => {
+        if (lojaId) {
+          const currentStoreProducts = s.storeCustomProducts[lojaId] || [];
+          const newMap = new Map(currentStoreProducts.map(x => [x.id, x]));
+          products.forEach(p => {
+            newMap.set(p.id, { ...p, nome: toTitleCase(p.nome), lojaId, isIndividualLoja: true, origem: "Loja Individual", isNovo: true, isRevisado: false });
+          });
+          return {
+            storeCustomProducts: {
+              ...s.storeCustomProducts,
+              [lojaId]: Array.from(newMap.values())
+            }
+          };
+        }
+
+        // Merge without duplicates based on ID for General Base
         const newMap = new Map(s.customProducts.map(x => [x.id, x]));
         products.forEach(p => {
           if (!newMap.has(p.id)) {
@@ -151,7 +275,23 @@ export const useAdminProducts = create<ProductsState>()(
         });
         return { customProducts: updated };
       }),
-      clearProducts: () => set({ customProducts: [] }),
+      clearProducts: (lojaId) => set((s) => {
+        if (lojaId) {
+          const newStoreCustom = { ...s.storeCustomProducts };
+          delete newStoreCustom[lojaId];
+          const newOverrides = { ...s.storeProductOverrides };
+          delete newOverrides[lojaId];
+          return {
+            storeCustomProducts: newStoreCustom,
+            storeProductOverrides: newOverrides,
+            storeRemovedProductIds: {
+              ...s.storeRemovedProductIds,
+              [lojaId]: s.customProducts.map(p => p.id)
+            }
+          };
+        }
+        return { customProducts: [] };
+      }),
       formatAllTitles: () => set((s) => ({
         customProducts: s.customProducts.map(p => ({ ...p, nome: toTitleCase(p.nome) }))
       })),
@@ -191,8 +331,32 @@ export const useAdminProducts = create<ProductsState>()(
           })
         };
       }),
-      bulkUpdateProducts: (productIds, updates) => set((s) => {
+      bulkUpdateProducts: (productIds, updates, lojaId) => set((s) => {
         const idSet = new Set(productIds);
+        if (lojaId) {
+          const storeCustom = s.storeCustomProducts[lojaId] || [];
+          const updatedCustom = storeCustom.map(p => idSet.has(p.id) ? { ...p, ...updates } : p);
+          
+          const prevOverrides = s.storeProductOverrides[lojaId] || {};
+          const newOverrides = { ...prevOverrides };
+          productIds.forEach(id => {
+            if (!storeCustom.some(x => x.id === id)) {
+              newOverrides[id] = { ...(newOverrides[id] || {}), ...updates };
+            }
+          });
+
+          return {
+            storeCustomProducts: {
+              ...s.storeCustomProducts,
+              [lojaId]: updatedCustom
+            },
+            storeProductOverrides: {
+              ...s.storeProductOverrides,
+              [lojaId]: newOverrides
+            }
+          };
+        }
+
         return {
           customProducts: s.customProducts.map(p => {
             if (idSet.has(p.id)) {

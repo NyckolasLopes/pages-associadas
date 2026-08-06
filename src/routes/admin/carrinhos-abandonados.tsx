@@ -40,8 +40,8 @@ function CarrinhosAbandonados() {
     liveCarts.push({
       id: "#807099", // ID fixo para o mock do carrinho atual
       createdAt: new Date(lastUpdatedAt || Date.now()).toLocaleDateString('pt-BR') + " " + new Date(lastUpdatedAt || Date.now()).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
-      client: user.name,
-      email: user.email,
+      client: user.name || "Cliente",
+      email: user.email || "",
       phone: (user as any).phone || "(51) 99999-9999",
       address: "Não informado",
       abandonedAt: "Há pouco tempo",

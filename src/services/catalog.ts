@@ -164,14 +164,16 @@ let cachedFuse: Fuse<Produto> | null = null;
 let lastCustomProductsRef: any = null;
 
 // Helper to get all merged products dynamically
-export const getAllProdutos = (): Produto[] => {
-  const customProducts = useAdminProducts.getState().customProducts || [];
+export const getAllProdutos = (lojaId?: string | null): Produto[] => {
+  const storeEffective = useAdminProducts.getState().getStoreEffectiveProducts(lojaId) || [];
   
-  if (cachedProdutos && lastCustomProductsRef === customProducts) {
+  if (!lojaId && cachedProdutos && lastCustomProductsRef === storeEffective) {
     return cachedProdutos;
   }
   
-  lastCustomProductsRef = customProducts;
+  if (!lojaId) {
+    lastCustomProductsRef = storeEffective;
+  }
   
   // Merge them (custom overrides base if IDs match)
   const map = new Map(baseProdutos.filter(Boolean).map(p => {
@@ -179,8 +181,8 @@ export const getAllProdutos = (): Produto[] => {
     return [newP?.id || "", enforceHealthServicesCategory(newP)];
   }));
   
-  // Do NOT enhance customProducts with variations, but DO enforce health services rules
-  customProducts.filter(Boolean).forEach(p => {
+  // Apply store effective products (general + store custom + store overrides)
+  storeEffective.filter(Boolean).forEach(p => {
     map.set(p.id, enforceHealthServicesCategory({ ...p }));
   });
   
@@ -195,10 +197,12 @@ export const getAllProdutos = (): Produto[] => {
     p._searchString = [n, ...tags, pa, fab].join(" ");
   });
   
-  cachedProdutos = merged;
-  cachedFuse = null; // Invalidate fuse when products change
+  if (!lojaId) {
+    cachedProdutos = merged;
+    cachedFuse = null; // Invalidate fuse when products change
+  }
   
-  return cachedProdutos;
+  return merged;
 };
 
 const wait = <T,>(v: T, ms = 0) => new Promise<T>((r) => setTimeout(() => r(v), ms));
@@ -300,21 +304,21 @@ export const catalog = {
     await ensureHydrated();
     const categorias = getCategorias();
     if (includeEmpty) return wait(categorias);
-    const usedIds = new Set(catalog.getUsedCategoriesIds());
+    const usedIds = new Set(await catalog.getUsedCategoriesIds());
     return wait(categorias.filter((c) => usedIds.has(c.id)));
   },
   async listMainCategories(includeEmpty = true): Promise<Categoria[]> {
     await ensureHydrated();
     const categorias = getCategorias();
     if (includeEmpty) return wait(categorias.filter((c) => !c.parentId));
-    const usedIds = new Set(catalog.getUsedCategoriesIds());
+    const usedIds = new Set(await catalog.getUsedCategoriesIds());
     return wait(categorias.filter((c) => !c.parentId && usedIds.has(c.id)));
   },
   async listSubcategories(parentId: string, includeEmpty = true): Promise<Categoria[]> {
     await ensureHydrated();
     const categorias = getCategorias();
     if (includeEmpty) return wait(categorias.filter((c) => c.parentId === parentId));
-    const usedIds = new Set(catalog.getUsedCategoriesIds());
+    const usedIds = new Set(await catalog.getUsedCategoriesIds());
     return wait(categorias.filter((c) => c.parentId === parentId && usedIds.has(c.id)));
   },
   async getCategoryBySlug(slug: string): Promise<Categoria | null> {
@@ -336,6 +340,18 @@ export const catalog = {
         x.url === slugOrId ||
         String(x.nome || "").toLowerCase().replace(/\s+/g, "-") === slugOrId,
     );
+    return p ? { ...p } : null;
+  },
+  getProductById: async (id: string) => {
+    await ensureHydrated();
+    const produtos = getAllProdutos();
+    const p = produtos.find((x) => x.id === id);
+    return p ? { ...p } : null;
+  },
+  getProduct: async (id: string) => {
+    await ensureHydrated();
+    const produtos = getAllProdutos();
+    const p = produtos.find((x) => x.id === id);
     return p ? { ...p } : null;
   },
   productsByCategory: async (categoryId: string, filters?: FilterOptions) => {
@@ -456,7 +472,7 @@ export const catalog = {
     let others = produtos.filter((p) => p && !cartIds.includes(p.id));
     
     if (settings) {
-      others = others.filter(p => (p.precoPor || p.preco || 0) <= settings.maxPrice);
+      others = others.filter(p => (p.precoPor || p.precoDe || 0) <= settings.maxPrice);
       
       if (settings.categoryId !== "all") {
         others = others.filter(p => p.categoriaId === settings.categoryId || String(p.subcategoriaId).startsWith(settings.categoryId));
@@ -491,7 +507,7 @@ export const catalog = {
     const settings = useAdmin.getState().orderBumpSettings;
     if (settings && settings.active) {
       const pList = all.filter((p) => {
-        const price = p.precoPor || p.preco || 0;
+        const price = p.precoPor || p.precoDe || 0;
         return (p.categoriaId === settings.categoryId || String(p.subcategoriaId).startsWith(settings.categoryId)) &&
                price > 0 && price <= settings.maxPrice;
       });

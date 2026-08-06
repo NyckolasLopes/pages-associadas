@@ -221,7 +221,7 @@ export function Footer() {
                   {p.title}
                 </a>
               ) : (
-                <Link to="/_store/pagina/$slug" params={{ slug: p.slug }} className="hover:underline">
+                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
                   {p.title}
                 </Link>
               )}
@@ -230,9 +230,9 @@ export function Footer() {
         </Col>
 
         <Col title="Navegação">
-          <li><Link to="/mapa-site" className="hover:underline">Mapa do Site</Link></li>
-          <li><Link to="/departamentos" className="hover:underline">Categorias</Link></li>
-          <li><Link to="/busca" search={{ q: "marcas" }} className="hover:underline">Marcas</Link></li>
+          <li><Link to={"/mapa-site" as any} className="hover:underline">Mapa do Site</Link></li>
+          <li><Link to={"/departamentos" as any} className="hover:underline">Categorias</Link></li>
+          <li><Link to={"/busca" as any} search={{ q: "marcas" } as any} className="hover:underline">Marcas</Link></li>
           <li><Link to="/busca" search={{ q: "principios-ativos" }} className="hover:underline">Princípios Ativos</Link></li>
           <li><Link to="/busca" search={{ q: "classes-terapeuticas" }} className="hover:underline">Classes Terapêuticas</Link></li>
           <li><Link to="/busca" search={{ q: "bulas" }} className="hover:underline">Bulas de A a Z</Link></li>
@@ -260,7 +260,7 @@ export function Footer() {
                   {p.title}
                 </a>
               ) : (
-                <Link to="/_store/pagina/$slug" params={{ slug: p.slug }} className="hover:underline">
+                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
                   {p.title}
                 </Link>
               )}
@@ -276,7 +276,7 @@ export function Footer() {
                   {p.title}
                 </a>
               ) : (
-                <Link to="/_store/pagina/$slug" params={{ slug: p.slug }} className="hover:underline">
+                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
                   {p.title}
                 </Link>
               )}

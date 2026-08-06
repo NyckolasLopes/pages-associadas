@@ -103,7 +103,7 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
                 <span className="text-xs font-semibold px-2.5 py-1 bg-white/80 rounded border border-slate-200 text-slate-600">
                   Fixo no Topo
                 </span>
-                <Link to="/admin/loja" className="hidden sm:inline-flex">
+                <Link to={"/admin/lojas" as any} className="hidden sm:inline-flex">
                   <Button size="sm" variant="ghost" className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50">
                     <Palette className="w-3.5 h-3.5 mr-1 text-[#00B5AD]" /> Personalizar
                   </Button>
@@ -341,7 +341,7 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
                   <p className="text-xs text-slate-400">Informações institucionais, Farmacêutico Responsável (CRF), Horários, Redes Sociais e Formas de Pagamento</p>
                 </div>
               </div>
-              <Link to="/admin/loja">
+              <Link to={"/admin/lojas" as any}>
                 <Button size="sm" variant="outline" className="text-xs font-bold border-slate-600 text-slate-200 bg-slate-800 hover:bg-slate-700">
                   Editar Dados da Loja
                 </Button>

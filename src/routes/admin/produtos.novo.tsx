@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ProductEditorForm } from "@/components/admin/ProductEditorForm";
 import { useAdminProducts } from "@/stores/products";
+import { useAdmin } from "@/stores/admin";
 import { Produto } from "@/types";
 import { toast } from "sonner";
 
@@ -11,13 +12,31 @@ export const Route = createFileRoute("/admin/produtos/novo")({
 function AdminNovoProduto() {
   const navigate = useNavigate();
   const { addOrUpdateProduct } = useAdminProducts();
+  const { currentUser, activeStoreId, pharmacies } = useAdmin();
   
+  const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
+  const currentLoja = pharmacies.find(p => p.id === currentLojaId);
+
   // Basic query params read (without typing)
   const searchParams = new URLSearchParams(window.location.search);
   const tipoParam = searchParams.get("tipo") || "fisico";
 
   const handleSave = (product: Produto) => {
-    addOrUpdateProduct(product);
+    const finalProduct: Produto = {
+      ...product,
+      lojaId: currentLojaId || undefined,
+      isIndividualLoja: !!currentLojaId,
+      origem: currentLojaId ? "Loja Individual" : "Manual",
+    };
+
+    addOrUpdateProduct(finalProduct, currentLojaId);
+
+    toast.success(
+      currentLojaId
+        ? `Produto "${product.nome}" cadastrado exclusivamente para a loja ${currentLoja?.nome || ""}!`
+        : `Produto "${product.nome}" cadastrado com sucesso no Catálogo Geral da Rede!`
+    );
+
     navigate({ to: "/admin/produtos" });
   };
 
@@ -46,9 +65,11 @@ function AdminNovoProduto() {
     subcategoriaId: "",
     internalTags: [],
     ativo: true,
-    origem: "Manual",
+    origem: currentLojaId ? "Loja Individual" : "Manual",
     dataImportacao: new Date().toISOString(),
-    tipoProduto: tipoParam
+    tipoProduto: tipoParam,
+    lojaId: currentLojaId || undefined,
+    isIndividualLoja: !!currentLojaId,
   };
 
   return (
@@ -59,6 +80,7 @@ function AdminNovoProduto() {
         product={newProduct}
         onSave={handleSave}
         asPage={true}
+        lojaId={currentLojaId}
       />
     </div>
   );

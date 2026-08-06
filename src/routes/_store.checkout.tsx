@@ -178,11 +178,11 @@ function Checkout() {
     toast.success(`Cupom aplicado com sucesso!`);
   };
 
-  const isServiceProduct = (i: Produto) => {
-    return i.categoriaId === "200" || 
-      (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")) ||
-      (i.internalTags && i.internalTags.some(t => t.toLowerCase() === "serviços de saúde" || t.toLowerCase() === "serviços")) ||
-      (i.categoriasAdicionais && i.categoriasAdicionais.some(c => c.toLowerCase() === "serviços de saúde" || c.toLowerCase() === "serviços"));
+  const isServiceProduct = (i: any) => {
+    return i?.categoriaId === "200" || 
+      (i?.subcategoriaId && String(i.subcategoriaId).startsWith("20")) ||
+      (i?.internalTags && i.internalTags.some((t: string) => t.toLowerCase() === "serviços de saúde" || t.toLowerCase() === "serviços")) ||
+      (i?.categoriasAdicionais && i.categoriasAdicionais.some((c: string) => c.toLowerCase() === "serviços de saúde" || c.toLowerCase() === "serviços"));
   };
 
   const hasPrescription = items.some(i => i.retemReceita || isServiceProduct(i));
@@ -1072,7 +1072,7 @@ function Checkout() {
               >
                 <CarouselContent className="-ml-3">
                   {orderBumps.map((p) => {
-                    const originalPrice = p.precoPor || p.preco;
+                    const originalPrice = p.precoPor || p.preco || 0;
                     const discountValue = originalPrice * ((orderBumpSettings?.discountPercentage || 1) / 100);
                     const newPrice = originalPrice - discountValue;
 

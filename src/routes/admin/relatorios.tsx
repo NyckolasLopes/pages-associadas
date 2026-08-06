@@ -343,12 +343,13 @@ function Relatorios() {
   // 5. Vendas por Produto (Ranking Top 100 & Competitividade)
   const produtosMap: Record<string, { nome: string, sku: string, qtd: number, faturamento: number }> = {};
   orders.forEach(o => {
-    o.produtos.forEach(p => {
-      if (!produtosMap[p.sku]) {
-        produtosMap[p.sku] = { nome: p.nome, sku: p.sku, qtd: 0, faturamento: 0 };
+    (o.produtos || []).forEach(p => {
+      const sku = p.sku || p.nome || "SKU-UNKNOWN";
+      if (!produtosMap[sku]) {
+        produtosMap[sku] = { nome: p.nome || "Produto", sku, qtd: 0, faturamento: 0 };
       }
-      produtosMap[p.sku].qtd += p.qtd;
-      produtosMap[p.sku].faturamento += p.qtd * p.valorUnitario;
+      produtosMap[sku].qtd += (p.qtd || 1);
+      produtosMap[sku].faturamento += (p.qtd || 1) * (p.valorUnitario || 0);
     });
   });
 
@@ -395,14 +396,18 @@ function Relatorios() {
     if (!regioesMap[regiao]) regioesMap[regiao] = {};
     if (!regioesMap["Todas"]) regioesMap["Todas"] = {};
 
-    o.produtos.forEach(p => {
-      if (!regioesMap[regiao][p.sku]) regioesMap[regiao][p.sku] = { nome: p.nome, sku: p.sku, qtd: 0, faturamento: 0 };
-      regioesMap[regiao][p.sku].qtd += p.qtd;
-      regioesMap[regiao][p.sku].faturamento += (p.qtd * p.valorUnitario);
+    (o.produtos || o.itens || []).forEach(p => {
+      const skuKey = p.sku || p.id || p.nome || "SEM-SKU";
+      const qtd = p.qtd || p.quantidade || 1;
+      const val = p.valorUnitario || p.preco || 0;
+
+      if (!regioesMap[regiao][skuKey]) regioesMap[regiao][skuKey] = { nome: p.nome, sku: skuKey, qtd: 0, faturamento: 0 };
+      regioesMap[regiao][skuKey].qtd += qtd;
+      regioesMap[regiao][skuKey].faturamento += (qtd * val);
       
-      if (!regioesMap["Todas"][p.sku]) regioesMap["Todas"][p.sku] = { nome: p.nome, sku: p.sku, qtd: 0, faturamento: 0 };
-      regioesMap["Todas"][p.sku].qtd += p.qtd;
-      regioesMap["Todas"][p.sku].faturamento += (p.qtd * p.valorUnitario);
+      if (!regioesMap["Todas"][skuKey]) regioesMap["Todas"][skuKey] = { nome: p.nome, sku: skuKey, qtd: 0, faturamento: 0 };
+      regioesMap["Todas"][skuKey].qtd += qtd;
+      regioesMap["Todas"][skuKey].faturamento += (qtd * val);
     });
   });
 

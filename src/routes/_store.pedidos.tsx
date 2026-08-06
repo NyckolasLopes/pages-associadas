@@ -415,10 +415,10 @@ function PedidosPage() {
                   <span>Subtotal</span>
                   <span>{brl(selectedOrder.valores.subtotal || selectedOrder.valores.produtos || 0)}</span>
                 </div>
-                {selectedOrder.valores.descontos > 0 && (
+                {Number(selectedOrder.valores?.descontos || selectedOrder.valores?.desconto || 0) > 0 && (
                   <div className="flex justify-between text-emerald-700 font-bold">
                     <span>Descontos / Cupons</span>
-                    <span>- {brl(selectedOrder.valores.descontos)}</span>
+                    <span>- {brl(selectedOrder.valores?.descontos || selectedOrder.valores?.desconto || 0)}</span>
                   </div>
                 )}
                 {selectedOrder.valores.frete > 0 && (

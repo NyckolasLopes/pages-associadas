@@ -270,7 +270,7 @@ function AdminUsuarios() {
     setNovoUsuarioNome(u.name);
     setNovoUsuarioEmail(u.email);
     setNovoUsuarioSenha(u.password || "");
-    setNovoUsuarioGrupo(u.grupoId);
+    setNovoUsuarioGrupo(u.grupoId || "");
     setNovoUsuarioLojas(u.lojasVinculadas || []);
     setShowPassword(false);
     setIsNovoUsuarioOpen(true);

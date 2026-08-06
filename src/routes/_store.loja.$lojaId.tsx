@@ -33,10 +33,10 @@ export const Route = createFileRoute("/_store/loja/$lojaId")({
 
 function LojaStorefrontPage() {
   const { lojaId } = Route.useParams();
-  const { pharmacies, banners, coupons, setSelectedPharmacyId } = useAdmin();
-  const { products } = useAdminProducts();
-  const { lojaPromocoes } = useMarketing();
-  const { addItem, applyCoupon, appliedCoupon } = useCart();
+  const { pharmacies, banners } = useAdmin();
+  const { customProducts: products } = useAdminProducts();
+  const { cupons: coupons, lojaPromocoes } = useMarketing();
+  const { add: addItem, applyCoupon, appliedCoupon, setSelectedPharmacyId } = useCart();
   const { recordLojaAccess, pingSession } = useLive();
 
   const loja = pharmacies.find((p) => p.id === lojaId) || pharmacies[0];
@@ -58,18 +58,18 @@ function LojaStorefrontPage() {
 
   // Banners locais
   const lojaBanners = useMemo(() => {
-    return banners.filter((b) => (b.lojaId === lojaId || b.farmaciaId === lojaId || !b.lojaId) && b.ativo);
+    return (banners || []).filter((b) => (b.lojaId === lojaId || b.farmaciaId === lojaId || !b.lojaId) && (b.active || b.ativo));
   }, [banners, lojaId]);
 
   // Cupons da loja
   const lojaCoupons = useMemo(() => {
-    return coupons.filter((c) => (c.lojaId === lojaId || c.farmaciaId === lojaId || !c.lojaId) && c.ativo);
+    return (coupons || []).filter((c: any) => (c.lojaId === lojaId || c.farmaciaId === lojaId || !c.lojaId) && c.ativo);
   }, [coupons, lojaId]);
 
   // Filtro de produtos da loja com preços locais
   const lojaProducts = useMemo(() => {
-    return products.filter((p) => {
-      if (!p.ativo) return false;
+    return (products || []).filter((p: Produto) => {
+      if (p.ativo === false) return false;
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
         const matchesName = p.nome.toLowerCase().includes(term);
@@ -222,7 +222,7 @@ function LojaStorefrontPage() {
               <h3 className="font-black text-slate-900 text-base">Cupons Exclusivos desta Unidade</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {lojaCoupons.map((c) => (
+              {lojaCoupons.map((c: any) => (
                 <div key={c.id} className="bg-white border border-amber-200 rounded-xl p-3 flex items-center justify-between shadow-xs">
                   <div>
                     <span className="font-mono font-black text-sm text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
@@ -287,7 +287,7 @@ function LojaStorefrontPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {lojaProducts.map((p) => {
+              {lojaProducts.map((p: Produto) => {
                 const ep = getEffectivePrice(p, loja.id);
                 const hasDiscount = ep.precoDe && ep.precoDe > ep.precoPor;
 

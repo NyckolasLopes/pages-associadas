@@ -56,8 +56,8 @@ export function PedidosAdmin() {
     liveCarts.push({
       id: "#807099",
       createdAt: new Date(lastUpdatedAt || Date.now()).toLocaleDateString('pt-BR') + " " + new Date(lastUpdatedAt || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      client: user.name,
-      email: user.email,
+      client: user.name || "Cliente",
+      email: user.email || "",
       phone: (user as any).phone || "(51) 99999-9999",
       address: "Não informado",
       abandonedAt: "Há pouco tempo",
@@ -125,9 +125,9 @@ export function PedidosAdmin() {
       o.cliente.cpf,
       o.cliente.telefone,
       getLojaName(o.lojaId),
-      o.valores.produtos.toString().replace('.', ','),
-      o.valores.frete.toString().replace('.', ','),
-      o.valores.total.toString().replace('.', ',')
+      (o.valores?.produtos || 0).toString().replace('.', ','),
+      (o.valores?.frete || 0).toString().replace('.', ','),
+      (o.valores?.total || 0).toString().replace('.', ',')
     ]);
     const csvContent = "data:text/csv;charset=utf-8," 
       + [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
@@ -181,7 +181,7 @@ export function PedidosAdmin() {
 
   if (selectedOrder) {
     // --- DETAILS VIEW ---
-    const isPickup = selectedOrder.envio.metodo.includes("Retirada");
+    const isPickup = (selectedOrder.envio?.metodo || "").includes("Retirada");
 
     return (
       <div className="min-h-screen bg-slate-50/50 p-6 font-sans">
@@ -239,12 +239,12 @@ export function PedidosAdmin() {
                 <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Entrega / Logística</h3>
               </div>
               <div>
-                <div className="font-bold text-slate-800">{selectedOrder.envio.metodo}</div>
-                {!isPickup && (
+                <div className="font-bold text-slate-800">{selectedOrder.envio?.metodo || "Padrão"}</div>
+                {!isPickup && selectedOrder.envio && (
                   <>
-                    <div className="text-sm text-slate-500 mt-1">{selectedOrder.envio.endereco}</div>
-                    <div className="text-sm text-slate-500">{selectedOrder.envio.cidade} - CEP: {selectedOrder.envio.cep}</div>
-                    <div className="text-xs font-bold text-slate-500 mt-3 pt-2 border-t">Prazo estimado: {selectedOrder.envio.prazo}</div>
+                    <div className="text-sm text-slate-500 mt-1">{selectedOrder.envio.endereco || "Endereço não informado"}</div>
+                    <div className="text-sm text-slate-500">{selectedOrder.envio.cidade || ""} {selectedOrder.envio.cep ? `- CEP: ${selectedOrder.envio.cep}` : ""}</div>
+                    <div className="text-xs font-bold text-slate-500 mt-3 pt-2 border-t">Prazo estimado: {selectedOrder.envio.prazo || "Imediato"}</div>
                   </>
                 )}
                 {isPickup && (
@@ -280,11 +280,11 @@ export function PedidosAdmin() {
               <div className="space-y-1.5 pt-3 border-t border-emerald-200/50">
                 <div className="flex justify-between text-sm font-medium text-slate-600">
                   <span>Subtotal Produtos</span>
-                  <span className="font-bold">{selectedOrder.valores.produtos.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                  <span className="font-bold">{(selectedOrder.valores?.produtos || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
                 </div>
                 <div className="flex justify-between text-sm font-medium text-slate-600">
                   <span>Frete</span>
-                  <span className="font-bold">{selectedOrder.valores.frete.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                  <span className="font-bold">{(selectedOrder.valores?.frete || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
                 </div>
               </div>
             </div>
@@ -296,11 +296,11 @@ export function PedidosAdmin() {
               <div className="p-5 border-b flex items-center justify-between bg-slate-50/50">
                 <h3 className="font-bold text-slate-700 text-lg flex items-center gap-2">
                   <Package className="h-5 w-5 text-emerald-600" />
-                  Itens do Pedido <Badge variant="secondary" className="ml-1 bg-white">{selectedOrder.produtos.length}</Badge>
+                  Itens do Pedido <Badge variant="secondary" className="ml-1 bg-white">{selectedOrder.produtos?.length || 0}</Badge>
                 </h3>
               </div>
               <div className="p-2 space-y-2">
-                {selectedOrder.produtos.map(p => (
+                {(selectedOrder.produtos || []).map(p => (
                    <div key={p.sku} className="flex items-center p-3 hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100">
                       <div className="w-16 h-16 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                         <img src={p.foto} alt={p.nome} className="w-full h-full object-cover" />
@@ -311,11 +311,11 @@ export function PedidosAdmin() {
                       </div>
                       <div className="px-6 text-center">
                          <div className="text-[10px] font-bold text-slate-400 uppercase">Qtd</div>
-                         <div className="font-black text-slate-700 text-base">{p.qtd}</div>
+                         <div className="font-black text-slate-700 text-base">{p.qtd || 1}</div>
                       </div>
                       <div className="px-4 text-right">
                          <div className="text-[10px] font-bold text-slate-400 uppercase">Total</div>
-                         <div className="font-bold text-emerald-700">{(p.valorUnitario * p.qtd).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
+                         <div className="font-bold text-emerald-700">{((p.valorUnitario || 0) * (p.qtd || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
                       </div>
                    </div>
                 ))}
@@ -568,9 +568,9 @@ export function PedidosAdmin() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="text-slate-700 text-xs">
-                            <span className="font-bold text-slate-800">{order.produtos?.reduce((acc, p) => acc + p.qtd, 0) || order.produtos?.length || 1} item(s)</span>
+                            <span className="font-bold text-slate-800">{order.produtos?.reduce((acc, p) => acc + (p.qtd || 1), 0) || order.produtos?.length || 1} item(s)</span>
                             <div className="text-slate-400 text-[11px] truncate max-w-[220px]">
-                              {order.produtos?.map(p => `${p.qtd}x ${p.nome}`).join(", ")}
+                              {order.produtos?.map(p => `${p.qtd || 1}x ${p.nome}`).join(", ")}
                             </div>
                           </div>
                         </td>

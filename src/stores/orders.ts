@@ -55,7 +55,7 @@ export interface Pedido {
     campaign?: string;
   };
   envio?: {
-    metodo: "entrega" | "retirada" | string;
+    metodo?: "entrega" | "retirada" | string;
     rastreio?: string;
     prazo?: string;
     endereco?: string;
@@ -109,13 +109,20 @@ export const useOrders = create<OrdersState>()(
           ...o, 
           status,
           historico: [
-            ...o.historico,
+            ...(o.historico || []),
             { data: new Date().toISOString(), situacao: status, autor: "Loja / Admin" }
           ]
         } : o)
       })),
       updateOrderTracking: (id, tracking) => set((state) => ({
-        orders: state.orders.map(o => o.id === id ? { ...o, envio: { ...o.envio, rastreio: tracking } } : o)
+        orders: state.orders.map(o => o.id === id ? { 
+          ...o, 
+          envio: { 
+            metodo: o.envio?.metodo || "entrega",
+            ...o.envio, 
+            rastreio: tracking 
+          } 
+        } : o)
       })),
       deleteOrder: (id) => set((state) => ({
         orders: state.orders.filter(o => o.id !== id)

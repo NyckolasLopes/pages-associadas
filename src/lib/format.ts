@@ -29,16 +29,9 @@ export const checkIsGenerico = (p: any) => {
          name.includes("generico");
 };
 
-export const productImage = (p: { 
-  ean?: string; 
-  possuiImagem?: boolean; 
-  nome?: string; 
-  tarja?: string; 
-  generico?: boolean;
-  retemReceita?: boolean;
-  requiresReceita?: boolean;
-  imagens?: string[];
-}) => {
+export const productImage = (p: any) => {
+  if (!p) return "/produtos/generico.webp";
+  if (typeof p === "string") return p;
   if (p.imagens && p.imagens.length > 0) {
     return p.imagens[0];
   }

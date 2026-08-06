@@ -105,8 +105,8 @@ function CartPage() {
 
   // Form details
   const [clientName, setClientName] = useState(user?.name || "");
-  const [clientPhone, setClientPhone] = useState(user?.phone || "");
-  const [clientCpf, setClientCpf] = useState(user?.cpf || "");
+  const [clientPhone, setClientPhone] = useState((user as any)?.phone || "");
+  const [clientCpf, setClientCpf] = useState((user as any)?.cpf || "");
   const [clientEmail, setClientEmail] = useState(user?.email || "");
   const [deliveryMethod, setDeliveryMethod] = useState<"entrega" | "retirada">("retirada");
   const [deliveryAddress, setDeliveryAddress] = useState("");

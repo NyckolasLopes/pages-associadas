@@ -30,10 +30,10 @@ interface ProductEditorFormProps {
   product: Produto | null;
   onSave: (product: Produto) => void;
   asPage?: boolean;
-
+  lojaId?: string | null;
 }
 
-export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage }: ProductEditorFormProps) {
+export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage, lojaId }: ProductEditorFormProps) {
   const [formData, setFormData] = useState<Produto | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [saveStep, setSaveStep] = useState<"idle" | "saving" | "syncing" | "done">("idle");
@@ -124,9 +124,21 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage 
         {/* Header Fixo */}
         <div className="flex items-center justify-between px-8 py-4 bg-white border-b sticky top-0 z-20 shadow-sm">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">
-              {product.id.startsWith("prod-") ? "Novo Produto" : `Editar Produto: ${product.nome}`}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-slate-800">
+                {product.id.startsWith("prod-") ? "Novo Produto" : `Editar Produto: ${product.nome}`}
+              </h2>
+              {lojaId ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                  <Info className="w-3 h-3 text-amber-600" />
+                  Individual da Loja (Sem alterar a Rede)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  🌐 Catálogo Geral da Rede
+                </span>
+              )}
+            </div>
             <div className="text-sm text-slate-500 mt-1">Código: {product.codigoInterno || product.id} • Cadastrado via {product.origem || "Sistema"}</div>
           </div>
           <div className="flex items-center gap-3">
@@ -140,6 +152,18 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage 
         {/* Content com Scroll Linear */}
         <div className="flex-1 overflow-y-auto p-8 space-y-8 max-w-6xl mx-auto w-full">
           
+          {lojaId && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3 text-blue-900 text-sm">
+              <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-bold">Modo de Edição Individual da Loja</p>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  As modificações ou novos produtos cadastrados aqui são salvos com isolamento total para esta loja e NÃO impactam o cadastro ou preços das demais lojas nem o Catálogo Geral da Rede.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Card: Informações Básicas */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Informações básicas</h3>
@@ -252,7 +276,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 border-t pt-6">
               <div className="space-y-2">
                 <Label className="font-bold flex items-center gap-2">
-                  Qual o nível de relevância? <Info className="h-4 w-4 text-slate-400" title="Nível de prioridade nas buscas do produto em sua loja." />
+                  Qual o nível de relevância? <span title="Nível de prioridade nas buscas do produto em sua loja."><Info className="h-4 w-4 text-slate-400" /></span>
                 </Label>
                 <div className="flex bg-slate-100 p-1 rounded-md w-full border border-slate-200">
                   <button 

@@ -45,7 +45,7 @@ function AdminCategorias() {
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
 
   // Active Store Context (either selected in top header or user's assigned store)
-  const currentLojaId = activeStoreId || (currentUser?.lojasGerenciadas && currentUser.lojasGerenciadas[0]) || null;
+  const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
   const currentLoja = pharmacies.find(p => p.id === currentLojaId);
   const isStoreCustom = currentLojaId ? !!isStoreUsingCustomCategories[currentLojaId] : false;
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAdmin, type Coupon } from "@/stores/admin";
+import { useAdmin } from "@/stores/admin";
+import { useMarketing, type Coupon } from "@/stores/marketing";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +12,12 @@ import { checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
 import { brl } from "@/lib/format";
 
 export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
-  const { coupons, addCoupon, removeCoupon, updateCoupon, pharmacies } = useAdmin();
+  const { pharmacies } = useAdmin();
+  const { cupons, addCoupon, removeCoupon, updateCoupon } = useMarketing();
   const pharmacy = pharmacies.find((p) => p.id === lojaId);
 
   // Filtra cupons da loja atual ou universais
-  const lojaCoupons = coupons.filter((c) => c.lojaId === lojaId || c.farmaciaId === lojaId);
+  const lojaCoupons = cupons.filter((c: any) => c.lojaId === lojaId || c.farmaciaId === lojaId);
 
   const [codigo, setCodigo] = useState("");
   const [tipo, setTipo] = useState<"percent" | "fixed">("percent");
@@ -48,23 +50,26 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
       const numMinimo = valorMinimo ? parseFloat(valorMinimo.replace(",", ".")) : 0;
       const numUsos = limiteUsos ? parseInt(limiteUsos, 10) : undefined;
 
-      const newCoupon: Coupon = {
-        id: `coupon-${Date.now()}`,
-        code: cleanCode,
-        tipo: tipo,
-        valor: numValor,
-        descontoPercentual: tipo === "percent" ? numValor : undefined,
-        descontoFixo: tipo === "fixed" ? numValor : undefined,
-        valorMinimo: numMinimo || 0,
-        lojaId: lojaId,
-        farmaciaId: lojaId,
-        validade: validade || undefined,
-        limiteUsos: numUsos,
-        usosAtuais: 0,
+      const newCoupon = {
+        codigo: cleanCode,
+        descricao: `Cupom ${cleanCode}`,
         ativo: true,
+        totalDisponiveis: numUsos || 999,
+        valorMinimo: numMinimo || 0,
+        dataInicio: "",
+        dataTermino: validade || "",
+        exigirMinItens: false,
+        tipoDesconto: (tipo === "percent" ? "percentual" : "fixo") as "percentual" | "fixo",
+        valorDesconto: numValor,
+        aplicarFreteGratis: false,
+        aplicacaoAutomatica: false,
+        permiteAcumular: false,
+        usoUnico: false,
+        cupomPrimeiraCompra: false,
+        lojaId: lojaId,
       };
 
-      addCoupon(newCoupon);
+      addCoupon(newCoupon as any);
       toast.success(`Cupom "${cleanCode}" cadastrado com sucesso para sua unidade!`);
 
       setCodigo("");
@@ -77,8 +82,8 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
     }
   };
 
-  const handleToggleCoupon = (coupon: Coupon) => {
-    updateCoupon({ ...coupon, ativo: !coupon.ativo });
+  const handleToggleCoupon = (coupon: any) => {
+    updateCoupon(coupon.id, { ativo: !coupon.ativo });
     toast.success(`Cupom ${!coupon.ativo ? "ativado" : "pausado"}!`);
   };
 
@@ -206,7 +211,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {lojaCoupons.map((c) => (
+                {lojaCoupons.map((c: any) => (
                   <div key={c.id} className="border rounded-2xl p-4 bg-white shadow-sm flex flex-col justify-between space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">

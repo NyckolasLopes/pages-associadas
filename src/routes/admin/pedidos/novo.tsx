@@ -69,11 +69,11 @@ function CriarPedidoAdmin() {
   useEffect(() => {
     const rawCpf = cpf.replace(/\D/g, "");
     if (rawCpf.length === 11) {
-      const foundOrder = orders.find(o => o.cliente.cpf.replace(/\D/g, "") === rawCpf);
+      const foundOrder = orders.find(o => o.cliente?.cpf && o.cliente.cpf.replace(/\D/g, "") === rawCpf);
       if (foundOrder) {
         setNome(foundOrder.cliente.nome);
-        setEmail(foundOrder.cliente.email);
-        setCelular(foundOrder.cliente.telefone);
+        setEmail(foundOrder.cliente.email || "");
+        setCelular(foundOrder.cliente.telefone || "");
         setTipoCliente("existente");
         setClienteBloqueado(true);
         toast.success("Cliente localizado e preenchido automaticamente.");

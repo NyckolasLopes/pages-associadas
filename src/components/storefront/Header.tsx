@@ -37,7 +37,7 @@ import { catalog } from "@/services/catalog";
 import type { Produto, Categoria } from "@/types";
 import { brl, productImage, getGreeting, checkIsGenerico } from "@/lib/format";
 import { getDeterministicStock } from "@/lib/stock";
-import { getLevePaguePromotion } from "@/lib/utils";
+import { getLevePaguePromotion, calculateDistance } from "@/lib/utils";
 
 import categoriesData from "@/data/categories.json";
 import { useAdmin } from "@/stores/admin";
@@ -238,7 +238,7 @@ export function Header() {
 
       if (lat && lng) {
         const pharmacies = useAdmin.getState().pharmacies;
-        let closest = null;
+        let closest: any = null;
         let minD = Infinity;
         pharmacies.forEach(p => {
             if (p.lat && p.lng) {
@@ -366,7 +366,7 @@ export function Header() {
                   {p.title}
                 </a>
               ) : (
-                <Link key={p.id} to="/_store/pagina/$slug" params={{ slug: p.slug }} className="hidden lg:inline-flex items-center gap-1 hover:underline">
+                <Link key={p.id} to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hidden lg:inline-flex items-center gap-1 hover:underline">
                   {p.title}
                 </Link>
               )
@@ -813,8 +813,8 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               return (
                 <Link
                   key={c.id}
-                  to={isNossasMarcas ? "/nossas-marcas" : "/c/$slug"}
-                  params={isNossasMarcas ? undefined : { slug: c.slug }}
+                  to={(isNossasMarcas ? "/nossas-marcas" : "/c/$slug") as any}
+                  params={(isNossasMarcas ? undefined : { slug: c.slug }) as any}
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold transition ${isOfertas ? 'bg-red-600 text-white hover:bg-red-700' : 'hover:bg-muted'}`}
                 >
@@ -849,8 +849,8 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                 </summary>
                 <div className="pl-11 pr-3 pb-2 flex flex-col">
                   <Link
-                    to={isNossasMarcas ? "/nossas-marcas" : "/c/$slug"}
-                    params={isNossasMarcas ? undefined : { slug: c.slug }}
+                    to={(isNossasMarcas ? "/nossas-marcas" : "/c/$slug") as any}
+                    params={(isNossasMarcas ? undefined : { slug: c.slug }) as any}
                     onClick={() => setOpen(false)}
                     className="text-sm py-2 hover:text-primary text-muted-foreground font-medium border-b border-muted/30 last:border-0"
                   >
@@ -1057,7 +1057,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                 return (
                   <div className="pt-6 mt-4 border-t border-slate-100/50">
                     <Link
-                      to="/nossas-marcas"
+                      to={"/nossas-marcas" as any}
                       onClick={() => setOpen(null)}
                       className="font-bold text-primary-dark hover:underline text-base mb-6 flex items-center gap-2"
                     >

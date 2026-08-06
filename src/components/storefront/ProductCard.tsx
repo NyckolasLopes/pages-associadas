@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/stores/favorites";
 import { useAuth } from "@/stores/auth";
+import { LoginModal } from "@/components/storefront/LoginModal";
 import { useGeoCep } from "@/stores/cart";
 import { isPbmEligible } from "@/lib/pbm";
 import { useAdmin } from "@/stores/admin";
@@ -26,12 +27,12 @@ import { useMarketing } from "@/stores/marketing";
 
 const WHATSAPP_PHONE = "5551999999999"; // mock
 
-const PromoIcon = ({ id, className }: { id: string, className?: string }) => {
-  if (id === 'gift') return <Gift className={className} />;
-  if (id === 'star') return <Star className={className} />;
-  if (id === 'zap') return <Zap className={className} />;
-  if (id === 'shopping-bag') return <ShoppingBag className={className} />;
-  return <Flame className={className} />;
+const PromoIcon = ({ id, className, style }: { id: string, className?: string, style?: React.CSSProperties }) => {
+  if (id === 'gift') return <Gift className={className} style={style} />;
+  if (id === 'star') return <Star className={className} style={style} />;
+  if (id === 'zap') return <Zap className={className} style={style} />;
+  if (id === 'shopping-bag') return <ShoppingBag className={className} style={style} />;
+  return <Flame className={className} style={style} />;
 };
 
 interface ProductCardProps {
@@ -59,8 +60,8 @@ function ProductCardComponent({
   const customProducts = useAdminProducts(s => s.customProducts);
   const p = customProducts?.find(c => c.id === initialProduct.id) || initialProduct;
   const regionalPrices = useRegionsStore(s => s.prices);
-  const setPharmacyDrawerOpen = useCart((s) => s.setPharmacyDrawerOpen);
   const user = useAuth((s) => s.user);
+  const [loginOpen, setLoginOpen] = useState(false);
   const promocoes = useMarketing((s) => s.promocoes);
   const lojaPromocoesMap = useMarketing((s) => s.lojaPromocoes);
   const recentlyAdded = isRecentlyAdded(p);
@@ -546,6 +547,7 @@ function ProductCardComponent({
           </div>
         </DialogContent>
       </Dialog>
+      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} onLoginSuccess={() => {}} />
     </article>
   );
 }

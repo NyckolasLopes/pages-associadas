@@ -166,6 +166,15 @@ export const useConfig = create<ConfigStore>()(
           }));
           return { redirects: [...state.redirects, ...added] };
         }),
+
+      scripts: {
+        head: "",
+        body: "",
+      },
+      setScripts: (data) =>
+        set((state) => ({
+          scripts: { ...state.scripts, ...data },
+        })),
     }),
     {
       name: "config-storage",

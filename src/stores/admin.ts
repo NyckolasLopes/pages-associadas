@@ -22,12 +22,14 @@ export interface AdminGroup {
   nome: string;
   permissoes: string[];
   padrao: boolean;
+  permissao_total?: boolean;
 }
 
 export interface AdminBanner {
   id: string;
   nome: string;
   imageUrl: string;
+  imagemUrl?: string;
   mobileImageUrl?: string;
   link: string;
   target?: string;
@@ -35,9 +37,11 @@ export interface AdminBanner {
   paginaPublicacao: string;
   titulo?: string;
   active: boolean;
+  ativo?: boolean;
   startDate?: string;
   endDate?: string;
   lojaId?: string; // Se preenchido, banner exclusivo da loja do associado
+  farmaciaId?: string;
   // Extra fields for Banner Extra below Vitrines
   vitrineVinculada?: string;
   bannerVinculado?: string;
@@ -111,6 +115,7 @@ export interface Pharmacy {
   // SEO Local e AEO / GEO
   bairrosAtendidos?: string[];
   descricaoSeo?: string;
+  seoDescricao?: string;
   palavrasChave?: string;
   faqLocal?: Array<{ pergunta: string; resposta: string }>;
   // Dados de Entrega
@@ -121,6 +126,7 @@ export interface Pharmacy {
   horarioFimEntregaRisco: string;
   tempoEntrega: string;
   custoEntrega: number;
+  raioEntregaKm?: number;
   raiosEntrega?: { ateKm: number; preco: number }[];
   faixasCep?: { cepInicio: string; cepFim: string; taxa: number; tempoMinutos?: number }[];
   // Entrega Expressa
@@ -245,6 +251,7 @@ interface AdminState {
   orderBumpSettings: OrderBumpSettings;
   setOrderBumpSettings: (settings: OrderBumpSettings) => void;
   compreJuntoSettings: CompreJuntoSettings;
+  setCompreJuntoSettings: (settings: CompreJuntoSettings) => void;
   // Vitrines da Loja
   storefrontVitrineConfig: StorefrontVitrineConfig;
   setStorefrontVitrineConfig: (config: Partial<StorefrontVitrineConfig>) => void;

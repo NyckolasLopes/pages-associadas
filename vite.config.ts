@@ -16,7 +16,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         sourcemap: false,
-        manualChunks(id) {
+        manualChunks(id: string) {
           if (id.includes("node_modules/xlsx")) {
             return "vendor-xlsx";
           }
@@ -43,5 +43,5 @@ export default defineConfig({
       "Referrer-Policy": "strict-origin-when-cross-origin",
     },
   },
-});
+} as any);
 

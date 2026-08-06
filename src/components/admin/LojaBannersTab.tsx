@@ -56,18 +56,17 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
 
       const newBanner: AdminBanner = {
         id: `banner-${Date.now()}`,
+        nome: cleanTitle,
         titulo: cleanTitle,
+        imageUrl: cleanImage,
         imagemUrl: cleanImage,
-        linkUrl: cleanLink || "/",
+        link: cleanLink || "/",
+        active: true,
         ativo: true,
         posicao: posicao,
+        paginaPublicacao: "loja",
         lojaId: lojaId,
         farmaciaId: lojaId,
-        ordem: lojaBanners.length + 1,
-        localizacao: {
-          uf: pharmacy?.uf || "RS",
-          cidade: pharmacy?.cidade || "Porto Alegre",
-        },
       };
 
       addBanner(newBanner);
@@ -82,7 +81,7 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
   };
 
   const handleToggleBanner = (banner: AdminBanner) => {
-    updateBanner({ ...banner, ativo: !banner.ativo });
+    updateBanner(banner.id, { ...banner, ativo: !banner.ativo, active: !banner.active });
     toast.success(`Banner ${!banner.ativo ? "ativado" : "desativado"} com sucesso!`);
   };
 
@@ -267,10 +266,10 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
                           </span>
                         </div>
                         <div className="p-3">
-                          <h4 className="font-bold text-sm text-slate-900 truncate">{b.titulo}</h4>
+                          <h4 className="font-bold text-sm text-slate-900 truncate">{b.titulo || b.nome}</h4>
                           <p className="text-xs text-slate-500 flex items-center gap-1 mt-1 truncate">
                             <LinkIcon className="w-3 h-3 shrink-0" />
-                            {b.linkUrl || "Sem link"}
+                            {b.link || (b as any).linkUrl || "Sem link"}
                           </p>
                         </div>
                       </div>

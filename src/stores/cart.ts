@@ -25,14 +25,14 @@ export interface CartItem {
   isOrderBump?: boolean;
 }
 
-/** Resolve the effective price for a cart item based on the selected pharmacy */
-export function getEffectivePrice(item: CartItem, pharmacyId: string | null): { precoPor: number; precoDe: number } {
+/** Resolve the effective price for a cart item or product based on the selected pharmacy */
+export function getEffectivePrice(item: any, pharmacyId: string | null): { precoPor: number; precoDe: number } {
   if (item.isOrderBump) {
-    return { precoPor: item.preco, precoDe: item.precoDe };
+    return { precoPor: item.preco, precoDe: item.precoDe || item.preco };
   }
 
-  let precoPor = item.preco;
-  let precoDe = item.precoDe;
+  let precoPor = item.precoPor ?? item.preco ?? 0;
+  let precoDe = item.precoDe ?? precoPor;
 
   if (pharmacyId) {
     const adminState = useAdmin.getState();

@@ -11,6 +11,7 @@ import {
   Plus,
   Pencil,
   Trash,
+  Trash2,
   Store,
   Search,
   MapPin,

@@ -18,6 +18,8 @@ export type Tarja =
 
 export interface Produto {
   id: string;
+  lojaId?: string; // Se preenchido, produto exclusivo desta loja individual
+  isIndividualLoja?: boolean;
   sku: string;
   ean?: string;
   ean2?: string;
@@ -90,6 +92,12 @@ export interface Produto {
   campanhaFim?: string;
   precosPorLoja?: Record<string, { precoDe: number; precoPor: number; ativo?: boolean }>;
   estoquesPorLoja?: Record<string, number>;
+  preco?: number;
+  basePrice?: number;
+  imagem?: string;
+  image?: string;
+  slug?: string;
+  requiresReceita?: boolean;
 
   // --- Novos campos integrados da API Externa ---
   

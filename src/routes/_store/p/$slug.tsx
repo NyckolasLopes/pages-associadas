@@ -766,7 +766,7 @@ function PDP() {
     },
     "offers": {
       "@type": "Offer",
-      "url": `https://associadas.com.br/p/${p.slug}`,
+      "url": `https://associadas.com.br/p/${p.url || p.slug || p.id}`,
       "priceCurrency": "BRL",
       "price": finalPrecoPor.toString(),
       "availability": maxStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
@@ -857,7 +857,7 @@ function PDP() {
               <img 
                 src={selectedImage} 
                 alt={p.nome} 
-                fetchpriority="high"
+                fetchPriority="high"
                 className={`w-full h-full object-contain p-4 pb-8 transition-opacity duration-300 ${isZoomed ? 'opacity-0' : 'opacity-100'}`}
               />
               {p.tarja && p.tarja !== 'Sem Tarja' && p.tarja !== 'none' && (
@@ -907,7 +907,7 @@ function PDP() {
                       <ProductStory videoUrl={storyUrl} productName={p.nome} inline={true} />
                     </div>
                   ))}
-                  {p.imagens.map((img: string, idx: number) => (
+                  {(p.imagens || []).map((img: string, idx: number) => (
                     <button 
                       key={idx} 
                       onClick={() => setSelectedImage(img)}

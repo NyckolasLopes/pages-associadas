@@ -61,7 +61,7 @@ export function LojaSeoTab({ lojaId }: { lojaId: string }) {
       seoDescricao: sanitizeText(metaDesc, 250),
     };
 
-    updatePharmacy(updated);
+    updatePharmacy(pharmacy.id, updated);
     toast.success("Configurações de SEO, GEO e AEO Local atualizadas com sucesso!");
   };
 

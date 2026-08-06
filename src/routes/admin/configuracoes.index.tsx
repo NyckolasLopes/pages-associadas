@@ -17,7 +17,16 @@ export const Route = createFileRoute("/admin/configuracoes/")({
 });
 
 function ConfiguracoesPage() {
-  const configs = [
+  interface ConfigItem {
+    id?: string;
+    titulo: string;
+    descricao: string;
+    subDescricao?: string;
+    url?: string;
+    icon: React.ReactNode;
+  }
+
+  const configs: ConfigItem[] = [
     {
       id: "dados-loja",
       titulo: "Dados da loja",

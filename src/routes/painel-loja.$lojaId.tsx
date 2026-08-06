@@ -30,7 +30,7 @@ import { LojaPromocoesTab } from "@/components/admin/LojaPromocoesTab";
 import { LojaBannersTab } from "@/components/admin/LojaBannersTab";
 import { LojaCuponsTab } from "@/components/admin/LojaCuponsTab";
 import { LojaSeoTab } from "@/components/admin/LojaSeoTab";
-import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles } from "lucide-react";
+import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "Aguardando pagamento",
@@ -344,9 +344,9 @@ function PainelLoja() {
             <p>Data: ${new Date(pedido.data).toLocaleString("pt-BR")}</p>
           </div>
           <h3>Dados do Cliente</h3>
-          <p><strong>Nome:</strong> ${pedido.cliente.nome}</p>
-          <p><strong>CPF:</strong> ${maskCpf(pedido.cliente.cpf)}</p>
-          <p><strong>Telefone:</strong> ${pedido.cliente.telefone || "Não informado"}</p>
+          <p><strong>Nome:</strong> ${pedido.cliente?.nome || ""}</p>
+          <p><strong>CPF:</strong> ${maskCpf(pedido.cliente?.cpf || "")}</p>
+          <p><strong>Telefone:</strong> ${pedido.cliente?.telefone || "Não informado"}</p>
           
           <h3>Itens do Pedido</h3>
           <table>
@@ -359,12 +359,12 @@ function PainelLoja() {
               </tr>
             </thead>
             <tbody>
-              ${pedido.produtos.map((item: any) => `
+              ${(pedido.produtos || []).map((item: any) => `
                 <tr>
                   <td>${item.nome}</td>
-                  <td>${item.qtd}</td>
-                  <td>R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}</td>
-                  <td>R$ ${(item.qtd * item.valorUnitario).toFixed(2).replace('.', ',')}</td>
+                  <td>${item.qtd || 1}</td>
+                  <td>R$ ${(item.valorUnitario || 0).toFixed(2).replace('.', ',')}</td>
+                  <td>R$ ${((item.qtd || 1) * (item.valorUnitario || 0)).toFixed(2).replace('.', ',')}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -817,10 +817,10 @@ function PainelLoja() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4 text-sm space-y-2">
-                    <p><span className="font-semibold text-slate-700">Nome:</span> {selectedPedidoInfo.cliente.nome}</p>
-                    <p><span className="font-semibold text-slate-700">Telefone:</span> {selectedPedidoInfo.cliente.telefone}</p>
-                    <p><span className="font-semibold text-slate-700">Email:</span> {selectedPedidoInfo.cliente.email}</p>
-                    <p><span className="font-semibold text-slate-700">CPF:</span> {maskCpf(selectedPedidoInfo.cliente.cpf)}</p>
+                    <p><span className="font-semibold text-slate-700">Nome:</span> {selectedPedidoInfo.cliente?.nome}</p>
+                    <p><span className="font-semibold text-slate-700">Telefone:</span> {selectedPedidoInfo.cliente?.telefone}</p>
+                    <p><span className="font-semibold text-slate-700">Email:</span> {selectedPedidoInfo.cliente?.email}</p>
+                    <p><span className="font-semibold text-slate-700">CPF:</span> {maskCpf(selectedPedidoInfo.cliente?.cpf || "")}</p>
                   </CardContent>
                 </Card>
 
@@ -847,7 +847,7 @@ function PainelLoja() {
                           <p className="text-slate-500 text-xs mt-1">Qtde: {prod.qtd}</p>
                         </div>
                         <div className="text-right font-semibold text-slate-800">
-                          R$ {prod.valorUnitario.toFixed(2).replace(".", ",")}
+                          R$ {(prod.valorUnitario || 0).toFixed(2).replace(".", ",")}
                         </div>
                       </div>
                     ))}
@@ -864,7 +864,7 @@ function PainelLoja() {
                   <CardContent className="pt-4 text-sm space-y-2">
                     <div className="flex justify-between">
                       <span className="text-slate-600">Subtotal Produtos</span>
-                      <span>R$ {selectedPedidoInfo.valores.produtos.toFixed(2).replace(".", ",")}</span>
+                      <span>R$ {(selectedPedidoInfo.valores?.produtos || 0).toFixed(2).replace(".", ",")}</span>
                     </div>
                     <div className="flex justify-between border-b border-slate-100 pb-2">
                       <span className="text-slate-600">Forma de Pagamento</span>
@@ -881,17 +881,17 @@ function PainelLoja() {
                     </div>
                     <div className="flex justify-between pt-2">
                       <span className="text-slate-600">Frete / Entrega</span>
-                      <span>R$ {selectedPedidoInfo.valores.frete.toFixed(2).replace(".", ",")}</span>
+                      <span>R$ {(selectedPedidoInfo.valores?.frete || 0).toFixed(2).replace(".", ",")}</span>
                     </div>
-                    {selectedPedidoInfo.valores.desconto > 0 && (
+                    {(selectedPedidoInfo.valores?.desconto || 0) > 0 && (
                       <div className="flex justify-between text-green-600">
                         <span>Desconto</span>
-                        <span>- R$ {selectedPedidoInfo.valores.desconto.toFixed(2).replace(".", ",")}</span>
+                        <span>- R$ {(selectedPedidoInfo.valores?.desconto || 0).toFixed(2).replace(".", ",")}</span>
                       </div>
                     )}
                     <div className="flex justify-between font-bold text-base border-t border-slate-200 mt-2 pt-2">
                       <span>Total</span>
-                      <span>R$ {selectedPedidoInfo.valores.total.toFixed(2).replace(".", ",")}</span>
+                      <span>R$ {(selectedPedidoInfo.valores?.total || 0).toFixed(2).replace(".", ",")}</span>
                     </div>
                   </CardContent>
                 </Card>

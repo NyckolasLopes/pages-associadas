@@ -36,7 +36,11 @@ import {
   Loader2,
   Layers,
   FileText,
-  Stethoscope
+  Stethoscope,
+  RefreshCw,
+  Info,
+  ShieldCheck,
+  Store
 } from "lucide-react";
 import { getCityFromCep, searchProductsMatch } from "@/lib/utils";
 import type { Produto } from "@/types";
@@ -65,11 +69,34 @@ export const Route = createFileRoute("/admin/produtos")({
 const PAGE_SIZE = 15;
 
 function AdminProdutos() {
-  const { customProducts, removeProduct, importProducts, addOrUpdateProduct, clearProducts, updateProductDescriptions, bulkUpdateProducts } = useAdminProducts();
+  const { 
+    customProducts, 
+    storeCustomProducts,
+    storeProductOverrides,
+    storeRemovedProductIds,
+    removeProduct, 
+    importProducts, 
+    addOrUpdateProduct, 
+    clearProducts, 
+    updateProductDescriptions, 
+    bulkUpdateProducts,
+    getStoreEffectiveProducts,
+    resetStoreProductsToGeneral
+  } = useAdminProducts();
   const { regions, prices } = useRegionsStore();
-  const { pharmacies } = useAdmin();
+  const { pharmacies, activeStoreId, currentUser } = useAdmin();
   const location = useLocation();
   const isRoot = location.pathname === "/admin/produtos" || location.pathname === "/admin/produtos/";
+
+  // Resolved store context
+  const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
+  const currentLoja = pharmacies.find(p => p.id === currentLojaId);
+
+  // Products effective for current scope (Store or Global Network Master)
+  const currentProductsList = useMemo(() => {
+    return getStoreEffectiveProducts(currentLojaId);
+  }, [customProducts, storeCustomProducts, storeProductOverrides, storeRemovedProductIds, currentLojaId, getStoreEffectiveProducts]);
+
   const [importerOpen, setImporterOpen] = useState(false);
   const [descImporterOpen, setDescImporterOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
@@ -101,15 +128,25 @@ function AdminProdutos() {
   };
 
   const handleSaveProduct = (updatedProduct: Produto) => {
-    addOrUpdateProduct(updatedProduct);
+    const finalProduct: Produto = {
+      ...updatedProduct,
+      lojaId: currentLojaId || undefined,
+      isIndividualLoja: !!currentLojaId,
+    };
+    addOrUpdateProduct(finalProduct, currentLojaId);
     setEditorOpen(false);
+    toast.success(
+      currentLojaId
+        ? `Produto atualizado exclusivamente para a loja ${currentLoja?.nome || ""}!`
+        : `Produto atualizado no Catálogo Geral da Rede!`
+    );
   };
 
 
 
   const handleExportJson = () => {
     // Exportar apenas um produto como modelo de API
-    const baseProduct = customProducts.length > 0 ? customProducts[0] : {} as any;
+    const baseProduct = currentProductsList.length > 0 ? currentProductsList[0] : {} as any;
     
     // Forçar estrutura completa do JSON para documentar a API
     const modelProduct = {
@@ -125,7 +162,7 @@ function AdminProdutos() {
       }
     };
     
-    const exportData = customProducts.length > 0 ? [modelProduct] : [];
+    const exportData = currentProductsList.length > 0 ? [modelProduct] : [];
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
     const dlAnchorElem = document.createElement("a");
     dlAnchorElem.setAttribute("href", dataStr);
@@ -135,7 +172,7 @@ function AdminProdutos() {
 
   const handleExportGoogleShopping = () => {
     // Filtrar produtos ativos, com preço e sem tarja de retenção
-    const feedProducts = customProducts.filter(p => 
+    const feedProducts = currentProductsList.filter(p => 
       p.ativo && 
       p.precoPor > 0 &&
       p.tarja !== "Vermelha" && 
@@ -202,7 +239,12 @@ function AdminProdutos() {
   };
 
   const handleSpreadsheetImport = (products: Produto[]) => {
-    importProducts(products);
+    importProducts(products, currentLojaId);
+    toast.success(
+      currentLojaId
+        ? `Planilha importada com sucesso exclusivamente para a loja ${currentLoja?.nome || ""}!`
+        : `Planilha importada no Catálogo Geral da Rede!`
+    );
   };
 
   const simulateApiSync = () => {
@@ -214,9 +256,13 @@ function AdminProdutos() {
   };
 
   const confirmDeleteAll = () => {
-    clearProducts();
+    clearProducts(currentLojaId);
     setDeleteAllModalOpen(false);
-    toast.success("Todos os produtos foram excluídos.");
+    toast.success(
+      currentLojaId
+        ? `Catálogo exclusivo da loja ${currentLoja?.nome || ""} foi limpo.`
+        : `Todos os produtos da rede foram excluídos.`
+    );
   };
 
   const handleConfirmSync = async () => {
@@ -337,7 +383,9 @@ function AdminProdutos() {
           categoriaId: "142",
           internalTags: [],
           origem: "API",
-          dataImportacao: new Date().toISOString()
+          dataImportacao: new Date().toISOString(),
+          lojaId: currentLojaId || undefined,
+          isIndividualLoja: !!currentLojaId,
         };
       });
 
@@ -346,12 +394,12 @@ function AdminProdutos() {
         reader.onload = (e) => {
           try {
             const data = JSON.parse(e.target?.result as string);
-            if (Array.isArray(data)) importProducts(data);
+            if (Array.isArray(data)) importProducts(data, currentLojaId);
           } catch {}
         };
         reader.readAsText(jsonFile);
       } else {
-        importProducts(mappedProducts);
+        importProducts(mappedProducts, currentLojaId);
       }
       
       setSyncProgress(100);
@@ -374,7 +422,7 @@ function AdminProdutos() {
 
   // Filtered products
   const filtered = useMemo(() => {
-    let result = customProducts;
+    let result = currentProductsList;
     
     if (listFilter !== "all") {
       if (listFilter === "out-of-stock") {
@@ -403,7 +451,7 @@ function AdminProdutos() {
     }
     
     return result;
-  }, [customProducts, search, listFilter]);
+  }, [currentProductsList, search, listFilter]);
 
   // Pagination
   const numericPageSize = parseInt(pageSize, 10);
@@ -421,11 +469,62 @@ function AdminProdutos() {
 
   return (
     <div className="space-y-6">
+      {/* Scope Banner: Store-Specific vs Network Master */}
+      {currentLojaId ? (
+        <div className="bg-gradient-to-r from-amber-50 to-blue-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 font-bold flex-shrink-0">
+              <Store className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="font-bold text-slate-800 text-sm">
+                  Loja: {currentLoja?.nome || "Loja do Associado"}
+                </h4>
+                <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs font-semibold">
+                  🛡️ Produtos Individuais da Loja
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                As criações, edições de preço e personalizações feitas nesta tela pertencem <strong>exclusivamente a esta loja</strong> e <strong>NÃO afetam</strong> o login geral da rede.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                resetStoreProductsToGeneral(currentLojaId);
+                toast.success("Catálogo da loja restaurado com base nos produtos padrões da rede!");
+              }}
+              className="text-xs bg-white text-slate-700 hover:bg-slate-50 border-slate-300 font-medium"
+              title="Descarta alterações exclusivas desta loja e volta a usar o padrão da rede"
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
+              Restaurar Catálogo da Rede
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center gap-3 text-xs text-slate-600">
+          <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <div>
+            <span className="font-bold text-slate-700">🌐 Painel Geral da Rede (Catálogo Central Master):</span>
+            <span className="ml-1">Você está gerenciando a base central de produtos compartilhada pelas farmácias da rede.</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Produtos</h2>
-          <p className="text-muted-foreground">Gerencie o catálogo de produtos importando planilhas ou JSON.</p>
+          <p className="text-muted-foreground">
+            {currentLojaId 
+              ? `Gerencie o catálogo exclusivo da loja ${currentLoja?.nome || ""}.`
+              : "Gerencie o catálogo geral de produtos da rede importando planilhas ou JSON."}
+          </p>
         </div>
         <div className="flex flex-col gap-2 items-end">
           {/* Top row: Exports and Sync */}
@@ -434,7 +533,7 @@ function AdminProdutos() {
               variant="outline"
               size="sm"
               onClick={handleExportJson}
-              disabled={customProducts.length === 0}
+              disabled={currentProductsList.length === 0}
               className="font-bold text-xs"
             >
               <FileDown className="h-3.5 w-3.5 mr-1.5" />
@@ -451,12 +550,12 @@ function AdminProdutos() {
             <Button
               size="sm"
               onClick={handleDeleteAll}
-              disabled={customProducts.length === 0}
+              disabled={currentProductsList.length === 0}
               variant="destructive"
               className="font-bold text-xs"
             >
               <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              Excluir Todos
+              {currentLojaId ? "Limpar da Loja" : "Excluir Todos"}
             </Button>
           </div>
 
@@ -530,11 +629,13 @@ function AdminProdutos() {
         <div className="p-4 border-b flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-slate-50">
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-muted-foreground" />
-            <h3 className="font-bold">Seus produtos</h3>
-            <Badge variant="secondary" className="text-xs">{customProducts.length}</Badge>
+            <h3 className="font-bold">
+              {currentLojaId ? `Produtos de ${currentLoja?.nome || "sua loja"}` : "Seus produtos da rede"}
+            </h3>
+            <Badge variant="secondary" className="text-xs">{currentProductsList.length}</Badge>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {customProducts.length > 0 && (
+            {currentProductsList.length > 0 && (
               <div className="w-full sm:w-48">
                 <Select value={listFilter} onValueChange={(v) => { setListFilter(v); setPage(0); }}>
                   <SelectTrigger className="h-8 text-xs bg-white">
@@ -555,7 +656,7 @@ function AdminProdutos() {
                 </Select>
               </div>
             )}
-            {customProducts.length > 0 && (
+            {currentProductsList.length > 0 && (
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -570,14 +671,16 @@ function AdminProdutos() {
         </div>
 
         {/* Table content */}
-        {customProducts.length === 0 ? (
+        {currentProductsList.length === 0 ? (
           <div className="p-12 text-center">
             <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
               <FileSpreadsheet className="h-8 w-8 text-slate-400" />
             </div>
             <p className="font-bold text-slate-600 mb-1">Nenhum produto cadastrado</p>
             <p className="text-sm text-muted-foreground mb-4">
-              Importe uma planilha Excel ou JSON para começar a gerenciar seu catálogo.
+              {currentLojaId 
+                ? "Esta loja ainda não possui produtos ativos. Importe uma planilha ou clique em 'Restaurar Catálogo da Rede'."
+                : "Importe uma planilha Excel ou JSON para começar a gerenciar seu catálogo."}
             </p>
             <div className="flex justify-center gap-2">
               <Button
@@ -619,121 +722,139 @@ function AdminProdutos() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedProducts.map((p, idx) => (
-                    <tr
-                      key={p.id}
-                      className="border-b last:border-0 hover:bg-slate-50/70 transition-colors"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-slate-100 border flex items-center justify-center shrink-0">
-                            <Package className="h-4 w-4 text-slate-400" />
-                          </div>
-                          <div className="min-w-0 flex flex-col gap-0.5">
-                            <div className="flex items-center gap-2">
-                              <div className="font-bold text-sm text-slate-800 truncate max-w-[250px]">{p.nome}</div>
-                              {p.isNovo && <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-sky-500 text-white border-none">Novo</Badge>}
-                              {p.isRevisado && <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500 text-white border-none">Revisado</Badge>}
+                  {paginatedProducts.map((p, idx) => {
+                    const isStoreExclusive = currentLojaId && (p.lojaId === currentLojaId || (storeCustomProducts[currentLojaId] || []).some(x => x.id === p.id));
+                    const isStoreOverride = currentLojaId && Boolean(storeProductOverrides[currentLojaId]?.[p.id]);
+
+                    return (
+                      <tr
+                        key={p.id}
+                        className="border-b last:border-0 hover:bg-slate-50/70 transition-colors"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-slate-100 border flex items-center justify-center shrink-0">
+                              <Package className="h-4 w-4 text-slate-400" />
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <code className="text-[10px] bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-500">EAN: {p.ean}</code>
-                              <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{p.fabricante || "Sem marca"}</span>
-                              <span className="text-[10px] text-muted-foreground truncate max-w-[150px] bg-slate-100 px-1.5 py-0.5 rounded">
-                                {(() => {
-                                  const cats = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
-                                  const cat = cats.find((c: any) => c.id === p.categoriaId);
-                                  const sub = p.subcategoriaId ? cats.find((c: any) => c.id === p.subcategoriaId) : null;
-                                  if (!cat) return "Sem categoria";
-                                  return sub ? `${cat.nome} > ${sub.nome}` : cat.nome;
-                                })()}
-                              </span>
-                              {p.categoriaId === "142" ? (
-                                <>
-                                  {Boolean(p.tarja && p.tarja !== "Sem Tarja") && (
-                                    <Badge variant={p.tarja === "Sem Tarja" ? "secondary" : "destructive"} className="text-[8px] px-1.5 py-0 h-4">
-                                      {p.tarja}
-                                    </Badge>
-                                  )}
-                                  {Boolean(p.retemReceita) && (
-                                    <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 bg-red-50 text-red-700 border-red-200">
-                                      Retém Receita
-                                    </Badge>
-                                  )}
-                                </>
-                              ) : (
-                                <Badge variant="secondary" className="text-[8px] px-1.5 py-0 h-4 text-slate-500 bg-slate-100 hover:bg-slate-100">
-                                  Não Medicamento
-                                </Badge>
-                              )}
+                            <div className="min-w-0 flex flex-col gap-0.5">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="font-bold text-sm text-slate-800 truncate max-w-[250px]">{p.nome}</div>
+                                {isStoreExclusive && (
+                                  <Badge className="text-[10px] px-1.5 py-0 h-4 bg-purple-100 text-purple-800 border-purple-300">
+                                    Exclusivo da Loja
+                                  </Badge>
+                                )}
+                                {isStoreOverride && (
+                                  <Badge className="text-[10px] px-1.5 py-0 h-4 bg-blue-100 text-blue-800 border-blue-300">
+                                    Preço/Dados Alterados
+                                  </Badge>
+                                )}
+                                {p.isNovo && <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-sky-500 text-white border-none">Novo</Badge>}
+                                {p.isRevisado && <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500 text-white border-none">Revisado</Badge>}
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <code className="text-[10px] bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-500">EAN: {p.ean}</code>
+                                <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{p.fabricante || "Sem marca"}</span>
+                                <span className="text-[10px] text-muted-foreground truncate max-w-[150px] bg-slate-100 px-1.5 py-0.5 rounded">
+                                  {(() => {
+                                    const cats = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
+                                    const cat = cats.find((c: any) => c.id === p.categoriaId);
+                                    const sub = p.subcategoriaId ? cats.find((c: any) => c.id === p.subcategoriaId) : null;
+                                    if (!cat) return "Sem categoria";
+                                    return sub ? `${cat.nome} > ${sub.nome}` : cat.nome;
+                                  })()}
+                                </span>
+                                {p.categoriaId === "142" ? (
+                                  <>
+                                    {Boolean(p.tarja && p.tarja !== "Sem Tarja") && (
+                                      <Badge variant={p.tarja === "Sem Tarja" ? "secondary" : "destructive"} className="text-[8px] px-1.5 py-0 h-4">
+                                        {p.tarja}
+                                      </Badge>
+                                    )}
+                                    {Boolean(p.retemReceita) && (
+                                      <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 bg-red-50 text-red-700 border-red-200">
+                                        Retém Receita
+                                      </Badge>
+                                    )}
+                                  </>
+                                ) : (
+                                  <Badge variant="secondary" className="text-[8px] px-1.5 py-0 h-4 text-slate-500 bg-slate-100 hover:bg-slate-100">
+                                    Não Medicamento
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
-                        <div className="flex flex-col gap-0.5">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-max ${p.origem === 'API' ? 'bg-slate-800 text-white' : p.origem === 'JSON' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                            {p.origem || 'Planilha'}
-                          </span>
-                          <span className="text-[10px] font-medium text-slate-400">
-                            {p.dataImportacao ? new Date(p.dataImportacao).toLocaleDateString("pt-BR") : new Date().toLocaleDateString("pt-BR")}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {p.precoDe > p.precoPor && (
-                          <div className="text-xs text-muted-foreground line-through">
-                            {p.precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-max ${p.origem === 'API' ? 'bg-slate-800 text-white' : p.origem === 'JSON' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                              {p.origem || 'Planilha'}
+                            </span>
+                            <span className="text-[10px] font-medium text-slate-400">
+                              {p.dataImportacao ? new Date(p.dataImportacao).toLocaleDateString("pt-BR") : new Date().toLocaleDateString("pt-BR")}
+                            </span>
                           </div>
-                        )}
-                        <div className="font-bold text-sm text-emerald-700">
-                          {p.precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className={`text-sm font-bold ${pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0) > 0 ? "text-slate-700" : "text-red-500"}`}>
-                          {pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Switch
-                          checked={p.ativo !== false}
-                          onCheckedChange={(checked) => addOrUpdateProduct({ ...p, ativo: checked })}
-                          className="data-[state=checked]:bg-emerald-500 scale-75"
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => addOrUpdateProduct({ ...p, destaque: !p.destaque })}
-                          className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
-                          title="Destacar produto"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                        </Button>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1">
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {p.precoDe > p.precoPor && (
+                            <div className="text-xs text-muted-foreground line-through">
+                              {p.precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            </div>
+                          )}
+                          <div className="font-bold text-sm text-emerald-700">
+                            {p.precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={`text-sm font-bold ${pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0) > 0 ? "text-slate-700" : "text-red-500"}`}>
+                            {pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Switch
+                            checked={p.ativo !== false}
+                            onCheckedChange={(checked) => addOrUpdateProduct({ ...p, ativo: checked }, currentLojaId)}
+                            className="data-[state=checked]:bg-emerald-500 scale-75"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50"
-                            onClick={() => handleEditProduct(p)}
+                            onClick={() => addOrUpdateProduct({ ...p, destaque: !p.destaque }, currentLojaId)}
+                            className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
+                            title="Destacar produto"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
-                            onClick={() => removeProduct(p.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50"
+                              onClick={() => handleEditProduct(p)}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => {
+                                removeProduct(p.id, currentLojaId);
+                                toast.success(currentLojaId ? "Produto removido da sua loja!" : "Produto removido da rede!");
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -808,7 +929,7 @@ function AdminProdutos() {
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
         filteredProducts={filtered}
-        onBulkUpdate={bulkUpdateProducts}
+        onBulkUpdate={(productIds, updates) => bulkUpdateProducts(productIds, updates, currentLojaId)}
       />
 
       {/* Product Editor Dialog */}
@@ -817,6 +938,7 @@ function AdminProdutos() {
         onOpenChange={setEditorOpen}
         product={editingProduct}
         onSave={handleSaveProduct}
+        lojaId={currentLojaId}
       />
       
       {/* Nested Routes (like /admin/produtos/novo) */}
