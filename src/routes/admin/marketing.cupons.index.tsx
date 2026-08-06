@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMarketing } from "@/stores/marketing";
+import { useAdmin } from "@/stores/admin";
 import { Search, Filter, ChevronDown, MoreHorizontal, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/admin/marketing/cupons/")({
 
 function CuponsIndexPage() {
   const { cupons, addCoupon, removeCoupon } = useMarketing();
+  const { currentUser } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [novoCupom, setNovoCupom] = useState({
@@ -47,7 +50,7 @@ function CuponsIndexPage() {
     <div className="max-w-6xl space-y-6 pb-16">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800">Meus cupons</h2>
+          <h2 className="text-2xl font-bold text-slate-800">{isGlobalAdmin ? "Cupons das lojas" : "Meus cupons"}</h2>
           <span className="text-sm text-slate-500">{cupons.length} cupom(s)</span>
         </div>
         <div className="flex items-center gap-4">
@@ -55,94 +58,96 @@ function CuponsIndexPage() {
             Ver performance dos cupons
           </Button>
           
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogTrigger asChild>
-              <Button className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white">
-                + Novo cupom
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Criar Novo Cupom</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Código do Cupom</label>
-                  <Input 
-                    placeholder="EX: 10OFF" 
-                    value={novoCupom.codigo} 
-                    onChange={e => setNovoCupom({...novoCupom, codigo: e.target.value.toUpperCase()})}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Descrição</label>
-                  <Input 
-                    placeholder="Descrição breve do cupom" 
-                    value={novoCupom.descricao} 
-                    onChange={e => setNovoCupom({...novoCupom, descricao: e.target.value})}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+          {!isGlobalAdmin && (
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white">
+                  + Novo cupom
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Cupom</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <label className="text-sm font-medium">Tipo</label>
-                    <Select value={novoCupom.tipoDesconto} onValueChange={(v: any) => setNovoCupom({...novoCupom, tipoDesconto: v})}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percentual">Percentual (%)</SelectItem>
-                        <SelectItem value="fixo">Valor Fixo (R$)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <label className="text-sm font-medium">Código do Cupom</label>
+                    <Input 
+                      placeholder="EX: 10OFF" 
+                      value={novoCupom.codigo} 
+                      onChange={e => setNovoCupom({...novoCupom, codigo: e.target.value.toUpperCase()})}
+                    />
                   </div>
                   <div className="grid gap-2">
-                    <label className="text-sm font-medium">Valor</label>
+                    <label className="text-sm font-medium">Descrição</label>
+                    <Input 
+                      placeholder="Descrição breve do cupom" 
+                      value={novoCupom.descricao} 
+                      onChange={e => setNovoCupom({...novoCupom, descricao: e.target.value})}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <label className="text-sm font-medium">Tipo</label>
+                      <Select value={novoCupom.tipoDesconto} onValueChange={(v: any) => setNovoCupom({...novoCupom, tipoDesconto: v})}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percentual">Percentual (%)</SelectItem>
+                          <SelectItem value="fixo">Valor Fixo (R$)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <label className="text-sm font-medium">Valor</label>
+                      <Input 
+                        type="number" 
+                        value={novoCupom.valorDesconto} 
+                        onChange={e => setNovoCupom({...novoCupom, valorDesconto: Number(e.target.value)})}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium">Valor Mínimo da Compra (R$)</label>
                     <Input 
                       type="number" 
-                      value={novoCupom.valorDesconto} 
-                      onChange={e => setNovoCupom({...novoCupom, valorDesconto: Number(e.target.value)})}
+                      value={novoCupom.valorMinimo} 
+                      onChange={e => setNovoCupom({...novoCupom, valorMinimo: Number(e.target.value)})}
                     />
                   </div>
                 </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Valor Mínimo da Compra (R$)</label>
-                  <Input 
-                    type="number" 
-                    value={novoCupom.valorMinimo} 
-                    onChange={e => setNovoCupom({...novoCupom, valorMinimo: Number(e.target.value)})}
-                  />
+                <div className="flex justify-end gap-3 mt-4">
+                  <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => {
+                    if (!novoCupom.codigo) return toast.error("Preencha o código do cupom");
+                    addCoupon({
+                      codigo: novoCupom.codigo,
+                      descricao: novoCupom.descricao,
+                      ativo: true,
+                      totalDisponiveis: novoCupom.totalDisponiveis,
+                      valorMinimo: novoCupom.valorMinimo,
+                      dataInicio: "",
+                      dataTermino: "",
+                      exigirMinItens: false,
+                      tipoDesconto: novoCupom.tipoDesconto,
+                      valorDesconto: novoCupom.valorDesconto,
+                      aplicarFreteGratis: false,
+                      aplicacaoAutomatica: false,
+                      permiteAcumular: false,
+                      usoUnico: false,
+                      cupomPrimeiraCompra: false,
+                    });
+                    toast.success("Cupom criado com sucesso!");
+                    setIsModalOpen(false);
+                    setNovoCupom({
+                      codigo: "", descricao: "", valorDesconto: 0, tipoDesconto: "percentual", valorMinimo: 0, totalDisponiveis: 100
+                    });
+                  }}>
+                    Salvar Cupom
+                  </Button>
                 </div>
-              </div>
-              <div className="flex justify-end gap-3 mt-4">
-                <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => {
-                  if (!novoCupom.codigo) return toast.error("Preencha o código do cupom");
-                  addCoupon({
-                    codigo: novoCupom.codigo,
-                    descricao: novoCupom.descricao,
-                    ativo: true,
-                    totalDisponiveis: novoCupom.totalDisponiveis,
-                    valorMinimo: novoCupom.valorMinimo,
-                    dataInicio: "",
-                    dataTermino: "",
-                    exigirMinItens: false,
-                    tipoDesconto: novoCupom.tipoDesconto,
-                    valorDesconto: novoCupom.valorDesconto,
-                    aplicarFreteGratis: false,
-                    aplicacaoAutomatica: false,
-                    permiteAcumular: false,
-                    usoUnico: false,
-                    cupomPrimeiraCompra: false,
-                  });
-                  toast.success("Cupom criado com sucesso!");
-                  setIsModalOpen(false);
-                  setNovoCupom({
-                    codigo: "", descricao: "", valorDesconto: 0, tipoDesconto: "percentual", valorMinimo: 0, totalDisponiveis: 100
-                  });
-                }}>
-                  Salvar Cupom
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -200,18 +205,20 @@ function CuponsIndexPage() {
                     <td className="px-4 py-4 text-right">
                       <div className="flex items-center justify-end gap-3">
                         <div className={`h-2 w-2 rounded-full ${cupom.ativo ? "bg-emerald-500" : "bg-slate-300"}`} />
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="text-red-600 cursor-pointer font-medium" onClick={() => removeCoupon(cupom.id)}>
-                              <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {!isGlobalAdmin && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem className="text-red-600 cursor-pointer font-medium" onClick={() => removeCoupon(cupom.id)}>
+                                <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
                     </td>
                   </tr>

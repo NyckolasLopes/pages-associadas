@@ -361,7 +361,7 @@ function AdminLayout() {
           )}
 
           {/* ---- LOJAS ---- */}
-          {(can('lojas_todas') || can('lojas_nova') || can('lojas_tabelas') || can('lojas_precos') || can('lojas_paineis')) && (
+          {(can('lojas_todas') || can('lojas_nova') || can('lojas_tabelas') || can('lojas_precos') || can('lojas_paineis') || !isGlobalAdmin) && (
             <NavSection 
               icon={isGlobalAdmin ? <Store className="h-4 w-4" /> : <DollarSign className="h-4 w-4" />} 
               label={isGlobalAdmin ? "Lojas" : "Preços"} 
@@ -372,6 +372,7 @@ function AdminLayout() {
               {can('lojas_nova') && <Link to="/admin/lojas/nova" className={subLinkClass} activeOptions={{ exact: true }}>Nova loja</Link>}
               {isGlobalAdmin && <Link to={"/admin/lojas/gerar" as any} className={subLinkClass} activeOptions={{ exact: true }}>Gerar Loja</Link>}
               {isGlobalAdmin && <Link to="/admin/lojas/link-inscricao" className={subLinkClass} activeOptions={{ exact: true }}>Link Inscrição Associado</Link>}
+              {!isGlobalAdmin && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Meus preços</Link>}
             </NavSection>
           )}
 
@@ -408,7 +409,7 @@ function AdminLayout() {
           {/* ---- MARKETING ---- */}
           {can('mkt_cupons') && (
             <NavSection icon={<Megaphone className="h-4 w-4" />} label="Marketing" open={openNavSection === "Marketing"} onToggle={() => setOpenNavSection(openNavSection === "Marketing" ? "" : "Marketing")}>
-              {can('mkt_cupons') && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>Meus cupons</Link>}
+              {can('mkt_cupons') && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Cupons das lojas" : "Meus cupons"}</Link>}
               {can('mkt_cupons') && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
             </NavSection>
           )}
