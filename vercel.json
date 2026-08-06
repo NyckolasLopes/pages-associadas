@@ -53,7 +53,7 @@
       ]
     },
     {
-      "source": "/(favicon.png|manifest.json|robots.txt|icon-(.*).png)",
+      "source": "/(favicon.png|manifest.json|robots.txt)",
       "headers": [
         {
           "key": "Cache-Control",
