@@ -469,12 +469,22 @@ function AdminLayout() {
           )}
 
           {/* ---- PERSONALIZAR MINHA LOJA ---- */}
-          <Link
-            to="/admin/banners"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary"
+          <NavSection 
+            icon={<Store className="h-4 w-4" />} 
+            label="Personalizar Minha Loja" 
+            open={openNavSection === "Personalizar"} 
+            onToggle={() => setOpenNavSection(openNavSection === "Personalizar" ? "" : "Personalizar")}
           >
-            <Store className="h-4 w-4" /> Personalizar Minha Loja
-          </Link>
+            <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
+              Banners
+            </Link>
+            <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
+              Estrutura da Minha Loja
+            </Link>
+            <Link to="/admin/banners" search={{ tab: "vitrines" }} className={subLinkClass}>
+              Minhas Vitrines
+            </Link>
+          </NavSection>
         </nav>
 
         <div className="p-4 border-t">

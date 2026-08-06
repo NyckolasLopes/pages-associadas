@@ -19,12 +19,18 @@ import {
 } from "@/components/ui/dialog";
 import { useAdmin, AdminBanner } from "@/stores/admin";
 import { useAdminProducts } from "@/stores/products";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { StoreStructureViewer } from "@/components/admin/StoreStructureViewer";
 import { StoreVitrinesConfig } from "@/components/admin/StoreVitrinesConfig";
 
+const bannersSearchSchema = z.object({
+  tab: z.enum(["banners", "estrutura", "vitrines"]).optional().catch("banners"),
+});
+
 export const Route = createFileRoute("/admin/banners")({
+  validateSearch: (search) => bannersSearchSchema.parse(search),
   component: AdminBanners,
 });
 
@@ -133,7 +139,25 @@ function AdminBanners() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Partial<AdminBanner> | null>(null);
-  const [activeTab, setActiveTab] = useState<"banners" | "estrutura" | "vitrines">("banners");
+
+  const searchParams = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const currentTab = (searchParams?.tab && ["banners", "estrutura", "vitrines"].includes(searchParams.tab))
+    ? (searchParams.tab as "banners" | "estrutura" | "vitrines")
+    : "banners";
+
+  const [activeTab, setActiveTab] = useState<"banners" | "estrutura" | "vitrines">(currentTab);
+
+  useEffect(() => {
+    if (searchParams?.tab && ["banners", "estrutura", "vitrines"].includes(searchParams.tab)) {
+      setActiveTab(searchParams.tab as "banners" | "estrutura" | "vitrines");
+    }
+  }, [searchParams?.tab]);
+
+  const handleTabChange = (tab: "banners" | "estrutura" | "vitrines") => {
+    setActiveTab(tab);
+    navigate({ search: (prev: any) => ({ ...prev, tab }) });
+  };
 
   const totalBannersCount = banners.length;
 
@@ -212,7 +236,7 @@ function AdminBanners() {
       {/* Modern Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
-          onClick={() => setActiveTab("banners")}
+          onClick={() => handleTabChange("banners")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
             activeTab === "banners"
               ? "bg-[#00B5AD] text-white shadow-sm"
@@ -229,7 +253,7 @@ function AdminBanners() {
         </button>
 
         <button
-          onClick={() => setActiveTab("estrutura")}
+          onClick={() => handleTabChange("estrutura")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
             activeTab === "estrutura"
               ? "bg-[#00B5AD] text-white shadow-sm"
@@ -246,7 +270,7 @@ function AdminBanners() {
         </button>
 
         <button
-          onClick={() => setActiveTab("vitrines")}
+          onClick={() => handleTabChange("vitrines")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
             activeTab === "vitrines"
               ? "bg-[#00B5AD] text-white shadow-sm"
