@@ -8,6 +8,8 @@ import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   DollarSign,
   ShoppingBag,
@@ -23,7 +25,8 @@ import {
   CheckCircle2,
   PackageCheck,
   Truck,
-  ExternalLink
+  ExternalLink,
+  Globe
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
@@ -33,9 +36,30 @@ export const Route = createFileRoute("/admin/")({
 function AdminDashboard() {
   const { currentUser, pharmacies, activeStoreId } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
-  const { visitors, totalAcessos } = useLive();
+  const { visitors, totalAcessos, lojasAcessos } = useLive();
   const { orders: rawOrders } = useOrders();
+  const [showVisitasModal, setShowVisitasModal] = useState(false);
   
+  const visitasPorLoja = useMemo(() => {
+    return (pharmacies || []).map(loja => {
+      const stat = lojasAcessos?.[loja.id] || { total: 0, mes: 0, hoje: 0 };
+      return {
+        id: loja.id,
+        nome: loja.nome,
+        cidade: loja.cidade,
+        uf: loja.uf,
+        mes: stat.mes || 0,
+        total: stat.total || 0,
+        hoje: stat.hoje || 0,
+      };
+    }).sort((a, b) => b.mes - a.mes);
+  }, [pharmacies, lojasAcessos]);
+
+  const maxVisitasMes = useMemo(() => {
+    const max = Math.max(...visitasPorLoja.map(v => v.mes), 1);
+    return max > 0 ? max : 1;
+  }, [visitasPorLoja]);
+
   const orders = useMemo(() => {
     if (!activeStoreId) return rawOrders;
     return rawOrders.filter(o => o.lojaId === activeStoreId);
@@ -324,13 +348,28 @@ function AdminDashboard() {
             </div>
           </Link>
 
-          <div className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-slate-400" />
-              <span className="text-xl font-bold text-slate-800">{totalAcessos || 0}</span>
+          <div 
+            onClick={() => setShowVisitasModal(true)}
+            className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                  <Eye className="h-4 w-4" />
+                </div>
+                <span className="text-xl font-bold text-slate-800">{totalAcessos || 0}</span>
+              </div>
+              <Badge variant="outline" className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border-emerald-200">
+                Por Loja
+              </Badge>
             </div>
             <div className="text-xs text-muted-foreground font-medium leading-tight">
-              Número de visitas no mês
+              Visitantes no mês por loja
+              <div className="text-[10px] text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
+                <span>{visitasPorLoja.length} lojas monitoradas</span>
+                <span>•</span>
+                <span>Clique para ver</span>
+              </div>
             </div>
           </div>
         </div>
@@ -350,7 +389,7 @@ function AdminDashboard() {
               )}
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Acompanhe em tempo real os pedidos finalizados via WhatsApp e e-commerce pelas lojas da rede.
+              Acompanhe em tempo real os pedidos finalizados via WhatsApp pelas lojas da rede.
             </p>
           </div>
           <Link 
@@ -466,6 +505,81 @@ function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* ---- Modal de Visitantes no Mês por Loja ---- */}
+      <Dialog open={showVisitasModal} onOpenChange={setShowVisitasModal}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-800 flex items-center gap-2">
+              <Eye className="h-5 w-5 text-emerald-600" />
+              Visitantes no Mês por Loja
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Acessos registrados nas páginas criadas de cada farmácia associada na rede.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto pr-1 mt-4 space-y-3">
+            {visitasPorLoja.map((loja, idx) => {
+              const perc = Math.round((loja.mes / maxVisitasMes) * 100);
+              return (
+                <div 
+                  key={loja.id} 
+                  className="bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl p-4 transition-all"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-800 font-black text-xs flex items-center justify-center shrink-0">
+                        #{idx + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-slate-800 truncate" title={loja.nome}>
+                          {loja.nome}
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-2">
+                          <span>{loja.cidade ? `${loja.cidade}/${loja.uf}` : "Rede"}</span>
+                          <span>•</span>
+                          <a 
+                            href={`/loja/${loja.id}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-emerald-600 hover:underline flex items-center gap-0.5 font-medium"
+                          >
+                            Página da loja <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div className="text-lg font-black text-emerald-700">
+                        {loja.mes} <span className="text-xs font-semibold text-slate-500">visitas</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        Hoje: <strong className="text-slate-600">{loja.hoje}</strong> • Total: <strong className="text-slate-600">{loja.total}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Barra de progresso comparativa */}
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-2">
+                    <div 
+                      className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.max(perc, 4)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+            {visitasPorLoja.length === 0 && (
+              <div className="text-center py-8 text-sm text-slate-400">
+                Nenhuma loja cadastrada para monitorar acessos.
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

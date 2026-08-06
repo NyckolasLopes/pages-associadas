@@ -3,6 +3,7 @@ import { useAdmin } from "@/stores/admin";
 import { useAdminProducts } from "@/stores/products";
 import { useCart, getEffectivePrice } from "@/stores/cart";
 import { useMarketing } from "@/stores/marketing";
+import { useLive } from "@/stores/live";
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,18 +37,24 @@ function LojaStorefrontPage() {
   const { products } = useAdminProducts();
   const { lojaPromocoes } = useMarketing();
   const { addItem, applyCoupon, appliedCoupon } = useCart();
+  const { recordLojaAccess, pingSession } = useLive();
 
   const loja = pharmacies.find((p) => p.id === lojaId) || pharmacies[0];
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("todos");
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
 
-  // Define esta loja como a loja ativa no carrinho
+  // Define esta loja como a loja ativa no carrinho e registra o acesso da página da loja
   useEffect(() => {
     if (loja?.id) {
       setSelectedPharmacyId(loja.id);
+      recordLojaAccess(loja.id);
+      
+      const sessionId = sessionStorage.getItem("fa-visitor-session") || Math.random().toString(36).substring(2);
+      sessionStorage.setItem("fa-visitor-session", sessionId);
+      pingSession(sessionId, loja.id);
     }
-  }, [loja?.id, setSelectedPharmacyId]);
+  }, [loja?.id, setSelectedPharmacyId, recordLojaAccess, pingSession]);
 
   // Banners locais
   const lojaBanners = useMemo(() => {

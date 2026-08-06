@@ -338,7 +338,7 @@ function AdminLayout() {
           {can('dash_view') && (
             <NavSection icon={<BarChart2 className="h-4 w-4" />} label="Análises" open={openNavSection === "Análises"} onToggle={() => setOpenNavSection(openNavSection === "Análises" ? "" : "Análises")}>
               <Link to="/admin/metricas" className={subLinkClass}>
-                Métricas
+                Métricas de Pedidos
               </Link>
               {(can('rel_vendas_produto') || can('rel_vendas_canal') || can('rel_desempenho') || can('rel_financeiro') || can('rel_logistica_retirada') || can('rel_logistica_sla') || can('rel_estoque_controlados') || can('rel_estoque_abc')) && (
                 <Link to="/admin/relatorios" className={subLinkClass}>
@@ -353,15 +353,20 @@ function AdminLayout() {
             </NavSection>
           )}
 
-          {/* ---- VENDAS ---- */}
-          {(can('vendas_pedidos') || can('vendas_criar') || can('vendas_carrinhos') || can('vendas_links')) && (
-            <NavSection icon={<Inbox className="h-4 w-4" />} label="Vendas" open={openNavSection === "Vendas"} onToggle={() => setOpenNavSection(openNavSection === "Vendas" ? "" : "Vendas")}>
-              {can('vendas_pedidos') && <Link to="/admin/pedidos" className={subLinkClass} activeOptions={{ exact: true }}>Pedidos</Link>}
-              {can('vendas_criar') && <Link to="/admin/pedidos/novo" className={subLinkClass} activeOptions={{ exact: true }}>Criar Pedido</Link>}
-              {can('vendas_carrinhos') && <Link to="/admin/carrinhos-abandonados" className={subLinkClass} activeOptions={{ exact: true }}>Carrinhos abandonados</Link>}
-              {can('vendas_links') && <Link to="/admin/links-carrinho" className={subLinkClass} activeOptions={{ exact: true }}>Links de carrinho</Link>}
+          {/* ---- PEDIDOS ---- */}
+          {can('vendas_pedidos') && (
+            <NavSection icon={<Inbox className="h-4 w-4" />} label="Pedidos" open={openNavSection === "Pedidos" || openNavSection === "Vendas"} onToggle={() => setOpenNavSection(openNavSection === "Pedidos" ? "" : "Pedidos")}>
+              <Link to="/admin/pedidos" className={subLinkClass} activeOptions={{ exact: true }}>Pedidos</Link>
             </NavSection>
           )}
+
+          {/* ---- MINHA LOJA (BANNERS) ---- */}
+          <Link
+            to="/admin/banners"
+            className="flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary"
+          >
+            <Store className="h-4 w-4" /> Minha Loja (Banners)
+          </Link>
 
           {/* ---- LOJAS ---- */}
           {(can('lojas_todas') || can('lojas_nova') || can('lojas_tabelas') || can('lojas_precos') || can('lojas_paineis')) && (
@@ -399,10 +404,9 @@ function AdminLayout() {
           )}
 
           {/* ---- CLIENTES ---- */}
-          {(can('cli_todos') || can('cli_leads')) && (
+          {can('cli_todos') && (
             <NavSection icon={<User className="h-4 w-4" />} label="Clientes" open={openNavSection === "Clientes"} onToggle={() => setOpenNavSection(openNavSection === "Clientes" ? "" : "Clientes")}>
-              {can('cli_todos') && <Link to="/admin/clientes" className={subLinkClass} activeOptions={{ exact: true }}>Ver todos</Link>}
-              {can('cli_leads') && <Link to="/admin/clientes/leads" className={subLinkClass} activeOptions={{ exact: true }}>Leads da Newsletter</Link>}
+              <Link to="/admin/clientes" className={subLinkClass} activeOptions={{ exact: true }}>Ver todos</Link>
             </NavSection>
           )}
 
@@ -455,21 +459,6 @@ function AdminLayout() {
               {can('mkt_comprejunto') && <Link to="/admin/marketing/compre-junto" className={subLinkClass} activeOptions={{ exact: true }}>Compre junto</Link>}
               {can('mkt_cupons') && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
             </NavSection>
-          )}
-
-          {/* ---- MEU PAINEL DA LOJA (Independent) ---- */}
-          {!isGlobalAdmin && can('lojas_paineis') && (
-            <Link
-              to="/admin/lojas/paineis"
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                location.pathname.startsWith("/admin/lojas/paineis")
-                  ? "bg-emerald-50 text-emerald-700 font-bold"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <Monitor className="h-4 w-4" />
-              Meu Painel da Loja
-            </Link>
           )}
 
           {/* ---- SOLUÇÕES ---- */}

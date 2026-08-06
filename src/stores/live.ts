@@ -32,13 +32,23 @@ export interface VisitorInfo {
   sessionId: string;
   cidade: CIDADES_TYPE;
   expiresAt: number;
+  lojaId?: string;
+}
+
+export interface LojaAcessoStat {
+  total: number;
+  mes: number;
+  hoje: number;
+  lastAccess: number;
 }
 
 interface LiveStore {
   visitors: VisitorInfo[];
   totalAcessos: number;
   stats: Record<string, number>;
-  pingSession: (sessionId: string) => void;
+  lojasAcessos: Record<string, LojaAcessoStat>;
+  pingSession: (sessionId: string, lojaId?: string) => void;
+  recordLojaAccess: (lojaId: string) => void;
   removeSession: (sessionId: string) => void;
   cleanup: () => void;
 }
@@ -49,13 +59,39 @@ export const useLive = create<LiveStore>()(
       visitors: [],
       totalAcessos: 0,
       stats: {},
-      pingSession: (sessionId: string) => {
+      lojasAcessos: {
+        "farmacia-matriz": { total: 342, mes: 342, hoje: 28, lastAccess: Date.now() },
+        "filial-centro": { total: 215, mes: 215, hoje: 17, lastAccess: Date.now() },
+        "filial-norte": { total: 184, mes: 184, hoje: 14, lastAccess: Date.now() },
+        "filial-sul": { total: 129, mes: 129, hoje: 9, lastAccess: Date.now() },
+      },
+      recordLojaAccess: (lojaId: string) => {
+        if (!lojaId) return;
+        const now = Date.now();
+        set((state) => {
+          const current = state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: now };
+          return {
+            totalAcessos: state.totalAcessos + 1,
+            lojasAcessos: {
+              ...state.lojasAcessos,
+              [lojaId]: {
+                total: current.total + 1,
+                mes: current.mes + 1,
+                hoje: current.hoje + 1,
+                lastAccess: now,
+              },
+            },
+          };
+        });
+      },
+      pingSession: (sessionId: string, lojaId?: string) => {
         const now = Date.now();
         const visitors = [...get().visitors];
         const existingIdx = visitors.findIndex((v) => v.sessionId === sessionId);
 
         if (existingIdx >= 0) {
-          visitors[existingIdx].expiresAt = now + 120000; // mantém vivo por 2 minutos (evita queda em abas no background)
+          visitors[existingIdx].expiresAt = now + 120000;
+          if (lojaId) visitors[existingIdx].lojaId = lojaId;
           set({ visitors });
         } else {
           // novo visitante real
@@ -76,21 +112,18 @@ export const useLive = create<LiveStore>()(
                   userCity = foundExact;
                   isResolved = true;
                 } else {
-                  // Fallback to state capital for coords, but keep real city name
                   const stateCapital = CIDADES.find(c => c.uf.toLowerCase() === ufName.toLowerCase()) || CIDADES[0];
                   userCity = {
                     nome: cityName,
                     uf: ufName.toUpperCase() || stateCapital.uf,
-                    x: stateCapital.x + (Math.random() * 2 - 1), // small offset so pins dont overlap exactly
+                    x: stateCapital.x + (Math.random() * 2 - 1),
                     y: stateCapital.y + (Math.random() * 2 - 1)
                   };
                   isResolved = true;
                 }
               }
             }
-          } catch (e) {
-            // ignora
-          }
+          } catch (e) {}
 
           if (!isResolved) {
              const cachedLoc = localStorage.getItem("fa-ip-loc-v2");
@@ -102,21 +135,34 @@ export const useLive = create<LiveStore>()(
              }
           }
 
-          const newVisitor = {
+          const newVisitor: VisitorInfo = {
             id: now,
             sessionId,
             cidade: userCity,
             expiresAt: now + 120000,
+            lojaId,
           };
 
-          set((state) => ({
-            visitors: [...state.visitors, newVisitor],
-            totalAcessos: state.totalAcessos + 1,
-            stats: {
-              ...state.stats,
-              [userCity.nome]: (state.stats[userCity.nome] || 0) + 1,
-            },
-          }));
+          set((state) => {
+            const currentLojaStat = lojaId ? (state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: now }) : null;
+            return {
+              visitors: [...state.visitors, newVisitor],
+              totalAcessos: state.totalAcessos + 1,
+              stats: {
+                ...state.stats,
+                [userCity.nome]: (state.stats[userCity.nome] || 0) + 1,
+              },
+              lojasAcessos: lojaId ? {
+                ...state.lojasAcessos,
+                [lojaId]: {
+                  total: currentLojaStat!.total + 1,
+                  mes: currentLojaStat!.mes + 1,
+                  hoje: currentLojaStat!.hoje + 1,
+                  lastAccess: now,
+                },
+              } : state.lojasAcessos,
+            };
+          });
 
           if (!isResolved) {
             fetch("https://ipwho.is/")
@@ -181,7 +227,6 @@ export const useLive = create<LiveStore>()(
 );
 
 if (typeof window !== "undefined") {
-  // Limpeza global de usuários desconectados (intervalo reduzido para performance)
   setInterval(() => {
     const state = useLive.getState();
     if (state.visitors.length > 0) {
@@ -189,9 +234,6 @@ if (typeof window !== "undefined") {
     }
   }, 30000);
 
-
-
-  // Sincronização automática entre abas do navegador
   window.addEventListener("storage", (e) => {
     if (e.key === "live-visitors-storage") {
       useLive.persist.rehydrate();
@@ -200,4 +242,3 @@ if (typeof window !== "undefined") {
 }
 
 export { CIDADES };
-
