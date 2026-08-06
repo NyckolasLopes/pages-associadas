@@ -10,9 +10,29 @@ export default defineConfig({
   build: {
     // Security: Sourcemaps desativados em produção para proteger o código-fonte contra engenharia reversa
     sourcemap: false,
+    target: "es2022",
+    minify: "esbuild",
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         sourcemap: false,
+        manualChunks(id) {
+          if (id.includes("node_modules/xlsx")) {
+            return "vendor-xlsx";
+          }
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3") || id.includes("node_modules/victory")) {
+            return "vendor-charts";
+          }
+          if (id.includes("node_modules/@supabase")) {
+            return "vendor-supabase";
+          }
+          if (id.includes("node_modules/@tanstack")) {
+            return "vendor-tanstack";
+          }
+          if (id.includes("node_modules/@radix-ui") || id.includes("node_modules/lucide-react")) {
+            return "vendor-ui";
+          }
+        },
       },
     },
   },

@@ -45,7 +45,7 @@ interface ProductCardProps {
   selectedStoreId?: string | null;
 }
 
-export function ProductCard({
+function ProductCardComponent({
   p: initialProduct,
   layout = "grid",
   hideCartButton = false,
@@ -58,13 +58,12 @@ export function ProductCard({
   // Bridge static SSR/loader product with live admin edits
   const customProducts = useAdminProducts(s => s.customProducts);
   const p = customProducts?.find(c => c.id === initialProduct.id) || initialProduct;
-  const { prices: regionalPrices } = useRegionsStore();
+  const regionalPrices = useRegionsStore(s => s.prices);
   const setPharmacyDrawerOpen = useCart((s) => s.setPharmacyDrawerOpen);
   const user = useAuth((s) => s.user);
   const setLoginOpen = useAuth((s) => s.setLoginOpen);
   
-  const marketingState = useMarketing();
-  const promocoes = marketingState.promocoes;
+  const promocoes = useMarketing(s => s.promocoes);
   const recentlyAdded = isRecentlyAdded(p);
   
   const add = useCart((s) => s.add);
@@ -551,4 +550,6 @@ export function ProductCard({
     </article>
   );
 }
+
+export const ProductCard = React.memo(ProductCardComponent);
 

@@ -39,18 +39,36 @@ function DynamicVitrines({ local, page = "Página inicial" }: { local: VitrineLo
   const allBanners = useAdmin((s) => s.banners || []);
 
   useEffect(() => {
+    let isCancelled = false;
     async function load() {
-      const res: Record<number, Produto[]> = {};
-      for (const v of vitrines) {
-        if (v.modo === "manual" && v.produtoIds && v.produtoIds.length > 0) {
-          res[v.id] = await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, v.produtoIds);
-        } else {
-          res[v.id] = await catalog.productsByVitrine(v.id.toString(), v.categoriaId);
-        }
+      if (vitrines.length === 0) {
+        setData({});
+        return;
       }
-      setData(res);
+      try {
+        const results = await Promise.all(
+          vitrines.map(async (v) => {
+            const prods = (v.modo === "manual" && v.produtoIds && v.produtoIds.length > 0)
+              ? await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, v.produtoIds)
+              : await catalog.productsByVitrine(v.id.toString(), v.categoriaId);
+            return { id: v.id, prods };
+          })
+        );
+        if (!isCancelled) {
+          const res: Record<number, Produto[]> = {};
+          results.forEach(({ id, prods }) => {
+            res[id] = prods;
+          });
+          setData(res);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar vitrines concorrentes:", err);
+      }
     }
     load();
+    return () => {
+      isCancelled = true;
+    };
   }, [vitrines]);
 
   return (

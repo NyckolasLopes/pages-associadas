@@ -195,10 +195,19 @@ function RootComponent() {
     // Ping inicial
     useLive.getState().pingSession(sessionId);
     
-    // Manter a sessão viva
+    // Manter a sessão viva com heartbeat eficiente (20s e somente se a aba estiver visível)
     const interval = setInterval(() => {
-      useLive.getState().pingSession(sessionId);
-    }, 5000);
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        useLive.getState().pingSession(sessionId);
+      }
+    }, 20000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        useLive.getState().pingSession(sessionId);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     
     // Ao fechar a aba
     const handleBeforeUnload = () => {
@@ -208,6 +217,7 @@ function RootComponent() {
 
     return () => {
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       useLive.getState().removeSession(sessionId);
     };
