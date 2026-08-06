@@ -420,33 +420,33 @@ function PainelLoja() {
 
         <Tabs defaultValue="pedidos" className="space-y-6">
           <TabsList className="bg-white border border-slate-200 p-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
-            <TabsTrigger value="pedidos" className="data-[state=active]:bg-slate-100 py-2">
+            <TabsTrigger value="pedidos" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
               <ListOrdered className="w-4 h-4 mr-1.5 shrink-0" />
               Pedidos
             </TabsTrigger>
-            <TabsTrigger value="promocoes" className="data-[state=active]:bg-slate-100 py-2">
+            <TabsTrigger value="promocoes" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
               <Megaphone className="w-4 h-4 mr-1.5 shrink-0" />
               Preços & Ofertas
             </TabsTrigger>
-            <TabsTrigger value="banners" className="data-[state=active]:bg-slate-100 py-2">
-              <ImageIcon className="w-4 h-4 mr-1.5 shrink-0" />
-              Banners
-            </TabsTrigger>
-            <TabsTrigger value="cupons" className="data-[state=active]:bg-slate-100 py-2">
+            <TabsTrigger value="cupons" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
               <TagIcon className="w-4 h-4 mr-1.5 shrink-0" />
               Cupons
             </TabsTrigger>
-            <TabsTrigger value="seo" className="data-[state=active]:bg-slate-100 py-2">
+            <TabsTrigger value="seo" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
               <Compass className="w-4 h-4 mr-1.5 shrink-0" />
               SEO & GEO
             </TabsTrigger>
-            <TabsTrigger value="metricas" className="data-[state=active]:bg-slate-100 py-2">
+            <TabsTrigger value="metricas" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
               <Activity className="w-4 h-4 mr-1.5 shrink-0" />
               Métricas
             </TabsTrigger>
+            <TabsTrigger value="personalizar" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-[#00B5AD] data-[state=active]:text-[#00B5AD]">
+              <Store className="w-4 h-4 mr-1.5 shrink-0" />
+              Personalizar Minha Loja
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="banners" className="space-y-6">
+          <TabsContent value="personalizar" className="space-y-6">
             <LojaBannersTab lojaId={lojaId} />
           </TabsContent>
 
