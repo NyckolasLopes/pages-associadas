@@ -469,52 +469,6 @@ function AdminProdutos() {
 
   return (
     <div className="space-y-6">
-      {/* Scope Banner: Store-Specific vs Network Master */}
-      {currentLojaId ? (
-        <div className="bg-gradient-to-r from-amber-50 to-blue-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 font-bold flex-shrink-0">
-              <Store className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="font-bold text-slate-800 text-sm">
-                  Loja: {currentLoja?.nome || "Loja do Associado"}
-                </h4>
-                <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs font-semibold">
-                  🛡️ Produtos Individuais da Loja
-                </Badge>
-              </div>
-              <p className="text-xs text-slate-600 mt-0.5">
-                As criações, edições de preço e personalizações feitas nesta tela pertencem <strong>exclusivamente a esta loja</strong> e <strong>NÃO afetam</strong> o login geral da rede.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                resetStoreProductsToGeneral(currentLojaId);
-                toast.success("Catálogo da loja restaurado com base nos produtos padrões da rede!");
-              }}
-              className="text-xs bg-white text-slate-700 hover:bg-slate-50 border-slate-300 font-medium"
-              title="Descarta alterações exclusivas desta loja e volta a usar o padrão da rede"
-            >
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
-              Restaurar Catálogo da Rede
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center gap-3 text-xs text-slate-600">
-          <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <div>
-            <span className="font-bold text-slate-700">🌐 Painel Geral da Rede (Catálogo Central Master):</span>
-            <span className="ml-1">Você está gerenciando a base central de produtos compartilhada pelas farmácias da rede.</span>
-          </div>
-        </div>
-      )}
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
