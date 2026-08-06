@@ -32,8 +32,8 @@ import { toast } from "sonner";
 export function StoreVitrinesConfig() {
   const storefrontVitrineConfig = useAdmin((s) => s.storefrontVitrineConfig);
   const setStorefrontVitrineConfig = useAdmin((s) => s.setStorefrontVitrineConfig);
-  const featuredCategories = useAdmin((s) => s.featuredCategories);
-  const { products } = useAdminProducts();
+  const featuredCategories = useAdmin((s) => s.featuredCategories) || [];
+  const customProducts = useAdminProducts((s) => s.customProducts) || [];
 
   // Local state for editing form
   const [config, setConfig] = useState<StorefrontVitrineConfig>({
@@ -350,7 +350,7 @@ export function StoreVitrinesConfig() {
                     Por Categoria
                   </div>
                   <span className="text-[11px] font-semibold text-purple-700 bg-white px-2 py-0.5 rounded border border-purple-200">
-                    {featuredCategories.length} categorias
+                    {featuredCategories?.length || 0} categorias
                   </span>
                 </div>
               )}
@@ -366,7 +366,7 @@ export function StoreVitrinesConfig() {
               <span className="text-xs text-slate-500 font-medium">Catálogo de Produtos:</span>
               <div className="flex items-center justify-between text-xs text-slate-700 bg-slate-50 p-2.5 rounded border border-slate-200">
                 <span>Total de produtos cadastrados</span>
-                <span className="font-bold text-[#00B5AD]">{products.length}</span>
+                <span className="font-bold text-[#00B5AD]">{customProducts?.length || 0}</span>
               </div>
             </div>
           </div>

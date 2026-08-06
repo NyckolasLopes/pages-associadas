@@ -27,17 +27,17 @@ interface StoreStructureViewerProps {
 }
 
 export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: StoreStructureViewerProps) {
-  const banners = useAdmin((s) => s.banners);
+  const banners = useAdmin((s) => s.banners) || [];
   const storefrontVitrineConfig = useAdmin((s) => s.storefrontVitrineConfig);
-  const featuredCategories = useAdmin((s) => s.featuredCategories);
+  const featuredCategories = useAdmin((s) => s.featuredCategories) || [];
 
   // Contagem de banners por posição
-  const fullBannersCount = banners.filter(b => b.posicao === "Full Banner" && b.active).length;
-  const tarjaBannersCount = banners.filter(b => b.posicao === "Banner Tarja" && b.active).length;
-  const miniBannersCount = banners.filter(b => b.posicao === "Mini Banner" && b.active).length;
-  const extraBannersCount = banners.filter(b => b.posicao === "Banner Extra" && b.active).length;
-  const categoriaBannersCount = banners.filter(b => b.posicao === "Banner Categoria" && b.active).length;
-  const diferenciaisCount = banners.filter(b => b.posicao === "Banner Diferenciais" && b.active).length;
+  const fullBannersCount = banners?.filter(b => b.posicao === "Full Banner" && b.active)?.length || 0;
+  const tarjaBannersCount = banners?.filter(b => b.posicao === "Banner Tarja" && b.active)?.length || 0;
+  const miniBannersCount = banners?.filter(b => b.posicao === "Mini Banner" && b.active)?.length || 0;
+  const extraBannersCount = banners?.filter(b => b.posicao === "Banner Extra" && b.active)?.length || 0;
+  const categoriaBannersCount = banners?.filter(b => b.posicao === "Banner Categoria" && b.active)?.length || 0;
+  const diferenciaisCount = banners?.filter(b => b.posicao === "Banner Diferenciais" && b.active)?.length || 0;
 
   return (
     <div className="space-y-6">

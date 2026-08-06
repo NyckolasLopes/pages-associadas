@@ -307,16 +307,12 @@ function ClientesAdmin() {
                 </div>
               </div>
 
-              {/* Seção 2: Dados de Compra e Autenticação */}
+              {/* Seção 2: Dados de Compra */}
               <div className="space-y-4">
                 <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
-                  <ShoppingBag className="w-3.5 h-3.5" /> Autenticação & Compras
+                  <ShoppingBag className="w-3.5 h-3.5" /> Histórico de Compras
                 </h4>
                 <div className="bg-white border rounded-xl p-4 space-y-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="text-[13px] font-bold text-slate-500">Meio de Cadastro</div>
-                    {getLoginBadge(selectedLead.metodoLogin)}
-                  </div>
                   <div className="flex items-center justify-between">
                     <div className="text-[13px] font-bold text-slate-500">Total de Pedidos</div>
                     <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
