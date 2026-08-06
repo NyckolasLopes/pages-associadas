@@ -33,10 +33,12 @@ interface CategoryFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category?: any; // If provided, it's edit mode
+  lojaId?: string | null;
 }
 
-export function CategoryFormModal({ open, onOpenChange, category }: CategoryFormModalProps) {
-  const { categories, addOrUpdateCategory } = useAdminCategories();
+export function CategoryFormModal({ open, onOpenChange, category, lojaId }: CategoryFormModalProps) {
+  const { categories, addOrUpdateCategory, addOrUpdateStoreCategory, getStoreCategories } = useAdminCategories();
+  const effectiveCategories = lojaId ? getStoreCategories(lojaId) : categories;
   
   const [nome, setNome] = useState("");
   const [slug, setSlug] = useState("");
@@ -111,7 +113,7 @@ export function CategoryFormModal({ open, onOpenChange, category }: CategoryForm
     
     const id = category?.id || Math.random().toString(36).substring(2, 9);
 
-    addOrUpdateCategory({
+    const categoryData = {
       id,
       nome,
       slug: slug || nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
@@ -123,7 +125,13 @@ export function CategoryFormModal({ open, onOpenChange, category }: CategoryForm
       ativa,
       destaque,
       icone
-    });
+    };
+
+    if (lojaId) {
+      addOrUpdateStoreCategory(lojaId, categoryData);
+    } else {
+      addOrUpdateCategory(categoryData);
+    }
     
     const isCurrentlyFeatured = featuredCategories.includes(id);
     if (destaque && !isCurrentlyFeatured) {
@@ -189,7 +197,7 @@ export function CategoryFormModal({ open, onOpenChange, category }: CategoryForm
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">[ Raiz ]</SelectItem>
-                      {categories.filter(c => c.id !== category?.id && !c.parentId).map(c => (
+                      {effectiveCategories.filter(c => c.id !== category?.id && !c.parentId).map(c => (
                         <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                       ))}
                     </SelectContent>

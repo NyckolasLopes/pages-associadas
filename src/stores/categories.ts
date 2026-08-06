@@ -70,14 +70,23 @@ const idbStorage: StateStorage = {
 
 interface CategoriesState {
   categories: Categoria[];
+  storeCategories: Record<string, Categoria[]>;
+  isStoreUsingCustomCategories: Record<string, boolean>;
   addOrUpdateCategory: (c: Categoria) => void;
   removeCategory: (id: string) => void;
+  importNetworkCategoriesToStore: (lojaId: string) => void;
+  addOrUpdateStoreCategory: (lojaId: string, c: Categoria) => void;
+  removeStoreCategory: (lojaId: string, id: string) => void;
+  resetStoreToNetwork: (lojaId: string) => void;
+  getStoreCategories: (lojaId?: string | null) => Categoria[];
 }
 
 export const useAdminCategories = create<CategoriesState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       categories: categoriesJson as Categoria[],
+      storeCategories: {},
+      isStoreUsingCustomCategories: {},
       addOrUpdateCategory: (c) => set((s) => {
         const exists = s.categories.find(x => x.id === c.id);
         if (exists) {
@@ -91,7 +100,72 @@ export const useAdminCategories = create<CategoriesState>()(
         return { 
           categories: s.categories.filter(x => x.id !== id && !childrenIds.includes(x.id)) 
         };
-      })
+      }),
+      importNetworkCategoriesToStore: (lojaId: string) => set((s) => {
+        const networkCats = JSON.parse(JSON.stringify(s.categories));
+        return {
+          storeCategories: {
+            ...s.storeCategories,
+            [lojaId]: networkCats
+          },
+          isStoreUsingCustomCategories: {
+            ...s.isStoreUsingCustomCategories,
+            [lojaId]: true
+          }
+        };
+      }),
+      addOrUpdateStoreCategory: (lojaId: string, c: Categoria) => set((s) => {
+        const current = s.storeCategories[lojaId] || JSON.parse(JSON.stringify(s.categories));
+        const exists = current.find((x: Categoria) => x.id === c.id);
+        let updated: Categoria[];
+        if (exists) {
+          updated = current.map((x: Categoria) => x.id === c.id ? c : x);
+        } else {
+          updated = [...current, c];
+        }
+        return {
+          storeCategories: {
+            ...s.storeCategories,
+            [lojaId]: updated
+          },
+          isStoreUsingCustomCategories: {
+            ...s.isStoreUsingCustomCategories,
+            [lojaId]: true
+          }
+        };
+      }),
+      removeStoreCategory: (lojaId: string, id: string) => set((s) => {
+        const current = s.storeCategories[lojaId] || JSON.parse(JSON.stringify(s.categories));
+        const childrenIds = current.filter((x: Categoria) => x.parentId === id).map((x: Categoria) => x.id);
+        const updated = current.filter((x: Categoria) => x.id !== id && !childrenIds.includes(x.id));
+        return {
+          storeCategories: {
+            ...s.storeCategories,
+            [lojaId]: updated
+          },
+          isStoreUsingCustomCategories: {
+            ...s.isStoreUsingCustomCategories,
+            [lojaId]: true
+          }
+        };
+      }),
+      resetStoreToNetwork: (lojaId: string) => set((s) => {
+        const newStoreCategories = { ...s.storeCategories };
+        delete newStoreCategories[lojaId];
+        const newIsCustom = { ...s.isStoreUsingCustomCategories };
+        delete newIsCustom[lojaId];
+        return {
+          storeCategories: newStoreCategories,
+          isStoreUsingCustomCategories: newIsCustom
+        };
+      }),
+      getStoreCategories: (lojaId?: string | null) => {
+        const state = get();
+        if (lojaId && state.storeCategories && state.storeCategories[lojaId]) {
+          return state.storeCategories[lojaId];
+        }
+        return state.categories || [];
+      }
     }),
     {
       name: "fa-admin-categories",

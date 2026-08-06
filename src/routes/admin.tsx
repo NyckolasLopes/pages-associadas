@@ -484,6 +484,21 @@ function AdminLayout() {
             <Link to="/admin/banners" search={{ tab: "vitrines" }} className={subLinkClass}>
               Minhas Vitrines
             </Link>
+            
+            <div className="pt-2 mt-2 border-t border-slate-200/60">
+              <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                Produtos
+              </div>
+              <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>
+                Criar Produto
+              </Link>
+              <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>
+                Ver Produtos
+              </Link>
+              <Link to="/admin/categorias" className={subLinkClass} activeOptions={{ exact: true }}>
+                Categorias
+              </Link>
+            </div>
           </NavSection>
         </nav>
 
