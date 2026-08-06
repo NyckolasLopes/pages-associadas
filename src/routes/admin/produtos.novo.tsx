@@ -4,6 +4,10 @@ import { useAdminProducts } from "@/stores/products";
 import { useAdmin } from "@/stores/admin";
 import { Produto } from "@/types";
 import { toast } from "sonner";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { FileUp } from "lucide-react";
+import { SubirDadosLojaModal } from "@/components/admin/SubirDadosLojaModal";
 
 export const Route = createFileRoute("/admin/produtos/novo")({
   component: AdminNovoProduto,
@@ -13,6 +17,7 @@ function AdminNovoProduto() {
   const navigate = useNavigate();
   const { addOrUpdateProduct } = useAdminProducts();
   const { currentUser, activeStoreId, pharmacies } = useAdmin();
+  const [subirDadosOpen, setSubirDadosOpen] = useState(false);
   
   const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
   const currentLoja = pharmacies.find(p => p.id === currentLojaId);
@@ -73,7 +78,17 @@ function AdminNovoProduto() {
   };
 
   return (
-    <div className="bg-slate-50 min-h-[80vh]">
+    <div className="bg-slate-50 min-h-[80vh] relative">
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <Button
+          size="sm"
+          onClick={() => setSubirDadosOpen(true)}
+          className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+        >
+          <FileUp className="h-3.5 w-3.5 mr-1.5" />
+          Subir Dados para Loja
+        </Button>
+      </div>
       <ProductEditorForm 
         open={true}
         onOpenChange={(open) => !open && handleCancel()}
@@ -82,6 +97,7 @@ function AdminNovoProduto() {
         asPage={true}
         lojaId={currentLojaId}
       />
+      <SubirDadosLojaModal open={subirDadosOpen} onOpenChange={setSubirDadosOpen} />
     </div>
   );
 }

@@ -8,6 +8,8 @@ export interface Lead {
   dataCadastro: string;
   origem: string;
   status: 'Ativo' | 'Inativo';
+  lojaId?: string;
+  lojaNome?: string;
 }
 
 const INITIAL_LEADS: Lead[] = [
@@ -17,14 +19,18 @@ const INITIAL_LEADS: Lead[] = [
     nome: "Nyckolas",
     dataCadastro: "10/05/2026 14:30",
     origem: "Newsletter",
-    status: "Ativo"
+    status: "Ativo",
+    lojaId: "loja-1",
+    lojaNome: "Farmácia Associadas - Centro",
   },
   {
     id: "l2",
     email: "contato.maria@empresa.com",
     dataCadastro: "12/06/2026 09:15",
     origem: "Newsletter",
-    status: "Ativo"
+    status: "Ativo",
+    lojaId: "loja-2",
+    lojaNome: "Farmácia Associadas - Zona Sul",
   },
   {
     id: "l3",
@@ -32,7 +38,9 @@ const INITIAL_LEADS: Lead[] = [
     nome: "João Silva",
     dataCadastro: "02/07/2026 11:20",
     origem: "Newsletter",
-    status: "Inativo"
+    status: "Inativo",
+    lojaId: "loja-1",
+    lojaNome: "Farmácia Associadas - Centro",
   },
   {
     id: "l4",

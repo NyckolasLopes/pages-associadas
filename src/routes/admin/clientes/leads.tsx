@@ -10,8 +10,10 @@ import {
   UserX,
   CheckCircle2,
   Trash2,
-  Users
+  Users,
+  Store
 } from "lucide-react";
+import { useAdmin } from "@/stores/admin";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,8 +34,12 @@ export const Route = createFileRoute("/admin/clientes/leads")({
 
 function LeadsAdmin() {
   const { leads, toggleStatus, removeLead } = useLeads();
+  const { currentUser, activeStoreId } = useAdmin();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
+  
+  const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
@@ -51,7 +57,11 @@ function LeadsAdmin() {
     }
   };
 
-  const filteredLeads = leads.filter(
+  const baseLeads = (isGlobalAdmin && !activeStoreId)
+    ? leads
+    : leads.filter(l => l.lojaId === currentLojaId);
+
+  const filteredLeads = baseLeads.filter(
     (l) => {
       const matchSearch = l.email.toLowerCase().includes(search.toLowerCase()) || 
                           (l.nome && l.nome.toLowerCase().includes(search.toLowerCase()));
@@ -61,9 +71,9 @@ function LeadsAdmin() {
   );
 
   const kpis = {
-    total: leads.length,
-    ativos: leads.filter(l => l.status === 'Ativo').length,
-    inativos: leads.filter(l => l.status === 'Inativo').length,
+    total: baseLeads.length,
+    ativos: baseLeads.filter(l => l.status === 'Ativo').length,
+    inativos: baseLeads.filter(l => l.status === 'Inativo').length,
   };
 
   const exportToCSV = () => {
@@ -178,6 +188,7 @@ function LeadsAdmin() {
               <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
                 <th className="px-4 py-3 w-10 text-center"><Checkbox /></th>
                 <th className="px-4 py-3">Lead / E-mail</th>
+                {isGlobalAdmin && !activeStoreId && <th className="px-4 py-3">Loja</th>}
                 <th className="px-4 py-3">Origem</th>
                 <th className="px-4 py-3">Data de Inscrição</th>
                 <th className="px-4 py-3 text-center">Status</th>
@@ -208,8 +219,24 @@ function LeadsAdmin() {
                       </div>
                     </div>
                   </td>
+                  {isGlobalAdmin && !activeStoreId && (
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        {lead.lojaNome ? (
+                          <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
+                            <Store className="w-3.5 h-3.5 mr-1" />
+                            {lead.lojaNome}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-slate-400">Geral</span>
+                        )}
+                      </div>
+                    </td>
+                  )}
                   <td className="px-4 py-4">
-                    <div className="font-medium text-slate-700">{lead.origem}</div>
+                    <Badge variant="secondary" className="font-bold bg-slate-100 text-slate-600">
+                      {lead.origem}
+                    </Badge>
                   </td>
                   <td className="px-4 py-4">
                     <div className="font-medium text-slate-600">{lead.dataCadastro}</div>

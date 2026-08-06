@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useCustomers, Customer } from "@/stores/customers";
+import { useAdmin } from "@/stores/admin";
+import { Store } from "lucide-react";
 import { 
   Users, 
   Search, 
@@ -60,13 +62,21 @@ const getLoginBadge = (method: Customer['metodoLogin']) => {
 
 function ClientesAdmin() {
   const { customers, updateCustomer, removeCustomer } = useCustomers();
+  const { currentUser, activeStoreId } = useAdmin();
   const [search, setSearch] = useState("");
+
+  const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const [selectedLead, setSelectedLead] = useState<Customer | null>(null);
   const [anotacoesForm, setAnotacoesForm] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string } | null>(null);
 
-  const filteredCustomers = customers.filter(
+  const baseCustomers = (isGlobalAdmin && !activeStoreId)
+    ? customers
+    : customers.filter(c => c.lojaId === currentLojaId);
+
+  const filteredCustomers = baseCustomers.filter(
     (c) =>
       c.nome.toLowerCase().includes(search.toLowerCase()) ||
       c.email.toLowerCase().includes(search.toLowerCase()) ||
@@ -177,6 +187,7 @@ function ClientesAdmin() {
               <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
                 <th className="px-4 py-3 w-10 text-center"><Checkbox /></th>
                 <th className="px-4 py-3">Cliente</th>
+                {isGlobalAdmin && !activeStoreId && <th className="px-4 py-3">Loja</th>}
                 <th className="px-4 py-3">Telefone</th>
                 <th className="px-4 py-3">Pedidos</th>
                 <th className="px-4 py-3 text-center">Ações</th>
@@ -210,6 +221,20 @@ function ClientesAdmin() {
                       </div>
                     </div>
                   </td>
+                  {isGlobalAdmin && !activeStoreId && (
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        {customer.lojaNome ? (
+                          <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
+                            <Store className="w-3.5 h-3.5 mr-1" />
+                            {customer.lojaNome}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-slate-400">Geral</span>
+                        )}
+                      </div>
+                    </td>
+                  )}
                   <td className="px-4 py-4">
                     <div className="font-medium text-slate-700">{customer.telefone}</div>
                   </td>

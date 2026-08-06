@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Search, ChevronDown, Eye, ChevronRight, Folder, FolderOpen, Tag, Star, Trash2, DownloadCloud, RotateCcw, Info, Check, ShieldCheck, Sparkles, Plus } from "lucide-react";
+import { Search, ChevronDown, Eye, ChevronRight, Folder, FolderOpen, Tag, Star, Trash2, DownloadCloud, RotateCcw, Info, Check, ShieldCheck, Sparkles, Plus, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { useAdminCategories } from "@/stores/categories";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CategoryFormModal } from "@/components/admin/CategoryFormModal";
+import { SubirDadosLojaModal } from "@/components/admin/SubirDadosLojaModal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const Route = createFileRoute("/admin/categorias")({
@@ -43,6 +44,7 @@ function AdminCategorias() {
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
   const [confirmImportOpen, setConfirmImportOpen] = useState(false);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [subirDadosOpen, setSubirDadosOpen] = useState(false);
 
   // Active Store Context (either selected in top header or user's assigned store)
   const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
@@ -165,6 +167,13 @@ function AdminCategorias() {
               )}
             </>
           )}
+
+          <Button 
+            onClick={() => setSubirDadosOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-5 gap-2 shadow-sm"
+          >
+            <FileUp className="w-4 h-4" /> Subir Dados para Loja
+          </Button>
 
           <Button 
             onClick={() => {
@@ -391,6 +400,8 @@ function AdminCategorias() {
         category={editingCategory}
         lojaId={currentLojaId}
       />
+
+      <SubirDadosLojaModal open={subirDadosOpen} onOpenChange={setSubirDadosOpen} />
     </div>
   );
 }

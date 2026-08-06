@@ -18,6 +18,8 @@ export interface Customer {
   totalPedidos: number;
   valorUltimoPedido?: number;
   anotacoes: string;
+  lojaId?: string;
+  lojaNome?: string;
 }
 
 const INITIAL_CUSTOMERS: Customer[] = [
@@ -36,6 +38,8 @@ const INITIAL_CUSTOMERS: Customer[] = [
     totalPedidos: 12,
     valorUltimoPedido: 148.50,
     anotacoes: "Cliente frequente, prefere entrega expressa.",
+    lojaId: "loja-1",
+    lojaNome: "Farmácia Associadas - Centro",
   },
   {
     id: "c2",
@@ -52,6 +56,8 @@ const INITIAL_CUSTOMERS: Customer[] = [
     totalPedidos: 3,
     valorUltimoPedido: 64.90,
     anotacoes: "",
+    lojaId: "loja-2",
+    lojaNome: "Farmácia Associadas - Zona Sul",
   },
   {
     id: "c3",
@@ -68,6 +74,8 @@ const INITIAL_CUSTOMERS: Customer[] = [
     totalPedidos: 1,
     valorUltimoPedido: 39.90,
     anotacoes: "Primeira compra via Facebook Ads.",
+    lojaId: "loja-1",
+    lojaNome: "Farmácia Associadas - Centro",
   },
   {
     id: "c4",

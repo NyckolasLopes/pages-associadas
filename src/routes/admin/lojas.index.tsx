@@ -371,6 +371,14 @@ function LojasAdmin() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary/20 border-0" 
+                          onClick={() => window.open(`/loja/${p.id}`, '_blank')}
+                        >
+                          Gerar Loja
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(p)}>
                           <Pencil className="h-4 w-4 text-slate-500" />
                         </Button>

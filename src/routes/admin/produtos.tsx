@@ -61,6 +61,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { SubirDadosLojaModal } from "@/components/admin/SubirDadosLojaModal";
 
 export const Route = createFileRoute("/admin/produtos")({
   component: AdminProdutos,
@@ -114,6 +115,7 @@ function AdminProdutos() {
   const [apiEstoqueUrl, setApiEstoqueUrl] = useState("");
   const [jsonFile, setJsonFile] = useState<File | null>(null);
   const [deleteAllModalOpen, setDeleteAllModalOpen] = useState(false);
+  const [subirDadosOpen, setSubirDadosOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -483,6 +485,14 @@ function AdminProdutos() {
         <div className="flex flex-col gap-2 items-end">
           {/* Top row: Exports and Sync */}
           <div className="flex flex-wrap gap-2 justify-end">
+            <Button
+              size="sm"
+              onClick={() => setSubirDadosOpen(true)}
+              className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <FileUp className="h-3.5 w-3.5 mr-1.5" />
+              Subir Dados para Loja
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -862,8 +872,9 @@ function AdminProdutos() {
             )}
           </>
         )}
-      </div>
-
+      
+      <SubirDadosLojaModal open={subirDadosOpen} onOpenChange={setSubirDadosOpen} />
+      
       {/* Spreadsheet Importer Dialog */}
       <SpreadsheetImporter
         open={importerOpen}
