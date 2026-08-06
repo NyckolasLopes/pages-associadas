@@ -47,7 +47,7 @@ function CuponsIndexPage() {
     <div className="max-w-6xl space-y-6 pb-16">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800">Cupons</h2>
+          <h2 className="text-2xl font-bold text-slate-800">Meus cupons</h2>
           <span className="text-sm text-slate-500">{cupons.length} cupom(s)</span>
         </div>
         <div className="flex items-center gap-4">

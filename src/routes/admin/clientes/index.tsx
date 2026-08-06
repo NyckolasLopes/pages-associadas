@@ -324,18 +324,11 @@ function ClientesAdmin() {
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="text-[13px] font-bold text-slate-500">Último Pagamento</div>
-                    <div className="text-[13px] font-black text-slate-800">{selectedLead.ultimoPagamento || "N/A"}</div>
-                  </div>
-                  {selectedLead.ultimoCartao && (
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                      <div className="text-[13px] font-bold text-slate-500">Cartão de Crédito Usado</div>
-                      <div className="text-[13px] font-black text-slate-800 flex items-center gap-1.5">
-                        <CreditCard className="w-4 h-4 text-sky-600" />
-                        **** {selectedLead.ultimoCartao}
-                      </div>
+                    <div className="text-[13px] font-bold text-slate-500">Valor do Último Pedido</div>
+                    <div className="text-[13px] font-black text-emerald-600">
+                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(selectedLead.valorUltimoPedido ?? 0)}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 

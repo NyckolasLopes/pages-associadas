@@ -446,7 +446,7 @@ function AdminLayout() {
           {/* ---- MARKETING ---- */}
           {(can('mkt_cupons') || can('mkt_orderbumps') || can('mkt_comprejunto')) && (
             <NavSection icon={<Megaphone className="h-4 w-4" />} label="Marketing" open={openNavSection === "Marketing"} onToggle={() => setOpenNavSection(openNavSection === "Marketing" ? "" : "Marketing")}>
-              {can('mkt_cupons') && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>Cupons</Link>}
+              {can('mkt_cupons') && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>Meus cupons</Link>}
               {can('mkt_orderbumps') && <Link to="/admin/marketing/order-bumps" className={subLinkClass} activeOptions={{ exact: true }}>Order bumps</Link>}
               {can('mkt_comprejunto') && <Link to="/admin/marketing/compre-junto" className={subLinkClass} activeOptions={{ exact: true }}>Compre junto</Link>}
               {can('mkt_cupons') && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}

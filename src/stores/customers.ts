@@ -16,6 +16,7 @@ export interface Customer {
   ultimoCartao?: string;
   ultimoPagamento?: string;
   totalPedidos: number;
+  valorUltimoPedido?: number;
   anotacoes: string;
 }
 
@@ -32,8 +33,8 @@ const INITIAL_CUSTOMERS: Customer[] = [
     cep: "90020-015",
     dataCadastro: "10/05/2026",
     metodoLogin: "Google",
-    ultimoPagamento: "Pix",
     totalPedidos: 12,
+    valorUltimoPedido: 148.50,
     anotacoes: "Cliente frequente, prefere entrega expressa.",
   },
   {
@@ -48,9 +49,8 @@ const INITIAL_CUSTOMERS: Customer[] = [
     cep: "01310-100",
     dataCadastro: "15/06/2026",
     metodoLogin: "Email",
-    ultimoPagamento: "Cartão de Crédito",
-    ultimoCartao: "4321",
     totalPedidos: 3,
+    valorUltimoPedido: 64.90,
     anotacoes: "",
   },
   {
@@ -65,8 +65,8 @@ const INITIAL_CUSTOMERS: Customer[] = [
     cep: "96015-000",
     dataCadastro: "02/07/2026",
     metodoLogin: "Facebook",
-    ultimoPagamento: "Dinheiro",
     totalPedidos: 1,
+    valorUltimoPedido: 39.90,
     anotacoes: "Primeira compra via Facebook Ads.",
   },
   {
@@ -81,9 +81,8 @@ const INITIAL_CUSTOMERS: Customer[] = [
     cep: "22020-001",
     dataCadastro: "20/06/2026",
     metodoLogin: "Apple",
-    ultimoPagamento: "Cartão de Crédito",
-    ultimoCartao: "9876",
     totalPedidos: 5,
+    valorUltimoPedido: 215.00,
     anotacoes: "Reclamou de atraso no pedido #420.",
   },
   {
@@ -98,9 +97,8 @@ const INITIAL_CUSTOMERS: Customer[] = [
     cep: "90000-000",
     dataCadastro: "01/01/2026",
     metodoLogin: "Email",
-    ultimoPagamento: "Cartão de Crédito",
-    ultimoCartao: "1111",
     totalPedidos: 45,
+    valorUltimoPedido: 389.90,
     anotacoes: "Conta de administração e testes.",
   }
 ];
