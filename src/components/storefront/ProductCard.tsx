@@ -61,9 +61,8 @@ function ProductCardComponent({
   const regionalPrices = useRegionsStore(s => s.prices);
   const setPharmacyDrawerOpen = useCart((s) => s.setPharmacyDrawerOpen);
   const user = useAuth((s) => s.user);
-  const setLoginOpen = useAuth((s) => s.setLoginOpen);
-  
-  const promocoes = useMarketing(s => s.promocoes);
+  const promocoes = useMarketing((s) => s.promocoes);
+  const lojaPromocoesMap = useMarketing((s) => s.lojaPromocoes);
   const recentlyAdded = isRecentlyAdded(p);
   
   const add = useCart((s) => s.add);
@@ -199,7 +198,7 @@ function ProductCardComponent({
   }
 
   // 3. Store-specific Oferta do Mês
-  const lojaPromocoes = activeStoreId ? marketingState.lojaPromocoes[activeStoreId] || [] : [];
+  const lojaPromocoes = activeStoreId ? lojaPromocoesMap?.[activeStoreId] || [] : [];
   const storeOferta = lojaPromocoes.find(promo => promo.ativa && promo.tipoCampanha === 'padrao' && promo.alvosId.includes(p.id));
   if (storeOferta && storeOferta.levePague_precoPorItem) {
     finalPrecoDe = finalPrecoPor;
