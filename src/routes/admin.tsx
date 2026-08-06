@@ -370,6 +370,7 @@ function AdminLayout() {
             >
               {can('lojas_todas') && <Link to="/admin/lojas" className={subLinkClass} activeOptions={{ exact: true }}>Ver todas</Link>}
               {can('lojas_nova') && <Link to="/admin/lojas/nova" className={subLinkClass} activeOptions={{ exact: true }}>Nova loja</Link>}
+              {isGlobalAdmin && <Link to={"/admin/lojas/gerar" as any} className={subLinkClass} activeOptions={{ exact: true }}>Gerar Loja</Link>}
               {isGlobalAdmin && <Link to="/admin/lojas/link-inscricao" className={subLinkClass} activeOptions={{ exact: true }}>Link Inscrição Associado</Link>}
               {can('lojas_tabelas') && <Link to="/admin/lojas/tabelas-precos" className={subLinkClass} activeOptions={{ exact: true }}>Tabelas de Preços</Link>}
               {can('lojas_precos') && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Preços por Loja" : "Meus preços"}</Link>}
@@ -468,38 +469,40 @@ function AdminLayout() {
             </Link>
           )}
 
-          {/* ---- PERSONALIZAR MINHA LOJA ---- */}
-          <NavSection 
-            icon={<Store className="h-4 w-4" />} 
-            label="Personalizar Minha Loja" 
-            open={openNavSection === "Personalizar"} 
-            onToggle={() => setOpenNavSection(openNavSection === "Personalizar" ? "" : "Personalizar")}
-          >
-            <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
-              Banners
-            </Link>
-            <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
-              Estrutura da Minha Loja
-            </Link>
-            <Link to="/admin/banners" search={{ tab: "vitrines" }} className={subLinkClass}>
-              Minhas Vitrines
-            </Link>
-            
-            <div className="pt-2 mt-2 border-t border-slate-200/60">
-              <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                Produtos
+          {/* ---- PERSONALIZAR MINHA LOJA (apenas para associados) ---- */}
+          {!isGlobalAdmin && (
+            <NavSection 
+              icon={<Store className="h-4 w-4" />} 
+              label="Personalizar Minha Loja" 
+              open={openNavSection === "Personalizar"} 
+              onToggle={() => setOpenNavSection(openNavSection === "Personalizar" ? "" : "Personalizar")}
+            >
+              <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
+                Banners
+              </Link>
+              <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
+                Estrutura da Minha Loja
+              </Link>
+              <Link to="/admin/banners" search={{ tab: "vitrines" }} className={subLinkClass}>
+                Minhas Vitrines
+              </Link>
+              
+              <div className="pt-2 mt-2 border-t border-slate-200/60">
+                <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                  Produtos
+                </div>
+                <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>
+                  Criar Produto
+                </Link>
+                <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>
+                  Ver Produtos
+                </Link>
+                <Link to="/admin/categorias" className={subLinkClass} activeOptions={{ exact: true }}>
+                  Categorias
+                </Link>
               </div>
-              <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>
-                Criar Produto
-              </Link>
-              <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>
-                Ver Produtos
-              </Link>
-              <Link to="/admin/categorias" className={subLinkClass} activeOptions={{ exact: true }}>
-                Categorias
-              </Link>
-            </div>
-          </NavSection>
+            </NavSection>
+          )}
         </nav>
 
         <div className="p-4 border-t">
