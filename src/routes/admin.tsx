@@ -312,7 +312,7 @@ function AdminLayout() {
           <div>
             <div className="text-lg font-bold text-primary">Painel Administrativo</div>
             <div className="text-xs text-muted-foreground mt-1">
-              {activeStoreId ? pharmacies.find(p => p.id === activeStoreId)?.nome : "Farmácias Associadas"}
+              {activeStoreId ? pharmacies.find(p => p.id === activeStoreId)?.nome : (isGlobalAdmin ? "Sede Administrativa" : "Farmácias Associadas")}
             </div>
           </div>
           <button 
@@ -493,11 +493,15 @@ function AdminLayout() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <h1 className="font-bold text-slate-800 hidden md:block">Painel de Controle</h1>
-              {activeStoreId && (
+              {activeStoreId ? (
                 <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200 hidden md:block">
                   {pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || "Padrão"}
                 </span>
-              )}
+              ) : isGlobalAdmin ? (
+                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 hidden md:block">
+                  Sede Administrativa
+                </span>
+              ) : null}
             </div>
             
             {!isGlobalAdmin && userStores.length > 1 && (
