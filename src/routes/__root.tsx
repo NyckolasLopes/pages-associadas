@@ -299,7 +299,7 @@ function RootComponent() {
 
       <PriceDropTracker />
       {!isAdmin && <FloatingElements />}
-      <InstallPrompt />
+      {!isAdmin && <InstallPrompt />}
       <Toaster 
         position="top-center" 
         toastOptions={{
