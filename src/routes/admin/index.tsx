@@ -5,6 +5,7 @@ import { useLive } from "@/stores/live";
 import { useOrders } from "@/stores/orders";
 import { useCart } from "@/stores/cart";
 import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
+import { useMarketing } from "@/stores/marketing";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +43,7 @@ function AdminDashboard() {
     return userGroup?.permissao_total || false;
   };
   
-  const effectiveStoreId = activeStoreId || (!isGlobalAdmin() && currentUser?.lojasVinculadas?.[0]) || null;
+  const effectiveStoreId = activeStoreId || null;
 
   
   const { visitors: rawVisitors, totalAcessos, lojasAcessos } = useLive();
@@ -79,6 +80,8 @@ function AdminDashboard() {
   }, [rawOrders, effectiveStoreId]);
   
   const { items: cartItems } = useCart();
+  const { lojaPromocoes } = useMarketing();
+  const [showPromoModal, setShowPromoModal] = useState(false);
 
   const pad = (n: number) => n.toString().padStart(2, '0');
 
