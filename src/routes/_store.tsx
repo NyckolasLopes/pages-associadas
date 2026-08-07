@@ -45,6 +45,10 @@ function StoreLayout() {
         "--secondary-foreground": "#ffffff",
         "--accent": pharmacy.themeColors.accent,
         "--accent-foreground": "#ffffff",
+        "--header-bg": pharmacy.themeColors.headerBg || pharmacy.themeColors.primary,
+        "--header-icons": pharmacy.themeColors.headerIcons || "#ffffff",
+        "--search-bg": pharmacy.themeColors.searchBg || "#ffffff",
+        "--institutional-bg": pharmacy.themeColors.institutionalBg || "#f97316",
       } as React.CSSProperties;
     }
     
