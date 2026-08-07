@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useOrders } from "@/stores/orders";
+import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
 import { useMemo, useEffect, useRef, useState } from "react";
 import { isToday, isYesterday, isThisWeek, isThisMonth, isThisYear, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone } from "lucide-react";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone, ShoppingBag, CheckCircle2, Clock, Eye, Check } from "lucide-react";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -148,6 +149,136 @@ function PainelLoja() {
     const horas = Math.floor(media / 60);
     const min = Math.round(media % 60);
     return { tempoMedioSeparacao: `${horas}h ${min}m` };
+  }, [lojaOrders]);
+
+  const { carts: allCarts } = useAbandonedCartsStore();
+
+  // Pedidos unificados da Loja (Pedidos regulares + Carrinhos da loja)
+  const lojaUnifiedOrders = useMemo(() => {
+    const list: Array<{
+      id: string;
+      data: string;
+      dataRaw: string;
+      clienteNome: string;
+      clienteTelefone: string;
+      status: "Concluído" | "Pendente" | "Cancelado";
+      itensQtd: number;
+      valorTotal: number;
+      origem: string;
+      rawOrder?: Pedido;
+    }> = [];
+
+    // Pedidos regulares
+    lojaOrders.forEach(o => {
+      const statusStr = (o.status || "").toLowerCase();
+      const origemStr = (o.origem || "").toLowerCase();
+      let unifiedStatus: "Concluído" | "Pendente" | "Cancelado" = "Pendente";
+
+      if (
+        origemStr === "whatsapp" ||
+        statusStr.includes("whatsapp") ||
+        statusStr === "pago" ||
+        statusStr === "entregue" ||
+        statusStr === "enviado" ||
+        statusStr === "em separação" ||
+        statusStr === "pronta para retirada" ||
+        statusStr === "aguardando retirada" ||
+        statusStr === "concluido" ||
+        statusStr === "concluído"
+      ) {
+        unifiedStatus = "Concluído";
+      } else if (statusStr.includes("cancelad") || statusStr === "recusado") {
+        unifiedStatus = "Cancelado";
+      }
+
+      const itemsList = o.itens || o.produtos || [];
+      const totalQtd = itemsList.reduce((acc, it: any) => acc + (it.quantidade || it.qtd || 1), 0) || 1;
+
+      let dateFormatted = o.data;
+      try {
+        const d = new Date(o.data);
+        if (!isNaN(d.getTime())) {
+          dateFormatted = `${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+      } catch {}
+
+      list.push({
+        id: o.id,
+        data: dateFormatted,
+        dataRaw: o.data,
+        clienteNome: o.cliente?.nome || "Cliente",
+        clienteTelefone: o.cliente?.telefone || "Não informado",
+        status: unifiedStatus,
+        itensQtd: totalQtd,
+        valorTotal: o.valores?.total || 0,
+        origem: o.origem || "site",
+        rawOrder: o
+      });
+    });
+
+    // Carrinhos abandonados desta loja
+    const storeCarts = (allCarts || []).filter(c => c.lojaId === lojaId);
+    storeCarts.forEach(c => {
+      const itemsList = c.items || [];
+      const totalQtd = itemsList.reduce((acc, it) => acc + (it.qtd || 1), 0) || 1;
+      list.push({
+        id: c.id,
+        data: c.createdAt || c.abandonedAt || "Recente",
+        dataRaw: c.createdAt || new Date().toISOString(),
+        clienteNome: c.client || "Cliente Carrinho",
+        clienteTelefone: c.phone || "Não informado",
+        status: "Pendente",
+        itensQtd: totalQtd,
+        valorTotal: c.total || 0,
+        origem: "carrinho"
+      });
+    });
+
+    return list.sort((a, b) => {
+      const tA = new Date(a.dataRaw).getTime() || 0;
+      const tB = new Date(b.dataRaw).getTime() || 0;
+      return tB - tA;
+    });
+  }, [lojaOrders, allCarts, lojaId]);
+
+  const totalPedidosLoja = lojaUnifiedOrders.length;
+  const concluidosLojaCount = lojaUnifiedOrders.filter(o => o.status === "Concluído").length;
+  const pendentesLojaCount = lojaUnifiedOrders.filter(o => o.status === "Pendente").length;
+  const canceladosLojaCount = lojaUnifiedOrders.filter(o => o.status === "Cancelado").length;
+
+  const concluidosLojaPct = totalPedidosLoja > 0 ? Math.round((concluidosLojaCount / totalPedidosLoja) * 100) : 0;
+  const pendentesLojaPct = totalPedidosLoja > 0 ? Math.round((pendentesLojaCount / totalPedidosLoja) * 100) : 0;
+
+  const statusPieDataLoja = useMemo(() => {
+    const data = [];
+    if (concluidosLojaCount > 0) data.push({ name: "Concluído (WhatsApp)", value: concluidosLojaCount, color: "#10b981" });
+    if (pendentesLojaCount > 0) data.push({ name: "Pendente (Carrinho)", value: pendentesLojaCount, color: "#f59e0b" });
+    if (canceladosLojaCount > 0) data.push({ name: "Cancelado", value: canceladosLojaCount, color: "#ef4444" });
+    return data;
+  }, [concluidosLojaCount, pendentesLojaCount, canceladosLojaCount]);
+
+  const volumePedidosPeriodo = useMemo(() => {
+    let hj = 0, ont = 0, sem = 0, m = 0;
+    lojaOrders.forEach(o => {
+      let date: Date;
+      if (o.data.includes("T")) {
+        date = new Date(o.data);
+      } else {
+        const [d, t] = o.data.split(" ");
+        const [day, mo, yr] = d.split("/");
+        date = new Date(`${yr}-${mo}-${day}T${t || "00:00"}:00`);
+      }
+      if (isToday(date)) hj++;
+      if (isYesterday(date)) ont++;
+      if (isThisWeek(date)) sem++;
+      if (isThisMonth(date)) m++;
+    });
+    return [
+      { name: "Hoje", pedidos: hj },
+      { name: "Ontem", pedidos: ont },
+      { name: "Esta Semana", pedidos: sem },
+      { name: "Este Mês", pedidos: m },
+    ];
   }, [lojaOrders]);
 
   // Notificação de Push
@@ -588,134 +719,280 @@ function PainelLoja() {
           </TabsContent>
 
           <TabsContent value="metricas" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* SLA de Separação */}
-              <Card className="border-slate-200 shadow-sm overflow-hidden">
-                <div className="h-1 bg-amber-500" />
+            {/* Top KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {/* Total de Pedidos da Loja */}
+              <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="h-1 bg-blue-600" />
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
-                    Tempo Médio Separação
-                    <Package className="w-4 h-4 text-slate-400" />
+                    Total de Pedidos
+                    <ShoppingBag className="w-4 h-4 text-blue-600" />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-slate-900">{tempoMedioSeparacao}</div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Histórico de SLA da loja
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalPedidosLoja}</div>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">
+                    {concluidosLojaCount} concluídos • {pendentesLojaCount} pendentes
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Vendas Hoje */}
-              <Card className="border-slate-200 shadow-sm overflow-hidden">
+              {/* Pedidos Concluídos (WhatsApp) */}
+              <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <div className="h-1 bg-emerald-500" />
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
-                    Vendas Hoje
-                    <DollarSign className="w-4 h-4 text-slate-400" />
+                    Concluídos (WhatsApp)
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-slate-900">{formatCurrency(hoje)}</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900">{concluidosLojaCount}</span>
+                    <Badge className="bg-emerald-100 text-emerald-800 border-none text-xs font-bold">
+                      {concluidosLojaPct}% do total
+                    </Badge>
+                  </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    vs {formatCurrency(ontem)} ontem
+                    Pedidos levados para o WhatsApp
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Vendas Semana */}
-              <Card className="border-slate-200 shadow-sm overflow-hidden">
-                <div className="h-1 bg-blue-500" />
+              {/* Pedidos Pendentes (Carrinho) */}
+              <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="h-1 bg-amber-500" />
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
-                    Vendas da Semana
-                    <TrendingUp className="w-4 h-4 text-slate-400" />
+                    Pendentes (Carrinho)
+                    <Clock className="w-4 h-4 text-amber-600" />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-slate-900">{formatCurrency(semana)}</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900">{pendentesLojaCount}</span>
+                    <Badge className="bg-amber-100 text-amber-800 border-none text-xs font-bold">
+                      {pendentesLojaPct}% do total
+                    </Badge>
+                  </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Acumulado dos últimos dias
+                    No carrinho ou aguardando conclusão
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Vendas Mês */}
-              <Card className="border-slate-200 shadow-sm overflow-hidden">
+              {/* SLA de Separação */}
+              <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <div className="h-1 bg-indigo-500" />
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
-                    Vendas do Mês
-                    <Calendar className="w-4 h-4 text-slate-400" />
+                    Tempo Médio Separação
+                    <Package className="w-4 h-4 text-indigo-600" />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-slate-900">{formatCurrency(mes)}</div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900">{tempoMedioSeparacao}</div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Total acumulado este mês
+                    Histórico de SLA de atendimento
                   </p>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2 border-slate-200 shadow-sm">
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Donut Chart: Status dos Pedidos da Loja */}
+              <Card className="border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg font-bold text-slate-800">Comparativo de Vendas</CardTitle>
+                  <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-[#00B5AD]" />
+                    Status dos Pedidos da Loja
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px] w-full">
+                  <div className="h-[280px] w-full flex items-center justify-center">
+                    {statusPieDataLoja.length === 0 ? (
+                      <div className="text-center text-slate-400 text-sm">
+                        Nenhum pedido registrado para gerar o gráfico.
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={statusPieDataLoja}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={65}
+                            outerRadius={95}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            {statusPieDataLoja.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: number, name: string) => [
+                              `${value} pedidos (${totalPedidosLoja > 0 ? Math.round((value / totalPedidosLoja) * 100) : 0}%)`,
+                              name
+                            ]}
+                            contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                          />
+                          <Legend
+                            verticalAlign="bottom"
+                            height={36}
+                            iconType="circle"
+                            formatter={(value) => <span className="text-xs font-semibold text-slate-700">{value}</span>}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Bar Chart: Volume de Pedidos por Período */}
+              <Card className="border-slate-200 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#00B5AD]" />
+                    Volume de Pedidos por Período
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[280px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <BarChart data={volumePedidosPeriodo} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis 
                           dataKey="name" 
                           axisLine={false} 
                           tickLine={false} 
-                          tick={{ fill: '#64748b' }} 
+                          tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} 
                         />
                         <YAxis 
+                          allowDecimals={false}
                           axisLine={false} 
                           tickLine={false} 
-                          tick={{ fill: '#64748b' }}
-                          tickFormatter={(value) => `R$ ${value}`}
+                          tick={{ fill: '#64748b', fontSize: 12 }}
                         />
                         <Tooltip 
-                          formatter={(value: number) => [formatCurrency(value), "Valor"]}
-                          cursor={{ fill: '#f1f5f9' }}
+                          formatter={(value: number) => [`${value} pedidos`, "Quantidade"]}
+                          cursor={{ fill: '#f8fafc' }}
                           contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
                         />
                         <Bar 
-                          dataKey="valor" 
-                          fill="#059669" 
-                          radius={[4, 4, 0, 0]} 
-                          barSize={40} 
+                          dataKey="pedidos" 
+                          fill="#00B5AD" 
+                          radius={[6, 6, 0, 0]} 
+                          barSize={36} 
                         />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
-
-              <Card className="border-slate-200 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold text-slate-800">Resumo Anual</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col justify-center items-center h-[300px]">
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                      <TrendingUp className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-500 font-medium">Total de Vendas no Ano</div>
-                      <div className="text-3xl font-black text-slate-900 mt-2">
-                        {formatCurrency(ano)}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
+
+            {/* Tabela de Últimos Pedidos da Loja */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-900">
+                    Últimos Pedidos da Loja
+                  </CardTitle>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Histórico detalhado com data, cliente, quantidade de itens, status e valor
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-xs text-slate-600 bg-slate-50 font-medium">
+                  {lojaUnifiedOrders.length} registros
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-slate-50 border-b border-slate-200">
+                      <TableRow>
+                        <TableHead className="font-bold text-slate-700 text-xs py-3 px-4">Data do Último Pedido</TableHead>
+                        <TableHead className="font-bold text-slate-700 text-xs py-3 px-4">Cliente</TableHead>
+                        <TableHead className="font-bold text-slate-700 text-xs py-3 px-4 text-center">Qtd. Itens</TableHead>
+                        <TableHead className="font-bold text-slate-700 text-xs py-3 px-4">Status</TableHead>
+                        <TableHead className="font-bold text-slate-700 text-xs py-3 px-4 text-right">Valor</TableHead>
+                        <TableHead className="font-bold text-slate-700 text-xs py-3 px-4 text-center">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lojaUnifiedOrders.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-12 text-slate-500 text-sm">
+                            Nenhum pedido encontrado para esta loja.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        lojaUnifiedOrders.slice(0, 15).map((order) => (
+                          <TableRow key={order.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                            <TableCell className="py-3 px-4 font-medium text-xs text-slate-700">
+                              {order.data}
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-xs">
+                              <div className="font-semibold text-slate-900">{order.clienteNome}</div>
+                              <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                <Phone className="w-3 h-3" />
+                                {order.clienteTelefone}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-center text-xs text-slate-600 font-medium">
+                              <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-semibold">
+                                {order.itensQtd} {order.itensQtd === 1 ? 'item' : 'itens'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-xs">
+                              {order.status === "Concluído" ? (
+                                <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold gap-1 px-2 py-0.5">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Concluído (WhatsApp)
+                                </Badge>
+                              ) : order.status === "Pendente" ? (
+                                <Badge className="bg-amber-100 text-amber-800 border-none font-bold gap-1 px-2 py-0.5">
+                                  <Clock className="w-3 h-3" />
+                                  Pendente (Carrinho)
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-red-100 text-red-700 border-none font-bold px-2 py-0.5">
+                                  Cancelado
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-right font-bold text-xs text-slate-900">
+                              {formatCurrency(order.valorTotal)}
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-center text-xs">
+                              {order.rawOrder ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectedPedidoInfo(order.rawOrder!)}
+                                  className="h-8 px-2.5 text-xs text-slate-600 hover:text-teal-700 hover:bg-teal-50 gap-1"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  Ver
+                                </Button>
+                              ) : (
+                                <span className="text-[11px] text-slate-400 italic">
+                                  Carrinho
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

@@ -37,16 +37,17 @@ export const Route = createFileRoute("/admin/")({
 function AdminDashboard() {
   const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
   
-  const isGlobalAdmin = currentUser?.proprietario || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total || false;
+  const isGlobalAdmin = currentUser?.proprietario || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total || currentUser?.lojasVinculadas === undefined || false;
   const isGlobalView = isGlobalAdmin && !activeStoreId;
   
-  const effectiveStoreId = activeStoreId || null;
+  // No Painel Global (que administra todas as lojas), nunca filtra por loja individual e mostra o painel geral da rede
+  const effectiveStoreId = isGlobalAdmin ? null : (activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null);
 
   
   const { visitors: rawVisitors, totalAcessos, lojasAcessos } = useLive();
   const visitors = useMemo(() => {
     if (!effectiveStoreId) return rawVisitors;
-    return rawVisitors.filter(v => v.lojaId === effectiveStoreId || (v.url && v.url.includes(effectiveStoreId)));
+    return rawVisitors.filter(v => v.lojaId === effectiveStoreId || ((v as any).url && (v as any).url.includes(effectiveStoreId)));
   }, [rawVisitors, effectiveStoreId]);
   const { orders: rawOrders } = useOrders();
   const [showVisitasModal, setShowVisitasModal] = useState(false);

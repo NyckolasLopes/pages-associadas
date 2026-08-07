@@ -113,7 +113,7 @@ const subLinkClass =
   "flex items-center gap-2.5 px-3 py-1.5 text-[13px] rounded-md text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary transition-colors";
 
 function AdminLayout() {
-  const { currentUser, login, logout, register, users, pharmacies, hasPermission, activeStoreId, setActiveStoreId } = useAdmin();
+  const { currentUser, login, logout, register, users, pharmacies, hasPermission, activeStoreId, setActiveStoreId, grupos } = useAdmin();
   const can = (perm: string) => currentUser?.proprietario || hasPermission(perm);
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -176,15 +176,20 @@ function AdminLayout() {
     }
   }, []);
 
-  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
   const userStores = isGlobalAdmin 
     ? pharmacies 
     : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id));
 
   // If user only has one store, auto-select it if none selected
+  // If user is global admin, keep activeStoreId as null (Painel Global)
   useEffect(() => {
-    if (mounted && currentUser && !isGlobalAdmin && userStores.length > 0 && !activeStoreId) {
-      setActiveStoreId(userStores[0].id);
+    if (mounted && currentUser) {
+      if (!isGlobalAdmin && userStores.length > 0 && !activeStoreId) {
+        setActiveStoreId(userStores[0].id);
+      } else if (isGlobalAdmin && activeStoreId) {
+        setActiveStoreId(null);
+      }
     }
   }, [mounted, currentUser, isGlobalAdmin, userStores, activeStoreId, setActiveStoreId]);
 
