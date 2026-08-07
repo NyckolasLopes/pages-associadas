@@ -340,8 +340,7 @@ function AdminDashboard() {
       </div>
 
       {/* ---- Linha 2 de KPIs Globais ---- */}
-      {isGlobalView && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4 text-emerald-500" />
@@ -387,37 +386,6 @@ function AdminDashboard() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* ---- Linha 2 de KPIs por Loja ---- */}
-      {!isGlobalView && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4 text-emerald-500" />
-              <span className="text-xl font-bold text-slate-800">{carrinhosRecuperar}</span>
-            </div>
-            <div className="text-xs text-slate-500 font-medium leading-tight">
-              Carrinhos a recuperar
-            </div>
-          </Link>
-
-          <div className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] transition-all">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-                  <Eye className="h-4 w-4" />
-                </div>
-                <span className="text-xl font-bold text-slate-800">{visitasPorLoja.find(v => v.id === effectiveStoreId)?.mes || 0}</span>
-              </div>
-            </div>
-            <div className="text-xs text-muted-foreground font-medium leading-tight">
-              Visitantes no mês
-            </div>
-          </div>
-        </div>
-      )}
-
 
 
       {/* ---- Modal de Visitantes no Mês por Loja ---- */}

@@ -288,7 +288,7 @@ function AdminLayout() {
         <div>
           <div className="text-lg font-bold text-primary">Painel Administrativo</div>
           <div className="text-xs text-muted-foreground mt-1">
-            {activeStoreId ? pharmacies.find(p => p.id === activeStoreId)?.nome : (isGlobalAdmin ? "Sede Administrativa" : "Farmácias Associadas")}
+            {isGlobalAdmin ? "Sede Administrativa" : (activeStoreId ? pharmacies.find(p => p.id === activeStoreId)?.nome : "Farmácias Associadas")}
           </div>
         </div>
         <button onClick={() => setMobileMenuOpen(true)} className="p-2 border border-slate-200 rounded-md hover:bg-slate-50 text-slate-600">
@@ -314,7 +314,7 @@ function AdminLayout() {
           <div>
             <div className="text-lg font-bold text-primary">Painel Administrativo</div>
             <div className="text-xs text-muted-foreground mt-1">
-              {activeStoreId ? pharmacies.find(p => p.id === activeStoreId)?.nome : (isGlobalAdmin ? "Sede Administrativa" : "Farmácias Associadas")}
+              {isGlobalAdmin ? "Sede Administrativa" : (activeStoreId ? pharmacies.find(p => p.id === activeStoreId)?.nome : "Farmácias Associadas")}
             </div>
           </div>
           <button 
