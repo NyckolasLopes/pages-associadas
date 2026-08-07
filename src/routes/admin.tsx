@@ -430,8 +430,11 @@ function AdminLayout() {
               open={openNavSection === "Personalizar"} 
               onToggle={() => setOpenNavSection(openNavSection === "Personalizar" ? "" : "Personalizar")}
             >
+              <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400 mt-1 mb-1">
+                Design
+              </div>
               <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
-                Design - Banners
+                Banners
               </Link>
               <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
                 Estrutura da Loja
