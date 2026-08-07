@@ -5,7 +5,7 @@ import { useLive, CIDADES } from "@/stores/live";
 
 import { useOrders } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
-import { useStores } from "@/stores/config";
+import { lojas } from "@/data/stores";
 
 export const Route = createFileRoute("/admin/ao-vivo")({
   component: AoVivo,
@@ -17,8 +17,7 @@ function AoVivo() {
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
   const visitors = isGlobalAdmin ? rawVisitors : rawVisitors.filter(v => v.lojaId === effectiveStoreId);
-  const lojas = useStores(state => state.lojas);
-  const getLojaName = (id) => lojas.find(l => String(l.id) === String(id))?.nome || "Loja Desconhecida";
+  const getLojaName = (id) => lojas.find(l => String(l.id) === String(id))?.nomeFantasia || "Loja Desconhecida";
   const pedidos = useOrders((state) => state.orders);
 
   const topCidades = useMemo(() => {
