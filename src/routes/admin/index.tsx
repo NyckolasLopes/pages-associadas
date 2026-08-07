@@ -38,6 +38,7 @@ function AdminDashboard() {
   const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
   
   const isGlobalAdmin = currentUser?.proprietario || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total || false;
+  const isGlobalView = isGlobalAdmin && !activeStoreId;
   
   const effectiveStoreId = activeStoreId || null;
 
@@ -339,7 +340,7 @@ function AdminDashboard() {
       </div>
 
       {/* ---- Linha 2 de KPIs Globais ---- */}
-      {isGlobalAdmin && (
+      {isGlobalView && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2">
@@ -389,7 +390,7 @@ function AdminDashboard() {
       )}
 
       {/* ---- Linha 2 de KPIs por Loja ---- */}
-      {!isGlobalAdmin && (
+      {!isGlobalView && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2">
