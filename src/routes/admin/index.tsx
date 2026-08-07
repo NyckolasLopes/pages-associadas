@@ -191,7 +191,7 @@ function AdminDashboard() {
   
   const rawStoreCarts = useAbandonedCartsStore(s => s.carts);
   const storeCarts = effectiveStoreId ? rawStoreCarts.filter(c => c.lojaId === effectiveStoreId) : rawStoreCarts;
-  const carrinhosRecuperar = storeCarts.length + (cartItems.length > 0 ? 1 : 0);
+  const carrinhosRecuperar = rawStoreCarts.length + (cartItems.length > 0 ? 1 : 0);
 
   const formatDataHora = (dataStr: string) => {
     if (!dataStr) return "";
@@ -221,7 +221,7 @@ function AdminDashboard() {
             Olá, {currentUser?.name || "Administrador"}! 👋
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            Painel Geral da Rede de Farmácias Associadas
+            {effectiveStoreId ? `Visão da Loja: ${pharmacies.find(p => p.id === effectiveStoreId)?.nome || ""}` : "Painel Geral da Rede de Farmácias Associadas"}
           </p>
         </div>
       </div>
