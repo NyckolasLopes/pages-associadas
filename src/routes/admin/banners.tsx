@@ -1216,7 +1216,13 @@ function StoreColorsConfig() {
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 bg-white"
-                onClick={() => window.open(`/${currentPharmacy.slug}`, '_blank')}
+                onClick={() => {
+                  const safeSlugify = (text: string) => {
+                    if (!text) return "";
+                    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                  };
+                  window.open(`/${safeSlugify(currentPharmacy.nome || currentPharmacy.id)}`, '_blank');
+                }}
               >
                 <Eye className="w-4 h-4" /> Ver na minha loja
               </Button>
