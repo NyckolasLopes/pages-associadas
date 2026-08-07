@@ -447,7 +447,7 @@ function AdminLayout() {
               <Link to="/admin/banners" search={{ tab: "logo" } as any} className={subLinkClass}>
                 Logo
               </Link>
-              {['Parceiro', 'Pleno'].includes(pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || '') && (
+              {pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado === 'Parceiro' && (
                 <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
                   Minhas Cores
                 </Link>
