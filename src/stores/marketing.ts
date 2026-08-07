@@ -38,6 +38,8 @@ export interface Promocao {
   corIcone?: string;
   corTextoBotao?: string;
   corBotao?: string;
+  textoBotao?: string;
+  lojaId?: string;
 }
 
 export interface MarketingStore {

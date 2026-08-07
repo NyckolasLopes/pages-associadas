@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Plus, Flame, Clock, Trash2, Edit } from "lucide-react";
 import { useMarketing } from "@/stores/marketing";
+import { useStores } from "@/stores/config";
+import { useAdmin } from "@/stores/admin";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -18,8 +20,14 @@ export const Route = createFileRoute("/admin/marketing/promocoes/")({
 });
 
 function AdminPromocoesPage() {
-  const promocoes = useMarketing((s) => s.promocoes);
+  const promocoesRaw = useMarketing((s) => s.promocoes);
+  const { currentUser, selectedStoreId } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
+  const promocoes = isGlobalAdmin ? promocoesRaw : promocoesRaw.filter(p => p.lojaId === effectiveStoreId);
+
   const removePromocao = useMarketing((s) => s.removePromocao);
+  const lojas = useStores((s) => s.lojas);
   const navigate = useNavigate();
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -78,6 +86,11 @@ function AdminPromocoesPage() {
                       )}
                     </h3>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm mt-1 text-slate-500">
+                      {isGlobalAdmin && p.lojaId && (
+                        <div className="flex items-center gap-1.5 font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                          Loja: {lojas.find(l => l.id === p.lojaId)?.nome || p.lojaId}
+                        </div>
+                      )}
                       <div className="flex items-center gap-1.5 font-medium">
                         <Clock className="w-4 h-4 text-slate-400" />
                         Até {p.dataFim.split("-").reverse().join("/")} às {p.horaFim}

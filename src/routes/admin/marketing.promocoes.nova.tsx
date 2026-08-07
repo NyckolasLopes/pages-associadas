@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save, Flame, Gift, Star, Zap, ShoppingBag, Search } from "lucide-react";
 import { useMarketing, Promocao } from "@/stores/marketing";
+import { useAdmin } from "@/stores/admin";
 import { toast } from "sonner";
 import categoriesData from "@/data/categories.json";
 import productsData from "@/data/products.json";
@@ -28,6 +29,10 @@ function NovaPromocaoPage() {
   const navigate = useNavigate();
   const search: any = useSearch({ from: "/admin/marketing/promocoes/nova" });
   const { addPromocao, updatePromocao, promocoes } = useMarketing();
+  const { currentUser, selectedStoreId } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
+
   
   const editingId = search?.id;
   const existing = promocoes.find((p) => p.id === editingId);
@@ -35,7 +40,7 @@ function NovaPromocaoPage() {
 
   const [formData, setFormData] = useState<Omit<Promocao, "id">>({
     titulo: "",
-    tipoAlvo: "categoria",
+    tipoAlvo: "produtos",
     alvosId: [],
     dataFim: "",
     horaFim: "23:59",
@@ -48,6 +53,7 @@ function NovaPromocaoPage() {
     corIcone: "#ea580c",
     corTextoBotao: "#ffffff",
     corBotao: "#ea580c",
+    textoBotao: "COMPRAR",
   });
 
   const categorias = getSafeCategories().filter((c: any) => !c.parentId);
@@ -73,6 +79,7 @@ function NovaPromocaoPage() {
         corIcone: existing.corIcone || existing.corSelo || "#ea580c",
         corTextoBotao: existing.corTextoBotao || "#ffffff",
         corBotao: existing.corBotao || existing.corSelo || "#ea580c",
+          textoBotao: existing.textoBotao || "COMPRAR",
       });
     }
   }, [existing]);
@@ -321,7 +328,7 @@ function NovaPromocaoPage() {
               </div>
             )}
 
-            {formData.tipoAlvo === 'produtos' && (
+            {true && (
               <div className="space-y-4 border p-4 rounded-lg bg-white">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold">Selecione os Produtos *</label>

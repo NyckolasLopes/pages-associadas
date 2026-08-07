@@ -12,18 +12,26 @@ export const Route = createFileRoute("/admin/metricas")({
 });
 
 function Metricas() {
-  const { pharmacies, activeStoreId, currentUser, grupos } = useAdmin();
-  const { orders } = useOrders();
-  const { totalAcessos } = useLive();
-  const selectedLoja = activeStoreId || "all";
-  
-  const isGlobalAdmin = () => {
-    if (currentUser?.proprietario) return true;
-    const userGroup = grupos.find(g => g.id === currentUser?.grupoId);
-    return userGroup?.permissao_total || false;
-  };
+  const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || (typeof grupos !== 'undefined' && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total) || currentUser?.lojasVinculadas === undefined;
+  const effectiveStoreId = activeStoreId || (!isGlobalAdmin && currentUser?.lojasVinculadas?.[0]) || null;
 
-  const lojaNameText = (activeStoreId && !isGlobalAdmin()) ? "da Loja" : "por Loja";
+  
+  
+  
+  
+
+  const { orders: rawOrders } = useOrders();
+  const orders = useMemo(() => {
+    if (!effectiveStoreId) return rawOrders;
+    return rawOrders.filter(o => o.lojaId === effectiveStoreId);
+  }, [rawOrders, effectiveStoreId]);
+  const { totalAcessos } = useLive();
+  const selectedLoja = effectiveStoreId || "all";
+  
+  
+
+  const lojaNameText = (effectiveStoreId && !isGlobalAdmin) ? "da Loja" : "por Loja";
   
   type ExpandedMetricType = 'pedidos-loja' | 'receita-loja' | 'ticket-loja';
   const [expandedMetric, setExpandedMetric] = useState<ExpandedMetricType | null>(null);
@@ -137,7 +145,7 @@ function Metricas() {
               Métricas de Pedidos
             </h1>
             <p className="text-slate-500 mt-1">
-              Visão geral de pedidos e faturamento {activeStoreId ? "da sua loja" : "da rede de farmácias"}.
+              Visão geral de pedidos e faturamento {effectiveStoreId ? "da sua loja" : "da rede de farmácias"}.
             </p>
           </div>
         </div>
@@ -216,7 +224,7 @@ function Metricas() {
         </div>
 
         {/* Conversão de Pedidos */}
-        {!activeStoreId && (
+        {!effectiveStoreId && (
           <div className="bg-white rounded-xl border shadow-sm p-6 flex flex-col hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
               Conversão de Pedidos <Info className="h-3.5 w-3.5" />
@@ -232,7 +240,7 @@ function Metricas() {
         )}
 
         {/* Top Pedidos por Loja */}
-        {!activeStoreId && (
+        {!effectiveStoreId && (
           <div className="bg-white rounded-xl border shadow-sm p-6 flex flex-col hover:shadow-md transition-shadow md:col-span-2">
             <div className="flex items-center gap-2 mb-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
               Top Pedidos por Loja (Ranking) <Info className="h-3.5 w-3.5" />

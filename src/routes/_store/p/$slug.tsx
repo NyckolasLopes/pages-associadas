@@ -634,10 +634,20 @@ function PDP() {
     }
     
     // 2. Specific store override
-    if (p.precosPorLoja?.[activeStoreId]) {
-      finalPrecoPor = p.precosPorLoja[activeStoreId].precoPor;
-      finalPrecoDe = p.precosPorLoja[activeStoreId].precoDe;
-    }
+    let isLojaPromoActiva = false;
+      if (p.precosPorLoja?.[activeStoreId]) {
+        const pLoja = p.precosPorLoja[activeStoreId];
+        finalPrecoPor = pLoja.precoPor;
+        finalPrecoDe = pLoja.precoDe;
+        
+        if (pLoja.campanhaInicio || pLoja.campanhaFim) {
+          const now = new Date();
+          let valid = true;
+          if (pLoja.campanhaInicio && new Date(pLoja.campanhaInicio + 'T00:00:00') > now) valid = false;
+          if (pLoja.campanhaFim && new Date(pLoja.campanhaFim + 'T23:59:59') < now) valid = false;
+          if (valid) isLojaPromoActiva = true;
+        }
+      }
   }
 
   // 3. Store-specific Oferta do Mês
@@ -1059,7 +1069,8 @@ function PDP() {
               </div>
             </section>
 
-            <section id="avaliacoes" className={`grid grid-cols-1 ${!isMedication ? 'md:grid-cols-2' : ''} gap-6 pt-4`}>
+            {!isStoreContext && (
+              <section id="avaliacoes" className={`grid grid-cols-1 ${!isMedication ? 'md:grid-cols-2' : ''} gap-6 pt-4`}>
               <div className="bg-white border rounded-xl p-6 shadow-sm relative overflow-hidden">
                 <h2 className="text-xl font-bold mb-4">Perguntas</h2>
                 
@@ -1199,7 +1210,8 @@ function PDP() {
                 );
               })()}
             </section>
-          </div>
+            )}
+            </div>
         </div>
 
         <div className="contents lg:flex lg:w-[400px] lg:shrink-0 lg:flex-col lg:gap-8">
@@ -1320,7 +1332,12 @@ function PDP() {
               </div>
             ) : (
               <>
-                {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (
+                {isLojaPromoActiva && isStoreContext && (
+                <span className="inline-block self-start text-[11px] font-black bg-red-600 text-white px-3 py-1 rounded uppercase tracking-wider mb-2 mr-2">
+                  EM OFERTA
+                </span>
+              )}
+              {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (
                   <div className="mb-1">
                     <span className="inline-block text-[11px] font-bold bg-accent text-accent-foreground px-2 py-0.5 rounded">
                       {formatPbmName(p.selo)}

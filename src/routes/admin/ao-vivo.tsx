@@ -4,31 +4,43 @@ import { useMemo } from "react";
 import { useLive, CIDADES } from "@/stores/live";
 
 import { useOrders } from "@/stores/orders";
+import { useAdmin } from "@/stores/admin";
+import { useStores } from "@/stores/config";
 
 export const Route = createFileRoute("/admin/ao-vivo")({
   component: AoVivo,
 });
 
 function AoVivo() {
-  const { visitors, totalAcessos, stats } = useLive();
+  const { visitors: rawVisitors, totalAcessos, stats } = useLive();
+  const { currentUser, selectedStoreId } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
+  const visitors = isGlobalAdmin ? rawVisitors : rawVisitors.filter(v => v.lojaId === effectiveStoreId);
+  const lojas = useStores(state => state.lojas);
+  const getLojaName = (id) => lojas.find(l => String(l.id) === String(id))?.nome || "Loja Desconhecida";
   const pedidos = useOrders((state) => state.orders);
 
   const topCidades = useMemo(() => {
-    const activeCounts: Record<string, number> = {};
-    visitors.forEach(v => {
-      const nome = v.cidade.nome;
-      activeCounts[nome] = (activeCounts[nome] || 0) + 1;
+    const activeCounts: Record<string, { acessos: number, lojaId?: string }> = {};
+    visitors.forEach((v: any) => {
+      const key = isGlobalAdmin && v.lojaId ? `${v.cidade.nome}::${v.lojaId}` : v.cidade.nome;
+      if (!activeCounts[key]) {
+        activeCounts[key] = { acessos: 0, lojaId: v.lojaId };
+      }
+      activeCounts[key].acessos += 1;
     });
 
     return Object.entries(activeCounts)
-      .map(([nome, acessos]) => {
-        const cityInfo = CIDADES.find(c => c.nome === nome);
-        const uf = cityInfo?.uf || visitors.find(v => v.cidade.nome === nome)?.cidade.uf || "";
-        return { nome, uf, acessos };
+      .map(([key, data]) => {
+        const nome = key.split("::")[0];
+        const cityInfo = CIDADES.find((c: any) => c.nome === nome);
+        const uf = cityInfo?.uf || visitors.find((v: any) => v.cidade.nome === nome)?.cidade.uf || "";
+        return { nome, uf, acessos: data.acessos, lojaId: data.lojaId };
       })
       .sort((a, b) => b.acessos - a.acessos)
       .slice(0, 6);
-  }, [visitors]);
+  }, [visitors, isGlobalAdmin]);
 
   const hojeStr = new Date().toLocaleDateString('pt-BR');
   const faturamentoHoje = pedidos
@@ -141,7 +153,12 @@ function AoVivo() {
                     <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md shadow-sm">
                       {cidade.uf}
                     </span>
-                    <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors truncate max-w-[130px]">{cidade.nome}</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors truncate max-w-[130px]">{cidade.nome}</span>
+                      {isGlobalAdmin && cidade.lojaId && (
+                        <span className="text-[10px] font-semibold text-indigo-500 truncate max-w-[130px]">{getLojaName(cidade.lojaId)}</span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-xs font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
                     {cidade.acessos}

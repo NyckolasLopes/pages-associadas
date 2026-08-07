@@ -34,9 +34,22 @@ export const Route = createFileRoute("/admin/")({
 });
 
 function AdminDashboard() {
-  const { currentUser, pharmacies, activeStoreId } = useAdmin();
-  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
-  const { visitors, totalAcessos, lojasAcessos } = useLive();
+  const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
+  
+  const isGlobalAdmin = () => {
+    if (currentUser?.proprietario) return true;
+    const userGroup = grupos?.find(g => g.id === currentUser?.grupoId);
+    return userGroup?.permissao_total || false;
+  };
+  
+  const effectiveStoreId = activeStoreId || (!isGlobalAdmin() && currentUser?.lojasVinculadas?.[0]) || null;
+
+  
+  const { visitors: rawVisitors, totalAcessos, lojasAcessos } = useLive();
+  const visitors = useMemo(() => {
+    if (!effectiveStoreId) return rawVisitors;
+    return rawVisitors.filter(v => v.lojaId === effectiveStoreId || (v.url && v.url.includes(effectiveStoreId)));
+  }, [rawVisitors, effectiveStoreId]);
   const { orders: rawOrders } = useOrders();
   const [showVisitasModal, setShowVisitasModal] = useState(false);
   
@@ -61,9 +74,9 @@ function AdminDashboard() {
   }, [visitasPorLoja]);
 
   const orders = useMemo(() => {
-    if (!activeStoreId) return rawOrders;
-    return rawOrders.filter(o => o.lojaId === activeStoreId);
-  }, [rawOrders, activeStoreId]);
+    if (!effectiveStoreId) return rawOrders;
+    return rawOrders.filter(o => o.lojaId === effectiveStoreId);
+  }, [rawOrders, effectiveStoreId]);
   
   const { items: cartItems } = useCart();
 

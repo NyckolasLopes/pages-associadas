@@ -28,8 +28,9 @@ export const Route = createFileRoute("/admin/marketing/cupons/")({
 
 function CuponsIndexPage() {
   const { cupons, addCoupon, removeCoupon } = useMarketing();
-  const { currentUser } = useAdmin();
+  const { currentUser, selectedStoreId } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [novoCupom, setNovoCupom] = useState({
@@ -41,10 +42,12 @@ function CuponsIndexPage() {
     totalDisponiveis: 100,
   });
 
-  const filteredCupons = cupons.filter((c) =>
-    c.codigo.toLowerCase().includes(search.toLowerCase()) ||
-    c.descricao.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCupons = cupons.filter((c) => {
+    const matchSearch = c.codigo.toLowerCase().includes(search.toLowerCase()) ||
+                        c.descricao.toLowerCase().includes(search.toLowerCase());
+    if (isGlobalAdmin) return matchSearch;
+    return matchSearch && c.lojaId === effectiveStoreId;
+  });
 
   return (
     <div className="max-w-6xl space-y-6 pb-16">
@@ -135,6 +138,7 @@ function CuponsIndexPage() {
                       permiteAcumular: false,
                       usoUnico: false,
                       cupomPrimeiraCompra: false,
+                      lojaId: !isGlobalAdmin && effectiveStoreId ? effectiveStoreId : undefined,
                     });
                     toast.success("Cupom criado com sucesso!");
                     setIsModalOpen(false);

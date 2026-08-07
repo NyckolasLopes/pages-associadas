@@ -90,7 +90,7 @@ export interface Produto {
   precoCampanha?: number;
   campanhaInicio?: string;
   campanhaFim?: string;
-  precosPorLoja?: Record<string, { precoDe: number; precoPor: number; ativo?: boolean }>;
+  precosPorLoja?: Record<string, { precoDe: number; precoPor: number; ativo?: boolean; campanhaInicio?: string; campanhaFim?: string }>;
   estoquesPorLoja?: Record<string, number>;
   preco?: number;
   basePrice?: number;

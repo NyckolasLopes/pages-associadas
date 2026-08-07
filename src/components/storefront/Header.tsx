@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Fragment } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Search, MapPin, ShoppingBasket, Menu, Phone, User, X, Truck, Sparkles,
   Pill, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Plus, Camera, Package, Home, Tag, ShieldCheck, ChevronDown, Flame, HeartPulse, Navigation,
@@ -124,6 +124,8 @@ function getSubcategoryIcon(name: string) {
 }
 
 export function Header() {
+  const params = useParams({ strict: false });
+  const isStoreContext = !!(params && (params as any).storeSlug);
   const customProducts = useAdminProducts(s => s.customProducts);
   const featuredCategories = useAdmin(s => s.featuredCategories);
   const contentPages = useAdmin(s => s.contentPages);
@@ -386,13 +388,15 @@ export function Header() {
         <Logo className="h-10 lg:h-12" />
 
         {/* CEP */}
-        <button onClick={() => setCepDialogOpen(true)} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border hover:border-primary transition text-left shrink-0">
-          <MapPin className="h-4 w-4 text-primary shrink-0" />
-          <div className="leading-tight">
-            <div className="text-[9px] text-muted-foreground uppercase tracking-wide">Você está em:</div>
-            <div className="text-xs font-bold">{mounted && cep ? cep : "Informe CEP"}</div>
-          </div>
-        </button>
+        {!isStoreContext && (
+          <button onClick={() => setCepDialogOpen(true)} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border hover:border-primary transition text-left shrink-0">
+            <MapPin className="h-4 w-4 text-primary shrink-0" />
+            <div className="leading-tight">
+              <div className="text-[9px] text-muted-foreground uppercase tracking-wide">Você está em:</div>
+              <div className="text-xs font-bold">{mounted && cep ? cep : "Informe CEP"}</div>
+            </div>
+          </button>
+        )}
 
         {/* Search */}
         <form onSubmit={onSubmit} className="flex-1 relative">
@@ -774,15 +778,15 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
         <nav className="p-2 overflow-y-auto flex-1 pb-16">
           {/* CEP / Rastreio no Menu (Mobile) */}
           <div className="mb-4 space-y-2">
-            <button onClick={() => setCepDialogOpen(true)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-primary/20 bg-primary/5 hover:border-primary transition text-left">
-              <MapPin className="h-5 w-5 text-primary shrink-0" />
-              <div className="flex-1 overflow-hidden">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Você está em:</div>
-                <div className="text-sm font-bold truncate">
-                  {mounted && cep ? cep : "Insira seu CEP"}
+            {!isStoreContext && (
+              <button onClick={() => setCepDialogOpen(true)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-primary/20 bg-primary/5 hover:border-primary transition text-left">
+                <MapPin className="h-5 w-5 text-primary shrink-0" />
+                <div className="flex-1 overflow-hidden">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Você está em:</div>
+                  <div className="text-sm font-bold truncate">{mounted && cep ? cep : "Informe CEP"}</div>
                 </div>
-              </div>
-            </button>
+              </button>
+            )}
 
             <Link to="/pedidos" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
               <Package className="h-5 w-5 text-primary shrink-0" />

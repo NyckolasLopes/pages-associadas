@@ -192,9 +192,19 @@ function ProductCardComponent({
     }
     
     // 2. Specific store override
+    let isLojaPromoActiva = false;
     if (p.precosPorLoja?.[activeStoreId]) {
-      finalPrecoPor = p.precosPorLoja[activeStoreId].precoPor;
-      finalPrecoDe = p.precosPorLoja[activeStoreId].precoDe;
+      const pLoja = p.precosPorLoja[activeStoreId];
+      finalPrecoPor = pLoja.precoPor;
+      finalPrecoDe = pLoja.precoDe;
+      
+      if (pLoja.campanhaInicio || pLoja.campanhaFim) {
+        const now = new Date();
+        let valid = true;
+        if (pLoja.campanhaInicio && new Date(pLoja.campanhaInicio + 'T00:00:00') > now) valid = false;
+        if (pLoja.campanhaFim && new Date(pLoja.campanhaFim + 'T23:59:59') < now) valid = false;
+        if (valid) isLojaPromoActiva = true;
+      }
     }
   }
 
@@ -339,7 +349,7 @@ function ProductCardComponent({
           <div className="mt-1">
             <span style={{ backgroundColor: levePaguePromo.corBotao || levePaguePromo.corSelo || '#ea580c', color: levePaguePromo.corTextoBotao || '#ffffff' }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max flex items-center gap-1">
               <PromoIcon id={levePaguePromo.icone} className="h-3 w-3" style={{ color: levePaguePromo.corIcone || 'inherit' }} />
-              LEVE {levePaguePromo.levePague_quantidade} PAGUE {brl(levePaguePromo.levePague_precoPorItem!)} CADA
+              {levePaguePromo.textoBotao ? levePaguePromo.textoBotao : `LEVE ${levePaguePromo.levePague_quantidade} PAGUE ${brl(levePaguePromo.levePague_precoPorItem || 0)} CADA`}
             </span>
           </div>
         )}
@@ -380,7 +390,12 @@ function ProductCardComponent({
         })()}
 
         <div className="mt-auto pt-3 flex flex-col gap-1">
-          {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (
+          {isLojaPromoActiva && isStoreContext && (
+              <span className="inline-block self-start text-[10px] font-black bg-red-600 text-white px-2 py-0.5 rounded uppercase tracking-wider mb-1">
+                EM OFERTA
+              </span>
+            )}
+            {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (
             <span className="inline-block self-start text-[10px] font-bold bg-accent text-accent-foreground px-2 py-0.5 rounded">
               {formatPbmName(p.selo)}
             </span>

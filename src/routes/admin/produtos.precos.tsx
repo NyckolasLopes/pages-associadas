@@ -75,6 +75,8 @@ function AdminProdutosPrecos() {
   const [campanhaSearch, setCampanhaSearch] = useState("");
   const [selectedCampanhaProducts, setSelectedCampanhaProducts] = useState<string[]>([]);
   const [campanhaPrices, setCampanhaPrices] = useState<Record<string, number>>({});
+  const [campanhaInicioModal, setCampanhaInicioModal] = useState("");
+  const [campanhaFimModal, setCampanhaFimModal] = useState("");
 
   const handleMeusPrecosFileUpload = (file: File) => {
     if (!file) return;
@@ -373,7 +375,7 @@ function AdminProdutosPrecos() {
     );
   };
 
-  const handleSaveCampanha = () => {
+  const handleSaveCampanha = (isDefinitive: boolean = false) => {
     let updatedCount = 0;
     
     selectedCampanhaProducts.forEach(productId => {
@@ -390,7 +392,8 @@ function AdminProdutosPrecos() {
           ...updatedProduct.precosPorLoja[selectedPharmacyId],
           precoDe: product.precoPor,
           precoPor: promoPrice,
-          ativo: true
+          ativo: true,
+          ...(isDefinitive ? { campanhaInicio: "", campanhaFim: "" } : { campanhaInicio: campanhaInicioModal, campanhaFim: campanhaFimModal })
         };
 
         addOrUpdateProduct(updatedProduct);

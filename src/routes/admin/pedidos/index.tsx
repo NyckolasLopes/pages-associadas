@@ -384,15 +384,13 @@ export function PedidosAdmin() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {isGlobalAdmin() && (
-              <>
-                <Button variant="outline" className="font-bold gap-2 bg-white border-slate-200 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200" onClick={() => setIsApiModalOpen(true)}>
-                  <Code className="h-4 w-4" /> API de Pedidos
-                </Button>
-                <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToExcel}>
-                  <Download className="h-4 w-4" /> Exportar Planilha
-                </Button>
-              </>
+              <Button variant="outline" className="font-bold gap-2 bg-white border-slate-200 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200" onClick={() => setIsApiModalOpen(true)}>
+                <Code className="h-4 w-4" /> API de Pedidos
+              </Button>
             )}
+            <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToExcel}>
+              <Download className="h-4 w-4" /> Exportar Planilha
+            </Button>
           </div>
         </div>
 

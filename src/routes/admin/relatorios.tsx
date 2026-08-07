@@ -61,8 +61,17 @@ function Relatorios() {
   const [activeReport, setActiveReport] = useState<string | null>(null);
   const [abcRegion, setAbcRegion] = useState<string>("Todas");
 
-  const { pharmacies, activeStoreId, currentUser, grupos } = useAdmin();
-  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+  const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
+  
+  const isGlobalAdmin = () => {
+    if (currentUser?.proprietario) return true;
+    const userGroup = grupos?.find(g => g.id === currentUser?.grupoId);
+    return userGroup?.permissao_total || false;
+  };
+  
+  const effectiveStoreId = activeStoreId || (!isGlobalAdmin() && currentUser?.lojasVinculadas?.[0]) || null;
+
+  
 
   const can = (permissionId: string) => {
     if (currentUser?.proprietario) return true;

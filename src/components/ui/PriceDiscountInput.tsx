@@ -20,8 +20,10 @@ export function PriceDiscountInput({
   const [promoPriceStr, setPromoPriceStr] = useState("");
   const [discountValueStr, setDiscountValueStr] = useState("");
   const [discountPercentStr, setDiscountPercentStr] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
+    if (isFocused) return;
     if (initialPromoPrice !== undefined && initialPromoPrice > 0) {
       updateFromPromo(initialPromoPrice, false);
     } else {
@@ -29,7 +31,7 @@ export function PriceDiscountInput({
       setDiscountValueStr("");
       setDiscountPercentStr("");
     }
-  }, [initialPromoPrice, basePrice]);
+  }, [initialPromoPrice, basePrice, isFocused]);
 
   const parseNum = (str: string) => {
     const clean = str.replace(/[^\d,.-]/g, "").replace(",", ".");
@@ -102,6 +104,8 @@ export function PriceDiscountInput({
           <Input 
             value={promoPriceStr} 
             onChange={e => handlePromoChange(e.target.value)} 
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => { setIsFocused(false); updateFromPromo(parseNum(promoPriceStr), false); }}
             disabled={disabled}
             className={`pl-7 h-9 text-sm ${isInvalid ? 'border-red-300 focus-visible:ring-red-400 bg-red-50' : ''}`}
             placeholder="0,00"
@@ -115,6 +119,8 @@ export function PriceDiscountInput({
           <Input 
             value={discountValueStr} 
             onChange={e => handleDiscountValueChange(e.target.value)} 
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => { setIsFocused(false); }}
             disabled={disabled}
             className="pl-7 h-9 text-sm"
             placeholder="0,00"
@@ -128,6 +134,8 @@ export function PriceDiscountInput({
           <Input 
             value={discountPercentStr} 
             onChange={e => handleDiscountPercentChange(e.target.value)} 
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => { setIsFocused(false); }}
             disabled={disabled}
             className="pl-7 h-9 text-sm"
             placeholder="0,00"
