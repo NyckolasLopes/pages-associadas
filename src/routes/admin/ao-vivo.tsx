@@ -147,19 +147,19 @@ function AoVivo() {
           ) : (
             <div className="space-y-3">
               {topCidades.map((cidade, i) => (
-                <div key={i} className="flex items-center justify-between group">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md shadow-sm">
+                <div key={i} className="flex items-start justify-between group py-1">
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0 pr-2">
+                    <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md shadow-sm shrink-0 mt-0.5">
                       {cidade.uf}
                     </span>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors truncate max-w-[130px]">{cidade.nome}</span>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors leading-tight">{cidade.nome}</span>
                       {isGlobalAdmin && cidade.lojaId && (
-                        <span className="text-[10px] font-semibold text-indigo-500 truncate max-w-[130px]">{getLojaName(cidade.lojaId)}</span>
+                        <span className="text-[10px] font-semibold text-indigo-500 leading-tight mt-0.5">{getLojaName(cidade.lojaId)}</span>
                       )}
                     </div>
                   </div>
-                  <div className="text-xs font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+                  <div className="text-xs font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md shrink-0 mt-0.5">
                     {cidade.acessos}
                   </div>
                 </div>

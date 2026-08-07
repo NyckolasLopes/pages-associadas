@@ -25,6 +25,8 @@ import paymentMethodsImg from "@/assets/payment-methods.png";
 import { useAdmin } from "@/stores/admin";
 import { useConfig } from "@/stores/config";
 import { useLeads } from "@/stores/leads";
+import { useCart } from "@/stores/cart";
+import { useMemo } from "react";
 
 const TOP_TERMS = [
   "Dipirona", "Vitamina D", "Paracetamol", "Protetor solar", "Whey protein",
@@ -47,6 +49,15 @@ export function Footer() {
   const banners = useAdmin((s) => s.banners);
   const diferenciaisBanners = banners.filter((b) => b.posicao === "Banner Diferenciais" && b.active);
   const addLead = useLeads((s) => s.addLead);
+
+  const { pharmacies } = useAdmin();
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const activePharmacy = useMemo(() => {
+    return pharmacies.find(p => p.id === selectedPharmacyId) || pharmacies[0] || null;
+  }, [pharmacies, selectedPharmacyId]);
+
+  // Fallback to global config if no pharmacy has a description, though typically we use the active pharmacy
+  const descricaoLoja = activePharmacy?.pageTitle || dadosLoja.descricao;
 
   return (
     <>
@@ -291,7 +302,7 @@ export function Footer() {
           <div>
             <Logo className="h-12 bg-white rounded-md p-2" />
             <p className="mt-3 text-sm opacity-90">
-              {dadosLoja.descricao}
+              {descricaoLoja}
             </p>
             <div className="flex flex-wrap gap-3 mt-4">
               {socialNetworks.map((net) => {
@@ -311,10 +322,10 @@ export function Footer() {
 
           <div className="text-sm space-y-2 opacity-95">
             <h3 className="font-bold uppercase text-xs tracking-wider opacity-80">Central de Relacionamento</h3>
-            <div className="flex items-start gap-2"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{dadosLoja.endereco}, {dadosLoja.numero}{dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : ''} — {dadosLoja.bairro}, {dadosLoja.cidade}/{dadosLoja.estado} — CEP {dadosLoja.cep}</div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {dadosLoja.telefone}</div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> SAC WhatsApp: {dadosLoja.whatsapp}</div>
-            <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {dadosLoja.email}</div>
+            <div className="flex items-start gap-2"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{activePharmacy?.endereco || dadosLoja.endereco}, {activePharmacy?.numero || dadosLoja.numero}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} — {activePharmacy?.bairro || dadosLoja.bairro}, {activePharmacy?.cidade || dadosLoja.cidade}/{activePharmacy?.uf || dadosLoja.estado} — CEP {activePharmacy?.cep || dadosLoja.cep}</div>
+            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {activePharmacy?.telefone || dadosLoja.telefone}</div>
+            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> SAC WhatsApp: {activePharmacy?.whatsapp || dadosLoja.whatsapp}</div>
+            <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {activePharmacy?.email || dadosLoja.email}</div>
           </div>
 
           <div className="flex flex-col gap-5 lg:col-span-1">
@@ -333,12 +344,21 @@ export function Footer() {
       <div className="bg-white text-slate-800 border-t-4 border-accent">
         <div className="container-fa py-6">
           <div className="text-[11px] leading-relaxed text-slate-700">
-            <p>
-              <strong>Plataforma Digital de Vendas da Rede:</strong> {dadosLoja.razaoSocial} | CNPJ: {dadosLoja.cnpj} | {dadosLoja.endereco}, {dadosLoja.numero}{dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : ''} - {dadosLoja.bairro} - {dadosLoja.cidade}/{dadosLoja.estado} - CEP: {dadosLoja.cep}
-            </p>
-            <p className="mt-2 text-justify">
-              <strong>AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009):</strong> Este site é uma vitrine digital de intermediação. A venda, a conferência de estoque, o faturamento (emissão da Nota Fiscal), a dispensação e a entrega dos produtos são de responsabilidade exclusiva da Farmácia Parceira da rede selecionada pelo consumidor no momento da compra. Os dados técnicos específicos do estabelecimento vendedor (Razão Social, CNPJ, AFE, CRF e Nome do Farmacêutico Responsável) serão apresentados detalhadamente na tela de resumo do pedido (checkout) e constarão obrigatoriamente no documento fiscal impresso entregue junto com as mercadorias. As informações contidas neste site não devem ser usadas para automedicação e não substituem, em hipótese alguma, as orientações dadas pelo profissional da área. Somente o médico e o farmacêutico estão aptos a diagnosticar qualquer problema de saúde e prescrever o tratamento adequado. Ao persistirem os sintomas, um médico deverá ser consultado. Os preços e promoções divulgados no site são válidos apenas para compras feitas pela internet. Todos os pedidos efetuados estão sujeitos à confirmação da disponibilidade de produto em nosso estoque. Maiores esclarecimentos, consultar o site: <a href="https://www.anvisa.gov.br" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">www.anvisa.gov.br</a>.
-            </p>
+            {activePharmacy?.footerPlataformaTexto ? (
+              <p className="whitespace-pre-wrap">{activePharmacy.footerPlataformaTexto}</p>
+            ) : (
+              <p>
+                <strong>Plataforma Digital de Vendas da Rede:</strong> {activePharmacy?.razaoSocial || dadosLoja.razaoSocial} | CNPJ: {activePharmacy?.cnpj || dadosLoja.cnpj} | {activePharmacy?.endereco || dadosLoja.endereco}, {activePharmacy?.numero || dadosLoja.numero}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} - {activePharmacy?.bairro || dadosLoja.bairro} - {activePharmacy?.cidade || dadosLoja.cidade}/{activePharmacy?.uf || dadosLoja.estado} - CEP: {activePharmacy?.cep || dadosLoja.cep}
+              </p>
+            )}
+            
+            {activePharmacy?.footerAvisoLegal ? (
+              <p className="mt-2 text-justify whitespace-pre-wrap">{activePharmacy.footerAvisoLegal}</p>
+            ) : (
+              <p className="mt-2 text-justify">
+                <strong>AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009):</strong> Este site é uma vitrine digital de intermediação. A venda, a conferência de estoque, o faturamento (emissão da Nota Fiscal), a dispensação e a entrega dos produtos são de responsabilidade exclusiva da Farmácia Parceira da rede selecionada pelo consumidor no momento da compra. Os dados técnicos específicos do estabelecimento vendedor (Razão Social, CNPJ, AFE, CRF e Nome do Farmacêutico Responsável) serão apresentados detalhadamente na tela de resumo do pedido (checkout) e constarão obrigatoriamente no documento fiscal impresso entregue junto com as mercadorias. As informações contidas neste site não devem ser usadas para automedicação e não substituem, em hipótese alguma, as orientações dadas pelo profissional da área. Somente o médico e o farmacêutico estão aptos a diagnosticar qualquer problema de saúde e prescrever o tratamento adequado. Ao persistirem os sintomas, um médico deverá ser consultado. Os preços e promoções divulgados no site são válidos apenas para compras feitas pela internet. Todos os pedidos efetuados estão sujeitos à confirmação da disponibilidade de produto em nosso estoque. Maiores esclarecimentos, consultar o site: <a href="https://www.anvisa.gov.br" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">www.anvisa.gov.br</a>.
+              </p>
+            )}
           </div>
         </div>
 

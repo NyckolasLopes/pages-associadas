@@ -32,7 +32,8 @@ import { LojaPromocoesTab } from "@/components/admin/LojaPromocoesTab";
 import { LojaBannersTab } from "@/components/admin/LojaBannersTab";
 import { LojaCuponsTab } from "@/components/admin/LojaCuponsTab";
 import { LojaSeoTab } from "@/components/admin/LojaSeoTab";
-import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store } from "lucide-react";
+import { LojaConfiguracoesTab } from "@/components/admin/LojaConfiguracoesTab";
+import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, Settings } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "Aguardando pagamento",
@@ -540,6 +541,10 @@ function PainelLoja() {
               <Store className="w-4 h-4 mr-1.5 shrink-0" />
               Personalizar Loja
             </TabsTrigger>
+            <TabsTrigger value="configuracoes" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-slate-700">
+              <Settings className="w-4 h-4 mr-1.5 shrink-0" />
+              Configurações e SEO
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="relatorios" className="space-y-6">
@@ -556,6 +561,10 @@ function PainelLoja() {
 
           <TabsContent value="cupons" className="space-y-6">
             <LojaCuponsTab lojaId={lojaId} />
+          </TabsContent>
+
+          <TabsContent value="configuracoes" className="space-y-6">
+            <LojaConfiguracoesTab lojaId={lojaId} />
           </TabsContent>
 
           <TabsContent value="seo" className="space-y-6">

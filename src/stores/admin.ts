@@ -117,10 +117,15 @@ export interface Pharmacy {
   lng?: number;
   // SEO Local e AEO / GEO
   bairrosAtendidos?: string[];
-  descricaoSeo?: string;
-  seoDescricao?: string;
+  descricaoSeo?: string; // Legacy
+  seoDescricao?: string; // Legacy
   palavrasChave?: string;
   faqLocal?: Array<{ pergunta: string; resposta: string }>;
+  pageTitle?: string;
+  metaDescription?: string;
+  // Footer Customization
+  footerPlataformaTexto?: string;
+  footerAvisoLegal?: string;
   // Dados de Entrega
   aceitaEntrega: boolean;
   modeloFrete: "cep" | "fixo" | "raio";

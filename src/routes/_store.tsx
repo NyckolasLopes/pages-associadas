@@ -58,11 +58,21 @@ function StoreLayout() {
     return undefined;
   }, [selectedPharmacyId, pharmacies]);
 
+  const activePharmacy = useMemo(() => {
+    return pharmacies.find((p) => p.id === selectedPharmacyId) || pharmacies[0] || null;
+  }, [selectedPharmacyId, pharmacies]);
+
   return (
     <div
       className={`min-h-screen flex flex-col bg-background`}
       style={storeTheme}
     >
+      {activePharmacy && (
+        <>
+          <title>{activePharmacy.pageTitle || activePharmacy.nome || "Farmácias Associadas"}</title>
+          <meta name="description" content={activePharmacy.metaDescription || "Sua farmácia online de confiança."} />
+        </>
+      )}
       <Header />
       <main className="flex-1">
         <Outlet />

@@ -28,12 +28,6 @@ function ConfiguracoesPage() {
 
   const configs: ConfigItem[] = [
     {
-      id: "dados-loja",
-      titulo: "Dados da loja",
-      descricao: "Veja e atualize as informações da sua loja, como título, descrição etc.",
-      icon: <Settings className="h-5 w-5 text-slate-600" />
-    },
-    {
       id: "usuarios",
       url: "/admin/usuarios",
       titulo: "Usuários",
