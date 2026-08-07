@@ -22,7 +22,8 @@ import {
   Filter,
   ArrowUpDown,
   TrendingDown,
-  Info
+  Info,
+  X
 } from "lucide-react";
 import { 
   ResponsiveContainer, 
@@ -80,6 +81,29 @@ export interface RankedProduct {
   percentQtd: number;
   lojasDistrib: Record<string, number>; // lojaId -> qtd
   lojasNomes: string[];
+}
+
+function ProductThumbnail({ foto, nome }: { foto?: string; nome: string }) {
+  const [imgError, setImgError] = useState(false);
+
+  if (!foto || imgError) {
+    return (
+      <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
+        <Package className="w-5 h-5 text-emerald-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center p-0.5 shrink-0 overflow-hidden shadow-2xs">
+      <img 
+        src={foto} 
+        alt={nome} 
+        onError={() => setImgError(true)}
+        className="w-full h-full object-contain" 
+      />
+    </div>
+  );
 }
 
 export function RelatorioTop100Produtos({
@@ -355,27 +379,27 @@ export function RelatorioTop100Produtos({
   const getRankBadge = (pos: number) => {
     if (pos === 1) {
       return (
-        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-black text-sm border-2 border-amber-400 shadow-xs ring-2 ring-amber-200">
-          🥇 1º
+        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-900 font-black text-sm border-2 border-amber-400 shadow-xs ring-2 ring-amber-200/50">
+          🥇
         </span>
       );
     }
     if (pos === 2) {
       return (
-        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-black text-sm border-2 border-slate-400 shadow-xs">
-          🥈 2º
+        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 text-slate-800 font-black text-sm border-2 border-slate-400 shadow-xs">
+          🥈
         </span>
       );
     }
     if (pos === 3) {
       return (
-        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-50 text-amber-900 font-black text-sm border-2 border-amber-600/60 shadow-xs">
-          🥉 3º
+        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100/60 text-amber-950 font-black text-sm border-2 border-amber-600/50 shadow-xs">
+          🥉
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+      <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200">
         {pos}º
       </span>
     );
@@ -384,20 +408,20 @@ export function RelatorioTop100Produtos({
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16 print:p-0 print:space-y-4">
       {/* Top Bar with Back Navigation & Print Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs print:hidden">
         <div className="flex items-center gap-3">
           {onBack && (
             <Button 
               variant="outline" 
               onClick={onBack}
-              className="h-10 px-3.5 rounded-xl hover:bg-slate-100 font-bold text-slate-700 flex items-center gap-2 border-slate-300"
+              className="h-10 px-3.5 rounded-xl hover:bg-slate-100 font-bold text-slate-700 flex items-center gap-2 border-slate-300 shadow-2xs"
             >
               <ArrowLeft className="h-4 w-4 text-slate-600" />
               <span>Voltar</span>
             </Button>
           )}
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-xs gap-1 py-0.5">
                 <Sparkles className="w-3 h-3 text-emerald-600" />
                 Relatório Oficial de Vendas
@@ -422,7 +446,7 @@ export function RelatorioTop100Produtos({
           <Button 
             onClick={handleExportXLSX} 
             variant="outline"
-            className="h-10 px-4 font-bold border-emerald-300 text-emerald-700 hover:bg-emerald-50 bg-white shadow-xs rounded-xl flex items-center gap-2"
+            className="h-10 px-4 font-bold border-emerald-300 text-emerald-700 hover:bg-emerald-50 bg-white shadow-2xs rounded-xl flex items-center gap-2"
           >
             <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
             <span className="hidden sm:inline">Exportar</span> Excel
@@ -430,7 +454,7 @@ export function RelatorioTop100Produtos({
 
           <Button 
             onClick={() => window.print()}
-            className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-xs rounded-xl flex items-center gap-2"
+            className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-2xs rounded-xl flex items-center gap-2"
           >
             <Printer className="h-4 w-4" />
             <span>Imprimir / PDF</span>
@@ -451,48 +475,39 @@ export function RelatorioTop100Produtos({
           </CardHeader>
           <CardContent>
             {championProduct ? (
-              <div className="space-y-1">
-                <p className="text-sm sm:text-base font-black text-slate-900 line-clamp-1" title={championProduct.nome}>
+              <>
+                <div className="text-base font-black text-slate-900 line-clamp-1" title={championProduct.nome}>
                   {championProduct.nome}
-                </p>
-                <div className="flex items-baseline gap-2 pt-0.5">
-                  <span className="text-xl sm:text-2xl font-black text-amber-800">
-                    {criterio === "quantidade" 
-                      ? `${championProduct.qtd} un` 
-                      : formatBRL(championProduct.faturamento)}
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-2xl sm:text-3xl font-black text-amber-700">
+                    {criterio === "quantidade" ? `${championProduct.qtd} un` : formatBRL(championProduct.faturamento)}
                   </span>
                   <span className="text-xs text-slate-500 font-bold">
-                    {criterio === "quantidade" 
-                      ? `(${formatBRL(championProduct.faturamento)})` 
-                      : `(${championProduct.qtd} un)`}
+                    {criterio === "quantidade" ? formatBRL(championProduct.faturamento) : `${championProduct.qtd} un`}
                   </span>
                 </div>
-                <p className="text-[11px] text-amber-700 font-medium pt-0.5">
-                  {championProduct.lojasNomes.length > 1 
-                    ? `Vendido em ${championProduct.lojasNomes.length} lojas da rede` 
-                    : `Líder isolado na unidade`}
-                </p>
-              </div>
+              </>
             ) : (
-              <p className="text-sm text-slate-400 font-medium">Nenhum pedido computado</p>
+              <div className="text-sm font-medium text-slate-400 py-1">Nenhum dado registrado</div>
             )}
           </CardContent>
         </Card>
 
-        {/* Total de Unidades Vendidas */}
+        {/* Volume Total Vendido */}
         <Card className="border-blue-200/80 bg-gradient-to-br from-blue-500/10 via-white to-blue-50/20 shadow-xs">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-blue-700 flex items-center justify-between">
-              <span>Volume Total Pedido</span>
+              <span>Volume Total em Unidades</span>
               <Package className="w-4 h-4 text-blue-600" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-black text-blue-900">
-              {totalQtdGeral} <span className="text-base font-bold text-blue-600">unidades</span>
+            <div className="text-2xl sm:text-3xl font-black text-blue-700">
+              {totalQtdGeral.toLocaleString("pt-BR")} <span className="text-base font-bold text-blue-500">un</span>
             </div>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              Soma de todos os produtos no período filtrado
+              Soma total de itens vendidos no período
             </p>
           </CardContent>
         </Card>
@@ -548,7 +563,7 @@ export function RelatorioTop100Produtos({
       </div>
 
       {/* Filter and Configuration Bar */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 print:hidden">
+      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 print:hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Main Criteria Selector Toggle */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -562,7 +577,7 @@ export function RelatorioTop100Produtos({
                 onClick={() => setCriterio("quantidade")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition-all ${
                   criterio === "quantidade"
-                    ? "bg-blue-600 text-white shadow-xs"
+                    ? "bg-blue-600 text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                 }`}
               >
@@ -574,7 +589,7 @@ export function RelatorioTop100Produtos({
                 onClick={() => setCriterio("faturamento")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition-all ${
                   criterio === "faturamento"
-                    ? "bg-emerald-600 text-white shadow-xs"
+                    ? "bg-emerald-600 text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                 }`}
               >
@@ -588,15 +603,15 @@ export function RelatorioTop100Produtos({
           <div className="flex flex-wrap items-center gap-3">
             {/* Store filter (Only visible/active if Global Admin) */}
             {!lojaId && isGlobalAdmin && (
-              <div className="flex items-center gap-2 min-w-[220px]">
-                <Store className="w-4 h-4 text-slate-400 shrink-0" />
+              <div className="flex items-center gap-2 min-w-[240px]">
+                <Store className="w-4 h-4 text-slate-500 shrink-0" />
                 <Select value={selectedLoja} onValueChange={setSelectedLoja}>
-                  <SelectTrigger className="h-9 text-xs font-bold bg-white border-slate-200 rounded-xl">
+                  <SelectTrigger className="h-9 text-xs font-bold bg-white border-slate-200 rounded-xl shadow-2xs">
                     <SelectValue placeholder="Selecione a loja..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all" className="font-bold text-blue-700">
-                      🏢 Todas as Lojas (Consolidado da Rede)
+                      Todas as Lojas (Consolidado da Rede)
                     </SelectItem>
                     {pharmacies.map(loja => (
                       <SelectItem key={loja.id} value={loja.id} className="font-semibold text-slate-700">
@@ -609,10 +624,10 @@ export function RelatorioTop100Produtos({
             )}
 
             {/* Period filter */}
-            <div className="flex items-center gap-2 min-w-[160px]">
-              <CalendarIcon className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-2 min-w-[170px]">
+              <CalendarIcon className="w-4 h-4 text-slate-500 shrink-0" />
               <Select value={periodo} onValueChange={(val: any) => setPeriodo(val)}>
-                <SelectTrigger className="h-9 text-xs font-bold bg-white border-slate-200 rounded-xl">
+                <SelectTrigger className="h-9 text-xs font-bold bg-white border-slate-200 rounded-xl shadow-2xs">
                   <SelectValue placeholder="Período" />
                 </SelectTrigger>
                 <SelectContent>
@@ -640,8 +655,17 @@ export function RelatorioTop100Produtos({
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-9 h-9 text-xs font-semibold bg-slate-50 border-slate-200 rounded-xl focus:bg-white"
+              className="pl-9 pr-8 h-9 text-xs font-semibold bg-slate-50 border-slate-200 rounded-xl focus:bg-white"
             />
+            {searchTerm && (
+              <button 
+                type="button" 
+                onClick={() => { setSearchTerm(""); setCurrentPage(1); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="text-xs text-slate-500 font-medium">
@@ -653,7 +677,7 @@ export function RelatorioTop100Produtos({
 
       {/* Chart: Top 10 Visual Ranking */}
       <Card className="border-slate-200 shadow-xs overflow-hidden">
-        <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-5 sm:p-6 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <CardTitle className="text-base font-black text-slate-900 flex items-center gap-2">
@@ -664,12 +688,12 @@ export function RelatorioTop100Produtos({
                 Comparativo visual dos 10 produtos de maior desempenho no recorte selecionado.
               </p>
             </div>
-            <Badge variant="outline" className="bg-white border-slate-200 text-slate-700 font-bold text-xs self-start sm:self-auto">
+            <Badge variant="outline" className="bg-white border-slate-200 text-slate-700 font-bold text-xs self-start sm:self-auto shadow-2xs">
               Critério Ativo: {criterio === "quantidade" ? "Quantidade (Unidades)" : "Faturamento (R$)"}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="p-5 sm:p-6 pt-6">
           {top10ChartData.length === 0 ? (
             <div className="py-12 text-center text-slate-400 font-medium text-sm">
               Nenhum dado registrado para o período ou filtro selecionado.
@@ -698,17 +722,15 @@ export function RelatorioTop100Produtos({
                     cursor={{ fill: '#f8fafc' }}
                     contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                     formatter={(val: any, name: string) => [
-                      criterio === "faturamento" ? formatBRL(Number(val)) : `${val} unidades`,
-                      criterio === "faturamento" ? "Faturamento Total" : "Qtd. Vendida"
+                      name === "faturamento" ? formatBRL(Number(val)) : `${val} unidades`,
+                      name === "faturamento" ? "Faturamento" : "Qtd. Vendida"
                     ]}
-                    labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName || ""}
+                    labelFormatter={(_, items) => items?.[0]?.payload?.fullName || ""}
                   />
                   <Bar 
                     dataKey={criterio === "quantidade" ? "qtd" : "faturamento"} 
-                    name={criterio === "quantidade" ? "Unidades Vendidas" : "Faturamento Bruto"}
-                    fill={criterio === "quantidade" ? "#2563eb" : "#10b981"}
-                    radius={[6, 6, 0, 0]}
-                    barSize={36}
+                    radius={[6, 6, 0, 0]} 
+                    maxBarSize={45}
                   >
                     {top10ChartData.map((_, index) => (
                       <Cell 
@@ -726,21 +748,21 @@ export function RelatorioTop100Produtos({
 
       {/* Main Ranking Table TOP 100 */}
       <Card className="border-slate-200 shadow-xs overflow-hidden">
-        <CardHeader className="border-b border-slate-100 bg-white pb-4">
+        <CardHeader className="border-b border-slate-100 bg-white p-5 sm:p-6 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <ListOrdered className="w-5 h-5 text-emerald-600" />
                 Tabela do Ranking Oficial TOP 100
               </CardTitle>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
+              <p className="text-xs text-slate-500 font-medium mt-1">
                 {selectedLoja === "all"
                   ? "Soma total consolidada de todas as lojas da rede de farmácias."
                   : `Ranking individual exclusivo da loja: ${activeStoreObj?.nome}.`}
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-start sm:self-auto">
               <span className="text-xs text-slate-500 font-bold">Linhas por página:</span>
               <Select value={String(pageSize)} onValueChange={(val) => { setPageSize(Number(val)); setCurrentPage(1); }}>
                 <SelectTrigger className="w-20 h-8 text-xs font-bold border-slate-200">
@@ -758,11 +780,11 @@ export function RelatorioTop100Produtos({
 
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b bg-slate-50/80 text-slate-500 text-[11px] font-black uppercase tracking-wider">
                   <th className="py-3.5 px-4 w-16 text-center">Posição</th>
-                  <th className="py-3.5 px-4">Produto</th>
+                  <th className="py-3.5 px-4 min-w-[260px]">Produto</th>
                   <th className="py-3.5 px-4">SKU / EAN</th>
                   {selectedLoja === "all" && (
                     <th className="py-3.5 px-4">Distribuição por Loja</th>
@@ -811,22 +833,12 @@ export function RelatorioTop100Produtos({
                         {/* Produto / Thumbnail / Nome */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            {item.foto ? (
-                              <img 
-                                src={item.foto} 
-                                alt={item.nome} 
-                                className="w-10 h-10 rounded-lg object-contain bg-slate-50 border border-slate-200 p-0.5 shrink-0" 
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-black text-xs shrink-0">
-                                <Package className="w-5 h-5" />
-                              </div>
-                            )}
-                            <div>
-                              <div className="font-extrabold text-slate-900 max-w-sm truncate" title={item.nome}>
+                            <ProductThumbnail foto={item.foto} nome={item.nome} />
+                            <div className="min-w-0 flex-1">
+                              <div className="font-extrabold text-slate-900 line-clamp-2 text-sm leading-snug" title={item.nome}>
                                 {item.nome}
                               </div>
-                              <div className="text-[11px] text-slate-400 font-medium">
+                              <div className="text-[11px] text-slate-400 font-medium mt-0.5">
                                 {item.categoria || "Medicamentos & Saúde"} • {item.pedidosCount} pedido(s)
                               </div>
                             </div>
@@ -834,7 +846,7 @@ export function RelatorioTop100Produtos({
                         </td>
 
                         {/* SKU */}
-                        <td className="py-3.5 px-4 text-slate-500 font-mono text-xs font-semibold">
+                        <td className="py-3.5 px-4 text-slate-500 font-mono text-xs font-semibold whitespace-nowrap">
                           {item.sku}
                         </td>
 
@@ -843,7 +855,7 @@ export function RelatorioTop100Produtos({
                           <td className="py-3.5 px-4">
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1.5">
-                                <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 text-xs font-bold">
+                                <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 text-xs font-bold whitespace-nowrap">
                                   {item.lojasNomes.length} {item.lojasNomes.length === 1 ? "loja" : "lojas"}
                                 </Badge>
                               </div>
@@ -863,7 +875,7 @@ export function RelatorioTop100Produtos({
                         )}
 
                         {/* Qtd Vendida */}
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <div className="flex flex-col items-center">
                             <span className="font-black text-slate-900 text-sm">
                               {item.qtd} <span className="text-xs text-slate-400 font-normal">un</span>
@@ -871,7 +883,7 @@ export function RelatorioTop100Produtos({
                             {/* Visual mini bar */}
                             <div className="w-16 bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
                               <div 
-                                className="bg-blue-600 h-full rounded-full" 
+                                className="bg-blue-600 h-full rounded-full transition-all duration-300" 
                                 style={{ width: `${relativePercent}%` }}
                               />
                             </div>
@@ -879,19 +891,19 @@ export function RelatorioTop100Produtos({
                         </td>
 
                         {/* Preço Médio */}
-                        <td className="py-3.5 px-4 text-right font-semibold text-slate-600 text-xs">
+                        <td className="py-3.5 px-4 text-right font-semibold text-slate-600 text-xs whitespace-nowrap">
                           {formatBRL(item.precoMedio)}
                         </td>
 
                         {/* Faturamento Total */}
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <span className="font-black text-emerald-700 text-sm">
                             {formatBRL(item.faturamento)}
                           </span>
                         </td>
 
                         {/* Representatividade */}
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <Badge 
                             variant="outline" 
                             className={`text-xs font-black py-0.5 ${
@@ -914,7 +926,7 @@ export function RelatorioTop100Produtos({
 
         {/* Pagination Footer */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50 print:hidden">
+          <div className="p-4 sm:p-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50 print:hidden">
             <div className="text-xs text-slate-500 font-medium">
               Página <span className="font-bold text-slate-800">{currentPage}</span> de <span className="font-bold text-slate-800">{totalPages}</span>
             </div>
@@ -925,7 +937,7 @@ export function RelatorioTop100Produtos({
                 size="sm"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="h-8 px-3 text-xs font-bold border-slate-200"
+                className="h-8 px-3 text-xs font-bold border-slate-200 shadow-2xs"
               >
                 Anterior
               </Button>
@@ -937,7 +949,7 @@ export function RelatorioTop100Produtos({
                   onClick={() => setCurrentPage(page)}
                   className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
                     currentPage === page
-                      ? "bg-emerald-600 text-white"
+                      ? "bg-emerald-600 text-white shadow-2xs"
                       : "text-slate-600 hover:bg-slate-200/60 bg-white border border-slate-200"
                   }`}
                 >
@@ -950,7 +962,7 @@ export function RelatorioTop100Produtos({
                 size="sm"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="h-8 px-3 text-xs font-bold border-slate-200"
+                className="h-8 px-3 text-xs font-bold border-slate-200 shadow-2xs"
               >
                 Próxima
               </Button>
