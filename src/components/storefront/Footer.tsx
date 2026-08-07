@@ -325,12 +325,6 @@ export function Footer() {
               </div>
             </div>
 
-            <div>
-              <h3 className="font-bold uppercase text-[10px] tracking-wider opacity-80 mb-2">Pagamentos processados via:</h3>
-              <div className="bg-white inline-flex items-center px-4 py-2 rounded-lg shadow-sm h-12">
-                <img src={asaasLogo} alt="ASAAS" className="h-full object-contain mix-blend-multiply" width={100} height={40} loading="lazy" decoding="async" />
-              </div>
-            </div>
           </div>
         </div>
       </div>
