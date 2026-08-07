@@ -1166,8 +1166,27 @@ function StoreColorsConfig() {
   const [colors, setColors] = useState<Record<string, string>>(currentPharmacy?.themeColors || {
     primary: "#00B5AD",
     secondary: "#10b981",
-    accent: "#f43f5e"
+    accent: "#f43f5e",
+    headerBg: "#00B5AD",
+    headerIcons: "#ffffff",
+    searchBg: "#ffffff",
+    institutionalBg: "#f97316"
   });
+
+  useEffect(() => {
+    if (currentPharmacy?.themeColors) {
+      setColors({
+        primary: "#00B5AD",
+        secondary: "#10b981",
+        accent: "#f43f5e",
+        headerBg: "#00B5AD",
+        headerIcons: "#ffffff",
+        searchBg: "#ffffff",
+        institutionalBg: "#f97316",
+        ...currentPharmacy.themeColors
+      });
+    }
+  }, [currentPharmacy?.themeColors]);
 
   if (!currentPharmacy) return <div className="p-8 text-center text-slate-500">Selecione uma loja para gerenciar as cores.</div>;
 
@@ -1181,49 +1200,197 @@ function StoreColorsConfig() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 max-w-2xl mt-6">
-      <h3 className="text-lg font-bold text-slate-800 mb-4">Personalizar Cores da Loja</h3>
-      <p className="text-sm text-slate-500 mb-6">Você pode personalizar as cores principais da sua loja para manter a identidade da sua marca.</p>
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+      <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div>
+          <h3 className="text-lg font-bold text-slate-800">Personalizar Cores da Loja</h3>
+          <p className="text-sm text-slate-500 mt-1">
+            Escolha as cores principais que representarão a sua marca no site.
+          </p>
+        </div>
+        <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+          <Save className="w-4 h-4 mr-2" /> Salvar Cores
+        </Button>
+      </div>
       
-      <div className="space-y-6">
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded shadow-sm border" style={{ backgroundColor: colors.primary }} />
-          <div className="flex-1">
-            <Label className="font-bold">Cor Primária</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input type="color" className="w-12 h-10 p-1 cursor-pointer" value={colors.primary} onChange={e => updateColor("primary", e.target.value)} />
-              <Input type="text" className="font-mono uppercase w-32" value={colors.primary} onChange={e => updateColor("primary", e.target.value)} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+        
+        {/* Left Column: Controles */}
+        <div className="p-8 space-y-8 bg-white max-h-[800px] overflow-y-auto">
+          <div>
+            <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <Palette className="w-5 h-5 text-slate-400" /> Paleta Principal
+            </h4>
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.primary }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Cor Primária</Label>
+                  <p className="text-xs text-slate-500 mb-2">A cor principal da marca (botões principais, links ativos).</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.primary || "#00B5AD"} onChange={e => updateColor("primary", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.primary || "#00B5AD"} onChange={e => updateColor("primary", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.secondary }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Cor Secundária</Label>
+                  <p className="text-xs text-slate-500 mb-2">Usada em botões secundários, ícones de menu e rodapé.</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.secondary || "#10b981"} onChange={e => updateColor("secondary", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.secondary || "#10b981"} onChange={e => updateColor("secondary", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.accent }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Cor de Destaque (Accent)</Label>
+                  <p className="text-xs text-slate-500 mb-2">Usada para chamar atenção: descontos, preços, alertas.</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.accent || "#f43f5e"} onChange={e => updateColor("accent", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.accent || "#f43f5e"} onChange={e => updateColor("accent", e.target.value)} />
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 mt-1">Usada em botões principais, cabeçalho e destaques.</p>
+          </div>
+
+          <div className="pt-8 border-t border-slate-100">
+            <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <LayoutTemplate className="w-5 h-5 text-slate-400" /> Estrutura
+            </h4>
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.headerBg || colors.primary }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Fundo do Cabeçalho</Label>
+                  <p className="text-xs text-slate-500 mb-2">Cor do topo do site.</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.headerBg || colors.primary} onChange={e => updateColor("headerBg", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.headerBg || colors.primary} onChange={e => updateColor("headerBg", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.headerIcons || "#ffffff" }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Ícones do Cabeçalho</Label>
+                  <p className="text-xs text-slate-500 mb-2">Cor dos ícones de carrinho, usuário etc.</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.headerIcons || "#ffffff"} onChange={e => updateColor("headerIcons", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.headerIcons || "#ffffff"} onChange={e => updateColor("headerIcons", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.searchBg || "#ffffff" }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Barra de Pesquisa</Label>
+                  <p className="text-xs text-slate-500 mb-2">Cor de fundo do campo de busca.</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.searchBg || "#ffffff"} onChange={e => updateColor("searchBg", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.searchBg || "#ffffff"} onChange={e => updateColor("searchBg", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.institutionalBg || "#f97316" }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Sessões Institucionais (Ex: Imagens)</Label>
+                  <p className="text-xs text-slate-500 mb-2">Cor de fundo das seções institucionais (como Serviços de Saúde e Diferenciais da Farmácia).</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.institutionalBg || "#f97316"} onChange={e => updateColor("institutionalBg", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.institutionalBg || "#f97316"} onChange={e => updateColor("institutionalBg", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded shadow-sm border" style={{ backgroundColor: colors.secondary }} />
-          <div className="flex-1">
-            <Label className="font-bold">Cor Secundária</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input type="color" className="w-12 h-10 p-1 cursor-pointer" value={colors.secondary} onChange={e => updateColor("secondary", e.target.value)} />
-              <Input type="text" className="font-mono uppercase w-32" value={colors.secondary} onChange={e => updateColor("secondary", e.target.value)} />
+        {/* Right Column: Preview */}
+        <div className="p-8 bg-slate-50/50 flex flex-col items-center justify-start overflow-hidden">
+          <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 self-start">
+            <Monitor className="w-5 h-5 text-slate-400" /> Demonstração ao vivo
+          </h4>
+          
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden w-full max-w-[400px]">
+            {/* Fake Header */}
+            <div className="px-4 py-3 flex flex-col gap-3" style={{ backgroundColor: colors.headerBg || colors.primary }}>
+              <div className="flex items-center justify-between">
+                <div className="font-black text-lg tracking-tight flex items-center gap-2" style={{ color: colors.headerIcons || "#ffffff" }}>
+                  <Store className="w-5 h-5" style={{ color: colors.headerIcons || "#ffffff" }} /> LOJA
+                </div>
+                <div className="flex items-center gap-3">
+                  <Search className="w-4 h-4" style={{ color: colors.headerIcons || "#ffffff" }} />
+                  <div className="relative">
+                    <ShoppingCart className="w-4 h-4" style={{ color: colors.headerIcons || "#ffffff" }} />
+                    <span className="absolute -top-1.5 -right-1.5 text-[9px] w-3 h-3 flex items-center justify-center rounded-full text-white font-bold" style={{ backgroundColor: colors.accent || "#f43f5e" }}>2</span>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full h-8 rounded-md flex items-center px-3" style={{ backgroundColor: colors.searchBg || "#ffffff" }}>
+                <Search className="w-3 h-3 text-slate-400 mr-2" />
+                <div className="h-2 w-24 bg-slate-200 rounded"></div>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 mt-1">Usada em elementos secundários e badges.</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded shadow-sm border" style={{ backgroundColor: colors.accent }} />
-          <div className="flex-1">
-            <Label className="font-bold">Cor de Destaque (Accent)</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input type="color" className="w-12 h-10 p-1 cursor-pointer" value={colors.accent} onChange={e => updateColor("accent", e.target.value)} />
-              <Input type="text" className="font-mono uppercase w-32" value={colors.accent} onChange={e => updateColor("accent", e.target.value)} />
+            {/* Fake Banner */}
+            <div className="h-24 flex items-center justify-center" style={{ backgroundColor: (colors.secondary || "#10b981") + "20" }}>
+              <div className="text-center">
+                <div className="text-[10px] font-bold" style={{ color: colors.secondary || "#10b981" }}>OFERTAS ESPECIAIS</div>
+                <div className="text-sm font-black text-slate-800">CUIDADO DIÁRIO</div>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 mt-1">Usada para preços promocionais, tags de desconto e alertas.</p>
-          </div>
-        </div>
 
-        <div className="pt-4 flex justify-end border-t border-slate-100">
-          <Button onClick={handleSave} className="bg-[#00B5AD] hover:bg-[#009c95] text-white">Salvar Cores</Button>
+            {/* Fake Content */}
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-sm text-slate-800">Mais Vendidos</div>
+                <div className="text-[10px] font-bold" style={{ color: colors.primary || "#00B5AD" }}>VER TODOS</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {[1,2].map(i => (
+                  <div key={i} className="border border-slate-100 rounded-lg p-3">
+                    <div className="w-full h-16 bg-slate-50 rounded mb-2 flex items-center justify-center">
+                      <Package className="w-6 h-6 text-slate-300" />
+                    </div>
+                    <div className="h-2 w-16 bg-slate-200 rounded mb-1"></div>
+                    <div className="h-2 w-10 bg-slate-200 rounded mb-3"></div>
+                    <div className="font-black text-sm" style={{ color: colors.accent || "#f43f5e" }}>R$ 19,90</div>
+                    <div className="w-full h-7 rounded mt-2 flex items-center justify-center text-[10px] font-bold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: colors.primary || "#00B5AD" }}>
+                      COMPRAR
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Fake Institutional */}
+            <div className="p-5 flex flex-col items-center justify-center space-y-3" style={{ backgroundColor: colors.institutionalBg || "#f97316" }}>
+              <div className="font-bold text-white text-sm text-center">Serviços de Saúde</div>
+              <div className="flex gap-4">
+                <div className="bg-white p-3 rounded-xl flex flex-col items-center gap-1 w-16 shadow-sm">
+                  <Stethoscope className="w-5 h-5" style={{ color: colors.institutionalBg || "#f97316" }} />
+                  <span className="text-[9px] font-bold text-slate-700 mt-1">Vacinas</span>
+                </div>
+                <div className="bg-white p-3 rounded-xl flex flex-col items-center gap-1 w-16 shadow-sm">
+                  <Droplets className="w-5 h-5" style={{ color: colors.institutionalBg || "#f97316" }} />
+                  <span className="text-[9px] font-bold text-slate-700 mt-1">Testes</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
