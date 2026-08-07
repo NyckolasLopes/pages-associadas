@@ -524,7 +524,7 @@ export function PedidosAdmin() {
                     <th className="px-3 py-3 w-10 text-center"><Checkbox /></th>
                     <th className="px-3 py-3 whitespace-nowrap">Pedido</th>
                     <th className="px-3 py-3">Cliente</th>
-                    <th className="px-3 py-3">Loja Faturamento</th>
+                    {isGlobalAdmin() && <th className="px-3 py-3">Loja Faturamento</th>}
                     <th className="px-3 py-3">Itens</th>
                     <th className="px-3 py-3 text-right whitespace-nowrap">Total / Ações</th>
                   </tr>
@@ -569,12 +569,14 @@ export function PedidosAdmin() {
                               </div>
                            </div>
                         </td>
+                        {isGlobalAdmin() && (
                         <td className="px-3 py-3">
                            <div className="flex items-center gap-2">
                              <Store className="h-4 w-4 text-slate-400 shrink-0" />
                              <span className="font-bold text-slate-800 text-[13px] leading-tight break-words">{getLojaName(order.lojaId)}</span>
                            </div>
                         </td>
+                        )}
                         <td className="px-3 py-3">
                           <div className="text-slate-700 text-xs">
                             <span className="font-bold text-slate-800">{order.produtos?.reduce((acc, p) => acc + (p.qtd || 1), 0) || order.produtos?.length || 1} item(s)</span>

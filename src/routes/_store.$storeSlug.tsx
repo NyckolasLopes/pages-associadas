@@ -10,7 +10,7 @@ import { SquarePromoGrid } from "@/components/storefront/SquarePromoGrid";
 import { ServicesSection } from "@/components/storefront/ServicesSection";
 import { Clock, Store, Percent, Activity, ScanBarcode, Pill, Sparkles, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Sun, TrendingUp, Heart, Handshake, Tag, Droplets, HeartPulse, Eye, Smile, User, Scale, Coffee, Dumbbell, Thermometer, BriefcaseMedical, Battery, Wind, Flame, Truck, MapPin, ShieldCheck, Banknote, ChevronLeft, ChevronRight, ExternalLink, Star } from "lucide-react";
 import { isCampanhaAtiva } from "@/lib/utils";
-import { BlogPreview } from "@/components/storefront/BlogPreview";
+
 import { GeoPopup } from "@/components/storefront/GeoPopup";
 // InstallPrompt are rendered globally in __root.tsx
 import type { Produto, Categoria, VitrineLocal } from "@/types";
@@ -627,7 +627,7 @@ function StoreHome() {
 
 
 
-        <BlogPreview />
+
       </main>
       
       
