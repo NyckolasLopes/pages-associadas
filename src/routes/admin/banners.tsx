@@ -26,7 +26,7 @@ import { StoreStructureViewer } from "@/components/admin/StoreStructureViewer";
 import { StoreVitrinesConfig } from "@/components/admin/StoreVitrinesConfig";
 
 const bannersSearchSchema = z.object({
-  tab: z.enum(["banners", "estrutura", "vitrines"]).optional().catch("banners"),
+  tab: z.enum(["banners", "estrutura", "vitrines", "logo", "cores"]).optional().catch("banners"),
 });
 
 export const Route = createFileRoute("/admin/banners")({
