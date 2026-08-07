@@ -88,7 +88,6 @@ const EMPTY_PHARMACY: Pharmacy = {
   aceitaMotoboy: false,
   custoMotoboy: "" as any,
   sistemaUtilizado: "",
-  vendeIfood: false,
   identificadorPagamento: "",
 };
 
@@ -860,24 +859,6 @@ function LojasAdmin() {
         {/* ========== OUTROS MEIOS DE ENTREGA ========== */}
         <FormSection icon={<Truck className="h-4 w-4 text-blue-600" />} title="Outros Meios de Entrega (Aplicativos/Motoboy)">
           <div className="grid gap-6 border rounded-lg p-4 bg-slate-50">
-            {/* IFOOD */}
-            <div className="grid gap-3 pb-4 border-b border-slate-200">
-              <RadioToggle
-                label="Loja vende no iFood?"
-                value={!!form.vendeIfood}
-                onChange={(v) => update({ vendeIfood: v })}
-              />
-            </div>
-
-            {/* FARMÁCIA APP */}
-            <div className="grid gap-3 pb-4 border-b border-slate-200">
-              <RadioToggle
-                label="Trabalha com FarmáciaApp?"
-                value={!!form.vendeFarmaciaApp}
-                onChange={(v) => update({ vendeFarmaciaApp: v })}
-              />
-            </div>
-            
             {/* UBER */}
             <div className="grid gap-3 pb-4 border-b border-slate-200 opacity-60">
               <RadioToggle

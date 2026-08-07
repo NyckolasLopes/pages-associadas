@@ -412,9 +412,9 @@ export const catalog = {
 
     return wait(applyFilters(results, filters));
   },
-  productsByVitrine: async (vitrineId: string, categoriaId: string, filters?: FilterOptions, produtoIds?: string[]) => {
+  productsByVitrine: async (vitrineId: string, categoriaId: string, filters?: FilterOptions, produtoIds?: string[], lojaId?: string | null) => {
     await ensureHydrated();
-    const all = getAllProdutos();
+    const all = getAllProdutos(lojaId);
     
     // If manual product IDs are provided, use those
     if (produtoIds && produtoIds.length > 0) {

@@ -688,28 +688,7 @@ function InscricaoLojaPublic() {
             </div>
           </FormSection>
 
-          {/* ========== OUTROS MEIOS DE ENTREGA ========== */}
-          <FormSection icon={<Truck className="h-4 w-4 text-blue-600" />} title="Integrações de Aplicativos de Venda">
-            <div className="grid gap-6 border rounded-lg p-6 bg-slate-50">
-              {/* IFOOD */}
-              <div className="grid gap-3 pb-4 border-b border-slate-200">
-                <RadioToggle
-                  label="Sua loja vende no iFood?"
-                  value={!!form.vendeIfood}
-                  onChange={(v) => update({ vendeIfood: v })}
-                />
-              </div>
-
-              {/* FARMÁCIA APP */}
-              <div className="grid gap-3">
-                <RadioToggle
-                  label="Trabalha com FarmáciaApp?"
-                  value={!!form.vendeFarmaciaApp}
-                  onChange={(v) => update({ vendeFarmaciaApp: v })}
-                />
-              </div>
-            </div>
-          </FormSection>
+          {/* ========== OUTROS MEIOS DE ENTREGA (Removido) ========== */}
 
           <div className="pt-6 border-t flex justify-end">
             <Button size="lg" onClick={handleSave} className="font-bold w-full sm:w-auto h-12 px-8 bg-primary hover:bg-primary-dark">

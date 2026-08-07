@@ -368,7 +368,7 @@ export function PedidosAdmin() {
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Meus Pedidos</h1>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">{isGlobalAdmin() ? 'Pedidos de Lojas' : 'Meus Pedidos'}</h1>
             <span className="text-slate-500 font-medium text-sm">Gerencie os pedidos concluídos via WhatsApp e os carrinhos a recuperar.</span>
           </div>
           <div className="flex flex-wrap items-center gap-3">

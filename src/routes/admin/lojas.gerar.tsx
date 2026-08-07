@@ -41,12 +41,11 @@ function GerarLojaPage() {
   };
 
   const getLojaUrl = (pharmacy: any) => {
-    return `${baseUrl}/loja/${pharmacy.id}`;
+    return `${baseUrl}/${getLojaSlug(pharmacy)}`;
   };
 
   const getLojaSlugUrl = (pharmacy: any) => {
-    const slug = getLojaSlug(pharmacy);
-    return `${baseUrl}/loja/${slug}`;
+    return getLojaUrl(pharmacy);
   };
 
   const handleGerar = (pharmacy: any) => {
