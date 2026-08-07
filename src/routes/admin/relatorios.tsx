@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { useAdmin } from "@/stores/admin";
 import { useOrders } from "@/stores/orders";
+import { useMarketing } from "@/stores/marketing";
+import { useProducts } from "@/stores/products";
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area
 } from "recharts";
@@ -87,7 +89,7 @@ function Relatorios() {
     ? "Medicamentos controlados exigem retenção de receita somente desta unidade."
     : "Relatório de vendas que exigiram retenção de receita presencial.";
 
-  const gruposRelatoriosRaw = [
+  let gruposRelatoriosRaw: any[] = [
     {
       categoria: "Vendas e Conversão",
       itens: [
@@ -129,12 +131,30 @@ function Relatorios() {
     }
   ];
 
+  if (!effectiveStoreId) {
+    gruposRelatoriosRaw.push({
+      categoria: "Marketing e Promoções",
+      itens: [
+        {
+          id: "promocoes-lojas",
+          titulo: "Promoções Ativas (Lojas)",
+          descricao: "Acompanhe quais lojas fizeram promoções e quais produtos estão em oferta.",
+          icon: <Ticket className="h-5 w-5 text-pink-600" />,
+          bgColor: "bg-pink-100",
+          permission: "rel_desempenho"
+        }
+      ]
+    });
+  }
+
   const gruposRelatorios = gruposRelatoriosRaw.map(grupo => ({
     ...grupo,
     itens: grupo.itens.filter(item => can(item.permission))
   })).filter(grupo => grupo.itens.length > 0);
 
   const { orders: rawOrders } = useOrders();
+  const { lojaPromocoes } = useMarketing();
+  const { products } = useProducts();
   const orders = useMemo(() => {
     let filtered = rawOrders.filter(o => {
       const status = o.status.toUpperCase();
@@ -578,6 +598,51 @@ function Relatorios() {
                   </table>
                 </div>
               </div>
+            </div>
+          ) : activeReport === "promocoes-lojas" ? (
+            <div className="p-6 overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Loja</th>
+                    <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Promoção</th>
+                    <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Mecânica</th>
+                    <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Produtos Afetados</th>
+                    <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {Object.keys(lojaPromocoes || {}).length > 0 ? Object.entries(lojaPromocoes).flatMap(([lojaId, promocoes]) => {
+                    const lojaNome = pharmacies.find(p => p.id === lojaId)?.nome || "Loja Desconhecida";
+                    return promocoes.map(promo => {
+                      const mecanica = promo.tipoCampanha === 'leve_pague' ? `Leve ${promo.levePague_quantidade} Pague R$ ${promo.levePague_precoPorItem?.toFixed(2)}` : 'Padrão';
+                      const produtosQtd = promo.alvosId.length;
+                      
+                      return (
+                        <tr key={`${lojaId}-${promo.id}`} className="hover:bg-slate-50">
+                          <td className="py-3 px-4 text-sm font-bold text-slate-800">{lojaNome}</td>
+                          <td className="py-3 px-4 text-sm font-medium text-slate-700">{promo.titulo}</td>
+                          <td className="py-3 px-4 text-sm font-medium text-slate-700">{mecanica}</td>
+                          <td className="py-3 px-4 text-sm font-medium text-slate-700">{produtosQtd} produto(s)</td>
+                          <td className="py-3 px-4">
+                            {promo.ativa ? (
+                              <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-bold text-xs">Ativa</span>
+                            ) : (
+                              <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold text-xs">Inativa</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  }) : (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-sm font-medium text-slate-500">
+                        Nenhuma promoção encontrada nas lojas.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           ) : activeReport === "vendas-produto" ? (
             <div className="p-6 space-y-8">
