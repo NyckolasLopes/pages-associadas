@@ -42,62 +42,17 @@ export const Route = createFileRoute("/admin/usuarios")({
 
 const PERMISSION_CATEGORIES = [
   {
-    category: "Dashboard",
-    permissions: [{ id: "dash_view", label: "Dashboard" }]
-  },
-  {
-    category: "Vendas",
+    category: "Gestão da Loja",
     permissions: [
-      { id: "vendas_pedidos", label: "Pedidos" },
-      { id: "vendas_carrinhos", label: "Carrinhos Abandonados" },
+      { id: "loja_pedidos", label: "Pedidos" },
+      { id: "loja_promocoes", label: "Preços & Ofertas" },
+      { id: "loja_cupons", label: "Cupons" },
+      { id: "loja_seo", label: "SEO & GEO" },
+      { id: "loja_metricas", label: "Métricas" },
+      { id: "loja_relatorios", label: "Relatórios (Top 100)" },
+      { id: "loja_personalizar", label: "Personalizar Loja" },
     ]
-  },
-  {
-    category: "Lojas",
-    permissions: [
-      { id: "lojas_todas", label: "Ver todas" },
-      { id: "lojas_nova", label: "Nova Loja" },
-    ]
-  },
-  {
-    category: "Produtos",
-    permissions: [
-      { id: "prod_todos", label: "Ver todos" },
-      { id: "prod_novo", label: "Novo Produto" },
-      { id: "prod_categorias", label: "Categorias" },
-    ]
-  },
-  {
-    category: "Clientes",
-    permissions: [
-      { id: "cli_todos", label: "Ver todos" },
-    ]
-  },
-
-  {
-    category: "Marketing",
-    permissions: [
-      { id: "mkt_cupons", label: "Cupons" },
-    ]
-  },
-  {
-    category: "Relatórios e Métricas",
-    permissions: [
-      { id: "rel_vendas_produto", label: "Vendas por produto loja" },
-      { id: "rel_desempenho", label: "Desempenho por unidade" },
-      { id: "rel_logistica_retirada", label: "Retirada vs entrega da unidade" },
-      { id: "rel_aovivo", label: "Ao vivo" },
-    ]
-  },
-  {
-    category: "Configurações",
-    permissions: [
-      { id: "conf_dados", label: "Dados da Loja" },
-      { id: "conf_dominios", label: "Domínios" },
-      { id: "conf_pagamentos", label: "Formas de pagamento" },
-      { id: "conf_usuarios", label: "Usuários" },
-    ]
-  },
+  }
 ];
 
 const ALL_PERMISSION_IDS = PERMISSION_CATEGORIES.flatMap(c => c.permissions.map(p => p.id));
