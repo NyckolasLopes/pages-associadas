@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { Heart, ShoppingBasket, Zap, Star, StarHalf, Calendar, Stethoscope, Truck, Bell, Flame, Gift, ShoppingBag, Youtube } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import type { Produto } from "@/types";
