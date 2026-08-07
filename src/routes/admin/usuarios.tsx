@@ -42,17 +42,70 @@ export const Route = createFileRoute("/admin/usuarios")({
 
 const PERMISSION_CATEGORIES = [
   {
-    category: "Gestão da Loja",
+    category: "Acesso a Lojas Vinculadas",
     permissions: [
-      { id: "loja_pedidos", label: "Pedidos" },
+      { id: "loja_pedidos", label: "Gestão de Pedidos" },
       { id: "loja_promocoes", label: "Preços & Ofertas" },
-      { id: "loja_cupons", label: "Cupons" },
-      { id: "loja_seo", label: "SEO & GEO" },
-      { id: "loja_metricas", label: "Métricas" },
+      { id: "loja_cupons", label: "Cupons de Desconto" },
+      { id: "loja_seo", label: "Configuração de SEO & GEO" },
+      { id: "loja_metricas", label: "Métricas da Loja" },
       { id: "loja_relatorios", label: "Relatórios (Top 100)" },
-      { id: "loja_personalizar", label: "Personalizar Loja" },
+      { id: "loja_personalizar", label: "Personalizar Banners da Loja" },
     ]
-  }
+  },
+  {
+    category: "Admin Global - Dashboard & Análises",
+    permissions: [
+      { id: "dash_view", label: "Acessar Dashboard" },
+      { id: "rel_vendas_produto", label: "Relatório: Vendas por Produto" },
+      { id: "rel_desempenho", label: "Relatório: Desempenho por Unidade" },
+      { id: "rel_logistica_retirada", label: "Relatório: Retirada vs Entrega" },
+      { id: "rel_aovivo", label: "Monitoramento Ao Vivo" },
+    ]
+  },
+  {
+    category: "Admin Global - Vendas e Pedidos",
+    permissions: [
+      { id: "vendas_pedidos", label: "Todos os Pedidos" },
+      { id: "vendas_carrinhos", label: "Carrinhos Abandonados" },
+    ]
+  },
+  {
+    category: "Admin Global - Lojas",
+    permissions: [
+      { id: "lojas_todas", label: "Ver todas as lojas" },
+      { id: "lojas_nova", label: "Cadastrar Nova Loja" },
+    ]
+  },
+  {
+    category: "Admin Global - Produtos",
+    permissions: [
+      { id: "prod_todos", label: "Catálogo Geral (Ver todos)" },
+      { id: "prod_novo", label: "Novo Produto Global" },
+      { id: "prod_categorias", label: "Categorias" },
+    ]
+  },
+  {
+    category: "Admin Global - Clientes",
+    permissions: [
+      { id: "cli_todos", label: "Base de Clientes (Ver todos)" },
+    ]
+  },
+  {
+    category: "Admin Global - Marketing",
+    permissions: [
+      { id: "mkt_cupons", label: "Cupons Globais" },
+    ]
+  },
+  {
+    category: "Admin Global - Configurações",
+    permissions: [
+      { id: "conf_dados", label: "Dados da Sede" },
+      { id: "conf_dominios", label: "Domínios" },
+      { id: "conf_pagamentos", label: "Formas de Pagamento" },
+      { id: "conf_usuarios", label: "Gestão de Usuários" },
+    ]
+  },
 ];
 
 const ALL_PERMISSION_IDS = PERMISSION_CATEGORIES.flatMap(c => c.permissions.map(p => p.id));
