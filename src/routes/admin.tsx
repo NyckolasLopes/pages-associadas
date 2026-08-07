@@ -431,14 +431,22 @@ function AdminLayout() {
               onToggle={() => setOpenNavSection(openNavSection === "Personalizar" ? "" : "Personalizar")}
             >
               <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
-                Banners
+                Design - Banners
               </Link>
               <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
-                Estrutura da Minha Loja
+                Estrutura da Loja
               </Link>
               <Link to="/admin/banners" search={{ tab: "vitrines" }} className={subLinkClass}>
                 Minhas Vitrines
               </Link>
+              <Link to="/admin/banners" search={{ tab: "logo" } as any} className={subLinkClass}>
+                Logo
+              </Link>
+              {pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado === 'Parceiro' && (
+                <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
+                  Minhas Cores
+                </Link>
+              )}
               
               <div className="pt-2 mt-2 border-t border-slate-200/60">
                 <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400">

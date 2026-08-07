@@ -140,21 +140,24 @@ function AdminBanners() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Partial<AdminBanner> | null>(null);
 
+  type TabType = "banners" | "estrutura" | "vitrines" | "logo" | "cores";
+
   const searchParams = Route.useSearch();
   const navigate = Route.useNavigate();
-  const currentTab = (searchParams?.tab && ["banners", "estrutura", "vitrines"].includes(searchParams.tab))
-    ? (searchParams.tab as "banners" | "estrutura" | "vitrines")
+  const validTabs: TabType[] = ["banners", "estrutura", "vitrines", "logo", "cores"];
+  const currentTab: TabType = (searchParams?.tab && validTabs.includes(searchParams.tab as any))
+    ? (searchParams.tab as TabType)
     : "banners";
 
-  const [activeTab, setActiveTab] = useState<"banners" | "estrutura" | "vitrines">(currentTab);
+  const [activeTab, setActiveTab] = useState<TabType>(currentTab);
 
   useEffect(() => {
-    if (searchParams?.tab && ["banners", "estrutura", "vitrines"].includes(searchParams.tab)) {
-      setActiveTab(searchParams.tab as "banners" | "estrutura" | "vitrines");
+    if (searchParams?.tab && validTabs.includes(searchParams.tab as any)) {
+      setActiveTab(searchParams.tab as TabType);
     }
   }, [searchParams?.tab]);
 
-  const handleTabChange = (tab: "banners" | "estrutura" | "vitrines") => {
+  const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     navigate({ search: (prev: any) => ({ ...prev, tab }) });
   };
@@ -222,13 +225,17 @@ function AdminBanners() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col">
           <h2 className="text-[22px] font-bold text-[#1a1a1a]">
-            {activeTab === "estrutura" ? "Estrutura da Minha Loja" : activeTab === "vitrines" ? "Minhas Vitrines" : "Banners"}
+            {activeTab === "estrutura" ? "Estrutura da Loja" : activeTab === "vitrines" ? "Minhas Vitrines" : activeTab === "logo" ? "Logotipo da Loja" : activeTab === "cores" ? "Minhas Cores" : "Banners"}
           </h2>
           <span className="text-sm font-medium text-slate-500">
             {activeTab === "estrutura" 
               ? "Panorama geral de todas as seções e blocos da sua loja" 
               : activeTab === "vitrines" 
               ? "Gerencie e organize as vitrines e carrosséis de produtos" 
+              : activeTab === "logo"
+              ? "Gerencie a logomarca da sua loja"
+              : activeTab === "cores"
+              ? "Personalize as cores da sua loja"
               : "Gerencie os banners promocionais e visuais da sua loja"}
           </span>
         </div>
@@ -365,6 +372,16 @@ function AdminBanners() {
       {/* Tab 3: Minhas Vitrines (Configuração & Produtos) */}
       {activeTab === "vitrines" && (
         <StoreVitrinesConfig />
+      )}
+
+      {/* Tab 4: Logo */}
+      {activeTab === "logo" && (
+        <StoreLogoConfig />
+      )}
+
+      {/* Tab 5: Cores */}
+      {activeTab === "cores" && (
+        <StoreColorsConfig />
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
@@ -1028,6 +1045,110 @@ function AdminBanners() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function StoreLogoConfig() {
+  const { activeStoreId, pharmacies, updatePharmacy } = useAdmin();
+  const currentPharmacy = pharmacies.find(p => p.id === activeStoreId);
+  const [logoUrl, setLogoUrl] = useState(currentPharmacy?.logoUrl || "");
+
+  if (!currentPharmacy) return <div className="p-8 text-center text-slate-500">Selecione uma loja para gerenciar o logotipo.</div>;
+
+  const handleSave = () => {
+    updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl });
+    toast.success("Logotipo salvo com sucesso!");
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 max-w-2xl mt-6">
+      <h3 className="text-lg font-bold text-slate-800 mb-4">Logotipo da Loja</h3>
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="w-32 h-32 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50">
+            {logoUrl ? <img src={logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" /> : <ImageIcon className="w-8 h-8 text-slate-400" />}
+          </div>
+          <div className="flex-1 space-y-2">
+            <Label>URL da Imagem (Logotipo)</Label>
+            <Input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." />
+            <p className="text-xs text-slate-500">Cole a URL da imagem do logotipo da sua loja. Recomendado: Fundo transparente (PNG) ou SVG.</p>
+          </div>
+        </div>
+        <div className="pt-4 flex justify-end">
+          <Button onClick={handleSave} className="bg-[#00B5AD] hover:bg-[#009c95] text-white">Salvar Logotipo</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StoreColorsConfig() {
+  const { activeStoreId, pharmacies, updatePharmacy } = useAdmin();
+  const currentPharmacy = pharmacies.find(p => p.id === activeStoreId);
+  const [colors, setColors] = useState<Record<string, string>>(currentPharmacy?.themeColors || {
+    primary: "#00B5AD",
+    secondary: "#10b981",
+    accent: "#f43f5e"
+  });
+
+  if (!currentPharmacy) return <div className="p-8 text-center text-slate-500">Selecione uma loja para gerenciar as cores.</div>;
+
+  const handleSave = () => {
+    updatePharmacy(currentPharmacy.id, { ...currentPharmacy, themeColors: colors });
+    toast.success("Cores salvas com sucesso!");
+  };
+
+  const updateColor = (key: string, value: string) => {
+    setColors(prev => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 max-w-2xl mt-6">
+      <h3 className="text-lg font-bold text-slate-800 mb-4">Personalizar Cores da Loja</h3>
+      <p className="text-sm text-slate-500 mb-6">Como parceiro, você pode personalizar as cores principais da sua loja para manter a identidade da sua marca.</p>
+      
+      <div className="space-y-6">
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-16 rounded shadow-sm border" style={{ backgroundColor: colors.primary }} />
+          <div className="flex-1">
+            <Label className="font-bold">Cor Primária</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <Input type="color" className="w-12 h-10 p-1 cursor-pointer" value={colors.primary} onChange={e => updateColor("primary", e.target.value)} />
+              <Input type="text" className="font-mono uppercase w-32" value={colors.primary} onChange={e => updateColor("primary", e.target.value)} />
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Usada em botões principais, cabeçalho e destaques.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-16 rounded shadow-sm border" style={{ backgroundColor: colors.secondary }} />
+          <div className="flex-1">
+            <Label className="font-bold">Cor Secundária</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <Input type="color" className="w-12 h-10 p-1 cursor-pointer" value={colors.secondary} onChange={e => updateColor("secondary", e.target.value)} />
+              <Input type="text" className="font-mono uppercase w-32" value={colors.secondary} onChange={e => updateColor("secondary", e.target.value)} />
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Usada em elementos secundários e badges.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-16 rounded shadow-sm border" style={{ backgroundColor: colors.accent }} />
+          <div className="flex-1">
+            <Label className="font-bold">Cor de Destaque (Accent)</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <Input type="color" className="w-12 h-10 p-1 cursor-pointer" value={colors.accent} onChange={e => updateColor("accent", e.target.value)} />
+              <Input type="text" className="font-mono uppercase w-32" value={colors.accent} onChange={e => updateColor("accent", e.target.value)} />
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Usada para preços promocionais, tags de desconto e alertas.</p>
+          </div>
+        </div>
+
+        <div className="pt-4 flex justify-end border-t border-slate-100">
+          <Button onClick={handleSave} className="bg-[#00B5AD] hover:bg-[#009c95] text-white">Salvar Cores</Button>
+        </div>
+      </div>
     </div>
   );
 }
