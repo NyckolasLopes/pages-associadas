@@ -634,7 +634,6 @@ function PDP() {
     }
     
     // 2. Specific store override
-    let isLojaPromoActiva = false;
       if (p.precosPorLoja?.[activeStoreId]) {
         const pLoja = p.precosPorLoja[activeStoreId];
         finalPrecoPor = pLoja.precoPor;

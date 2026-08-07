@@ -179,6 +179,7 @@ function ProductCardComponent({
   const isCampanha = isCampanhaAtiva(p);
   let finalPrecoPor = p.precoPor;
   let finalPrecoDe = p.precoDe;
+  let isLojaPromoActiva = false;
 
   if (isCampanha) {
     finalPrecoPor = p.precoCampanha || p.precoPor;
@@ -192,7 +193,6 @@ function ProductCardComponent({
     }
     
     // 2. Specific store override
-    let isLojaPromoActiva = false;
     if (p.precosPorLoja?.[activeStoreId]) {
       const pLoja = p.precosPorLoja[activeStoreId];
       finalPrecoPor = pLoja.precoPor;
