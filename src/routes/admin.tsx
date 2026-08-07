@@ -286,8 +286,10 @@ function AdminLayout() {
       {/* Mobile Top Bar */}
       <div className="md:hidden print:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-30">
         <div>
-          <div className="text-lg font-bold text-primary">Admin</div>
-          <div className="text-xs text-muted-foreground mt-0.5">Farmácias Associadas</div>
+          <div className="text-lg font-bold text-primary">Painel Administrativo</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {activeStoreId ? pharmacies.find(p => p.id === activeStoreId)?.nome : (isGlobalAdmin ? "Sede Administrativa" : "Farmácias Associadas")}
+          </div>
         </div>
         <button onClick={() => setMobileMenuOpen(true)} className="p-2 border border-slate-200 rounded-md hover:bg-slate-50 text-slate-600">
           <Menu className="w-5 h-5" />

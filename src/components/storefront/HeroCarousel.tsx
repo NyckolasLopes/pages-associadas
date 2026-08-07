@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAdmin } from "@/stores/admin";
+import { useCart } from "@/stores/cart";
 
 export function HeroCarousel({ page = "Página inicial" }: { page?: string }) {
   const { banners: adminBanners } = useAdmin();
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const [i, setI] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
@@ -22,6 +24,7 @@ export function HeroCarousel({ page = "Página inicial" }: { page?: string }) {
   const activeBanners = adminBanners.filter(b => {
     if (b.posicao !== "Full Banner") return false;
     if (!b.active) return false;
+    if (b.lojaId && b.lojaId !== selectedPharmacyId) return false;
     if (b.paginaPublicacao && b.paginaPublicacao !== "Todas as páginas" && b.paginaPublicacao !== page) return false;
     const now = new Date();
     if (b.startDate && new Date(b.startDate) > now) return false;
