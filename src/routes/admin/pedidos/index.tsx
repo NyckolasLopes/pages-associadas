@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Search,
   Filter,
@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   Package,
   MapPin,
-  CreditCard,
   Check,
   Mail,
   MessageSquare,
@@ -18,7 +17,10 @@ import {
   Code,
   Copy,
   ShoppingCart,
-  CheckCircle2
+  CheckCircle2,
+  Clock,
+  Eye,
+  Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useOrders, Pedido } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
 import { useAbandonedCartsStore, AbandonedCart } from "@/stores/abandoned-carts";
@@ -38,8 +40,39 @@ export const Route = createFileRoute("/admin/pedidos/")({
   component: PedidosAdmin,
 });
 
+interface UnifiedOrderItem {
+  id: string;
+  data: string;
+  dataOriginal: string;
+  clienteNome: string;
+  clienteTelefone: string;
+  clienteEmail?: string;
+  clienteCpf?: string;
+  clienteEndereco?: string;
+  lojaId?: string;
+  lojaNome: string;
+  status: "Concluído" | "Pendente";
+  statusDesc: string;
+  itensQtd: number;
+  itensDesc: string;
+  produtos: Array<{
+    nome: string;
+    qtd?: number;
+    quantidade?: number;
+    valorUnitario?: number;
+    preco?: number;
+    foto?: string;
+    imagem?: string;
+    sku?: string;
+  }>;
+  total: number;
+  tipo: "pedido" | "carrinho";
+  rawOrder?: Pedido;
+  rawCart?: AbandonedCart;
+}
+
 export function PedidosAdmin() {
-  const { orders: allOrders, updateOrderStatus, updateOrderTracking, deleteOrder } = useOrders();
+  const { orders: allOrders, deleteOrder } = useOrders();
   const { pharmacies, currentUser, grupos } = useAdmin();
   
   // Carrinhos abandonados / itens de clientes logados
@@ -75,50 +108,60 @@ export function PedidosAdmin() {
   }
   const allAbandonedCartsRaw = [...liveCarts, ...storeCarts];
     
-    const isGlobalAdmin = () => {
-      if (currentUser?.proprietario) return true;
-      const userGroup = grupos.find(g => g.id === currentUser?.grupoId);
-      return userGroup?.permissao_total || false;
-    };
+  const isGlobalAdmin = () => {
+    if (currentUser?.proprietario) return true;
+    const userGroup = grupos.find(g => g.id === currentUser?.grupoId);
+    return userGroup?.permissao_total || false;
+  };
 
-    const orders = allOrders.filter(o => {
-      if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId))) return false;
-      return true;
-    });
+  const orders = allOrders.filter(o => {
+    if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId))) return false;
+    return true;
+  });
 
-    const allAbandonedCarts = allAbandonedCartsRaw.filter(c => {
-      if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId))) return false;
-      return true;
-    });
+  const allAbandonedCarts = allAbandonedCartsRaw.filter(c => {
+    if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId))) return false;
+    return true;
+  });
 
-  
   const [selectedOrder, setSelectedOrder] = useState<Pedido | null>(null);
+  const [selectedCartItem, setSelectedCartItem] = useState<UnifiedOrderItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateStartFilter, setDateStartFilter] = useState("");
   const [dateEndFilter, setDateEndFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [mainView, setMainView] = useState<"todos" | "concluidos" | "carrinhos">("todos");
 
-  const handleDelete = (id: string) => {
-    setItemToDelete(id);
+  const getLojaName = (id?: string) => {
+    if (!id) return "Farmácias Associadas";
+    const p = pharmacies.find(ph => ph.id === id);
+    return p ? p.nomeFantasia : "Farmácias Associadas";
+  };
+
+  const handleDelete = (id: string, tipo: "pedido" | "carrinho") => {
+    setItemToDelete({ id, tipo });
     setConfirmOpen(true);
   };
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      deleteOrder(itemToDelete);
-      setSelectedOrder(null);
+      if (itemToDelete.tipo === "pedido") {
+        deleteOrder(itemToDelete.id);
+        if (selectedOrder?.id === itemToDelete.id) setSelectedOrder(null);
+      } else {
+        if (itemToDelete.id === "#807099") {
+          clearCart();
+        } else {
+          removeStoreCart(itemToDelete.id);
+        }
+        if (selectedCartItem?.id === itemToDelete.id) setSelectedCartItem(null);
+      }
       setConfirmOpen(false);
-      toast.success("Pedido excluído com sucesso!");
+      setItemToDelete(null);
+      toast.success(itemToDelete.tipo === "pedido" ? "Pedido excluído com sucesso!" : "Carrinho excluído com sucesso!");
     }
-  };
-
-  const getLojaName = (id?: string) => {
-    if (!id) return "Loja Principal";
-    const p = pharmacies.find(ph => ph.id === id);
-    return p ? p.nomeFantasia : id;
   };
 
   const copyToClipboard = (text: string) => {
@@ -126,19 +169,191 @@ export function PedidosAdmin() {
     toast.success("Copiado para a área de transferência!");
   };
 
+  // Função para avisar a loja faturadora via WhatsApp (Admin Global avisa a loja para que ela entre em contato)
+  const handleAvisarLoja = (item: {
+    id: string;
+    lojaId?: string;
+    lojaNome: string;
+    clienteNome: string;
+    clienteTelefone: string;
+    total: number;
+    status: "Concluído" | "Pendente";
+    produtos: Array<{ nome: string; qtd?: number; quantidade?: number }>;
+  }) => {
+    const loja = pharmacies.find(p => p.id === item.lojaId);
+    const cleanPhone = (loja?.whatsapp || loja?.telefone || "").replace(/\D/g, "");
+    if (!cleanPhone) {
+      toast.error(`A loja "${item.lojaNome}" não possui número de WhatsApp ou telefone cadastrado.`);
+      return;
+    }
+
+    const itemsList = item.produtos.map(p => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`).join("\n");
+    const isPendente = item.status === "Pendente";
+
+    const message = isPendente
+      ? `💊 *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
+        `🏬 *Unidade:* ${loja?.nomeFantasia || item.lojaNome}\n` +
+        `⚠️ *AVISO DE PEDIDO PENDENTE / CARRINHO ABANDONADO*\n\n` +
+        `Olá equipe! Há um pedido pendente/carrinho em aberto no sistema.\n\n` +
+        `👤 *Cliente:* ${item.clienteNome}\n` +
+        `📱 *WhatsApp do Cliente:* ${item.clienteTelefone}\n\n` +
+        `🛒 *Itens do Pedido:*\n${itemsList}\n\n` +
+        `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
+        `👉 *Ação necessária:* Por favor, entrem em contato com o cliente para dar seguimento ao atendimento e finalizar a compra!`
+      : `💊 *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
+        `🏬 *Unidade:* ${loja?.nomeFantasia || item.lojaNome}\n` +
+        `🔔 *AVISO DE PEDIDO CONCLUÍDO (#${item.id})*\n\n` +
+        `Olá equipe! Temos um pedido registrado para a sua loja.\n\n` +
+        `👤 *Cliente:* ${item.clienteNome}\n` +
+        `📱 *Telefone:* ${item.clienteTelefone}\n\n` +
+        `🛒 *Itens do Pedido:*\n${itemsList}\n\n` +
+        `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
+        `👉 *Ação necessária:* Verifiquem o pedido no painel da sua loja e façam o contato/separação dos itens.`;
+
+    window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+    toast.success(`Abrindo WhatsApp da loja ${loja?.nomeFantasia || item.lojaNome}...`);
+  };
+
+  // Unificação de todos os pedidos: Concluídos (via WhatsApp) + Pendentes (no carrinho)
+  const allUnifiedOrders: UnifiedOrderItem[] = useMemo(() => {
+    const list: UnifiedOrderItem[] = [];
+    const seenIds = new Set<string>();
+
+    // 1. Pedidos Concluídos (via WhatsApp / Finalizados)
+    orders.forEach(order => {
+      seenIds.add(order.id);
+      let dateFormatted = order.data;
+      try {
+        if (order.data.includes("T")) {
+          const d = new Date(order.data);
+          if (!isNaN(d.getTime())) {
+            dateFormatted = d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+          }
+        }
+      } catch {
+        dateFormatted = order.data;
+      }
+
+      const totalItemsCount = order.produtos?.reduce((acc, p) => acc + (p.qtd || p.quantidade || 1), 0) || order.produtos?.length || 1;
+      const itemsListText = (order.produtos || []).map(p => `${p.qtd || p.quantidade || 1}x ${p.nome}`).join(", ");
+
+      list.push({
+        id: order.id,
+        data: dateFormatted,
+        dataOriginal: order.data,
+        clienteNome: order.cliente?.nome || "Cliente",
+        clienteTelefone: order.cliente?.telefone || "Não informado",
+        clienteEmail: order.cliente?.email,
+        clienteCpf: order.cliente?.cpf,
+        clienteEndereco: order.cliente?.endereco ? `${order.cliente.endereco.rua}, ${order.cliente.endereco.numero} - ${order.cliente.endereco.bairro}` : undefined,
+        lojaId: order.lojaId,
+        lojaNome: getLojaName(order.lojaId),
+        status: "Concluído",
+        statusDesc: "Concluído (WhatsApp)",
+        itensQtd: totalItemsCount,
+        itensDesc: itemsListText,
+        produtos: order.produtos || [],
+        total: order.valores?.total || 0,
+        tipo: "pedido",
+        rawOrder: order,
+      });
+    });
+
+    // 2. Carrinhos Abandonados / Pedidos Pendentes
+    allAbandonedCarts.forEach(cart => {
+      if (seenIds.has(cart.id)) return;
+      const totalItemsCount = (cart.items || []).reduce((acc, i) => acc + (i.qtd || 1), 0) || 1;
+      const itemsListText = (cart.items || []).map(i => `${i.qtd || 1}x ${i.nome}`).join(", ");
+
+      list.push({
+        id: cart.id,
+        data: cart.createdAt || cart.abandonedAt || "Recente",
+        dataOriginal: cart.createdAt || new Date().toISOString(),
+        clienteNome: cart.client || "Cliente Carrinho",
+        clienteTelefone: cart.phone || "Não informado",
+        clienteEmail: cart.email,
+        clienteCpf: undefined,
+        clienteEndereco: cart.address,
+        lojaId: cart.lojaId,
+        lojaNome: getLojaName(cart.lojaId),
+        status: "Pendente",
+        statusDesc: "Pendente (Carrinho)",
+        itensQtd: totalItemsCount,
+        itensDesc: itemsListText,
+        produtos: (cart.items || []).map(i => ({
+          nome: i.nome,
+          qtd: i.qtd || 1,
+          valorUnitario: i.valorUnitario,
+          foto: i.foto,
+        })),
+        total: cart.total || 0,
+        tipo: "carrinho",
+        rawCart: cart,
+      });
+    });
+
+    // Ordenação do mais recente para o mais antigo
+    return list.sort((a, b) => {
+      const timeA = new Date(a.dataOriginal).getTime() || 0;
+      const timeB = new Date(b.dataOriginal).getTime() || 0;
+      return timeB - timeA;
+    });
+  }, [orders, allAbandonedCarts, pharmacies]);
+
+  // KPIs: TOTAL DE PEDIDOS puxa TODOS os pedidos (Pendentes + Concluídos)
+  const kpis = {
+    total: allUnifiedOrders.length,
+    concluidos: orders.length,
+    carrinhosARecuperar: allAbandonedCarts.length,
+  };
+
+  // Filtragem
+  const filteredUnifiedOrders = useMemo(() => {
+    return allUnifiedOrders.filter(item => {
+      // Filtro por view
+      if (mainView === "concluidos" && item.status !== "Concluído") return false;
+      if (mainView === "carrinhos" && item.status !== "Pendente") return false;
+
+      // Filtro por busca
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesId = item.id.toLowerCase().includes(term);
+        const matchesClient = item.clienteNome.toLowerCase().includes(term);
+        const matchesPhone = item.clienteTelefone.toLowerCase().includes(term);
+        const matchesLoja = item.lojaNome.toLowerCase().includes(term);
+        if (!matchesId && !matchesClient && !matchesPhone && !matchesLoja) {
+          return false;
+        }
+      }
+
+      // Filtro por período de data
+      if (dateStartFilter || dateEndFilter) {
+        try {
+          const itemTime = new Date(item.dataOriginal).getTime();
+          if (!isNaN(itemTime)) {
+            if (dateStartFilter && itemTime < new Date(dateStartFilter + "T00:00:00").getTime()) return false;
+            if (dateEndFilter && itemTime > new Date(dateEndFilter + "T23:59:59").getTime()) return false;
+          }
+        } catch {}
+      }
+
+      return true;
+    });
+  }, [allUnifiedOrders, mainView, searchTerm, dateStartFilter, dateEndFilter]);
+
   const exportToExcel = () => {
-    const headers = ["ID", "Data", "Cliente", "Email", "CPF", "Telefone", "Loja", "Produtos", "Frete", "Total"];
-    const rows = filteredOrders.map(o => [
+    const headers = ["ID", "Data", "Cliente", "Email", "CPF", "Telefone", "Loja Faturamento", "Status", "Itens", "Total"];
+    const rows = filteredUnifiedOrders.map(o => [
       o.id,
       o.data,
-      o.cliente.nome,
-      o.cliente.email,
-      o.cliente.cpf,
-      o.cliente.telefone,
-      getLojaName(o.lojaId),
-      (o.valores?.produtos || 0).toString().replace('.', ','),
-      (o.valores?.frete || 0).toString().replace('.', ','),
-      (o.valores?.total || 0).toString().replace('.', ',')
+      o.clienteNome,
+      o.clienteEmail || "",
+      o.clienteCpf || "",
+      o.clienteTelefone,
+      o.lojaNome,
+      o.statusDesc,
+      o.itensDesc,
+      o.total.toString().replace('.', ',')
     ]);
     const csvContent = "data:text/csv;charset=utf-8," 
       + [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
@@ -154,44 +369,8 @@ export function PedidosAdmin() {
     toast.success("Planilha exportada com sucesso!");
   };
 
-  const filteredOrders = orders.filter(o => {
-      if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      if (!o.id.toLowerCase().includes(term) && !o.cliente.nome.toLowerCase().includes(term)) {
-        return false;
-      }
-    }
-    
-    if (dateStartFilter || dateEndFilter) {
-       const orderDateStr = o.data.split(" ")[0]; 
-       if (orderDateStr && orderDateStr.includes("/")) {
-         const [d, m, y] = orderDateStr.split("/");
-         const orderDateObj = new Date(`${y}-${m}-${d}T12:00:00`);
-         if (dateStartFilter && orderDateObj < new Date(dateStartFilter + "T00:00:00")) return false;
-         if (dateEndFilter && orderDateObj > new Date(dateEndFilter + "T23:59:59")) return false;
-       }
-    }
-    return true;
-  });
-
-  const filteredAbandonedCarts = allAbandonedCarts.filter(c => {
-      if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      if (!c.id.toLowerCase().includes(term) && !c.client.toLowerCase().includes(term)) {
-        return false;
-      }
-    }
-    return true;
-  });
-
-  const kpis = {
-    total: orders.length,
-    concluidos: orders.length,
-    carrinhosARecuperar: allAbandonedCarts.length,
-  };
-
+  // --- DETAILS VIEW FOR ORDER ---
   if (selectedOrder) {
-    // --- DETAILS VIEW ---
     const isPickup = (selectedOrder.envio?.metodo || "").includes("Retirada");
 
     return (
@@ -220,18 +399,26 @@ export function PedidosAdmin() {
               </span>
             </div>
             <div className="flex items-center gap-3 print:hidden">
+               {/* No Admin Global, avisamos a loja responsável */}
                <Button 
                  className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
                  onClick={() => {
-                    const cleanPhone = (selectedOrder.cliente.telefone || "").replace(/\D/g, "");
-                    const text = `Olá ${selectedOrder.cliente.nome.split(" ")[0]}, estamos em contato sobre o seu pedido #${selectedOrder.id} realizado na Farmácias Associadas!`;
-                    window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+                   handleAvisarLoja({
+                     id: selectedOrder.id,
+                     lojaId: selectedOrder.lojaId,
+                     lojaNome: getLojaName(selectedOrder.lojaId),
+                     clienteNome: selectedOrder.cliente.nome,
+                     clienteTelefone: selectedOrder.cliente.telefone,
+                     total: selectedOrder.valores.total,
+                     status: "Concluído",
+                     produtos: selectedOrder.produtos || [],
+                   });
                  }}
                >
                  <MessageSquare className="h-4 w-4" />
-                 Falar no WhatsApp
+                 Avisar Loja (WhatsApp)
                </Button>
-               <Button variant="outline" className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2" onClick={() => handleDelete(selectedOrder.id)}>
+               <Button variant="outline" className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2" onClick={() => handleDelete(selectedOrder.id, "pedido")}>
                 <Trash2 className="h-4 w-4" />
                 Excluir
               </Button>
@@ -270,11 +457,11 @@ export function PedidosAdmin() {
             <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
                 <Store className="h-5 w-5" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Loja de Atendimento</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Loja de Faturamento</h3>
               </div>
               <div>
                 <div className="font-bold text-slate-800">{getLojaName(selectedOrder.lojaId)}</div>
-                <div className="text-sm text-slate-500 mt-1">Pedido direcionado para atendimento via WhatsApp</div>
+                <div className="text-sm text-slate-500 mt-1">Pedido direcionado para faturamento e entrega</div>
                 <div className="text-xs text-emerald-700 bg-emerald-50 font-bold p-2 rounded-lg mt-3 border border-emerald-100 flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5" /> Concluído pelo carrinho da loja
                 </div>
@@ -312,21 +499,21 @@ export function PedidosAdmin() {
               </div>
               <div className="p-2 space-y-2">
                 {(selectedOrder.produtos || []).map(p => (
-                   <div key={p.sku} className="flex items-center p-3 hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100">
+                   <div key={p.sku || p.nome} className="flex items-center p-3 hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100">
                       <div className="w-16 h-16 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                        <img src={p.foto} alt={p.nome} className="w-full h-full object-cover" />
+                        <img src={p.foto || "https://placehold.co/100"} alt={p.nome} className="w-full h-full object-cover" />
                       </div>
                       <div className="ml-4 flex-1">
                         <div className="font-bold text-slate-800 text-sm leading-tight hover:text-emerald-600 cursor-pointer">{p.nome}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-medium">SKU: {p.sku}</div>
+                        {p.sku && <div className="text-xs text-slate-500 mt-1 font-medium">SKU: {p.sku}</div>}
                       </div>
                       <div className="px-6 text-center">
                          <div className="text-[10px] font-bold text-slate-400 uppercase">Qtd</div>
-                         <div className="font-black text-slate-700 text-base">{p.qtd || 1}</div>
+                         <div className="font-black text-slate-700 text-base">{p.qtd || p.quantidade || 1}</div>
                       </div>
                       <div className="px-4 text-right">
                          <div className="text-[10px] font-bold text-slate-400 uppercase">Total</div>
-                         <div className="font-bold text-emerald-700">{((p.valorUnitario || 0) * (p.qtd || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
+                         <div className="font-bold text-emerald-700">{((p.valorUnitario || p.preco || 0) * (p.qtd || p.quantidade || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
                       </div>
                    </div>
                 ))}
@@ -349,10 +536,12 @@ export function PedidosAdmin() {
                </div>
 
                <div className="space-y-3 pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    <span className="font-medium hover:text-emerald-600 cursor-pointer">{selectedOrder.cliente.email}</span>
-                  </div>
+                  {selectedOrder.cliente.email && (
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <Mail className="h-4 w-4 text-slate-400" />
+                      <span className="font-medium hover:text-emerald-600 cursor-pointer">{selectedOrder.cliente.email}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 text-sm text-slate-600">
                     <MessageSquare className="h-4 w-4 text-green-500" />
                     <span className="font-bold text-slate-800">{selectedOrder.cliente.telefone}</span>
@@ -379,8 +568,12 @@ export function PedidosAdmin() {
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight">{isGlobalAdmin() ? 'Pedidos de Lojas' : 'Meus Pedidos'}</h1>
-            <span className="text-slate-500 font-medium text-sm">Gerencie os pedidos concluídos via WhatsApp e os carrinhos a recuperar.</span>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">
+              {isGlobalAdmin() ? 'Pedidos da Rede' : 'Meus Pedidos'}
+            </h1>
+            <span className="text-slate-500 font-medium text-sm">
+              Visão geral consolidada de todos os pedidos concluídos via WhatsApp e pendentes no carrinho.
+            </span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {isGlobalAdmin() && (
@@ -394,9 +587,9 @@ export function PedidosAdmin() {
           </div>
         </div>
 
-        {/* 3 KPIs Principais: TOTAL DE PEDIDOS, CONCLUIDO, CARRINHOS A RECUPERAR */}
+        {/* 3 KPIs Principais: TOTAL DE PEDIDOS (Concluídos + Pendentes), CONCLUIDO, CARRINHOS A RECUPERAR */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           {/* TOTAL DE PEDIDOS */}
+           {/* TOTAL DE PEDIDOS - Puxa todos os pedidos (Pendentes e Concluídos) */}
            <div 
              onClick={() => setMainView("todos")}
              className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
@@ -406,7 +599,9 @@ export function PedidosAdmin() {
               <div>
                 <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">TOTAL DE PEDIDOS</p>
                 <p className="text-3xl font-black text-slate-800">{kpis.total}</p>
-                <span className="text-[12px] text-slate-400 font-medium">Todos os pedidos registrados</span>
+                <span className="text-[12px] text-slate-500 font-medium">
+                  {kpis.concluidos} concluídos + {kpis.carrinhosARecuperar} pendentes
+                </span>
               </div>
               <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center">
                 <Package className="h-6 w-6" />
@@ -430,7 +625,7 @@ export function PedidosAdmin() {
               </div>
            </div>
 
-           {/* CARRINHOS A RECUPERAR */}
+           {/* CARRINHOS A RECUPERAR / PENDENTES */}
            <div 
              onClick={() => setMainView("carrinhos")}
              className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
@@ -449,13 +644,13 @@ export function PedidosAdmin() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-          {/* Top Bar */}
+          {/* Top Bar com Busca e Filtros */}
           <div className="p-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
             <div className="flex flex-1 items-center gap-2 max-w-md">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
-                  placeholder={mainView === "carrinhos" ? "Buscar por cliente ou ID do carrinho..." : "Buscar por ID, Cliente..."} 
+                  placeholder="Buscar por ID, Cliente, Telefone ou Loja..." 
                   className="pl-9 h-10 w-full bg-white border-slate-200 font-medium"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -471,7 +666,15 @@ export function PedidosAdmin() {
                     mainView === "todos" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  Pedidos ({orders.length})
+                  Todos ({kpis.total})
+                </button>
+                <button
+                  onClick={() => setMainView("concluidos")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    mainView === "concluidos" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Concluídos ({kpis.concluidos})
                 </button>
                 <button
                   onClick={() => setMainView("carrinhos")}
@@ -479,230 +682,187 @@ export function PedidosAdmin() {
                     mainView === "carrinhos" ? "bg-white text-amber-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  Carrinhos a Recuperar ({allAbandonedCarts.length})
+                  Pendentes / Carrinhos ({kpis.carrinhosARecuperar})
                 </button>
               </div>
 
-              {mainView !== "carrinhos" && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="h-10 font-bold gap-2 bg-white text-slate-600 border-slate-200">
-                      <Filter className="h-4 w-4" /> Período
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-4 rounded-xl border-slate-200 shadow-xl" align="end">
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-slate-800">Filtrar por data</h4>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período</label>
-                        <div className="flex items-center gap-2">
-                           <Input type="date" className="h-8 text-xs font-bold" value={dateStartFilter} onChange={e => setDateStartFilter(e.target.value)} />
-                           <span className="text-slate-400 font-medium">a</span>
-                           <Input type="date" className="h-8 text-xs font-bold" value={dateEndFilter} onChange={e => setDateEndFilter(e.target.value)} />
-                        </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="h-10 font-bold gap-2 bg-white text-slate-600 border-slate-200">
+                    <Filter className="h-4 w-4" /> Período
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4 rounded-xl border-slate-200 shadow-xl" align="end">
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-slate-800">Filtrar por data</h4>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período</label>
+                      <div className="flex items-center gap-2">
+                         <Input type="date" className="h-8 text-xs font-bold" value={dateStartFilter} onChange={e => setDateStartFilter(e.target.value)} />
+                         <span className="text-slate-400 font-medium">a</span>
+                         <Input type="date" className="h-8 text-xs font-bold" value={dateEndFilter} onChange={e => setDateEndFilter(e.target.value)} />
                       </div>
-
-                      <Button className="w-full font-bold h-9 bg-slate-100 hover:bg-slate-200 text-slate-700" onClick={() => {
-                          setDateStartFilter("");
-                          setDateEndFilter("");
-                      }} variant="ghost">
-                        Limpar Filtro de Data
-                      </Button>
                     </div>
-                  </PopoverContent>
-                </Popover>
-              )}
+
+                    <Button className="w-full font-bold h-9 bg-slate-100 hover:bg-slate-200 text-slate-700" onClick={() => {
+                        setDateStartFilter("");
+                        setDateEndFilter("");
+                    }} variant="ghost">
+                      Limpar Filtro de Data
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
-          {/* Table Pedidos (sem coluna STATUS e sem coluna PAGAMENTO) */}
-          {mainView !== "carrinhos" ? (
-            <div className="overflow-x-auto min-h-[400px]">
-              <table className="w-full text-left text-[13px] min-w-[800px]">
-                <thead>
-                  <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
-                    <th className="px-3 py-3 w-10 text-center"><Checkbox /></th>
-                    <th className="px-3 py-3 whitespace-nowrap">Pedido</th>
-                    <th className="px-3 py-3">Cliente</th>
-                    {isGlobalAdmin() && <th className="px-3 py-3">Loja Faturamento</th>}
-                    <th className="px-3 py-3">Itens</th>
-                    <th className="px-3 py-3 text-right whitespace-nowrap">Total / Ações</th>
+          {/* Tabela Unificada de Pedidos (Puxa Todos os Pedidos: Pendentes e Concluídos) */}
+          <div className="overflow-x-auto min-h-[400px]">
+            <table className="w-full text-left text-[13px] min-w-[800px]">
+              <thead>
+                <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
+                  <th className="px-3 py-3 w-10 text-center"><Checkbox /></th>
+                  <th className="px-3 py-3 whitespace-nowrap">Pedido</th>
+                  <th className="px-3 py-3">Cliente</th>
+                  {isGlobalAdmin() && <th className="px-3 py-3 whitespace-nowrap">Loja Faturamento</th>}
+                  <th className="px-3 py-3 text-center">Status</th>
+                  <th className="px-3 py-3">Itens</th>
+                  <th className="px-3 py-3 text-right whitespace-nowrap">Total / Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredUnifiedOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={isGlobalAdmin() ? 7 : 6} className="p-12 text-center text-slate-500 font-medium">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <AlertCircle className="w-8 h-8 text-slate-300 mb-2" />
+                        <span className="text-lg font-bold text-slate-700">Nenhum pedido encontrado.</span>
+                        <span className="text-sm font-medium text-slate-500">Não encontramos nenhum registro com os filtros selecionados.</span>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-12 text-center text-slate-500 font-medium">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <AlertCircle className="w-8 h-8 text-slate-300 mb-2" />
-                          <span className="text-lg font-bold text-slate-700">Nenhum pedido encontrado.</span>
-                          <span className="text-sm font-medium text-slate-500">Não encontramos nenhum pedido com os critérios de busca.</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : null}
-                  {filteredOrders.map(order => {
-                    return (
-                      <tr 
-                        key={order.id} 
-                        className="hover:bg-slate-50 transition-colors cursor-pointer group"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        <td className="px-3 py-3 text-center" onClick={e => e.stopPropagation()}>
-                          <Checkbox />
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          <div className="font-bold text-slate-800 text-[15px]">#{order.id}</div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">{order.data}</div>
-                        </td>
-                        <td className="px-3 py-3">
-                           <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-110 transition-transform">
-                                 {order.cliente.nome.charAt(0)}
-                              </div>
-                              <div className="max-w-[180px]">
-                                 <div className="font-bold text-slate-700 truncate">{order.cliente.nome}</div>
-                                 <div className="text-[11px] text-slate-500 truncate flex items-center gap-1">
-                                    <MessageSquare className="w-3 h-3 text-green-500 shrink-0" />
-                                    {order.cliente.telefone}
-                                 </div>
-                              </div>
-                           </div>
-                        </td>
-                        {isGlobalAdmin() && (
-                        <td className="px-3 py-3">
-                           <div className="flex items-center gap-2">
-                             <Store className="h-4 w-4 text-slate-400 shrink-0" />
-                             <span className="font-bold text-slate-800 text-[13px] leading-tight break-words">{getLojaName(order.lojaId)}</span>
-                           </div>
-                        </td>
-                        )}
-                        <td className="px-3 py-3">
-                          <div className="text-slate-700 text-xs">
-                            <span className="font-bold text-slate-800">{order.produtos?.reduce((acc, p) => acc + (p.qtd || 1), 0) || order.produtos?.length || 1} item(s)</span>
-                            <div className="text-slate-400 text-[11px] truncate max-w-[220px]">
-                              {order.produtos?.map(p => `${p.qtd || 1}x ${p.nome}`).join(", ")}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
-                            <div className="font-black text-slate-800 text-[15px] mr-2">
-                              {order.valores.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                            </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="h-8 px-2.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold gap-1 rounded-lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const cleanPhone = (order.cliente.telefone || "").replace(/\D/g, "");
-                                const text = `Olá ${order.cliente.nome.split(" ")[0]}, tudo bem? Estamos em contato sobre o seu pedido #${order.id} na Farmácias Associadas!`;
-                                window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
-                              }}
-                            >
-                              <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
-                              WhatsApp
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg" onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            /* Table Carrinhos a Recuperar */
-            <div className="overflow-x-auto min-h-[400px]">
-              <table className="w-full text-left text-[13px] min-w-[800px]">
-                <thead>
-                  <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
-                    <th className="px-3 py-3 w-10 text-center"><Checkbox /></th>
-                    <th className="px-3 py-3 whitespace-nowrap">Cliente / Carrinho</th>
-                    <th className="px-3 py-3">Contato</th>
-                    <th className="px-3 py-3">Produtos no Carrinho</th>
-                    <th className="px-3 py-3">Loja</th>
-                    <th className="px-3 py-3 text-right whitespace-nowrap">Total / Recuperação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredAbandonedCarts.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-12 text-center text-slate-500 font-medium">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <ShoppingCart className="w-8 h-8 text-slate-300 mb-2" />
-                          <span className="text-lg font-bold text-slate-700">Nenhum carrinho pendente de recuperação.</span>
-                          <span className="text-sm font-medium text-slate-500">Quando clientes logados deixarem itens no carrinho sem finalizar, eles aparecerão aqui para recuperação.</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : null}
-                  {filteredAbandonedCarts.map(cart => (
-                    <tr key={cart.id} className="hover:bg-amber-50/20 transition-colors">
-                      <td className="px-3 py-3 text-center">
+                ) : null}
+
+                {filteredUnifiedOrders.map(item => {
+                  const isConcluido = item.status === "Concluído";
+                  const isPendente = item.status === "Pendente";
+
+                  return (
+                    <tr 
+                      key={item.id} 
+                      className={`transition-colors cursor-pointer group ${
+                        isPendente ? 'hover:bg-amber-50/30' : 'hover:bg-slate-50'
+                      }`}
+                      onClick={() => {
+                        if (item.tipo === "pedido" && item.rawOrder) {
+                          setSelectedOrder(item.rawOrder);
+                        } else {
+                          setSelectedCartItem(item);
+                        }
+                      }}
+                    >
+                      <td className="px-3 py-3 text-center" onClick={e => e.stopPropagation()}>
                         <Checkbox />
                       </td>
+
+                      {/* Pedido & Data */}
                       <td className="px-3 py-3 whitespace-nowrap">
-                        <div className="font-bold text-slate-800 text-[14px]">{cart.client}</div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">{cart.abandonedAt} • {cart.createdAt}</div>
+                        <div className="font-bold text-slate-800 text-[14px]">#{item.id}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">{item.data}</div>
                       </td>
+
+                      {/* Cliente */}
                       <td className="px-3 py-3">
-                        <div className="font-bold text-slate-700 text-xs flex items-center gap-1.5">
-                          <MessageSquare className="w-3.5 h-3.5 text-green-600 shrink-0" />
-                          {cart.phone}
-                        </div>
-                        {cart.email && <div className="text-[11px] text-slate-400">{cart.email}</div>}
+                         <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-110 transition-transform ${
+                              isConcluido ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                               {item.clienteNome.charAt(0)}
+                            </div>
+                            <div className="max-w-[180px]">
+                               <div className="font-bold text-slate-700 truncate">{item.clienteNome}</div>
+                               <div className="text-[11px] text-slate-500 truncate flex items-center gap-1">
+                                  <MessageSquare className="w-3 h-3 text-green-500 shrink-0" />
+                                  {item.clienteTelefone}
+                               </div>
+                            </div>
+                         </div>
                       </td>
+
+                      {/* Loja Faturamento */}
+                      {isGlobalAdmin() && (
+                        <td className="px-3 py-3 whitespace-nowrap">
+                           <div className="flex items-center gap-2">
+                             <Store className="h-4 w-4 text-emerald-600 shrink-0" />
+                             <span className="font-bold text-slate-800 text-[13px] leading-tight">{item.lojaNome}</span>
+                           </div>
+                        </td>
+                      )}
+
+                      {/* Status */}
+                      <td className="px-3 py-3 text-center whitespace-nowrap">
+                        {isConcluido ? (
+                          <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold gap-1 px-2.5 py-0.5">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                            Concluído (WhatsApp)
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-amber-100 text-amber-800 border-none font-bold gap-1 px-2.5 py-0.5">
+                            <Clock className="w-3 h-3 text-amber-700" />
+                            Pendente (Carrinho)
+                          </Badge>
+                        )}
+                      </td>
+
+                      {/* Itens */}
                       <td className="px-3 py-3">
                         <div className="text-slate-700 text-xs">
-                          <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 mr-2">
-                            {cart.items.reduce((acc, i) => acc + i.qtd, 0)} item(s)
-                          </span>
-                          <span className="text-slate-600 truncate inline-block max-w-[220px] align-middle">
-                            {cart.items.map(i => `${i.qtd}x ${i.nome}`).join(", ")}
-                          </span>
+                          <span className="font-bold text-slate-800 mr-2">{item.itensQtd} item(s)</span>
+                          <div className="text-slate-400 text-[11px] truncate max-w-[220px]">
+                            {item.itensDesc}
+                          </div>
                         </div>
                       </td>
-                      <td className="px-3 py-3">
-                        <span className="font-semibold text-slate-700 text-xs">{getLojaName(cart.lojaId)}</span>
-                      </td>
+
+                      {/* Total / Ações */}
                       <td className="px-3 py-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
+                          {/* Preço Total */}
                           <div className="font-black text-slate-800 text-[15px] mr-2">
-                            {cart.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            {item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                           </div>
+
+                          {/* Botão Avisar Loja (Admin Global avisa a loja para que a loja faça o contato com o cliente) */}
                           <Button 
-                            className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow-sm rounded-lg text-xs"
-                            onClick={() => {
-                              const loja = pharmacies.find(p => p.id === cart.lojaId);
-                                const cleanPhone = (loja?.whatsapp || loja?.telefone || "").replace(/\D/g, "");
-                                if (!cleanPhone) {
-                                  toast.error("Esta loja não possui telefone cadastrado.");
-                                  return;
-                                }
-                                const itemsList = cart.items.map(i => `• ${i.qtd}x ${i.nome}`).join("\n");
-                                const text = `Olá, equipe da loja ${loja?.nomeFantasia}! 👋\n\nHá um carrinho abandonado pendente de contato na sua unidade.\n\n*Cliente:* ${cart.client}\n*Telefone do Cliente:* ${cart.phone}\n\n*Itens no carrinho:*\n${itemsList}\n\n*Total:* R$ ${cart.total.toFixed(2).replace(".", ",")}\n\nPor favor, entrem em contato com o cliente para tentar recuperar esta venda.`;
-                                window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
-                              }}
-                            >
-                              <MessageSquare className="h-3.5 w-3.5 text-white" />
-                              Avisar Loja
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 px-2.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold gap-1.5 rounded-lg text-xs shadow-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAvisarLoja({
+                                id: item.id,
+                                lojaId: item.lojaId,
+                                lojaNome: item.lojaNome,
+                                clienteNome: item.clienteNome,
+                                clienteTelefone: item.clienteTelefone,
+                                total: item.total,
+                                status: item.status,
+                                produtos: item.produtos,
+                              });
+                            }}
+                          >
+                            <Send className="h-3.5 w-3.5 text-emerald-600" />
+                            Avisar Loja
                           </Button>
+
+                          {/* Botão Excluir */}
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg"
-                            onClick={() => {
-                              if (cart.id === "#807099") {
-                                clearCart();
-                              } else {
-                                removeStoreCart(cart.id);
-                              }
-                              toast.success("Carrinho removido!");
+                            className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              handleDelete(item.id, item.tipo); 
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -710,11 +870,11 @@ export function PedidosAdmin() {
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -723,9 +883,109 @@ export function PedidosAdmin() {
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         onConfirm={confirmDelete}
-        title="Tem certeza que deseja excluir este pedido?"
-        description="Essa ação não pode ser desfeita."
+        title="Tem certeza que deseja excluir este registro?"
+        description="Essa ação não poderá ser desfeita."
       />
+
+      {/* Modal de Detalhes do Carrinho Pendente */}
+      <Dialog open={Boolean(selectedCartItem)} onOpenChange={open => !open && setSelectedCartItem(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between pr-6">
+              <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5 text-amber-600" />
+                Carrinho #{selectedCartItem?.id}
+              </DialogTitle>
+              <Badge className="bg-amber-100 text-amber-800 border-0 font-bold">
+                Pendente (Carrinho)
+              </Badge>
+            </div>
+            <DialogDescription>
+              {selectedCartItem?.data} • Loja: {selectedCartItem?.lojaNome}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedCartItem && (
+            <div className="space-y-4 text-sm mt-2">
+              {/* Cliente */}
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1.5">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Dados do Cliente</div>
+                <div className="font-bold text-slate-800">{selectedCartItem.clienteNome}</div>
+                <div className="text-xs text-slate-600 flex items-center gap-3">
+                  <span>Tel: {selectedCartItem.clienteTelefone}</span>
+                  {selectedCartItem.clienteEmail && <span>• Email: {selectedCartItem.clienteEmail}</span>}
+                </div>
+                {selectedCartItem.clienteEndereco && (
+                  <div className="text-xs text-slate-500">Endereço: {selectedCartItem.clienteEndereco}</div>
+                )}
+              </div>
+
+              {/* Loja de Faturamento */}
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Loja de Faturamento</div>
+                <div className="font-bold text-slate-800 text-sm mt-1">{selectedCartItem.lojaNome}</div>
+                <div className="text-xs text-slate-500 mt-0.5">Unidade responsável pelo atendimento deste carrinho</div>
+              </div>
+
+              {/* Produtos */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Itens no Carrinho ({selectedCartItem.itensQtd})
+                </div>
+                <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 border rounded-xl">
+                  {selectedCartItem.produtos.map((it, idx) => (
+                    <div key={idx} className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-50">
+                      <div>
+                        <div className="font-bold text-slate-800">{it.nome}</div>
+                        <div className="text-slate-400 text-[11px]">Qtd: {it.qtd || it.quantidade || 1}x</div>
+                      </div>
+                      <div className="font-black text-slate-900">
+                        {it.valorUnitario || it.preco ? ((it.valorUnitario || it.preco || 0) * (it.qtd || it.quantidade || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Valor Total & Botão Avisar Loja */}
+              <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center justify-between">
+                <span className="font-bold text-amber-900">Valor Total do Carrinho:</span>
+                <span className="text-xl font-black text-amber-800">
+                  {selectedCartItem.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </span>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2"
+                  onClick={() => {
+                    handleAvisarLoja({
+                      id: selectedCartItem.id,
+                      lojaId: selectedCartItem.lojaId,
+                      lojaNome: selectedCartItem.lojaNome,
+                      clienteNome: selectedCartItem.clienteNome,
+                      clienteTelefone: selectedCartItem.clienteTelefone,
+                      total: selectedCartItem.total,
+                      status: "Pendente",
+                      produtos: selectedCartItem.produtos,
+                    });
+                  }}
+                >
+                  <Send className="w-4 h-4" />
+                  Avisar Loja via WhatsApp
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="text-red-600 hover:bg-red-50 border-red-200 font-bold"
+                  onClick={() => handleDelete(selectedCartItem.id, "carrinho")}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Modal API de Pedidos */}
       <Dialog open={isApiModalOpen} onOpenChange={setIsApiModalOpen}>

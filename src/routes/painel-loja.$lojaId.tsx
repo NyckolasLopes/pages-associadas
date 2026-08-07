@@ -5,7 +5,7 @@ import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
 import { useMemo, useEffect, useRef, useState } from "react";
 import { isToday, isYesterday, isThisWeek, isThisMonth, isThisYear, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone, ShoppingBag, CheckCircle2, Clock, Eye, Check } from "lucide-react";
+import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone, ShoppingBag, CheckCircle2, Clock, Eye, Check, FileSpreadsheet } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -22,6 +22,7 @@ import { Pedido } from "@/stores/orders";
 import { secureSession } from "@/lib/secureStorage";
 import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
 import { sanitizeText, sanitizeSpreadsheetValue, sanitizeCouponCode } from "@/lib/security";
+import { RelatorioTop100Produtos } from "@/components/admin/RelatorioTop100Produtos";
 
 export const Route = createFileRoute("/painel-loja/$lojaId")({
   component: PainelLoja,
@@ -100,55 +101,6 @@ function PainelLoja() {
       if (isThisYear(date)) a += val;
     });
     return { hoje: hj, ontem: ont, semana: sem, mes: m, ano: a };
-  }, [lojaOrders]);
-
-  const { tempoMedioSeparacao } = useMemo(() => {
-    let somaMinutos = 0;
-    let count = 0;
-    
-    lojaOrders.forEach(pedido => {
-      const separacao = pedido.historico?.find(h => h.situacao.toLowerCase() === "em separação");
-      const conclusao = pedido.historico?.find(h => 
-        h.situacao.toLowerCase() === "pronta para retirada" || 
-        h.situacao.toLowerCase() === "enviado" || 
-        h.situacao.toLowerCase() === "entregue"
-      );
-      
-      if (separacao && conclusao) {
-        let start: Date;
-        let end: Date;
-        
-        if (separacao.data.includes("T")) start = new Date(separacao.data);
-        else {
-          const [d, t] = separacao.data.split(" ");
-          const [day, mo, yr] = d.split("/");
-          start = new Date(`${yr}-${mo}-${day}T${t}:00`);
-        }
-
-        if (conclusao.data.includes("T")) end = new Date(conclusao.data);
-        else {
-          const [d, t] = conclusao.data.split(" ");
-          const [day, mo, yr] = d.split("/");
-          end = new Date(`${yr}-${mo}-${day}T${t}:00`);
-        }
-
-        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-          const diffMs = end.getTime() - start.getTime();
-          if (diffMs >= 0) {
-            somaMinutos += (diffMs / 1000 / 60);
-            count++;
-          }
-        }
-      }
-    });
-
-    if (count === 0) return { tempoMedioSeparacao: "N/A" };
-    
-    const media = somaMinutos / count;
-    if (media < 60) return { tempoMedioSeparacao: `${Math.round(media)} min` };
-    const horas = Math.floor(media / 60);
-    const min = Math.round(media % 60);
-    return { tempoMedioSeparacao: `${horas}h ${min}m` };
   }, [lojaOrders]);
 
   const { carts: allCarts } = useAbandonedCartsStore();
@@ -559,7 +511,7 @@ function PainelLoja() {
         </div>
 
         <Tabs defaultValue="pedidos" className="space-y-6">
-          <TabsList className="bg-white border border-slate-200 p-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
+          <TabsList className="bg-white border border-slate-200 p-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto gap-1">
             <TabsTrigger value="pedidos" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
               <ListOrdered className="w-4 h-4 mr-1.5 shrink-0" />
               Pedidos
@@ -580,11 +532,23 @@ function PainelLoja() {
               <Activity className="w-4 h-4 mr-1.5 shrink-0" />
               Métricas
             </TabsTrigger>
+            <TabsTrigger value="relatorios" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-emerald-700 data-[state=active]:text-emerald-700">
+              <FileSpreadsheet className="w-4 h-4 mr-1.5 shrink-0 text-emerald-600" />
+              Relatórios (Top 100)
+            </TabsTrigger>
             <TabsTrigger value="personalizar" className="data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-[#00B5AD] data-[state=active]:text-[#00B5AD]">
               <Store className="w-4 h-4 mr-1.5 shrink-0" />
-              Personalizar Minha Loja
+              Personalizar Loja
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="relatorios" className="space-y-6">
+            <RelatorioTop100Produtos 
+              lojaId={lojaId} 
+              isGlobalAdmin={false} 
+              titlePrefix={`TOP 100 — ${loja.nomeFantasia || loja.nome}`} 
+            />
+          </TabsContent>
 
           <TabsContent value="personalizar" className="space-y-6">
             <LojaBannersTab lojaId={lojaId} />
@@ -720,7 +684,7 @@ function PainelLoja() {
 
           <TabsContent value="metricas" className="space-y-6">
             {/* Top KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {/* Total de Pedidos da Loja */}
               <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <div className="h-1 bg-blue-600" />
@@ -778,23 +742,6 @@ function PainelLoja() {
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
                     No carrinho ou aguardando conclusão
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* SLA de Separação */}
-              <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="h-1 bg-indigo-500" />
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
-                    Tempo Médio Separação
-                    <Package className="w-4 h-4 text-indigo-600" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-900">{tempoMedioSeparacao}</div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Histórico de SLA de atendimento
                   </p>
                 </CardContent>
               </Card>

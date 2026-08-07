@@ -107,11 +107,13 @@ const INITIAL_ORDERS: Pedido[] = [
     },
     pagamento: { metodo: "Pix via WhatsApp" },
     itens: [
-      { nome: "Dorflex 36 Comprimidos", qtd: 2, quantidade: 2, valorUnitario: 18.90, preco: 18.90 },
-      { nome: "Vitamina C 1g Cewin Efervescente", qtd: 1, quantidade: 1, valorUnitario: 24.50, preco: 24.50 },
-      { nome: "Neosaldina 30 Drágeas", qtd: 1, quantidade: 1, valorUnitario: 32.00, preco: 32.00 }
+      { nome: "Paracetamol 500mg 20 Comprimidos", sku: "PARACETAMOL-500", qtd: 40, quantidade: 40, valorUnitario: 8.90, preco: 8.90 },
+      { nome: "Dorflex 36 Comprimidos", sku: "DORFLEX-36", qtd: 30, quantidade: 30, valorUnitario: 18.90, preco: 18.90 },
+      { nome: "Dipirona Monoidratada 500mg 10 Comprimidos", sku: "DIPIRONA-500", qtd: 25, quantidade: 25, valorUnitario: 5.90, preco: 5.90 },
+      { nome: "Vitamina C 1g Cewin Efervescente", sku: "CEWIN-1G", qtd: 15, quantidade: 15, valorUnitario: 24.50, preco: 24.50 },
+      { nome: "Neosaldina 30 Drágeas", sku: "NEOSALDINA-30", qtd: 20, quantidade: 20, valorUnitario: 32.00, preco: 32.00 }
     ],
-    valores: { subtotal: 94.30, produtos: 94.30, frete: 0, total: 94.30 },
+    valores: { subtotal: 1883.50, produtos: 1883.50, frete: 0, total: 1883.50 },
     historico: [
       { data: new Date(Date.now() - 1000 * 60 * 25).toISOString(), situacao: "Pedido Realizado via WhatsApp", autor: "Cliente" }
     ]
@@ -132,10 +134,13 @@ const INITIAL_ORDERS: Pedido[] = [
     },
     pagamento: { metodo: "Cartão de Crédito" },
     itens: [
-      { nome: "Whey Protein 100% Max Titanium 900g", qtd: 1, quantidade: 1, valorUnitario: 119.90, preco: 119.90 },
-      { nome: "Creatina Creapure 300g", qtd: 1, quantidade: 1, valorUnitario: 89.90, preco: 89.90 }
+      { nome: "Paracetamol 500mg 20 Comprimidos", sku: "PARACETAMOL-500", qtd: 35, quantidade: 35, valorUnitario: 8.90, preco: 8.90 },
+      { nome: "Whey Protein 100% Max Titanium 900g", sku: "WHEY-MAX-900", qtd: 12, quantidade: 12, valorUnitario: 119.90, preco: 119.90 },
+      { nome: "Creatina Creapure 300g", sku: "CREATINA-300", qtd: 15, quantidade: 15, valorUnitario: 89.90, preco: 89.90 },
+      { nome: "Dorflex 36 Comprimidos", sku: "DORFLEX-36", qtd: 25, quantidade: 25, valorUnitario: 18.90, preco: 18.90 },
+      { nome: "Dipirona Monoidratada 500mg 10 Comprimidos", sku: "DIPIRONA-500", qtd: 20, quantidade: 20, valorUnitario: 5.90, preco: 5.90 }
     ],
-    valores: { subtotal: 209.80, produtos: 209.80, frete: 0, total: 209.80 },
+    valores: { subtotal: 3719.30, produtos: 3719.30, frete: 0, total: 3719.30 },
     historico: [
       { data: new Date(Date.now() - 1000 * 60 * 75).toISOString(), situacao: "Pedido Realizado via WhatsApp", autor: "Cliente" }
     ]
@@ -155,9 +160,11 @@ const INITIAL_ORDERS: Pedido[] = [
     },
     pagamento: { metodo: "Pix" },
     itens: [
-      { nome: "Protetor Solar Anthelios Airlicium FPS 80", qtd: 1, quantidade: 1, valorUnitario: 92.50, preco: 92.50 }
+      { nome: "Protetor Solar Anthelios Airlicium FPS 80", sku: "ANTHELIOS-80", qtd: 10, quantidade: 10, valorUnitario: 92.50, preco: 92.50 },
+      { nome: "Shampoo Anticaspa Dercos Vichy 200ml", sku: "DERCOS-200", qtd: 8, quantidade: 8, valorUnitario: 84.90, preco: 84.90 },
+      { nome: "Sabonete Líquido Granado Bebê 250ml", sku: "GRANADO-BEBE", qtd: 20, quantidade: 20, valorUnitario: 21.90, preco: 21.90 }
     ],
-    valores: { subtotal: 92.50, produtos: 92.50, frete: 10.00, total: 102.50 },
+    valores: { subtotal: 2042.20, produtos: 2042.20, frete: 10.00, total: 2052.20 },
     historico: [
       { data: new Date(Date.now() - 1000 * 60 * 180).toISOString(), situacao: "Aguardando pagamento", autor: "Sistema" }
     ]
@@ -177,10 +184,13 @@ const INITIAL_ORDERS: Pedido[] = [
     },
     pagamento: { metodo: "Dinheiro na Entrega" },
     itens: [
-      { nome: "Fralda Pampers Confort Sec G 60 Tiras", qtd: 2, quantidade: 2, valorUnitario: 79.90, preco: 79.90 },
-      { nome: "Lenços Umedecidos Johnson's Baby", qtd: 3, quantidade: 3, valorUnitario: 14.50, preco: 14.50 }
+      { nome: "Paracetamol 500mg 20 Comprimidos", sku: "PARACETAMOL-500", qtd: 25, quantidade: 25, valorUnitario: 8.90, preco: 8.90 },
+      { nome: "Fralda Pampers Confort Sec G 60 Tiras", sku: "PAMPERS-G-60", qtd: 20, quantidade: 20, valorUnitario: 79.90, preco: 79.90 },
+      { nome: "Lenços Umedecidos Johnson's Baby 48 un", sku: "LENCOS-JB-48", qtd: 30, quantidade: 30, valorUnitario: 14.50, preco: 14.50 },
+      { nome: "Dorflex 36 Comprimidos", sku: "DORFLEX-36", qtd: 20, quantidade: 20, valorUnitario: 18.90, preco: 18.90 },
+      { nome: "Dipirona Monoidratada 500mg 10 Comprimidos", sku: "DIPIRONA-500", qtd: 20, quantidade: 20, valorUnitario: 5.90, preco: 5.90 }
     ],
-    valores: { subtotal: 203.30, produtos: 203.30, frete: 5.00, total: 208.30 },
+    valores: { subtotal: 3173.50, produtos: 3173.50, frete: 5.00, total: 3178.50 },
     historico: [
       { data: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString(), situacao: "Entregue", autor: "Loja" }
     ]
@@ -200,11 +210,39 @@ const INITIAL_ORDERS: Pedido[] = [
     },
     pagamento: { metodo: "Cartão de Débito" },
     itens: [
-      { nome: "Shampoo Anticaspa Dercos Vichy 200ml", qtd: 1, quantidade: 1, valorUnitario: 84.90, preco: 84.90 }
+      { nome: "Whey Protein 100% Max Titanium 900g", sku: "WHEY-MAX-900", qtd: 8, quantidade: 8, valorUnitario: 119.90, preco: 119.90 },
+      { nome: "Protetor Solar Anthelios Airlicium FPS 80", sku: "ANTHELIOS-80", qtd: 8, quantidade: 8, valorUnitario: 92.50, preco: 92.50 },
+      { nome: "Losartana Potássica 50mg 30 Comprimidos", sku: "LOSARTANA-50", qtd: 35, quantidade: 35, valorUnitario: 9.90, preco: 9.90 },
+      { nome: "Omeprazol 20mg 28 Cápsulas", sku: "OMEPRAZOL-20", qtd: 30, quantidade: 30, valorUnitario: 12.50, preco: 12.50 }
     ],
-    valores: { subtotal: 84.90, produtos: 84.90, frete: 0, total: 84.90 },
+    valores: { subtotal: 2420.70, produtos: 2420.70, frete: 0, total: 2420.70 },
     historico: [
       { data: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(), situacao: "Pendente", autor: "Sistema" }
+    ]
+  },
+  {
+    id: "FA-20260805-4421",
+    lojaId: "1",
+    lojaNome: "Farmácias Associadas — POA Centro",
+    data: new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString(),
+    origem: "whatsapp",
+    status: "Concluído",
+    modalidade: "Entrega",
+    cliente: {
+      nome: "Fernanda Ribeiro",
+      telefone: "(51) 99345-6789",
+      email: "fernanda.r@email.com"
+    },
+    pagamento: { metodo: "Pix" },
+    itens: [
+      { nome: "Neosaldina 30 Drágeas", sku: "NEOSALDINA-30", qtd: 30, quantidade: 30, valorUnitario: 32.00, preco: 32.00 },
+      { nome: "Vitamina C 1g Cewin Efervescente", sku: "CEWIN-1G", qtd: 30, quantidade: 30, valorUnitario: 24.50, preco: 24.50 },
+      { nome: "Desodorante Rexona Clinical Aerosol 150ml", sku: "REXONA-CLIN", qtd: 35, quantidade: 35, valorUnitario: 26.90, preco: 26.90 },
+      { nome: "Ivermectina 6mg 4 Comprimidos", sku: "IVERMECTINA-6", qtd: 30, quantidade: 30, valorUnitario: 19.90, preco: 19.90 }
+    ],
+    valores: { subtotal: 3233.50, produtos: 3233.50, frete: 0, total: 3233.50 },
+    historico: [
+      { data: new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString(), situacao: "Entregue", autor: "Loja" }
     ]
   }
 ];

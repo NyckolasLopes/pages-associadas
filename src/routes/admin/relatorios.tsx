@@ -30,6 +30,7 @@ import { useAdmin } from "@/stores/admin";
 import { useOrders } from "@/stores/orders";
 import { useMarketing } from "@/stores/marketing";
 import { useAdminProducts } from "@/stores/products";
+import { RelatorioTop100Produtos } from "@/components/admin/RelatorioTop100Produtos";
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area
 } from "recharts";
@@ -81,7 +82,7 @@ function Relatorios() {
     return userGroup?.permissoes?.includes(permissionId) || false;
   };
 
-  const vendasProdutoTitulo = activeStoreId ? "Vendas por produto da loja" : "Vendas por produto";
+  const vendasProdutoTitulo = activeStoreId ? "TOP 100 Produtos Mais Pedidos da Unidade" : "TOP 100 Produtos Mais Pedidos";
   const repasseTitulo = activeStoreId ? "Repasse Financeiro da loja" : "Repasse Financeiro";
   const retiradaTitulo = activeStoreId ? "Retirada vs Entrega da unidade" : "Retirada vs Entrega";
   const medControladosTitulo = activeStoreId ? "Medicamentos Controlados da unidade" : "Medicamentos Controlados";
@@ -94,9 +95,9 @@ function Relatorios() {
       categoria: "Vendas e Conversão",
       itens: [
         {
-          id: "vendas-produto",
+          id: "top-100-produtos",
           titulo: vendasProdutoTitulo,
-          descricao: "Acompanhe as vendas dos seus produtos e faça comparativos.",
+          descricao: "Ranking dos 100 produtos mais pedidos da rede ou unidade com filtros por quantidade e faturamento.",
           icon: <Package className="h-5 w-5 text-emerald-600" />,
           bgColor: "bg-emerald-100",
           permission: "rel_vendas_produto"
@@ -390,6 +391,17 @@ function Relatorios() {
 
   const regioesDisponiveis = Object.keys(regioesMap).sort((a, b) => a === "Todas" ? -1 : b === "Todas" ? 1 : a.localeCompare(b));
   const abcRanking = Object.values(regioesMap[abcRegion] || {}).sort((a, b) => b.qtd - a.qtd).slice(0, 100);
+
+  if (activeReport === "top-100-produtos" || activeReport === "vendas-produto") {
+    return (
+      <RelatorioTop100Produtos
+        lojaId={effectiveStoreId}
+        isGlobalAdmin={isGlobalAdmin()}
+        onBack={() => setActiveReport(null)}
+        titlePrefix={effectiveStoreId ? "TOP 100 da Unidade" : "TOP 100 da Rede"}
+      />
+    );
+  }
 
   if (activeReport) {
     return (

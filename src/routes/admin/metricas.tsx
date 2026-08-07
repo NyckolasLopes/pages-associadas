@@ -147,6 +147,24 @@ function Metricas() {
         dateFormatted = order.data;
       }
 
+      // Formata método de pagamento escolhido pelo cliente no pedido finalizado
+      let paymentLabel = order.pagamento?.metodo;
+      if (paymentLabel) {
+        const pLower = paymentLabel.toLowerCase();
+        if (pLower === "pix") paymentLabel = "Pix";
+        else if (pLower === "credito" || pLower === "cartao_credito") paymentLabel = "Cartão de Crédito";
+        else if (pLower === "debito" || pLower === "cartao_debito") paymentLabel = "Cartão de Débito";
+        else if (pLower === "dinheiro") paymentLabel = "Dinheiro na Entrega";
+        else if (pLower === "vale_refeicao") paymentLabel = "Vale Refeição / Alimentação";
+        
+        if (order.pagamento?.parcelas && order.pagamento.parcelas > 1) {
+          paymentLabel += ` (${order.pagamento.parcelas}x)`;
+        }
+        if (order.pagamento?.trocoPara) {
+          paymentLabel += ` (Troco para R$ ${order.pagamento.trocoPara})`;
+        }
+      }
+
       list.push({
         id: order.id,
         data: dateFormatted,
@@ -164,13 +182,13 @@ function Metricas() {
         itensQtd: totalItemsCount,
         valorTotal: order.valores?.total || 0,
         itens: orderItems,
-        pagamentoMetodo: order.pagamento?.metodo,
+        pagamentoMetodo: paymentLabel,
         modalidade: order.modalidade || (order.envio?.metodo === "entrega" ? "Entrega" : "Retirada"),
         tipoRegistro: "pedido"
       });
     });
 
-    // 2. Processa carrinhos abandonados (como pedidos Pendentes no carrinho)
+    // 2. Processa carrinhos abandonados (como pedidos Pendentes no carrinho - sem forma de pagamento escolhida)
     (rawCarts || []).forEach(cart => {
       if (seenIds.has(cart.id)) return;
       const lojaObj = pharmacies.find(p => p.id === cart.lojaId);
@@ -201,7 +219,7 @@ function Metricas() {
         itensQtd: totalItemsCount,
         valorTotal: cart.total || 0,
         itens: cartItems,
-        pagamentoMetodo: cart.type === "pagamento_nao_aprovado" ? "Cartão / Pix Recusado" : "Abandono no Checkout",
+        pagamentoMetodo: undefined, // Cliente abandonou o carrinho sem escolher forma de pagamento
         modalidade: "Online",
         tipoRegistro: "carrinho"
       });
@@ -790,7 +808,7 @@ function Metricas() {
               <tr>
                 <th className="py-3.5 px-4">Data do Pedido</th>
                 <th className="py-3.5 px-4">Cliente</th>
-                {isGlobalView && <th className="py-3.5 px-4">Loja que Faturou</th>}
+                {isGlobalView && <th className="py-3.5 px-4 whitespace-nowrap">Loja que Faturou</th>}
                 <th className="py-3.5 px-4 text-center">Qtd. Itens</th>
                 <th className="py-3.5 px-4 text-center">Status</th>
                 <th className="py-3.5 px-4 text-right">Valor Total</th>
@@ -813,7 +831,7 @@ function Metricas() {
                   return (
                     <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
                       {/* Data do Pedido */}
-                      <td className="py-3.5 px-4 text-xs font-semibold text-slate-700">
+                      <td className="py-3.5 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">
                         <div>{order.data}</div>
                         <div className="text-[10px] text-slate-400 mt-0.5">#{order.id}</div>
                       </td>
@@ -821,20 +839,18 @@ function Metricas() {
                       {/* Cliente */}
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-slate-900">{order.clienteNome}</div>
-                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                          <Phone className="w-3 h-3 text-slate-400" />
+                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                          <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                           {order.clienteTelefone}
                         </div>
                       </td>
 
-                      {/* Loja que Faturou (Aparece no Painel Global) */}
+                      {/* Loja que Faturou (Aparece no Painel Global sem corte) */}
                       {isGlobalView && (
-                        <td className="py-3.5 px-4">
-                          <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200">
-                            <Store className="w-3 h-3 text-emerald-600" />
-                            <span className="truncate max-w-[200px]" title={order.lojaNome}>
-                              {order.lojaNome}
-                            </span>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-200">
+                            <Store className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{order.lojaNome}</span>
                           </div>
                         </td>
                       )}
@@ -869,7 +885,7 @@ function Metricas() {
                       </td>
 
                       {/* Valor Total */}
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <span className="font-black text-slate-900 text-sm">
                           {order.valorTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                         </span>
@@ -940,17 +956,22 @@ function Metricas() {
               </div>
 
               {/* Loja & Pagamento */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <div className={`grid ${selectedOrderDetails.status === "Concluído" && selectedOrderDetails.pagamentoMetodo ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"} gap-3`}>
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Loja que Faturou</div>
-                  <div className="font-bold text-slate-800 text-xs mt-1">{selectedOrderDetails.lojaNome}</div>
-                  <div className="text-[11px] text-slate-500">{selectedOrderDetails.lojaCidadeUf}</div>
+                  <div className="font-bold text-slate-800 text-sm mt-1">{selectedOrderDetails.lojaNome}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">{selectedOrderDetails.lojaCidadeUf}</div>
                 </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Origem / Pagamento</div>
-                  <div className="font-bold text-slate-800 text-xs mt-1">{selectedOrderDetails.pagamentoMetodo || "WhatsApp / Online"}</div>
-                  <div className="text-[11px] text-slate-500">Modalidade: {selectedOrderDetails.modalidade || "Entrega"}</div>
-                </div>
+                {/* Apenas exibe Forma de Pagamento quando o pedido estiver concluído/finalizado com método escolhido */}
+                {selectedOrderDetails.status === "Concluído" && selectedOrderDetails.pagamentoMetodo && (
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Forma de Pagamento</div>
+                    <div className="font-bold text-slate-800 text-sm mt-1">{selectedOrderDetails.pagamentoMetodo}</div>
+                    {selectedOrderDetails.modalidade && (
+                      <div className="text-xs text-slate-500 mt-0.5">Modalidade: {selectedOrderDetails.modalidade}</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Produtos */}
