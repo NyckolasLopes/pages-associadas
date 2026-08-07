@@ -475,37 +475,7 @@ function ProductCardComponent({
           </div>
         )}
         
-        {(() => {
-          if (isMedicamento || isService) return null;
 
-          const avaliacoes = getAvaliacoesPorProduto(p.id);
-          const hasReviews = avaliacoes.length > 0;
-          
-          let rating = 0;
-          if (hasReviews) {
-            rating = avaliacoes.reduce((acc, curr) => acc + curr.nota, 0) / avaliacoes.length;
-          }
-
-          return (
-            <div className="flex flex-col mt-1.5 mb-0.5">
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <Star 
-                      key={i} 
-                      className={`h-3 w-3 ${i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} 
-                    />
-                  ))}
-                </div>
-                {hasReviews ? (
-                  <span className="text-[10px] text-muted-foreground font-medium">{rating.toFixed(1)} ({avaliacoes.length})</span>
-                ) : (
-                  <span className="text-[10px] text-muted-foreground font-medium">0</span>
-                )}
-              </div>
-            </div>
-          );
-        })()}
 
         <div className="mt-auto pt-3 flex flex-col gap-1">
           {isLojaPromoActiva && isStoreContext && (
