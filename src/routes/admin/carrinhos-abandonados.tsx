@@ -31,7 +31,7 @@ function CarrinhosAbandonados() {
   const lastUpdatedAt = useCart(s => (s as any).lastUpdatedAt);
   const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
   const [forceAbandoned, setForceAbandoned] = useState(false);
-  const { currentUser, pharmacies } = useAdmin();
+  const { currentUser, pharmacies, activeStoreId } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   
   const liveCarts: AbandonedCart[] = [];
@@ -63,6 +63,7 @@ function CarrinhosAbandonados() {
 
   // Filtro por loja
   const authorizedCarts = carts.filter(cart => {
+    if (activeStoreId) return cart.lojaId === activeStoreId;
     if (isGlobalAdmin) return true;
     return cart.lojaId && currentUser?.lojasVinculadas?.includes(cart.lojaId);
   });

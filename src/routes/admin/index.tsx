@@ -41,7 +41,7 @@ function AdminDashboard() {
   const isGlobalView = isGlobalAdmin && !activeStoreId;
   
   // No Painel Global (que administra todas as lojas), nunca filtra por loja individual e mostra o painel geral da rede
-  const effectiveStoreId = isGlobalAdmin ? null : (activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null);
+  const effectiveStoreId = isGlobalAdmin ? (activeStoreId || null) : (activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null);
 
   
   const { visitors: rawVisitors, totalAcessos, lojasAcessos } = useLive();
@@ -192,7 +192,9 @@ function AdminDashboard() {
   
   const rawStoreCarts = useAbandonedCartsStore(s => s.carts);
   const storeCarts = effectiveStoreId ? rawStoreCarts.filter(c => c.lojaId === effectiveStoreId) : rawStoreCarts;
-  const carrinhosRecuperar = rawStoreCarts.length + (cartItems.length > 0 ? 1 : 0);
+  const carrinhosRecuperar = effectiveStoreId 
+    ? storeCarts.length 
+    : (rawStoreCarts.length + (cartItems.length > 0 ? 1 : 0));
 
   const formatDataHora = (dataStr: string) => {
     if (!dataStr) return "";
@@ -290,7 +292,9 @@ function AdminDashboard() {
           <div className="flex flex-col mt-3">
             <span className="text-4xl font-black text-slate-800 tracking-tight">{visitors.length}</span>
             <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="text-[11px] text-slate-400 font-medium leading-tight">visitantes simultâneos na rede</span>
+              <span className="text-[11px] text-slate-400 font-medium leading-tight">
+                {effectiveStoreId ? "visitantes simultâneos na loja" : "visitantes simultâneos na rede"}
+              </span>
             </div>
           </div>
         </Link>
@@ -340,8 +344,46 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* ---- Linha 2 de KPIs Globais ---- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* ---- Linha 2 de KPIs: Painel da Loja vs Painel Global da Rede ---- */}
+      {effectiveStoreId ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4 text-emerald-500" />
+              <span className="text-xl font-bold text-slate-800">{carrinhosRecuperar}</span>
+            </div>
+            <div className="text-xs text-slate-500 font-medium leading-tight">
+              Carrinhos a recuperar
+              <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">
+                Somente desta loja
+              </div>
+            </div>
+          </Link>
+
+          <div className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                  <Eye className="h-4 w-4" />
+                </div>
+                <span className="text-xl font-bold text-slate-800">
+                  {lojasAcessos?.[effectiveStoreId]?.mes || 0}
+                </span>
+              </div>
+              <Badge variant="outline" className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border-emerald-200">
+                Nesta Loja
+              </Badge>
+            </div>
+            <div className="text-xs text-muted-foreground font-medium leading-tight">
+              Visitantes no mês
+              <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+                Hoje: <strong className="text-slate-700">{lojasAcessos?.[effectiveStoreId]?.hoje || 0}</strong> • Total: <strong className="text-slate-700">{lojasAcessos?.[effectiveStoreId]?.total || 0}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4 text-emerald-500" />
@@ -387,6 +429,7 @@ function AdminDashboard() {
             </div>
           </div>
         </div>
+      )}
 
 
       {/* ---- Modal de Visitantes no Mês por Loja ---- */}

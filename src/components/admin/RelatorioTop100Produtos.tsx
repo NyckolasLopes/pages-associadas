@@ -421,11 +421,7 @@ export function RelatorioTop100Produtos({
             </Button>
           )}
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-xs gap-1 py-0.5">
-                <Sparkles className="w-3 h-3 text-emerald-600" />
-                Relatório Oficial de Vendas
-              </Badge>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               {selectedLoja === "all" ? (
                 <Badge className="bg-blue-600 text-white font-bold text-xs">
                   Rede Consolidada
@@ -436,7 +432,7 @@ export function RelatorioTop100Produtos({
                 </Badge>
               )}
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               {titlePrefix || "TOP 100"} Produtos Mais Pedidos
             </h1>
           </div>

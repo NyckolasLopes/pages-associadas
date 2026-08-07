@@ -73,7 +73,7 @@ interface UnifiedOrderItem {
 
 export function PedidosAdmin() {
   const { orders: allOrders, deleteOrder } = useOrders();
-  const { pharmacies, currentUser, grupos } = useAdmin();
+  const { pharmacies, currentUser, grupos, activeStoreId } = useAdmin();
   
   // Carrinhos abandonados / itens de clientes logados
   const { carts: storeCarts, removeCart: removeStoreCart } = useAbandonedCartsStore();
@@ -114,12 +114,16 @@ export function PedidosAdmin() {
     return userGroup?.permissao_total || false;
   };
 
+  const isGlobalView = isGlobalAdmin() && !activeStoreId;
+
   const orders = allOrders.filter(o => {
+    if (activeStoreId) return o.lojaId === activeStoreId;
     if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId))) return false;
     return true;
   });
 
   const allAbandonedCarts = allAbandonedCartsRaw.filter(c => {
+    if (activeStoreId) return c.lojaId === activeStoreId;
     if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId))) return false;
     return true;
   });
@@ -181,7 +185,8 @@ export function PedidosAdmin() {
     produtos: Array<{ nome: string; qtd?: number; quantidade?: number }>;
   }) => {
     const loja = pharmacies.find(p => p.id === item.lojaId);
-    const cleanPhone = (loja?.whatsapp || loja?.telefone || "").replace(/\D/g, "");
+    const rawPhone = loja?.whatsapp || loja?.telefone || "";
+    const cleanPhone = rawPhone.replace(/\D/g, "");
     if (!cleanPhone) {
       toast.error(`A loja "${item.lojaNome}" não possui número de WhatsApp ou telefone cadastrado.`);
       return;
@@ -210,8 +215,51 @@ export function PedidosAdmin() {
         `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `👉 *Ação necessária:* Verifiquem o pedido no painel da sua loja e façam o contato/separação dos itens.`;
 
-    window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+    const fullPhone = cleanPhone.startsWith("55") && cleanPhone.length > 11 ? cleanPhone : `55${cleanPhone}`;
+    window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, "_blank");
     toast.success(`Abrindo WhatsApp da loja ${loja?.nomeFantasia || item.lojaNome}...`);
+  };
+
+  // Função para a loja falar diretamente com o cliente via WhatsApp ("Ver no WhatsApp")
+  const handleVerWhatsAppCliente = (item: {
+    id: string;
+    lojaId?: string;
+    lojaNome: string;
+    clienteNome: string;
+    clienteTelefone: string;
+    total: number;
+    status: "Concluído" | "Pendente";
+    produtos: Array<{ nome: string; qtd?: number; quantidade?: number }>;
+  }) => {
+    const rawPhone = item.clienteTelefone || "";
+    const cleanPhone = rawPhone.replace(/\D/g, "");
+    if (!cleanPhone) {
+      toast.error(`O cliente "${item.clienteNome}" não possui número de WhatsApp cadastrado.`);
+      return;
+    }
+
+    const loja = pharmacies.find(p => p.id === item.lojaId);
+    const lojaNome = loja?.nomeFantasia || loja?.nome || item.lojaNome || "Farmácias Associadas";
+    const itemsList = item.produtos.map(p => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`).join("\n");
+    const isPendente = item.status === "Pendente";
+
+    const message = isPendente
+      ? `Olá ${item.clienteNome}, tudo bem? 😊\n\n` +
+        `Aqui é da *${lojaNome}* (Farmácias Associadas).\n` +
+        `Notamos que você selecionou alguns produtos em nosso site e gostaríamos de ajudar a finalizar seu pedido:\n\n` +
+        `🛒 *Itens:*\n${itemsList}\n\n` +
+        `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
+        `Como prefere realizar o pagamento ou entrega? Estamos à disposição para atendê-lo(a)!`
+      : `Olá ${item.clienteNome}, tudo bem? 😊\n\n` +
+        `Aqui é da *${lojaNome}* (Farmácias Associadas).\n` +
+        `Recebemos o seu pedido *#${item.id}* com sucesso!\n\n` +
+        `🛒 *Itens:*\n${itemsList}\n\n` +
+        `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
+        `Já estamos preparando seu pedido com todo o cuidado. Qualquer dúvida, pode falar conosco por aqui!`;
+
+    const fullPhone = cleanPhone.startsWith("55") && cleanPhone.length > 11 ? cleanPhone : `55${cleanPhone}`;
+    window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, "_blank");
+    toast.success(`Abrindo WhatsApp do cliente ${item.clienteNome}...`);
   };
 
   // Unificação de todos os pedidos: Concluídos (via WhatsApp) + Pendentes (no carrinho)
@@ -399,26 +447,47 @@ export function PedidosAdmin() {
               </span>
             </div>
             <div className="flex items-center gap-3 print:hidden">
-               {/* No Admin Global, avisamos a loja responsável */}
-               <Button 
-                 className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
-                 onClick={() => {
-                   handleAvisarLoja({
-                     id: selectedOrder.id,
-                     lojaId: selectedOrder.lojaId,
-                     lojaNome: getLojaName(selectedOrder.lojaId),
-                     clienteNome: selectedOrder.cliente.nome,
-                     clienteTelefone: selectedOrder.cliente.telefone,
-                     total: selectedOrder.valores.total,
-                     status: "Concluído",
-                     produtos: selectedOrder.produtos || [],
-                   });
-                 }}
-               >
-                 <MessageSquare className="h-4 w-4" />
-                 Avisar Loja (WhatsApp)
-               </Button>
-               <Button variant="outline" className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2" onClick={() => handleDelete(selectedOrder.id, "pedido")}>
+                {/* No Admin Global: Avisar Loja. No Painel da Loja (Meus Pedidos): Ver no WhatsApp do Cliente */}
+                {isGlobalView ? (
+                  <Button 
+                    className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
+                    onClick={() => {
+                      handleAvisarLoja({
+                        id: selectedOrder.id,
+                        lojaId: selectedOrder.lojaId,
+                        lojaNome: getLojaName(selectedOrder.lojaId),
+                        clienteNome: selectedOrder.cliente.nome,
+                        clienteTelefone: selectedOrder.cliente.telefone,
+                        total: selectedOrder.valores.total,
+                        status: "Concluído",
+                        produtos: selectedOrder.produtos || [],
+                      });
+                    }}
+                  >
+                    <Send className="h-4 w-4" />
+                    Avisar Loja (WhatsApp)
+                  </Button>
+                ) : (
+                  <Button 
+                    className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
+                    onClick={() => {
+                      handleVerWhatsAppCliente({
+                        id: selectedOrder.id,
+                        lojaId: selectedOrder.lojaId,
+                        lojaNome: getLojaName(selectedOrder.lojaId),
+                        clienteNome: selectedOrder.cliente.nome,
+                        clienteTelefone: selectedOrder.cliente.telefone,
+                        total: selectedOrder.valores.total,
+                        status: "Concluído",
+                        produtos: selectedOrder.produtos || [],
+                      });
+                    }}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Ver no WhatsApp
+                  </Button>
+                )}
+                <Button variant="outline" className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2" onClick={() => handleDelete(selectedOrder.id, "pedido")}>
                 <Trash2 className="h-4 w-4" />
                 Excluir
               </Button>
@@ -569,7 +638,7 @@ export function PedidosAdmin() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-3xl font-black text-slate-800 tracking-tight">
-              {isGlobalAdmin() ? 'Pedidos da Rede' : 'Meus Pedidos'}
+              {isGlobalView ? 'Pedidos da Rede' : 'Meus Pedidos'}
             </h1>
             <span className="text-slate-500 font-medium text-sm">
               Visão geral consolidada de todos os pedidos concluídos via WhatsApp e pendentes no carrinho.
@@ -832,28 +901,54 @@ export function PedidosAdmin() {
                             {item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                           </div>
 
-                          {/* Botão Avisar Loja (Admin Global avisa a loja para que a loja faça o contato com o cliente) */}
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 px-2.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold gap-1.5 rounded-lg text-xs shadow-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAvisarLoja({
-                                id: item.id,
-                                lojaId: item.lojaId,
-                                lojaNome: item.lojaNome,
-                                clienteNome: item.clienteNome,
-                                clienteTelefone: item.clienteTelefone,
-                                total: item.total,
-                                status: item.status,
-                                produtos: item.produtos,
-                              });
-                            }}
-                          >
-                            <Send className="h-3.5 w-3.5 text-emerald-600" />
-                            Avisar Loja
-                          </Button>
+                          {/* Ação WhatsApp: No Admin Global avisa a loja faturadora. No Painel da Loja (Meus Pedidos), fala direto com o cliente */}
+                          {isGlobalView ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 px-2.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold gap-1.5 rounded-lg text-xs shadow-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAvisarLoja({
+                                  id: item.id,
+                                  lojaId: item.lojaId,
+                                  lojaNome: item.lojaNome,
+                                  clienteNome: item.clienteNome,
+                                  clienteTelefone: item.clienteTelefone,
+                                  total: item.total,
+                                  status: item.status,
+                                  produtos: item.produtos,
+                                });
+                              }}
+                              title="Avisar a loja faturadora pelo WhatsApp"
+                            >
+                              <Send className="h-3.5 w-3.5 text-emerald-600" />
+                              Avisar Loja
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 px-2.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold gap-1.5 rounded-lg text-xs shadow-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleVerWhatsAppCliente({
+                                  id: item.id,
+                                  lojaId: item.lojaId,
+                                  lojaNome: item.lojaNome,
+                                  clienteNome: item.clienteNome,
+                                  clienteTelefone: item.clienteTelefone,
+                                  total: item.total,
+                                  status: item.status,
+                                  produtos: item.produtos,
+                                });
+                              }}
+                              title="Falar com o cliente via WhatsApp"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
+                              Ver no WhatsApp
+                            </Button>
+                          )}
 
                           {/* Botão Excluir */}
                           <Button 
@@ -956,24 +1051,45 @@ export function PedidosAdmin() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button 
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2"
-                  onClick={() => {
-                    handleAvisarLoja({
-                      id: selectedCartItem.id,
-                      lojaId: selectedCartItem.lojaId,
-                      lojaNome: selectedCartItem.lojaNome,
-                      clienteNome: selectedCartItem.clienteNome,
-                      clienteTelefone: selectedCartItem.clienteTelefone,
-                      total: selectedCartItem.total,
-                      status: "Pendente",
-                      produtos: selectedCartItem.produtos,
-                    });
-                  }}
-                >
-                  <Send className="w-4 h-4" />
-                  Avisar Loja via WhatsApp
-                </Button>
+                {isGlobalView ? (
+                  <Button 
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2"
+                    onClick={() => {
+                      handleAvisarLoja({
+                        id: selectedCartItem.id,
+                        lojaId: selectedCartItem.lojaId,
+                        lojaNome: selectedCartItem.lojaNome,
+                        clienteNome: selectedCartItem.clienteNome,
+                        clienteTelefone: selectedCartItem.clienteTelefone,
+                        total: selectedCartItem.total,
+                        status: "Pendente",
+                        produtos: selectedCartItem.produtos,
+                      });
+                    }}
+                  >
+                    <Send className="w-4 h-4" />
+                    Avisar Loja via WhatsApp
+                  </Button>
+                ) : (
+                  <Button 
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2"
+                    onClick={() => {
+                      handleVerWhatsAppCliente({
+                        id: selectedCartItem.id,
+                        lojaId: selectedCartItem.lojaId,
+                        lojaNome: selectedCartItem.lojaNome,
+                        clienteNome: selectedCartItem.clienteNome,
+                        clienteTelefone: selectedCartItem.clienteTelefone,
+                        total: selectedCartItem.total,
+                        status: "Pendente",
+                        produtos: selectedCartItem.produtos,
+                      });
+                    }}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Ver no WhatsApp
+                  </Button>
+                )}
                 <Button 
                   variant="outline" 
                   className="text-red-600 hover:bg-red-50 border-red-200 font-bold"
