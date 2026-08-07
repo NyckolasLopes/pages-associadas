@@ -96,6 +96,14 @@ function Metricas() {
   const lojasRevenue: Record<string, number> = {};
   const lojasTotalBase: Record<string, number> = {};
 
+  if (!effectiveStoreId) {
+    pharmacies.forEach(p => {
+      lojasTotalBase[p.id] = 0;
+    });
+  } else {
+    lojasTotalBase[effectiveStoreId] = 0;
+  }
+
   baseOrders.forEach(o => {
     const lojaId = o.lojaId || 'unknown';
     lojasTotalBase[lojaId] = (lojasTotalBase[lojaId] || 0) + 1;
