@@ -144,6 +144,9 @@ export function PedidosAdmin() {
   };
 
   const filteredOrders = orders.filter(o => {
+      if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId))) {
+        return false;
+      }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!o.id.toLowerCase().includes(term) && !o.cliente.nome.toLowerCase().includes(term)) {
@@ -164,6 +167,9 @@ export function PedidosAdmin() {
   });
 
   const filteredAbandonedCarts = allAbandonedCarts.filter(c => {
+      if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId))) {
+        return false;
+      }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!c.id.toLowerCase().includes(term) && !c.client.toLowerCase().includes(term)) {
