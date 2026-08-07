@@ -668,6 +668,8 @@ export function Header() {
 }
 
 function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.ReactNode }) {
+  const params = useParams({ strict: false });
+  const isStoreContext = !!(params && (params as any).storeSlug);
   const [open, setOpen] = useState(false);
   const { cep, setCep } = useGeoCep();
   const [cepInput, setCepInput] = useState(cep);
