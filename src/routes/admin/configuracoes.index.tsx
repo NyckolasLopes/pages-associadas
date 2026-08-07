@@ -34,36 +34,6 @@ function ConfiguracoesPage() {
       icon: <Settings className="h-5 w-5 text-slate-600" />
     },
     {
-      id: "dominios",
-      titulo: "Domínios",
-      descricao: "Gerencie os domínios para sua loja virtual e checkout.",
-      icon: <Globe className="h-5 w-5 text-slate-600" />
-    },
-    {
-      titulo: "E-mails transacionais",
-      descricao: "Gerencie o remetente, os status dos pedidos e as mensagens que os seus clientes receberão por e-mail.",
-      icon: <Mail className="h-5 w-5 text-slate-600" />
-    },
-    {
-      id: "pagamento",
-      titulo: "Formas de pagamento",
-      descricao: "Configure suas formas de pagamento e gateways",
-      icon: <CreditCard className="h-5 w-5 text-slate-600" />
-    },
-    {
-      titulo: "Logística",
-      descricao: "Configure as formas de entrega e regras de frete grátis.",
-      subDescricao: "Frete grátis",
-      icon: <Truck className="h-5 w-5 text-slate-600" />
-    },
-
-    {
-      id: "redirects",
-      titulo: "Redirect 301",
-      descricao: "Mapeie suas URLs antigas e defina quais são as URLs novas",
-      icon: <LinkIcon className="h-5 w-5 text-slate-600" />
-    },
-    {
       id: "usuarios",
       url: "/admin/usuarios",
       titulo: "Usuários",
