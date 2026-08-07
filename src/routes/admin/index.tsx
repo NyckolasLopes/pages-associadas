@@ -37,11 +37,7 @@ export const Route = createFileRoute("/admin/")({
 function AdminDashboard() {
   const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
   
-  const isGlobalAdmin = () => {
-    if (currentUser?.proprietario) return true;
-    const userGroup = grupos?.find(g => g.id === currentUser?.grupoId);
-    return userGroup?.permissao_total || false;
-  };
+  const isGlobalAdmin = currentUser?.proprietario || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total || false;
   
   const effectiveStoreId = activeStoreId || null;
 
@@ -192,7 +188,8 @@ function AdminDashboard() {
   const crescPedidos = calcCrescimento(qtdAtual, qtdAnterior);
   const crescTicket = calcCrescimento(ticketAtual, ticketAnterior);
   
-  const storeCarts = useAbandonedCartsStore(s => s.carts);
+  const rawStoreCarts = useAbandonedCartsStore(s => s.carts);
+  const storeCarts = effectiveStoreId ? rawStoreCarts.filter(c => c.lojaId === effectiveStoreId) : rawStoreCarts;
   const carrinhosRecuperar = storeCarts.length + (cartItems.length > 0 ? 1 : 0);
 
   const formatDataHora = (dataStr: string) => {
@@ -386,6 +383,35 @@ function AdminDashboard() {
                 <span>•</span>
                 <span>Clique para ver</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Linha 2 de KPIs por Loja ---- */}
+      {!isGlobalAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4 text-emerald-500" />
+              <span className="text-xl font-bold text-slate-800">{carrinhosRecuperar}</span>
+            </div>
+            <div className="text-xs text-slate-500 font-medium leading-tight">
+              Carrinhos a recuperar
+            </div>
+          </Link>
+
+          <div className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                  <Eye className="h-4 w-4" />
+                </div>
+                <span className="text-xl font-bold text-slate-800">{visitasPorLoja.find(v => v.id === effectiveStoreId)?.mes || 0}</span>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground font-medium leading-tight">
+              Visitantes no mês
             </div>
           </div>
         </div>
