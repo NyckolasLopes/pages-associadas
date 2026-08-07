@@ -89,6 +89,7 @@ export interface ContentPage {
 export interface Pharmacy {
   id: string;
   ativo?: boolean;
+  categoriaAssociado?: 'Pleno' | 'Parceiro';
   // Dados da Loja
   cnpj: string;
   razaoSocial: string;

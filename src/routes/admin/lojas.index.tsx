@@ -325,7 +325,12 @@ function LojasAdmin() {
                   <tr key={p.id} className="border-b last:border-0 hover:bg-slate-50/70 transition-colors">
                     <td className="px-4 py-3">
                       <div>
-                        <div className="font-bold text-slate-800">{p.nome}</div>
+                        <div className="font-bold text-slate-800 flex items-center gap-2">
+                            {p.nome}
+                            {p.categoriaAssociado === 'Parceiro' && (
+                              <span className="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Parceiro</span>
+                            )}
+                          </div>
                         <div className="text-xs text-muted-foreground">{p.cnpj}</div>
                       </div>
                     </td>

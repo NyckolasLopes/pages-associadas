@@ -34,6 +34,7 @@ const UF_OPTIONS = [
 
 const EMPTY_PHARMACY: Pharmacy = {
   id: "",
+  categoriaAssociado: "Pleno",
   cnpj: "",
   razaoSocial: "",
   nome: "",
@@ -222,6 +223,18 @@ function NovaLojaAdmin() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <FieldLabel required>Categoria do Associado</FieldLabel>
+                <Select value={form.categoriaAssociado || "Pleno"} onValueChange={(val) => update({ categoriaAssociado: val as any })}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pleno">Pleno (Layout da Rede)</SelectItem>
+                    <SelectItem value="Parceiro">Parceiro (Layout Neutro/OpenSource)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5">
                 <FieldLabel required>Nome Fantasia</FieldLabel>
                 <Input

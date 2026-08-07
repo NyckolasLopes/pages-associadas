@@ -164,6 +164,7 @@ export type MetodoPagamento =
 
 export interface Loja {
   id: string;
+  categoriaAssociado?: 'Pleno' | 'Parceiro';
   cnpj: string;
   razaoSocial: string;
   nomeFantasia: string;

@@ -392,7 +392,16 @@ function PainelLoja() {
         {/* Header */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">{loja.nome}</h1>
+            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+              {loja.nome}
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${
+                loja.categoriaAssociado === 'Parceiro'
+                  ? 'bg-slate-200 text-slate-700'
+                  : 'bg-emerald-100 text-emerald-800'
+              }`}>
+                {loja.categoriaAssociado === 'Parceiro' ? 'Parceiro' : 'Pleno'}
+              </span>
+            </h1>
             <p className="text-slate-500 mt-1">
               Painel do Associado • {loja.cidade}/{loja.uf}
             </p>

@@ -1012,12 +1012,7 @@ function CartPage() {
                 <span>−{brl(storeDiscount)}</span>
               </div>
             )}
-            {pbmDisc > 0 && (
-              <div className="flex justify-between text-sm text-accent font-bold py-1">
-                <span>Desconto {pbm ? pbm.provider : "Laboratório"}</span>
-                <span>−{brl(pbmDisc)}</span>
-              </div>
-            )}
+
             {couponDisc > 0 && (
               <div className="flex justify-between text-sm text-emerald-600 font-bold py-1">
                 <span className="flex items-center gap-1"><Tag className="h-3.5 w-3.5"/> Cupom ({appliedCoupon})</span>
@@ -1075,9 +1070,9 @@ function CartPage() {
                 <span>Total Estimado</span>
                 <span className="text-primary text-xl">{brl(grandTotal)}</span>
               </div>
-              {(storeDiscount > 0 || pbmDisc > 0 || couponDisc > 0) && (
+              {(storeDiscount > 0 || couponDisc > 0) && (
                 <div className="text-right text-xs text-green-600 font-bold mt-1">
-                  Você está economizando {brl(storeDiscount + pbmDisc + couponDisc)}
+                  Você está economizando {brl(storeDiscount + couponDisc)}
                 </div>
               )}
             </div>

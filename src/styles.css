@@ -185,3 +185,32 @@
     }
   }
 }
+
+/* ============================================================
+   PARCEIRO THEME – Neutral / Open-Source skeleton
+   Overrides brand green & orange with grey/black tones.
+   Applied via class .theme-parceiro + inline CSS vars.
+   ============================================================ */
+.theme-parceiro {
+  --color-emerald-50: #f9fafb;
+  --color-emerald-100: #f3f4f6;
+  --color-emerald-200: #e5e7eb;
+  --color-emerald-300: #d1d5db;
+  --color-emerald-400: #9ca3af;
+  --color-emerald-500: #6b7280;
+  --color-emerald-600: #4b5563;
+  --color-emerald-700: #374151;
+  --color-emerald-800: #1f2937;
+  --color-emerald-900: #111827;
+
+  --color-orange-50: #f9fafb;
+  --color-orange-100: #f3f4f6;
+  --color-orange-200: #e5e7eb;
+  --color-orange-300: #d1d5db;
+  --color-orange-400: #9ca3af;
+  --color-orange-500: #6b7280;
+  --color-orange-600: #4b5563;
+  --color-orange-700: #374151;
+  --color-orange-800: #1f2937;
+  --color-orange-900: #111827;
+}

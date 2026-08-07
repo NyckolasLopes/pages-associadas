@@ -1323,7 +1323,7 @@ function CartDrawer() {
                     alt=""
                     className="h-16 w-full object-contain bg-white"
                   />
-                  <div className="font-bold mt-1 min-h-[28px]">{p.nome}</div>
+                  <div className="font-bold mt-1 min-h-[36px] line-clamp-2 text-[11px] leading-tight">{p.nome}</div>
                   <div className="text-foreground font-bold mt-1">{brl(p.precoPor)}</div>
                   <button
                     onClick={() => add(p)}
@@ -1346,12 +1346,6 @@ function CartDrawer() {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Desconto loja</span>
             <span className="text-primary-dark">−{brl(storeDisc)}</span>
-          </div>
-        )}
-        {pbmDisc > 0 && (
-          <div className="flex justify-between text-sm font-bold rounded-md bg-accent/10 px-2 py-1 border border-accent/30">
-            <span className="text-accent">Desconto convênio{pbm ? ` (${pbm.provider})` : ""}</span>
-            <span className="text-accent">−{brl(pbmDisc)}</span>
           </div>
         )}
         
