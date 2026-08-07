@@ -667,15 +667,19 @@ export function PedidosAdmin() {
                           <Button 
                             className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow-sm rounded-lg text-xs"
                             onClick={() => {
-                              const cleanPhone = (cart.phone || "").replace(/\D/g, "");
-                              const firstName = cart.client.split(" ")[0];
-                              const itemsList = cart.items.map(i => `• ${i.qtd}x ${i.nome}`).join("\n");
-                              const text = `Olá ${firstName}, tudo bem? 👋\n\nVimos que você deixou alguns itens no seu carrinho na Farmácias Associadas:\n${itemsList}\n\nTotal: R$ ${cart.total.toFixed(2).replace(".", ",")}\n\nPodemos te ajudar a concluir o seu pedido com entrega rápida ou retirada na loja? 😊`;
-                              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
-                            }}
-                          >
-                            <MessageSquare className="h-3.5 w-3.5 text-white" />
-                            Recuperar no WhatsApp
+                              const loja = pharmacies.find(p => p.id === cart.lojaId);
+                                const cleanPhone = (loja?.telefone || "").replace(/\D/g, "");
+                                if (!cleanPhone) {
+                                  toast.error("Esta loja não possui telefone cadastrado.");
+                                  return;
+                                }
+                                const itemsList = cart.items.map(i => `• ${i.qtd}x ${i.nome}`).join("\n");
+                                const text = `Olá, equipe da loja ${loja?.nome}! 👋\n\nHá um carrinho abandonado pendente de contato na sua unidade.\n\n*Cliente:* ${cart.client}\n*Telefone do Cliente:* ${cart.phone}\n\n*Itens no carrinho:*\n${itemsList}\n\n*Total:* R$ ${cart.total.toFixed(2).replace(".", ",")}\n\nPor favor, entrem em contato com o cliente para tentar recuperar esta venda.`;
+                                window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+                              }}
+                            >
+                              <MessageSquare className="h-3.5 w-3.5 text-white" />
+                              Avisar Loja
                           </Button>
                           <Button 
                             variant="ghost" 
