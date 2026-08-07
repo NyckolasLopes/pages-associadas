@@ -92,6 +92,7 @@ export interface Pharmacy {
   categoriaAssociado?: 'Pleno' | 'Parceiro';
   // Dados da Loja
   cnpj: string;
+  logoUrl?: string;
   razaoSocial: string;
   nome: string; // Nome Fantasia
   tabelaPrecoId?: string; // Tabela de Preços Regional
