@@ -295,6 +295,7 @@ function LojasAdmin() {
             <thead className="text-xs text-muted-foreground uppercase bg-slate-50/50 border-b">
               <tr>
                 <th className="px-4 py-3 font-bold">Nome Fantasia</th>
+                <th className="px-4 py-3 font-bold">Categoria</th>
                 <th className="px-4 py-3 font-bold">Cidade/UF</th>
                 <th className="px-4 py-3 font-bold">Telefone</th>
                 <th className="px-4 py-3 font-bold text-center">Entrega</th>
@@ -333,6 +334,15 @@ function LojasAdmin() {
                           </div>
                         <div className="text-xs text-muted-foreground">{p.cnpj}</div>
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                        p.categoriaAssociado === 'Parceiro'
+                          ? 'bg-slate-200 text-slate-700'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {p.categoriaAssociado === 'Parceiro' ? 'Parceiro' : 'Pleno'}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-sm">
                       {p.cidade && p.uf ? `${p.cidade}/${p.uf}` : enderecoCompleto(p)}
@@ -435,7 +445,19 @@ function LojasAdmin() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5 sm:col-span-2">
+              <div className="space-y-1.5">
+                <FieldLabel required>Categoria do Associado</FieldLabel>
+                <Select value={form.categoriaAssociado || "Pleno"} onValueChange={(val) => update({ categoriaAssociado: val as any })}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pleno">Pleno (Layout da Rede)</SelectItem>
+                    <SelectItem value="Parceiro">Parceiro (Layout Neutro/OpenSource)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 sm:col-span-1">
                 <FieldLabel required>Nome Fantasia</FieldLabel>
                 <Input
                   value={form.nome}
