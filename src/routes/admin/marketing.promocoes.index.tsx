@@ -27,7 +27,6 @@ function AdminPromocoesPage() {
   const promocoes = isGlobalAdmin ? promocoesRaw : promocoesRaw.filter(p => p.lojaId === effectiveStoreId);
 
   const removePromocao = useMarketing((s) => s.removePromocao);
-  const lojas = useStores((s) => s.lojas);
   const navigate = useNavigate();
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
