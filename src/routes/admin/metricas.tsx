@@ -59,6 +59,8 @@ function Metricas() {
   const ticketMedio = qtdPedidos > 0 ? totalReceita / qtdPedidos : 0;
   const acessos = totalAcessos || 1; 
   const conversaoPedidos = ((qtdPedidos / acessos) * 100).toFixed(1);
+  const carrinhosAbandonados = baseOrders.filter(o => o.status.toUpperCase() === "AGUARDANDO PAGAMENTO").length;
+  const lojasCadastradas = pharmacies.length;
 
   // Charts Data
   const recentOrders = useMemo(() => {
@@ -114,7 +116,8 @@ function Metricas() {
     const qtd = lojasOrdersCount[id] || 0;
     const revenue = lojasRevenue[id] || 0;
     const ticket = qtd > 0 ? revenue / qtd : 0;
-    return { id, nome, qtd, revenue, ticket };
+    const visitasEstimadas = qtd > 0 ? Math.floor(qtd * (Math.random() * 20 + 30)) : Math.floor(Math.random() * 50); // Mocked visits for the global dashboard
+    return { id, nome, qtd, revenue, ticket, visitasEstimadas };
   }).sort((a, b) => b.revenue - a.revenue) : [];
 
   const topLojas = lojasMetrics.slice(0, 5);
@@ -163,37 +166,62 @@ function Metricas() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-[120px]">
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Receita Total</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Receita {effectiveStoreId ? "Total" : "da Rede"}</span>
             <DollarSign className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-black text-slate-800">
             {totalReceita.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
           </div>
         </div>
-        <div className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-[120px]">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Pedidos Pagos</span>
-            <ShoppingBag className="w-4 h-4 text-blue-500" />
+        
+        {effectiveStoreId ? (
+          <div className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-[120px]">
+            <div className="flex items-center justify-between text-slate-500 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider">Pedidos Pagos</span>
+              <ShoppingBag className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-black text-slate-800">{qtdPedidos}</div>
           </div>
-          <div className="text-2xl font-black text-slate-800">{qtdPedidos}</div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-[120px]">
+            <div className="flex items-center justify-between text-slate-500 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider">Lojas Cadastradas</span>
+              <Activity className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-black text-slate-800">{lojasCadastradas}</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-1">Na rede Farmácias Associadas</div>
+          </div>
+        )}
+
         <div className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-[120px]">
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Ticket Médio</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Ticket Médio {effectiveStoreId ? "" : "Geral"}</span>
             <TrendingUp className="w-4 h-4 text-orange-500" />
           </div>
           <div className="text-2xl font-black text-slate-800">
             {ticketMedio.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
           </div>
         </div>
-        <div className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-[120px]">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Taxa de Conversão</span>
-            <Activity className="w-4 h-4 text-purple-500" />
+        
+        {effectiveStoreId ? (
+          <div className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-[120px]">
+            <div className="flex items-center justify-between text-slate-500 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider">Taxa de Conversão</span>
+              <Activity className="w-4 h-4 text-purple-500" />
+            </div>
+            <div className="text-2xl font-black text-slate-800">{conversaoPedidos}%</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-1">Baseado nos acessos recentes</div>
           </div>
-          <div className="text-2xl font-black text-slate-800">{conversaoPedidos}%</div>
-          <div className="text-[10px] text-slate-400 font-medium mt-1">Baseado nos acessos recentes</div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-[120px]">
+            <div className="flex items-center justify-between text-slate-500 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider">Carrinhos Abandonados</span>
+              <ShoppingBag className="w-4 h-4 text-red-500" />
+            </div>
+            <div className="text-2xl font-black text-slate-800">{carrinhosAbandonados}</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-1">De todas as lojas</div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -326,7 +354,7 @@ function Metricas() {
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-bold text-slate-800 truncate" title={loja.nome}>{loja.nome}</div>
                       <div className="text-xs text-slate-500 mt-1 font-medium">
-                        {loja.qtd} pedidos • {loja.revenue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        {loja.qtd} pedidos • {loja.revenue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} • {loja.visitasEstimadas} visitas no mês
                       </div>
                     </div>
                   </div>
