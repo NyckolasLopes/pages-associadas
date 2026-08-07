@@ -29,7 +29,7 @@ import {
 import { useAdmin } from "@/stores/admin";
 import { useOrders } from "@/stores/orders";
 import { useMarketing } from "@/stores/marketing";
-import { useProducts } from "@/stores/products";
+import { useAdminProducts } from "@/stores/products";
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area
 } from "recharts";
@@ -154,7 +154,7 @@ function Relatorios() {
 
   const { orders: rawOrders } = useOrders();
   const { lojaPromocoes } = useMarketing();
-  const { products } = useProducts();
+  const { products } = useAdminProducts();
   const orders = useMemo(() => {
     let filtered = rawOrders.filter(o => {
       const status = o.status.toUpperCase();
