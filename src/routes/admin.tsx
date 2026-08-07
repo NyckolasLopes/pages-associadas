@@ -344,7 +344,7 @@ function AdminLayout() {
               </Link>
               {(can('rel_vendas_produto') || can('rel_vendas_canal') || can('rel_desempenho') || can('rel_financeiro') || can('rel_logistica_retirada') || can('rel_logistica_sla') || can('rel_estoque_controlados') || can('rel_estoque_abc')) && (
                 <Link to="/admin/relatorios" className={subLinkClass}>
-                  Relatórios e Métricas
+                  Central de Relatórios
                 </Link>
               )}
               {can('rel_aovivo') && (
