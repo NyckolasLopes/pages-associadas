@@ -172,6 +172,8 @@ export interface Loja {
   afe: string;
   alvaraSanitario: string;
   endereco: string;
+    telefone?: string;
+    whatsapp?: string;
   lat?: number;
   lng?: number;
   faixasCep: FaixaCep[];

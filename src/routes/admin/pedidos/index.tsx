@@ -118,7 +118,7 @@ export function PedidosAdmin() {
   const getLojaName = (id?: string) => {
     if (!id) return "Loja Principal";
     const p = pharmacies.find(ph => ph.id === id);
-    return p ? p.nome : id;
+    return p ? p.nomeFantasia : id;
   };
 
   const copyToClipboard = (text: string) => {
@@ -677,13 +677,13 @@ export function PedidosAdmin() {
                             className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow-sm rounded-lg text-xs"
                             onClick={() => {
                               const loja = pharmacies.find(p => p.id === cart.lojaId);
-                                const cleanPhone = (loja?.telefone || "").replace(/\D/g, "");
+                                const cleanPhone = (loja?.whatsapp || loja?.telefone || "").replace(/\D/g, "");
                                 if (!cleanPhone) {
                                   toast.error("Esta loja não possui telefone cadastrado.");
                                   return;
                                 }
                                 const itemsList = cart.items.map(i => `• ${i.qtd}x ${i.nome}`).join("\n");
-                                const text = `Olá, equipe da loja ${loja?.nome}! 👋\n\nHá um carrinho abandonado pendente de contato na sua unidade.\n\n*Cliente:* ${cart.client}\n*Telefone do Cliente:* ${cart.phone}\n\n*Itens no carrinho:*\n${itemsList}\n\n*Total:* R$ ${cart.total.toFixed(2).replace(".", ",")}\n\nPor favor, entrem em contato com o cliente para tentar recuperar esta venda.`;
+                                const text = `Olá, equipe da loja ${loja?.nomeFantasia}! 👋\n\nHá um carrinho abandonado pendente de contato na sua unidade.\n\n*Cliente:* ${cart.client}\n*Telefone do Cliente:* ${cart.phone}\n\n*Itens no carrinho:*\n${itemsList}\n\n*Total:* R$ ${cart.total.toFixed(2).replace(".", ",")}\n\nPor favor, entrem em contato com o cliente para tentar recuperar esta venda.`;
                                 window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
                               }}
                             >
