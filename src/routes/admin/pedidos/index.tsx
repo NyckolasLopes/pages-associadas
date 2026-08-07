@@ -39,7 +39,7 @@ export const Route = createFileRoute("/admin/pedidos/")({
 });
 
 export function PedidosAdmin() {
-  const { orders, updateOrderStatus, updateOrderTracking, deleteOrder } = useOrders();
+  const { orders: allOrders, updateOrderStatus, updateOrderTracking, deleteOrder } = useOrders();
   const { pharmacies, currentUser, grupos } = useAdmin();
   
   // Carrinhos abandonados / itens de clientes logados
@@ -73,14 +73,25 @@ export function PedidosAdmin() {
       }))
     });
   }
-  const allAbandonedCarts = [...liveCarts, ...storeCarts];
+  const allAbandonedCartsRaw = [...liveCarts, ...storeCarts];
+    
+    const isGlobalAdmin = () => {
+      if (currentUser?.proprietario) return true;
+      const userGroup = grupos.find(g => g.id === currentUser?.grupoId);
+      return userGroup?.permissao_total || false;
+    };
 
-  const isGlobalAdmin = () => {
-    if (currentUser?.proprietario) return true;
-    const userGroup = grupos.find(g => g.id === currentUser?.grupoId);
-    return userGroup?.permissao_total || false;
-  };
+    const orders = allOrders.filter(o => {
+      if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId))) return false;
+      return true;
+    });
 
+    const allAbandonedCarts = allAbandonedCartsRaw.filter(c => {
+      if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId))) return false;
+      return true;
+    });
+
+  
   const [selectedOrder, setSelectedOrder] = useState<Pedido | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateStartFilter, setDateStartFilter] = useState("");
@@ -144,10 +155,7 @@ export function PedidosAdmin() {
   };
 
   const filteredOrders = orders.filter(o => {
-      if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId))) {
-        return false;
-      }
-    if (searchTerm) {
+      if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!o.id.toLowerCase().includes(term) && !o.cliente.nome.toLowerCase().includes(term)) {
         return false;
@@ -167,10 +175,7 @@ export function PedidosAdmin() {
   });
 
   const filteredAbandonedCarts = allAbandonedCarts.filter(c => {
-      if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId))) {
-        return false;
-      }
-    if (searchTerm) {
+      if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!c.id.toLowerCase().includes(term) && !c.client.toLowerCase().includes(term)) {
         return false;
