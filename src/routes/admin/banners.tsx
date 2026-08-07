@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package } from "lucide-react";
+import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -1061,22 +1061,81 @@ function StoreLogoConfig() {
     toast.success("Logotipo salvo com sucesso!");
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 max-w-2xl mt-6">
-      <h3 className="text-lg font-bold text-slate-800 mb-4">Logotipo da Loja</h3>
-      <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="w-32 h-32 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50">
-            {logoUrl ? <img src={logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" /> : <ImageIcon className="w-8 h-8 text-slate-400" />}
-          </div>
-          <div className="flex-1 space-y-2">
-            <Label>URL da Imagem (Logotipo)</Label>
-            <Input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." />
-            <p className="text-xs text-slate-500">Cole a URL da imagem do logotipo da sua loja. Recomendado: Fundo transparente (PNG) ou SVG.</p>
-          </div>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h3 className="text-lg font-bold text-slate-800">Logotipo da Loja</h3>
+          <p className="text-sm text-slate-500 mt-1">
+            Personalize a logomarca que será exibida no cabeçalho da loja.
+          </p>
         </div>
-        <div className="pt-4 flex justify-end">
-          <Button onClick={handleSave} className="bg-[#00B5AD] hover:bg-[#009c95] text-white">Salvar Logotipo</Button>
+        <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+          <Save className="w-4 h-4 mr-2" /> Salvar Logo
+        </Button>
+      </div>
+      
+      <div className="space-y-4">
+        <div className="flex items-start gap-6">
+          <div className="w-48 h-32 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden relative group">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="max-w-full max-h-full object-contain p-2" />
+            ) : (
+              <div className="flex flex-col items-center text-slate-400">
+                <ImageIcon className="w-8 h-8 mb-2" />
+                <span className="text-xs font-bold">Sem logotipo</span>
+              </div>
+            )}
+            
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+              <UploadCloud className="w-6 h-6 text-white" />
+              <span className="text-white text-xs font-bold">Alterar imagem</span>
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageUpload} />
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-4">
+            <div>
+              <Label className="font-bold text-slate-700">Fazer Upload do Computador</Label>
+              <div className="relative mt-1">
+                <Input type="file" accept="image/*" onChange={handleImageUpload} className="cursor-pointer file:bg-emerald-50 file:text-emerald-700 file:border-0 file:rounded file:px-2 file:py-1 file:font-bold file:mr-2" />
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-slate-400 font-bold">OU</span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="font-bold text-slate-700">URL da Imagem</Label>
+              <Input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." className="mt-1" />
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg flex items-start gap-3">
+              <Info className="w-5 h-5 text-amber-500 shrink-0" />
+              <div className="text-xs text-amber-800 leading-relaxed">
+                <span className="font-bold block mb-1">Medidas Recomendadas:</span>
+                Tamanho ideal: <strong className="font-black text-amber-900">250x60 pixels</strong> (formato horizontal).<br/>
+                Recomendamos imagens com fundo transparente (<strong className="font-black text-amber-900">PNG</strong>) para melhor adaptação no cabeçalho.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
