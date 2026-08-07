@@ -1,4 +1,4 @@
-import { createFileRoute, notFound, Link } from "@tanstack/react-router";
+import { createFileRoute, notFound, Link, useParams } from "@tanstack/react-router";
 import { catalog } from "@/services/catalog";
 import { brl, productImage, tarjaColor, checkIsGenerico, getInstallmentText, formatPbmName } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -315,6 +315,8 @@ function extractCharacteristics(htmlDesc: string): string[] {
 }
 
 function PDP() {
+  const params = useParams({ strict: false });
+  const isStoreContext = !!(params && (params as any).storeSlug);
   const { p: initialProduct, loja, cat, subcat, crossSell, variations, compreJuntoPartner } = Route.useLoaderData();
   const customProducts = useAdminProducts(s => s.customProducts);
   const p = customProducts?.find(c => c.id === initialProduct.id) || initialProduct;
