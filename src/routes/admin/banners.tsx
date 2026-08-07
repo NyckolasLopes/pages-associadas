@@ -1211,9 +1211,20 @@ function StoreColorsConfig() {
             Escolha as cores principais que representarão a sua marca no site.
           </p>
         </div>
-        <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
-          <Save className="w-4 h-4 mr-2" /> Salvar Cores
-        </Button>
+          <div className="flex items-center gap-3">
+            {currentPharmacy && (
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 bg-white"
+                onClick={() => window.open(`/${currentPharmacy.slug}`, '_blank')}
+              >
+                <Eye className="w-4 h-4" /> Ver na minha loja
+              </Button>
+            )}
+            <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+              <Save className="w-4 h-4 mr-2" /> Salvar Cores
+            </Button>
+          </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
