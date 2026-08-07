@@ -1054,6 +1054,10 @@ function StoreLogoConfig() {
   const currentPharmacy = pharmacies.find(p => p.id === activeStoreId);
   const [logoUrl, setLogoUrl] = useState(currentPharmacy?.logoUrl || "");
 
+  useEffect(() => {
+    setLogoUrl(currentPharmacy?.logoUrl || "");
+  }, [currentPharmacy?.logoUrl]);
+
   if (!currentPharmacy) return <div className="p-8 text-center text-slate-500">Selecione uma loja para gerenciar o logotipo.</div>;
 
   const handleSave = () => {
