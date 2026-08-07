@@ -25,13 +25,16 @@ export interface Coupon {
 export interface Promocao {
   id: string;
   titulo: string;
-  tipoAlvo: "categoria" | "produtos";
+  subtitulo?: string;
+  tipoAlvo: "produtos";
   alvosId: string[];
   dataFim: string; // ISO date string or yyyy-mm-dd
   horaFim: string; // HH:mm
-  icone: string; // lucide icon name
+  icone: string; // lucide icon name (flame, zap, gift, star, shopping-bag, percent, tag, clock)
   ativa: boolean;
   tipoCampanha?: "padrao" | "leve_pague";
+  descontoPercentual?: number;
+  precoPromocional?: number;
   levePague_quantidade?: number;
   levePague_precoPorItem?: number;
   corSelo?: string;
@@ -39,7 +42,7 @@ export interface Promocao {
   corTextoBotao?: string;
   corBotao?: string;
   textoBotao?: string;
-  lojaId?: string;
+  lojaId?: string; // empty/undefined for global network, or store ID
 }
 
 export interface MarketingStore {
@@ -123,43 +126,78 @@ export const useMarketing = create<MarketingStore>()(
           cupons: state.cupons.filter((c) => c.id !== id),
         })),
       addPromocao: (promocao) =>
-        set((state) => ({
-          promocoes: [
-            ...state.promocoes,
-            { ...promocao, id: Date.now().toString() }
-          ]
-        })),
+        set((state) => {
+          const newPromo: Promocao = {
+            ...promocao,
+            tipoAlvo: "produtos",
+            id: Date.now().toString(),
+          };
+          const nextLojaPromos = { ...state.lojaPromocoes };
+          if (newPromo.lojaId) {
+            const current = nextLojaPromos[newPromo.lojaId] || [];
+            nextLojaPromos[newPromo.lojaId] = [...current, newPromo];
+          }
+          return {
+            promocoes: [...state.promocoes, newPromo],
+            lojaPromocoes: nextLojaPromos,
+          };
+        }),
       updatePromocao: (id, updatedFields) =>
-        set((state) => ({
-          promocoes: state.promocoes.map((p) =>
+        set((state) => {
+          const updatedPromocoes = state.promocoes.map((p) =>
             p.id === id ? { ...p, ...updatedFields } : p
-          )
-        })),
+          );
+          const nextLojaPromos: Record<string, Promocao[]> = {};
+          Object.keys(state.lojaPromocoes).forEach((lid) => {
+            nextLojaPromos[lid] = (state.lojaPromocoes[lid] || []).map((p) =>
+              p.id === id ? { ...p, ...updatedFields } : p
+            );
+          });
+          return {
+            promocoes: updatedPromocoes,
+            lojaPromocoes: nextLojaPromos,
+          };
+        }),
       removePromocao: (id) =>
-        set((state) => ({
-          promocoes: state.promocoes.filter((p) => p.id !== id),
-        })),
+        set((state) => {
+          const nextLojaPromos: Record<string, Promocao[]> = {};
+          Object.keys(state.lojaPromocoes).forEach((lid) => {
+            nextLojaPromos[lid] = (state.lojaPromocoes[lid] || []).filter((p) => p.id !== id);
+          });
+          return {
+            promocoes: state.promocoes.filter((p) => p.id !== id),
+            lojaPromocoes: nextLojaPromos,
+          };
+        }),
       addLojaPromocao: (lojaId, promocao) =>
         set((state) => {
-          const id = Math.random().toString(36).substring(2, 9);
+          const id = Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+          const newPromo: Promocao = {
+            ...promocao,
+            tipoAlvo: "produtos",
+            id,
+            lojaId,
+          };
           const current = state.lojaPromocoes[lojaId] || [];
           return {
+            promocoes: [...state.promocoes, newPromo],
             lojaPromocoes: {
               ...state.lojaPromocoes,
-              [lojaId]: [...current, { ...promocao, id }]
-            }
+              [lojaId]: [...current, newPromo],
+            },
           };
         }),
       removeLojaPromocao: (lojaId, id) =>
         set((state) => {
           const current = state.lojaPromocoes[lojaId] || [];
           return {
+            promocoes: state.promocoes.filter((p) => p.id !== id),
             lojaPromocoes: {
               ...state.lojaPromocoes,
-              [lojaId]: current.filter(p => p.id !== id)
-            }
+              [lojaId]: current.filter((p) => p.id !== id),
+            },
           };
-        })
+        }),
     }),
     {
       name: "marketing-storage",

@@ -19,9 +19,10 @@ import { useAdminProducts } from "@/stores/products";
 import { useReviews } from "@/stores/reviews";
 import { useSelos } from "@/stores/selos";
 import { getDeterministicStock } from "@/lib/stock";
-import { getCityFromCep, isCampanhaAtiva, calculateCepDistanceAsync, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion } from "@/lib/utils";
+import { getCityFromCep, isCampanhaAtiva, calculateCepDistanceAsync, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion, getPadraoPromotionWithTimer } from "@/lib/utils";
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
+import { PromoCardBadge } from "./PromoCountdown";
 
 // Removed isSameDayDeliveryWindow
 
@@ -208,15 +209,25 @@ function ProductCardComponent({
     }
   }
 
-  // 3. Store-specific Oferta do Mês
+  // 3. Store-specific & Global Promotions
   const lojaPromocoes = activeStoreId ? lojaPromocoesMap?.[activeStoreId] || [] : [];
-  const storeOferta = lojaPromocoes.find(promo => promo.ativa && promo.tipoCampanha === 'padrao' && promo.alvosId.includes(p.id));
-  if (storeOferta && storeOferta.levePague_precoPorItem) {
-    finalPrecoDe = finalPrecoPor;
-    finalPrecoPor = storeOferta.levePague_precoPorItem;
+  const padraoPromo = getPadraoPromotionWithTimer(p, promocoes, lojaPromocoes);
+  const levePaguePromo = getLevePaguePromotion(p, promocoes, lojaPromocoes);
+
+  if (padraoPromo) {
+    if (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0) {
+      finalPrecoDe = finalPrecoPor;
+      finalPrecoPor = padraoPromo.precoPromocional;
+    } else if (padraoPromo.descontoPercentual && padraoPromo.descontoPercentual > 0) {
+      finalPrecoDe = finalPrecoPor;
+      finalPrecoPor = finalPrecoPor * (1 - padraoPromo.descontoPercentual / 100);
+    } else if (padraoPromo.levePague_precoPorItem && padraoPromo.levePague_precoPorItem > 0) {
+      finalPrecoDe = finalPrecoPor;
+      finalPrecoPor = padraoPromo.levePague_precoPorItem;
+    }
   }
 
-  const levePaguePromo = getLevePaguePromotion(p, promocoes, lojaPromocoes);
+  const activePromo = padraoPromo || levePaguePromo;
 
   const desconto =
     finalPrecoDe > finalPrecoPor ? Math.round((1 - finalPrecoPor / finalPrecoDe) * 100) : 0;
@@ -332,6 +343,13 @@ function ProductCardComponent({
       </Link>
 
       <div className="p-3 flex-1 flex flex-col">
+        {/* Promotional Badge (Timer / Leve + Pague) */}
+        {activePromo && (
+          <div className="mb-1.5">
+            <PromoCardBadge promo={activePromo} precoOriginal={finalPrecoDe} />
+          </div>
+        )}
+
         {/* Marca em negrito */}
         <div className="text-[11px] uppercase font-bold text-muted-foreground truncate mb-1">
           {p.fabricante}
@@ -441,11 +459,25 @@ function ProductCardComponent({
                     window.location.href = `/p/${p.url || p.id}`;
                   }
                 }}
-                className={`w-full font-bold text-xs py-2.5 rounded transition flex items-center justify-center gap-2 ${isService ? 'bg-teal-600 hover:bg-teal-700 text-white' : (p.precoSobConsulta ? 'bg-slate-800 hover:bg-slate-900 text-white' : 'bg-primary hover:bg-primary-dark text-white')}`}
+                style={
+                  activePromo?.corBotao
+                    ? { backgroundColor: activePromo.corBotao, color: activePromo.corTextoBotao || '#ffffff' }
+                    : undefined
+                }
+                className={`w-full font-bold text-xs py-2.5 rounded transition flex items-center justify-center gap-2 shadow-sm hover:brightness-110 active:scale-[0.99] ${
+                  activePromo?.corBotao
+                    ? ''
+                    : isService
+                    ? 'bg-teal-600 hover:bg-teal-700 text-white'
+                    : p.precoSobConsulta
+                    ? 'bg-slate-800 hover:bg-slate-900 text-white'
+                    : 'bg-primary hover:bg-primary-dark text-white'
+                }`}
               >
                 {isService ? "AGENDAR" : (p.precoSobConsulta ? "CONSULTAR PREÇO" : (
                   <>
-                    <ShoppingBasket className="h-4 w-4" /> COMPRAR
+                    <ShoppingBasket className="h-4 w-4" />
+                    <span>{activePromo?.textoBotao || "COMPRAR"}</span>
                   </>
                 ))}
               </button>
@@ -465,16 +497,7 @@ function ProductCardComponent({
             )}
           </div>
         </div>
-        
-        {levePaguePromo && (
-          <div className="mt-1">
-            <span style={{ backgroundColor: levePaguePromo.corBotao || levePaguePromo.corSelo || '#ea580c', color: levePaguePromo.corTextoBotao || '#ffffff' }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max flex items-center gap-1">
-              <PromoIcon id={levePaguePromo.icone} className="h-3 w-3" style={{ color: levePaguePromo.corIcone || 'inherit' }} />
-              {levePaguePromo.textoBotao ? levePaguePromo.textoBotao : `LEVE ${levePaguePromo.levePague_quantidade} PAGUE ${brl(levePaguePromo.levePague_precoPorItem || 0)} CADA`}
-            </span>
-          </div>
-        )}
-        
+
 
 
         <div className="mt-auto pt-3 flex flex-col gap-1">

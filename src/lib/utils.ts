@@ -312,7 +312,7 @@ export function isRecentlyAdded(produto: any): boolean {
   return diffDays <= 5;
 }
 
-export function getLevePaguePromotion(produto: any, promocoes: any[], storePromocoes: any[] = []) {
+export function getLevePaguePromotion(produto: any, promocoes: any[] = [], storePromocoes: any[] = []) {
   if (!produto) return null;
   
   const now = new Date();
@@ -322,16 +322,13 @@ export function getLevePaguePromotion(produto: any, promocoes: any[], storePromo
     
     // Verificar se a data expirou (se existir data/hora fim)
     if (p.dataFim) {
-      const dataFimStr = p.horaFim ? `${p.dataFim}T${p.horaFim}` : p.dataFim;
+      const dataFimStr = p.horaFim ? `${p.dataFim}T${p.horaFim}:00` : `${p.dataFim}T23:59:59`;
       const fim = new Date(dataFimStr);
-      if (now > fim) return false;
+      if (!isNaN(fim.getTime()) && now > fim) return false;
     }
     
-    if (p.tipoAlvo === "produtos" && p.alvosId?.includes(produto.id)) {
-      return true;
-    }
-    
-    if (p.tipoAlvo === "categoria" && p.alvosId?.includes(produto.categoriaId)) {
+    // Apenas produto individual
+    if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.includes(produto.id)) {
       return true;
     }
     
@@ -345,4 +342,100 @@ export function getLevePaguePromotion(produto: any, promocoes: any[], storePromo
   // 2. Fallback to global
   const globalPromo = promocoes?.find(checkPromo);
   return globalPromo || null;
+}
+
+export function getPadraoPromotionWithTimer(produto: any, promocoes: any[] = [], storePromocoes: any[] = []) {
+  if (!produto) return null;
+  
+  const now = new Date();
+  
+  const checkPromo = (p: any) => {
+    if (!p.ativa || (p.tipoCampanha && p.tipoCampanha !== "padrao")) return false;
+    
+    // Verificar se a data expirou (se existir data/hora fim)
+    if (p.dataFim) {
+      const dataFimStr = p.horaFim ? `${p.dataFim}T${p.horaFim}:00` : `${p.dataFim}T23:59:59`;
+      const fim = new Date(dataFimStr);
+      if (!isNaN(fim.getTime()) && now > fim) return false;
+    }
+    
+    // Apenas produto individual
+    if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.includes(produto.id)) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // 1. Try store specific first
+  const storePromo = storePromocoes?.find(checkPromo);
+  if (storePromo) return storePromo;
+
+  // 2. Fallback to global
+  const globalPromo = promocoes?.find(checkPromo);
+  return globalPromo || null;
+}
+
+export function calculatePromoTimeRemaining(dataFim?: string, horaFim?: string) {
+  if (!dataFim) {
+    return {
+      isExpired: false,
+      hasTimer: false,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      formatted: "",
+    };
+  }
+
+  const dataFimStr = horaFim ? `${dataFim}T${horaFim}:00` : `${dataFim}T23:59:59`;
+  const target = new Date(dataFimStr);
+  const now = new Date();
+
+  if (isNaN(target.getTime())) {
+    return {
+      isExpired: false,
+      hasTimer: false,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      formatted: "",
+    };
+  }
+
+  const diffMs = target.getTime() - now.getTime();
+  if (diffMs <= 0) {
+    return {
+      isExpired: true,
+      hasTimer: true,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      formatted: "Expirada",
+    };
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const formatted = days > 0
+    ? `${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+    : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+  return {
+    isExpired: false,
+    hasTimer: true,
+    days,
+    hours,
+    minutes,
+    seconds,
+    formatted,
+  };
 }

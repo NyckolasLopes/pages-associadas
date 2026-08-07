@@ -22,10 +22,10 @@ import { useWaitlist } from "@/stores/waitlist";
 import { useAuth } from "@/stores/auth";
 import { useSelos } from "@/stores/selos";
 import { LoginModal } from "@/components/storefront/LoginModal";
-import { getDeterministicStock } from "@/lib/stock";
-import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion } from "@/lib/utils";
+import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion, getPadraoPromotionWithTimer } from "@/lib/utils";
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
+import { PromoProductPageBanner, PromoLevePagueOfferBox } from "@/components/storefront/PromoCountdown";
 
 const PromoIcon = ({ id, className }: { id: string, className?: string }) => {
   if (id === 'gift') return <Gift className={className} />;
@@ -651,15 +651,25 @@ function PDP() {
       }
   }
 
-  // 3. Store-specific Oferta do Mês
+  // 3. Store-specific & Global Promotions
   const lojaPromocoes = activeStoreId ? marketingState.lojaPromocoes[activeStoreId] || [] : [];
-  const storeOferta = lojaPromocoes.find(promo => promo.ativa && promo.tipoCampanha === 'padrao' && promo.alvosId.includes(p.id));
-  if (storeOferta && storeOferta.levePague_precoPorItem) {
-    finalPrecoDe = finalPrecoPor;
-    finalPrecoPor = storeOferta.levePague_precoPorItem;
+  const padraoPromo = getPadraoPromotionWithTimer(p, promocoes, lojaPromocoes);
+  const levePaguePromo = getLevePaguePromotion(p, promocoes, lojaPromocoes);
+
+  if (padraoPromo) {
+    if (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0) {
+      finalPrecoDe = finalPrecoPor;
+      finalPrecoPor = padraoPromo.precoPromocional;
+    } else if (padraoPromo.descontoPercentual && padraoPromo.descontoPercentual > 0) {
+      finalPrecoDe = finalPrecoPor;
+      finalPrecoPor = finalPrecoPor * (1 - padraoPromo.descontoPercentual / 100);
+    } else if (padraoPromo.levePague_precoPorItem && padraoPromo.levePague_precoPorItem > 0) {
+      finalPrecoDe = finalPrecoPor;
+      finalPrecoPor = padraoPromo.levePague_precoPorItem;
+    }
   }
 
-  const levePaguePromo = getLevePaguePromotion(p, promocoes, lojaPromocoes);
+  const activePromo = padraoPromo || levePaguePromo;
 
   const desconto = finalPrecoDe > finalPrecoPor ? Math.round((1 - finalPrecoPor / finalPrecoDe) * 100) : 0;
 
@@ -817,20 +827,23 @@ function PDP() {
           <div className="space-y-6 max-w-full overflow-hidden order-1 lg:order-none">
             <h1 className="text-2xl font-bold leading-tight lg:hidden block">{p.nome}</h1>
             
+            {/* Mobile Promotional Displays */}
+            {padraoPromo && (
+              <div className="lg:hidden mt-3 mb-2">
+                <PromoProductPageBanner promo={padraoPromo} precoOriginal={finalPrecoDe} precoAtual={finalPrecoPor} />
+              </div>
+            )}
+
             {levePaguePromo && (
-              <div className="lg:hidden mt-3 mb-1">
-                <div className="flex flex-col justify-center min-h-[50px] border-l-2 border-primary px-3 bg-primary/5 rounded-r">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-primary">{levePaguePromo.levePague_quantidade} por</span>
-                    <div className="text-3xl font-bold text-foreground">
-                      {brl(levePaguePromo.levePague_precoPorItem || 0)}
-                    </div>
-                    <span className="text-sm font-medium text-primary">cada</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground font-semibold">
-                    1 por {brl(finalPrecoPor)}
-                  </div>
-                </div>
+              <div className="lg:hidden mt-3 mb-2">
+                <PromoLevePagueOfferBox 
+                  promo={levePaguePromo} 
+                  precoOriginal={finalPrecoDe} 
+                  onAddToCart={() => {
+                    add({ ...p, estoque: maxStock }, levePaguePromo.levePague_quantidade || 1);
+                    toast.success("Oferta Leve + Pague adicionada ao carrinho!");
+                  }}
+                />
               </div>
             )}
             
@@ -1219,20 +1232,23 @@ function PDP() {
           <aside className="space-y-4 order-2 lg:order-none">
             <h1 className="text-2xl font-bold leading-tight hidden lg:block">{p.nome}</h1>
             
+            {/* Desktop Promotional Displays */}
+            {padraoPromo && (
+              <div className="hidden lg:block mt-2 mb-2">
+                <PromoProductPageBanner promo={padraoPromo} precoOriginal={finalPrecoDe} precoAtual={finalPrecoPor} />
+              </div>
+            )}
+
             {levePaguePromo && (
               <div className="hidden lg:block mt-2 mb-2">
-                <div className="flex flex-col justify-center min-h-[60px] border-l-2 border-primary px-3 bg-primary/5 rounded-r">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base font-bold text-primary">{levePaguePromo.levePague_quantidade} por</span>
-                    <div className="text-4xl font-bold text-foreground">
-                      {brl(levePaguePromo.levePague_precoPorItem || 0)}
-                    </div>
-                    <span className="text-base font-medium text-primary">cada</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground font-semibold mt-0.5">
-                    1 por {brl(finalPrecoPor)}
-                  </div>
-                </div>
+                <PromoLevePagueOfferBox 
+                  promo={levePaguePromo} 
+                  precoOriginal={finalPrecoDe} 
+                  onAddToCart={() => {
+                    add({ ...p, estoque: maxStock }, levePaguePromo.levePague_quantidade || 1);
+                    toast.success("Oferta Leve + Pague adicionada ao carrinho!");
+                  }}
+                />
               </div>
             )}
             
@@ -1387,7 +1403,18 @@ function PDP() {
                   )}
                   <Button 
                     size="lg" 
-                    className={`flex-1 h-12 text-base font-bold shadow-sm ${p.precoSobConsulta ? 'bg-slate-800 hover:bg-slate-900' : ''}`}
+                    style={
+                      activePromo?.corBotao
+                        ? { backgroundColor: activePromo.corBotao, color: activePromo.corTextoBotao || '#ffffff' }
+                        : undefined
+                    }
+                    className={`flex-1 h-12 text-base font-bold shadow-sm transition-transform active:scale-[0.99] hover:brightness-110 ${
+                      activePromo?.corBotao
+                        ? ''
+                        : p.precoSobConsulta
+                        ? 'bg-slate-800 hover:bg-slate-900'
+                        : ''
+                    }`}
                     onClick={() => {
                       if (p.precoSobConsulta) {
                         const text = encodeURIComponent(`Olá! Gostaria de consultar o preço do produto: ${p.nome} (Ref: ${p.sku || p.id})`);
@@ -1404,7 +1431,8 @@ function PDP() {
                   >
                     {isService ? "AGENDAR" : (p.precoSobConsulta ? "CONSULTAR PREÇO" : (
                       <span className="flex items-center justify-center gap-2">
-                        <ShoppingBasket className="h-5 w-5" /> COMPRAR
+                        <ShoppingBasket className="h-5 w-5" />
+                        <span>{activePromo?.textoBotao || "COMPRAR"}</span>
                       </span>
                     ))}
                   </Button>
