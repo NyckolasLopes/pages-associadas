@@ -577,7 +577,7 @@ export function Header() {
       <div 
         className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t shadow-[0_-4px_12px_rgba(0,0,0,0.1)] z-[100] flex items-center justify-between px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] transform-gpu translate-z-0 transition-none"
       >
-        <Link to="/" className="flex flex-col items-center gap-1 text-primary">
+        <Link to={isStoreContext ? "/_store/$storeSlug" : "/"} params={isStoreContext ? { storeSlug: params?.storeSlug as any } : undefined} className="flex flex-col items-center gap-1 text-primary">
           <Home className="h-5 w-5" />
           <span className="text-[10px] font-bold">Início</span>
         </Link>
@@ -1323,7 +1323,7 @@ function CartDrawer() {
                     alt=""
                     className="h-16 w-full object-contain bg-white"
                   />
-                  <div className="line-clamp-2 font-bold mt-1 min-h-[28px]">{p.nome}</div>
+                  <div className="font-bold mt-1 min-h-[28px]">{p.nome}</div>
                   <div className="text-foreground font-bold mt-1">{brl(p.precoPor)}</div>
                   <button
                     onClick={() => add(p)}
@@ -1354,15 +1354,7 @@ function CartDrawer() {
             <span className="text-accent">−{brl(pbmDisc)}</span>
           </div>
         )}
-        {!pbm && (
-          <PBMAuthModal
-            trigger={
-              <button className="w-full text-xs text-accent border border-dashed border-accent/50 rounded-md py-2 hover:bg-accent/5 transition">
-                + Conectar convênio PBM para economizar
-              </button>
-            }
-          />
-        )}
+        
         <div className="flex justify-between font-bold text-lg pt-2 border-t">
           <span>Total</span>
           <span className="text-foreground">{brl(total)}</span>
