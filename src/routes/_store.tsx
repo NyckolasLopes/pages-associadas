@@ -31,16 +31,33 @@ function StoreLayout() {
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const pharmacies = useAdmin((s) => s.pharmacies);
 
-  const isParceiro = useMemo(() => {
-    if (!selectedPharmacyId) return false;
+  const storeTheme = useMemo(() => {
+    if (!selectedPharmacyId) return undefined;
     const pharmacy = pharmacies.find((p) => p.id === selectedPharmacyId);
-    return pharmacy?.categoriaAssociado === "Parceiro";
+    if (!pharmacy) return undefined;
+    
+    if (pharmacy.themeColors) {
+      return {
+        "--primary": pharmacy.themeColors.primary,
+        "--primary-foreground": "#ffffff",
+        "--primary-dark": pharmacy.themeColors.primary,
+        "--secondary": pharmacy.themeColors.secondary,
+        "--secondary-foreground": "#ffffff",
+        "--accent": pharmacy.themeColors.accent,
+        "--accent-foreground": "#ffffff",
+      } as React.CSSProperties;
+    }
+    
+    if (pharmacy.categoriaAssociado === "Parceiro") {
+      return PARCEIRO_THEME as React.CSSProperties;
+    }
+    return undefined;
   }, [selectedPharmacyId, pharmacies]);
 
   return (
     <div
-      className={`min-h-screen flex flex-col bg-background${isParceiro ? " theme-parceiro" : ""}`}
-      style={isParceiro ? (PARCEIRO_THEME as React.CSSProperties) : undefined}
+      className={`min-h-screen flex flex-col bg-background`}
+      style={storeTheme}
     >
       <Header />
       <main className="flex-1">

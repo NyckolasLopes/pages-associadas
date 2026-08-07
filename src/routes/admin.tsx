@@ -310,8 +310,10 @@ function AdminLayout() {
       `}>
         <div className="p-6 border-b flex justify-between items-center bg-white">
           <div>
-            <div className="text-lg font-bold text-primary">Admin</div>
-            <div className="text-xs text-muted-foreground mt-1">Farmácias Associadas</div>
+            <div className="text-lg font-bold text-primary">Painel Administrativo</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {activeStoreId ? pharmacies.find(p => p.id === activeStoreId)?.nome : "Farmácias Associadas"}
+            </div>
           </div>
           <button 
             className="md:hidden p-1.5 hover:bg-slate-100 rounded-md text-slate-500" 
@@ -445,7 +447,7 @@ function AdminLayout() {
               <Link to="/admin/banners" search={{ tab: "logo" } as any} className={subLinkClass}>
                 Logo
               </Link>
-              {pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado === 'Parceiro' && (
+              {['Parceiro', 'Pleno'].includes(pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || '') && (
                 <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
                   Minhas Cores
                 </Link>
@@ -489,7 +491,14 @@ function AdminLayout() {
         {/* Top Header */}
         <header className="h-16 border-b bg-white flex items-center px-4 md:px-8 justify-between shrink-0 sticky top-0 z-20">
           <div className="flex items-center gap-6">
-            <h1 className="font-bold text-slate-800 hidden md:block">Painel de Controle</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="font-bold text-slate-800 hidden md:block">Painel de Controle</h1>
+              {activeStoreId && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200 hidden md:block">
+                  {pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || "Padrão"}
+                </span>
+              )}
+            </div>
             
             {!isGlobalAdmin && userStores.length > 1 && (
               <div className="flex items-center gap-3 bg-emerald-50/50 p-1.5 pr-2 rounded-lg border border-emerald-200 shadow-sm">

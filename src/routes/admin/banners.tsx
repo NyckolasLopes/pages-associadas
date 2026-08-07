@@ -1106,7 +1106,7 @@ function StoreColorsConfig() {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 max-w-2xl mt-6">
       <h3 className="text-lg font-bold text-slate-800 mb-4">Personalizar Cores da Loja</h3>
-      <p className="text-sm text-slate-500 mb-6">Como parceiro, você pode personalizar as cores principais da sua loja para manter a identidade da sua marca.</p>
+      <p className="text-sm text-slate-500 mb-6">Você pode personalizar as cores principais da sua loja para manter a identidade da sua marca.</p>
       
       <div className="space-y-6">
         <div className="flex items-center gap-6">
