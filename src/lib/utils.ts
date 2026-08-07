@@ -337,11 +337,21 @@ export function getLevePaguePromotion(produto: any, promocoes: any[] = [], store
 
   // 1. Try store specific first
   const storePromo = storePromocoes?.find(checkPromo);
-  if (storePromo) return storePromo;
+  const foundPromo = storePromo || promocoes?.find(checkPromo) || null;
+  if (!foundPromo) return null;
 
-  // 2. Fallback to global
-  const globalPromo = promocoes?.find(checkPromo);
-  return globalPromo || null;
+  // Resolve per-product individual config if present
+  const prodId = String(produto.id || '');
+  const pConfig = foundPromo.produtosConfig?.[prodId] || foundPromo.produtosConfig?.[produto.id];
+  if (pConfig) {
+    return {
+      ...foundPromo,
+      levePague_quantidade: Number(pConfig.quantidade) || foundPromo.levePague_quantidade || 2,
+      levePague_precoPorItem: Number(pConfig.precoPorItem) || foundPromo.levePague_precoPorItem || 0,
+    };
+  }
+
+  return foundPromo;
 }
 
 export function getPadraoPromotionWithTimer(produto: any, promocoes: any[] = [], storePromocoes: any[] = []) {

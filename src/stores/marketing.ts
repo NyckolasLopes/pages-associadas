@@ -22,6 +22,11 @@ export interface Coupon {
   lojaId?: string; // Se preenchido, cupom exclusivo da loja
 }
 
+export interface LevePagueProdutoConfig {
+  quantidade: number;
+  precoPorItem: number;
+}
+
 export interface Promocao {
   id: string;
   titulo: string;
@@ -37,6 +42,7 @@ export interface Promocao {
   precoPromocional?: number;
   levePague_quantidade?: number;
   levePague_precoPorItem?: number;
+  produtosConfig?: Record<string, LevePagueProdutoConfig>;
   corSelo?: string;
   corIcone?: string;
   corTextoBotao?: string;

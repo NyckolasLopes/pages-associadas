@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { 
   ArrowLeft, Save, Flame, Gift, Star, Zap, ShoppingBag, Search, 
-  Eye, Sparkles, Tag, Clock, ShoppingBasket, CheckCircle2
+  Eye, Sparkles, Tag, Clock, ShoppingBasket, CheckCircle2,
+  Percent, ArrowRight, Layers, HelpCircle
 } from "lucide-react";
-import { useMarketing, Promocao } from "@/stores/marketing";
+import { useMarketing, Promocao, LevePagueProdutoConfig } from "@/stores/marketing";
 import { useAdmin } from "@/stores/admin";
 import { toast } from "sonner";
 import productsData from "@/data/products.json";
@@ -56,6 +57,14 @@ function NovaPromocaoPage() {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const defaultDateFim = tomorrow.toISOString().split("T")[0];
 
+  const produtos = useMemo(() => getSafeProducts(), []);
+
+  // Per-product configuration state for Leve + Pague
+  const [produtosConfig, setProdutosConfig] = useState<Record<string, LevePagueProdutoConfig>>({});
+  const [batchQtd, setBatchQtd] = useState<number>(2);
+  const [batchDescontoPct, setBatchDescontoPct] = useState<number>(20);
+  const [selectedPreviewProductId, setSelectedPreviewProductId] = useState<string>("");
+
   const [formData, setFormData] = useState<Omit<Promocao, "id">>({
     titulo: "",
     tipoAlvo: "produtos",
@@ -69,6 +78,7 @@ function NovaPromocaoPage() {
     precoPromocional: undefined,
     levePague_quantidade: 2,
     levePague_precoPorItem: 0,
+    produtosConfig: {},
     corSelo: "#ea580c",
     corIcone: "#ea580c",
     corTextoBotao: "#ffffff",
@@ -77,7 +87,6 @@ function NovaPromocaoPage() {
     lojaId: effectiveStoreId || undefined,
   });
 
-  const produtos = useMemo(() => getSafeProducts(), []);
   const filteredProdutos = useMemo(() => {
     if (!searchQuery.trim()) return produtos;
     const q = searchQuery.toLowerCase();
@@ -90,6 +99,8 @@ function NovaPromocaoPage() {
 
   useEffect(() => {
     if (existing) {
+      const initialConfigs = existing.produtosConfig || {};
+      setProdutosConfig(initialConfigs);
       setFormData({
         titulo: existing.titulo,
         tipoAlvo: "produtos",
@@ -103,6 +114,7 @@ function NovaPromocaoPage() {
         precoPromocional: existing.precoPromocional,
         levePague_quantidade: existing.levePague_quantidade || 2,
         levePague_precoPorItem: existing.levePague_precoPorItem || 0,
+        produtosConfig: initialConfigs,
         corSelo: existing.corSelo || "#ea580c",
         corIcone: existing.corIcone || existing.corSelo || "#ea580c",
         corTextoBotao: existing.corTextoBotao || "#ffffff",
@@ -110,11 +122,77 @@ function NovaPromocaoPage() {
         textoBotao: existing.textoBotao || "COMPRAR",
         lojaId: existing.lojaId || effectiveStoreId || undefined,
       });
+      if (existing.alvosId && existing.alvosId.length > 0) {
+        setSelectedPreviewProductId(existing.alvosId[0]);
+      }
     }
   }, [existing]);
 
+  // Helper to get or auto-initialize config for a given product
+  const getProductConfig = (prodId: string, prodPrecoPor: number): LevePagueProdutoConfig => {
+    if (produtosConfig[prodId]) {
+      return produtosConfig[prodId];
+    }
+    const defaultPreco = +(prodPrecoPor * 0.85).toFixed(2);
+    return {
+      quantidade: formData.levePague_quantidade || 2,
+      precoPorItem: defaultPreco,
+    };
+  };
+
+  const updateSingleProductConfig = (prodId: string, key: keyof LevePagueProdutoConfig, val: number) => {
+    setProdutosConfig(prev => ({
+      ...prev,
+      [prodId]: {
+        ...(prev[prodId] || { quantidade: 2, precoPorItem: 0 }),
+        [key]: val
+      }
+    }));
+  };
+
+  const applyBatchQuantity = () => {
+    if (!batchQtd || batchQtd < 2) {
+      toast.error("A quantidade mínima deve ser de pelo menos 2 unidades.");
+      return;
+    }
+    setProdutosConfig(prev => {
+      const next = { ...prev };
+      formData.alvosId.forEach(id => {
+        const prod = produtos.find(p => p.id === id);
+        const originalPreco = prod?.precoPor || 10;
+        const current = next[id] || { quantidade: batchQtd, precoPorItem: +(originalPreco * 0.85).toFixed(2) };
+        next[id] = { ...current, quantidade: batchQtd };
+      });
+      return next;
+    });
+    toast.success(`Quantidade (${batchQtd} un) aplicada a todos os produtos selecionados!`);
+  };
+
+  const applyBatchDiscount = () => {
+    if (!batchDescontoPct || batchDescontoPct <= 0 || batchDescontoPct >= 100) {
+      toast.error("Informe uma porcentagem válida de desconto (1% a 99%).");
+      return;
+    }
+    setProdutosConfig(prev => {
+      const next = { ...prev };
+      formData.alvosId.forEach(id => {
+        const prod = produtos.find(p => p.id === id);
+        const originalPreco = prod?.precoPor || 10;
+        const novoPrecoItem = +(originalPreco * (1 - batchDescontoPct / 100)).toFixed(2);
+        const current = next[id] || { quantidade: batchQtd || 2, precoPorItem: novoPrecoItem };
+        next[id] = { ...current, precoPorItem: novoPrecoItem };
+      });
+      return next;
+    });
+    toast.success(`Desconto de ${batchDescontoPct}% no combo aplicado a todos os produtos!`);
+  };
+
   // Selected sample product for live preview
   const sampleProduct = useMemo(() => {
+    if (selectedPreviewProductId) {
+      const found = produtos.find(p => p.id === selectedPreviewProductId);
+      if (found) return found;
+    }
     if (formData.alvosId.length > 0) {
       const found = produtos.find(p => formData.alvosId.includes(p.id));
       if (found) return found;
@@ -128,13 +206,17 @@ function NovaPromocaoPage() {
       precoPor: 12.90,
       imagens: ["/placeholder.svg"],
     };
-  }, [formData.alvosId, produtos]);
+  }, [selectedPreviewProductId, formData.alvosId, produtos]);
 
-  // Computed preview prices
+  // Computed preview prices for the selected sample product
   const previewOriginalPrice = sampleProduct.precoPor || 19.90;
+  const sampleConfig = useMemo(() => {
+    return getProductConfig(sampleProduct.id, previewOriginalPrice);
+  }, [sampleProduct, previewOriginalPrice, produtosConfig]);
+
   const previewPromoPrice = useMemo(() => {
     if (formData.tipoCampanha === "leve_pague") {
-      return formData.levePague_precoPorItem || (previewOriginalPrice * 0.8);
+      return sampleConfig.precoPorItem || (previewOriginalPrice * 0.85);
     }
     if (formData.precoPromocional && formData.precoPromocional > 0) {
       return formData.precoPromocional;
@@ -143,7 +225,7 @@ function NovaPromocaoPage() {
       return previewOriginalPrice * (1 - formData.descontoPercentual / 100);
     }
     return previewOriginalPrice * 0.85;
-  }, [formData, previewOriginalPrice]);
+  }, [formData, sampleConfig, previewOriginalPrice]);
 
   const previewPromoObj: Promocao = useMemo(() => ({
     id: "preview-promo",
@@ -157,15 +239,16 @@ function NovaPromocaoPage() {
     tipoCampanha: formData.tipoCampanha,
     descontoPercentual: formData.descontoPercentual,
     precoPromocional: formData.precoPromocional,
-    levePague_quantidade: formData.levePague_quantidade,
-    levePague_precoPorItem: formData.levePague_precoPorItem,
+    levePague_quantidade: sampleConfig.quantidade || 2,
+    levePague_precoPorItem: sampleConfig.precoPorItem || +(previewOriginalPrice * 0.85).toFixed(2),
+    produtosConfig: produtosConfig,
     corSelo: formData.corSelo,
     corIcone: formData.corIcone,
     corTextoBotao: formData.corTextoBotao,
     corBotao: formData.corBotao,
     textoBotao: formData.textoBotao,
     lojaId: formData.lojaId,
-  }), [formData]);
+  }), [formData, sampleConfig, produtosConfig, previewOriginalPrice]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,9 +267,31 @@ function NovaPromocaoPage() {
       return;
     }
 
+    // Prepare per-product configs ensuring all selected products have valid data
+    const finalProdutosConfig: Record<string, LevePagueProdutoConfig> = {};
+    if (formData.tipoCampanha === "leve_pague") {
+      formData.alvosId.forEach(id => {
+        const prod = produtos.find(p => p.id === id);
+        const originalPreco = prod?.precoPor || 10;
+        const cfg = produtosConfig[id] || {
+          quantidade: formData.levePague_quantidade || 2,
+          precoPorItem: +(originalPreco * 0.85).toFixed(2)
+        };
+        finalProdutosConfig[id] = {
+          quantidade: Number(cfg.quantidade) || 2,
+          precoPorItem: Number(cfg.precoPorItem) || +(originalPreco * 0.85).toFixed(2),
+        };
+      });
+    }
+
+    const firstConfig = formData.alvosId.length > 0 && finalProdutosConfig[formData.alvosId[0]];
+
     const payload: Omit<Promocao, "id"> = {
       ...formData,
       tipoAlvo: "produtos",
+      produtosConfig: formData.tipoCampanha === "leve_pague" ? finalProdutosConfig : undefined,
+      levePague_quantidade: firstConfig ? firstConfig.quantidade : formData.levePague_quantidade,
+      levePague_precoPorItem: firstConfig ? firstConfig.precoPorItem : formData.levePague_precoPorItem,
       lojaId: isGlobalAdmin ? formData.lojaId : effectiveStoreId,
     };
 
@@ -223,7 +328,7 @@ function NovaPromocaoPage() {
               </span>
             </div>
             <p className="text-slate-500 text-sm mt-0.5">
-              Configure ofertas com cronômetro regressivo ou modalidade Leve + Pague por produto.
+              Configure ofertas com cronômetro regressivo ou modalidade Leve + Pague com preço por produto.
             </p>
           </div>
         </div>
@@ -275,7 +380,7 @@ function NovaPromocaoPage() {
                 <Input 
                   value={formData.titulo} 
                   onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} 
-                  placeholder="Ex: Oferta Relâmpago 24h, Semana da Saúde, Leve 3 Pague 2..."
+                  placeholder="Ex: Leve Mais e Pague Menos, Oferta Relâmpago 24h..."
                   className="h-11 border-slate-300 font-medium text-slate-900 focus-visible:ring-orange-500"
                   required
                 />
@@ -295,8 +400,8 @@ function NovaPromocaoPage() {
                       tipoAlvo: "produtos"
                     })}
                   >
-                    <option value="padrao">⏱ Promoção com Timer + Selo</option>
-                    <option value="leve_pague">🏷 Leve + Pague Menos (Combo Unitário)</option>
+                    <option value="leve_pague">🏷 Leve + Pague Menos (Preço e Qtd por Produto)</option>
+                    <option value="padrao">⏱ Promoção Padrão com Timer + Selo</option>
                   </select>
                 </div>
 
@@ -404,42 +509,14 @@ function NovaPromocaoPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-4">
+                <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 space-y-2">
                   <div className="flex items-center gap-2 text-amber-950 font-bold text-xs uppercase tracking-wider">
-                    <ShoppingBag className="h-4 w-4 text-amber-600" />
-                    Condição Leve + Pague Menos
+                    <ShoppingBasket className="h-4 w-4 text-amber-600" />
+                    Mecânica Leve Mais e Pague Menos Individualizada
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">
-                        Quantidade Mínima (Ex: Leve 2, 3...) *
-                      </label>
-                      <Input 
-                        type="number" 
-                        min="2"
-                        value={formData.levePague_quantidade || 2} 
-                        onChange={(e) => setFormData({ ...formData, levePague_quantidade: Number(e.target.value) })} 
-                        className="h-10 border-slate-300 bg-white font-bold"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">
-                        Preço por Unidade no Combo (R$) *
-                      </label>
-                      <Input 
-                        type="number" 
-                        step="0.01"
-                        min="0.01"
-                        placeholder="Ex: 8.50"
-                        value={formData.levePague_precoPorItem || ""} 
-                        onChange={(e) => setFormData({ ...formData, levePague_precoPorItem: Number(e.target.value) })} 
-                        className="h-10 border-slate-300 bg-white font-bold"
-                        required
-                      />
-                    </div>
-                  </div>
+                  <p className="text-xs text-amber-900 leading-relaxed">
+                    Você pode selecionar múltiplos produtos e definir para <strong>cada produto</strong> a sua própria quantidade mínima do pacote e o respectivo preço unitário promocional.
+                  </p>
                 </div>
               )}
             </div>
@@ -507,7 +584,7 @@ function NovaPromocaoPage() {
                   <Input
                     value={formData.textoBotao || "COMPRAR"}
                     onChange={(e) => setFormData({ ...formData, textoBotao: e.target.value })}
-                    placeholder="Ex: APROVEITAR OFERTA"
+                    placeholder="Ex: COMPRAR COMBO"
                     className="h-9 font-bold text-xs"
                   />
                 </div>
@@ -515,7 +592,7 @@ function NovaPromocaoPage() {
             </div>
           </div>
 
-          {/* Card: Seleção Estrita de Produtos Individuais */}
+          {/* Card: Seleção de Produtos Individuais */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
@@ -546,7 +623,10 @@ function NovaPromocaoPage() {
                   type="button" 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => setFormData({ ...formData, alvosId: [] })}
+                  onClick={() => {
+                    setFormData({ ...formData, alvosId: [] });
+                    setProdutosConfig({});
+                  }}
                   className="h-10 text-xs font-bold text-red-600 hover:bg-red-50"
                 >
                   Limpar ({formData.alvosId.length})
@@ -555,7 +635,7 @@ function NovaPromocaoPage() {
             </div>
 
             {/* Product Checklist Scrollable */}
-            <div className="border border-slate-200 rounded-xl max-h-[320px] overflow-y-auto divide-y divide-slate-100 bg-white">
+            <div className="border border-slate-200 rounded-xl max-h-[260px] overflow-y-auto divide-y divide-slate-100 bg-white">
               {filteredProdutos.length > 0 ? (
                 filteredProdutos.map((p: any) => {
                   const isChecked = formData.alvosId.includes(p.id);
@@ -570,6 +650,17 @@ function NovaPromocaoPage() {
                         onChange={(e) => {
                           if (e.target.checked) {
                             setFormData({ ...formData, alvosId: [...formData.alvosId, p.id] });
+                            if (!selectedPreviewProductId) setSelectedPreviewProductId(p.id);
+                            // initialize config for this product if not set
+                            if (!produtosConfig[p.id]) {
+                              setProdutosConfig(prev => ({
+                                ...prev,
+                                [p.id]: {
+                                  quantidade: 2,
+                                  precoPorItem: +(p.precoPor * 0.85).toFixed(2)
+                                }
+                              }));
+                            }
                           } else {
                             setFormData({ ...formData, alvosId: formData.alvosId.filter(id => id !== p.id) });
                           }
@@ -601,6 +692,165 @@ function NovaPromocaoPage() {
             </div>
           </div>
 
+          {/* Section: Configuração Individual por Produto (Quando Leve + Pague) */}
+          {formData.tipoCampanha === "leve_pague" && formData.alvosId.length > 0 && (
+            <div className="bg-white border-2 border-orange-300/80 rounded-2xl p-6 shadow-sm space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-100 pb-3">
+                <div>
+                  <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-orange-600" /> 4. Preço e Quantidade por Produto
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Defina a quantidade mínima e o preço unitário do combo para cada produto selecionado.
+                  </p>
+                </div>
+              </div>
+
+              {/* Batch Actions Bar */}
+              <div className="bg-orange-50/70 border border-orange-200 rounded-xl p-3.5 space-y-3">
+                <div className="text-xs font-bold text-orange-950 uppercase tracking-wide flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-orange-600" /> Ações em Massa (Preencher Todos)
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-24">
+                      <Input
+                        type="number"
+                        min="2"
+                        value={batchQtd}
+                        onChange={(e) => setBatchQtd(Number(e.target.value))}
+                        className="h-9 text-xs font-bold bg-white"
+                        placeholder="Qtd (ex: 3)"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={applyBatchQuantity}
+                      className="h-9 text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white flex-1"
+                    >
+                      Aplicar Quantidade p/ Todos
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="w-24">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={batchDescontoPct}
+                        onChange={(e) => setBatchDescontoPct(Number(e.target.value))}
+                        className="h-9 text-xs font-bold bg-white"
+                        placeholder="% OFF"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={applyBatchDiscount}
+                      className="h-9 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white flex-1"
+                    >
+                      Aplicar % Desconto p/ Todos
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Individual Products Configuration Rows */}
+              <div className="space-y-3">
+                {formData.alvosId.map(id => {
+                  const prod = produtos.find(p => p.id === id);
+                  if (!prod) return null;
+                  const originalPrice = prod.precoPor || 10;
+                  const cfg = getProductConfig(id, originalPrice);
+                  const totalCombo = cfg.quantidade * cfg.precoPorItem;
+                  const totalOriginal = cfg.quantidade * originalPrice;
+                  const economia = Math.max(0, totalOriginal - totalCombo);
+                  const descontoPct = originalPrice > 0 ? Math.round((1 - cfg.precoPorItem / originalPrice) * 100) : 0;
+
+                  return (
+                    <div 
+                      key={id} 
+                      className="bg-slate-50 border border-slate-200 rounded-xl p-4 hover:border-orange-300 transition-colors space-y-3"
+                    >
+                      {/* Product Header */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-lg bg-white p-1 flex items-center justify-center shrink-0 border border-slate-200">
+                            <img src={prod.imagens?.[0] || "/placeholder.svg"} alt={prod.nome} className="w-full h-full object-contain mix-blend-multiply" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-900 truncate">{prod.nome}</div>
+                            <div className="text-[11px] text-slate-500">
+                              Preço Original: <strong className="text-slate-800">{brl(originalPrice)}</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Economy Tag */}
+                        {economia > 0 && (
+                          <div className="text-right shrink-0">
+                            <span className="bg-emerald-100 text-emerald-800 font-extrabold text-[11px] px-2 py-0.5 rounded-full">
+                              -{descontoPct}% OFF ({brl(economia)} total)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Inputs Row */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/70">
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                            Quantidade Mínima (Leve X) *
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="2"
+                              value={cfg.quantidade}
+                              onChange={(e) => updateSingleProductConfig(id, "quantidade", Number(e.target.value))}
+                              className="h-10 bg-white font-bold text-slate-900 text-sm"
+                            />
+                            <span className="text-xs font-semibold text-slate-500 shrink-0">unidades</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                            Preço por Unidade no Combo (R$) *
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              value={cfg.precoPorItem}
+                              onChange={(e) => updateSingleProductConfig(id, "precoPorItem", Number(e.target.value))}
+                              className="h-10 bg-white font-black text-orange-600 text-sm"
+                            />
+                            <span className="text-xs font-semibold text-slate-500 shrink-0">cada</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Summary calculation pill */}
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-2 text-xs flex items-center justify-between text-slate-600">
+                        <span>
+                          Total: <strong>{cfg.quantidade} un.</strong> x <strong>{brl(cfg.precoPorItem)}</strong> = <strong className="text-slate-900">{brl(totalCombo)}</strong>
+                        </span>
+                        <span className="text-emerald-700 font-bold">
+                          Economia: {brl(economia)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Submit Action */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button
@@ -623,39 +873,60 @@ function NovaPromocaoPage() {
 
         {/* Right Live Preview Column (5 Cols) */}
         <div className="lg:col-span-5 lg:sticky lg:top-6 space-y-4">
-          <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-xl border border-slate-800">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+          <div className="bg-white text-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
               <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-orange-400" />
-                <h3 className="font-bold text-sm text-slate-100">Prévia em Tempo Real</h3>
+                <Sparkles className="h-4 w-4 text-orange-600" />
+                <h3 className="font-black text-sm text-slate-900">Promo na minha loja</h3>
               </div>
               
               {/* Preview Mode Switcher */}
-              <div className="flex bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+              <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
                 <button
                   type="button"
                   onClick={() => setPreviewTab("card")}
-                  className={`text-xs font-bold px-3 py-1 rounded-md transition ${previewTab === "card" ? 'bg-orange-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  className={`text-xs font-bold px-3 py-1 rounded-md transition ${previewTab === "card" ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  Card da Vitrine
+                  Card Vitrine
                 </button>
                 <button
                   type="button"
                   onClick={() => setPreviewTab("pdp")}
-                  className={`text-xs font-bold px-3 py-1 rounded-md transition ${previewTab === "pdp" ? 'bg-orange-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  className={`text-xs font-bold px-3 py-1 rounded-md transition ${previewTab === "pdp" ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  Página do Produto
+                  Página Produto
                 </button>
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 mb-4">
-              Veja exatamente como sua promoção aparecerá para os clientes na loja virtual:
+            {/* Selector for which selected product to preview */}
+            {formData.alvosId.length > 1 && (
+              <div className="mb-4 bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center gap-2">
+                <span className="text-[11px] font-bold text-slate-600 shrink-0">Simular com:</span>
+                <select
+                  value={sampleProduct.id}
+                  onChange={(e) => setSelectedPreviewProductId(e.target.value)}
+                  className="w-full bg-white text-xs font-bold text-slate-800 rounded-lg px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:ring-1 focus:ring-orange-500 truncate shadow-sm cursor-pointer"
+                >
+                  {formData.alvosId.map(id => {
+                    const prod = produtos.find(p => p.id === id);
+                    return (
+                      <option key={id} value={id}>
+                        {prod?.nome || id}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+
+            <p className="text-xs text-slate-600 mb-4 bg-orange-50/60 p-2.5 rounded-lg border border-orange-100">
+              Visualização para o cliente: <strong className="text-slate-900">{sampleProduct.nome}</strong>
             </p>
 
             {/* Tab: Card da Vitrine */}
             {previewTab === "card" && (
-              <div className="bg-white text-slate-900 rounded-xl p-4 shadow-lg border border-slate-200 max-w-[300px] mx-auto">
+              <div className="bg-white text-slate-900 rounded-xl p-4 shadow-md border-2 border-slate-100 max-w-[300px] mx-auto">
                 {/* Promo Badge on Card */}
                 <div className="mb-2">
                   <PromoCardBadge promo={previewPromoObj} precoOriginal={previewOriginalPrice} />
@@ -682,7 +953,7 @@ function NovaPromocaoPage() {
                 {formData.tipoCampanha === "leve_pague" ? (
                   <div className="border-l-2 border-orange-500 pl-2 mb-3 bg-orange-50/50 py-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-xs font-bold text-orange-600">{formData.levePague_quantidade || 2} por</span>
+                      <span className="text-xs font-bold text-orange-600">{sampleConfig.quantidade || 2} por</span>
                       <span className="text-base font-black text-slate-900">{brl(previewPromoPrice)}</span>
                       <span className="text-[10px] font-medium text-orange-600">cada</span>
                     </div>
@@ -704,7 +975,7 @@ function NovaPromocaoPage() {
                   </div>
                 )}
 
-                {/* CTA Button */}
+                {/* CTA Button with ShoppingBasket */}
                 <button
                   type="button"
                   style={{
@@ -730,17 +1001,17 @@ function NovaPromocaoPage() {
                   <PromoProductPageBanner 
                     promo={previewPromoObj} 
                     precoOriginal={previewOriginalPrice} 
-                    precoAtual={previewPromoPrice} 
+                    precoPromocional={previewPromoPrice} 
                   />
                 ) : (
                   <PromoLevePagueOfferBox 
                     promo={previewPromoObj} 
-                    precoOriginal={previewOriginalPrice}
-                    onAddToCart={() => toast.info("Simulação: Produto adicionado!")} 
+                    precoUnitarioOriginal={previewOriginalPrice}
+                    onAddToCart={() => toast.info("Simulação: Combo adicionado ao carrinho!")} 
                   />
                 )}
 
-                {/* Simulated PDP CTA Area */}
+                {/* Simulated PDP CTA Area with ShoppingBasket */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
                   <div className="text-xs font-bold text-slate-600">Simulação do Botão de Compra:</div>
                   <button
@@ -749,7 +1020,7 @@ function NovaPromocaoPage() {
                       backgroundColor: formData.corBotao || "#ea580c",
                       color: formData.corTextoBotao || "#ffffff",
                     }}
-                    className="w-full h-11 rounded-lg font-bold text-sm flex items-center justify-center gap-2 shadow-sm"
+                    className="w-full h-11 rounded-lg font-bold text-sm flex items-center justify-center gap-2 shadow-sm uppercase"
                   >
                     <ShoppingBasket className="h-4 w-4" />
                     <span>{formData.textoBotao || "COMPRAR"}</span>

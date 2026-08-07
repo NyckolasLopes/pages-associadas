@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Flame, Zap, Gift, Star, ShoppingBag, Percent, Tag, Sparkles, CheckCircle2 } from "lucide-react";
+import { Clock, Flame, Zap, Gift, Star, ShoppingBag, ShoppingBasket, Percent, Tag, Sparkles, CheckCircle2 } from "lucide-react";
 import { Promocao } from "@/stores/marketing";
 import { brl } from "@/lib/format";
 import { calculatePromoTimeRemaining } from "@/lib/utils";
@@ -323,7 +323,7 @@ export function PromoLevePagueOfferBox({
             className="w-full h-12 rounded-xl font-black text-sm tracking-wide shadow-md hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-2 uppercase"
             style={{ backgroundColor: themeColor, color: textColor }}
           >
-            <ShoppingBag className="w-5 h-5" />
+            <ShoppingBasket className="w-5 h-5" />
             {btnText}
           </button>
         )}
