@@ -137,7 +137,7 @@ function PainelLoja() {
 
       if (statusStr.includes("cancelad") || statusStr === "recusado") {
         unifiedStatus = "Cancelado";
-      } else if (statusStr === "abandonado no carrinho" || statusStr === "pendente") {
+      } else if (statusStr === "abandonado no carrinho" || origemStr === "carrinho") {
         unifiedStatus = "Pendente";
       } else {
         unifiedStatus = "Concluído";
