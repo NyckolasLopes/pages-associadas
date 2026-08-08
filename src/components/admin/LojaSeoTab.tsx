@@ -6,33 +6,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { 
-  Globe, MapPin, Search, Bot, Sparkles, Phone, Clock, 
-  Share2, CheckCircle2, Copy, Layers, Compass 
-} from "lucide-react";
+import { Globe, CheckCircle2, Compass } from "lucide-react";
 import { sanitizeText } from "@/lib/security";
 
 export function LojaSeoTab({ lojaId }: { lojaId: string }) {
   const { pharmacies, updatePharmacy } = useAdmin();
   const pharmacy = pharmacies.find((p) => p.id === lojaId);
 
-  const [nome, setNome] = useState(pharmacy?.nome || "");
-  const [whatsapp, setWhatsapp] = useState(pharmacy?.whatsapp || pharmacy?.telefone || "");
-  const [bairro, setBairro] = useState(pharmacy?.bairro || "");
-  const [cidade, setCidade] = useState(pharmacy?.cidade || "");
-  const [uf, setUf] = useState(pharmacy?.uf || "RS");
-  const [endereco, setEndereco] = useState(pharmacy?.endereco || "");
-  const [cep, setCep] = useState(pharmacy?.cep || "");
-  const [raioEntregaKm, setRaioEntregaKm] = useState(pharmacy?.raioEntregaKm?.toString() || "8");
-  const [bairrosAtendidos, setBairrosAtendidos] = useState(
-    pharmacy?.bairrosAtendidos?.join(", ") || `${pharmacy?.bairro || "Centro"}, Bela Vista, Menino Deus, Moinhos de Vento`
+  const [pageTitle, setPageTitle] = useState(
+    pharmacy?.pageTitle || `Farmácias Associadas - ${pharmacy?.nome || "Minha Loja"}`
   );
-  const [horarioFuncionamento, setHorarioFuncionamento] = useState(
-    pharmacy?.horarioFuncionamento || "Seg a Sex: 08h às 21h | Sáb: 08h às 19h | Dom: 09h às 14h"
-  );
+  
   const [metaDesc, setMetaDesc] = useState(
-    pharmacy?.seoDescricao || `Sua farmácia completa em ${pharmacy?.cidade || "sua região"} - ${pharmacy?.bairro || "Centro"}. Medicamentos, perfumaria, dermocosméticos e ofertas exclusivas com entrega rápida via WhatsApp.`
+    pharmacy?.metaDescription || pharmacy?.seoDescricao || 
+    `Sua farmácia completa em ${pharmacy?.cidade || "sua região"}. Medicamentos, perfumaria, dermocosméticos e ofertas exclusivas com entrega rápida.`
   );
+
+  const [bairrosAtendidos, setBairrosAtendidos] = useState(
+    pharmacy?.bairrosAtendidos?.join(", ") || `${pharmacy?.bairro || "Centro"}, Bela Vista, Menino Deus`
+  );
+
+  const [raioEntregaKm, setRaioEntregaKm] = useState(pharmacy?.raioEntregaKm?.toString() || "8");
 
   if (!pharmacy) {
     return <div className="text-sm text-slate-500">Loja não encontrada.</div>;
@@ -48,238 +42,149 @@ export function LojaSeoTab({ lojaId }: { lojaId: string }) {
 
     const updated: Pharmacy = {
       ...pharmacy,
-      nome: sanitizeText(nome, 100),
-      whatsapp: sanitizeText(whatsapp, 30),
-      bairro: sanitizeText(bairro, 80),
-      cidade: sanitizeText(cidade, 80),
-      uf: sanitizeText(uf, 2).toUpperCase(),
-      endereco: sanitizeText(endereco, 150),
-      cep: sanitizeText(cep, 10),
-      raioEntregaKm: parseFloat(raioEntregaKm) || 8,
+      pageTitle: sanitizeText(pageTitle, 100),
+      metaDescription: sanitizeText(metaDesc, 250),
+      seoDescricao: sanitizeText(metaDesc, 250), // mantendo legado atualizado
       bairrosAtendidos: cleanBairros,
-      horarioFuncionamento: sanitizeText(horarioFuncionamento, 150),
-      seoDescricao: sanitizeText(metaDesc, 250),
+      raioEntregaKm: parseFloat(raioEntregaKm) || 8,
     };
 
     updatePharmacy(pharmacy.id, updated);
-    toast.success("Configurações de SEO, GEO e AEO Local atualizadas com sucesso!");
-  };
-
-  // Schema.org Local Business JSON-LD gerado em tempo real para pré-visualização
-  const localSchemaJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Pharmacy",
-    "name": `Farmácias Associadas - ${nome || pharmacy.nome}`,
-    "image": "https://farmaciasassociadas.com.br/logo.png",
-    "telephone": whatsapp || pharmacy.telefone,
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": endereco || pharmacy.endereco,
-      "addressLocality": cidade || pharmacy.cidade,
-      "addressRegion": uf || pharmacy.uf,
-      "postalCode": cep || pharmacy.cep,
-      "addressCountry": "BR",
-    },
-    "geo": {
-      "@type": "GeoCoordinates",
-      "latitude": pharmacy.lat || -30.0346,
-      "longitude": pharmacy.lng || -51.2177,
-    },
-    "openingHours": horarioFuncionamento,
-    "priceRange": "$$",
-    "areaServed": bairrosAtendidos.split(",").map((b) => b.trim()),
-    "description": metaDesc,
-  };
-
-  const copySchemaToClipboard = () => {
-    navigator.clipboard.writeText(JSON.stringify(localSchemaJsonLd, null, 2));
-    toast.success("Schema.org JSON-LD copiado para a área de transferência!");
+    toast.success("Otimização de Buscas Locais (SEO) salva com sucesso!");
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary/10 p-2 rounded-xl">
-            <Compass className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">SEO, GEO e AEO Local da Loja</h2>
-            <p className="text-sm text-slate-500">
-              Otimização avançada para Google Maps, Buscas por voz, Motores de IA (ChatGPT, Perplexity) e SEO Regional.
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="bg-blue-50 p-2.5 rounded-xl border border-blue-100">
+          <Globe className="w-5 h-5 text-blue-600" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">Otimização para o Google (SEO Local)</h2>
+          <p className="text-sm text-slate-500">
+            Ajuste como sua loja aparece nas buscas para clientes da sua região.
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Formulário de Configuração Local */}
-        <Card className="border-slate-200 shadow-sm lg:col-span-2">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-lg font-bold">Informações Regionais e SEO</CardTitle>
-            <CardDescription>
-              Esses dados potencializam o ranqueamento orgânico da página da sua loja no Google e mecanismos de IA.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <form onSubmit={handleSaveSeo} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold">Nome da Unidade / Loja</Label>
-                  <Input
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    placeholder="Ex: Farmácia Associadas - Filial Menino Deus"
-                    required
-                  />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Live Preview de SEO */}
+        <div className="order-2 lg:order-1 space-y-4">
+          <Card className="border-slate-200 shadow-sm overflow-hidden h-full flex flex-col">
+            <CardHeader className="bg-slate-50/80 border-b pb-4">
+              <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-slate-700">
+                Prévia de como aparecerá no Google
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 bg-white flex-1">
+              <div className="space-y-2 max-w-md">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center p-1 border">
+                    <img src="/logo-icon.png" alt="FA" className="w-full h-full object-contain opacity-50" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    <span className="text-[10px] font-bold text-slate-400">FA</span>
+                  </div>
+                  <div>
+                    <div className="text-[13px] text-slate-800 truncate font-medium">Farmácias Associadas</div>
+                    <div className="text-[12px] text-slate-500 truncate">
+                      https://farmaciasassociadas.com.br › loja › {pharmacy.id}
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold">WhatsApp de Atendimento Local</Label>
-                  <Input
-                    value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
-                    placeholder="Ex: (51) 99999-9999"
-                    required
-                  />
+                
+                <div className="text-[20px] font-medium text-[#1a0dab] hover:underline cursor-pointer leading-tight pt-1">
+                  {pageTitle || `Farmácias Associadas - ${pharmacy.nome}`}
+                </div>
+                
+                <div className="text-[14px] text-[#4d5156] leading-[1.58] mt-1 line-clamp-2">
+                  {metaDesc || "Preencha a meta descrição para ver como a sua loja será exibida nos resultados de pesquisa."}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold">Endereço Completo</Label>
-                  <Input
-                    value={endereco}
-                    onChange={(e) => setEndereco(e.target.value)}
-                    placeholder="Rua / Av. e Número"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold">Bairro Principal</Label>
-                  <Input
-                    value={bairro}
-                    onChange={(e) => setBairro(e.target.value)}
-                    placeholder="Ex: Centro"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs font-bold">Cidade</Label>
-                    <Input
-                      value={cidade}
-                      onChange={(e) => setCidade(e.target.value)}
-                      placeholder="Cidade"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-bold">UF</Label>
-                    <Input
-                      value={uf}
-                      maxLength={2}
-                      onChange={(e) => setUf(e.target.value.toUpperCase())}
-                      placeholder="RS"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-bold">Bairros Atendidos com Entrega (Separados por vírgula)</Label>
-                <Input
-                  value={bairrosAtendidos}
-                  onChange={(e) => setBairrosAtendidos(e.target.value)}
-                  placeholder="Ex: Centro, Menino Deus, Praia de Belas, Cidade Baixa, Moinhos de Vento"
-                />
-                <p className="text-[11px] text-slate-500">
-                  Esses bairros são indexados para responder buscas do tipo <em>"farmácia que entrega no bairro X"</em>.
+              <div className="mt-8 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                <h4 className="text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
+                  <Compass className="w-4 h-4 text-blue-600" />
+                  Indexação Automática
+                </h4>
+                <p className="text-xs text-blue-800/80 leading-relaxed">
+                  As informações preenchidas são automaticamente convertidas em dados estruturados (Schema.org) internamente no site. Isso garante que o Google e outras plataformas entendam sua loja como uma unidade local distinta.
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold">Raio Máximo de Entrega (em KM)</Label>
+        {/* Formulário de Configuração Local */}
+        <div className="order-1 lg:order-2">
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="bg-white border-b pb-4">
+              <CardTitle className="text-base font-bold">Dados para Buscas</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <form onSubmit={handleSaveSeo} className="space-y-5">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-bold text-slate-700">Título da Página (Google)</Label>
+                  <Input
+                    value={pageTitle}
+                    onChange={(e) => setPageTitle(e.target.value)}
+                    placeholder="Ex: Farmácias Associadas - Filial Menino Deus"
+                    className="border-slate-300"
+                    required
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    O título principal que aparece em azul nas buscas. Use o nome do seu bairro ou cidade.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-bold text-slate-700">Meta Descrição</Label>
+                  <Textarea
+                    rows={3}
+                    value={metaDesc}
+                    onChange={(e) => setMetaDesc(e.target.value)}
+                    className="border-slate-300 resize-none"
+                    placeholder="Sua farmácia completa com entrega rápida..."
+                  />
+                  <div className="flex justify-between items-center text-[11px] text-slate-500">
+                    <span>O texto curto que aparece logo abaixo do título azul.</span>
+                    <span className={metaDesc.length > 160 ? "text-amber-600 font-bold" : ""}>
+                      {metaDesc.length}/160 caracteres (Recomendado)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                  <Label className="text-sm font-bold text-slate-700">Regiões e Bairros Atendidos</Label>
+                  <Input
+                    value={bairrosAtendidos}
+                    onChange={(e) => setBairrosAtendidos(e.target.value)}
+                    className="border-slate-300"
+                    placeholder="Ex: Centro, Cidade Baixa, Praia de Belas"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Separe por vírgula. Isso ajuda clientes que buscam por "farmácia que entrega no bairro X".
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-bold text-slate-700">Raio Máximo de Entrega (em KM)</Label>
                   <Input
                     type="number"
                     value={raioEntregaKm}
                     onChange={(e) => setRaioEntregaKm(e.target.value)}
-                    placeholder="Ex: 8"
+                    className="border-slate-300 bg-slate-50 max-w-[150px]"
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold">Horário de Funcionamento</Label>
-                  <Input
-                    value={horarioFuncionamento}
-                    onChange={(e) => setHorarioFuncionamento(e.target.value)}
-                    placeholder="Ex: Seg-Sex: 08h às 20h | Sáb: 08h às 18h"
-                  />
-                </div>
-              </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-bold">Meta Descrição da Loja (SEO / AEO)</Label>
-                <Textarea
-                  rows={3}
-                  value={metaDesc}
-                  onChange={(e) => setMetaDesc(e.target.value)}
-                  placeholder="Descrição exibida no snippet do Google..."
-                />
-                <p className="text-[11px] text-slate-500">Recomendado: entre 120 e 160 caracteres.</p>
-              </div>
-
-              <Button type="submit" className="w-full font-bold gap-2 mt-4">
-                <CheckCircle2 className="w-4 h-4" />
-                Salvar Configurações de SEO Local
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Live Preview de SEO / Schema.org */}
-        <div className="space-y-6 lg:col-span-1">
-          {/* Card Google Snippet Preview */}
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="bg-slate-50/50 border-b pb-3">
-              <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-slate-800">
-                <Globe className="w-4 h-4 text-blue-600" />
-                Prévia da Busca Google (SEO)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 space-y-2">
-              <div className="text-xs text-slate-500 truncate">
-                https://farmaciasassociadas.com.br/loja/{pharmacy.id}
-              </div>
-              <div className="text-sm font-bold text-blue-800 hover:underline cursor-pointer leading-tight">
-                Farmácias Associadas em {bairro || "Sua Região"}, {cidade || "Sua Cidade"} | Medicamentos & Ofertas
-              </div>
-              <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
-                {metaDesc}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Card Schema.org / AEO JSON-LD */}
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="bg-slate-50/50 border-b pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-slate-800">
-                <Bot className="w-4 h-4 text-emerald-600" />
-                JSON-LD Gerado (AEO / IA)
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={copySchemaToClipboard}
-                className="h-7 px-2 text-xs font-bold gap-1 text-slate-600 hover:text-slate-900"
-              >
-                <Copy className="w-3 h-3" />
-                Copiar
-              </Button>
-            </CardHeader>
-            <CardContent className="p-4">
-              <pre className="text-[10px] font-mono bg-slate-950 text-slate-200 p-3 rounded-xl overflow-x-auto max-h-52">
-                {JSON.stringify(localSchemaJsonLd, null, 2)}
-              </pre>
+                <Button type="submit" className="w-full font-bold gap-2 mt-4 bg-blue-600 hover:bg-blue-700 text-white h-11">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Salvar Dados para Buscas
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </div>
+
       </div>
     </div>
   );

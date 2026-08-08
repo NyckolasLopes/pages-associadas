@@ -44,9 +44,9 @@ function ConfiguracoesPage() {
 
   if (!isGlobalAdmin) {
     configs.push({
-      id: "personalizar-loja",
+      id: "dados-loja",
       url: "/admin/configuracoes/loja",
-      titulo: "Personalizar minha loja",
+      titulo: "Dados da minha loja",
       descricao: "Altere textos de rodapé, informações da empresa e SEO para o Google.",
       icon: <Store className="h-5 w-5 text-slate-600" />
     });

@@ -36,7 +36,7 @@ function ConfiguracoesLojaPage() {
     <div className="max-w-4xl space-y-6 pb-16">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-slate-800">
-          Personalizar Minha Loja
+          Dados da minha loja
         </h2>
         <p className="text-slate-500 text-sm mt-1">
           Ajuste as informações da sua loja, regras de frete e configurações de SEO.
