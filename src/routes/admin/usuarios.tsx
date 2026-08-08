@@ -50,13 +50,15 @@ const PERMISSION_CATEGORIES = [
       { id: "loja_seo", label: "Configuração de SEO & GEO" },
       { id: "loja_metricas", label: "Métricas da Loja" },
       { id: "loja_relatorios", label: "Relatórios (Top 100)" },
-      { id: "loja_personalizar", label: "Personalizar Banners da Loja" },
+      { id: "loja_personalizar", label: "Personalizar Loja (Banners/Estrutura)" },
+      { id: "loja_configuracoes", label: "Configurações da Loja" },
     ]
   },
   {
     category: "Admin Global - Dashboard & Análises",
     permissions: [
       { id: "dash_view", label: "Acessar Dashboard" },
+      { id: "rel_metricas_pedidos", label: "Análises: Métricas de Pedidos" },
       { id: "rel_vendas_produto", label: "Relatório: Vendas por Produto" },
       { id: "rel_desempenho", label: "Relatório: Desempenho por Unidade" },
       { id: "rel_logistica_retirada", label: "Relatório: Retirada vs Entrega" },
@@ -75,6 +77,9 @@ const PERMISSION_CATEGORIES = [
     permissions: [
       { id: "lojas_todas", label: "Ver todas as lojas" },
       { id: "lojas_nova", label: "Cadastrar Nova Loja" },
+      { id: "lojas_gerar", label: "Gerar Loja" },
+      { id: "lojas_link", label: "Link Inscrição Associado" },
+      { id: "lojas_precos", label: "Meus Preços (Associado)" },
     ]
   },
   {
@@ -82,7 +87,16 @@ const PERMISSION_CATEGORIES = [
     permissions: [
       { id: "prod_todos", label: "Catálogo Geral (Ver todos)" },
       { id: "prod_novo", label: "Novo Produto Global" },
+      { id: "prod_estoque", label: "Estoques" },
+      { id: "prod_avaliacoes", label: "Avaliações" },
       { id: "prod_categorias", label: "Categorias" },
+      { id: "prod_colecoes", label: "Vitrine de Produtos" },
+      { id: "prod_filtros", label: "Filtros" },
+      { id: "prod_espera", label: "Lista de espera" },
+      { id: "prod_marcas", label: "Marcas" },
+      { id: "prod_perguntas", label: "Perguntas" },
+      { id: "prod_selos", label: "Selos" },
+      { id: "prod_variacoes", label: "Variações" },
     ]
   },
   {
@@ -95,6 +109,7 @@ const PERMISSION_CATEGORIES = [
     category: "Admin Global - Marketing",
     permissions: [
       { id: "mkt_cupons", label: "Cupons Globais" },
+      { id: "mkt_promocoes", label: "Promoções" },
     ]
   },
   {
@@ -305,7 +320,7 @@ function AdminUsuarios() {
         <div className="flex-1 space-y-4">
           <div className="bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden p-6">
             <div className="flex items-center justify-between mb-6">
-              <span className="font-bold text-slate-700">Você tem {grupos.length} grupo{grupos.length !== 1 ? 's' : ''}</span>
+              <span className="font-bold text-slate-700">Grupos de Permissões (Administrador / Associado)</span>
               
               <Dialog open={isNovoGrupoOpen} onOpenChange={(open) => {
                 setIsNovoGrupoOpen(open);
@@ -315,25 +330,20 @@ function AdminUsuarios() {
                   setEditingGrupoId(null);
                 }
               }}>
-                <DialogTrigger asChild>
-                  <Button className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold h-9 px-4 text-xs">
-                    + Novo grupo
-                  </Button>
-                </DialogTrigger>
                 <DialogContent className="max-w-[700px] h-[90vh] flex flex-col p-0 gap-0">
                   <DialogHeader className="px-6 py-4 border-b shrink-0">
-                    <DialogTitle>{editingGrupoId ? "Editar grupo" : "Criar novo grupo"}</DialogTitle>
+                    <DialogTitle>Editar permissões: {novoGrupoNome}</DialogTitle>
                   </DialogHeader>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t p-6 flex-1 overflow-y-auto">
                     <div className="col-span-1">
-                      <h3 className="font-bold text-slate-800">Grupos</h3>
-                      <p className="text-sm text-slate-500 mt-1">Crie grupos de trabalho e gerencie as permissões de acesso de cada grupo.</p>
+                      <h3 className="font-bold text-slate-800">Permissões</h3>
+                      <p className="text-sm text-slate-500 mt-1">Gerencie as permissões de acesso deste grupo.</p>
                     </div>
                     <div className="col-span-2 space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-sm font-semibold">Nome</Label>
-                        <Input value={novoGrupoNome} onChange={(e) => setNovoGrupoNome(e.target.value)} />
+                        <Label className="text-sm font-semibold">Nome (Fixo)</Label>
+                        <Input value={novoGrupoNome} disabled />
                       </div>
                       
                       <div className="flex items-center space-x-2 pt-2">
@@ -426,30 +436,7 @@ function AdminUsuarios() {
               ))}
             </div>
 
-            <div className="mt-4">
-              <Dialog open={isExcluirGrupoOpen} onOpenChange={setIsExcluirGrupoOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="bg-red-100 hover:bg-red-200 text-red-600 font-bold h-8 px-4 text-xs tracking-wider"
-                    disabled={selectedGrupos.length === 0}
-                  >
-                    EXCLUIR SELECIONADOS
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Você tem certeza que deseja excluir o grupo?</DialogTitle>
-                  </DialogHeader>
-                  <p className="text-slate-500 text-sm py-4">
-                    Essa ação não poderá ser desfeita.
-                  </p>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsExcluirGrupoOpen(false)}>Cancelar</Button>
-                    <Button variant="destructive" onClick={handleExcluirGrupos}>Sim, excluir</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
+            <div className="mt-4 hidden">
           </div>
         </div>
       </div>

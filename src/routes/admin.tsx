@@ -379,9 +379,9 @@ function AdminLayout() {
             >
               {can('lojas_todas') && <Link to="/admin/lojas" className={subLinkClass} activeOptions={{ exact: true }}>Ver todas</Link>}
               {can('lojas_nova') && <Link to="/admin/lojas/nova" className={subLinkClass} activeOptions={{ exact: true }}>Nova loja</Link>}
-              {isGlobalAdmin && <Link to={"/admin/lojas/gerar" as any} className={subLinkClass} activeOptions={{ exact: true }}>Gerar Loja</Link>}
-              {isGlobalAdmin && <Link to="/admin/lojas/link-inscricao" className={subLinkClass} activeOptions={{ exact: true }}>Link Inscrição Associado</Link>}
-              {!isGlobalAdmin && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Meus preços</Link>}
+              {can('lojas_gerar') && <Link to={"/admin/lojas/gerar" as any} className={subLinkClass} activeOptions={{ exact: true }}>Gerar Loja</Link>}
+              {can('lojas_link') && <Link to="/admin/lojas/link-inscricao" className={subLinkClass} activeOptions={{ exact: true }}>Link Inscrição Associado</Link>}
+              {can('lojas_precos') && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Meus preços</Link>}
             </NavSection>
           )}
 
@@ -390,16 +390,16 @@ function AdminLayout() {
             <NavSection icon={<Package className="h-4 w-4" />} label="Produtos" open={openNavSection === "Produtos"} onToggle={() => setOpenNavSection(openNavSection === "Produtos" ? "" : "Produtos")}>
               {can('prod_todos') && <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>Ver todos</Link>}
               {can('prod_novo') && <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>Novo produto</Link>}
-              {!isGlobalAdmin && can('prod_estoque') && <Link to="/admin/produtos/estoque" className={subLinkClass} activeOptions={{ exact: true }}>Estoques</Link>}
-              {!isGlobalAdmin && can('prod_avaliacoes') && <Link to="/admin/avaliacoes" className={subLinkClass}>Avaliações</Link>}
+              {can('prod_estoque') && <Link to="/admin/produtos/estoque" className={subLinkClass} activeOptions={{ exact: true }}>Estoques</Link>}
+              {can('prod_avaliacoes') && <Link to="/admin/avaliacoes" className={subLinkClass}>Avaliações</Link>}
               {can('prod_categorias') && <Link to="/admin/categorias" className={subLinkClass}>Categorias</Link>}
-              {!isGlobalAdmin && can('prod_colecoes') && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
-              {!isGlobalAdmin && can('prod_filtros') && <Link to="/admin/filtros" className={subLinkClass}>Filtros</Link>}
-              {!isGlobalAdmin && can('prod_espera') && <Link to="/admin/lista-espera" className={subLinkClass}>Lista de espera</Link>}
-              {!isGlobalAdmin && can('prod_marcas') && <Link to="/admin/marcas" className={subLinkClass}>Marcas</Link>}
-              {!isGlobalAdmin && can('prod_perguntas') && <Link to="/admin/perguntas" className={subLinkClass}>Perguntas</Link>}
-              {!isGlobalAdmin && can('prod_selos') && <Link to="/admin/selos" className={subLinkClass}>Selos</Link>}
-              {!isGlobalAdmin && can('prod_todos') && <Link to="/admin/variacoes" className={subLinkClass}>Variações</Link>}
+              {can('prod_colecoes') && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
+              {can('prod_filtros') && <Link to="/admin/filtros" className={subLinkClass}>Filtros</Link>}
+              {can('prod_espera') && <Link to="/admin/lista-espera" className={subLinkClass}>Lista de espera</Link>}
+              {can('prod_marcas') && <Link to="/admin/marcas" className={subLinkClass}>Marcas</Link>}
+              {can('prod_perguntas') && <Link to="/admin/perguntas" className={subLinkClass}>Perguntas</Link>}
+              {can('prod_selos') && <Link to="/admin/selos" className={subLinkClass}>Selos</Link>}
+              {can('prod_variacoes') && <Link to="/admin/variacoes" className={subLinkClass}>Variações</Link>}
             </NavSection>
           )}
 
@@ -432,7 +432,7 @@ function AdminLayout() {
           )}
 
           {/* ---- PERSONALIZAR MINHA LOJA (apenas para associados) ---- */}
-          {!isGlobalAdmin && (
+          {(can('loja_banners') || can('loja_estrutura') || can('loja_vitrines') || can('loja_logo') || can('loja_cores') || can('prod_novo') || can('prod_todos') || can('prod_categorias')) && (
             <NavSection 
               icon={<Store className="h-4 w-4" />} 
               label="Personalizar Minha Loja" 
@@ -442,18 +442,16 @@ function AdminLayout() {
               <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400 mt-1 mb-1">
                 Design
               </div>
-              <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
-                Banners
-              </Link>
-              <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
-                Estrutura da Loja
-              </Link>
-              <Link to="/admin/banners" search={{ tab: "vitrines" }} className={subLinkClass}>
-                Minhas Vitrines
-              </Link>
-              <Link to="/admin/banners" search={{ tab: "logo" } as any} className={subLinkClass}>
-                Logo
-              </Link>
+              {can('loja_personalizar') && (
+                <>
+                  <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
+                    Banners
+                  </Link>
+                  <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
+                    Estrutura da Loja
+                  </Link>
+                </>
+              )}
               {pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado === 'Parceiro' && (
                 <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
                   Minhas Cores
