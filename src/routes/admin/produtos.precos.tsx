@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import type { Produto } from "@/types";
 import { isCampanhaAtiva } from "@/lib/utils";
+import { formatCurrency } from "@/lib/formatters";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
