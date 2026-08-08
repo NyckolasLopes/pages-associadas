@@ -82,7 +82,10 @@ function Relatorios() {
     return userGroup?.permissoes?.includes(permissionId) || false;
   };
 
-  const vendasProdutoTitulo = effectiveStoreId ? "Produtos mais vendidos da minha loja" : "TOP 100 Produtos Mais Pedidos";
+  const vendasProdutoTitulo = effectiveStoreId ? "Produtos mais vendidos da minha loja" : "TOP 100 Produtos Mais Vendidos";
+  const vendasProdutoDesc = effectiveStoreId 
+    ? "Acompanhe os produtos que mais vendem da sua loja por unidade ou faturamento"
+    : "Ranking dos 100 produtos mais vendidos da rede com filtros por quantidade e faturamento.";
   const repasseTitulo = activeStoreId ? "Repasse Financeiro da loja" : "Repasse Financeiro";
   const retiradaTitulo = activeStoreId ? "Retirada vs Entrega da unidade" : "Retirada vs Entrega";
   const medControladosTitulo = activeStoreId ? "Medicamentos Controlados da unidade" : "Medicamentos Controlados";
@@ -97,7 +100,7 @@ function Relatorios() {
         {
           id: "top-100-produtos",
           titulo: vendasProdutoTitulo,
-          descricao: "Ranking dos 100 produtos mais pedidos da rede ou unidade com filtros por quantidade e faturamento.",
+          descricao: vendasProdutoDesc,
           icon: <Package className="h-5 w-5 text-emerald-600" />,
           bgColor: "bg-emerald-100",
           permission: "rel_vendas_produto"

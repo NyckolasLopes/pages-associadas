@@ -377,10 +377,10 @@ function AdminLayout() {
               open={openNavSection === (isGlobalAdmin ? "Lojas" : "Preços")} 
               onToggle={() => setOpenNavSection(openNavSection === (isGlobalAdmin ? "Lojas" : "Preços") ? "" : (isGlobalAdmin ? "Lojas" : "Preços"))}
             >
-              {can('lojas_todas') && <Link to="/admin/lojas" className={subLinkClass} activeOptions={{ exact: true }}>Ver todas</Link>}
-              {can('lojas_nova') && <Link to="/admin/lojas/nova" className={subLinkClass} activeOptions={{ exact: true }}>Nova loja</Link>}
-              {can('lojas_gerar') && <Link to={"/admin/lojas/gerar" as any} className={subLinkClass} activeOptions={{ exact: true }}>Gerar Loja</Link>}
-              {can('lojas_link') && <Link to="/admin/lojas/link-inscricao" className={subLinkClass} activeOptions={{ exact: true }}>Link Inscrição Associado</Link>}
+              {isGlobalAdmin && can('lojas_todas') && <Link to="/admin/lojas" className={subLinkClass} activeOptions={{ exact: true }}>Ver todas</Link>}
+              {isGlobalAdmin && can('lojas_nova') && <Link to="/admin/lojas/nova" className={subLinkClass} activeOptions={{ exact: true }}>Nova loja</Link>}
+              {isGlobalAdmin && can('lojas_gerar') && <Link to={"/admin/lojas/gerar" as any} className={subLinkClass} activeOptions={{ exact: true }}>Gerar Loja</Link>}
+              {isGlobalAdmin && can('lojas_link') && <Link to="/admin/lojas/link-inscricao" className={subLinkClass} activeOptions={{ exact: true }}>Link Inscrição Associado</Link>}
               {can('lojas_precos') && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Meus preços</Link>}
             </NavSection>
           )}

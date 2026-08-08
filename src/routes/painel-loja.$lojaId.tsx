@@ -135,21 +135,12 @@ function PainelLoja() {
       const origemStr = (o.origem || "").toLowerCase();
       let unifiedStatus: "Concluído" | "Pendente" | "Cancelado" = "Pendente";
 
-      if (
-        origemStr === "whatsapp" ||
-        statusStr.includes("whatsapp") ||
-        statusStr === "pago" ||
-        statusStr === "entregue" ||
-        statusStr === "enviado" ||
-        statusStr === "em separação" ||
-        statusStr === "pronta para retirada" ||
-        statusStr === "aguardando retirada" ||
-        statusStr === "concluido" ||
-        statusStr === "concluído"
-      ) {
-        unifiedStatus = "Concluído";
-      } else if (statusStr.includes("cancelad") || statusStr === "recusado") {
+      if (statusStr.includes("cancelad") || statusStr === "recusado") {
         unifiedStatus = "Cancelado";
+      } else if (statusStr === "abandonado no carrinho" || statusStr === "pendente") {
+        unifiedStatus = "Pendente";
+      } else {
+        unifiedStatus = "Concluído";
       }
 
       const itemsList = o.itens || o.produtos || [];
@@ -842,7 +833,7 @@ function PainelLoja() {
                       </Badge>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
-                      No carrinho ou aguardando conclusão
+                      Abandonado no carrinho
                     </p>
                   </CardContent>
                 </Card>
@@ -1019,15 +1010,28 @@ function PainelLoja() {
                             </TableCell>
                             <TableCell className="py-3 px-4 text-center text-xs">
                               {order.rawOrder ? (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setSelectedPedidoInfo(order.rawOrder!)}
-                                  className="h-8 px-2.5 text-xs text-slate-600 hover:text-teal-700 hover:bg-teal-50 gap-1"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                  Ver
-                                </Button>
+                                <div className="flex items-center justify-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedPedidoInfo(order.rawOrder!)}
+                                    className="h-8 px-2.5 text-xs text-slate-600 hover:text-teal-700 hover:bg-teal-50 gap-1"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    Ver
+                                  </Button>
+                                  {order.clienteTelefone && order.clienteTelefone !== "Não informado" && (
+                                    <a
+                                      href={`https://wa.me/55${order.clienteTelefone.replace(/\D/g, '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center justify-center h-8 w-8 rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                                      title="Falar no WhatsApp"
+                                    >
+                                      <MessageCircle className="w-4 h-4" />
+                                    </a>
+                                  )}
+                                </div>
                               ) : (
                                 <span className="text-[11px] text-slate-400 italic">
                                   Carrinho
@@ -1159,7 +1163,7 @@ function PainelLoja() {
                       {selectedPedidoInfo.cliente?.telefone}
                       {selectedPedidoInfo.cliente?.telefone && (
                         <a 
-                          href={`https://wa.me/55${selectedPedidoInfo.cliente.telefone.replace(/\\D/g, "")}`} 
+                          href={`https://wa.me/55${selectedPedidoInfo.cliente.telefone.replace(/\D/g, "")}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-emerald-600 hover:text-emerald-700 bg-emerald-50 p-1.5 rounded-full hover:bg-emerald-100 transition-colors"
