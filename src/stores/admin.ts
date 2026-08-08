@@ -93,6 +93,7 @@ export interface Pharmacy {
   // Dados da Loja
   cnpj: string;
   logoUrl?: string;
+  faviconUrl?: string;
   themeColors?: Record<string, string>;
   razaoSocial: string;
   nome: string; // Nome Fantasia

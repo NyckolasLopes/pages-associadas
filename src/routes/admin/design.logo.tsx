@@ -11,8 +11,24 @@ export const Route = createFileRoute("/admin/design/logo")({
 });
 
 function AdminDesignLogo() {
-  const admin = useAdmin();
+  const { activeStoreId, currentUser, pharmacies, updatePharmacy } = useAdmin();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+  let storeId = activeStoreId;
+  
+  if (!isGlobalAdmin && !storeId && currentUser?.lojasVinculadas?.length) {
+    storeId = currentUser.lojasVinculadas[0];
+  }
+
+  const currentPharmacy = pharmacies.find((p) => p.id === storeId);
+  const isParceiro = currentPharmacy?.categoriaAssociado === 'Parceiro';
+
+  const defaultLogo = isParceiro ? "" : logoUrlDefault;
+  const defaultFavicon = isParceiro ? "" : "/favicon.png";
+
+  const currentLogo = currentPharmacy?.logoUrl || defaultLogo;
+  const currentFavicon = currentPharmacy?.faviconUrl || defaultFavicon;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
     const file = e.target.files?.[0];
@@ -43,11 +59,19 @@ function AdminDesignLogo() {
     }
   };
 
+  if (!storeId || !currentPharmacy) {
+    return (
+      <div className="p-8 text-center text-slate-500 bg-white rounded-lg shadow-sm border">
+        Selecione uma loja específica no topo para visualizar ou alterar o logo e favicon.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-20">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Logo e Favicon</h2>
-        <p className="text-muted-foreground">Gerencie a identidade visual básica da sua loja.</p>
+        <p className="text-muted-foreground">Gerencie a identidade visual da loja <strong>{currentPharmacy.nome}</strong>.</p>
       </div>
 
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
@@ -60,22 +84,39 @@ function AdminDesignLogo() {
             <div className="flex items-center gap-1">
               <span className="font-bold text-sm">Logo</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => admin.setLogoUrl(base64))}>
+            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
+              updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl: base64 });
+              toast.success("Logo da loja atualizado!");
+            })}>
               <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
             </Button>
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
-              <img src={admin.logoUrl || logoUrlDefault} alt="Logo" className="h-16 object-contain" />
-              {admin.logoUrl && (
-                <button onClick={() => admin.setLogoUrl("")} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+              {currentLogo ? (
+                <img src={currentLogo} alt="Logo" className="h-16 object-contain" />
+              ) : (
+                <div className="h-16 w-32 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400">
+                  <ImageIcon className="w-6 h-6" />
+                </div>
+              )}
+              {currentPharmacy.logoUrl && (
+                <button onClick={() => {
+                  updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl: "" });
+                  toast.success("Logo removido!");
+                }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
             </div>
-            {!admin.logoUrl && (
+            {!currentPharmacy.logoUrl && !isParceiro && (
               <p className="text-xs font-medium text-slate-400 mt-4">
-                Exibindo logo padrão do tema.
+                Exibindo logo padrão do tema (Farmácias Associadas).
+              </p>
+            )}
+            {!currentPharmacy.logoUrl && isParceiro && (
+              <p className="text-xs font-medium text-amber-600 mt-4 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200">
+                Lojas parceiras não utilizam a logo da rede. Envie a logo da sua farmácia.
               </p>
             )}
             <p className="text-xs text-muted-foreground max-w-[250px] mt-4">
@@ -90,22 +131,39 @@ function AdminDesignLogo() {
             <div className="flex items-center gap-1">
               <span className="font-bold text-sm">Ícone da página (Favicon)</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => { admin.setFaviconUrl(base64); toast.success("Favicon atualizado!"); })}>
+            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
+              updatePharmacy(currentPharmacy.id, { ...currentPharmacy, faviconUrl: base64 });
+              toast.success("Favicon da loja atualizado!");
+            })}>
               <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
             </Button>
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
-              <img src={admin.faviconUrl || '/favicon.png'} alt="Favicon" className="h-16 w-16 object-contain border rounded-lg bg-slate-50 p-2" />
-              {admin.faviconUrl && (
-                <button onClick={() => admin.setFaviconUrl("")} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+              {currentFavicon ? (
+                <img src={currentFavicon} alt="Favicon" className="h-16 w-16 object-contain border rounded-lg bg-slate-50 p-2" />
+              ) : (
+                <div className="h-16 w-16 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400">
+                  <ImageIcon className="w-6 h-6" />
+                </div>
+              )}
+              {currentPharmacy.faviconUrl && (
+                <button onClick={() => {
+                  updatePharmacy(currentPharmacy.id, { ...currentPharmacy, faviconUrl: "" });
+                  toast.success("Favicon removido!");
+                }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
             </div>
-            {!admin.faviconUrl && (
+            {!currentPharmacy.faviconUrl && !isParceiro && (
               <p className="text-xs font-medium text-slate-400 mt-4">
-                Exibindo ícone padrão do tema.
+                Exibindo ícone padrão do tema (Farmácias Associadas).
+              </p>
+            )}
+            {!currentPharmacy.faviconUrl && isParceiro && (
+              <p className="text-xs font-medium text-amber-600 mt-4 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200">
+                Lojas parceiras não utilizam o ícone da rede. Envie o ícone da sua farmácia.
               </p>
             )}
             <p className="text-xs text-muted-foreground max-w-[250px] mt-4">
