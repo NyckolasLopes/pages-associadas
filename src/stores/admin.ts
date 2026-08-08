@@ -505,7 +505,6 @@ export const useAdmin = create<AdminState>()(
         { id: "admin-1", name: "Nyckolas Lopes", email: "nyckolas.lopes@farmaciasassociadas.com.br", password: "Aspro@2026", grupoId: "grupo-admin", proprietario: true },
         { id: "admin-2", name: "Thiago Rocha", email: "thiago.rocha@farmaciasassociadas.com.br", password: "Aspro@2026", grupoId: "grupo-admin", proprietario: true },
         { id: "admin-3", name: "Eduardo", email: "eduardo@ri.com.br", password: "Aspro@2026", grupoId: "grupo-admin", proprietario: false },
-        { id: "associado-1", name: "Loja Teste Associado", email: "teste@teste.com.br", password: "Aspro@2026", grupoId: "grupo-associado", proprietario: false },
       ],
       grupos: [
         { 
