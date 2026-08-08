@@ -576,52 +576,54 @@ function StoreHome() {
 
 
         {/* Diferenciais da Rede */}
-        <section className="container-fa my-12">
-          <div className="bg-orange-500 text-white rounded-2xl p-6 md:p-8">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold">Farmácias Associadas</h2>
-              <p className="text-orange-100 mt-2">Farmácias Associadas, muito mais que farmácia, aqui você tem amigos.</p>
+        {loja?.categoriaAssociado !== 'Parceiro' && (
+          <section className="container-fa my-12">
+            <div className="bg-orange-500 text-white rounded-2xl p-6 md:p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold">Farmácias Associadas</h2>
+                <p className="text-orange-100 mt-2">Farmácias Associadas, muito mais que farmácia, aqui você tem amigos.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                {/* Força Associadas (Icone do Usuário) */}
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                    <img src="/icone-associadas.png" alt="A Força das Associadas" className="h-10 w-10 object-contain" />
+                  </div>
+                  <h3 className="font-bold text-sm">A Força de uma Rede Gigante</h3>
+                  <p className="text-xs text-orange-100">Somos a maior rede associativa de farmácias do Sul do Brasil.</p>
+                </div>
+
+                {/* Atendimento Humanizado */}
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
+                    <Heart className="h-8 w-8" />
+                  </div>
+                  <h3 className="font-bold text-sm">Atendimento Humanizado</h3>
+                  <p className="text-xs text-orange-100">Aqui você tem amigos. Um time preparado para cuidar de você.</p>
+                </div>
+
+                {/* Entrega Rápida */}
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
+                    <Truck className="h-8 w-8" />
+                  </div>
+                  <h3 className="font-bold text-sm">Entrega Rápida</h3>
+                  <p className="text-xs text-orange-100">Receba seus produtos no conforto do seu lar com segurança.</p>
+                </div>
+
+                {/* Qualidade */}
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
+                    <ShieldCheck className="h-8 w-8" />
+                  </div>
+                  <h3 className="font-bold text-sm">Qualidade Comprovada</h3>
+                  <p className="text-xs text-orange-100">Produtos originais e com a garantia que você e sua família merecem.</p>
+                </div>
+              </div>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {/* Força Associadas (Icone do Usuário) */}
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                  <img src="/icone-associadas.png" alt="A Força das Associadas" className="h-10 w-10 object-contain" />
-                </div>
-                <h3 className="font-bold text-sm">A Força de uma Rede Gigante</h3>
-                <p className="text-xs text-orange-100">Somos a maior rede associativa de farmácias do Sul do Brasil.</p>
-              </div>
-
-              {/* Atendimento Humanizado */}
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
-                  <Heart className="h-8 w-8" />
-                </div>
-                <h3 className="font-bold text-sm">Atendimento Humanizado</h3>
-                <p className="text-xs text-orange-100">Aqui você tem amigos. Um time preparado para cuidar de você.</p>
-              </div>
-
-              {/* Entrega Rápida */}
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
-                  <Truck className="h-8 w-8" />
-                </div>
-                <h3 className="font-bold text-sm">Entrega Rápida</h3>
-                <p className="text-xs text-orange-100">Receba seus produtos no conforto do seu lar com segurança.</p>
-              </div>
-
-              {/* Qualidade */}
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
-                  <ShieldCheck className="h-8 w-8" />
-                </div>
-                <h3 className="font-bold text-sm">Qualidade Comprovada</h3>
-                <p className="text-xs text-orange-100">Produtos originais e com a garantia que você e sua família merecem.</p>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
         
         <DynamicVitrines local="espaco_3" lojaId={lojaId} />
 
