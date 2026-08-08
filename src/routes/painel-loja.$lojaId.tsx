@@ -720,8 +720,10 @@ function PainelLoja() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
-          <TabsContent value="metricas" className="space-y-6">
+          {can('loja_metricas') && (
+            <TabsContent value="metricas" className="space-y-6">
             {/* Top KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {/* Total de Pedidos da Loja */}
@@ -980,6 +982,7 @@ function PainelLoja() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
         </Tabs>
 
         {/* Cancel Confirmation Dialog */}

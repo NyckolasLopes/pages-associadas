@@ -437,6 +437,7 @@ function AdminUsuarios() {
             </div>
 
             <div className="mt-4 hidden">
+            </div>
           </div>
         </div>
       </div>
