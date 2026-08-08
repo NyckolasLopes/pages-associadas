@@ -512,100 +512,71 @@ function PainelLoja() {
           </div>
         </div>
 
-        <Tabs defaultValue={can('loja_pedidos') ? 'pedidos' : can('loja_promocoes') ? 'promocoes' : can('loja_cupons') ? 'cupons' : can('loja_seo') ? 'seo' : can('loja_metricas') ? 'metricas' : can('loja_relatorios') ? 'relatorios' : can('loja_personalizar') ? 'personalizar' : 'configuracoes'} className="space-y-6">
+        <Tabs defaultValue="pedidos" className="space-y-6">
           <TabsList className="bg-white border border-slate-200 p-1 flex flex-wrap h-auto gap-1">
-            {can('loja_pedidos') && (
-              <TabsTrigger value="pedidos" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
+            <TabsTrigger value="pedidos" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
                 <ListOrdered className="w-4 h-4 mr-1.5 shrink-0" />
                 Pedidos
               </TabsTrigger>
-            )}
-            {can('loja_promocoes') && (
-              <TabsTrigger value="promocoes" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
+            <TabsTrigger value="promocoes" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
                 <Megaphone className="w-4 h-4 mr-1.5 shrink-0" />
                 Preços & Ofertas
               </TabsTrigger>
-            )}
-            {can('loja_cupons') && (
-              <TabsTrigger value="cupons" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
+            <TabsTrigger value="cupons" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
                 <TagIcon className="w-4 h-4 mr-1.5 shrink-0" />
                 Cupons
               </TabsTrigger>
-            )}
-            {can('loja_seo') && (
-              <TabsTrigger value="seo" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
+            <TabsTrigger value="seo" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
                 <Compass className="w-4 h-4 mr-1.5 shrink-0" />
                 SEO & GEO
               </TabsTrigger>
-            )}
-            {can('loja_metricas') && (
-              <TabsTrigger value="metricas" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
+            <TabsTrigger value="metricas" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
                 <Activity className="w-4 h-4 mr-1.5 shrink-0" />
                 Métricas
               </TabsTrigger>
-            )}
-            {can('loja_relatorios') && (
-              <TabsTrigger value="relatorios" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-emerald-700 data-[state=active]:text-emerald-700">
+            <TabsTrigger value="relatorios" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-emerald-700 data-[state=active]:text-emerald-700">
                 <FileSpreadsheet className="w-4 h-4 mr-1.5 shrink-0 text-emerald-600" />
                 Relatórios (Top 100)
               </TabsTrigger>
-            )}
-            {can('loja_personalizar') && (
-              <TabsTrigger value="personalizar" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-[#00B5AD] data-[state=active]:text-[#00B5AD]">
+            <TabsTrigger value="personalizar" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-[#00B5AD] data-[state=active]:text-[#00B5AD]">
                 <Store className="w-4 h-4 mr-1.5 shrink-0" />
                 Personalizar Loja
               </TabsTrigger>
-            )}
-            {can('loja_configuracoes') && (
-              <TabsTrigger value="configuracoes" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-slate-700">
+            <TabsTrigger value="configuracoes" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-slate-700">
                 <Settings className="w-4 h-4 mr-1.5 shrink-0" />
                 Configurações e SEO
               </TabsTrigger>
-            )}
           </TabsList>
 
-          {can('loja_relatorios') && (
-            <TabsContent value="relatorios" className="space-y-6">
+          <TabsContent value="relatorios" className="space-y-6">
               <RelatorioTop100Produtos 
                 lojaId={lojaId} 
                 isGlobalAdmin={false} 
                 titlePrefix={`TOP 100 — ${loja?.nomeFantasia || loja?.nome}`} 
               />
             </TabsContent>
-          )}
 
-          {can('loja_personalizar') && (
-            <TabsContent value="personalizar" className="space-y-6">
+          <TabsContent value="personalizar" className="space-y-6">
               <LojaBannersTab lojaId={lojaId} />
             </TabsContent>
-          )}
 
-          {can('loja_cupons') && (
-            <TabsContent value="cupons" className="space-y-6">
+          <TabsContent value="cupons" className="space-y-6">
               <LojaCuponsTab lojaId={lojaId} />
             </TabsContent>
-          )}
 
-          {can('loja_configuracoes') && (
-            <TabsContent value="configuracoes" className="space-y-6">
+          <TabsContent value="configuracoes" className="space-y-6">
               <LojaConfiguracoesTab lojaId={lojaId} />
             </TabsContent>
-          )}
 
-          {can('loja_seo') && (
-            <TabsContent value="seo" className="space-y-6">
+          <TabsContent value="seo" className="space-y-6">
               <LojaSeoTab lojaId={lojaId} />
             </TabsContent>
-          )}
 
-          {can('loja_promocoes') && (
-            <TabsContent value="promocoes" className="space-y-6">
+          <TabsContent value="promocoes" className="space-y-6">
               <LojaPromocoesTab lojaId={lojaId} />
             </TabsContent>
-          )}
 
-          {can('loja_pedidos') && (
-            <TabsContent value="pedidos" className="space-y-6">
+          <TabsContent value="pedidos" className="space-y-6">
               <Card className="border-slate-200 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-bold text-slate-800">
@@ -720,10 +691,8 @@ function PainelLoja() {
               </CardContent>
             </Card>
           </TabsContent>
-          )}
 
-          {can('loja_metricas') && (
-            <TabsContent value="metricas" className="space-y-6">
+          <TabsContent value="metricas" className="space-y-6">
             {/* Top KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {/* Total de Pedidos da Loja */}
@@ -982,7 +951,6 @@ function PainelLoja() {
               </CardContent>
             </Card>
           </TabsContent>
-          )}
         </Tabs>
 
         {/* Cancel Confirmation Dialog */}
