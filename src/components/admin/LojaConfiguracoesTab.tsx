@@ -15,7 +15,13 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
 
   useEffect(() => {
     if (loja) {
-      setFormData(loja);
+      let initialData = { ...loja };
+      
+      if (!initialData.footerPlataformaTexto && loja.categoriaAssociado !== 'Parceiro') {
+        initialData.footerPlataformaTexto = `Farmacias Associadas - ${loja.nome || '(nome da sua loja)'} | ${loja.cnpj || '61.585.865/0240-93'} | I.E. 116.756.280.113 | ${loja.endereco || 'Av. Nsa. Sra. Assunção'}, ${loja.numero || '638'} | ${loja.bairro || 'Bairro'}| ${loja.cidade || 'CIDADE'} (${loja.uf || 'ESTADO SIGLA'}) | CEP ${loja.cep || '0000-001'} |Para dúvidas, elogios e reclamações acesse nossa Central de Atendimento no Whatsapp | Farmacêutico responsável: ${loja.respTecnico || 'NOME DO FARMACEUTICO'} | CRF ${loja.inscricaoFarmaceutico || '000000'} | AFE: ${loja.afe || '0000'} | ALVARÁ- ${loja.alvara || 'XXXXXXXXXXXX'} As informações contidas neste site não devem ser usadas para automedicação e não substituem, em hipótese alguma, as orientações dadas pelo profissional da área médica. Somente o médico está apto a diagnosticar qualquer problema de saúde e prescrever o tratamento adequado. Ao persistirem os sintomas, um médico deverá ser consultado. Os preços e promoções divulgados no site são válidos apenas para pedidos feitos pela internet. Maiores esclarecimentos, consultar o site: www.anvisa.gov.br . A Farmacias Associadas trabalha com tecnologias de proteção de dados, para que você possa realizar seus pedidos com segurança. A privacidade e a segurança dos clientes são compromissos da Farmacias Associadas. Todos os pedidos efetuados estão sujeitos à confirmação da disponibilidade de produto em nosso estoque consultado pelo Whatsapp da loja ${loja.whatsapp || '(00) 00000-0000'}.`;
+      }
+      
+      setFormData(initialData);
     }
   }, [loja]);
 
@@ -142,21 +148,12 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
         <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">Rodapé (Footer)</h3>
         <div className="grid grid-cols-1 gap-6">
           <div className="space-y-2">
-            <Label>Texto da Plataforma Digital (Substitui o padrão "Plataforma Digital de Vendas da Rede:...")</Label>
+            <Label>Texto referente a legislação da sua loja</Label>
             <Textarea 
               value={formData.footerPlataformaTexto || ""} 
               onChange={(e) => handleChange("footerPlataformaTexto", e.target.value)} 
-              rows={4}
-              placeholder="Ex: Plataforma Digital de Vendas: Sua Farmácia | CNPJ: 00.000.000/0001-00 | Endereço completo..."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Aviso Legal e Responsabilidade (Substitui o aviso da ANVISA padrão)</Label>
-            <Textarea 
-              value={formData.footerAvisoLegal || ""} 
-              onChange={(e) => handleChange("footerAvisoLegal", e.target.value)} 
-              rows={6}
-              placeholder="Ex: AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009)..."
+              rows={12}
+              placeholder="Ex: Farmacias Associadas - Sua Farmácia | CNPJ: ..."
             />
           </div>
         </div>
