@@ -139,29 +139,6 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
           </div>
         </div>
 
-        <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">SEO</h3>
-        <div className="grid grid-cols-1 gap-4">
-          <div className="space-y-2">
-            <Label>Título da Página (Meta Title)</Label>
-            <Input 
-              placeholder="Ex: Farmácia X | Muito mais saúde"
-              value={formData.pageTitle || ""} 
-              onChange={(e) => handleChange("pageTitle", e.target.value)} 
-            />
-            <p className="text-xs text-slate-400">Este é o título exibido na aba do navegador e no Google.</p>
-          </div>
-          <div className="space-y-2">
-            <Label>Descrição da Página (Meta Description)</Label>
-            <Textarea 
-              placeholder="Ex: Encontre os melhores medicamentos na Farmácia X..."
-              value={formData.metaDescription || ""} 
-              onChange={(e) => handleChange("metaDescription", e.target.value)} 
-              rows={3}
-            />
-            <p className="text-xs text-slate-400">Resumo da sua loja exibido nos resultados de busca do Google.</p>
-          </div>
-        </div>
-
         <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">Rodapé (Footer)</h3>
         <div className="grid grid-cols-1 gap-6">
           <div className="space-y-2">
