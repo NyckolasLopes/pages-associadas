@@ -82,22 +82,18 @@ function getUnifiedOrderStatus(order: { status?: string; origem?: string; type?:
     statusStr === "pago" ||
     statusStr === "entregue" ||
     statusStr === "enviado" ||
-    statusStr === "em separação" ||
-    statusStr === "pronta para retirada" ||
-    statusStr === "aguardando retirada" ||
-    statusStr === "concluido" ||
-    statusStr === "concluído"
-  ) {
-    return { label: "Concluído", desc: "WhatsApp / Concluído" };
-  }
-
   // Cancelados
   if (statusStr.includes("cancelad") || statusStr === "recusado") {
     return { label: "Cancelado", desc: "Cancelado" };
   }
 
   // Carrinho abandonado / Aguardando pagamento -> Pendente
-  return { label: "Pendente", desc: "Abandonado no carrinho" };
+  if (statusStr === "abandonado no carrinho" || origemStr === "carrinho") {
+    return { label: "Pendente", desc: "Abandonado no carrinho" };
+  }
+
+  // Qualquer pedido real finalizado via site (que vai pro WhatsApp) é Concluído
+  return { label: "Concluído", desc: "WhatsApp / Concluído" };
 }
 
 function Metricas() {

@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Apple, Mail } from "lucide-react";
+import { toast } from "sonner";
+
+const loginSchema = z.object({
+  email: z.string().email("Por favor, insira um e-mail válido."),
+  pass: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.")
+});
 
 export const Route = createFileRoute("/_store/login")({
   validateSearch: zodValidator(
@@ -25,7 +31,15 @@ function LoginPage() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !pass) return;
+    try {
+      loginSchema.parse({ email, pass });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        return;
+      }
+    }
+    
     login({ name: email.split("@")[0], email, provider: "email" });
     navigate({ to: redirect as any });
   };

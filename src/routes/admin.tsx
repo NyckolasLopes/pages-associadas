@@ -61,6 +61,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { z } from "zod";
+
+const adminLoginSchema = z.object({
+  email: z.string().email("Por favor, insira um e-mail válido."),
+  pass: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.")
+});
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
@@ -211,6 +217,15 @@ function AdminLayout() {
 
             <form className="space-y-5" onSubmit={(e) => {
               e.preventDefault();
+              try {
+                adminLoginSchema.parse({ email, pass });
+              } catch (err) {
+                if (err instanceof z.ZodError) {
+                  toast.error(err.errors[0].message);
+                  return;
+                }
+              }
+
               if(!login(email, pass)) {
                 toast.error("Credenciais inválidas");
               }

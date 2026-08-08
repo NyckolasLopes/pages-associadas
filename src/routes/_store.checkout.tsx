@@ -17,10 +17,18 @@ import { toast } from "sonner";
 import { calculateDistance, getCepCoordinates } from "@/lib/utils";
 import { catalog } from "@/services/catalog";
 import type { Produto } from "@/types";
+import { z } from "zod";
 
 export const Route = createFileRoute("/_store/checkout")({
   head: () => ({ meta: [{ title: "Checkout — Farmácias Associadas" }] }),
   component: Checkout,
+});
+
+const checkoutSchema = z.object({
+  nome: z.string().min(3, "Nome completo é obrigatório"),
+  email: z.string().email("E-mail inválido"),
+  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}\-\d{2}$/, "CPF inválido"),
+  telefone: z.string().regex(/^\(\d{2}\)\s\d{4,5}\-\d{4}$/, "Telefone inválido"),
 });
 
 function Checkout() {
@@ -1177,6 +1185,15 @@ function Checkout() {
             (paymentCategory === "online" && paymentMethod === "credit" && (cardNumber.replace(/\D/g, "").length < 13 || !cardName.trim() || cardExpiry.length < 5 || cardCvv.length < 3 || cardCpf.replace(/\D/g, "").length !== 11))
           }
           onClick={() => { 
+            try {
+              checkoutSchema.parse({ nome, email, cpf, telefone });
+            } catch (err) {
+              if (err instanceof z.ZodError) {
+                toast.error(err.errors[0].message);
+                return;
+              }
+            }
+
             const newOrder = {
               id: String(Math.floor(Math.random() * 10000)),
               lojaId: activeStore?.id || "loja-poa-centro",

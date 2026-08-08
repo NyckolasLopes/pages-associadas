@@ -1,2 +1,12 @@
+- **Deployment Rule**: Após cada atualização ou finalização de tarefa, faça o git commit das alterações e em seguida o git push automaticamente para acionar o deploy, salvo instrução contrária.
 
-- **Deployment Rule**: Ap�s cada atualiza��o ou finaliza��o de tarefa, fa�a o git commit das altera��es e em seguida o git push automaticamente para acionar o deploy, salvo instru��o contr�ria.
+- **Atue como um especialista em segurança e arquitetura de software. Ao desenvolver ou revisar esta aplicação, aplique rigorosamente os seguintes comandos e restrições:**
+  - **Segredos e Credenciais:** Variáveis de ambiente (como sk_ e key), chaves de API e lógica de autenticação baseada em cookies não devem ficar no frontend.
+  - **Tratamento de Dados e API:** A API deve buscar os dados no banco de dados. Retorne ao usuário do site apenas o que é estritamente necessário para a interface.
+  - **Validação de Input:** Tudo que o usuário digitar em campos de texto deve ser validado. Aplique a regra principal: nunca confie no front end.
+  - **Autenticação e Sessão:** A autenticação do usuário deve ocorrer sempre no backend. Configure a expiração da sessão dos usuários. O fluxo de logout precisa obrigatoriamente invalidar o refresh token.
+  - **Observabilidade:** Implemente um sistema de logs confiáveis para monitoramento.
+  - **Proteção de Endpoints:**
+    - Crie limitação de requisições (rate limiting) para as APIs.
+    - Configure o CORS para definir explicitamente quais URLs podem ou não fazer requisições.
+  - **Banco de Dados:** Configure políticas de segurança em nível de linha (RLS - Row Level Security).
