@@ -236,6 +236,21 @@ function NovaLojaAdmin() {
                 </Select>
               </div>
               <div className="space-y-1.5">
+                <FieldLabel required>Sua loja oferece serviços de aplicação e testes?</FieldLabel>
+                <Select value={form.offersServices ? "true" : "false"} onValueChange={(val) => update({ offersServices: val === "true" })}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sim</SelectItem>
+                    <SelectItem value="false">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
                 <FieldLabel required>Nome Fantasia</FieldLabel>
                 <Input
                   value={form.nome}

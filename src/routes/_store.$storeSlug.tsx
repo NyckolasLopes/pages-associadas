@@ -509,6 +509,40 @@ function StoreHome() {
     }
   };
 
+  if (!loja) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-8 bg-slate-50">
+        <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-6">
+          <Store className="w-8 h-8 text-slate-400" />
+        </div>
+        <h1 className="text-3xl font-bold text-slate-800 mb-4">Loja não encontrada</h1>
+        <p className="text-muted-foreground text-lg mb-8 max-w-md">
+          Não conseguimos localizar nenhuma Farmácia Associada com esse endereço.
+        </p>
+        <a href="/" className="text-blue-600 font-medium hover:underline flex items-center gap-2">
+          <ChevronLeft className="w-4 h-4" /> Voltar para o início
+        </a>
+      </div>
+    );
+  }
+
+  if (loja.virtualStoreStatus === 'Inativa') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-8 bg-slate-50">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
+          <Store className="w-8 h-8 text-red-500" />
+        </div>
+        <h1 className="text-3xl font-bold text-slate-800 mb-4">Loja Temporariamente Indisponível</h1>
+        <p className="text-muted-foreground text-lg mb-8 max-w-md">
+          Esta loja está inativa no momento. Por favor, volte mais tarde ou procure por outra Farmácia Associada.
+        </p>
+        <a href="/" className="text-blue-600 font-medium hover:underline flex items-center gap-2">
+          <ChevronLeft className="w-4 h-4" /> Voltar para o início
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
@@ -534,7 +568,7 @@ function StoreHome() {
         
         <DynamicExtraBanners lojaId={lojaId} />
         
-        <ServicesSection />
+        {loja?.offersServices !== false && <ServicesSection />}
         
         <DynamicVitrines local="espaco_2" lojaId={lojaId} />
 

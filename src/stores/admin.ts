@@ -90,6 +90,9 @@ export interface Pharmacy {
   id: string;
   ativo?: boolean;
   categoriaAssociado?: 'Pleno' | 'Parceiro';
+  isVirtualStoreGenerated?: boolean;
+  virtualStoreStatus?: 'Ativa' | 'Inativa';
+  offersServices?: boolean;
   // Dados da Loja
   cnpj: string;
   logoUrl?: string;
