@@ -553,7 +553,7 @@ export function RelatorioTop100Produtos({
               </>
             ) : (
               <>
-                <div className="text-base sm:text-lg font-black text-indigo-900 line-clamp-1">
+                <div className="text-base sm:text-lg font-black text-indigo-900 leading-tight">
                   {activeStoreObj?.nome || `Loja #${selectedLoja}`}
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-1">
