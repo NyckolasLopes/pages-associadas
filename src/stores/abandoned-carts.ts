@@ -39,7 +39,7 @@ const initialMockCarts: AbandonedCart[] = [
     total: 125.90,
     type: 'sem_transacao',
     notes: "",
-    lojaId: "2",
+    lojaId: "loja-poa-zonasul",
     items: [
       { nome: "Vitamina C 1g Targifor C 30 Comprimidos", qtd: 1, valorUnitario: 45.90, foto: "https://placehold.co/100" },
       { nome: "Protetor Solar Neostrata", qtd: 1, valorUnitario: 80.00, foto: "https://placehold.co/100" }
@@ -57,7 +57,7 @@ const initialMockCarts: AbandonedCart[] = [
     total: 89.90,
     type: 'pagamento_nao_aprovado',
     notes: "Cartão recusado pelo banco",
-    lojaId: "3",
+    lojaId: "loja-caxias-centro",
     items: [
       { nome: "Whey Protein Isolado Integralmédica", qtd: 1, valorUnitario: 89.90, foto: "https://placehold.co/100" }
     ]
@@ -74,7 +74,7 @@ const initialMockCarts: AbandonedCart[] = [
     total: 45.00,
     type: 'sem_transacao',
     notes: "Ficou de ver com a esposa e finalizar depois.",
-    lojaId: "1",
+    lojaId: "loja-poa-centro",
     items: [
       { nome: "Desodorante Rexona Clinical", qtd: 3, valorUnitario: 15.00, foto: "https://placehold.co/100" }
     ]
@@ -91,7 +91,7 @@ const initialMockCarts: AbandonedCart[] = [
     total: 210.50,
     type: 'pagamento_nao_aprovado',
     notes: "Pix não foi pago até o vencimento do checkout.",
-    lojaId: "2",
+    lojaId: "loja-poa-zonasul",
     items: [
       { nome: "Kit Skincare La Roche-Posay", qtd: 1, valorUnitario: 210.50, foto: "https://placehold.co/100" }
     ]

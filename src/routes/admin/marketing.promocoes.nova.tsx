@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { 
   ArrowLeft, Save, Flame, Gift, Star, Zap, ShoppingBag, Search, 
-  Eye, Sparkles, Tag, Clock, ShoppingBasket, CheckCircle2,
+  Eye, Tag, Clock, ShoppingBasket, CheckCircle2,
   Percent, ArrowRight, Layers, HelpCircle
 } from "lucide-react";
 import { useMarketing, Promocao, LevePagueProdutoConfig } from "@/stores/marketing";
@@ -80,7 +80,7 @@ function NovaPromocaoPage() {
     levePague_precoPorItem: 0,
     produtosConfig: {},
     corSelo: "#ea580c",
-    corIcone: "#ea580c",
+    corIcone: "#ffffff",
     corTextoBotao: "#ffffff",
     corBotao: "#ea580c",
     textoBotao: "COMPRAR",
@@ -116,7 +116,7 @@ function NovaPromocaoPage() {
         levePague_precoPorItem: existing.levePague_precoPorItem || 0,
         produtosConfig: initialConfigs,
         corSelo: existing.corSelo || "#ea580c",
-        corIcone: existing.corIcone || existing.corSelo || "#ea580c",
+        corIcone: existing.corIcone && existing.corIcone !== existing.corSelo ? existing.corIcone : "#ffffff",
         corTextoBotao: existing.corTextoBotao || "#ffffff",
         corBotao: existing.corBotao || existing.corSelo || "#ea580c",
         textoBotao: existing.textoBotao || "COMPRAR",
@@ -323,9 +323,6 @@ function NovaPromocaoPage() {
               <h1 className="text-2xl font-black tracking-tight text-slate-900">
                 {existing ? "Editar Promoção" : "Criar Nova Promoção"}
               </h1>
-              <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <Sparkles className="h-3 w-3" /> Alta Conversão
-              </span>
             </div>
             <p className="text-slate-500 text-sm mt-0.5">
               Configure ofertas com cronômetro regressivo ou modalidade Leve + Pague com preço por produto.
@@ -525,7 +522,7 @@ function NovaPromocaoPage() {
           {/* Card: Customização Visual & CTA */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-              <Sparkles className="h-4 w-4 text-orange-600" /> 2. Cores & Botão de Compra
+              <Eye className="h-4 w-4 text-orange-600" /> 2. Cores & Botão de Compra
             </h2>
 
             <div className="space-y-4">
@@ -540,7 +537,7 @@ function NovaPromocaoPage() {
                       onClick={() => setFormData({
                         ...formData,
                         corSelo: c.bg,
-                        corIcone: c.bg,
+                        corIcone: "#ffffff",
                         corBotao: c.bg,
                       })}
                       className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-400 transition"
@@ -709,7 +706,7 @@ function NovaPromocaoPage() {
               {/* Batch Actions Bar */}
               <div className="bg-orange-50/70 border border-orange-200 rounded-xl p-3.5 space-y-3">
                 <div className="text-xs font-bold text-orange-950 uppercase tracking-wide flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-orange-600" /> Ações em Massa (Preencher Todos)
+                  <Layers className="h-3.5 w-3.5 text-orange-600" /> Ações em Massa (Preencher Todos)
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -876,7 +873,7 @@ function NovaPromocaoPage() {
           <div className="bg-white text-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-orange-600" />
+                <Eye className="h-4 w-4 text-orange-600" />
                 <h3 className="font-black text-sm text-slate-900">Promo na minha loja</h3>
               </div>
               

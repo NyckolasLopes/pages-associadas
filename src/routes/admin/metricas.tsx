@@ -122,10 +122,19 @@ function Metricas() {
     const list: UnifiedOrder[] = [];
     const seenIds = new Set<string>();
 
+    const normalizeLojaId = (id?: string) => {
+      if (id === "1") return "loja-poa-centro";
+      if (id === "2") return "loja-poa-zonasul";
+      if (id === "3") return "loja-caxias-centro";
+      if (id === "4") return "loja-caxias-pioneiro";
+      return id;
+    };
+
     // 1. Processa pedidos normais
     (rawOrders || []).forEach(order => {
       seenIds.add(order.id);
-      const lojaObj = pharmacies.find(p => p.id === order.lojaId);
+      const safeLojaId = normalizeLojaId(order.lojaId) || "loja-poa-centro";
+      const lojaObj = pharmacies.find(p => p.id === safeLojaId);
       const { label, desc } = getUnifiedOrderStatus({ status: order.status, origem: order.origem });
       
       const orderItems = (order.itens || order.produtos || []).map(i => ({
@@ -173,7 +182,7 @@ function Metricas() {
         clienteTelefone: order.cliente?.telefone || "Não informado",
         clienteEmail: order.cliente?.email,
         clienteEndereco: order.cliente?.endereco ? `${order.cliente.endereco.rua}, ${order.cliente.endereco.numero} - ${order.cliente.endereco.bairro}` : undefined,
-        lojaId: order.lojaId || "1",
+        lojaId: safeLojaId,
         lojaNome: lojaObj?.nome || order.lojaNome || "Farmácias Associadas",
         lojaCidadeUf: lojaObj ? `${lojaObj.cidade}/${lojaObj.uf}` : "POA/RS",
         status: label,
@@ -191,7 +200,8 @@ function Metricas() {
     // 2. Processa carrinhos abandonados (como pedidos Pendentes no carrinho - sem forma de pagamento escolhida)
     (rawCarts || []).forEach(cart => {
       if (seenIds.has(cart.id)) return;
-      const lojaObj = pharmacies.find(p => p.id === cart.lojaId);
+      const safeLojaId = normalizeLojaId(cart.lojaId) || "loja-poa-centro";
+      const lojaObj = pharmacies.find(p => p.id === safeLojaId);
       
       const cartItems = (cart.items || []).map(i => ({
         nome: i.nome,
@@ -210,7 +220,7 @@ function Metricas() {
         clienteTelefone: cart.phone || "Não informado",
         clienteEmail: cart.email,
         clienteEndereco: cart.address,
-        lojaId: cart.lojaId || "1",
+        lojaId: safeLojaId,
         lojaNome: lojaObj?.nome || "Farmácias Associadas",
         lojaCidadeUf: lojaObj ? `${lojaObj.cidade}/${lojaObj.uf}` : "POA/RS",
         status: "Pendente",

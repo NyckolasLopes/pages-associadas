@@ -782,9 +782,7 @@ export function RelatorioTop100Produtos({
                   <th className="py-3.5 px-4 w-16 text-center">Posição</th>
                   <th className="py-3.5 px-4 min-w-[260px]">Produto</th>
                   <th className="py-3.5 px-4">SKU / EAN</th>
-                  {selectedLoja === "all" && (
-                    <th className="py-3.5 px-4">Distribuição por Loja</th>
-                  )}
+
                   <th className="py-3.5 px-4 text-center">
                     <div className="inline-flex items-center gap-1">
                       <span>Qtd. Pedida</span>
@@ -804,7 +802,7 @@ export function RelatorioTop100Produtos({
               <tbody className="divide-y divide-slate-100 bg-white">
                 {paginatedRanking.length === 0 ? (
                   <tr>
-                    <td colSpan={selectedLoja === "all" ? 8 : 7} className="py-12 text-center text-slate-400 font-medium">
+                    <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
                       Nenhum produto encontrado com os filtros atuais.
                     </td>
                   </tr>
@@ -845,30 +843,6 @@ export function RelatorioTop100Produtos({
                         <td className="py-3.5 px-4 text-slate-500 font-mono text-xs font-semibold whitespace-nowrap">
                           {item.sku}
                         </td>
-
-                        {/* Distribuição por Loja (No Admin Global) */}
-                        {selectedLoja === "all" && (
-                          <td className="py-3.5 px-4">
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1.5">
-                                <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 text-xs font-bold whitespace-nowrap">
-                                  {item.lojasNomes.length} {item.lojasNomes.length === 1 ? "loja" : "lojas"}
-                                </Badge>
-                              </div>
-                              <div className="text-[11px] text-slate-500 font-medium max-w-xs truncate" title={
-                                Object.entries(item.lojasDistrib).map(([lId, q]) => {
-                                  const name = pharmacies.find(p => p.id === lId)?.nomeFantasia || `Loja #${lId}`;
-                                  return `${name}: ${q} un`;
-                                }).join(" | ")
-                              }>
-                                {Object.entries(item.lojasDistrib).map(([lId, q]) => {
-                                  const name = pharmacies.find(p => p.id === lId)?.nomeFantasia || `Loja #${lId}`;
-                                  return `${name} (${q})`;
-                                }).join(" • ")}
-                              </div>
-                            </div>
-                          </td>
-                        )}
 
                         {/* Qtd Vendida */}
                         <td className="py-3.5 px-4 text-center whitespace-nowrap">

@@ -105,19 +105,6 @@ function Relatorios() {
       ]
     },
     {
-      categoria: "Rede de Farmácias e Repasses",
-      itens: [
-        {
-          id: "desempenho-loja",
-          titulo: "Desempenho por Unidade",
-          descricao: "Vendas, volume de pedidos e taxa de conversão por farmácia da rede.",
-          icon: <Store className="h-5 w-5 text-orange-600" />,
-          bgColor: "bg-orange-100",
-          permission: "rel_desempenho"
-        }
-      ]
-    },
-    {
       categoria: "Logística e Entrega",
       itens: [
         {
@@ -133,6 +120,20 @@ function Relatorios() {
   ];
 
   if (!effectiveStoreId) {
+    gruposRelatoriosRaw.push({
+      categoria: "Rede de Farmácias e Repasses",
+      itens: [
+        {
+          id: "desempenho-loja",
+          titulo: "Desempenho por Unidade",
+          descricao: "Vendas, volume de pedidos e taxa de conversão por farmácia da rede.",
+          icon: <Store className="h-5 w-5 text-orange-600" />,
+          bgColor: "bg-orange-100",
+          permission: "rel_desempenho"
+        }
+      ]
+    });
+    
     gruposRelatoriosRaw.push({
       categoria: "Marketing e Promoções",
       itens: [
@@ -270,7 +271,8 @@ function Relatorios() {
   });
   
   const barChartData = Object.entries(lojasMap).map(([id, data]) => {
-    const nome = pharmacies.find(p => p.id === id)?.nome || id;
+    const loja = pharmacies.find(p => p.id === id);
+    const nome = loja?.nomeFantasia || loja?.nome || `Loja ${id}`;
     return {
       name: nome,
       faturamento: data.faturamento,

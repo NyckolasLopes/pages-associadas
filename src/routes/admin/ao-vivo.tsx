@@ -17,7 +17,10 @@ function AoVivo() {
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
   const visitors = isGlobalAdmin ? rawVisitors : rawVisitors.filter(v => v.lojaId === effectiveStoreId);
-  const getLojaName = (id) => lojas.find(l => String(l.id) === String(id))?.nomeFantasia || "Loja Desconhecida";
+  const getLojaName = (id) => {
+    if (id === "admin-sede") return "Admin da Sede";
+    return lojas.find(l => String(l.id) === String(id))?.nomeFantasia || "Loja Desconhecida";
+  };
   const pedidos = useOrders((state) => state.orders);
 
   const topCidades = useMemo(() => {

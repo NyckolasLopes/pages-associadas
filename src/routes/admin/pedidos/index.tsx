@@ -138,10 +138,9 @@ export function PedidosAdmin() {
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [mainView, setMainView] = useState<"todos" | "concluidos" | "carrinhos">("todos");
 
-  const getLojaName = (id?: string) => {
-    if (!id) return "Farmácias Associadas";
-    const p = pharmacies.find(ph => ph.id === id);
-    return p ? p.nomeFantasia : "Farmácias Associadas";
+  const getLojaName = (id?: string, fallbackName?: string) => {
+    const p = id ? pharmacies.find(ph => ph.id === id) : null;
+    return p ? (p.nomeFantasia || p.nome) : (fallbackName || "Farmácias Associadas");
   };
 
   const handleDelete = (id: string, tipo: "pedido" | "carrinho") => {
@@ -295,7 +294,7 @@ export function PedidosAdmin() {
         clienteCpf: order.cliente?.cpf,
         clienteEndereco: order.cliente?.endereco ? `${order.cliente.endereco.rua}, ${order.cliente.endereco.numero} - ${order.cliente.endereco.bairro}` : undefined,
         lojaId: order.lojaId,
-        lojaNome: getLojaName(order.lojaId),
+        lojaNome: getLojaName(order.lojaId, order.lojaNome),
         status: "Concluído",
         statusDesc: "Concluído (WhatsApp)",
         itensQtd: totalItemsCount,
@@ -323,7 +322,7 @@ export function PedidosAdmin() {
         clienteCpf: undefined,
         clienteEndereco: cart.address,
         lojaId: cart.lojaId,
-        lojaNome: getLojaName(cart.lojaId),
+        lojaNome: getLojaName(cart.lojaId, cart.lojaNome),
         status: "Pendente",
         statusDesc: "Pendente (Carrinho)",
         itensQtd: totalItemsCount,
@@ -443,7 +442,7 @@ export function PedidosAdmin() {
               <span className="text-slate-500 font-medium text-sm flex items-center gap-2">
                 Efetuado em {selectedOrder.data} 
                 <span className="w-1 h-1 rounded-full bg-slate-300" /> 
-                <Store className="h-3 w-3" /> {getLojaName(selectedOrder.lojaId)}
+                <Store className="h-3 w-3" /> {getLojaName(selectedOrder.lojaId, selectedOrder.lojaNome)}
               </span>
             </div>
             <div className="flex items-center gap-3 print:hidden">
@@ -529,7 +528,7 @@ export function PedidosAdmin() {
                 <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Loja de Faturamento</h3>
               </div>
               <div>
-                <div className="font-bold text-slate-800">{getLojaName(selectedOrder.lojaId)}</div>
+                <div className="font-bold text-slate-800">{getLojaName(selectedOrder.lojaId, selectedOrder.lojaNome)}</div>
                 <div className="text-sm text-slate-500 mt-1">Pedido direcionado para faturamento e entrega</div>
                 <div className="text-xs text-emerald-700 bg-emerald-50 font-bold p-2 rounded-lg mt-3 border border-emerald-100 flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5" /> Concluído pelo carrinho da loja

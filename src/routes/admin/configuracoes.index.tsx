@@ -9,8 +9,11 @@ import {
   Link as LinkIcon, 
   Lock, 
   User, 
-  Webhook 
+  Webhook,
+  Store
 } from "lucide-react";
+
+import { useAdmin } from "@/stores/admin";
 
 export const Route = createFileRoute("/admin/configuracoes/")({
   component: ConfiguracoesPage,
@@ -35,6 +38,19 @@ function ConfiguracoesPage() {
       icon: <User className="h-5 w-5 text-slate-600" />
     }
   ];
+
+  const { currentUser } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+
+  if (!isGlobalAdmin) {
+    configs.push({
+      id: "personalizar-loja",
+      url: "/admin/configuracoes/loja",
+      titulo: "Personalizar minha loja",
+      descricao: "Altere textos de rodapé, informações da empresa e SEO para o Google.",
+      icon: <Store className="h-5 w-5 text-slate-600" />
+    });
+  }
 
   return (
     <div className="max-w-4xl space-y-6 pb-10">

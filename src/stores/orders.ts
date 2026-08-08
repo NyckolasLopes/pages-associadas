@@ -92,7 +92,7 @@ export function generateOrderNumber(): string {
 const INITIAL_ORDERS: Pedido[] = [
   {
     id: "FA-20260807-8492",
-    lojaId: "1",
+    lojaId: "loja-poa-centro",
     lojaNome: "Farmácias Associadas — POA Centro",
     data: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
     origem: "whatsapp",
@@ -120,7 +120,7 @@ const INITIAL_ORDERS: Pedido[] = [
   },
   {
     id: "FA-20260807-6119",
-    lojaId: "2",
+    lojaId: "loja-poa-zonasul",
     lojaNome: "Farmácias Associadas — Zona Norte",
     data: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
     origem: "whatsapp",
@@ -147,7 +147,7 @@ const INITIAL_ORDERS: Pedido[] = [
   },
   {
     id: "FA-20260807-3321",
-    lojaId: "1",
+    lojaId: "loja-poa-centro",
     lojaNome: "Farmácias Associadas — POA Centro",
     data: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
     origem: "site",
@@ -171,7 +171,7 @@ const INITIAL_ORDERS: Pedido[] = [
   },
   {
     id: "FA-20260806-9042",
-    lojaId: "3",
+    lojaId: "loja-caxias-centro",
     lojaNome: "Farmácias Associadas — Caxias do Sul",
     data: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString(),
     origem: "whatsapp",
@@ -197,7 +197,7 @@ const INITIAL_ORDERS: Pedido[] = [
   },
   {
     id: "FA-20260806-1188",
-    lojaId: "2",
+    lojaId: "loja-poa-zonasul",
     lojaNome: "Farmácias Associadas — Zona Norte",
     data: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
     origem: "site",
@@ -222,7 +222,7 @@ const INITIAL_ORDERS: Pedido[] = [
   },
   {
     id: "FA-20260805-4421",
-    lojaId: "1",
+    lojaId: "loja-poa-centro",
     lojaNome: "Farmácias Associadas — POA Centro",
     data: new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString(),
     origem: "whatsapp",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Flame, Zap, Gift, Star, ShoppingBag, ShoppingBasket, Percent, Tag, Sparkles, CheckCircle2 } from "lucide-react";
+import { Clock, Flame, Zap, Gift, Star, ShoppingBag, ShoppingBasket, Percent, Tag, CheckCircle2 } from "lucide-react";
 import { Promocao } from "@/stores/marketing";
 import { brl } from "@/lib/format";
 import { calculatePromoTimeRemaining } from "@/lib/utils";
@@ -164,8 +164,8 @@ export function PromoProductPageBanner({
         </div>
 
         {economia > 0 && (
-          <div className="bg-white text-slate-900 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+          <div className="bg-white text-slate-900 font-extrabold text-xs px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-sm">
+            <Tag className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
             <span>Economize {brl(economia)}</span>
           </div>
         )}

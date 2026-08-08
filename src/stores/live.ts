@@ -97,6 +97,10 @@ export const useLive = create<LiveStore>()(
           // novo visitante real
           let userCity = { nome: "Localizando...", uf: "", x: 50, y: 50 };
           let isResolved = false;
+          if (lojaId === "admin-sede") {
+            userCity = { nome: "Admin Sede", uf: "RS", x: 52.5, y: 88.5 }; // Close to Porto Alegre on map
+            isResolved = true;
+          }
           
           try {
             // Tenta pegar do CEP se estiver preenchido
@@ -164,7 +168,7 @@ export const useLive = create<LiveStore>()(
             };
           });
 
-          if (!isResolved) {
+          if (!isResolved && lojaId !== "admin-sede") {
             fetch("https://ipwho.is/")
               .then(res => res.json())
               .then(data => {

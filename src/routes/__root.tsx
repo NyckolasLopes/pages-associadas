@@ -193,18 +193,19 @@ function RootComponent() {
     const sessionId = Math.random().toString(36).substring(2, 9);
     
     // Ping inicial
-    useLive.getState().pingSession(sessionId);
+    const pingLojaId = location.pathname.startsWith("/admin") ? "admin-sede" : undefined;
+    useLive.getState().pingSession(sessionId, pingLojaId);
     
     // Manter a sessão viva com heartbeat eficiente (20s e somente se a aba estiver visível)
     const interval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        useLive.getState().pingSession(sessionId);
+        useLive.getState().pingSession(sessionId, location.pathname.startsWith("/admin") ? "admin-sede" : undefined);
       }
     }, 20000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        useLive.getState().pingSession(sessionId);
+        useLive.getState().pingSession(sessionId, location.pathname.startsWith("/admin") ? "admin-sede" : undefined);
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
