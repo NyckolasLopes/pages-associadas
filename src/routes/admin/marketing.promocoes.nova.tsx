@@ -229,7 +229,7 @@ function NovaPromocaoPage() {
 
   const previewPromoObj: Promocao = useMemo(() => ({
     id: "preview-promo",
-    titulo: formData.titulo || "SUPER OFERTA EXCLUSIVA",
+    titulo: formData.titulo || "OFERTA EXCLUSIVA",
     tipoAlvo: "produtos",
     alvosId: formData.alvosId,
     dataFim: formData.dataFim,

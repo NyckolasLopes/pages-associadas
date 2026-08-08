@@ -42,16 +42,30 @@ export const Route = createFileRoute("/admin/usuarios")({
 
 const PERMISSION_CATEGORIES = [
   {
-    category: "Acesso a Lojas Vinculadas",
+    category: "Painel da Loja (Permissões do Associado)",
     permissions: [
-      { id: "loja_pedidos", label: "Gestão de Pedidos" },
-      { id: "loja_promocoes", label: "Preços & Ofertas" },
-      { id: "loja_cupons", label: "Cupons de Desconto" },
+      { id: "loja_pedidos", label: "Gestão de Pedidos da Loja" },
+      { id: "lojas_precos", label: "Meus Preços (Tabela da Loja)" },
+      { id: "loja_promocoes", label: "Preços & Ofertas da Loja" },
+      { id: "loja_cupons", label: "Meus Cupons de Desconto" },
       { id: "loja_seo", label: "Configuração de SEO & GEO" },
       { id: "loja_metricas", label: "Métricas da Loja" },
-      { id: "loja_relatorios", label: "Relatórios (Top 100)" },
-      { id: "loja_personalizar", label: "Personalizar Loja (Banners/Estrutura)" },
+      { id: "loja_relatorios", label: "Relatórios da Loja (Top 100)" },
+      { id: "loja_personalizar", label: "Personalizar Loja (Banners/Cores/Estrutura)" },
       { id: "loja_configuracoes", label: "Configurações da Loja" },
+      { id: "prod_novo", label: "Criar Produto" },
+      { id: "prod_todos", label: "Ver Produtos" },
+      { id: "prod_categorias", label: "Categorias de Produtos" },
+      { id: "prod_estoque", label: "Gerenciar Estoques" },
+      { id: "prod_avaliacoes", label: "Gerenciar Avaliações" },
+      { id: "prod_colecoes", label: "Vitrine de Produtos" },
+      { id: "prod_filtros", label: "Filtros" },
+      { id: "prod_espera", label: "Lista de Espera" },
+      { id: "prod_marcas", label: "Marcas" },
+      { id: "prod_perguntas", label: "Perguntas de Clientes" },
+      { id: "prod_selos", label: "Selos" },
+      { id: "prod_variacoes", label: "Variações" },
+      { id: "vendas_pedidos", label: "Todos os Pedidos (Menu)" },
     ]
   },
   {
@@ -70,6 +84,7 @@ const PERMISSION_CATEGORIES = [
     permissions: [
       { id: "vendas_pedidos", label: "Todos os Pedidos" },
       { id: "vendas_carrinhos", label: "Carrinhos Abandonados" },
+      { id: "vendas_links", label: "Links de Pagamento" },
     ]
   },
   {
@@ -79,7 +94,8 @@ const PERMISSION_CATEGORIES = [
       { id: "lojas_nova", label: "Cadastrar Nova Loja" },
       { id: "lojas_gerar", label: "Gerar Loja" },
       { id: "lojas_link", label: "Link Inscrição Associado" },
-      { id: "lojas_precos", label: "Meus Preços (Associado)" },
+      { id: "lojas_tabelas", label: "Tabelas de Preços Base" },
+      { id: "lojas_paineis", label: "Controle de Painéis (Sede)" },
     ]
   },
   {
