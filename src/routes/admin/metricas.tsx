@@ -75,13 +75,6 @@ function getUnifiedOrderStatus(order: { status?: string; origem?: string; type?:
   const statusStr = (order.status || "").toLowerCase();
   const origemStr = (order.origem || "").toLowerCase();
 
-  // Pedidos que foram levados para o WhatsApp ou finalizados/pagos -> Concluído
-  if (
-    origemStr === "whatsapp" ||
-    statusStr.includes("whatsapp") ||
-    statusStr === "pago" ||
-    statusStr === "entregue" ||
-    statusStr === "enviado" ||
   // Cancelados
   if (statusStr.includes("cancelad") || statusStr === "recusado") {
     return { label: "Cancelado", desc: "Cancelado" };
