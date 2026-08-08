@@ -320,7 +320,7 @@ function AdminUsuarios() {
         <div className="flex-1 space-y-4">
           <div className="bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden p-6">
             <div className="flex items-center justify-between mb-6">
-              <span className="font-bold text-slate-700">Grupos de Permissões (Administrador / Associado)</span>
+              <span className="font-bold text-slate-700">Grupos de Permissões (Admin Global / Painel do Associado)</span>
               
               <Dialog open={isNovoGrupoOpen} onOpenChange={(open) => {
                 setIsNovoGrupoOpen(open);
