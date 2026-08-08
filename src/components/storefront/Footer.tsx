@@ -374,15 +374,6 @@ export function Footer() {
                 loading="lazy"
                 decoding="async"
               />
-              <img
-                src="/selo-bacen.png"
-                alt="Declaração de Conformidade BACEN"
-                className="h-12 md:h-[68px] w-auto object-contain"
-                width={120}
-                height={68}
-                loading="lazy"
-                decoding="async"
-              />
             </div>
             
             <div className="flex flex-col items-center justify-center gap-4 text-xs pt-6 border-t border-slate-100">

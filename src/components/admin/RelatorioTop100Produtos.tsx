@@ -146,7 +146,14 @@ export function RelatorioTop100Produtos({
       if (status === "cancelado" || status === "recusado") return false;
 
       // Store filter
-      if (selectedLoja !== "all" && order.lojaId !== selectedLoja) {
+      const normalizeLojaId = (id: string | undefined): string | undefined => {
+        if (id === "1") return "loja-poa-centro";
+        if (id === "2") return "loja-canoas-centro";
+        if (id === "3") return "loja-viamao";
+        return id;
+      };
+
+      if (selectedLoja !== "all" && normalizeLojaId(order.lojaId) !== normalizeLojaId(selectedLoja)) {
         return false;
       }
 
@@ -433,7 +440,7 @@ export function RelatorioTop100Produtos({
               )}
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {titlePrefix || "TOP 100"} Produtos Mais Pedidos
+              {titlePrefix || (selectedLoja === "all" ? "TOP 100 Produtos Mais Pedidos da Rede" : "Produtos Mais Pedidos da Minha Loja")}
             </h1>
           </div>
         </div>
@@ -749,7 +756,7 @@ export function RelatorioTop100Produtos({
             <div>
               <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <ListOrdered className="w-5 h-5 text-emerald-600" />
-                Tabela do Ranking Oficial TOP 100
+                {selectedLoja === "all" ? "Tabela do Ranking Oficial TOP 100" : "Tabela de Produtos Mais Pedidos"}
               </CardTitle>
               <p className="text-xs text-slate-500 font-medium mt-1">
                 {selectedLoja === "all"

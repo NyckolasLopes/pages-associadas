@@ -386,7 +386,7 @@ function AdminLayout() {
           )}
 
           {/* ---- PRODUTOS ---- */}
-          {(can('prod_todos') || can('prod_novo') || can('prod_estoque') || can('prod_avaliacoes') || can('prod_categorias') || can('prod_colecoes') || can('prod_filtros') || can('prod_espera') || can('prod_marcas') || can('prod_perguntas') || can('prod_selos')) && (
+          {isGlobalAdmin && (can('prod_todos') || can('prod_novo') || can('prod_estoque') || can('prod_avaliacoes') || can('prod_categorias') || can('prod_colecoes') || can('prod_filtros') || can('prod_espera') || can('prod_marcas') || can('prod_perguntas') || can('prod_selos')) && (
             <NavSection icon={<Package className="h-4 w-4" />} label="Produtos" open={openNavSection === "Produtos"} onToggle={() => setOpenNavSection(openNavSection === "Produtos" ? "" : "Produtos")}>
               {can('prod_todos') && <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>Ver todos</Link>}
               {can('prod_novo') && <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>Novo produto</Link>}
@@ -424,13 +424,6 @@ function AdminLayout() {
           )}
 
 
-          {/* ---- CONFIGURAÇÕES ---- */}
-          {(can('conf_dados') || can('conf_dominios') || can('conf_pagamentos') || can('conf_usuarios')) && (
-            <Link to="/admin/configuracoes" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
-              <Settings className="h-4 w-4" /> Configurações
-            </Link>
-          )}
-
           {/* ---- PERSONALIZAR MINHA LOJA (apenas para associados) ---- */}
           {!isGlobalAdmin && (can('loja_banners') || can('loja_estrutura') || can('loja_vitrines') || can('loja_logo') || can('loja_cores') || can('prod_novo') || can('prod_todos') || can('prod_categorias')) && (
             <NavSection 
@@ -444,6 +437,9 @@ function AdminLayout() {
               </div>
               {can('loja_personalizar') && (
                 <>
+                  <Link to="/admin/design/logo" className={subLinkClass} activeOptions={{ exact: true }}>
+                    Logo e Favicon
+                  </Link>
                   <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
                     Banners
                   </Link>
@@ -473,6 +469,13 @@ function AdminLayout() {
                 </Link>
               </div>
             </NavSection>
+          )}
+
+          {/* ---- CONFIGURAÇÕES ---- */}
+          {(can('conf_dados') || can('conf_dominios') || can('conf_pagamentos') || can('conf_usuarios')) && (
+            <Link to="/admin/configuracoes" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
+              <Settings className="h-4 w-4" /> Configurações
+            </Link>
           )}
         </nav>
 

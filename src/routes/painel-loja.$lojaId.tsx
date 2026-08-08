@@ -5,7 +5,7 @@ import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
 import { useMemo, useEffect, useRef, useState } from "react";
 import { isToday, isYesterday, isThisWeek, isThisMonth, isThisYear, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone, ShoppingBag, CheckCircle2, Clock, Eye, Check, FileSpreadsheet } from "lucide-react";
+import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone, ShoppingBag, CheckCircle2, Clock, Eye, Check, FileSpreadsheet, MessageCircle } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -36,7 +36,7 @@ import { LojaConfiguracoesTab } from "@/components/admin/LojaConfiguracoesTab";
 import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, Settings } from "lucide-react";
 
 const STATUS_OPTIONS = [
-  "Aguardando pagamento",
+  "Abandonado no carrinho",
   "Pago",
   "Em separação",
   "Enviado",
@@ -46,7 +46,7 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  "Aguardando pagamento": "bg-amber-100 text-amber-700",
+  "Abandonado no carrinho": "bg-amber-100 text-amber-700",
   "Pago": "bg-emerald-100 text-emerald-700",
   "Em separação": "bg-blue-100 text-blue-700",
   "Enviado": "bg-indigo-100 text-indigo-700",
@@ -77,8 +77,15 @@ function PainelLoja() {
   const panelInfo = storePanels.find(p => p.lojaId === lojaId);
   const loja = pharmacies.find(p => p.id === lojaId);
 
+  const normalizeLojaId = (id: string | undefined): string | undefined => {
+    if (id === "1") return "loja-poa-centro";
+    if (id === "2") return "loja-canoas-centro";
+    if (id === "3") return "loja-viamao";
+    return id;
+  };
+
   // Filter orders for this specific store
-  const lojaOrders = useMemo(() => orders.filter((o) => o.lojaId === lojaId).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()), [orders, lojaId]);
+  const lojaOrders = useMemo(() => orders.filter((o) => normalizeLojaId(o.lojaId) === normalizeLojaId(lojaId)).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()), [orders, lojaId]);
 
   // Metricas de vendas
   const { hoje, ontem, semana, mes, ano } = useMemo(() => {
@@ -569,7 +576,6 @@ function PainelLoja() {
               <RelatorioTop100Produtos 
                 lojaId={lojaId} 
                 isGlobalAdmin={false} 
-                titlePrefix={`TOP 100 — ${loja?.nomeFantasia || loja?.nome}`} 
               />
             </TabsContent>
           )}
@@ -680,7 +686,7 @@ function PainelLoja() {
                                       setShowCancelConfirm(true);
                                     } else {
                                       if (
-                                        pedido.status === "Aguardando pagamento" && 
+                                        pedido.status === "Abandonado no carrinho" && 
                                         ["Em separação", "Enviado", "Entregue", "Pronta para retirada"].includes(newStatus)
                                       ) {
                                         updateOrderStatus(pedido.id, "Pago");
@@ -737,8 +743,8 @@ function PainelLoja() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalPedidosLoja}</div>
-                  <p className="text-xs text-slate-500 mt-1 font-medium">
-                    {concluidosLojaCount} concluídos • {pendentesLojaCount} pendentes
+                  <p className="text-xs text-slate-500 mt-1 font-medium flex gap-1 items-center">
+                    {concluidosLojaCount} concluídos • <Link to="/admin/carrinhos-abandonados" className="text-amber-600 hover:underline cursor-pointer">{pendentesLojaCount} pendentes</Link>
                   </p>
                 </CardContent>
               </Card>
@@ -766,26 +772,28 @@ function PainelLoja() {
               </Card>
 
               {/* Pedidos Pendentes (Carrinho) */}
-              <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="h-1 bg-amber-500" />
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
-                    Pendentes (Carrinho)
-                    <Clock className="w-4 h-4 text-amber-600" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl sm:text-3xl font-black text-slate-900">{pendentesLojaCount}</span>
-                    <Badge className="bg-amber-100 text-amber-800 border-none text-xs font-bold">
-                      {pendentesLojaPct}% do total
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    No carrinho ou aguardando conclusão
-                  </p>
-                </CardContent>
-              </Card>
+              <Link to="/admin/carrinhos-abandonados" className="block hover:opacity-90 transition-opacity">
+                <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow h-full cursor-pointer">
+                  <div className="h-1 bg-amber-500" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
+                      Pendentes (Carrinho)
+                      <Clock className="w-4 h-4 text-amber-600" />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl sm:text-3xl font-black text-slate-900">{pendentesLojaCount}</span>
+                      <Badge className="bg-amber-100 text-amber-800 border-none text-xs font-bold">
+                        {pendentesLojaPct}% do total
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      No carrinho ou aguardando conclusão
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
             </div>
 
             {/* Charts Row */}
@@ -1093,7 +1101,21 @@ function PainelLoja() {
                   </CardHeader>
                   <CardContent className="pt-4 text-sm space-y-2">
                     <p><span className="font-semibold text-slate-700">Nome:</span> {selectedPedidoInfo.cliente?.nome}</p>
-                    <p><span className="font-semibold text-slate-700">Telefone:</span> {selectedPedidoInfo.cliente?.telefone}</p>
+                    <p className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-700">Telefone:</span> 
+                      {selectedPedidoInfo.cliente?.telefone}
+                      {selectedPedidoInfo.cliente?.telefone && (
+                        <a 
+                          href={`https://wa.me/55${selectedPedidoInfo.cliente.telefone.replace(/\\D/g, "")}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-emerald-600 hover:text-emerald-700 bg-emerald-50 p-1.5 rounded-full hover:bg-emerald-100 transition-colors"
+                          title="Chamar no WhatsApp"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </a>
+                      )}
+                    </p>
                     <p><span className="font-semibold text-slate-700">Email:</span> {selectedPedidoInfo.cliente?.email}</p>
                     <p><span className="font-semibold text-slate-700">CPF:</span> {maskCpf(selectedPedidoInfo.cliente?.cpf || "")}</p>
                   </CardContent>

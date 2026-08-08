@@ -312,7 +312,12 @@ export function Header() {
     if (p) {
       toast.success("Produto escaneado com sucesso!");
       setScannerOpen(false);
-      navigate({ to: "/p/$slug", params: { slug: p.url } });
+      const storeSlug = (params as any).storeSlug;
+      if (isStoreContext && storeSlug) {
+        navigate({ to: "/loja/$storeSlug/p/$slug", params: { storeSlug, slug: p.url } });
+      } else {
+        navigate({ to: "/p/$slug", params: { slug: p.url } });
+      }
     } else {
       setScanError(`Produto não cadastrado (EAN: ${code})`);
     }

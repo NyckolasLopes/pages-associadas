@@ -97,7 +97,7 @@ function getUnifiedOrderStatus(order: { status?: string; origem?: string; type?:
   }
 
   // Carrinho abandonado / Aguardando pagamento -> Pendente
-  return { label: "Pendente", desc: "Carrinho / Pendente" };
+  return { label: "Pendente", desc: "Abandonado no carrinho" };
 }
 
 function Metricas() {
@@ -457,7 +457,7 @@ function Metricas() {
               </Badge>
             </div>
             <div className="text-xs text-slate-500 mt-1 font-medium">
-              No carrinho ou aguardando pagamento
+              Abandonado no carrinho
             </div>
           </div>
         </div>

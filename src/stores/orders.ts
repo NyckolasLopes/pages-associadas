@@ -166,7 +166,7 @@ const INITIAL_ORDERS: Pedido[] = [
     ],
     valores: { subtotal: 2042.20, produtos: 2042.20, frete: 10.00, total: 2052.20 },
     historico: [
-      { data: new Date(Date.now() - 1000 * 60 * 180).toISOString(), situacao: "Aguardando pagamento", autor: "Sistema" }
+      { data: new Date(Date.now() - 1000 * 60 * 180).toISOString(), situacao: "Abandonado no carrinho", autor: "Sistema" }
     ]
   },
   {
