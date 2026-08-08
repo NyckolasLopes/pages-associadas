@@ -228,6 +228,8 @@ function AdminLayout() {
 
               if(!login(email, pass)) {
                 toast.error("Credenciais inválidas");
+              } else {
+                navigate({ to: "/admin" });
               }
             }}>
               <div className="space-y-2">
