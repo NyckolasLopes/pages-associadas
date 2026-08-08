@@ -416,10 +416,10 @@ function AdminLayout() {
 
 
           {/* ---- MARKETING ---- */}
-          {(can('mkt_cupons') || can('mkt_promocoes')) && (
+          {(can('mkt_cupons') || (!isGlobalAdmin && can('mkt_promocoes'))) && (
             <NavSection icon={<Megaphone className="h-4 w-4" />} label="Marketing" open={openNavSection === "Marketing"} onToggle={() => setOpenNavSection(openNavSection === "Marketing" ? "" : "Marketing")}>
               {can('mkt_cupons') && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Cupons das lojas" : "Meus cupons"}</Link>}
-              {can('mkt_promocoes') && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Relatório Promoções" : "Promoções"}</Link>}
+              {!isGlobalAdmin && can('mkt_promocoes') && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
             </NavSection>
           )}
 

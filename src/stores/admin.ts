@@ -549,6 +549,15 @@ export const useAdmin = create<AdminState>()(
         if (!currentUser.grupoId) return false;
         const grupo = grupos.find(g => g.id === currentUser.grupoId);
         if (!grupo) return false;
+        
+        // Se a permissão começa com loja_ e o grupo não tem NENHUMA permissão loja_ (cache antigo), 
+        // e é o grupo Associado ou Admin, libera o acesso para não sumir do nada.
+        if (permissionId.startsWith("loja_") && !grupo.permissoes.some(p => p.startsWith("loja_"))) {
+          if (grupo.id === "grupo-associado" || grupo.id === "grupo-admin") {
+            return true;
+          }
+        }
+
         return grupo.permissoes.includes(permissionId);
       },
 
