@@ -531,7 +531,7 @@ function AdminProdutosPrecos() {
             <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-100 uppercase tracking-wider text-xs">
               <tr>
                 <th className="px-4 py-3">Produto</th>
-                <th className="px-4 py-3">Preço Base (Global)</th>
+                {isGlobalAdmin() && <th className="px-4 py-3">Preço Base (Global)</th>}
                 
                 {selectedPharmacyId === "global" ? (
                   <th className="px-4 py-3 bg-orange-50 text-orange-800 border-l border-orange-100 text-center" colSpan={2}>
@@ -540,7 +540,7 @@ function AdminProdutosPrecos() {
                 ) : (
                   <>
                     <th className="px-4 py-3 bg-emerald-50 text-emerald-800 border-l border-emerald-100">
-                      Preço Específico ({pharmacies.find(p => p.id === selectedPharmacyId)?.nome || "Loja"})
+                      {isGlobalAdmin() ? `Preço Específico (${pharmacies.find(p => p.id === selectedPharmacyId)?.nome || "Loja"})` : "Meus Preços"}
                     </th>
                     <th className="px-4 py-3 bg-emerald-50 text-emerald-800 text-center">Disponível na Loja</th>
                   </>
@@ -595,14 +595,20 @@ function AdminProdutosPrecos() {
                       </div>
                     </td>
                     
-                    <td className="px-4 py-4 text-slate-600">
-                      <div className="flex flex-col">
-                        {globalDe > globalPor && (
-                          <span className="text-xs line-through text-slate-400">R$ {globalDe.toFixed(2)}</span>
-                        )}
-                        <span className="font-bold">R$ {globalPor.toFixed(2)}</span>
-                      </div>
-                    </td>
+                    {isGlobalAdmin() && (
+                      <td className="px-4 py-4 text-slate-600">
+                        <div className="flex flex-col">
+                          {globalDe > globalPor && (
+                            <span className="text-xs line-through text-slate-400 font-medium">
+                              R$ {globalDe.toFixed(2)}
+                            </span>
+                          )}
+                          <span className="font-bold text-slate-800 text-base">
+                            R$ {globalPor.toFixed(2)}
+                          </span>
+                        </div>
+                      </td>
+                    )}
 
                     {isGlobal ? (
                       <td className="px-4 py-4 bg-orange-50/30 border-l border-orange-100" colSpan={2}>

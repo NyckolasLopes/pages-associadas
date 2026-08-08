@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useOrders } from "@/stores/orders";
 import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
@@ -178,7 +178,7 @@ function PainelLoja() {
     });
 
     // Carrinhos abandonados desta loja
-    const storeCarts = (allCarts || []).filter(c => c.lojaId === lojaId);
+    const storeCarts = (allCarts || []).filter(c => normalizeLojaId(c.lojaId) === normalizeLojaId(lojaId));
     storeCarts.forEach(c => {
       const itemsList = c.items || [];
       const totalQtd = itemsList.reduce((acc, it) => acc + (it.qtd || 1), 0) || 1;
@@ -631,14 +631,66 @@ function PainelLoja() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {lojaOrders.length === 0 ? (
+                      {lojaUnifiedOrders.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center py-8 text-slate-500">
                             Nenhum pedido recebido ainda.
                           </TableCell>
                         </TableRow>
                       ) : (
-                        lojaOrders.map((pedido) => (
+                        lojaUnifiedOrders.map((unified) => {
+                          const pedido = unified.rawOrder;
+                          if (!pedido) {
+                            return (
+                              <TableRow key={unified.id} className="bg-amber-50/30">
+                                <TableCell className="text-sm font-medium text-slate-600">
+                                  {unified.data.split(" às ")[0]}<br/>
+                                  <span className="text-xs text-slate-400">
+                                    {unified.data.split(" às ")[1] || ""}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-bold text-slate-800">{unified.clienteNome}</div>
+                                  <div className="flex items-center text-xs text-slate-500 mt-1">
+                                    <Phone className="w-3 h-3 mr-1" />
+                                    {unified.clienteTelefone}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm font-medium text-slate-900">
+                                    {formatCurrency(unified.valorTotal)}
+                                  </div>
+                                  <div className="text-xs text-slate-500 mt-1">
+                                    {unified.itensQtd} produto(s)
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-col gap-1 items-start">
+                                    <Badge variant="outline" className="font-normal bg-amber-100 text-amber-800 border-none">
+                                      <ShoppingBag className="w-3 h-3 mr-1" />
+                                      Carrinho Aberto
+                                    </Badge>
+                                    <span className="text-xs font-medium text-slate-500">
+                                      Sem pagamento
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-col gap-2">
+                                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 justify-center h-8">
+                                      Abandonado no carrinho
+                                    </Badge>
+                                    <Link to="/admin/carrinhos-abandonados" className="w-full">
+                                      <Button variant="outline" size="sm" className="h-7 text-xs w-full">
+                                        Ver Carrinho
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          }
+                          return (
                           <TableRow key={pedido.id}>
                             <TableCell className="text-sm font-medium text-slate-600">
                               {new Date(pedido.data).toLocaleDateString("pt-BR")}<br/>
@@ -718,7 +770,8 @@ function PainelLoja() {
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))
+                        );
+                        })
                       )}
                     </TableBody>
                   </Table>

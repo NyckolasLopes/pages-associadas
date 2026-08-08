@@ -82,7 +82,7 @@ function Relatorios() {
     return userGroup?.permissoes?.includes(permissionId) || false;
   };
 
-  const vendasProdutoTitulo = activeStoreId ? "TOP 100 Produtos Mais Pedidos da Unidade" : "TOP 100 Produtos Mais Pedidos";
+  const vendasProdutoTitulo = effectiveStoreId ? "Produtos mais vendidos da minha loja" : "TOP 100 Produtos Mais Pedidos";
   const repasseTitulo = activeStoreId ? "Repasse Financeiro da loja" : "Repasse Financeiro";
   const retiradaTitulo = activeStoreId ? "Retirada vs Entrega da unidade" : "Retirada vs Entrega";
   const medControladosTitulo = activeStoreId ? "Medicamentos Controlados da unidade" : "Medicamentos Controlados";

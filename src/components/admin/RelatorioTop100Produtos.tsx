@@ -440,7 +440,7 @@ export function RelatorioTop100Produtos({
               )}
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {titlePrefix || (selectedLoja === "all" ? "TOP 100 Produtos Mais Pedidos da Rede" : "Produtos Mais Pedidos da Minha Loja")}
+              {titlePrefix || (selectedLoja === "all" ? "TOP 100 Produtos Mais Vendidos da Rede" : "Produtos Mais Vendidos da Minha Loja")}
             </h1>
           </div>
         </div>
@@ -756,7 +756,7 @@ export function RelatorioTop100Produtos({
             <div>
               <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <ListOrdered className="w-5 h-5 text-emerald-600" />
-                {selectedLoja === "all" ? "Tabela do Ranking Oficial TOP 100" : "Tabela de Produtos Mais Pedidos"}
+                {selectedLoja === "all" ? "Tabela do Ranking Oficial TOP 100" : "Tabela de Produtos Mais Vendidos"}
               </CardTitle>
               <p className="text-xs text-slate-500 font-medium mt-1">
                 {selectedLoja === "all"
