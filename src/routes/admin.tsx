@@ -487,6 +487,11 @@ function AdminLayout() {
               </div>
             </NavSection>
           )}
+          {isGlobalAdmin && (
+            <Link to="/admin/paginas-informativas" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
+              <FileText className="h-4 w-4" /> Páginas Informativas
+            </Link>
+          )}
 
           {/* ---- CONFIGURAÇÕES ---- */}
           {(can('conf_dados') || can('conf_dominios') || can('conf_pagamentos') || can('conf_usuarios')) && (
