@@ -20,7 +20,8 @@ import {
   ChevronRight,
   PackageCheck,
   Percent,
-  X
+  X,
+  MessageCircle
 } from "lucide-react";
 import { useAdmin } from "@/stores/admin";
 import { useOrders, Pedido } from "@/stores/orders";
@@ -837,7 +838,22 @@ function Metricas() {
 
                       {/* Cliente */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900">{order.clienteNome}</div>
+                        <div className="font-bold text-slate-900 flex items-center gap-2">
+                          {order.clienteNome}
+                          {order.clienteTelefone && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const p = order.clienteTelefone.replace(/\D/g, "");
+                                window.open(`https://wa.me/55${p}`, "_blank");
+                              }}
+                              className="text-emerald-500 hover:text-emerald-600 transition-colors"
+                              title="Chamar no WhatsApp"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                         <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5 whitespace-nowrap">
                           <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                           {order.clienteTelefone}
@@ -951,6 +967,20 @@ function Metricas() {
                 </div>
                 {selectedOrderDetails.clienteEndereco && (
                   <div className="text-xs text-slate-500">Endereço: {selectedOrderDetails.clienteEndereco}</div>
+                )}
+                {selectedOrderDetails.clienteTelefone && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full mt-2 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold gap-1.5"
+                    onClick={() => {
+                      const p = selectedOrderDetails.clienteTelefone.replace(/\D/g, "");
+                      window.open(`https://wa.me/55${p}`, "_blank");
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Chamar no WhatsApp
+                  </Button>
                 )}
               </div>
 
