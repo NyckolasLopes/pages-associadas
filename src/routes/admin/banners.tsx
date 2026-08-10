@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAdmin, AdminBanner } from "@/stores/admin";
+import { useConfig } from "@/stores/config";
 import { useAdminProducts } from "@/stores/products";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
@@ -75,7 +76,12 @@ function AdminBanners() {
   const banners = activeStoreId ? allBanners.filter(b => b.lojaId === activeStoreId) : allBanners.filter(b => !b.lojaId);
   const setBanners = useAdmin(s => s.setBanners);
   const removeBanner = useAdmin(s => s.removeBanner);
+  const fetchBanners = useAdmin(s => s.fetchBanners);
   const vitrines = useAdminProducts(s => s.vitrines);
+
+  useEffect(() => {
+    fetchBanners(activeStoreId || undefined);
+  }, [activeStoreId, fetchBanners]);
 
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
@@ -1053,18 +1059,20 @@ function AdminBanners() {
 }
 
 function StoreLogoConfig() {
-  const { activeStoreId, pharmacies, updatePharmacy } = useAdmin();
-  const currentPharmacy = pharmacies.find(p => p.id === activeStoreId);
-  const [logoUrl, setLogoUrl] = useState(currentPharmacy?.logoUrl || "");
+  const { activeStoreId } = useAdmin();
+  const { logo, fetchConfigs, saveConfig } = useConfig();
+  const [logoUrl, setLogoUrl] = useState(logo || "");
 
   useEffect(() => {
-    setLogoUrl(currentPharmacy?.logoUrl || "");
-  }, [currentPharmacy?.logoUrl]);
+    fetchConfigs(activeStoreId || undefined);
+  }, [activeStoreId, fetchConfigs]);
 
-  if (!currentPharmacy) return <div className="p-8 text-center text-slate-500">Selecione uma loja para gerenciar o logotipo.</div>;
+  useEffect(() => {
+    setLogoUrl(logo || "");
+  }, [logo]);
 
-  const handleSave = () => {
-    updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl });
+  const handleSave = async () => {
+    await saveConfig("logo", logoUrl, activeStoreId || undefined);
     toast.success("Logotipo salvo com sucesso!");
   };
 
@@ -1164,9 +1172,11 @@ function StoreLogoConfig() {
 }
 
 function StoreColorsConfig() {
-  const { activeStoreId, pharmacies, updatePharmacy } = useAdmin();
+  const { activeStoreId, pharmacies } = useAdmin();
   const currentPharmacy = pharmacies.find(p => p.id === activeStoreId);
-  const [colors, setColors] = useState<Record<string, string>>(currentPharmacy?.themeColors || {
+  const { cores, fetchConfigs, saveConfig } = useConfig();
+  
+  const defaultColors = {
     primary: "#00B5AD",
     secondary: "#10b981",
     accent: "#f43f5e",
@@ -1174,27 +1184,26 @@ function StoreColorsConfig() {
     headerIcons: "#ffffff",
     searchBg: "#ffffff",
     institutionalBg: "#f97316"
+  };
+
+  const [colors, setColors] = useState<Record<string, string>>({
+    ...defaultColors,
+    ...cores
   });
 
   useEffect(() => {
-    if (currentPharmacy?.themeColors) {
-      setColors({
-        primary: "#00B5AD",
-        secondary: "#10b981",
-        accent: "#f43f5e",
-        headerBg: "#00B5AD",
-        headerIcons: "#ffffff",
-        searchBg: "#ffffff",
-        institutionalBg: "#f97316",
-        ...currentPharmacy.themeColors
-      });
-    }
-  }, [currentPharmacy?.themeColors]);
+    fetchConfigs(activeStoreId || undefined);
+  }, [activeStoreId, fetchConfigs]);
 
-  if (!currentPharmacy) return <div className="p-8 text-center text-slate-500">Selecione uma loja para gerenciar as cores.</div>;
+  useEffect(() => {
+    setColors({
+      ...defaultColors,
+      ...cores
+    });
+  }, [cores]);
 
-  const handleSave = () => {
-    updatePharmacy(currentPharmacy.id, { ...currentPharmacy, themeColors: colors });
+  const handleSave = async () => {
+    await saveConfig("cores", colors, activeStoreId || undefined);
     toast.success("Cores salvas com sucesso!");
   };
 

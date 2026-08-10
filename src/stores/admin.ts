@@ -227,9 +227,10 @@ interface AdminState {
   // Banners
   banners: AdminBanner[];
   setBanners: (banners: AdminBanner[]) => void;
-  addBanner: (banner: AdminBanner) => void;
-  updateBanner: (id: string, banner: Partial<AdminBanner>) => void;
-  removeBanner: (id: string) => void;
+  addBanner: (banner: AdminBanner) => Promise<void>;
+  updateBanner: (id: string, banner: Partial<AdminBanner>) => Promise<void>;
+  removeBanner: (id: string) => Promise<void>;
+  fetchBanners: (lojaId?: string) => Promise<void>;
 
   // Social Networks
   socialNetworks: SocialNetwork[];
@@ -673,13 +674,101 @@ export const useAdmin = create<AdminState>()(
       themeColors: {},
       setThemeColors: (themeColors) => set({ themeColors }),
 
-      banners: defaultBanners,
+      banners: [],
       setBanners: (banners) => set({ banners }),
-      addBanner: (banner) => set((state) => ({ banners: [...state.banners, banner] })),
-      updateBanner: (id, updates) => set((state) => ({
-        banners: state.banners.map(b => b.id === id ? { ...b, ...updates } : b)
-      })),
-      removeBanner: (id) => set((s) => ({ banners: s.banners.filter((b) => b.id !== id) })),
+      fetchBanners: async (lojaId?: string) => {
+        let query = supabase.from('banners' as any).select('*');
+        if (lojaId) {
+          query = query.or(`loja_id.eq.${lojaId},loja_id.is.null`);
+        } else {
+          query = query.is('loja_id', null);
+        }
+        const { data, error } = await query;
+        if (!error && data) {
+          const parsedBanners = data.map((b: any) => ({
+            id: b.id,
+            nome: b.nome,
+            imageUrl: b.image_url,
+            mobileImageUrl: b.mobile_image_url,
+            link: b.link,
+            posicao: b.posicao,
+            paginaPublicacao: b.pagina_publicacao,
+            titulo: b.titulo,
+            active: b.ativo,
+            startDate: b.start_date,
+            endDate: b.end_date,
+            lojaId: b.loja_id,
+            vitrineVinculada: b.vitrine_vinculada,
+            bannerVinculado: b.banner_vinculado,
+            formatoExtra: b.formato_extra,
+            imageUrl2: b.image_url2,
+            mobileImageUrl2: b.mobile_image_url2,
+            link2: b.link2,
+            imageUrl3: b.image_url3,
+            mobileImageUrl3: b.mobile_image_url3,
+            link3: b.link3,
+          })) as AdminBanner[];
+          set({ banners: parsedBanners });
+        }
+      },
+      addBanner: async (banner) => {
+        const payload = {
+          nome: banner.nome,
+          image_url: banner.imageUrl,
+          mobile_image_url: banner.mobileImageUrl,
+          link: banner.link,
+          posicao: banner.posicao,
+          pagina_publicacao: banner.paginaPublicacao,
+          titulo: banner.titulo,
+          ativo: banner.active,
+          start_date: banner.startDate,
+          end_date: banner.endDate,
+          loja_id: banner.lojaId || null,
+          vitrine_vinculada: banner.vitrineVinculada,
+          banner_vinculado: banner.bannerVinculado,
+          formato_extra: banner.formatoExtra,
+          image_url2: banner.imageUrl2,
+          mobile_image_url2: banner.mobileImageUrl2,
+          link2: banner.link2,
+          image_url3: banner.imageUrl3,
+          mobile_image_url3: banner.mobileImageUrl3,
+          link3: banner.link3,
+        };
+        const { data, error } = await supabase.from('banners' as any).insert(payload).select().single();
+        if (!error && data) {
+          get().fetchBanners(banner.lojaId);
+        }
+      },
+      updateBanner: async (id, banner) => {
+        const payload: any = {};
+        if (banner.nome !== undefined) payload.nome = banner.nome;
+        if (banner.imageUrl !== undefined) payload.image_url = banner.imageUrl;
+        if (banner.mobileImageUrl !== undefined) payload.mobile_image_url = banner.mobileImageUrl;
+        if (banner.link !== undefined) payload.link = banner.link;
+        if (banner.posicao !== undefined) payload.posicao = banner.posicao;
+        if (banner.paginaPublicacao !== undefined) payload.pagina_publicacao = banner.paginaPublicacao;
+        if (banner.titulo !== undefined) payload.titulo = banner.titulo;
+        if (banner.active !== undefined) payload.ativo = banner.active;
+        if (banner.startDate !== undefined) payload.start_date = banner.startDate;
+        if (banner.endDate !== undefined) payload.end_date = banner.endDate;
+        if (banner.vitrineVinculada !== undefined) payload.vitrine_vinculada = banner.vitrineVinculada;
+        if (banner.bannerVinculado !== undefined) payload.banner_vinculado = banner.bannerVinculado;
+        if (banner.formatoExtra !== undefined) payload.formato_extra = banner.formatoExtra;
+        if (banner.imageUrl2 !== undefined) payload.image_url2 = banner.imageUrl2;
+        if (banner.mobileImageUrl2 !== undefined) payload.mobile_image_url2 = banner.mobileImageUrl2;
+        if (banner.link2 !== undefined) payload.link2 = banner.link2;
+        
+        const { error } = await supabase.from('banners' as any).update(payload).eq('id', id);
+        if (!error) {
+          get().fetchBanners(get().activeStoreId || undefined);
+        }
+      },
+      removeBanner: async (id) => {
+        const { error } = await supabase.from('banners' as any).delete().eq('id', id);
+        if (!error) {
+          set((s) => ({ banners: s.banners.filter((b) => b.id !== id) }));
+        }
+      },
 
       integrations: { webhookUrl: "", apiKey: "" },
       setIntegrations: (integrations) => set({ integrations }),
