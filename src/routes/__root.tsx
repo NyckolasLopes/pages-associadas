@@ -179,8 +179,7 @@ function RootComponent() {
     useGeoCep.persist.rehydrate();
     useAdmin.persist.rehydrate();
     useAdminProducts.persist.rehydrate();
-    useAdminCategories.persist.rehydrate();
-    useLive.persist.rehydrate();
+    useAdminCategories.getState().loadCategories();
     useOrders.persist.rehydrate();
     
     // Register PWA Service Worker
@@ -210,38 +209,12 @@ function RootComponent() {
       }
       return { lojaId: "admin-sede", storeName: undefined };
     };
-
-    // Ping inicial
+    // Init Realtime Presence
     const initialPing = getPingData();
-    useLive.getState().pingSession(sessionId, initialPing.lojaId, initialPing.storeName);
-    
-    // Manter a sessão viva com heartbeat eficiente (20s e somente se a aba estiver visível)
-    const interval = setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        const ping = getPingData();
-        useLive.getState().pingSession(sessionId, ping.lojaId, ping.storeName);
-      }
-    }, 20000);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        const ping = getPingData();
-        useLive.getState().pingSession(sessionId, ping.lojaId, ping.storeName);
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    
-    // Ao fechar a aba
-    const handleBeforeUnload = () => {
-      useLive.getState().removeSession(sessionId);
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    useLive.getState().initPresence(sessionId, initialPing.lojaId);
 
     return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      useLive.getState().removeSession(sessionId);
+      useLive.getState().cleanup();
     };
   }, []);
 

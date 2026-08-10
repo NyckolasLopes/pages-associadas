@@ -134,6 +134,10 @@ function AdminLayout() {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Carregar lojas do banco de dados (Supabase)
+    const { loadPharmacies } = useAdmin.getState();
+    loadPharmacies();
 
     // Migration / Clean-up for old cached localStorage
     const currentUsers = useAdmin.getState().users;

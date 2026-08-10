@@ -247,10 +247,11 @@ interface AdminState {
 
   // Pharmacies
   pharmacies: Pharmacy[];
-  addPharmacy: (p: Pharmacy) => void;
-  updatePharmacy: (id: string, p: Pharmacy) => void;
-  togglePharmacyStatus: (id: string) => void;
-  removePharmacy: (id: string) => void;
+  addPharmacy: (p: Pharmacy) => Promise<void>;
+  updatePharmacy: (id: string, p: Pharmacy) => Promise<void>;
+  togglePharmacyStatus: (id: string) => Promise<void>;
+  removePharmacy: (id: string) => Promise<void>;
+  loadPharmacies: () => Promise<void>;
 
   // Category Icons & Features
   categoryIcons: Record<string, string>; // categoryId -> base64/url
@@ -681,11 +682,106 @@ export const useAdmin = create<AdminState>()(
       integrations: { webhookUrl: "", apiKey: "" },
       setIntegrations: (integrations) => set({ integrations }),
 
-      pharmacies: defaultPharmacies,
-      addPharmacy: (p) => set((s) => ({ pharmacies: [...s.pharmacies, { ...p, ativo: p.ativo ?? true }] })),
-      updatePharmacy: (id, p) => set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) })),
-      togglePharmacyStatus: (id) => set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? { ...x, ativo: !(x.ativo ?? true) } : x) })),
-      removePharmacy: (id) => set((s) => ({ pharmacies: s.pharmacies.filter(x => x.id !== id) })),
+      pharmacies: [],
+      loadPharmacies: async () => {
+        const { data, error } = await supabase.from('lojas').select('*');
+        if (!error && data) {
+          const loadedPharmacies: Pharmacy[] = data.map((l: any) => ({
+            id: l.id,
+            ativo: l.ativa ?? true,
+            cnpj: l.cnpj,
+            razaoSocial: l.razao_social,
+            nome: l.nome_fantasia,
+            email: l.email,
+            telefone: l.telefone,
+            horarioFuncionamento: l.horario_funcionamento,
+            respTecnico: l.farmaceutico_responsavel,
+            inscricaoFarmaceutico: l.crf,
+            alvara: l.alvara_sanitario,
+            afe: l.afe,
+            cep: l.cep,
+            logradouro: l.logradouro,
+            numero: l.numero,
+            bairro: l.bairro,
+            cidade: l.cidade,
+            estado: l.estado,
+            latitude: l.latitude,
+            longitude: l.longitude,
+            categoriaAssociado: l.categoria_associado as any,
+          }));
+          set({ pharmacies: loadedPharmacies });
+        }
+      },
+      addPharmacy: async (p) => {
+        const { error } = await supabase.from('lojas').insert({
+          id: p.id,
+          ativa: p.ativo ?? true,
+          cnpj: p.cnpj,
+          razao_social: p.razaoSocial,
+          nome_fantasia: p.nome,
+          email: p.email,
+          telefone: p.telefone,
+          horario_funcionamento: p.horarioFuncionamento,
+          farmaceutico_responsavel: p.respTecnico,
+          crf: p.inscricaoFarmaceutico,
+          alvara_sanitario: p.alvara,
+          afe: p.afe,
+          cep: p.cep,
+          logradouro: p.logradouro,
+          numero: p.numero,
+          bairro: p.bairro,
+          cidade: p.cidade,
+          estado: p.estado,
+          latitude: p.latitude,
+          longitude: p.longitude,
+          categoria_associado: p.categoriaAssociado
+        });
+        if (!error) {
+          set((s) => ({ pharmacies: [...s.pharmacies, { ...p, ativo: p.ativo ?? true }] }));
+        }
+      },
+      updatePharmacy: async (id, p) => {
+        const { error } = await supabase.from('lojas').update({
+          ativa: p.ativo ?? true,
+          cnpj: p.cnpj,
+          razao_social: p.razaoSocial,
+          nome_fantasia: p.nome,
+          email: p.email,
+          telefone: p.telefone,
+          horario_funcionamento: p.horarioFuncionamento,
+          farmaceutico_responsavel: p.respTecnico,
+          crf: p.inscricaoFarmaceutico,
+          alvara_sanitario: p.alvara,
+          afe: p.afe,
+          cep: p.cep,
+          logradouro: p.logradouro,
+          numero: p.numero,
+          bairro: p.bairro,
+          cidade: p.cidade,
+          estado: p.estado,
+          latitude: p.latitude,
+          longitude: p.longitude,
+          categoria_associado: p.categoriaAssociado
+        }).eq('id', id);
+        if (!error) {
+          set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) }));
+        }
+      },
+      togglePharmacyStatus: async (id) => {
+        const p = get().pharmacies.find(x => x.id === id);
+        if (p) {
+          const { error } = await supabase.from('lojas').update({ ativa: !(p.ativo ?? true) }).eq('id', id);
+          if (!error) {
+            set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? { ...x, ativo: !(x.ativo ?? true) } : x) }));
+          }
+        }
+      },
+      removePharmacy: async (id) => {
+        const { error } = await supabase.from('lojas').delete().eq('id', id);
+        if (!error) {
+          set((s) => ({ pharmacies: s.pharmacies.filter(x => x.id !== id) }));
+        }
+      },
 
       categoryIcons: {},
       setCategoryIcon: (categoryId, iconUrl) => set((s) => ({ categoryIcons: { ...s.categoryIcons, [categoryId]: iconUrl } })),

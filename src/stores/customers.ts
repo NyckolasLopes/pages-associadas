@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Customer {
   id: string;
@@ -18,125 +18,85 @@ export interface Customer {
   totalPedidos: number;
   valorUltimoPedido?: number;
   anotacoes: string;
-  lojaId?: string;
-  lojaNome?: string;
+  enderecos?: any[];
 }
-
-const INITIAL_CUSTOMERS: Customer[] = [
-  {
-    id: "c1",
-    nome: "Nyckolas Lopes Correia Schuch",
-    email: "nyckolas.lopes@gmail.com",
-    telefone: "(51) 98173-1656",
-    cpf: "600.117.090-81",
-    endereco: "Rua Dos Andradas, 59",
-    cidade: "Porto Alegre",
-    uf: "RS",
-    cep: "90020-015",
-    dataCadastro: "10/05/2026",
-    metodoLogin: "Google",
-    totalPedidos: 12,
-    valorUltimoPedido: 148.50,
-    anotacoes: "Cliente frequente.",
-    lojaId: "loja-1",
-    lojaNome: "Farmácia Associadas - Centro",
-  },
-  {
-    id: "c2",
-    nome: "Maria Oliveira",
-    email: "maria.oliveira@gmail.com",
-    telefone: "(11) 99822-3444",
-    cpf: "123.456.789-00",
-    endereco: "Av Paulista, 1000",
-    cidade: "São Paulo",
-    uf: "SP",
-    cep: "01310-100",
-    dataCadastro: "15/06/2026",
-    metodoLogin: "Email",
-    totalPedidos: 3,
-    valorUltimoPedido: 64.90,
-    anotacoes: "",
-    lojaId: "loja-2",
-    lojaNome: "Farmácia Associadas - Zona Sul",
-  },
-  {
-    id: "c3",
-    nome: "João Silva",
-    email: "joao.silva@hotmail.com",
-    telefone: "(53) 99123-4567",
-    cpf: "000.111.222-33",
-    endereco: "Rua Quinze de Novembro, 200",
-    cidade: "Pelotas",
-    uf: "RS",
-    cep: "96015-000",
-    dataCadastro: "02/07/2026",
-    metodoLogin: "Facebook",
-    totalPedidos: 1,
-    valorUltimoPedido: 39.90,
-    anotacoes: "Primeira compra via Facebook Ads.",
-    lojaId: "loja-1",
-    lojaNome: "Farmácia Associadas - Centro",
-  },
-  {
-    id: "c4",
-    nome: "Ana Paula Souza",
-    email: "anapaula.apple@icloud.com",
-    telefone: "(21) 98765-4321",
-    cpf: "333.444.555-66",
-    endereco: "Rua Copacabana, 50",
-    cidade: "Rio de Janeiro",
-    uf: "RJ",
-    cep: "22020-001",
-    dataCadastro: "20/06/2026",
-    metodoLogin: "Apple",
-    totalPedidos: 5,
-    valorUltimoPedido: 215.00,
-    anotacoes: "Reclamou de atraso no pedido #420.",
-  },
-  {
-    id: "c5",
-    nome: "admin",
-    email: "admin@associadas.com.br",
-    telefone: "(51) 99999-9999",
-    cpf: "000.000.000-00",
-    endereco: "Rua Matriz, 1",
-    cidade: "Porto Alegre",
-    uf: "RS",
-    cep: "90000-000",
-    dataCadastro: "01/01/2026",
-    metodoLogin: "Email",
-    totalPedidos: 45,
-    valorUltimoPedido: 389.90,
-    anotacoes: "Conta de administração e testes.",
-  }
-];
 
 interface CustomersStore {
   customers: Customer[];
-  addCustomer: (customer: Customer) => void;
-  updateCustomer: (id: string, customer: Partial<Customer>) => void;
-  removeCustomer: (id: string) => void;
+  loadCustomers: () => Promise<void>;
+  addCustomer: (customer: Customer) => Promise<void>;
+  updateCustomer: (id: string, customer: Partial<Customer>) => Promise<void>;
+  removeCustomer: (id: string) => Promise<void>;
 }
 
-export const useCustomers = create<CustomersStore>()(
-  persist(
-    (set) => ({
-      customers: INITIAL_CUSTOMERS,
-      addCustomer: (customer) =>
-        set((state) => ({ customers: [...state.customers, customer] })),
-      updateCustomer: (id, update) =>
-        set((state) => ({
-          customers: state.customers.map((c) =>
-            c.id === id ? { ...c, ...update } : c
-          ),
-        })),
-      removeCustomer: (id) =>
-        set((state) => ({
-          customers: state.customers.filter((c) => c.id !== id),
-        })),
-    }),
-    {
-      name: 'customers-storage',
+export const useCustomers = create<CustomersStore>((set, get) => ({
+  customers: [],
+  loadCustomers: async () => {
+    const { data, error } = await supabase.from('vw_clientes_estatisticas').select('*');
+    if (data && !error) {
+      const mapped = data.map((d: any) => {
+        const principalEndereco = Array.isArray(d.enderecos) && d.enderecos.length > 0 ? d.enderecos[0] : null;
+        
+        return {
+          id: d.id,
+          nome: d.nome || 'Sem Nome',
+          email: d.email || '',
+          telefone: d.telefone || '',
+          cpf: d.cpf || '',
+          endereco: principalEndereco ? principalEndereco.rua : '',
+          cidade: principalEndereco ? principalEndereco.cidade : '',
+          uf: principalEndereco ? principalEndereco.uf : '',
+          cep: principalEndereco ? principalEndereco.cep : '',
+          dataCadastro: new Date(d.data_cadastro).toLocaleDateString('pt-BR'),
+          metodoLogin: 'Email',
+          totalPedidos: parseInt(d.total_pedidos || '0'),
+          valorUltimoPedido: parseFloat(d.valor_ultimo_pedido || '0'),
+          anotacoes: d.anotacoes || '',
+          enderecos: d.enderecos || []
+        };
+      });
+      set({ customers: mapped });
     }
-  )
-);
+  },
+  addCustomer: async (customer) => {
+    // A adição real deve acontecer através do Auth, mas para admin update manual:
+    const { error } = await supabase.from('profiles').insert({
+      id: customer.id,
+      nome: customer.nome,
+      email: customer.email,
+      telefone: customer.telefone,
+      cpf: customer.cpf,
+      anotacoes: customer.anotacoes,
+      enderecos: customer.enderecos || []
+    });
+    if (!error) {
+      set((state) => ({ customers: [...state.customers, customer] }));
+    }
+  },
+  updateCustomer: async (id, update) => {
+    const { error } = await supabase.from('profiles').update({
+      nome: update.nome,
+      email: update.email,
+      telefone: update.telefone,
+      cpf: update.cpf,
+      anotacoes: update.anotacoes,
+      enderecos: update.enderecos
+    }).eq('id', id);
+    if (!error) {
+      set((state) => ({
+        customers: state.customers.map((c) =>
+          c.id === id ? { ...c, ...update } : c
+        ),
+      }));
+    }
+  },
+  removeCustomer: async (id) => {
+    // Delete profile (se possível)
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    if (!error) {
+      set((state) => ({
+        customers: state.customers.filter((c) => c.id !== id),
+      }));
+    }
+  },
+}));

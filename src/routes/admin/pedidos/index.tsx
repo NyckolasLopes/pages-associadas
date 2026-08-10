@@ -71,9 +71,15 @@ interface UnifiedOrderItem {
   rawCart?: AbandonedCart;
 }
 
+import { useEffect } from 'react';
+
 export function PedidosAdmin() {
-  const { orders: allOrders, deleteOrder } = useOrders();
+  const { orders: allOrders, deleteOrder, loadOrders } = useOrders();
   const { pharmacies, currentUser, grupos, activeStoreId } = useAdmin();
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
   
   // Carrinhos abandonados / itens de clientes logados
   const { carts: storeCarts, removeCart: removeStoreCart } = useAbandonedCartsStore();
@@ -433,7 +439,7 @@ export function PedidosAdmin() {
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-black text-slate-800 tracking-tight">Pedido #{selectedOrder.id}</h1>
+                <h1 className="text-3xl font-black text-slate-800 tracking-tight">Pedido #{selectedOrder.numero || selectedOrder.id}</h1>
                 <div className="px-3 py-1 rounded-full text-xs font-bold border bg-emerald-100 text-emerald-700 border-emerald-200 flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   Concluído (WhatsApp)

@@ -1,73 +1,8 @@
 import { create } from "zustand";
-import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { Produto, Vitrine } from "@/types";
-import productsJson from "@/data/products.json";
+import { supabase } from "@/integrations/supabase/client";
 import { toTitleCase } from "@/lib/utils";
-
-// IndexedDB storage adapter to avoid localStorage 5MB quota limits when importing spreadsheets
-const idbStorage: StateStorage = {
-  getItem: async (name: string): Promise<string | null> => {
-    if (typeof window === "undefined" || !window.indexedDB) return null;
-    return new Promise((resolve) => {
-      const request = indexedDB.open("fa-admin-db", 1);
-      request.onupgradeneeded = (e: any) => {
-        e.target.result.createObjectStore("keyval");
-      };
-      request.onsuccess = (e: any) => {
-        const db = e.target.result;
-        try {
-          const tx = db.transaction("keyval", "readonly");
-          const store = tx.objectStore("keyval");
-          const req = store.get(name);
-          req.onsuccess = () => resolve((req.result as string) || null);
-          req.onerror = () => resolve(null);
-        } catch {
-          resolve(null);
-        }
-      };
-      request.onerror = () => resolve(null);
-    });
-  },
-  setItem: async (name: string, value: string): Promise<void> => {
-    if (typeof window === "undefined" || !window.indexedDB) return;
-    return new Promise((resolve) => {
-      const request = indexedDB.open("fa-admin-db", 1);
-      request.onupgradeneeded = (e: any) => {
-        e.target.result.createObjectStore("keyval");
-      };
-      request.onsuccess = (e: any) => {
-        const db = e.target.result;
-        try {
-          const tx = db.transaction("keyval", "readwrite");
-          const store = tx.objectStore("keyval");
-          store.put(value, name);
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => resolve();
-        } catch {
-          resolve();
-        }
-      };
-      request.onerror = () => resolve();
-    });
-  },
-  removeItem: async (name: string): Promise<void> => {
-    if (typeof window === "undefined" || !window.indexedDB) return;
-    return new Promise((resolve) => {
-      const request = indexedDB.open("fa-admin-db", 1);
-      request.onsuccess = (e: any) => {
-        const db = e.target.result;
-        try {
-          const tx = db.transaction("keyval", "readwrite");
-          const store = tx.objectStore("keyval");
-          store.delete(name);
-          tx.oncomplete = () => resolve();
-        } catch {
-          resolve();
-        }
-      };
-    });
-  },
-};
 
 export interface Fornecedor {
   id: number;
@@ -94,6 +29,8 @@ interface ProductsState {
   storeRemovedProductIds: Record<string, string[]>;
   fornecedores: Fornecedor[];
   vitrines: Vitrine[];
+  _loaded: boolean;
+  loadProducts: () => Promise<void>;
   addOrUpdateProduct: (p: Produto, lojaId?: string | null) => void;
   removeProduct: (id: string, lojaId?: string | null) => void;
   getStoreEffectiveProducts: (lojaId?: string | null) => Produto[];
@@ -114,13 +51,59 @@ interface ProductsState {
   importStoreSpreadsheet: (lojaId: string, items: StorePriceItem[]) => { updated: number; notFound: number; total: number };
 }
 
+// Helper: map Supabase row to Produto type
+function mapRowToProduto(d: any): Produto {
+  return {
+    id: d.id,
+    ean: d.ean,
+    nome: toTitleCase(d.nome || ""),
+    descricao: d.descricao,
+    url: d.slug,
+    slug: d.slug,
+    fabricante: d.fabricante,
+    marca: d.marca,
+    precoDe: Number(d.preco_de) || 0,
+    precoPor: Number(d.preco_por) || 0,
+    estoque: d.estoque || 0,
+    registroAnvisa: d.registro_anvisa,
+    tarja: d.tarja,
+    retemReceita: d.retem_receita || false,
+    generico: d.generico || false,
+    possuiImagem: d.possui_imagem || false,
+    categoriaId: d.categoria_id,
+    subcategoriaId: d.subcategoria_id,
+    categoriasAdicionais: d.categorias_adicionais || [],
+    internalTags: d.internal_tags || [],
+    principiosAtivos: d.principios_ativos || [],
+    imagens: d.imagens || [],
+    videoUrl: d.video_url,
+    destaque: d.destaque || false,
+    ativo: d.ativo !== false,
+    aVenda: d.a_venda !== false,
+    visivel: d.visivel !== false,
+  } as Produto;
+}
+
 export const useAdminProducts = create<ProductsState>()(
   persist(
     (set, get) => ({
-      customProducts: ((productsJson as unknown) as Produto[]).map(p => ({ ...p, nome: toTitleCase(p.nome) })),
+      customProducts: [],
       storeCustomProducts: {},
       storeProductOverrides: {},
       storeRemovedProductIds: {},
+      _loaded: false,
+      loadProducts: async () => {
+        if (get()._loaded) return;
+        const { data, error } = await supabase
+          .from('produtos')
+          .select('*')
+          .order('nome', { ascending: true });
+        
+        if (!error && data) {
+          const mapped = data.map(mapRowToProduto);
+          set({ customProducts: mapped, _loaded: true });
+        }
+      },
       addOrUpdateProduct: (p, lojaId) => set((s) => {
         const formattedProduct = { ...p, nome: toTitleCase(p.nome) };
         
@@ -469,29 +452,34 @@ export const useAdminProducts = create<ProductsState>()(
       }
     }),
     {
-      name: "fa-admin-products-store-v3",
-      storage: createJSONStorage(() => idbStorage),
+      name: "fa-admin-products-store-v4",
+      storage: createJSONStorage(() => localStorage),
       skipHydration: true,
+      // Only persist local-only fields (vitrines, fornecedores, overrides).
+      // customProducts now comes from Supabase via loadProducts().
+      partialize: (state) => ({
+        storeCustomProducts: state.storeCustomProducts,
+        storeProductOverrides: state.storeProductOverrides,
+        storeRemovedProductIds: state.storeRemovedProductIds,
+        fornecedores: state.fornecedores,
+        vitrines: state.vitrines,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          setTimeout(() => {
-            if (typeof state.formatAllTitles === 'function') {
-              state.formatAllTitles();
-            }
-            
-            // Add default vitrines if missing (migration for existing localStorage)
-            if (!state.vitrines || !state.vitrines.some(v => v.categoriaId === "all")) {
-              const defaults = [
-                { id: 3, nome: "Mais vendidos", categoriaId: "all", local: "espaco_2" as const, ativa: true, icone: "TrendingUp", modo: "categoria" as const, ordem: 1, linkSeo: "mais-vendidos", tituloSeo: "Mais Vendidos", descricaoSeo: "Os produtos mais vendidos e procurados nas Farmácias Associadas." },
-                { id: 4, nome: "Ofertas da Semana", categoriaId: "ofertas", local: "espaco_2" as const, ativa: true, icone: "Percent", modo: "categoria" as const, ordem: 2, linkSeo: "ofertas-da-semana", tituloSeo: "Ofertas da Semana", descricaoSeo: "As melhores promoções da semana." },
-                { id: 5, nome: "Novidades", categoriaId: "novidades", local: "espaco_3" as const, ativa: true, icone: "Sparkles", modo: "categoria" as const, ordem: 1, linkSeo: "novidades", tituloSeo: "Novidades", descricaoSeo: "Lançamentos e novos produtos." },
-                { id: 6, nome: "Mamãe e Bebê", categoriaId: "144", local: "espaco_3" as const, ativa: true, icone: "Baby", modo: "categoria" as const, ordem: 2, linkSeo: "mamae-e-bebe", tituloSeo: "Mamãe e Bebê", descricaoSeo: "Produtos para o cuidado da mamãe e do bebê." },
-                { id: 7, nome: "Protetores Solares e Bronzeadores", categoriaId: "protetores", local: "espaco_3" as const, ativa: true, icone: "Sun", modo: "categoria" as const, ordem: 3, linkSeo: "protetores-solares-e-bronzeadores", tituloSeo: "Protetores Solares", descricaoSeo: "Proteção solar e bronzeadores." },
-              ];
-              // Use setState to trigger re-render and save to storage
-              useAdminProducts.setState((s) => ({ vitrines: [...(s.vitrines || []), ...defaults] }));
-            }
-          }, 0);
+          // Load products from Supabase after local rehydration
+          state.loadProducts();
+
+          // Add default vitrines if missing (migration for existing localStorage)
+          if (!state.vitrines || !state.vitrines.some(v => v.categoriaId === "all")) {
+            const defaults = [
+              { id: 3, nome: "Mais vendidos", categoriaId: "all", local: "espaco_2" as const, ativa: true, icone: "TrendingUp", modo: "categoria" as const, ordem: 1, linkSeo: "mais-vendidos", tituloSeo: "Mais Vendidos", descricaoSeo: "Os produtos mais vendidos e procurados nas Farmácias Associadas." },
+              { id: 4, nome: "Ofertas da Semana", categoriaId: "ofertas", local: "espaco_2" as const, ativa: true, icone: "Percent", modo: "categoria" as const, ordem: 2, linkSeo: "ofertas-da-semana", tituloSeo: "Ofertas da Semana", descricaoSeo: "As melhores promoções da semana." },
+              { id: 5, nome: "Novidades", categoriaId: "novidades", local: "espaco_3" as const, ativa: true, icone: "Sparkles", modo: "categoria" as const, ordem: 1, linkSeo: "novidades", tituloSeo: "Novidades", descricaoSeo: "Lançamentos e novos produtos." },
+              { id: 6, nome: "Mamãe e Bebê", categoriaId: "144", local: "espaco_3" as const, ativa: true, icone: "Baby", modo: "categoria" as const, ordem: 2, linkSeo: "mamae-e-bebe", tituloSeo: "Mamãe e Bebê", descricaoSeo: "Produtos para o cuidado da mamãe e do bebê." },
+              { id: 7, nome: "Protetores Solares e Bronzeadores", categoriaId: "protetores", local: "espaco_3" as const, ativa: true, icone: "Sun", modo: "categoria" as const, ordem: 3, linkSeo: "protetores-solares-e-bronzeadores", tituloSeo: "Protetores Solares", descricaoSeo: "Proteção solar e bronzeadores." },
+            ];
+            useAdminProducts.setState((s) => ({ vitrines: [...(s.vitrines || []), ...defaults] }));
+          }
         }
       }
     }

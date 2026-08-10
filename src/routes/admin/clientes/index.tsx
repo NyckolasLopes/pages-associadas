@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useCustomers, Customer } from "@/stores/customers";
 import { useOrders } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
@@ -92,10 +92,14 @@ export interface UnifiedCustomer {
 }
 
 function ClientesAdmin() {
-  const { customers, updateCustomer, removeCustomer } = useCustomers();
+  const { customers, updateCustomer, removeCustomer, loadCustomers } = useCustomers();
   const { orders } = useOrders();
   const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    loadCustomers();
+  }, [loadCustomers]);
 
   const isGlobalAdminUser = currentUser?.proprietario || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total || currentUser?.lojasVinculadas === undefined;
   const isGlobalView = isGlobalAdminUser && !activeStoreId;

@@ -371,7 +371,12 @@ function PDP() {
   
   const [newReviewText, setNewReviewText] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(5);
-  const { avaliacoes: allReviews, addAvaliacao } = useReviews();
+  const { avaliacoes: allReviews, addAvaliacao, loadAvaliacoes } = useReviews();
+
+  useEffect(() => {
+    loadAvaliacoes();
+  }, [loadAvaliacoes]);
+
 
   const handleAskQuestion = () => {
     if (!user || !newQuestion.trim()) return;

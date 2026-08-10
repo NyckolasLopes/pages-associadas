@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,6 +21,7 @@ export const Route = createFileRoute("/admin/avaliacoes")({
 
 function AdminAvaliacoes() {
   const avaliacoes = useReviews((s) => s.avaliacoes);
+  const loadAvaliacoes = useReviews((s) => s.loadAvaliacoes);
   const removeAvaliacao = useReviews((s) => s.removeAvaliacao);
   const updateAvaliacaoStatus = useReviews((s) => s.updateAvaliacaoStatus);
   const duplicateAvaliacaoToProducts = useReviews((s) => s.duplicateAvaliacaoToProducts);
@@ -28,6 +29,10 @@ function AdminAvaliacoes() {
   const updateAvaliacao = useReviews((s) => s.updateAvaliacao);
   const produtos = useAdminProducts((s) => s.customProducts);
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    loadAvaliacoes();
+  }, [loadAvaliacoes]);
   
   // Modal state
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);

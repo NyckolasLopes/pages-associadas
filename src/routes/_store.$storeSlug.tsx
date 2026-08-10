@@ -447,11 +447,11 @@ function StoreHome() {
 
   const { storeSlug } = Route.useParams();
   const { pharmacies } = useAdmin();
-  const loja = useMemo(() => pharmacies.find((p) => safeSlugify(p.nome || p.nomeFantasia || p.id) === storeSlug), [pharmacies, storeSlug]);
+  const loja = useMemo(() => pharmacies.find((p) => safeSlugify(p.nome || p.id) === storeSlug), [pharmacies, storeSlug]);
   const lojaId = loja?.id;
 
   const { setSelectedPharmacyId } = useCart();
-  const { recordLojaAccess, pingSession } = useLive();
+  const { recordLojaAccess, initPresence } = useLive();
   
   useEffect(() => {
     if (lojaId) {
@@ -459,11 +459,11 @@ function StoreHome() {
       recordLojaAccess(lojaId);
       const sessionId = sessionStorage.getItem("fa-visitor-session") || Math.random().toString(36).substring(2);
       sessionStorage.setItem("fa-visitor-session", sessionId);
-      pingSession(sessionId, lojaId);
+      initPresence(sessionId, lojaId);
     } else {
       setSelectedPharmacyId(null);
     }
-  }, [lojaId, setSelectedPharmacyId, recordLojaAccess, pingSession]);
+  }, [lojaId, setSelectedPharmacyId, recordLojaAccess, initPresence]);
 
 
   const { featured, cats, allCats } = Route.useLoaderData();

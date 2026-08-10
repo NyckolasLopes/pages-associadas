@@ -4,7 +4,7 @@ import { Plus, Flame, Clock, Trash2, Edit } from "lucide-react";
 import { useMarketing } from "@/stores/marketing";
 import { lojas } from "@/data/stores";
 import { useAdmin } from "@/stores/admin";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -21,7 +21,13 @@ export const Route = createFileRoute("/admin/marketing/promocoes/")({
 
 function AdminPromocoesPage() {
   const promocoesRaw = useMarketing((s) => s.promocoes);
+  const loadMarketing = useMarketing((s) => s.loadMarketing);
   const { currentUser, selectedStoreId } = useAdmin();
+  
+  useEffect(() => {
+    loadMarketing();
+  }, [loadMarketing]);
+
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
   const promocoes = isGlobalAdmin ? promocoesRaw : promocoesRaw.filter(p => p.lojaId === effectiveStoreId);

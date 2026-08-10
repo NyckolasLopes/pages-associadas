@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { supabase } from '@/integrations/supabase/client';
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface CIDADES_TYPE {
   uf: string;
@@ -47,206 +48,91 @@ interface LiveStore {
   totalAcessos: number;
   stats: Record<string, number>;
   lojasAcessos: Record<string, LojaAcessoStat>;
-  pingSession: (sessionId: string, lojaId?: string, adminStoreName?: string) => void;
+  channel: RealtimeChannel | null;
+  initPresence: (sessionId: string, lojaId?: string) => void;
   recordLojaAccess: (lojaId: string) => void;
-  removeSession: (sessionId: string) => void;
   cleanup: () => void;
 }
 
-export const useLive = create<LiveStore>()(
-  persist(
-    (set, get) => ({
-      visitors: [],
-      totalAcessos: 0,
-      stats: {},
-      lojasAcessos: {
-        "1": { total: 1530, mes: 1530, hoje: 112, lastAccess: Date.now() },
-        "2": { total: 940, mes: 940, hoje: 65, lastAccess: Date.now() },
-        "3": { total: 420, mes: 420, hoje: 28, lastAccess: Date.now() },
-        "filial-norte": { total: 184, mes: 184, hoje: 14, lastAccess: Date.now() },
-        "filial-sul": { total: 129, mes: 129, hoje: 9, lastAccess: Date.now() },
-      },
-      recordLojaAccess: (lojaId: string) => {
-        if (!lojaId) return;
-        const now = Date.now();
-        set((state) => {
-          const current = state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: now };
-          return {
-            totalAcessos: state.totalAcessos + 1,
-            lojasAcessos: {
-              ...state.lojasAcessos,
-              [lojaId]: {
-                total: current.total + 1,
-                mes: current.mes + 1,
-                hoje: current.hoje + 1,
-                lastAccess: now,
-              },
-            },
-          };
-        });
-      },
-      pingSession: (sessionId: string, lojaId?: string, adminStoreName?: string) => {
-        const now = Date.now();
-        const visitors = [...get().visitors];
-        const existingIdx = visitors.findIndex((v) => v.sessionId === sessionId);
+const getCityByIPMock = () => {
+  return CIDADES[Math.floor(Math.random() * CIDADES.length)];
+};
 
-        if (existingIdx >= 0) {
-          visitors[existingIdx].expiresAt = now + 120000;
-          if (lojaId) visitors[existingIdx].lojaId = lojaId;
-          set({ visitors });
-        } else {
-          // novo visitante real
-          let userCity = { nome: "Localizando...", uf: "", x: 50, y: 50 };
-          let isResolved = false;
-          if (lojaId === "admin-sede") {
-            userCity = { nome: "Admin Sede", uf: "RS", x: 52.5, y: 88.5 }; // Close to Porto Alegre on map
-            isResolved = true;
-          } else if (lojaId && lojaId.startsWith("admin-loja-")) {
-            userCity = { nome: `Admin ${adminStoreName || 'da Loja'}`, uf: "RS", x: 52.5, y: 88.5 };
-            isResolved = true;
-          }
-          
-          try {
-            // Tenta pegar do CEP se estiver preenchido
-            const cepStr = localStorage.getItem("fa-geo-cep");
-            if (cepStr) {
-              const parsed = JSON.parse(cepStr);
-              if (parsed?.state?.city) {
-                const cityName = parsed.state.city;
-                const ufName = parsed.state.uf || "";
-                
-                const foundExact = CIDADES.find(c => c.nome.toLowerCase() === cityName.toLowerCase());
-                if (foundExact) {
-                  userCity = foundExact;
-                  isResolved = true;
-                } else {
-                  const stateCapital = CIDADES.find(c => c.uf.toLowerCase() === ufName.toLowerCase()) || CIDADES[0];
-                  userCity = {
-                    nome: cityName,
-                    uf: ufName.toUpperCase() || stateCapital.uf,
-                    x: stateCapital.x + (Math.random() * 2 - 1),
-                    y: stateCapital.y + (Math.random() * 2 - 1)
-                  };
-                  isResolved = true;
-                }
-              }
-            }
-          } catch (e) {}
+export const useLive = create<LiveStore>((set, get) => ({
+  visitors: [],
+  totalAcessos: 0,
+  stats: {},
+  lojasAcessos: {
+    "1": { total: 1530, mes: 1530, hoje: 112, lastAccess: Date.now() },
+    "2": { total: 940, mes: 940, hoje: 65, lastAccess: Date.now() },
+    "3": { total: 420, mes: 420, hoje: 28, lastAccess: Date.now() },
+  },
+  channel: null,
 
-          if (!isResolved) {
-             const cachedLoc = localStorage.getItem("fa-ip-loc-v2");
-             if (cachedLoc) {
-                try {
-                   userCity = JSON.parse(cachedLoc);
-                   isResolved = true;
-                } catch(e) {}
-             }
-          }
-
-          const newVisitor: VisitorInfo = {
-            id: now,
-            sessionId,
-            cidade: userCity,
-            expiresAt: now + 120000,
-            lojaId,
-          };
-
-          set((state) => {
-            const currentLojaStat = lojaId ? (state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: now }) : null;
-            return {
-              visitors: [...state.visitors, newVisitor],
-              totalAcessos: state.totalAcessos + 1,
-              stats: {
-                ...state.stats,
-                [userCity.nome]: (state.stats[userCity.nome] || 0) + 1,
-              },
-              lojasAcessos: lojaId ? {
-                ...state.lojasAcessos,
-                [lojaId]: {
-                  total: currentLojaStat!.total + 1,
-                  mes: currentLojaStat!.mes + 1,
-                  hoje: currentLojaStat!.hoje + 1,
-                  lastAccess: now,
-                },
-              } : state.lojasAcessos,
-            };
+  initPresence: (sessionId: string, lojaId?: string) => {
+    let channel = get().channel;
+    
+    if (!channel) {
+      channel = supabase.channel('online-visitors');
+      
+      channel.on('presence', { event: 'sync' }, () => {
+        const newState = channel!.presenceState();
+        const activeVisitors: VisitorInfo[] = [];
+        
+        Object.keys(newState).forEach(key => {
+          (newState[key] as any[]).forEach((pres: any) => {
+            activeVisitors.push({
+              id: Math.floor(Math.random() * 1000000), // Random ID
+              sessionId: pres.sessionId,
+              cidade: pres.cidade,
+              expiresAt: Date.now() + 60000,
+              lojaId: pres.lojaId
+            });
           });
+        });
+        
+        set({ visitors: activeVisitors });
+      });
 
-          if (!isResolved && lojaId !== "admin-sede") {
-            fetch("https://ipwho.is/")
-              .then(res => res.json())
-              .then(data => {
-                if (data && data.success && data.city) {
-                  const lat = parseFloat(data.latitude);
-                  const lon = parseFloat(data.longitude);
-                  const x = 93 + (lon + 34.87) * 2.42;
-                  const y = 88 - (lat + 30.03) * 2.34;
-                  
-                  const resolvedCity = {
-                    nome: data.city,
-                    uf: data.region_code || "",
-                    x: Math.min(Math.max(x, 5), 95),
-                    y: Math.min(Math.max(y, 5), 95)
-                  };
-                  
-                  localStorage.setItem("fa-ip-loc-v2", JSON.stringify(resolvedCity));
-
-                  set(s => {
-                    const v = [...s.visitors];
-                    const idx = v.findIndex(vi => vi.sessionId === sessionId);
-                    if (idx >= 0 && v[idx].cidade.nome === "Localizando...") {
-                      v[idx].cidade = resolvedCity;
-                      
-                      const newStats = { ...s.stats };
-                      if (newStats["Localizando..."]) {
-                        newStats["Localizando..."]--;
-                        if (newStats["Localizando..."] <= 0) delete newStats["Localizando..."];
-                      }
-                      newStats[resolvedCity.nome] = (newStats[resolvedCity.nome] || 0) + 1;
-                      
-                      return { visitors: v, stats: newStats };
-                    }
-                    return s;
-                  });
-                }
-              })
-              .catch(() => {});
-          }
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel!.track({
+            sessionId,
+            lojaId,
+            cidade: getCityByIPMock(),
+            onlineAt: new Date().toISOString()
+          });
         }
-      },
-      removeSession: (sessionId: string) => {
-        set((state) => ({
-          visitors: state.visitors.filter((v) => v.sessionId !== sessionId),
-        }));
-      },
-      cleanup: () => {
-        const now = Date.now();
-        const state = get();
-        const newVisitors = state.visitors.filter((v) => v.expiresAt > now);
-        if (newVisitors.length !== state.visitors.length) {
-          set({ visitors: newVisitors });
-        }
-      },
-    }),
-    {
-      name: "live-visitors-storage",
-    }
-  )
-);
+      });
 
-if (typeof window !== "undefined") {
-  setInterval(() => {
-    const state = useLive.getState();
-    if (state.visitors.length > 0) {
-      state.cleanup();
+      set({ channel });
     }
-  }, 30000);
+  },
 
-  window.addEventListener("storage", (e) => {
-    if (e.key === "live-visitors-storage") {
-      useLive.persist.rehydrate();
+  recordLojaAccess: (lojaId: string) => {
+    if (!lojaId) return;
+    const now = Date.now();
+    set((state) => {
+      const current = state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: now };
+      return {
+        totalAcessos: state.totalAcessos + 1,
+        lojasAcessos: {
+          ...state.lojasAcessos,
+          [lojaId]: {
+            total: current.total + 1,
+            mes: current.mes + 1,
+            hoje: current.hoje + 1,
+            lastAccess: now,
+          },
+        },
+      };
+    });
+  },
+  
+  cleanup: () => {
+    const channel = get().channel;
+    if (channel) {
+      channel.untrack();
     }
-  });
-}
-
-export { CIDADES };
+  }
+}));

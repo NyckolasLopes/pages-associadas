@@ -247,45 +247,131 @@ const INITIAL_ORDERS: Pedido[] = [
   }
 ];
 
+import { supabase } from '@/integrations/supabase/client';
+
 interface OrdersState {
   orders: Pedido[];
-  addOrder: (order: Pedido) => void;
-  updateOrderStatus: (id: string, status: string) => void;
-  updateOrderTracking: (id: string, tracking: string) => void;
-  deleteOrder: (id: string) => void;
+  loadOrders: () => Promise<void>;
+  addOrder: (order: Pedido) => Promise<void>;
+  updateOrderStatus: (id: string, status: string) => Promise<void>;
+  updateOrderTracking: (id: string, tracking: string) => Promise<void>;
+  deleteOrder: (id: string) => Promise<void>;
 }
 
-export const useOrders = create<OrdersState>()(
-  persist(
-    (set) => ({
-      orders: INITIAL_ORDERS,
-      addOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
-      updateOrderStatus: (id, status) => set((state) => ({
-        orders: state.orders.map(o => o.id === id ? { 
-          ...o, 
-          status,
-          historico: [
-            ...(o.historico || []),
-            { data: new Date().toISOString(), situacao: status, autor: "Loja / Admin" }
-          ]
-        } : o)
-      })),
-      updateOrderTracking: (id, tracking) => set((state) => ({
-        orders: state.orders.map(o => o.id === id ? { 
-          ...o, 
-          envio: { 
-            metodo: o.envio?.metodo || "entrega",
-            ...o.envio, 
-            rastreio: tracking 
-          } 
-        } : o)
-      })),
-      deleteOrder: (id) => set((state) => ({
-        orders: state.orders.filter(o => o.id !== id)
-      }))
-    }),
-    {
-      name: 'associadas-orders-storage',
+export const useOrders = create<OrdersState>((set, get) => ({
+  orders: [],
+  loadOrders: async () => {
+    const { data, error } = await supabase.from('pedidos').select('*, pedido_itens(*), profiles(*)').order('created_at', { ascending: false });
+    if (!error && data) {
+      const mappedOrders: Pedido[] = data.map((d: any) => ({
+        id: d.id,
+        numero: d.numero,
+        lojaId: d.loja_id,
+        data: d.created_at,
+        origem: "site",
+        status: d.status,
+        modalidade: d.metodo_entrega,
+        cliente: {
+          nome: d.profiles?.nome || 'Cliente',
+          email: d.profiles?.email || '',
+          telefone: d.profiles?.telefone || '',
+          cpf: d.profiles?.cpf || '',
+          endereco: d.endereco_entrega
+        },
+        pagamento: {
+          metodo: d.metodo_pagamento
+        },
+        itens: d.pedido_itens?.map((i: any) => ({
+          nome: i.nome,
+          sku: i.sku,
+          ean: i.ean,
+          quantidade: i.quantidade,
+          qtd: i.quantidade,
+          valorUnitario: i.preco_unitario,
+          preco: i.preco_unitario * i.quantidade,
+          foto: i.imagem_url
+        })),
+        valores: {
+          subtotal: d.subtotal,
+          produtos: d.subtotal,
+          frete: d.frete,
+          desconto: d.desconto,
+          total: d.total
+        },
+        historico: [],
+        anotacoes: d.observacoes
+      }));
+      set({ orders: mappedOrders });
     }
-  )
-);
+  },
+  addOrder: async (order) => {
+    // 1. Tentar inserir na tabela pedidos
+    const { data: userAuth } = await supabase.auth.getUser();
+    const userId = userAuth?.user?.id || null;
+
+    const { data: insertedOrder, error: orderError } = await supabase.from('pedidos').insert({
+      numero: order.id.replace('FA-', ''), // ex: 20260807-8492
+      user_id: userId, // pode ser null se o guest insert estiver habilitado no DB
+      loja_id: order.lojaId,
+      status: order.status || 'novo',
+      subtotal: order.valores.subtotal || 0,
+      desconto: order.valores.desconto || 0,
+      frete: order.valores.frete || 0,
+      total: order.valores.total || 0,
+      cep_entrega: order.cliente?.endereco?.cep || null,
+      endereco_entrega: order.cliente?.endereco || {},
+      metodo_entrega: order.modalidade,
+      metodo_pagamento: order.pagamento?.metodo,
+      observacoes: order.anotacoes || ''
+    }).select('id').single();
+
+    if (!orderError && insertedOrder) {
+      // 2. Inserir itens
+      const itens = order.produtos || order.itens || [];
+      if (itens.length > 0) {
+        const orderItemsRows = itens.map(i => ({
+          pedido_id: insertedOrder.id,
+          nome: i.nome,
+          sku: i.sku,
+          ean: i.ean,
+          quantidade: i.qtd || i.quantidade || 1,
+          preco_unitario: i.valorUnitario || i.preco || 0,
+          imagem_url: i.foto || i.imagem || ''
+        }));
+        await supabase.from('pedido_itens').insert(orderItemsRows);
+      }
+    }
+
+    // Mantém no estado local também para refletir imediatamente caso necessário
+    set((state) => ({ orders: [order, ...state.orders] }));
+  },
+  updateOrderStatus: async (id, status) => {
+    const { error } = await supabase.from('pedidos').update({ status }).eq('id', id);
+    if (!error) {
+      set((state) => ({
+        orders: state.orders.map(o => o.id === id ? { ...o, status } : o)
+      }));
+    }
+  },
+  updateOrderTracking: async (id, tracking) => {
+    // Atualiza um JSONB em observações ou envios
+    set((state) => ({
+      orders: state.orders.map(o => o.id === id ? { 
+        ...o, 
+        envio: { 
+          metodo: o.envio?.metodo || "entrega",
+          ...o.envio, 
+          rastreio: tracking 
+        } 
+      } : o)
+    }));
+  },
+  deleteOrder: async (id) => {
+    const { error } = await supabase.from('pedidos').delete().eq('id', id);
+    if (!error) {
+      set((state) => ({
+        orders: state.orders.filter(o => o.id !== id)
+      }));
+    }
+  }
+}));

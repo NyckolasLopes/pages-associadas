@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMarketing } from "@/stores/marketing";
 import { useAdmin } from "@/stores/admin";
 import { Search, Filter, ChevronDown, MoreHorizontal, Trash2 } from "lucide-react";
@@ -27,8 +27,13 @@ export const Route = createFileRoute("/admin/marketing/cupons/")({
 });
 
 function CuponsIndexPage() {
-  const { cupons, addCoupon, removeCoupon } = useMarketing();
+  const { cupons, addCoupon, removeCoupon, loadMarketing } = useMarketing();
   const { currentUser, selectedStoreId } = useAdmin();
+
+  useEffect(() => {
+    loadMarketing();
+  }, [loadMarketing]);
+
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
   const [search, setSearch] = useState("");

@@ -1,5 +1,4 @@
 import Fuse from "fuse.js";
-import productsJson from "../data/products.json";
 import { useAdminCategories } from "@/stores/categories";
 import { useMarcasStore } from "@/stores/marcas";
 
@@ -7,8 +6,6 @@ import { useAdmin } from "@/stores/admin";
 import type { Produto, Categoria, Loja } from "@/types";
 import { removeAccents } from "@/lib/utils";
 import { checkIsGenerico } from "@/lib/format";
-
-const getSafeProducts = () => Array.isArray(productsJson) ? productsJson : (productsJson as any)?.default || [];
 
 const getCategorias = () => {
   const baseCats = useAdminCategories.getState().categories;
@@ -31,7 +28,7 @@ const getCategorias = () => {
   return [...filteredBase, ...marcasCats];
 };
 
-const baseProdutos = getSafeProducts() as Produto[];
+// Products now come entirely from useAdminProducts store (backed by Supabase)
 
 // Helper to format product names (Sentence case)
 function formatProductName(name: any): string {
@@ -143,16 +140,22 @@ function enforceHealthServicesCategory(p: Produto): Produto {
 
 import { useAdminProducts } from "@/stores/products";
 
-// Await hydration helper
+// Await hydration helper — also ensures Supabase products are loaded
 async function ensureHydrated() {
-  if (useAdminProducts.persist.hasHydrated()) return;
+  if (useAdminProducts.persist.hasHydrated()) {
+    // Even if hydrated, ensure Supabase products are loaded
+    await useAdminProducts.getState().loadProducts();
+    return;
+  }
   return new Promise<void>((resolve) => {
-    const unsub = useAdminProducts.persist.onFinishHydration(() => {
+    const unsub = useAdminProducts.persist.onFinishHydration(async () => {
+      await useAdminProducts.getState().loadProducts();
       resolve();
       unsub();
     });
     // Fallback in case it hangs
-    setTimeout(() => {
+    setTimeout(async () => {
+      await useAdminProducts.getState().loadProducts();
       resolve();
       unsub();
     }, 500);
@@ -175,15 +178,13 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
     lastCustomProductsRef = storeEffective;
   }
   
-  // Merge them (custom overrides base if IDs match)
-  const map = new Map(baseProdutos.filter(Boolean).map(p => {
-    const newP = enhanceProduct(p);
-    return [newP?.id || "", enforceHealthServicesCategory(newP)];
-  }));
+  // Products now come directly from the store (Supabase-backed)
+  const map = new Map<string, Produto>();
   
-  // Apply store effective products (general + store custom + store overrides)
+  // Apply store effective products (general from Supabase + store custom + store overrides)
   storeEffective.filter(Boolean).forEach(p => {
-    map.set(p.id, enforceHealthServicesCategory({ ...p }));
+    const enhanced = enhanceProduct(p);
+    map.set(enhanced.id, enforceHealthServicesCategory(enhanced));
   });
   
   const merged = Array.from(map.values()).filter(p => p && p.id);

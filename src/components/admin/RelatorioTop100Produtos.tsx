@@ -114,7 +114,7 @@ export function RelatorioTop100Produtos({
 }: RelatorioTop100Props) {
   const { orders } = useOrders();
   const { pharmacies } = useAdmin();
-  const { products: catalogProducts } = useAdminProducts();
+  const { customProducts: catalogProducts } = useAdminProducts();
 
   // State
   const [criterio, setCriterio] = useState<"quantidade" | "faturamento">("quantidade");
