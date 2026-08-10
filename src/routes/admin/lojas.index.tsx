@@ -221,11 +221,13 @@ function LojasAdmin() {
       return;
     }
 
+    const payload = { ...form, categoriaAssociado: form.categoriaAssociado || "Pleno" };
+
     if (editingId) {
-      updatePharmacy(editingId, form);
+      updatePharmacy(editingId, payload);
       toast.success("Loja atualizada com sucesso!");
     } else {
-      addPharmacy(form);
+      addPharmacy(payload);
       toast.success("Loja adicionada com sucesso!");
     }
     setModalOpen(false);

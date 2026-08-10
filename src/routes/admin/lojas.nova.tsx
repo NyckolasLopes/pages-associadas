@@ -169,13 +169,14 @@ function NovaLojaAdmin() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!form.nome || !form.cnpj) {
       toast.error("Preencha ao menos o Nome Fantasia e o CNPJ.");
       return;
     }
 
-    addPharmacy(form);
+    addPharmacy({ ...form, categoriaAssociado: form.categoriaAssociado || "Pleno" });
     toast.success("Loja adicionada com sucesso!");
     navigate({ to: "/admin/lojas" });
   };
