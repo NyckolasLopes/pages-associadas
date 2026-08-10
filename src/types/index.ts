@@ -247,4 +247,5 @@ export interface Avaliacao {
   texto: string;
   data: string;
   status?: "aprovada" | "recusada" | "pendente";
+  lojaId?: string;
 }

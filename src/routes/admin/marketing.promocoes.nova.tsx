@@ -43,7 +43,8 @@ function NovaPromocaoPage() {
   const navigate = useNavigate();
   const search: any = useSearch({ from: "/admin/marketing/promocoes/nova" });
   const { addPromocao, updatePromocao, promocoes } = useMarketing();
-  const { currentUser, selectedStoreId } = useAdmin();
+  const { currentUser } = useAdmin();
+  const selectedStoreId = "1";
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
   
@@ -158,7 +159,7 @@ function NovaPromocaoPage() {
     setProdutosConfig(prev => {
       const next = { ...prev };
       formData.alvosId.forEach(id => {
-        const prod = produtos.find(p => p.id === id);
+        const prod = produtos.find((p: any) => p.id === id);
         const originalPreco = prod?.precoPor || 10;
         const current = next[id] || { quantidade: batchQtd, precoPorItem: +(originalPreco * 0.85).toFixed(2) };
         next[id] = { ...current, quantidade: batchQtd };
@@ -176,7 +177,7 @@ function NovaPromocaoPage() {
     setProdutosConfig(prev => {
       const next = { ...prev };
       formData.alvosId.forEach(id => {
-        const prod = produtos.find(p => p.id === id);
+        const prod = produtos.find((p: any) => p.id === id);
         const originalPreco = prod?.precoPor || 10;
         const novoPrecoItem = +(originalPreco * (1 - batchDescontoPct / 100)).toFixed(2);
         const current = next[id] || { quantidade: batchQtd || 2, precoPorItem: novoPrecoItem };
@@ -190,11 +191,11 @@ function NovaPromocaoPage() {
   // Selected sample product for live preview
   const sampleProduct = useMemo(() => {
     if (selectedPreviewProductId) {
-      const found = produtos.find(p => p.id === selectedPreviewProductId);
+      const found = produtos.find((p: any) => p.id === selectedPreviewProductId);
       if (found) return found;
     }
     if (formData.alvosId.length > 0) {
-      const found = produtos.find(p => formData.alvosId.includes(p.id));
+      const found = produtos.find((p: any) => formData.alvosId.includes(p.id));
       if (found) return found;
     }
     return produtos[0] || {
@@ -271,7 +272,7 @@ function NovaPromocaoPage() {
     const finalProdutosConfig: Record<string, LevePagueProdutoConfig> = {};
     if (formData.tipoCampanha === "leve_pague") {
       formData.alvosId.forEach(id => {
-        const prod = produtos.find(p => p.id === id);
+        const prod = produtos.find((p: any) => p.id === id);
         const originalPreco = prod?.precoPor || 10;
         const cfg = produtosConfig[id] || {
           quantidade: formData.levePague_quantidade || 2,
@@ -341,7 +342,7 @@ function NovaPromocaoPage() {
             >
               <option value="">Todas as Lojas (Global)</option>
               {lojas.map((l) => (
-                <option key={l.id} value={l.id}>{l.nome}</option>
+                <option key={l.id} value={l.id}>{l.nomeFantasia}</option>
               ))}
             </select>
           </div>
@@ -758,7 +759,7 @@ function NovaPromocaoPage() {
               {/* Individual Products Configuration Rows */}
               <div className="space-y-3">
                 {formData.alvosId.map(id => {
-                  const prod = produtos.find(p => p.id === id);
+                  const prod = produtos.find((p: any) => p.id === id);
                   if (!prod) return null;
                   const originalPrice = prod.precoPor || 10;
                   const cfg = getProductConfig(id, originalPrice);
@@ -906,10 +907,10 @@ function NovaPromocaoPage() {
                   className="w-full bg-white text-xs font-bold text-slate-800 rounded-lg px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:ring-1 focus:ring-orange-500 truncate shadow-sm cursor-pointer"
                 >
                   {formData.alvosId.map(id => {
-                    const prod = produtos.find(p => p.id === id);
+                    const p = produtos.find((p: any) => p.id === id);
                     return (
                       <option key={id} value={id}>
-                        {prod?.nome || id}
+                        {p?.nome || id}
                       </option>
                     );
                   })}

@@ -22,7 +22,8 @@ export const Route = createFileRoute("/admin/marketing/promocoes/")({
 function AdminPromocoesPage() {
   const promocoesRaw = useMarketing((s) => s.promocoes);
   const loadMarketing = useMarketing((s) => s.loadMarketing);
-  const { currentUser, selectedStoreId } = useAdmin();
+  const { currentUser } = useAdmin();
+  const selectedStoreId = "1"; // Fallback
   
   useEffect(() => {
     loadMarketing();
@@ -93,7 +94,7 @@ function AdminPromocoesPage() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm mt-1 text-slate-500">
                       {isGlobalAdmin && p.lojaId && (
                         <div className="flex items-center gap-1.5 font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                          Loja: {lojas.find(l => l.id === p.lojaId)?.nome || p.lojaId}
+                          Loja: {lojas.find(l => l.id === p.lojaId)?.nomeFantasia || p.lojaId}
                         </div>
                       )}
                       <div className="flex items-center gap-1.5 font-medium">

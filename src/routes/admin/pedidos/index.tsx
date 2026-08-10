@@ -124,13 +124,13 @@ export function PedidosAdmin() {
 
   const orders = allOrders.filter(o => {
     if (activeStoreId) return o.lojaId === activeStoreId;
-    if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId))) return false;
+    if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId as string))) return false;
     return true;
   });
 
   const allAbandonedCarts = allAbandonedCartsRaw.filter(c => {
     if (activeStoreId) return c.lojaId === activeStoreId;
-    if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId))) return false;
+    if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId as string))) return false;
     return true;
   });
 
@@ -146,7 +146,7 @@ export function PedidosAdmin() {
 
   const getLojaName = (id?: string, fallbackName?: string) => {
     const p = id ? pharmacies.find(ph => ph.id === id) : null;
-    return p ? (p.nomeFantasia || p.nome) : (fallbackName || "Farmácias Associadas");
+    return p ? (p.nome) : (fallbackName || "Farmácias Associadas");
   };
 
   const handleDelete = (id: string, tipo: "pedido" | "carrinho") => {
@@ -202,7 +202,7 @@ export function PedidosAdmin() {
 
     const message = isPendente
       ? `💊 *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
-        `🏬 *Unidade:* ${loja?.nomeFantasia || item.lojaNome}\n` +
+        `🏬 *Unidade:* ${loja?.nome || item.lojaNome}\n` +
         `⚠️ *AVISO DE PEDIDO PENDENTE / CARRINHO ABANDONADO*\n\n` +
         `Olá equipe! Há um pedido pendente/carrinho em aberto no sistema.\n\n` +
         `👤 *Cliente:* ${item.clienteNome}\n` +
@@ -211,7 +211,7 @@ export function PedidosAdmin() {
         `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `👉 *Ação necessária:* Por favor, entrem em contato com o cliente para dar seguimento ao atendimento e finalizar a compra!`
       : `💊 *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
-        `🏬 *Unidade:* ${loja?.nomeFantasia || item.lojaNome}\n` +
+        `🏬 *Unidade:* ${loja?.nome || item.lojaNome}\n` +
         `🔔 *AVISO DE PEDIDO CONCLUÍDO (#${item.id})*\n\n` +
         `Olá equipe! Temos um pedido registrado para a sua loja.\n\n` +
         `👤 *Cliente:* ${item.clienteNome}\n` +
@@ -222,7 +222,7 @@ export function PedidosAdmin() {
 
     const fullPhone = cleanPhone.startsWith("55") && cleanPhone.length > 11 ? cleanPhone : `55${cleanPhone}`;
     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, "_blank");
-    toast.success(`Abrindo WhatsApp da loja ${loja?.nomeFantasia || item.lojaNome}...`);
+    toast.success(`Abrindo WhatsApp da loja ${loja?.nome || item.lojaNome}...`);
   };
 
   // Função para a loja falar diretamente com o cliente via WhatsApp ("Ver no WhatsApp")
@@ -244,7 +244,7 @@ export function PedidosAdmin() {
     }
 
     const loja = pharmacies.find(p => p.id === item.lojaId);
-    const lojaNome = loja?.nomeFantasia || loja?.nome || item.lojaNome || "Farmácias Associadas";
+    const lojaNome = loja?.nome || item.lojaNome || "Farmácias Associadas";
     const itemsList = item.produtos.map(p => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`).join("\n");
     const isPendente = item.status === "Pendente";
 

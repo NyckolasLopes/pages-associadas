@@ -94,6 +94,7 @@ export interface Pharmacy {
   isVirtualStoreGenerated?: boolean;
   virtualStoreStatus?: 'Ativa' | 'Inativa';
   offersServices?: boolean;
+  entregaExpressa?: boolean;
   // Dados da Loja
   cnpj: string;
   logoUrl?: string;
@@ -140,7 +141,6 @@ export interface Pharmacy {
   tempoEntrega: string;
   custoEntrega: number;
   raioEntregaKm?: number;
-  raiosEntrega?: { ateKm: number; preco: number }[];
   faixasCep?: { cepInicio: string; cepFim: string; taxa: number; tempoMinutos?: number }[];
 
   // Dados de Retirada
@@ -150,11 +150,13 @@ export interface Pharmacy {
   tempoRetirada: string;
   // Outros métodos de entrega
   aceitaUber: boolean;
-  custoUber: number;
+  custoUber: number | string;
   aceita99: boolean;
-  custo99: number;
+  custo99: number | string;
   aceitaMotoboy: boolean;
-  custoMotoboy: number;
+  custoMotoboy: number | string;
+  custoEntregaExpressa?: number | string;
+  raiosEntrega?: { ateKm: number; preco: number }[];
   // Integração
   sistemaUtilizado?: string;
   vendeIfood?: boolean;
@@ -708,7 +710,7 @@ export const useAdmin = create<AdminState>()(
             latitude: l.latitude,
             longitude: l.longitude,
             categoriaAssociado: l.categoria_associado as any,
-          }));
+          })) as unknown as Pharmacy[];
           set({ pharmacies: loadedPharmacies });
         }
       },
@@ -726,16 +728,17 @@ export const useAdmin = create<AdminState>()(
           crf: p.inscricaoFarmaceutico,
           alvara_sanitario: p.alvara,
           afe: p.afe,
-          cep: p.cep,
-          logradouro: p.logradouro,
-          numero: p.numero,
-          bairro: p.bairro,
-          cidade: p.cidade,
-          estado: p.estado,
-          latitude: p.latitude,
-          longitude: p.longitude,
-          categoria_associado: p.categoriaAssociado
-        });
+          cep: (p as any).cep,
+          logradouro: (p as any).logradouro,
+          numero: (p as any).numero,
+          bairro: (p as any).bairro,
+          cidade: (p as any).cidade,
+          estado: (p as any).estado,
+          latitude: (p as any).latitude,
+          longitude: (p as any).longitude,
+          categoria_associado: p.categoriaAssociado,
+          entrega_expressa: p.entregaExpressa,
+        } as any);
         if (!error) {
           set((s) => ({ pharmacies: [...s.pharmacies, { ...p, ativo: p.ativo ?? true }] }));
         }
@@ -753,16 +756,17 @@ export const useAdmin = create<AdminState>()(
           crf: p.inscricaoFarmaceutico,
           alvara_sanitario: p.alvara,
           afe: p.afe,
-          cep: p.cep,
-          logradouro: p.logradouro,
-          numero: p.numero,
-          bairro: p.bairro,
-          cidade: p.cidade,
-          estado: p.estado,
-          latitude: p.latitude,
-          longitude: p.longitude,
-          categoria_associado: p.categoriaAssociado
-        }).eq('id', id);
+          cep: (p as any).cep,
+          logradouro: (p as any).logradouro,
+          numero: (p as any).numero,
+          bairro: (p as any).bairro,
+          cidade: (p as any).cidade,
+          estado: (p as any).estado,
+          latitude: (p as any).latitude,
+          longitude: (p as any).longitude,
+          categoria_associado: p.categoriaAssociado,
+          entrega_expressa: p.entregaExpressa,
+        } as any).eq('id', id);
         if (!error) {
           set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) }));
         }

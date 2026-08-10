@@ -909,7 +909,7 @@ function AdminProdutosPrecos() {
                 <div className="space-x-2 flex">
                   <Button variant="outline" onClick={() => setIsCampanhaModalOpen(false)}>Cancelar</Button>
                   <Button 
-                    onClick={handleSaveCampanha} 
+                    onClick={() => handleSaveCampanha()} 
                     className="bg-emerald-600 hover:bg-emerald-700"
                     disabled={
                       selectedCampanhaProducts.some(id => {

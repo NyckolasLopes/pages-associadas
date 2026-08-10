@@ -15,6 +15,7 @@ export interface AbandonedCart {
   type: 'sem_transacao' | 'pagamento_nao_aprovado';
   notes?: string;
   lojaId?: string;
+  lojaNome?: string;
   items: { nome: string; qtd: number; valorUnitario: number; foto: string }[];
 }
 

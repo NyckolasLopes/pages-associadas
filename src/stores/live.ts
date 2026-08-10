@@ -9,7 +9,7 @@ interface CIDADES_TYPE {
   y: number;
 }
 
-const CIDADES = [
+export const CIDADES = [
   { uf: "RS", nome: "Porto Alegre", x: 52, y: 88 },
   { uf: "RS", nome: "Caxias do Sul", x: 53, y: 86 },
   { uf: "RS", nome: "Pelotas", x: 51, y: 92 },

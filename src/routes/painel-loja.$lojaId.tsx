@@ -276,7 +276,7 @@ function PainelLoja() {
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'associadas-orders-storage') {
-        useOrders.persist.rehydrate();
+        useOrders.getState().loadOrders();
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -291,7 +291,7 @@ function PainelLoja() {
     const worker = new Worker(URL.createObjectURL(blob));
     
     worker.onmessage = () => {
-      useOrders.persist.rehydrate();
+      useOrders.getState().loadOrders();
     };
 
     return () => {

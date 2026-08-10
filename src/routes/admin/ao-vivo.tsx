@@ -13,11 +13,12 @@ export const Route = createFileRoute("/admin/ao-vivo")({
 
 function AoVivo() {
   const { visitors: rawVisitors, totalAcessos, stats } = useLive();
-  const { currentUser, selectedStoreId } = useAdmin();
+  const { currentUser } = useAdmin();
+  const selectedStoreId = "1";
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
   const visitors = isGlobalAdmin ? rawVisitors : rawVisitors.filter(v => v.lojaId === effectiveStoreId || v.lojaId === `admin-loja-${effectiveStoreId}`);
-  const getLojaName = (id) => {
+  const getLojaName = (id: string) => {
     if (id === "admin-sede") return "Admin da Sede";
     return lojas.find(l => String(l.id) === String(id))?.nomeFantasia || "Loja Desconhecida";
   };

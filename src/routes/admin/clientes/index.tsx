@@ -119,11 +119,11 @@ function ClientesAdmin() {
     customers.forEach((c) => {
       const cleanPhone = (c.telefone || "").replace(/\D/g, "");
       const cleanEmail = (c.email || "").toLowerCase().trim();
-      const targetLojaId = c.lojaId || "1";
+      const targetLojaId = (c as any).lojaId || "1";
       const key = `${cleanPhone || cleanEmail || c.id}_${targetLojaId}`;
 
       const loja = pharmacies.find((p) => p.id === targetLojaId);
-      const lojaNome = loja?.nome || c.lojaNome || `Farmácias Associadas #${targetLojaId}`;
+      const lojaNome = loja?.nome || (c as any).lojaNome || `Farmácias Associadas #${targetLojaId}`;
 
       customerMap.set(key, {
         id: c.id,
@@ -343,7 +343,7 @@ function ClientesAdmin() {
     
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", isGlobalView ? "clientes_rede_completa.csv" : `clientes_${activeLoja?.slug || 'loja'}.csv`);
+    link.setAttribute("download", isGlobalView ? "clientes_rede_completa.csv" : `clientes_${(activeLoja as any)?.slug || 'loja'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -447,7 +447,7 @@ function ClientesAdmin() {
             />
           </div>
           <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-            <span>Exibindo {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente' : 'clientes'}</span>
+            <a href={`/loja/${(activeLoja as any).slug}`} target="_blank" className="flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md transition-colors">Exibindo {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente' : 'clientes'}</a>
           </div>
         </div>
 

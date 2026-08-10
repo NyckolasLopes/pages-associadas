@@ -28,7 +28,8 @@ export const Route = createFileRoute("/admin/marketing/cupons/")({
 
 function CuponsIndexPage() {
   const { cupons, addCoupon, removeCoupon, loadMarketing } = useMarketing();
-  const { currentUser, selectedStoreId } = useAdmin();
+  const { currentUser } = useAdmin();
+  const selectedStoreId = "1";
 
   useEffect(() => {
     loadMarketing();

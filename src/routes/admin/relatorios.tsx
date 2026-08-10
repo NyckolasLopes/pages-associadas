@@ -159,7 +159,7 @@ function Relatorios() {
 
   const { orders: rawOrders } = useOrders();
   const { lojaPromocoes } = useMarketing();
-  const { products } = useAdminProducts();
+  const { customProducts } = useAdminProducts();
   const orders = useMemo(() => {
     let filtered = rawOrders.filter(o => {
       const status = o.status.toUpperCase();
@@ -275,7 +275,7 @@ function Relatorios() {
   
   const barChartData = Object.entries(lojasMap).map(([id, data]) => {
     const loja = pharmacies.find(p => p.id === id);
-    const nome = loja?.nomeFantasia || loja?.nome || `Loja ${id}`;
+    const nome = loja?.nome || `Loja ${id}`;
     return {
       name: nome,
       faturamento: data.faturamento,
@@ -1153,7 +1153,7 @@ function Relatorios() {
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {grupo.itens.map((relatorio) => {
+              {grupo.itens.map((relatorio: any) => {
                 const isDisabled = relatorio.id === "vendas-upsell";
                 return (
                   <div 

@@ -29,7 +29,7 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
 
   loadMarcas: async () => {
     const { data, error } = await supabase
-      .from('marcas')
+      .from('marcas' as any)
       .select('*')
       .order('nome', { ascending: true });
 
@@ -39,7 +39,7 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
   },
 
   addMarca: async (m) => {
-    const { error } = await supabase.from('marcas').upsert({
+    const { error } = await supabase.from('marcas' as any).upsert({
       id: m.id,
       nome: m.nome,
       slug: m.slug,
@@ -56,7 +56,7 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
   },
 
   updateMarca: async (m) => {
-    const { error } = await supabase.from('marcas').update({
+    const { error } = await supabase.from('marcas' as any).update({
       nome: m.nome,
       slug: m.slug,
       descricao: m.descricao || null,
@@ -72,7 +72,7 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
   },
 
   removeMarca: async (id) => {
-    const { error } = await supabase.from('marcas').delete().eq('id', id);
+    const { error } = await supabase.from('marcas' as any).delete().eq('id', id);
     if (!error) {
       get().loadMarcas();
     }

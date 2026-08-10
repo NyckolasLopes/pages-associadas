@@ -618,7 +618,7 @@ export function RelatorioTop100Produtos({
                     </SelectItem>
                     {pharmacies.map(loja => (
                       <SelectItem key={loja.id} value={loja.id} className="font-semibold text-slate-700">
-                        {loja.nomeFantasia || loja.nome}
+                        {(loja as any).nomeFantasia || loja.nome}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -35,7 +35,6 @@ export const useAdminCategories = create<CategoriesState>((set, get) => ({
         parentId: d.parent_id,
         descricaoHtml: d.descricao_html,
         ativa: d.ativa,
-        destaque: d.destaque,
       }));
       set({ categories: mapped as Categoria[] });
     }
@@ -49,7 +48,6 @@ export const useAdminCategories = create<CategoriesState>((set, get) => ({
       parent_id: c.parentId || null,
       descricao_html: c.descricaoHtml || null,
       ativa: c.ativa !== false,
-      destaque: c.destaque !== false,
     });
     if (!error) {
       get().loadCategories();

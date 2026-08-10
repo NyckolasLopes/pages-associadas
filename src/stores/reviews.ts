@@ -17,7 +17,7 @@ export const useReviews = create<ReviewsStore>((set, get) => ({
   avaliacoes: [],
   
   loadAvaliacoes: async () => {
-    const { data, error } = await supabase.from('avaliacoes').select('*').order('data', { ascending: false });
+    const { data, error } = await supabase.from('avaliacoes' as any).select('*').order('data', { ascending: false });
     if (data && !error) {
       const parsed: Avaliacao[] = data.map((d: any) => ({
         id: d.id,
@@ -37,7 +37,7 @@ export const useReviews = create<ReviewsStore>((set, get) => ({
     const { data: userAuth } = await supabase.auth.getUser();
     const userId = userAuth?.user?.id || null;
     
-    const { error } = await supabase.from('avaliacoes').insert({
+    const { error } = await supabase.from('avaliacoes' as any).insert({
       produto_id: avaliacao.produtoId,
       usuario_id: userId,
       usuario_nome: avaliacao.usuario,
@@ -52,7 +52,7 @@ export const useReviews = create<ReviewsStore>((set, get) => ({
   },
   
   removeAvaliacao: async (id) => {
-    const { error } = await supabase.from('avaliacoes').delete().eq('id', id);
+    const { error } = await supabase.from('avaliacoes' as any).delete().eq('id', id);
     if (!error) {
       await get().loadAvaliacoes();
     }
@@ -64,7 +64,7 @@ export const useReviews = create<ReviewsStore>((set, get) => ({
     if (updates.nota !== undefined) dbUpdate.nota = updates.nota;
     if (updates.status !== undefined) dbUpdate.status = updates.status;
     
-    const { error } = await supabase.from('avaliacoes').update(dbUpdate).eq('id', id);
+    const { error } = await supabase.from('avaliacoes' as any).update(dbUpdate).eq('id', id);
     if (!error) {
       await get().loadAvaliacoes();
     }
@@ -75,7 +75,7 @@ export const useReviews = create<ReviewsStore>((set, get) => ({
   },
   
   updateAvaliacaoStatus: async (id, status) => {
-    const { error } = await supabase.from('avaliacoes').update({ status }).eq('id', id);
+    const { error } = await supabase.from('avaliacoes' as any).update({ status }).eq('id', id);
     if (!error) {
       await get().loadAvaliacoes();
     }
@@ -98,7 +98,7 @@ export const useReviews = create<ReviewsStore>((set, get) => ({
       loja_id: source.lojaId || null
     }));
     
-    const { error } = await supabase.from('avaliacoes').insert(rows);
+    const { error } = await supabase.from('avaliacoes' as any).insert(rows);
     if (!error) {
       await get().loadAvaliacoes();
     }

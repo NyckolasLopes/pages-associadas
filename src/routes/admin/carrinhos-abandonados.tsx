@@ -254,7 +254,7 @@ function CarrinhosAbandonados() {
                       </td>
                       {isGlobalAdmin && (
                         <td className="p-4 text-slate-600 font-medium text-xs">
-                          {loja?.nomeFantasia || "Rede"}
+                          {loja?.nome || "Rede"}
                         </td>
                       )}
                       <td className="p-4 text-slate-600 font-medium">{cart.createdAt}</td>

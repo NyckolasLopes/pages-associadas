@@ -119,7 +119,7 @@ function PerfilPage() {
     setEditPhone(v);
   };
 
-  const handleSavePersonalInfo = () => {
+  const handleSavePersonalInfo = async () => {
     if (!user) return;
     if (!editName.trim() || !editEmail.trim()) {
       toast.error("Nome e E-mail são obrigatórios.");

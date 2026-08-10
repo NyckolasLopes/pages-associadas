@@ -75,8 +75,8 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
   
   loadMarketing: async () => {
     const [ { data: cuponsData }, { data: promocoesData } ] = await Promise.all([
-      supabase.from('cupons').select('*').order('created_at', { ascending: false }),
-      supabase.from('promocoes').select('*').order('created_at', { ascending: false })
+      supabase.from('cupons' as any).select('*').order('created_at', { ascending: false }),
+      supabase.from('promocoes' as any).select('*').order('created_at', { ascending: false })
     ]);
 
     let parsedCupons: Coupon[] = [];
@@ -163,7 +163,7 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       loja_id: coupon.lojaId || null
     };
 
-    const { data, error } = await supabase.from('cupons').insert(dbCoupon).select().single();
+    const { data, error } = await supabase.from('cupons' as any).insert(dbCoupon).select().single();
     if (data && !error) {
       await get().loadMarketing();
     }
@@ -187,14 +187,14 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
     if (updatedFields.usoUnico !== undefined) dbUpdate.uso_unico = updatedFields.usoUnico;
     if (updatedFields.cupomPrimeiraCompra !== undefined) dbUpdate.cupom_primeira_compra = updatedFields.cupomPrimeiraCompra;
     
-    const { error } = await supabase.from('cupons').update(dbUpdate).eq('id', id);
+    const { error } = await supabase.from('cupons' as any).update(dbUpdate).eq('id', id);
     if (!error) {
       await get().loadMarketing();
     }
   },
 
   removeCoupon: async (id) => {
-    const { error } = await supabase.from('cupons').delete().eq('id', id);
+    const { error } = await supabase.from('cupons' as any).delete().eq('id', id);
     if (!error) {
       await get().loadMarketing();
     }
@@ -224,7 +224,7 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       loja_id: promocao.lojaId || null
     };
 
-    const { error } = await supabase.from('promocoes').insert(dbPromo);
+    const { error } = await supabase.from('promocoes' as any).insert(dbPromo);
     if (!error) await get().loadMarketing();
   },
 
@@ -235,12 +235,12 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
     if (updatedFields.ativa !== undefined) dbUpdate.ativa = updatedFields.ativa;
     // (outros mapeamentos podem ser adicionados conforme necessário no admin)
 
-    const { error } = await supabase.from('promocoes').update(dbUpdate).eq('id', id);
+    const { error } = await supabase.from('promocoes' as any).update(dbUpdate).eq('id', id);
     if (!error) await get().loadMarketing();
   },
 
   removePromocao: async (id) => {
-    const { error } = await supabase.from('promocoes').delete().eq('id', id);
+    const { error } = await supabase.from('promocoes' as any).delete().eq('id', id);
     if (!error) await get().loadMarketing();
   },
 

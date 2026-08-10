@@ -19,6 +19,7 @@ export interface PedidoItem {
 
 export interface Pedido {
   id: string;
+  numero?: string;
   lojaId?: string;
   lojaNome?: string;
   data: string;
@@ -160,7 +161,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     const { data: insertedOrder, error: orderError } = await supabase.from('pedidos').insert({
       numero: order.id.replace('FA-', ''),
-      user_id: userId,
+      user_id: userId as string,
       loja_id: order.lojaId,
       status: order.status || 'novo',
       subtotal: order.valores.subtotal || 0,
@@ -180,13 +181,11 @@ export const useOrders = create<OrdersState>((set, get) => ({
         const orderItemsRows = itens.map(i => ({
           pedido_id: insertedOrder.id,
           nome: i.nome,
-          sku: i.sku,
-          ean: i.ean,
-          quantidade: i.qtd || i.quantidade || 1,
-          preco_unitario: i.valorUnitario || i.preco || 0,
-          imagem_url: i.foto || i.imagem || '',
+          produto_id: i.id || null,
+          qty: i.qtd || i.quantidade || 1,
+          preco_unit: i.valorUnitario || i.preco || 0,
         }));
-        await supabase.from('pedido_itens').insert(orderItemsRows);
+        await supabase.from('pedido_itens').insert(orderItemsRows as any);
       }
     }
 

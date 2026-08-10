@@ -16,9 +16,12 @@ export const authService = {
    */
   getSession() {
     try {
-      const session = secureSession.get('auth_session');
-      if (session && session.expiresAt > Date.now()) {
-        return session.user;
+      const sessionStr = secureSession.get('auth_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session && session.expiresAt > Date.now()) {
+          return session.user;
+        }
       }
       return null;
     } catch (e) {
@@ -40,10 +43,10 @@ export const authService = {
         if (email && pass) {
           const user = { name: email.split("@")[0], email, provider: "email" };
           // Simulate backend returning a token/session with expiration
-          secureSession.set('auth_session', {
+          secureSession.set('auth_session', JSON.stringify({
             user,
             expiresAt: Date.now() + 1000 * 60 * 60 * 24 // 24 hours
-          });
+          }));
           resolve(user);
         } else {
           reject(new Error("Invalid credentials"));
