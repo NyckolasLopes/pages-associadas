@@ -141,9 +141,7 @@ export interface Pharmacy {
   raioEntregaKm?: number;
   raiosEntrega?: { ateKm: number; preco: number }[];
   faixasCep?: { cepInicio: string; cepFim: string; taxa: number; tempoMinutos?: number }[];
-  // Entrega Expressa
-  entregaExpressa: boolean;
-  custoEntregaExpressa: number;
+
   // Dados de Retirada
   aceitaRetirada: boolean;
   horarioInicioRetirada: string;
@@ -315,8 +313,7 @@ const defaultPharmacies: Pharmacy[] = lojas.map((l, idx) => {
     tempoEntrega: l.faixasCep?.[0]?.tempoMinutos ? `00:${l.faixasCep[0].tempoMinutos}` : "01:00",
     custoEntrega: l.faixasCep?.[0]?.taxa || 5.0,
     raiosEntrega: [],
-    entregaExpressa: true,
-    custoEntregaExpressa: (l.faixasCep?.[0]?.taxa || 5.0) + 5,
+
     aceitaRetirada: true,
     horarioInicioRetirada: "08:00",
     horarioFimRetirada: "22:00",

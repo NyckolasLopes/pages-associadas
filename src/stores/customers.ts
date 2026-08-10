@@ -37,7 +37,7 @@ const INITIAL_CUSTOMERS: Customer[] = [
     metodoLogin: "Google",
     totalPedidos: 12,
     valorUltimoPedido: 148.50,
-    anotacoes: "Cliente frequente, prefere entrega expressa.",
+    anotacoes: "Cliente frequente.",
     lojaId: "loja-1",
     lojaNome: "Farmácia Associadas - Centro",
   },

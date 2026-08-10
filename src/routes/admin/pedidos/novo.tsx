@@ -242,7 +242,7 @@ function CriarPedidoAdmin() {
     navigate({ to: "/admin/pedidos" });
   };
 
-  const deliveryOptions = ["Entrega Padrão", "Entrega Expressa", "Uber Flash", "99 Entrega"];
+  const deliveryOptions = ["Entrega Padrão", "Uber Flash", "99 Entrega"];
   const paymentOptionsEntrega = ["Pix", "Cartão de Crédito"];
   const paymentOptionsRetirada = [
     "Pagamento na Farmácia (Dinheiro)",

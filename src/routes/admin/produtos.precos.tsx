@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
 import { 
   Store, Search, DollarSign, Package, Upload, 
-  FileSpreadsheet, AlertCircle, CheckCircle2, FileText, ArrowRight, Check 
+  FileSpreadsheet, AlertCircle, CheckCircle2, FileText, ArrowRight, Check, Calendar 
 } from "lucide-react";
 import {
   Select,
@@ -683,12 +683,24 @@ function AdminProdutosPrecos() {
                         <td className="px-4 py-4 bg-emerald-50/30 border-l border-emerald-100">
                           <div className="flex items-center gap-2">
                             <div className="flex-1 min-w-[300px]">
-                              <PriceDiscountInput
-                                basePrice={globalPor}
-                                initialPromoPrice={parseFloat(displayPor || "0") || undefined}
-                                onChange={(val) => handleEditChange(produto.id, "precoPor", val.toString())}
-                                disabled={campanhaAtiva}
-                              />
+                              {isCampanhaInterna && lojaPreco?.campanhaInicio && lojaPreco?.campanhaFim && edits === undefined && !campanhaAtiva ? (
+                                <div className="bg-orange-50 border border-orange-200 rounded p-3 text-xs w-full max-w-sm">
+                                  <div className="font-bold text-orange-800 mb-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> Período da Oferta</div>
+                                  <div className="text-slate-700 mb-2">{lojaPreco.campanhaInicio.split('-').reverse().join('/')} até {lojaPreco.campanhaFim.split('-').reverse().join('/')}</div>
+                                  <div className="flex justify-between items-center mb-2">
+                                    <div className="text-slate-500">De: <span className="line-through">{formatCurrency(lojaPreco.precoDe)}</span></div>
+                                    <div className="font-bold text-emerald-600">Por: {formatCurrency(lojaPreco.precoPor)}</div>
+                                  </div>
+                                  <div className="text-[10px] text-orange-700 italic">Após isso vai retornar automaticamente para o preço original.</div>
+                                </div>
+                              ) : (
+                                <PriceDiscountInput
+                                  basePrice={globalPor}
+                                  initialPromoPrice={parseFloat(displayPor || "0") || undefined}
+                                  onChange={(val) => handleEditChange(produto.id, "precoPor", val.toString())}
+                                  disabled={campanhaAtiva}
+                                />
+                              )}
                             </div>
                             
                             <div className="flex flex-col gap-1 mt-4">
@@ -751,7 +763,8 @@ function AdminProdutosPrecos() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Importar Encarte</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-slate-600">
+              Você está importando um encarte para a loja <strong className="text-emerald-700">{pharmacies.find(p => p.id === selectedPharmacyId)?.nome || "Selecionada"}</strong>.<br/><br/>
               As promoções do encarte devem ser aplicadas no mês de {currentMonthName}?
             </DialogDescription>
           </DialogHeader>

@@ -626,35 +626,7 @@ function InscricaoLojaPublic() {
                     </div>
                   </div>
 
-                  {/* ---- ENTREGA EXPRESSA ---- */}
-                  <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-amber-600" />
-                      <span className="text-sm font-bold text-amber-800">Entrega expressa válido para raios de até 10km</span>
-                    </div>
-                    <RadioToggle
-                      label="Tem entrega expressa?"
-                      value={form.entregaExpressa}
-                      onChange={(v) => update({ entregaExpressa: v })}
-                    />
-                    {form.entregaExpressa && (
-                      <div className="space-y-1.5 max-w-[200px]">
-                        <FieldLabel required>Valor da Entrega Expressa (R$)</FieldLabel>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={form.custoEntregaExpressa === "" as any ? "" : form.custoEntregaExpressa}
-                          onChange={(e) => update({ custoEntregaExpressa: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-                        />
-                      </div>
-                    )}
-                    {!form.entregaExpressa && (
-                      <p className="text-xs text-amber-700">
-                        A opção de entrega expressa <strong>não será exibida</strong> no site para esta loja.
-                      </p>
-                    )}
-                  </div>
+
                 </>
               )}
             </div>

@@ -252,9 +252,6 @@ function CartPage() {
         opts.push(
           { id: "standard", label: "Entrega Padrão", price: deliveryPrice, eta: p.tempoEntrega ? `Em até ${p.tempoEntrega}` : "Em até 3 horas", icon: Bike }
         );
-        if (p.entregaExpressa && distance !== null && distance <= 10) {
-           opts.push({ id: "express", label: "Entrega Expressa", price: deliveryPrice + (p.custoEntregaExpressa || 5), eta: "Em até 30 minutos", icon: Truck });
-        }
       }
     }
 

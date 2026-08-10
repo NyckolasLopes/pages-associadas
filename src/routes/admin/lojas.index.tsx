@@ -299,7 +299,7 @@ function LojasAdmin() {
                 <th className="px-4 py-3 font-bold">Cidade/UF</th>
                 <th className="px-4 py-3 font-bold">Telefone</th>
                 <th className="px-4 py-3 font-bold text-center">Entrega</th>
-                <th className="px-4 py-3 font-bold text-center">Expressa</th>
+
                 <th className="px-4 py-3 font-bold text-center">Retirada</th>
                 <th className="px-4 py-3 font-bold text-center">Sistema</th>
                 <th className="px-4 py-3 font-bold text-center">Status</th>
@@ -352,13 +352,7 @@ function LojasAdmin() {
                         <Badge variant="secondary" className="text-[10px]"><X className="h-3 w-3 mr-1" />Não</Badge>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      {p.entregaExpressa ? (
-                        <Badge className="bg-amber-100 text-amber-800 text-[10px]"><Zap className="h-3 w-3 mr-1" />R$ {p.custoEntregaExpressa?.toFixed(2)}</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-[10px]"><X className="h-3 w-3 mr-1" />Não</Badge>
-                      )}
-                    </td>
+
                     <td className="px-4 py-3 text-center">
                       {p.aceitaRetirada ? (
                         <Badge className="bg-emerald-100 text-emerald-800 text-[10px]"><Check className="h-3 w-3 mr-1" />Sim</Badge>
@@ -813,35 +807,7 @@ function LojasAdmin() {
                   </div>
                 </div>
 
-                {/* ---- ENTREGA EXPRESSA ---- */}
-                <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-amber-600" />
-                    <span className="text-sm font-bold text-amber-800">Entrega expressa válido para raios de até 10km</span>
-                  </div>
-                  <RadioToggle
-                    label="Tem entrega expressa?"
-                    value={form.entregaExpressa}
-                    onChange={(v) => update({ entregaExpressa: v })}
-                  />
-                  {form.entregaExpressa && (
-                    <div className="space-y-1.5 max-w-[200px]">
-                      <FieldLabel required>Valor da Entrega Expressa (R$)</FieldLabel>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={form.custoEntregaExpressa === "" as any ? "" : form.custoEntregaExpressa}
-                        onChange={(e) => update({ custoEntregaExpressa: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-                      />
-                    </div>
-                  )}
-                  {!form.entregaExpressa && (
-                    <p className="text-xs text-amber-700">
-                      A opção de entrega expressa <strong>não será exibida</strong> no site para esta loja.
-                    </p>
-                  )}
-                </div>
+
               </>
             )}
           </div>
