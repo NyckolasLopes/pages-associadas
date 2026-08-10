@@ -102,9 +102,22 @@ export const useLive = create<LiveStore>((set, get) => ({
             if (res.ok) {
               const data = await res.json();
               if (data.city && data.region) {
+                let x = 50;
+                let y = 50;
+                const found = CIDADES.find(c => c.nome.toLowerCase() === data.city.toLowerCase());
+                if (found) {
+                  x = found.x;
+                  y = found.y;
+                } else if (data.longitude && data.latitude) {
+                   x = ((data.longitude + 74) / 40) * 100;
+                   y = ((5.2 - data.latitude) / 38.9) * 100;
+                }
+                
                 realCity = {
                   nome: data.city,
-                  uf: data.region
+                  uf: data.region,
+                  x,
+                  y
                 };
               }
             }

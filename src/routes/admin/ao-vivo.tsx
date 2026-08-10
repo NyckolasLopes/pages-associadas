@@ -28,6 +28,11 @@ function AoVivo() {
 
   const getLojaName = (id: string) => {
     if (id === "admin-sede") return "Admin da Sede";
+    if (id.startsWith('admin-loja-')) {
+      const realId = id.replace('admin-loja-', '');
+      const storeName = pharmacies.find(l => String(l.id) === String(realId))?.nomeFantasia || "Loja Desconhecida";
+      return `Admin (${storeName})`;
+    }
     const realId = id.replace('admin-loja-', '');
     return pharmacies.find(l => String(l.id) === String(realId))?.nomeFantasia || "Loja Desconhecida";
   };
@@ -147,7 +152,7 @@ function AoVivo() {
               <div className="font-black text-slate-700 text-xl">{Math.max(0, visitors.length - Math.floor(visitors.length / 3))}</div>
             </div>
             <div className="bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100 text-center">
-              <div className="text-[10px] text-emerald-600 uppercase tracking-wider font-bold mb-0.5">Checkout</div>
+              <div className="text-[10px] text-emerald-600 uppercase tracking-wider font-bold mb-0.5">Carrinho</div>
               <div className="font-black text-emerald-700 text-xl">{Math.floor(visitors.length / 3)}</div>
             </div>
           </div>
@@ -175,12 +180,9 @@ function AoVivo() {
               {topCidades.map((cidade, i) => (
                 <div key={i} className="flex items-start justify-between group py-1">
                   <div className="flex items-start gap-2.5 flex-1 min-w-0 pr-2">
-                    <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md shadow-sm shrink-0 mt-0.5">
-                      {cidade.uf}
-                    </span>
                     <div className="flex flex-col flex-1 min-w-0">
                       <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors leading-tight">{cidade.nome}</span>
-                      {isGlobalAdmin && cidade.lojaId && (
+                      {cidade.lojaId && (
                         <span className="text-[10px] font-semibold text-indigo-500 leading-tight mt-0.5">{getLojaName(cidade.lojaId)}</span>
                       )}
                     </div>
