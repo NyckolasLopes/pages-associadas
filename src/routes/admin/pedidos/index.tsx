@@ -141,7 +141,6 @@ export function PedidosAdmin() {
   const [dateEndFilter, setDateEndFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
-  const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [mainView, setMainView] = useState<"todos" | "concluidos" | "carrinhos">("todos");
 
   const getLojaName = (id?: string, fallbackName?: string) => {
@@ -650,11 +649,7 @@ export function PedidosAdmin() {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {isGlobalAdmin() && (
-              <Button variant="outline" className="font-bold gap-2 bg-white border-slate-200 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200" onClick={() => setIsApiModalOpen(true)}>
-                <Code className="h-4 w-4" /> API de Pedidos
-              </Button>
-            )}
+
             <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToExcel}>
               <Download className="h-4 w-4" /> Exportar Planilha
             </Button>
@@ -1108,42 +1103,7 @@ export function PedidosAdmin() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal API de Pedidos */}
-      <Dialog open={isApiModalOpen} onOpenChange={setIsApiModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-              <Code className="h-6 w-6 text-emerald-600" /> API de Pedidos
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            <div className="bg-slate-50 border rounded-xl p-4 text-sm text-slate-600">
-              <p className="font-medium">Utilize a nossa API RESTful para integrar a entrada de pedidos diretamente com o seu sistema de ERP (ex: Trier, Linx, etc).</p>
-            </div>
 
-            <div className="space-y-3">
-              <h3 className="font-bold text-slate-800">1. Credenciais de Acesso (Bearer Token)</h3>
-              <p className="text-sm text-slate-500">Envie este token no cabeçalho <code className="bg-slate-100 px-1 rounded">Authorization</code> das suas requisições.</p>
-              <div className="flex items-center gap-2 bg-slate-900 text-slate-300 p-3 rounded-lg font-mono text-sm border border-slate-700">
-                <span className="flex-1 truncate">Bearer sk_live_51Mabc123DEF...</span>
-                <Button variant="ghost" size="sm" className="h-8 hover:bg-slate-800 text-slate-400 hover:text-white" onClick={() => copyToClipboard("sk_live_51Mabc123DEF")}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="font-bold text-slate-800">2. Webhook: Receber Novos Pedidos</h3>
-              <p className="text-sm text-slate-500">Cadastre a URL do seu ERP para receber um POST (JSON) toda vez que um pedido for concluído.</p>
-              <div className="flex gap-2">
-                <Input placeholder="https://seu-erp.com.br/api/receber-pedido" className="flex-1" />
-                <Button className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white">Salvar Webhook</Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
