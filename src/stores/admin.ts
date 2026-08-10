@@ -160,6 +160,12 @@ export interface Pharmacy {
   sistemaUtilizado?: string;
   vendeIfood?: boolean;
   vendeFarmaciaApp?: boolean;
+  // Pixels e Tracking
+  googleAnalyticsId?: string;
+  googleAdsId?: string;
+  googleTagManagerId?: string;
+  facebookPixelId?: string;
+  chatgptAdsId?: string;
   // Pagamento
   identificadorPagamento?: string;
   hashRecebimento?: string;

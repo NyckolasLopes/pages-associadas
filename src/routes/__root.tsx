@@ -154,7 +154,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const { customCss, customHtml, customJs, themeColors } = useAdmin();
+  const { customCss, customHtml, customJs, themeColors, activeStoreId, pharmacies } = useAdmin();
+  const currentPharmacy = pharmacies.find((p) => p.id === activeStoreId);
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
   const redirects = useConfig((s) => s.redirects);
@@ -288,6 +289,79 @@ function RootComponent() {
       });
     };
   }, [scripts?.head, scripts?.body]);
+
+  // Injeção dinâmica de Pixels e Tracking por loja
+  useEffect(() => {
+    if (!currentPharmacy) return;
+
+    const injectedNodes: Node[] = [];
+
+    const injectScript = (src?: string, content?: string) => {
+      const script = document.createElement('script');
+      if (src) script.src = src;
+      if (content) script.innerHTML = content;
+      script.async = true;
+      document.head.appendChild(script);
+      injectedNodes.push(script);
+    };
+
+    // Google Analytics
+    if (currentPharmacy.googleAnalyticsId) {
+      injectScript(`https://www.googletagmanager.com/gtag/js?id=${currentPharmacy.googleAnalyticsId}`);
+      injectScript(undefined, `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${currentPharmacy.googleAnalyticsId}');
+      `);
+    }
+
+    // Google Ads
+    if (currentPharmacy.googleAdsId) {
+      injectScript(`https://www.googletagmanager.com/gtag/js?id=${currentPharmacy.googleAdsId}`);
+      injectScript(undefined, `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${currentPharmacy.googleAdsId}');
+      `);
+    }
+
+    // GTM
+    if (currentPharmacy.googleTagManagerId) {
+      injectScript(undefined, `
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','${currentPharmacy.googleTagManagerId}');
+      `);
+    }
+
+    // Facebook Pixel
+    if (currentPharmacy.facebookPixelId) {
+      injectScript(undefined, `
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '${currentPharmacy.facebookPixelId}');
+        fbq('track', 'PageView');
+      `);
+    }
+
+    return () => {
+      injectedNodes.forEach(node => {
+        if (node.parentNode) {
+          node.parentNode.removeChild(node);
+        }
+      });
+    };
+  }, [currentPharmacy]);
 
   return (
     <QueryClientProvider client={queryClient}>

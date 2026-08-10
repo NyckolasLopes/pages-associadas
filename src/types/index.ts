@@ -196,6 +196,11 @@ export interface Loja {
   aceitaMotoboy?: boolean;
   custoMotoboy?: number;
   vendeFarmaciaApp?: boolean;
+  googleAnalyticsId?: string;
+  googleAdsId?: string;
+  googleTagManagerId?: string;
+  facebookPixelId?: string;
+  chatgptAdsId?: string;
 }
 
 export interface PedidoItem {
