@@ -19,6 +19,7 @@ import { useAdmin } from "../stores/admin";
 import { useLive } from "../stores/live";
 import { useOrders } from "../stores/orders";
 import { useAdminCategories } from "../stores/categories";
+import { useMarcasStore } from "../stores/marcas";
 import { useConfig } from "../stores/config";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -180,7 +181,8 @@ function RootComponent() {
     useAdmin.persist.rehydrate();
     useAdminProducts.persist.rehydrate();
     useAdminCategories.getState().loadCategories();
-    useOrders.persist.rehydrate();
+    useMarcasStore.getState().loadMarcas();
+    useOrders.getState().loadOrders();
     
     // Register PWA Service Worker
     if ('serviceWorker' in navigator) {
