@@ -443,7 +443,7 @@ function AdminLayout() {
 
 
           {/* ---- PERSONALIZAR MINHA LOJA (apenas para associados) ---- */}
-          {!isGlobalAdmin && (can('loja_banners') || can('loja_estrutura') || can('loja_vitrines') || can('loja_logo') || can('loja_cores') || can('prod_novo') || can('prod_todos') || can('prod_categorias')) && (
+          {!isGlobalAdmin && (
             <NavSection 
               icon={<Store className="h-4 w-4" />} 
               label="Personalizar Minha Loja" 
@@ -453,39 +453,22 @@ function AdminLayout() {
               <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400 mt-1 mb-1">
                 Design
               </div>
-              {can('loja_personalizar') && (
-                <>
-                  <Link to="/admin/design/logo" className={subLinkClass} activeOptions={{ exact: true }}>
-                    Logo e Favicon
-                  </Link>
-                  <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
-                    Banners
-                  </Link>
-                  <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
-                    Estrutura da Loja
-                  </Link>
-                </>
-              )}
+              <Link to="/admin/design/logo" className={subLinkClass} activeOptions={{ exact: true }}>
+                Logo e Favicon
+              </Link>
+              <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
+                Banners
+              </Link>
+              <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
+                Estrutura da Loja
+              </Link>
               {pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado === 'Parceiro' && (
                 <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
                   Minhas Cores
                 </Link>
               )}
               
-              <div className="pt-2 mt-2 border-t border-slate-200/60">
-                <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                  Produtos
-                </div>
-                <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>
-                  Criar Produto
-                </Link>
-                <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>
-                  Ver Produtos
-                </Link>
-                <Link to="/admin/categorias" className={subLinkClass} activeOptions={{ exact: true }}>
-                  Categorias
-                </Link>
-              </div>
+
             </NavSection>
           )}
           {isGlobalAdmin && (
@@ -495,7 +478,7 @@ function AdminLayout() {
           )}
 
           {/* ---- CONFIGURAÇÕES ---- */}
-          {(can('conf_dados') || can('conf_dominios') || can('conf_pagamentos') || can('conf_usuarios')) && (
+          {(!isGlobalAdmin || can('conf_dados') || can('conf_dominios') || can('conf_pagamentos') || can('conf_usuarios')) && (
             <Link to="/admin/configuracoes" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
               <Settings className="h-4 w-4" /> Configurações
             </Link>
