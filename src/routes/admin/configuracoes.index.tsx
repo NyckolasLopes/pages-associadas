@@ -29,18 +29,20 @@ function ConfiguracoesPage() {
     icon: React.ReactNode;
   }
 
-  const configs: ConfigItem[] = [
-    {
+  const { currentUser } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+
+  let configs: ConfigItem[] = [];
+
+  if (isGlobalAdmin || currentUser?.permissoes?.includes("conf_usuarios")) {
+    configs.push({
       id: "usuarios",
       url: "/admin/usuarios",
       titulo: "Usuários",
       descricao: "Gerencie os usuários, grupos e permissões",
       icon: <User className="h-5 w-5 text-slate-600" />
-    }
-  ];
-
-  const { currentUser } = useAdmin();
-  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+    });
+  }
 
   if (!isGlobalAdmin) {
     configs.push({
