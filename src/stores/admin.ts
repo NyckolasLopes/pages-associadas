@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface AdminUser {
   id: string;
@@ -200,8 +201,8 @@ interface AdminState {
   users: AdminUser[];
   grupos: AdminGroup[];
   currentUser: AdminUser | null;
-  login: (email: string, pass: string) => boolean;
-  logout: () => void;
+  login: (email: string, pass: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   register: (user: AdminUser) => void;
   setUsers: (users: AdminUser[]) => void;
   setGrupos: (grupos: AdminGroup[]) => void;
@@ -528,15 +529,58 @@ export const useAdmin = create<AdminState>()(
         }
       ],
       currentUser: null,
-      login: (email, password) => {
-        const user = get().users.find((u) => u.email === email && u.password === password);
-        if (user) {
-          set({ currentUser: user });
+      login: async (email, password) => {
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (error || !data.user) {
+            console.error("Login Supabase falhou:", error?.message);
+            return false;
+          }
+
+          // Fetch the profile
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", data.user.id)
+            .single();
+
+          if (profile) {
+            const p = profile as any;
+            set({
+              currentUser: {
+                id: p.id,
+                name: p.nome || email.split("@")[0],
+                email: p.email || email,
+                grupoId: p.grupo_id,
+                proprietario: p.proprietario,
+                lojasVinculadas: p.lojas_vinculadas || [],
+              },
+            });
+            return true;
+          }
+
+          // Se não encontrou o profile ainda, loga com o que tem
+          set({
+            currentUser: {
+              id: data.user.id,
+              name: email.split("@")[0],
+              email: email,
+            },
+          });
           return true;
+        } catch (e) {
+          console.error(e);
+          return false;
         }
-        return false;
       },
-      logout: () => set({ currentUser: null }),
+      logout: async () => {
+        await supabase.auth.signOut();
+        set({ currentUser: null });
+      },
       register: (user) => set((s) => ({ users: [...s.users, user] })),
       setUsers: (users) => set({ users }),
       setGrupos: (grupos) => set({ grupos }),

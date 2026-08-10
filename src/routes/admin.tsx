@@ -215,7 +215,7 @@ function AdminLayout() {
               <h1 className="text-[28px] font-bold text-[#1a1a1a]">Bem-vindo!</h1>
             </div>
 
-            <form className="space-y-5" onSubmit={(e) => {
+            <form className="space-y-5" onSubmit={async (e) => {
               e.preventDefault();
               try {
                 adminLoginSchema.parse({ email, pass });
@@ -226,7 +226,8 @@ function AdminLayout() {
                 }
               }
 
-              if(!login(email, pass)) {
+              const success = await login(email, pass);
+              if(!success) {
                 toast.error("Credenciais inválidas");
               } else {
                 navigate({ to: "/admin" });
