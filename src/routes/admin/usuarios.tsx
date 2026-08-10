@@ -565,7 +565,7 @@ function AdminUsuarios() {
                                       {pharmacies.map((loja) => (
                                         <CommandItem
                                           key={loja.id}
-                                          value={loja.nome}
+                                          value={`${loja.id} ${loja.nome} ${loja.cidade}`}
                                           onSelect={() => toggleSelectLojaUsuario(loja.id)}
                                         >
                                           <Check
