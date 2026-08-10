@@ -7,25 +7,27 @@ interface CIDADES_TYPE {
   nome: string;
   x: number;
   y: number;
+  lat?: number;
+  lng?: number;
 }
 
 export const CIDADES = [
-  { uf: "RS", nome: "Porto Alegre", x: 52, y: 88 },
-  { uf: "RS", nome: "Caxias do Sul", x: 53, y: 86 },
-  { uf: "RS", nome: "Pelotas", x: 51, y: 92 },
-  { uf: "RS", nome: "Santa Maria", x: 47, y: 87 },
-  { uf: "RS", nome: "Canoas", x: 52, y: 87.5 },
-  { uf: "SP", nome: "São Paulo", x: 63, y: 70 },
-  { uf: "RJ", nome: "Rio de Janeiro", x: 69, y: 68 },
-  { uf: "MG", nome: "Belo Horizonte", x: 68, y: 58 },
-  { uf: "PR", nome: "Curitiba", x: 57, y: 76 },
-  { uf: "SC", nome: "Florianópolis", x: 58, y: 81 },
-  { uf: "DF", nome: "Brasília", x: 59, y: 48 },
-  { uf: "BA", nome: "Salvador", x: 83, y: 38 },
-  { uf: "PE", nome: "Recife", x: 93, y: 27 },
-  { uf: "CE", nome: "Fortaleza", x: 83, y: 15 },
-  { uf: "AM", nome: "Manaus", x: 32, y: 25 },
-  { uf: "PA", nome: "Belém", x: 60, y: 18 },
+  { uf: "RS", nome: "Porto Alegre", x: 52, y: 88, lat: -30.0346, lng: -51.2177 },
+  { uf: "RS", nome: "Caxias do Sul", x: 53, y: 86, lat: -29.1681, lng: -51.1794 },
+  { uf: "RS", nome: "Pelotas", x: 51, y: 92, lat: -31.7654, lng: -52.3376 },
+  { uf: "RS", nome: "Santa Maria", x: 47, y: 87, lat: -29.6842, lng: -53.8069 },
+  { uf: "RS", nome: "Canoas", x: 52, y: 87.5, lat: -29.9192, lng: -51.1833 },
+  { uf: "SP", nome: "São Paulo", x: 63, y: 70, lat: -23.5505, lng: -46.6333 },
+  { uf: "RJ", nome: "Rio de Janeiro", x: 69, y: 68, lat: -22.9068, lng: -43.1729 },
+  { uf: "MG", nome: "Belo Horizonte", x: 68, y: 58, lat: -19.9208, lng: -43.9378 },
+  { uf: "PR", nome: "Curitiba", x: 57, y: 76, lat: -25.4290, lng: -49.2671 },
+  { uf: "SC", nome: "Florianópolis", x: 58, y: 81, lat: -27.5954, lng: -48.5480 },
+  { uf: "DF", nome: "Brasília", x: 59, y: 48, lat: -15.7938, lng: -47.8828 },
+  { uf: "BA", nome: "Salvador", x: 83, y: 38, lat: -12.9714, lng: -38.5014 },
+  { uf: "PE", nome: "Recife", x: 93, y: 27, lat: -8.0476, lng: -34.8770 },
+  { uf: "CE", nome: "Fortaleza", x: 83, y: 15, lat: -3.7172, lng: -38.5433 },
+  { uf: "AM", nome: "Manaus", x: 32, y: 25, lat: -3.1190, lng: -60.0217 },
+  { uf: "PA", nome: "Belém", x: 60, y: 18, lat: -1.4550, lng: -48.5024 },
 ];
 
 export interface VisitorInfo {
@@ -104,10 +106,15 @@ export const useLive = create<LiveStore>((set, get) => ({
               if (data.city && data.region) {
                 let x = 50;
                 let y = 50;
+                let lat = data.latitude;
+                let lng = data.longitude;
+                
                 const found = CIDADES.find(c => c.nome.toLowerCase() === data.city.toLowerCase());
                 if (found) {
                   x = found.x;
                   y = found.y;
+                  lat = found.lat;
+                  lng = found.lng;
                 } else if (data.longitude && data.latitude) {
                    x = ((data.longitude + 74) / 40) * 100;
                    y = ((5.2 - data.latitude) / 38.9) * 100;
@@ -117,7 +124,9 @@ export const useLive = create<LiveStore>((set, get) => ({
                   nome: data.city,
                   uf: data.region,
                   x,
-                  y
+                  y,
+                  lat,
+                  lng
                 };
               }
             }

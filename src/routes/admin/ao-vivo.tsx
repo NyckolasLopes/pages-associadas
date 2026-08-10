@@ -3,6 +3,7 @@ import { StoreSelector } from "@/components/admin/StoreSelector";
 import { Circle, MapPin } from "lucide-react";
 import { useMemo } from "react";
 import { useLive, CIDADES } from "@/stores/live";
+import { LiveMap } from "@/components/admin/LiveMap";
 
 import { useOrders } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
@@ -85,41 +86,9 @@ function AoVivo() {
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-400/5 rounded-full blur-[100px] -mr-40 -mt-40 pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-[100px] -ml-40 -mb-40 pointer-events-none"></div>
 
-      {/* Map Background Wrapper */}
-      <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-12 lg:pl-72">
-        <div className="relative w-full max-w-[850px] h-full max-h-[850px] aspect-square">
-          {/* Mapa base SVG (silhueta) */}
-          <img 
-            src="/brazil-map.svg" 
-            className="w-full h-full object-contain opacity-[0.04] drop-shadow-2xl" 
-            alt="Mapa do Brasil" 
-            style={{ filter: "brightness(0)" }} 
-          />
-          
-          {/* Overlay de Marcadores */}
-          <div className="absolute inset-0">
-            {visitors.map(v => {
-              if (!v || !v.cidade) return null;
-              return (
-              <div 
-                key={v.id}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
-                style={{ left: `${v.cidade.x}%`, top: `${v.cidade.y}%` }}
-              >
-                <div className="relative flex items-center justify-center group">
-                  <div className="absolute w-8 h-8 bg-emerald-500 rounded-full opacity-60 animate-ping"></div>
-                  <div className="relative w-3 h-3 bg-emerald-600 rounded-full shadow-[0_0_12px_rgba(5,150,105,1)] border-[1.5px] border-white"></div>
-                  
-                  {/* Tooltip com nome da cidade */}
-                  <div className="absolute top-5 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-700 shadow-lg whitespace-nowrap border border-slate-100 z-20 flex items-center gap-1.5 transition-all">
-                    <MapPin className="h-3 w-3 text-emerald-500" />
-                    {v.cidade.nome}
-                  </div>
-                </div>
-              </div>
-            )})}
-          </div>
-        </div>
+      {/* Interactive Map */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <LiveMap visitors={visitors} />
       </div>
 
       {/* AO VIVO Badge */}
