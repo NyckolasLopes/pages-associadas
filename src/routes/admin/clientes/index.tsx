@@ -343,7 +343,7 @@ function ClientesAdmin() {
     
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", isGlobalView ? "clientes_rede_completa.csv" : `clientes_${(activeLoja as any)?.slug || 'loja'}.csv`);
+    link.setAttribute("download", isGlobalView ? "clientes_rede_completa.csv" : `clientes_${activeLoja?.id || 'loja'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -446,8 +446,13 @@ function ClientesAdmin() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-            <a href={`/loja/${(activeLoja as any).slug}`} target="_blank" className="flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md transition-colors">Exibindo {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente' : 'clientes'}</a>
+          <div className="flex items-center gap-2">
+            {activeLoja && (
+              <a href={`/loja/${activeLoja.id}`} target="_blank" className="flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md transition-colors">Exibindo {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente' : 'clientes'}</a>
+            )}
+            {!activeLoja && (
+              <span className="flex items-center gap-1.5 text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">Exibindo {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente' : 'clientes'}</span>
+            )}
           </div>
         </div>
 

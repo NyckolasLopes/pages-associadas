@@ -176,7 +176,8 @@ function NovaLojaAdmin() {
       return;
     }
 
-    addPharmacy({ ...form, categoriaAssociado: form.categoriaAssociado || "Pleno" });
+    const generatedId = form.id || form.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-");
+    addPharmacy({ ...form, id: generatedId, categoriaAssociado: form.categoriaAssociado || "Pleno" });
     toast.success("Loja adicionada com sucesso!");
     navigate({ to: "/admin/lojas" });
   };

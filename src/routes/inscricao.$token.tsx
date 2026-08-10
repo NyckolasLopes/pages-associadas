@@ -196,7 +196,8 @@ function InscricaoLojaPublic() {
 
     // Mark used and save
     markRegistrationTokenUsed(token);
-    addPharmacy(form);
+    const generatedId = form.id || form.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-");
+    addPharmacy({ ...form, id: generatedId });
     setIsSuccess(true);
     toast.success("Inscrição realizada com sucesso!");
   };
