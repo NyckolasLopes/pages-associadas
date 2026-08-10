@@ -527,7 +527,7 @@ function AdminLayout() {
               ) : null}
             </div>
             
-            {!isGlobalAdmin && userStores.length > 1 && (
+            {!isGlobalAdmin && userStores.length > 0 && (
               <div className="flex items-center gap-3 bg-emerald-50/50 p-1.5 pr-2 rounded-lg border border-emerald-200 shadow-sm">
                 <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider ml-2 hidden lg:block">Selecione a sua loja:</span>
                 <div className="w-[280px] md:w-[320px]">
