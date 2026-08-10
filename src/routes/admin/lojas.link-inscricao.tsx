@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { Button } from "@/components/ui/button";
-import { Link2, Copy, CheckCircle2, Clock } from "lucide-react";
+import { Link2, Copy, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/admin/lojas/link-inscricao")({
 });
 
 function LinkInscricaoAssociado() {
-  const { currentUser, registrationTokens, generateRegistrationToken } = useAdmin();
+  const { currentUser, registrationTokens, generateRegistrationToken, deleteRegistrationToken, clearRegistrationTokens } = useAdmin();
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
 
@@ -61,8 +61,22 @@ function LinkInscricaoAssociado() {
 
       {sortedTokens.length > 0 && (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b bg-slate-50 font-bold text-slate-800">
-            Histórico de Links Gerados
+          <div className="p-4 border-b bg-slate-50 font-bold text-slate-800 flex justify-between items-center">
+            <span>Histórico de Links Gerados</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              onClick={() => {
+                if (confirm("Tem certeza que deseja excluir todo o histórico de links?")) {
+                  clearRegistrationTokens();
+                  toast.success("Histórico limpo com sucesso!");
+                }
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              Limpar Histórico
+            </Button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
@@ -96,7 +110,7 @@ function LinkInscricaoAssociado() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -106,6 +120,19 @@ function LinkInscricaoAssociado() {
                       >
                         {copiedToken === t.token ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                         {copiedToken === t.token ? "Copiado" : "Copiar"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8"
+                        onClick={() => {
+                          if (confirm("Excluir este link?")) {
+                            deleteRegistrationToken(t.token);
+                            toast.success("Link excluído!");
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </td>
                   </tr>

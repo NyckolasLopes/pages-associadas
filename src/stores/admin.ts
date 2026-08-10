@@ -281,6 +281,8 @@ interface AdminState {
   registrationTokens: RegistrationToken[];
   generateRegistrationToken: () => string;
   markRegistrationTokenUsed: (token: string) => void;
+  deleteRegistrationToken: (token: string) => void;
+  clearRegistrationTokens: () => void;
 }
 
 import { lojas } from "@/data/stores";
@@ -903,6 +905,14 @@ export const useAdmin = create<AdminState>()(
         set((state) => ({
           registrationTokens: state.registrationTokens.map(t => t.token === token ? { ...t, used: true } : t)
         }));
+      },
+      deleteRegistrationToken: (token) => {
+        set((state) => ({
+          registrationTokens: state.registrationTokens.filter(t => t.token !== token)
+        }));
+      },
+      clearRegistrationTokens: () => {
+        set({ registrationTokens: [] });
       },
 
       storePanels: [],
