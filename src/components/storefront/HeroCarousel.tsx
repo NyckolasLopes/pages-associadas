@@ -11,14 +11,14 @@ export function HeroCarousel({ page = "Página inicial" }: { page?: string }) {
 
   // Wait for Zustand persist hydration before rendering
   useEffect(() => {
-    const unsub = useAdmin.persist.onFinishHydration(() => {
+    const unsub = useAdmin.persist?.onFinishHydration(() => {
       setHydrated(true);
     });
     // If already hydrated (e.g. navigating back)
-    if (useAdmin.persist.hasHydrated()) {
+    if (useAdmin.persist?.hasHydrated()) {
       setHydrated(true);
     }
-    return () => unsub();
+    return () => unsub?.();
   }, []);
 
   const activeBanners = adminBanners.filter(b => {

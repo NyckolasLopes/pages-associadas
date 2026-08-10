@@ -142,7 +142,7 @@ import { useAdminProducts } from "@/stores/products";
 
 // Await hydration helper — also ensures Supabase products are loaded
 async function ensureHydrated() {
-  if (useAdminProducts.persist.hasHydrated()) {
+  if (!useAdminProducts.persist || useAdminProducts.persist.hasHydrated()) {
     // Even if hydrated, ensure Supabase products are loaded
     await useAdminProducts.getState().loadProducts();
     return;
