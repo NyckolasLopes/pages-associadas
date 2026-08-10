@@ -154,7 +154,7 @@ function Relatorios() {
 
   const gruposRelatorios = gruposRelatoriosRaw.map(grupo => ({
     ...grupo,
-    itens: grupo.itens.filter(item => can(item.permission))
+    itens: grupo.itens.filter((item: any) => can(item.permission) || !isGlobalAdmin())
   })).filter(grupo => grupo.itens.length > 0);
 
   const { orders: rawOrders } = useOrders();
