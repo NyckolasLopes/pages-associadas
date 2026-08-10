@@ -100,14 +100,14 @@ export const useLive = create<LiveStore>((set, get) => ({
         if (status === 'SUBSCRIBED') {
           let realCity = getCityByIPMock();
           try {
-            const res = await fetch("https://ipapi.co/json/");
+            const res = await fetch("https://get.geojs.io/v1/ip/geo.json");
             if (res.ok) {
               const data = await res.json();
               if (data.city && data.region) {
                 let x = 50;
                 let y = 50;
-                let lat = data.latitude;
-                let lng = data.longitude;
+                let lat = parseFloat(data.latitude);
+                let lng = parseFloat(data.longitude);
                 
                 const found = CIDADES.find(c => c.nome.toLowerCase() === data.city.toLowerCase());
                 if (found) {
