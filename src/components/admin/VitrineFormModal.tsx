@@ -20,9 +20,10 @@ interface VitrineFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   vitrine?: Vitrine | null;
+  lojaId?: string | null;
 }
 
-export function VitrineFormModal({ isOpen, onClose, vitrine }: VitrineFormModalProps) {
+export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFormModalProps) {
   const { addVitrine, updateVitrine } = useAdminProducts();
   
   const [nome, setNome] = useState("");
@@ -101,10 +102,10 @@ export function VitrineFormModal({ isOpen, onClose, vitrine }: VitrineFormModalP
     };
     
     if (vitrine) {
-      updateVitrine({ ...vitrineData, id: vitrine.id });
+      updateVitrine({ ...vitrineData, id: vitrine.id }, lojaId);
       toast.success("Vitrine atualizada com sucesso!");
     } else {
-      addVitrine(vitrineData);
+      addVitrine(vitrineData, lojaId);
       toast.success("Vitrine criada com sucesso!");
     }
     onClose();

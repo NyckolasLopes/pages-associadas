@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { ProductEditorForm } from "@/components/admin/ProductEditorForm";
 import { useAdminProducts } from "@/stores/products";
 import { useAdmin } from "@/stores/admin";
@@ -79,7 +80,8 @@ function AdminNovoProduto() {
 
   return (
     <div className="bg-slate-50 min-h-[80vh] relative">
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
+      <div className="absolute top-4 right-4 z-10 flex gap-2 items-center">
+        <StoreSelector className="mb-0" />
         <Button
           size="sm"
           onClick={() => setSubirDadosOpen(true)}

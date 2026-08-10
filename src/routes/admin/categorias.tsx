@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { Search, ChevronDown, Eye, ChevronRight, Folder, FolderOpen, Tag, Star, Trash2, DownloadCloud, RotateCcw, Info, Check, ShieldCheck, Sparkles, Plus, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,6 +144,7 @@ function AdminCategorias() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <StoreSelector className="mb-0" />
           {currentLojaId && (
             <>
               <Button 

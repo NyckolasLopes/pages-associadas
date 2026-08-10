@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useAdmin } from "@/stores/admin";
 import { useState } from "react";
 import { Paintbrush, RotateCcw } from "lucide-react";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 
 export const Route = createFileRoute("/admin/design/cores")({
   component: AdminDesignCores,
@@ -66,20 +67,27 @@ function AdminDesignCores() {
       </div>
 
       <div className="bg-white rounded-xl border shadow-sm max-w-4xl overflow-hidden">
-        <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-          <div className="flex items-center gap-2 font-bold text-sm">
-            <Paintbrush className="w-4 h-4 text-primary" />
-            Paleta de Cores
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleReset}>
-              <RotateCcw className="w-3.5 h-3.5 mr-2" /> Restaurar Padrões
-            </Button>
-            <Button size="sm" onClick={handleSave}>
-              Salvar Configurações
-            </Button>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center p-6 border-b">
+        <div>
+          <h2 className="text-[22px] font-bold text-[#1a1a1a] flex items-center gap-2">
+            <Paintbrush className="w-6 h-6 text-emerald-600" />
+            Cores da Loja
+          </h2>
+          <p className="text-slate-500 text-sm mt-1">
+            Personalize a paleta de cores da sua vitrine.
+          </p>
         </div>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <StoreSelector className="mb-0" />
+          <Button onClick={handleReset} variant="outline" className="text-slate-600 hover:text-slate-900">
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Restaurar Padrão
+          </Button>
+          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
+            Salvar Alterações
+          </Button>
+        </div>
+      </div>
 
         <div className="p-6 space-y-10">
           {COLOR_GROUPS.map((group, i) => (

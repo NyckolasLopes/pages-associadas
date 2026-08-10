@@ -18,14 +18,16 @@ export interface Filtro {
 
 interface FiltroStore {
   filtros: Filtro[];
-  addFiltro: (filtro: Filtro) => void;
-  updateFiltro: (id: string, filtro: Partial<Filtro>) => void;
-  removeFiltro: (id: string) => void;
+  storeFiltros: Record<string, Filtro[]>;
+  getStoreFiltros: (lojaId?: string | null) => Filtro[];
+  addFiltro: (filtro: Filtro, lojaId?: string | null) => void;
+  updateFiltro: (id: string, filtro: Partial<Filtro>, lojaId?: string | null) => void;
+  removeFiltro: (id: string, lojaId?: string | null) => void;
 }
 
 export const useAdminFiltros = create<FiltroStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       filtros: [
         {
           id: "gen",
@@ -74,13 +76,33 @@ export const useAdminFiltros = create<FiltroStore>()(
           opcoes: []
         }
       ],
-      addFiltro: (filtro) => set((state) => ({ filtros: [...state.filtros, filtro] })),
-      updateFiltro: (id, updated) =>
-        set((state) => ({
-          filtros: state.filtros.map((f) => (f.id === id ? { ...f, ...updated } : f)),
-        })),
-      removeFiltro: (id) =>
-        set((state) => ({ filtros: state.filtros.filter((f) => f.id !== id) })),
+      storeFiltros: {},
+      getStoreFiltros: (lojaId) => {
+        const state = get();
+        if (!lojaId) return state.filtros;
+        return state.storeFiltros[lojaId] || [];
+      },
+      addFiltro: (filtro, lojaId) => set((state) => {
+        if (!lojaId) return { filtros: [...state.filtros, filtro] };
+        const current = state.storeFiltros[lojaId] || [];
+        return { storeFiltros: { ...state.storeFiltros, [lojaId]: [...current, filtro] } };
+      }),
+      updateFiltro: (id, updated, lojaId) =>
+        set((state) => {
+          if (!lojaId) {
+            return { filtros: state.filtros.map((f) => (f.id === id ? { ...f, ...updated } : f)) };
+          }
+          const current = state.storeFiltros[lojaId] || [];
+          return { storeFiltros: { ...state.storeFiltros, [lojaId]: current.map((f) => (f.id === id ? { ...f, ...updated } : f)) } };
+        }),
+      removeFiltro: (id, lojaId) =>
+        set((state) => {
+          if (!lojaId) {
+            return { filtros: state.filtros.filter((f) => f.id !== id) };
+          }
+          const current = state.storeFiltros[lojaId] || [];
+          return { storeFiltros: { ...state.storeFiltros, [lojaId]: current.filter((f) => f.id !== id) } };
+        }),
     }),
     {
       name: "admin-filtros-storage",

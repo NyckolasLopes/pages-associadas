@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { 
   BarChart3, 
   ShoppingBag, 

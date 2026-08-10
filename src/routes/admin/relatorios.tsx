@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { 
   Package, 
   Ticket, 
@@ -411,16 +412,19 @@ function Relatorios() {
   if (activeReport) {
     return (
       <div className="space-y-6 max-w-6xl pb-10">
-        <div className="flex items-center gap-4 bg-white p-4 rounded-xl border shadow-sm print:hidden">
-          <Button variant="ghost" onClick={() => setActiveReport(null)} className="h-10 px-4 rounded-lg hover:bg-slate-100 flex items-center gap-2 font-bold text-slate-600">
-            <ArrowLeft className="h-5 w-5" />
-            Voltar para Relatórios
-          </Button>
-          <div className="border-l border-slate-200 pl-4">
-            <h2 className="text-xl font-black text-slate-800 tracking-tight capitalize">
-              {activeReport.replace(/-/g, ' ')}
-            </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border shadow-sm print:hidden">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => setActiveReport(null)} className="h-10 px-4 rounded-lg hover:bg-slate-100 flex items-center gap-2 font-bold text-slate-600">
+              <ArrowLeft className="h-5 w-5" />
+              Voltar para Relatórios
+            </Button>
+            <div className="border-l border-slate-200 pl-4">
+              <h2 className="text-xl font-black text-slate-800 tracking-tight capitalize">
+                {activeReport.replace(/-/g, ' ')}
+              </h2>
+            </div>
           </div>
+          <StoreSelector />
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border shadow-sm print:hidden">
@@ -1141,6 +1145,9 @@ function Relatorios() {
             <h2 className="text-3xl font-black text-slate-800 tracking-tight">Central de Relatórios</h2>
             <p className="text-sm font-medium text-slate-500 mt-1">Acesse todas as análises e extrações de dados da sua loja em um só lugar.</p>
           </div>
+        </div>
+        <div className="relative z-10">
+          <StoreSelector />
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useLive } from "@/stores/live";
@@ -218,7 +219,7 @@ function AdminDashboard() {
   return (
     <div className="space-y-8 max-w-5xl pb-10">
       {/* ---- Greeting ---- */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-[26px] font-bold text-slate-800 tracking-tight">
             Olá, {currentUser?.name || "Administrador"}! 👋
@@ -227,6 +228,7 @@ function AdminDashboard() {
             {effectiveStoreId ? `Visão da Loja: ${pharmacies.find(p => p.id === effectiveStoreId)?.nome || ""}` : "Painel Geral da Rede de Farmácias Associadas"}
           </p>
         </div>
+        <StoreSelector />
       </div>
 
       {/* ---- Faturamento ---- */}

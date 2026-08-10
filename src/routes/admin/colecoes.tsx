@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { Search, Plus, Trash2, Eye, EyeOff, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +9,17 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { VitrineFormModal } from "@/components/admin/VitrineFormModal";
 import type { Vitrine } from "@/types";
+import { useAdmin } from "@/stores/admin";
 
 export const Route = createFileRoute("/admin/colecoes")({
   component: AdminVitrines,
 });
 
 function AdminVitrines() {
-  const { vitrines, toggleVitrine, removeVitrine } = useAdminProducts();
+  const { activeStoreId } = useAdmin();
+  const { getStoreVitrines, toggleVitrine, removeVitrine } = useAdminProducts();
+  const vitrines = getStoreVitrines(activeStoreId);
+  
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,7 +32,7 @@ function AdminVitrines() {
 
   const confirmDelete = () => {
     if (itemToDelete !== null) {
-      removeVitrine(itemToDelete);
+      removeVitrine(itemToDelete, activeStoreId);
       toast.success("Vitrine excluída!");
     }
   };
@@ -44,10 +49,13 @@ function AdminVitrines() {
           <h1 className="text-3xl font-bold text-slate-800">Vitrines de Produto</h1>
           <p className="text-slate-500 mt-2">Gerencie as vitrines dinâmicas que aparecem na página inicial da loja.</p>
         </div>
-        <Button onClick={() => { setEditingVitrine(null); setIsModalOpen(true); }} className="font-bold">
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Vitrine
-        </Button>
+        <div className="flex items-center gap-3">
+          <StoreSelector className="mb-0" />
+          <Button onClick={() => { setEditingVitrine(null); setIsModalOpen(true); }} className="font-bold">
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Vitrine
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -87,7 +95,7 @@ function AdminVitrines() {
                   )}
                 </td>
                 <td className="p-4 text-right flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => toggleVitrine(v.id)}>
+                  <Button variant="ghost" size="sm" onClick={() => toggleVitrine(v.id, activeStoreId)}>
                     {v.ativa ? <EyeOff className="h-4 w-4 text-slate-500" /> : <Eye className="h-4 w-4 text-slate-500" />}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => handleEdit(v)}>
@@ -117,9 +125,10 @@ function AdminVitrines() {
       />
       
       <VitrineFormModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        vitrine={editingVitrine}
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen} 
+        vitrineToEdit={editingVitrine} 
+        lojaId={activeStoreId}
       />
     </div>
   );

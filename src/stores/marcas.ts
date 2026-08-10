@@ -5,9 +5,10 @@ import { Marca } from "@/types";
 interface MarcasState {
   marcas: Marca[];
   loadMarcas: () => Promise<void>;
-  addMarca: (m: Marca) => Promise<void>;
-  updateMarca: (m: Marca) => Promise<void>;
+  addMarca: (m: Omit<Marca, 'global_pleno' | 'loja_id'> & { loja_id?: string; global_pleno?: boolean }) => Promise<void>;
+  updateMarca: (m: Omit<Marca, 'global_pleno' | 'loja_id'> & { loja_id?: string; global_pleno?: boolean }) => Promise<void>;
   removeMarca: (id: string) => Promise<void>;
+  getStoreEffectiveMarcas: (lojaId?: string) => Marca[];
 }
 
 function mapRowToMarca(d: any): Marca {
@@ -21,6 +22,8 @@ function mapRowToMarca(d: any): Marca {
     destaque: d.destaque,
     seoUrl: d.seo_url,
     marcaPropria: d.marca_propria,
+    loja_id: d.loja_id,
+    global_pleno: d.global_pleno,
   };
 }
 
@@ -49,6 +52,8 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
       destaque: m.destaque || false,
       seo_url: m.seoUrl || null,
       marca_propria: m.marcaPropria || false,
+      loja_id: m.loja_id || null,
+      global_pleno: m.global_pleno || false,
     });
     if (!error) {
       get().loadMarcas();
@@ -65,6 +70,8 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
       destaque: m.destaque || false,
       seo_url: m.seoUrl || null,
       marca_propria: m.marcaPropria || false,
+      loja_id: m.loja_id || null,
+      global_pleno: m.global_pleno || false,
     }).eq('id', m.id);
     if (!error) {
       get().loadMarcas();
@@ -77,4 +84,15 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
       get().loadMarcas();
     }
   },
+
+  getStoreEffectiveMarcas: (lojaId?: string) => {
+    const state = get();
+    return state.marcas.filter((m) => {
+      if (lojaId) {
+        return m.loja_id === lojaId || (m.global_pleno === true && !m.loja_id);
+      }
+      // If no store ID, return only global items
+      return !m.loja_id;
+    });
+  }
 }));

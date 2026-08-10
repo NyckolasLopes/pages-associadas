@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { Button } from "@/components/ui/button";
 import { Plus, Flame, Clock, Trash2, Edit } from "lucide-react";
 import { useMarketing } from "@/stores/marketing";
@@ -55,9 +56,12 @@ function AdminPromocoesPage() {
             Crie promoções com timer regressivo para aumentar as vendas.
           </p>
         </div>
-        <Button onClick={() => navigate({ to: "/admin/marketing/promocoes/nova" })} className="bg-red-600 hover:bg-red-700 text-white font-bold gap-2">
-          <Plus className="h-4 w-4" /> Nova Promoção
-        </Button>
+        <div className="flex items-center gap-3">
+          <StoreSelector className="mb-0" />
+          <Button onClick={() => navigate({ to: "/admin/marketing/promocoes/nova" })} className="bg-red-600 hover:bg-red-700 text-white font-bold gap-2">
+            <Plus className="h-4 w-4" /> Nova Promoção
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border shadow-sm overflow-hidden">

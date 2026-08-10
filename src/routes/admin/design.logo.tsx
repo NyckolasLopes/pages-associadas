@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { useAdmin } from "@/stores/admin";
 import { Button } from "@/components/ui/button";
 import { Upload, Trash2, Image as ImageIcon } from "lucide-react";
@@ -69,9 +70,12 @@ function AdminDesignLogo() {
 
   return (
     <div className="space-y-6 pb-20">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Logo e Favicon</h2>
-        <p className="text-muted-foreground">Gerencie a identidade visual da loja <strong>{currentPharmacy.nome}</strong>.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Logo e Favicon</h2>
+          <p className="text-muted-foreground">Gerencie a identidade visual da loja <strong>{currentPharmacy.nome}</strong>.</p>
+        </div>
+        <StoreSelector className="mb-0" />
       </div>
 
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />

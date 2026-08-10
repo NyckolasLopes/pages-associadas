@@ -1,4 +1,5 @@
 import { Link, createFileRoute, useNavigate, Outlet, useLocation } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { useAdminProducts } from "@/stores/products";
 import { useRegionsStore } from "@/stores/regions";
 import { useAdmin } from "@/stores/admin";
@@ -484,7 +485,8 @@ function AdminProdutos() {
         </div>
         <div className="flex flex-col gap-2 items-end">
           {/* Top row: Exports and Sync */}
-          <div className="flex flex-wrap gap-2 justify-end">
+          <div className="flex flex-wrap gap-2 justify-end items-center">
+            <StoreSelector className="mb-1" />
             <Button
               size="sm"
               onClick={() => setSubirDadosOpen(true)}

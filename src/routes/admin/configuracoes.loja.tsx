@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { useAdmin } from "@/stores/admin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LojaConfiguracoesTab } from "@/components/admin/LojaConfiguracoesTab";
@@ -34,13 +35,16 @@ function ConfiguracoesLojaPage() {
 
   return (
     <div className="max-w-4xl space-y-6 pb-16">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-800">
-          Dados da minha loja
-        </h2>
-        <p className="text-slate-500 text-sm mt-1">
-          Ajuste as informações da sua loja, regras de frete e configurações de SEO.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-800">
+            Dados da minha loja
+          </h2>
+          <p className="text-slate-500 text-sm mt-1">
+            Ajuste as informações da sua loja, regras de frete e configurações de SEO.
+          </p>
+        </div>
+        <StoreSelector className="mb-0" />
       </div>
 
       <Tabs defaultValue="config" className="w-full">

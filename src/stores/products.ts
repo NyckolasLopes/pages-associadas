@@ -29,6 +29,8 @@ interface ProductsState {
   storeRemovedProductIds: Record<string, string[]>;
   fornecedores: Fornecedor[];
   vitrines: Vitrine[];
+  storeVitrines: Record<string, Vitrine[]>;
+  getStoreVitrines: (lojaId?: string | null) => Vitrine[];
   _loaded: boolean;
   loadProducts: () => Promise<void>;
   addOrUpdateProduct: (p: Produto, lojaId?: string | null) => void;
@@ -41,10 +43,10 @@ interface ProductsState {
   formatAllTitles: () => void;
   setFornecedores: (fornecedores: Fornecedor[]) => void;
   removeFornecedor: (id: number) => void;
-  addVitrine: (v: Omit<Vitrine, "id">) => void;
-  updateVitrine: (v: Vitrine) => void;
-  removeVitrine: (id: number) => void;
-  toggleVitrine: (id: number) => void;
+  addVitrine: (v: Omit<Vitrine, "id">, lojaId?: string | null) => void;
+  updateVitrine: (v: Vitrine, lojaId?: string | null) => void;
+  removeVitrine: (id: number, lojaId?: string | null) => void;
+  toggleVitrine: (id: number, lojaId?: string | null) => void;
   updateProductDescriptions: (updates: { ean: string; descricao: string }[]) => void;
   bulkUpdateProducts: (productIds: string[], updates: Partial<Produto>, lojaId?: string | null) => void;
   updateStoreProductPrice: (lojaId: string, productId: string, precoPor: number, precoDe?: number, estoque?: number, ativo?: boolean) => void;
@@ -81,6 +83,9 @@ function mapRowToProduto(d: any): Produto {
     ativo: d.ativo !== false,
     aVenda: d.a_venda !== false,
     visivel: d.visivel !== false,
+    lojaId: d.loja_id,
+    precosPorLoja: d.precos_por_loja || {},
+    estoquesPorLoja: d.estoques_por_loja || {},
   } as Produto;
 }
 
@@ -91,6 +96,13 @@ export const useAdminProducts = create<ProductsState>()(
       storeCustomProducts: {},
       storeProductOverrides: {},
       storeRemovedProductIds: {},
+      vitrines: [],
+      storeVitrines: {},
+      getStoreVitrines: (lojaId) => {
+        const state = get();
+        if (!lojaId) return state.vitrines;
+        return state.storeVitrines[lojaId] || [];
+      },
       _loaded: false,
       loadProducts: async () => {
         if (get()._loaded) return;
@@ -150,6 +162,8 @@ export const useAdminProducts = create<ProductsState>()(
           a_venda: formattedProduct.aVenda !== false,
           visivel: formattedProduct.visivel !== false,
           loja_id: lojaId || null,
+          precos_por_loja: formattedProduct.precosPorLoja || {},
+          estoques_por_loja: formattedProduct.estoquesPorLoja || {},
           global_pleno: globalPleno
         });
       },
@@ -272,18 +286,34 @@ export const useAdminProducts = create<ProductsState>()(
       ],
       setFornecedores: (fornecedores) => set({ fornecedores }),
       removeFornecedor: (id) => set((s) => ({ fornecedores: s.fornecedores.filter(f => f.id !== id) })),
-      addVitrine: (v) => set((s) => {
-        const nextId = s.vitrines.length > 0 ? Math.max(...s.vitrines.map(x => x.id)) + 1 : 1;
-        const maxOrdem = s.vitrines.filter(x => x.local === v.local).reduce((max, x) => Math.max(max, x.ordem || 0), 0);
-        return { vitrines: [...s.vitrines, { ...v, id: nextId, ordem: v.ordem || maxOrdem + 1 }] };
+      addVitrine: (v, lojaId) => set((s) => {
+        if (!lojaId) {
+          const nextId = s.vitrines.length > 0 ? Math.max(...s.vitrines.map(x => x.id)) + 1 : 1;
+          const maxOrdem = s.vitrines.filter(x => x.local === v.local).reduce((max, x) => Math.max(max, x.ordem || 0), 0);
+          return { vitrines: [...s.vitrines, { ...v, id: nextId, ordem: v.ordem || maxOrdem + 1 }] };
+        } else {
+          const storeVits = s.storeVitrines[lojaId] || [];
+          const allVits = [...s.vitrines, ...Object.values(s.storeVitrines).flat()];
+          const nextId = allVits.length > 0 ? Math.max(...allVits.map(x => x.id)) + 1 : 1;
+          const maxOrdem = storeVits.filter(x => x.local === v.local).reduce((max, x) => Math.max(max, x.ordem || 0), 0);
+          return { storeVitrines: { ...s.storeVitrines, [lojaId]: [...storeVits, { ...v, id: nextId, ordem: v.ordem || maxOrdem + 1 }] } };
+        }
       }),
-      updateVitrine: (v) => set((s) => ({
-        vitrines: s.vitrines.map(x => x.id === v.id ? v : x)
-      })),
-      removeVitrine: (id) => set((s) => ({ vitrines: s.vitrines.filter(v => v.id !== id) })),
-      toggleVitrine: (id) => set((s) => ({
-        vitrines: s.vitrines.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v)
-      })),
+      updateVitrine: (v, lojaId) => set((s) => {
+        if (!lojaId) return { vitrines: s.vitrines.map(x => x.id === v.id ? v : x) };
+        const storeVits = s.storeVitrines[lojaId] || [];
+        return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(x => x.id === v.id ? v : x) } };
+      }),
+      removeVitrine: (id, lojaId) => set((s) => {
+        if (!lojaId) return { vitrines: s.vitrines.filter(v => v.id !== id) };
+        const storeVits = s.storeVitrines[lojaId] || [];
+        return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.filter(v => v.id !== id) } };
+      }),
+      toggleVitrine: (id, lojaId) => set((s) => {
+        if (!lojaId) return { vitrines: s.vitrines.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v) };
+        const storeVits = s.storeVitrines[lojaId] || [];
+        return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v) } };
+      }),
       updateProductDescriptions: (updates) => set((s) => {
         const updateMap = new Map(updates.filter(u => u.ean).map(u => [u.ean, u.descricao]));
         return {
@@ -330,33 +360,44 @@ export const useAdminProducts = create<ProductsState>()(
           })
         };
       }),
-      updateStoreProductPrice: (lojaId, productId, precoPor, precoDe, estoque, ativo = true) => set((s) => {
-        return {
-          customProducts: s.customProducts.map(p => {
-            if (p.id === productId) {
-              const prevStore = p.precosPorLoja || {};
-              const prevStock = p.estoquesPorLoja || {};
-              return {
-                ...p,
-                precosPorLoja: {
-                  ...prevStore,
-                  [lojaId]: {
-                    precoDe: precoDe !== undefined ? precoDe : p.precoDe,
-                    precoPor: precoPor,
-                    ativo: ativo
-                  }
-                },
-                estoquesPorLoja: estoque !== undefined ? {
-                  ...prevStock,
-                  [lojaId]: estoque
-                } : prevStock
-              };
-            }
-            return p;
-          })
+      updateStoreProductPrice: async (lojaId, productId, precoPor, precoDe, estoque, ativo = true) => {
+        const state = get();
+        const p = state.customProducts.find(x => x.id === productId);
+        if (!p) return;
+
+        const prevStore = p.precosPorLoja || {};
+        const prevStock = p.estoquesPorLoja || {};
+        
+        const newPrecosPorLoja = {
+          ...prevStore,
+          [lojaId]: {
+            precoDe: precoDe !== undefined ? precoDe : p.precoDe,
+            precoPor: precoPor,
+            ativo: ativo
+          }
         };
-      }),
-      importStoreSpreadsheet: (lojaId, items) => {
+        
+        const newEstoquesPorLoja = estoque !== undefined ? {
+          ...prevStock,
+          [lojaId]: estoque
+        } : prevStock;
+
+        // Optimistic UI Update
+        set((s) => ({
+          customProducts: s.customProducts.map(x => x.id === productId ? {
+            ...x,
+            precosPorLoja: newPrecosPorLoja,
+            estoquesPorLoja: newEstoquesPorLoja
+          } : x)
+        }));
+
+        // Supabase DB Update
+        await supabase.from('produtos').update({
+          precos_por_loja: newPrecosPorLoja,
+          estoques_por_loja: newEstoquesPorLoja
+        }).eq('id', productId);
+      },
+      importStoreSpreadsheet: async (lojaId, items) => {
         const state = get();
         let updatedCount = 0;
         let notFoundCount = 0;
@@ -402,31 +443,40 @@ export const useAdminProducts = create<ProductsState>()(
         });
 
         if (updatesToApply.size > 0) {
-          set({
-            customProducts: state.customProducts.map(p => {
-              const up = updatesToApply.get(p.id);
-              if (up) {
-                const prevStore = p.precosPorLoja || {};
-                const prevStock = p.estoquesPorLoja || {};
-                return {
-                  ...p,
-                  precosPorLoja: {
-                    ...prevStore,
-                    [lojaId]: {
-                      precoDe: up.precoDe !== undefined ? up.precoDe : p.precoDe,
-                      precoPor: up.precoPor,
-                      ativo: up.ativo !== undefined ? up.ativo : true
-                    }
-                  },
-                  estoquesPorLoja: up.estoque !== undefined ? {
-                    ...prevStock,
-                    [lojaId]: up.estoque
-                  } : prevStock
-                };
-              }
-              return p;
-            })
+          const updatedProducts = state.customProducts.map(p => {
+            const up = updatesToApply.get(p.id);
+            if (up) {
+              const prevStore = p.precosPorLoja || {};
+              const prevStock = p.estoquesPorLoja || {};
+              return {
+                ...p,
+                precosPorLoja: {
+                  ...prevStore,
+                  [lojaId]: {
+                    precoDe: up.precoDe !== undefined ? up.precoDe : p.precoDe,
+                    precoPor: up.precoPor,
+                    ativo: up.ativo !== undefined ? up.ativo : true
+                  }
+                },
+                estoquesPorLoja: up.estoque !== undefined ? {
+                  ...prevStock,
+                  [lojaId]: up.estoque
+                } : prevStock
+              };
+            }
+            return p;
           });
+          
+          set({ customProducts: updatedProducts });
+
+          // Send bulk updates to Supabase
+          const productsToUpdate = updatedProducts.filter(p => updatesToApply.has(p.id));
+          for (const p of productsToUpdate) {
+            await supabase.from('produtos').update({
+              precos_por_loja: p.precosPorLoja,
+              estoques_por_loja: p.estoquesPorLoja
+            }).eq('id', p.id);
+          }
         }
 
         return { updated: updatedCount, notFound: notFoundCount, total: items.length };
@@ -444,6 +494,7 @@ export const useAdminProducts = create<ProductsState>()(
         storeRemovedProductIds: state.storeRemovedProductIds,
         fornecedores: state.fornecedores,
         vitrines: state.vitrines,
+        storeVitrines: state.storeVitrines,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

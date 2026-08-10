@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -248,11 +249,14 @@ function AdminBanners() {
               : "Gerencie os banners promocionais e visuais da sua loja"}
           </span>
         </div>
-        {activeTab === "banners" && (
-          <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
-            <Plus className="w-4 h-4 mr-2" /> Novo banner
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          <StoreSelector className="mb-0" />
+          {activeTab === "banners" && (
+            <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
+              <Plus className="w-4 h-4 mr-2" /> Novo banner
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Tab 1: Banners Content */}

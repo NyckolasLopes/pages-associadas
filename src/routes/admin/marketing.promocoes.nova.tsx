@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -330,6 +331,7 @@ function NovaPromocaoPage() {
             </p>
           </div>
         </div>
+        <StoreSelector className="mb-0" />
 
         {/* Global Admin Store Selector */}
         {isGlobalAdmin && (

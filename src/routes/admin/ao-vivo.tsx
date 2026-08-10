@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { Circle, MapPin } from "lucide-react";
 import { useMemo } from "react";
 import { useLive, CIDADES } from "@/stores/live";
@@ -61,7 +62,20 @@ function AoVivo() {
   const valorVendido = faturamentoHoje.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
-    <div className="relative h-[calc(100vh-100px)] w-full rounded-xl overflow-hidden border border-slate-200 shadow-md bg-gradient-to-br from-slate-50 to-emerald-50/20">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative z-10">
+        <div>
+          <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            Ao Vivo
+          </h2>
+        </div>
+        <StoreSelector />
+      </div>
+      <div className="relative h-[calc(100vh-150px)] w-full rounded-xl overflow-hidden border border-slate-200 shadow-md bg-gradient-to-br from-slate-50 to-emerald-50/20">
       {/* Efeitos de fundo premium */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-400/5 rounded-full blur-[100px] -mr-40 -mt-40 pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-[100px] -ml-40 -mb-40 pointer-events-none"></div>
@@ -181,6 +195,7 @@ function AoVivo() {
         </div>
 
       </div>
+    </div>
     </div>
   );
 }

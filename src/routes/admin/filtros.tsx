@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 import { Search, Plus, Trash2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +8,18 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FiltroFormModal } from "@/components/admin/FiltroFormModal";
+import { useAdmin } from "@/stores/admin";
 
 export const Route = createFileRoute("/admin/filtros")({
   component: AdminFiltros,
 });
 
 function AdminFiltros() {
-  const { filtros, addFiltro, updateFiltro, removeFiltro } = useAdminFiltros();
+  const { activeStoreId } = useAdmin();
+  const { getStoreFiltros, addFiltro, updateFiltro, removeFiltro } = useAdminFiltros();
+  
+  const filtros = getStoreFiltros(activeStoreId);
+  
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   
@@ -27,7 +33,7 @@ function AdminFiltros() {
 
   const confirmDelete = () => {
     if (itemToDelete !== null) {
-      removeFiltro(itemToDelete);
+      removeFiltro(itemToDelete, activeStoreId);
       toast.success("Filtro removido!");
     }
   };
@@ -39,10 +45,10 @@ function AdminFiltros() {
 
   const handleSaveFiltro = (filtro: Filtro) => {
     if (editingFiltro) {
-      updateFiltro(filtro.id, filtro);
+      updateFiltro(filtro.id, filtro, activeStoreId);
       toast.success("Filtro atualizado com sucesso!");
     } else {
-      addFiltro(filtro);
+      addFiltro(filtro, activeStoreId);
       toast.success("Filtro criado com sucesso!");
     }
     setModalOpen(false);
@@ -55,10 +61,13 @@ function AdminFiltros() {
           <h2 className="text-[22px] font-bold text-[#1a1a1a]">Filtros</h2>
           <span className="text-sm font-medium text-slate-500">{filtros.length} filtros</span>
         </div>
-        <Button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary/90 text-white font-bold h-10 px-6">
-          <Plus className="h-4 w-4 mr-2" />
-          Novo filtro
-        </Button>
+        <div className="flex items-center gap-3">
+          <StoreSelector className="mb-0" />
+          <Button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary/90 text-white font-bold h-10 px-6">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo filtro
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden">
