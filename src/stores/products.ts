@@ -94,6 +94,10 @@ export const useAdminProducts = create<ProductsState>()(
       _loaded: false,
       loadProducts: async () => {
         if (get()._loaded) return;
+        
+        // Em um sistema multi-tenant completo, nós não carregaríamos TUDO.
+        // Porém, como o sistema ainda possui dependências síncronas que filtram localmente,
+        // continuaremos carregando todos os produtos e o RLS fará o filtro (ou a query).
         const { data, error } = await supabase
           .from('produtos')
           .select('*')
@@ -104,81 +108,58 @@ export const useAdminProducts = create<ProductsState>()(
           set({ customProducts: mapped, _loaded: true });
         }
       },
-      addOrUpdateProduct: (p, lojaId) => set((s) => {
-        const formattedProduct = { ...p, nome: toTitleCase(p.nome) };
+      addOrUpdateProduct: async (p, lojaId) => {
+        const formattedProduct = { ...p, nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "" };
+        const globalPleno = true; // Por padrão Sede
         
-        // If editing/creating in the context of a specific store:
-        if (lojaId) {
-          const currentStoreProducts = s.storeCustomProducts[lojaId] || [];
-          const isStoreExclusive = p.lojaId === lojaId || p.isIndividualLoja || currentStoreProducts.some(x => x.id === p.id) || !s.customProducts.some(x => x.id === p.id);
-
-          if (isStoreExclusive) {
-            const storeProd = { ...formattedProduct, lojaId, isIndividualLoja: true, origem: "Loja Individual" };
-            const exists = currentStoreProducts.find(x => x.id === p.id);
-            const updatedList = exists 
-              ? currentStoreProducts.map(x => x.id === p.id ? storeProd : x)
-              : [storeProd, ...currentStoreProducts];
-            
-            return {
-              storeCustomProducts: {
-                ...s.storeCustomProducts,
-                [lojaId]: updatedList
-              }
-            };
-          } else {
-            // It is a network product being customized for this store only
-            const prevStoreOverrides = s.storeProductOverrides[lojaId] || {};
-            return {
-              storeProductOverrides: {
-                ...s.storeProductOverrides,
-                [lojaId]: {
-                  ...prevStoreOverrides,
-                  [p.id]: formattedProduct
-                }
-              }
-            };
+        // Optimistic UI Update
+        set((s) => {
+          const exists = s.customProducts.find(x => x.id === p.id);
+          if (exists) {
+            return { customProducts: s.customProducts.map(x => x.id === p.id ? { ...x, ...formattedProduct, lojaId } : x) };
           }
-        }
+          return { customProducts: [{ ...formattedProduct, lojaId }, ...s.customProducts] };
+        });
 
-        // Master / General Admin base
-        const exists = s.customProducts.find(x => x.id === p.id);
-        if (exists) {
-          return { customProducts: s.customProducts.map(x => x.id === p.id ? formattedProduct : x) };
-        }
-        return { customProducts: [formattedProduct, ...s.customProducts] };
-      }),
-      removeProduct: (id, lojaId) => set((s) => {
-        if (lojaId) {
-          const currentStoreProducts = s.storeCustomProducts[lojaId] || [];
-          const isStoreExclusive = currentStoreProducts.some(x => x.id === id);
-
-          if (isStoreExclusive) {
-            return {
-              storeCustomProducts: {
-                ...s.storeCustomProducts,
-                [lojaId]: currentStoreProducts.filter(x => x.id !== id)
-              }
-            };
-          } else {
-            // Hide network product from this store only
-            const currentRemoved = s.storeRemovedProductIds[lojaId] || [];
-            if (!currentRemoved.includes(id)) {
-              return {
-                storeRemovedProductIds: {
-                  ...s.storeRemovedProductIds,
-                  [lojaId]: [...currentRemoved, id]
-                }
-              };
-            }
-            return {};
-          }
-        }
-
-        // Master / General Admin
-        return {
-          customProducts: s.customProducts.filter(x => x.id !== id)
-        };
-      }),
+        // Supabase DB Update
+        await supabase.from('produtos').upsert({
+          id: formattedProduct.id,
+          ean: formattedProduct.ean || null,
+          nome: formattedProduct.nome,
+          descricao: formattedProduct.descricao || null,
+          slug: formattedProduct.slug || formattedProduct.url || formattedProduct.id,
+          fabricante: formattedProduct.fabricante || null,
+          marca: formattedProduct.marca || null,
+          preco_de: formattedProduct.precoDe || 0,
+          preco_por: formattedProduct.precoPor || 0,
+          estoque: formattedProduct.estoque || 0,
+          registro_anvisa: formattedProduct.registroAnvisa || null,
+          tarja: formattedProduct.tarja || null,
+          retem_receita: formattedProduct.retemReceita || false,
+          generico: formattedProduct.generico || false,
+          possui_imagem: formattedProduct.possuiImagem || false,
+          categoria_id: formattedProduct.categoriaId || null,
+          subcategoria_id: formattedProduct.subcategoriaId || null,
+          categorias_adicionais: formattedProduct.categoriasAdicionais || [],
+          internal_tags: formattedProduct.internalTags || [],
+          principios_ativos: formattedProduct.principiosAtivos || [],
+          imagens: formattedProduct.imagens || [],
+          video_url: formattedProduct.videoUrl || null,
+          destaque: formattedProduct.destaque || false,
+          ativo: formattedProduct.ativo !== false,
+          a_venda: formattedProduct.aVenda !== false,
+          visivel: formattedProduct.visivel !== false,
+          loja_id: lojaId || null,
+          global_pleno: globalPleno
+        });
+      },
+      removeProduct: async (id, lojaId) => {
+        // Optimistic
+        set((s) => ({ customProducts: s.customProducts.filter(x => x.id !== id) }));
+        
+        // DB Delete
+        await supabase.from('produtos').delete().eq('id', id);
+      },
       getStoreEffectiveProducts: (lojaId) => {
         const state = get();
         if (!lojaId) {

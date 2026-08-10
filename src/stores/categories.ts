@@ -35,30 +35,42 @@ export const useAdminCategories = create<CategoriesState>((set, get) => ({
         parentId: d.parent_id,
         descricaoHtml: d.descricao_html,
         ativa: d.ativa,
+        loja_id: d.loja_id,
+        global_pleno: d.global_pleno
       }));
       set({ categories: mapped as Categoria[] });
     }
   },
 
-  addOrUpdateCategory: async (c) => {
-    const { error } = await supabase.from('categorias').upsert({
-      id: c.id,
-      nome: c.nome,
-      slug: c.slug,
-      parent_id: c.parentId || null,
-      descricao_html: c.descricaoHtml || null,
-      ativa: c.ativa !== false,
+  addOrUpdateCategory: async (c: Categoria & { loja_id?: string; global_pleno?: boolean }) => {
+    // Optimistic
+    set((s) => {
+      const exists = s.categories.find(x => x.id === c.id);
+      if (exists) {
+        return { categories: s.categories.map(x => x.id === c.id ? c : x) };
+      }
+      return { categories: [...s.categories, c] };
     });
-    if (!error) {
-      get().loadCategories();
+
+    const { error } = await supabase.from('categorias').upsert({
+        id: c.id,
+        nome: c.nome,
+        slug: c.slug,
+        parent_id: c.parentId || null,
+        descricao_html: c.descricaoHtml || null,
+        ativa: c.ativa !== false,
+        loja_id: c.loja_id || null,
+        global_pleno: c.global_pleno !== false
+    });
+    
+    if (error) {
+      console.error("Error upserting category:", error);
     }
   },
 
   removeCategory: async (id) => {
+    set((s) => ({ categories: s.categories.filter(x => x.id !== id) }));
     const { error } = await supabase.from('categorias').delete().eq('id', id);
-    if (!error) {
-      get().loadCategories();
-    }
   },
 
   importNetworkCategoriesToStore: (lojaId) => {

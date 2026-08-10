@@ -20,6 +20,7 @@ export interface Produto {
   id: string;
   lojaId?: string; // Se preenchido, produto exclusivo desta loja individual
   isIndividualLoja?: boolean;
+  globalPleno?: boolean;
   sku: string;
   ean?: string;
   ean2?: string;
@@ -132,6 +133,8 @@ export interface Marca {
   destaque: boolean;
   seoUrl?: string;
   marcaPropria?: boolean;
+  loja_id?: string;
+  globalPleno?: boolean;
 }
 
 export interface Categoria {
@@ -146,6 +149,8 @@ export interface Categoria {
   ativa?: boolean;
   destaque?: boolean;
   icone?: string;
+  loja_id?: string;
+  globalPleno?: boolean;
 }
 
 export interface FaixaCep {

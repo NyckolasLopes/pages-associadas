@@ -828,7 +828,6 @@ export const useAdmin = create<AdminState>()(
           estado: (p as any).estado,
           latitude: (p as any).latitude,
           longitude: (p as any).longitude,
-          categoria_associado: p.categoriaAssociado,
           entrega_expressa: p.entregaExpressa,
         } as any);
         if (!error) {
@@ -857,7 +856,6 @@ export const useAdmin = create<AdminState>()(
           estado: (p as any).estado,
           latitude: (p as any).latitude,
           longitude: (p as any).longitude,
-          categoria_associado: p.categoriaAssociado,
           entrega_expressa: p.entregaExpressa,
         } as any).eq('id', id);
         if (!error) {
