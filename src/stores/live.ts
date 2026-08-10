@@ -96,10 +96,26 @@ export const useLive = create<LiveStore>((set, get) => ({
 
       channel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          let realCity = getCityByIPMock();
+          try {
+            const res = await fetch("https://ipapi.co/json/");
+            if (res.ok) {
+              const data = await res.json();
+              if (data.city && data.region) {
+                realCity = {
+                  nome: data.city,
+                  uf: data.region
+                };
+              }
+            }
+          } catch (e) {
+            console.error("GeoIP Fetch Error:", e);
+          }
+
           await channel!.track({
             sessionId,
             lojaId,
-            cidade: getCityByIPMock(),
+            cidade: realCity,
             onlineAt: new Date().toISOString()
           });
         }

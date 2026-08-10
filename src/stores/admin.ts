@@ -809,6 +809,7 @@ export const useAdmin = create<AdminState>()(
         const { error } = await supabase.from('lojas').insert({
           id: p.id,
           ativa: p.ativo ?? true,
+          categoria_associado: p.categoriaAssociado,
           cnpj: p.cnpj,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,
@@ -837,6 +838,7 @@ export const useAdmin = create<AdminState>()(
       updatePharmacy: async (id, p) => {
         const { error } = await supabase.from('lojas').update({
           ativa: p.ativo ?? true,
+          categoria_associado: p.categoriaAssociado,
           cnpj: p.cnpj,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,

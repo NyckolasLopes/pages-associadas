@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/stores/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -278,18 +279,30 @@ function AdminUsuarios() {
     }
 
     if (editingUsuarioId) {
-      // Update existing user
+      // Update existing user in local state
+      const isGlobal = isGlobalGroup();
       setUsuarios(usuarios.map(u => u.id === editingUsuarioId ? {
         ...u,
         name: novoUsuarioNome,
         email: novoUsuarioEmail,
         password: novoUsuarioSenha || u.password,
         grupoId: novoUsuarioGrupo,
-        lojasVinculadas: isGlobalGroup() ? undefined : novoUsuarioLojas
+        lojasVinculadas: isGlobal ? undefined : novoUsuarioLojas
       } : u));
+      
+      // Sync to Supabase profiles
+      supabase.from('profiles').update({
+        grupo_id: novoUsuarioGrupo,
+        lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
+        is_admin: isGlobal
+      }).eq('email', novoUsuarioEmail).then(({ error }) => {
+        if (error) console.error("Failed to sync profile:", error);
+      });
+      
       toast.success("Usuário atualizado com sucesso!");
     } else {
-      // Create new user
+      // Create new user in local state
+      const isGlobal = isGlobalGroup();
       setUsuarios([...usuarios, { 
         id: `user-${Date.now()}`, 
         name: novoUsuarioNome, 
@@ -297,9 +310,19 @@ function AdminUsuarios() {
         password: novoUsuarioSenha,
         grupoId: novoUsuarioGrupo, 
         proprietario: false,
-        lojasVinculadas: isGlobalGroup() ? undefined : novoUsuarioLojas
+        lojasVinculadas: isGlobal ? undefined : novoUsuarioLojas
       }]);
-      toast.success("Usuário salvo com sucesso!");
+
+      // Sync to Supabase profiles if it exists
+      supabase.from('profiles').update({
+        grupo_id: novoUsuarioGrupo,
+        lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
+        is_admin: isGlobal
+      }).eq('email', novoUsuarioEmail).then(({ error }) => {
+        if (error) console.error("Failed to sync profile:", error);
+      });
+
+      toast.success("Usuário criado com sucesso!");
     }
     setIsNovoUsuarioOpen(false);
     resetUsuarioForm();

@@ -362,54 +362,6 @@ function Checkout() {
 
 
   if (done) {
-    if (paymentCategory === "online" && paymentMethod === "pix") {
-      return (
-        <div className="container-fa py-12 text-center max-w-lg mx-auto">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Pedido gerado! 🎉</h1>
-          <p className="text-muted-foreground mb-8">
-            Falta pouco! Faça o pagamento via Pix no valor de <strong className="text-foreground">{brl(orderedTotal)}</strong> para confirmarmos o pedido.
-          </p>
-
-          <div className="bg-white p-6 rounded-xl border shadow-sm mx-auto w-fit mb-6">
-            <QrCode className="w-48 h-48 text-slate-800 mx-auto" strokeWidth={1} />
-          </div>
-
-          <div className="flex items-center justify-center gap-2 text-rose-600 font-bold bg-rose-50 py-2 px-4 rounded-full w-fit mx-auto mb-6">
-            <Clock className="w-4 h-4" />
-            Vence em {Math.floor(pixTimeLeft / 60).toString().padStart(2, '0')}:{Math.floor(pixTimeLeft % 60).toString().padStart(2, '0')}
-          </div>
-
-          <div className="space-y-2 mb-8 text-left">
-            <p className="text-sm font-bold text-slate-700 text-center">Ou copie o código Pix abaixo:</p>
-            <div className="flex gap-2">
-              <Input value={`00020126360014BR.GOV.BCB.PIX0114+5551999999999520400005303986540510.005802BR5919FARMACIAS ASSOCIADAS6009SAO PAULO62140510PIXSTORE016304ABCD`} readOnly className="font-mono text-xs bg-slate-50" id="pixCode" />
-              <Button variant="outline" onClick={() => {
-                navigator.clipboard.writeText("00020126360014BR.GOV.BCB.PIX0114+5551999999999520400005303986540510.005802BR5919FARMACIAS ASSOCIADAS6009SAO PAULO62140510PIXSTORE016304ABCD");
-                toast.success("Código Pix copiado com sucesso!");
-              }}>Copiar</Button>
-            </div>
-          </div>
-
-          <Link to="/">
-            <Button variant="outline" className="w-full h-12 font-bold">Voltar à loja</Button>
-          </Link>
-        </div>
-      );
-    }
-
-    if (paymentCategory === "online" && paymentMethod === "credit") {
-      if (creditCardStatus === "refused") {
-        return (
-          <div className="container-fa py-12 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-300">
-            <div className="mx-auto w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
-              <AlertCircle className="w-8 h-8" />
-            </div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">Pagamento Recusado</h1>
-            <p className="text-muted-foreground mb-6">
-              Infelizmente seu pagamento no cartão final <strong>{cardNumber.replace(/\D/g, "").slice(-4) || "****"}</strong> não foi autorizado pelo banco emissor. Por favor, verifique os dados ou tente outro meio de pagamento.
-            </p>
-
-            <Button onClick={() => {
               setDone(false);
               setCreditCardStatus(null);
             }} className="w-full h-12 font-bold bg-slate-800 hover:bg-slate-900 text-white">
@@ -1250,24 +1202,33 @@ function Checkout() {
               ],
               anotacoes: pickupPersonType === "other" ? `Autorizado para retirada: ${authName} (CPF: ${authCpf} - Tel: ${authPhone})` : ""
             };
-            let localCardStatus = creditCardStatus;
-            if (paymentCategory === "online" && paymentMethod === "credit") {
-              const rand = Math.random();
-              if (rand < 0.6) localCardStatus = "approved";
-              else if (rand < 0.8) localCardStatus = "refused";
-              else localCardStatus = "analysis";
-              setCreditCardStatus(localCardStatus);
-            }
-            if (paymentCategory !== "online" || paymentMethod !== "credit" || localCardStatus !== "refused") {
-              addOrder(newOrder);
-              clear();
-            }
-            setOrderedTotal(finalTotal);
-            if (paymentCategory === "online" && paymentMethod === "pix") {
-              setPixGenerated(true);
-            }
-            setDone(true); 
-          }}
+              let localCardStatus = creditCardStatus;
+              if (paymentCategory === "online" && paymentMethod === "credit") {
+                const rand = Math.random();
+                if (rand < 0.6) localCardStatus = "approved";
+                else if (rand < 0.8) localCardStatus = "refused";
+                else localCardStatus = "analysis";
+                setCreditCardStatus(localCardStatus);
+              }
+              if (paymentCategory !== "online" || paymentMethod !== "credit" || localCardStatus !== "refused") {
+                addOrder(newOrder);
+                clear();
+                
+                // Gerar mensagem do WhatsApp
+                const phone = (activeStore?.telefone || "51999999999").replace(/\D/g, "");
+                const waNumber = phone.startsWith("55") ? phone : `55${phone}`;
+                const itemsText = visibleItems.map(i => `- ${i.qty}x ${i.nome}`).join("%0A");
+                const deliveryText = deliveryMethod === "store" ? "Retirada na Loja" : "Entrega em Domicílio";
+                const totalText = brl(finalTotal);
+                
+                const text = `Olá! Acabei de fazer um pedido na loja virtual.%0A%0A*Pedido:* #${newOrder.id}%0A*Cliente:* ${nome}%0A*Entrega:* ${deliveryText}%0A%0A*Itens:*%0A${itemsText}%0A%0A*Total:* ${totalText}%0A%0AGostaria de prosseguir com o pedido.`;
+                
+                const waLink = `https://wa.me/${waNumber}?text=${text}`;
+                window.open(waLink, "_blank");
+              }
+              setOrderedTotal(finalTotal);
+              setDone(true); 
+            }}
         >
           <Lock className="h-4 w-4 mr-2 opacity-50" />
           Finalizar Pedido {brl(finalTotal)}
