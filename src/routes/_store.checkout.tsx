@@ -358,76 +358,38 @@ function Checkout() {
       }
       setHasPromptedPickup(true);
     }
-  }, [mounted, deliveryMethod, pickupPersonType, hasPromptedPickup, isServiceCart]);
-
+  }, [mounted, deliveryMethod, pickupPersonType, hasPromptedPickup]);
 
   if (done) {
-              setDone(false);
-              setCreditCardStatus(null);
-            }} className="w-full h-12 font-bold bg-slate-800 hover:bg-slate-900 text-white">
-              Tentar Novamente
-            </Button>
-          </div>
-        );
-      }
-
-      if (creditCardStatus === "analysis") {
-        return (
-          <div className="container-fa py-12 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-300">
-            <div className="mx-auto w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-6">
-              <Clock className="w-8 h-8" />
-            </div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">Pagamento em Análise</h1>
-            <p className="text-muted-foreground mb-6">
-              Seu pedido foi recebido e o pagamento no valor de <strong className="text-foreground">{brl(finalTotal)}</strong> no cartão final <strong>{cardNumber.replace(/\D/g, "").slice(-4) || "****"}</strong> está passando por uma análise de segurança antifraude. Se estiver tudo certo, a aprovação sairá em algumas horas.
-            </p>
-
-            <Link to="/">
-              <Button className="w-full h-12 font-bold bg-amber-600 hover:bg-amber-700 text-white">Acompanhar Pedido</Button>
-            </Link>
-          </div>
-        );
-      }
-
-      return (
-        <div className="container-fa py-12 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-300">
-          <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Pagamento Aprovado! 🎉</h1>
-          <p className="text-muted-foreground mb-6">
-            Sua compra no valor de <strong className="text-foreground">{brl(finalTotal)}</strong> foi processada com sucesso no cartão final <strong>{cardNumber.replace(/\D/g, "").slice(-4) || "****"}</strong>.
-          </p>
-
-          <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 mb-8 text-left text-sm space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Parcelamento:</span>
-              <span className="font-bold">{installments}x de {brl(finalTotal / Number(installments))}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status do Pedido:</span>
-              <span className="font-bold text-emerald-600">Preparando para envio</span>
-            </div>
-          </div>
-
-          <Link to="/">
-            <Button className="w-full h-12 font-bold bg-emerald-600 hover:bg-emerald-700 text-white">Voltar à loja</Button>
-          </Link>
-        </div>
-      );
-    }
-
     return (
-      <div className="container-fa py-20 text-center">
-        <h1 className="text-3xl font-bold">Pedido recebido! 🎉</h1>
-        <p className="text-muted-foreground mt-2">
-          {isServiceCart 
-            ? "Sua farmácia entrará em contato para confirmar o agendamento."
-            : "Sua farmácia entrará em contato para confirmar a entrega ou retirada."
-          }
+      <div className="container-fa py-12 text-center max-w-lg mx-auto min-h-[60vh] flex flex-col justify-center">
+        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <MessageCircle className="w-10 h-10 text-emerald-600" />
+        </div>
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">Pedido Recebido! 🎉</h1>
+        <p className="text-slate-600 mb-8 text-lg">
+          O seu pedido no valor de <strong className="text-slate-800">{brl(orderedTotal)}</strong> foi gerado com sucesso.
         </p>
-        <Link to="/">
-          <Button className="mt-6">Voltar à loja</Button>
+
+        <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 mb-8">
+          <p className="text-emerald-800 mb-4">
+            Estamos redirecionando você para o nosso <strong>WhatsApp</strong> para finalizar o pagamento e combinar a entrega.
+          </p>
+          <Button 
+            className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg"
+            onClick={() => {
+              const phone = (activeStore?.telefone || "51999999999").replace(/\D/g, "");
+              const waNumber = phone.startsWith("55") ? phone : `55${phone}`;
+              window.open(`https://wa.me/${waNumber}`, "_blank");
+            }}
+          >
+            <MessageCircle className="w-5 h-5 mr-2" />
+            Ir para o WhatsApp Agora
+          </Button>
+        </div>
+
+        <Link to={`/${activeStore?.slug || ''}`}>
+          <Button variant="outline" className="w-full h-12">Voltar para a página inicial</Button>
         </Link>
       </div>
     );
