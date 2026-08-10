@@ -354,24 +354,24 @@ function AdminLayout() {
           }
         }}>
           {/* Dashboard */}
-          {can('dash_view') && (
+          {(can('dash_view') || !isGlobalAdmin) && (
             <Link to="/admin" className="flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary" activeOptions={{ exact: true }}>
               <LayoutDashboard className="h-4 w-4" /> Dashboard
             </Link>
           )}
 
           {/* ---- ANÁLISES ---- */}
-          {can('dash_view') && (
+          {(can('dash_view') || !isGlobalAdmin) && (
             <NavSection icon={<BarChart2 className="h-4 w-4" />} label="Análises" open={openNavSection === "Análises"} onToggle={() => setOpenNavSection(openNavSection === "Análises" ? "" : "Análises")}>
               <Link to="/admin/metricas" className={subLinkClass}>
                 Métricas de Pedidos
               </Link>
-              {(can('rel_vendas_produto') || can('rel_vendas_canal') || can('rel_desempenho') || can('rel_financeiro') || can('rel_logistica_retirada') || can('rel_logistica_sla') || can('rel_estoque_controlados') || can('rel_estoque_abc')) && (
+              {(can('rel_vendas_produto') || can('rel_vendas_canal') || can('rel_desempenho') || can('rel_financeiro') || can('rel_logistica_retirada') || can('rel_logistica_sla') || can('rel_estoque_controlados') || can('rel_estoque_abc') || !isGlobalAdmin) && (
                 <Link to="/admin/relatorios" className={subLinkClass}>
                   Central de Relatórios
                 </Link>
               )}
-              {can('rel_aovivo') && (
+              {(can('rel_aovivo') || !isGlobalAdmin) && (
                 <Link to="/admin/ao-vivo" className={subLinkClass}>
                   Ao Vivo
                 </Link>
@@ -380,7 +380,7 @@ function AdminLayout() {
           )}
 
           {/* ---- PEDIDOS ---- */}
-          {can('vendas_pedidos') && (
+          {(can('vendas_pedidos') || !isGlobalAdmin) && (
             <NavSection icon={<Inbox className="h-4 w-4" />} label="Pedidos" open={openNavSection === "Pedidos" || openNavSection === "Vendas"} onToggle={() => setOpenNavSection(openNavSection === "Pedidos" ? "" : "Pedidos")}>
               <Link to="/admin/pedidos" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? 'Pedidos de Lojas' : 'Meus pedidos'}</Link>
             </NavSection>
@@ -403,20 +403,20 @@ function AdminLayout() {
           )}
 
           {/* ---- PRODUTOS ---- */}
-          {isGlobalAdmin && (can('prod_todos') || can('prod_novo') || can('prod_estoque') || can('prod_avaliacoes') || can('prod_categorias') || can('prod_colecoes') || can('prod_filtros') || can('prod_espera') || can('prod_marcas') || can('prod_perguntas') || can('prod_selos')) && (
+          {(can('prod_todos') || can('prod_novo') || can('prod_estoque') || can('prod_avaliacoes') || can('prod_categorias') || can('prod_colecoes') || can('prod_filtros') || can('prod_espera') || can('prod_marcas') || can('prod_perguntas') || can('prod_selos') || !isGlobalAdmin) && (
             <NavSection icon={<Package className="h-4 w-4" />} label="Produtos" open={openNavSection === "Produtos"} onToggle={() => setOpenNavSection(openNavSection === "Produtos" ? "" : "Produtos")}>
-              {can('prod_todos') && <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>Ver todos</Link>}
-              {can('prod_novo') && <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>Novo produto</Link>}
-              {can('prod_estoque') && <Link to="/admin/produtos/estoque" className={subLinkClass} activeOptions={{ exact: true }}>Estoques</Link>}
-              {can('prod_avaliacoes') && <Link to="/admin/avaliacoes" className={subLinkClass}>Avaliações</Link>}
-              {can('prod_categorias') && <Link to="/admin/categorias" className={subLinkClass}>Categorias</Link>}
-              {can('prod_colecoes') && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
-              {can('prod_filtros') && <Link to="/admin/filtros" className={subLinkClass}>Filtros</Link>}
-              {can('prod_espera') && <Link to="/admin/lista-espera" className={subLinkClass}>Lista de espera</Link>}
-              {can('prod_marcas') && <Link to="/admin/marcas" className={subLinkClass}>Marcas</Link>}
-              {can('prod_perguntas') && <Link to="/admin/perguntas" className={subLinkClass}>Perguntas</Link>}
-              {can('prod_selos') && <Link to="/admin/selos" className={subLinkClass}>Selos</Link>}
-              {can('prod_variacoes') && <Link to="/admin/variacoes" className={subLinkClass}>Variações</Link>}
+              {(can('prod_todos') || !isGlobalAdmin) && <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>Ver todos</Link>}
+              {(can('prod_novo') || !isGlobalAdmin) && <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>Novo produto</Link>}
+              {!isGlobalAdmin && (can('prod_estoque') || !isGlobalAdmin) && <Link to="/admin/produtos/estoque" className={subLinkClass} activeOptions={{ exact: true }}>Estoques</Link>}
+              {!isGlobalAdmin && (can('prod_avaliacoes') || !isGlobalAdmin) && <Link to="/admin/avaliacoes" className={subLinkClass}>Avaliações</Link>}
+              {(can('prod_categorias') || !isGlobalAdmin) && <Link to="/admin/categorias" className={subLinkClass}>Categorias</Link>}
+              {!isGlobalAdmin && (can('prod_colecoes') || !isGlobalAdmin) && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
+              {!isGlobalAdmin && (can('prod_filtros') || !isGlobalAdmin) && <Link to="/admin/filtros" className={subLinkClass}>Filtros</Link>}
+              {!isGlobalAdmin && (can('prod_espera') || !isGlobalAdmin) && <Link to="/admin/lista-espera" className={subLinkClass}>Lista de espera</Link>}
+              {!isGlobalAdmin && (can('prod_marcas') || !isGlobalAdmin) && <Link to="/admin/marcas" className={subLinkClass}>Marcas</Link>}
+              {!isGlobalAdmin && (can('prod_perguntas') || !isGlobalAdmin) && <Link to="/admin/perguntas" className={subLinkClass}>Perguntas</Link>}
+              {!isGlobalAdmin && (can('prod_selos') || !isGlobalAdmin) && <Link to="/admin/selos" className={subLinkClass}>Selos</Link>}
+              {!isGlobalAdmin && (can('prod_todos') || !isGlobalAdmin) && <Link to="/admin/variacoes" className={subLinkClass}>Variações</Link>}
             </NavSection>
           )}
 
@@ -433,10 +433,11 @@ function AdminLayout() {
 
 
           {/* ---- MARKETING ---- */}
-          {(can('mkt_cupons') || (!isGlobalAdmin && can('mkt_promocoes'))) && (
+          {(can('mkt_cupons') || can('mkt_promocoes') || !isGlobalAdmin) && (
             <NavSection icon={<Megaphone className="h-4 w-4" />} label="Marketing" open={openNavSection === "Marketing"} onToggle={() => setOpenNavSection(openNavSection === "Marketing" ? "" : "Marketing")}>
               {can('mkt_cupons') && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Cupons das lojas" : "Meus cupons"}</Link>}
-              {!isGlobalAdmin && can('mkt_promocoes') && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
+              {(can('mkt_promocoes') || !isGlobalAdmin) && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
+              {<Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Campanha Encarte</Link>}
             </NavSection>
           )}
 

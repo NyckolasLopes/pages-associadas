@@ -44,7 +44,7 @@ function AdminProdutosPrecos() {
     ? pharmacies 
     : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id));
 
-  const defaultSelection = isGlobalAdmin() ? "global" : (userStores[0]?.id || "");
+  const defaultSelection = userStores[0]?.id || "";
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>(defaultSelection);
   const [search, setSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -310,6 +310,10 @@ function AdminProdutosPrecos() {
 
   const handleConfirmImport = () => {
     if (!pendingImportData) return;
+    if (!selectedPharmacyId || selectedPharmacyId === "global") {
+      toast.error("Por favor, selecione uma loja primeiro.");
+      return;
+    }
     
     let inicioCampanha = importStartDate;
     let fimCampanha = importEndDate;
@@ -351,12 +355,22 @@ function AdminProdutosPrecos() {
 
       if (isNaN(precoCampanha) || precoCampanha <= 0) continue;
 
+      const storePrices = product.precosPorLoja || {};
+      const currentStorePrice = storePrices[selectedPharmacyId] || {};
+
       addOrUpdateProduct({
         ...product,
-        emCampanha: true,
-        precoCampanha,
-        campanhaInicio: inicioCampanha,
-        campanhaFim: fimCampanha
+        precosPorLoja: {
+          ...storePrices,
+          [selectedPharmacyId]: {
+            ...currentStorePrice,
+            precoDe: product.precoPor,
+            precoPor: precoCampanha,
+            ativo: true,
+            campanhaInicio: inicioCampanha,
+            campanhaFim: fimCampanha
+          }
+        }
       });
       updatedCount++;
     }
@@ -440,11 +454,9 @@ function AdminProdutosPrecos() {
             <Upload className="h-4 w-4" /> Importar meus preços
           </Button>
 
-          {isGlobalAdmin() && (
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 h-10">
-              <FileSpreadsheet className="mr-2 h-4 w-4" /> Planilha Encarte
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 h-10">
+            <FileSpreadsheet className="mr-2 h-4 w-4" /> Planilha Encarte
+          </Button>
           <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={(e) => {
             const file = e.target.files?.[0];
             if (!file) return;
@@ -486,9 +498,6 @@ function AdminProdutosPrecos() {
                     <SelectValue placeholder="Selecione uma farmácia..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {isGlobalAdmin() && (
-                      <SelectItem value="global" className="font-bold text-orange-600 bg-orange-50">Gerenciar campanhas de preços em todas as lojas</SelectItem>
-                    )}
                     {userStores.map(p => (
                       <SelectItem key={p.id} value={p.id}>{p.nome} - {p.cidade}/{p.uf}</SelectItem>
                     ))}
@@ -743,7 +752,7 @@ function AdminProdutosPrecos() {
           <DialogHeader>
             <DialogTitle>Importar Encarte</DialogTitle>
             <DialogDescription>
-              Esses encartes são correspondentes aos preços de {currentMonthName}?
+              As promoções do encarte devem ser aplicadas no mês de {currentMonthName}?
             </DialogDescription>
           </DialogHeader>
           
@@ -754,19 +763,22 @@ function AdminProdutosPrecos() {
                 className="w-full justify-start"
                 onClick={() => setImportManualDates(false)}
               >
-                Sim, aplicar durante o mês inteiro vigente
+                Sim
               </Button>
               <Button 
                 variant={importManualDates ? "default" : "outline"}
                 className="w-full justify-start"
                 onClick={() => setImportManualDates(true)}
               >
-                Não, definir datas manualmente
+                Não
               </Button>
             </div>
 
             {importManualDates && (
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div className="col-span-2 space-y-1.5 mb-2 text-sm text-slate-600 text-center font-medium">
+                  Em qual periodo voce gostaria de aplicar a campanha do encarte?
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700">Data de Início</label>
                   <Input type="date" value={importStartDate} onChange={e => setImportStartDate(e.target.value)} />

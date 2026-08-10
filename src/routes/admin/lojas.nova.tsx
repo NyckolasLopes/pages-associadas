@@ -257,19 +257,6 @@ function NovaLojaAdmin() {
                   onChange={(e) => update({ nome: e.target.value })}
                 />
               </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Tabela de Preços Regional</FieldLabel>
-                <Select value={form.tabelaPrecoId} onValueChange={(val) => update({ tabelaPrecoId: val })}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Selecione a tabela..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {regions.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -338,14 +325,6 @@ function NovaLojaAdmin() {
                 <Input
                   value={form.sistemaUtilizado || ""}
                   onChange={(e) => update({ sistemaUtilizado: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Hash para Recebimentos</FieldLabel>
-                <Input
-                  value={form.hashRecebimento || ""}
-                  onChange={(e) => update({ hashRecebimento: e.target.value })}
-                  placeholder="Preenchido internamente pelo Admin"
                 />
               </div>
             </div>
@@ -691,52 +670,51 @@ function NovaLojaAdmin() {
           </div>
         </FormSection>
 
-        {/* ========== OUTROS MEIOS DE ENTREGA ========== */}
-        <FormSection icon={<Truck className="h-4 w-4 text-blue-600" />} title="Outros Meios de Entrega (Aplicativos/Motoboy)">
-          <div className="grid gap-6 border rounded-lg p-4 bg-slate-50">
-            {/* UBER */}
-            <div className="grid gap-3 pb-4 border-b border-slate-200 opacity-60">
-              <RadioToggle
-                label="Aceita Uber Entregas? (em breve)"
-                value={form.aceitaUber}
-                onChange={() => {}}
-              />
-              {false && (
-                <div className="space-y-1.5 max-w-[200px]">
-                  <FieldLabel required>Valor Uber (R$)</FieldLabel>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.custoUber === "" as any ? "" : form.custoUber}
-                    onChange={(e) => update({ custoUber: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-                  />
-                </div>
-              )}
+
+        {/* ========== DADOS DE RASTREAMENTO (TRACKING) ========== */}
+        <FormSection icon={<Zap className="h-4 w-4 text-orange-600" />} title="Pixels e Rastreamento">
+          <div className="grid gap-4 border rounded-lg p-4 bg-slate-50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <FieldLabel>Google Analytics ID</FieldLabel>
+                <Input
+                  value={form.googleAnalyticsId || ""}
+                  onChange={(e) => update({ googleAnalyticsId: e.target.value })}
+                  placeholder="Ex: G-XXXXXXXX"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>Google Ads ID</FieldLabel>
+                <Input
+                  value={form.googleAdsId || ""}
+                  onChange={(e) => update({ googleAdsId: e.target.value })}
+                  placeholder="Ex: AW-XXXXXXXX"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>Google Tag Manager ID</FieldLabel>
+                <Input
+                  value={form.googleTagManagerId || ""}
+                  onChange={(e) => update({ googleTagManagerId: e.target.value })}
+                  placeholder="Ex: GTM-XXXXXXX"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>Pixel do Facebook ID</FieldLabel>
+                <Input
+                  value={form.facebookPixelId || ""}
+                  onChange={(e) => update({ facebookPixelId: e.target.value })}
+                  placeholder="Ex: 1234567890"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>ChatGPT Ads ID</FieldLabel>
+                <Input
+                  value={form.chatgptAdsId || ""}
+                  onChange={(e) => update({ chatgptAdsId: e.target.value })}
+                />
+              </div>
             </div>
-
-            {/* 99 ENTREGAS */}
-            <div className="grid gap-3 pb-4 border-b border-slate-200 opacity-60">
-              <RadioToggle
-                label="Aceita 99 Entregas? (em breve)"
-                value={form.aceita99}
-                onChange={() => {}}
-              />
-              {false && (
-                <div className="space-y-1.5 max-w-[200px]">
-                  <FieldLabel required>Valor 99 Entregas (R$)</FieldLabel>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.custo99 === "" as any ? "" : form.custo99}
-                    onChange={(e) => update({ custo99: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-                  />
-                </div>
-              )}
-            </div>
-
-
           </div>
         </FormSection>
       </div>
