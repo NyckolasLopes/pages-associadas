@@ -182,16 +182,30 @@ function GerarLojaPage() {
                     </Button>
                   ) : (
                     <>
-                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                        <Label htmlFor={`toggle-${pharmacy.id}`} className="text-sm font-semibold text-slate-700 cursor-pointer">
-                          Vitrine Ativada
-                        </Label>
-                        <Switch
-                          id={`toggle-${pharmacy.id}`}
-                          checked={isAtiva}
-                          onCheckedChange={(checked) => handleToggleStatus(pharmacy, checked)}
-                          className="data-[state=checked]:bg-emerald-500"
-                        />
+                      <div className="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <div className="flex items-center justify-between mb-1">
+                          <Label className="text-sm font-semibold text-slate-700">
+                            Status da Vitrine: {isAtiva ? 'Ativada' : 'Desativada'}
+                          </Label>
+                        </div>
+                        <Button
+                          variant={isAtiva ? "destructive" : "default"}
+                          size="sm"
+                          onClick={() => handleToggleStatus(pharmacy, !isAtiva)}
+                          className={isAtiva ? "w-full bg-red-500 hover:bg-red-600 font-bold shadow-sm" : "w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-sm"}
+                        >
+                          {isAtiva ? (
+                            <>
+                              <XCircle className="w-4 h-4 mr-2" />
+                              Desativar Loja
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Ativar Loja
+                            </>
+                          )}
+                        </Button>
                       </div>
                       
                       <div className="flex gap-2">

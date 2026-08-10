@@ -801,6 +801,8 @@ export const useAdmin = create<AdminState>()(
             latitude: l.latitude,
             longitude: l.longitude,
             categoriaAssociado: l.categoria_associado as any,
+            isVirtualStoreGenerated: !!l.status_loja_virtual,
+            virtualStoreStatus: l.status_loja_virtual,
           })) as unknown as Pharmacy[];
           set({ pharmacies: loadedPharmacies });
         }
@@ -829,6 +831,7 @@ export const useAdmin = create<AdminState>()(
           latitude: (p as any).latitude,
           longitude: (p as any).longitude,
           entrega_expressa: p.entregaExpressa,
+          status_loja_virtual: p.virtualStoreStatus,
         } as any);
         if (!error) {
           set((s) => ({ pharmacies: [...s.pharmacies, { ...p, ativo: p.ativo ?? true }] }));
@@ -857,6 +860,7 @@ export const useAdmin = create<AdminState>()(
           latitude: (p as any).latitude,
           longitude: (p as any).longitude,
           entrega_expressa: p.entregaExpressa,
+          status_loja_virtual: p.virtualStoreStatus,
         } as any).eq('id', id);
         if (!error) {
           set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) }));
