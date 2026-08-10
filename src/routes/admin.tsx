@@ -336,14 +336,15 @@ function AdminLayout() {
         ${mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
       `}>
         <div className="p-6 border-b flex justify-between items-center bg-white">
-          <div className="text-lg font-bold text-primary">Painel Administrativo</div>
-          <div className="text-xs text-muted-foreground mt-1">
-            {isGlobalAdmin ? "Sede Administrativa" : (activeStoreId ? (() => {
-              const store = pharmacies.find(p => p.id === activeStoreId);
-              return store ? `${store.cidade || ''} - Admin ${store.nome}` : "Farmácias Associadas";
-            })() : "Farmácias Associadas")}
+          <div>
+            <div className="text-lg font-bold text-primary">Painel Administrativo</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {isGlobalAdmin ? "Sede Administrativa" : (activeStoreId ? (() => {
+                const store = pharmacies.find(p => p.id === activeStoreId);
+                return store ? `${store.cidade || ''} - Admin ${store.nome}` : "Farmácias Associadas";
+              })() : "Farmácias Associadas")}
+            </div>
           </div>
-        </div>
           <button 
             className="md:hidden p-1.5 hover:bg-slate-100 rounded-md text-slate-500" 
             onClick={() => setMobileMenuOpen(false)}
