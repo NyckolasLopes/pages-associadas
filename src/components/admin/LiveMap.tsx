@@ -34,8 +34,7 @@ export function LiveMap({ visitors }: LiveMapProps) {
   
   return (
     <div className="w-full h-full rounded-xl overflow-hidden relative z-0">
-      <style>
-        {\`
+      <style dangerouslySetInnerHTML={{ __html: `
           .leaflet-container {
             width: 100%;
             height: 100%;
@@ -62,8 +61,7 @@ export function LiveMap({ visitors }: LiveMapProps) {
             background-color: #f8fafc !important;
             color: #10b981 !important;
           }
-        \`}
-      </style>
+        ` }} />
       <MapContainer 
         center={center} 
         zoom={4} 
