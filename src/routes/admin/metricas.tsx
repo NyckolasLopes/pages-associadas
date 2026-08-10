@@ -300,16 +300,21 @@ function Metricas() {
 
   // Dados para Gráfico de Barras de Pedidos por Loja
   const lojaBarData = useMemo(() => {
-    return distribuicaoLojas
-      .filter(l => l.total > 0)
-      .slice(0, 6)
-      .map(l => ({
-        name: l.nome.replace("Farmácias Associadas — ", "").replace("Farmácias Associadas - ", ""),
-        concluidos: l.concluidos,
-        pendentes: l.pendentes,
-        total: l.total
-      }));
-  }, [distribuicaoLojas]);
+    let lojas = distribuicaoLojas.filter(l => l.total > 0);
+    
+    if (selectedLojaFilter !== "all") {
+      lojas = lojas.filter(l => l.id === selectedLojaFilter);
+    } else {
+      lojas = lojas.slice(0, 6);
+    }
+
+    return lojas.map(l => ({
+      name: l.nome.replace("Farmácias Associadas — ", "").replace("Farmácias Associadas - ", ""),
+      concluidos: l.concluidos,
+      pendentes: l.pendentes,
+      total: l.total
+    }));
+  }, [distribuicaoLojas, selectedLojaFilter]);
 
   // Filtro de Pesquisa e Status para a Tabela de Últimos Pedidos
   const filteredLatestOrders = useMemo(() => {
@@ -564,11 +569,11 @@ function Metricas() {
             <div className="flex items-center gap-2">
               <Store className="w-5 h-5 text-blue-600" />
               <h3 className="font-bold text-slate-800 text-base">
-                {isGlobalView ? "Volume de Pedidos por Loja" : "Resumo de Pedidos da Loja"}
+                {isGlobalView && selectedLojaFilter === "all" ? "Volume de Pedidos por Loja" : isGlobalView ? "Volume de Pedidos (Loja Filtrada)" : "Resumo de Pedidos da Loja"}
               </h3>
             </div>
             <span className="text-xs font-semibold text-slate-400">
-              {isGlobalView ? "Top Lojas com mais movimentação" : "Desempenho desta unidade"}
+              {isGlobalView && selectedLojaFilter === "all" ? "Top Lojas com mais movimentação" : isGlobalView ? "Desempenho da loja selecionada" : "Desempenho desta unidade"}
             </span>
           </div>
 
