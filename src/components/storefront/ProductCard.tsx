@@ -361,7 +361,7 @@ function ProductCardComponent({
           to="/p/$slug"
           preload="intent"
           params={{ slug: p.url || p.id }}
-          className="text-sm md:text-[15px] font-bold line-clamp-4 h-[5em] hover:text-primary-dark leading-tight overflow-hidden"
+          className="text-sm md:text-[15px] font-bold line-clamp-2 h-[2.5em] hover:text-primary-dark leading-tight overflow-hidden"
         >
           {p.nome}
         </Link>
