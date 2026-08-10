@@ -231,6 +231,7 @@ function AdminLayout() {
               if(!success) {
                 toast.error("Credenciais inválidas");
               } else {
+                toast.success("Login realizado com sucesso!");
                 navigate({ to: "/admin" });
               }
             }}>
