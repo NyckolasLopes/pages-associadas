@@ -24,6 +24,17 @@ export function LojaSeoTab({ lojaId }: { lojaId: string }) {
 
   const [facebookPixelId, setFacebookPixelId] = useState(pharmacy?.facebookPixelId || "");
   const [googleAnalyticsId, setGoogleAnalyticsId] = useState(pharmacy?.googleAnalyticsId || "");
+  const [googleTagManagerId, setGoogleTagManagerId] = useState(pharmacy?.googleTagManagerId || "");
+
+  useEffect(() => {
+    if (pharmacy) {
+      setPageTitle(pharmacy.pageTitle || `Farmácias Associadas - ${pharmacy.nome || "Nova Loja"}`);
+      setMetaDesc(pharmacy.metaDescription || pharmacy.seoDescricao || `Sua farmácia completa em ${pharmacy.cidade || "sua região"}. Medicamentos, perfumaria, dermocosméticos e ofertas exclusivas com entrega rápida.`);
+      setFacebookPixelId(pharmacy.facebookPixelId || "");
+      setGoogleAnalyticsId(pharmacy.googleAnalyticsId || "");
+      setGoogleTagManagerId(pharmacy.googleTagManagerId || "");
+    }
+  }, [pharmacy]);
 
   if (!pharmacy) {
     return <div className="text-sm text-slate-500">Loja não encontrada.</div>;
@@ -39,6 +50,7 @@ export function LojaSeoTab({ lojaId }: { lojaId: string }) {
       seoDescricao: sanitizeText(metaDesc, 250), // mantendo legado atualizado
       facebookPixelId: facebookPixelId,
       googleAnalyticsId: googleAnalyticsId,
+      googleTagManagerId: googleTagManagerId,
     };
 
     updatePharmacy(pharmacy.id, updated);
@@ -172,6 +184,19 @@ export function LojaSeoTab({ lojaId }: { lojaId: string }) {
                       />
                       <p className="text-[11px] text-slate-500">
                         Usado para análise de tráfego através do Google Analytics 4.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-bold text-slate-700">Google Tag Manager ID</Label>
+                      <Input
+                        value={googleTagManagerId}
+                        onChange={(e) => setGoogleTagManagerId(e.target.value)}
+                        className="border-slate-300"
+                        placeholder="Ex: GTM-XXXXXXX"
+                      />
+                      <p className="text-[11px] text-slate-500">
+                        Usado para gerenciar tags e scripts avançados na loja.
                       </p>
                     </div>
                   </div>
