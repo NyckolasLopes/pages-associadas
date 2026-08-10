@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Store, Link as LinkIcon, Play, Pause, ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 
 export const Route = createFileRoute("/admin/lojas/paineis")({
   component: LojasPaineis,
@@ -94,6 +95,9 @@ function LojasPaineis() {
               ? "Gere e gerencie dashboards individuais para cada farmácia associada."
               : "Gerencie e acesse os painéis gerados."}
           </p>
+        </div>
+        <div>
+          <StoreSelector className="mb-0" />
         </div>
       </div>
 

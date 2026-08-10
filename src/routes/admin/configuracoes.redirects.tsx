@@ -7,6 +7,7 @@ import { Info, ArrowLeft, Link as LinkIcon, Trash2, Upload } from "lucide-react"
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { useRef } from "react";
+import { StoreSelector } from "@/components/admin/StoreSelector";
 
 export const Route = createFileRoute("/admin/configuracoes/redirects")({
   component: RedirectsPage,
@@ -171,15 +172,20 @@ function RedirectsPage() {
 
   return (
     <div className="max-w-4xl space-y-6 pb-20">
-      <div className="flex items-center gap-4">
-        <Link to="/admin/configuracoes" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-          <ArrowLeft className="h-5 w-5 text-slate-600" />
-        </Link>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/admin/configuracoes" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <ArrowLeft className="h-5 w-5 text-slate-600" />
+          </Link>
+          <div>
+            <h2 className="text-[26px] font-bold text-slate-800 flex items-center gap-2">
+              <LinkIcon className="h-6 w-6 text-slate-600" /> Redirect 301
+            </h2>
+            <p className="text-slate-500">Mapeie suas URLs antigas para as novas</p>
+          </div>
+        </div>
         <div>
-          <h2 className="text-[26px] font-bold text-slate-800 flex items-center gap-2">
-            <LinkIcon className="h-6 w-6 text-slate-600" /> Redirect 301
-          </h2>
-          <p className="text-slate-500">Mapeie suas URLs antigas para as novas</p>
+          <StoreSelector className="mb-0" />
         </div>
       </div>
 
