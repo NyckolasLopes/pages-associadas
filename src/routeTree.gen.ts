@@ -13,6 +13,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as StoreRouteImport } from './routes/_store'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as PainelLojaOldRouteImport } from './routes/painel-loja.old'
 import { Route as PainelLojaLojaIdRouteImport } from './routes/painel-loja.$lojaId'
 import { Route as InscricaoTokenRouteImport } from './routes/inscricao.$token'
 import { Route as AdminVariacoesRouteImport } from './routes/admin/variacoes'
@@ -22,6 +23,7 @@ import { Route as AdminRelatoriosRouteImport } from './routes/admin/relatorios'
 import { Route as AdminProdutosRouteImport } from './routes/admin/produtos'
 import { Route as AdminPerguntasRouteImport } from './routes/admin/perguntas'
 import { Route as AdminPbmsRouteImport } from './routes/admin/pbms'
+import { Route as AdminPaginasInformativasRouteImport } from './routes/admin/paginas-informativas'
 import { Route as AdminMetricasRouteImport } from './routes/admin/metricas'
 import { Route as AdminMarcasRouteImport } from './routes/admin/marcas'
 import { Route as AdminListaEsperaRouteImport } from './routes/admin/lista-espera'
@@ -77,8 +79,8 @@ import { Route as AdminDesignLogoRouteImport } from './routes/admin/design.logo'
 import { Route as AdminDesignCoresRouteImport } from './routes/admin/design.cores'
 import { Route as AdminConfiguracoesRedirectsRouteImport } from './routes/admin/configuracoes.redirects'
 import { Route as AdminConfiguracoesPagamentoRouteImport } from './routes/admin/configuracoes.pagamento'
+import { Route as AdminConfiguracoesLojaRouteImport } from './routes/admin/configuracoes.loja'
 import { Route as AdminConfiguracoesDominiosRouteImport } from './routes/admin/configuracoes.dominios'
-import { Route as AdminConfiguracoesDadosLojaRouteImport } from './routes/admin/configuracoes.dados-loja'
 import { Route as AdminClientesLeadsRouteImport } from './routes/admin/clientes/leads'
 import { Route as AdminCanaisIfoodRouteImport } from './routes/admin/canais.ifood'
 import { Route as AdminCanaisGoogleShoppingRouteImport } from './routes/admin/canais.google-shopping'
@@ -112,6 +114,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const PainelLojaOldRoute = PainelLojaOldRouteImport.update({
+  id: '/painel-loja/old',
+  path: '/painel-loja/old',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PainelLojaLojaIdRoute = PainelLojaLojaIdRouteImport.update({
   id: '/painel-loja/$lojaId',
@@ -158,6 +165,12 @@ const AdminPbmsRoute = AdminPbmsRouteImport.update({
   path: '/pbms',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPaginasInformativasRoute =
+  AdminPaginasInformativasRouteImport.update({
+    id: '/paginas-informativas',
+    path: '/paginas-informativas',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminMetricasRoute = AdminMetricasRouteImport.update({
   id: '/metricas',
   path: '/metricas',
@@ -440,16 +453,15 @@ const AdminConfiguracoesPagamentoRoute =
     path: '/configuracoes/pagamento',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminConfiguracoesLojaRoute = AdminConfiguracoesLojaRouteImport.update({
+  id: '/configuracoes/loja',
+  path: '/configuracoes/loja',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminConfiguracoesDominiosRoute =
   AdminConfiguracoesDominiosRouteImport.update({
     id: '/configuracoes/dominios',
     path: '/configuracoes/dominios',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminConfiguracoesDadosLojaRoute =
-  AdminConfiguracoesDadosLojaRouteImport.update({
-    id: '/configuracoes/dados-loja',
-    path: '/configuracoes/dados-loja',
     getParentRoute: () => AdminRoute,
   } as any)
 const AdminClientesLeadsRoute = AdminClientesLeadsRouteImport.update({
@@ -555,6 +567,7 @@ export interface FileRoutesByFullPath {
   '/admin/lista-espera': typeof AdminListaEsperaRoute
   '/admin/marcas': typeof AdminMarcasRouteWithChildren
   '/admin/metricas': typeof AdminMetricasRoute
+  '/admin/paginas-informativas': typeof AdminPaginasInformativasRoute
   '/admin/pbms': typeof AdminPbmsRoute
   '/admin/perguntas': typeof AdminPerguntasRoute
   '/admin/produtos': typeof AdminProdutosRouteWithChildren
@@ -564,6 +577,7 @@ export interface FileRoutesByFullPath {
   '/admin/variacoes': typeof AdminVariacoesRouteWithChildren
   '/inscricao/$token': typeof InscricaoTokenRoute
   '/painel-loja/$lojaId': typeof PainelLojaLojaIdRoute
+  '/painel-loja/old': typeof PainelLojaOldRoute
   '/admin/': typeof AdminIndexRoute
   '/ajuda/$page': typeof StoreAjudaPageRoute
   '/c/$slug': typeof StoreCSlugRoute
@@ -575,8 +589,8 @@ export interface FileRoutesByFullPath {
   '/admin/canais/google-shopping': typeof AdminCanaisGoogleShoppingRoute
   '/admin/canais/ifood': typeof AdminCanaisIfoodRoute
   '/admin/clientes/leads': typeof AdminClientesLeadsRoute
-  '/admin/configuracoes/dados-loja': typeof AdminConfiguracoesDadosLojaRoute
   '/admin/configuracoes/dominios': typeof AdminConfiguracoesDominiosRoute
+  '/admin/configuracoes/loja': typeof AdminConfiguracoesLojaRoute
   '/admin/configuracoes/pagamento': typeof AdminConfiguracoesPagamentoRoute
   '/admin/configuracoes/redirects': typeof AdminConfiguracoesRedirectsRoute
   '/admin/design/cores': typeof AdminDesignCoresRoute
@@ -639,6 +653,7 @@ export interface FileRoutesByTo {
   '/admin/lista-espera': typeof AdminListaEsperaRoute
   '/admin/marcas': typeof AdminMarcasRouteWithChildren
   '/admin/metricas': typeof AdminMetricasRoute
+  '/admin/paginas-informativas': typeof AdminPaginasInformativasRoute
   '/admin/pbms': typeof AdminPbmsRoute
   '/admin/perguntas': typeof AdminPerguntasRoute
   '/admin/produtos': typeof AdminProdutosRouteWithChildren
@@ -648,6 +663,7 @@ export interface FileRoutesByTo {
   '/admin/variacoes': typeof AdminVariacoesRouteWithChildren
   '/inscricao/$token': typeof InscricaoTokenRoute
   '/painel-loja/$lojaId': typeof PainelLojaLojaIdRoute
+  '/painel-loja/old': typeof PainelLojaOldRoute
   '/admin': typeof AdminIndexRoute
   '/ajuda/$page': typeof StoreAjudaPageRoute
   '/c/$slug': typeof StoreCSlugRoute
@@ -659,8 +675,8 @@ export interface FileRoutesByTo {
   '/admin/canais/google-shopping': typeof AdminCanaisGoogleShoppingRoute
   '/admin/canais/ifood': typeof AdminCanaisIfoodRoute
   '/admin/clientes/leads': typeof AdminClientesLeadsRoute
-  '/admin/configuracoes/dados-loja': typeof AdminConfiguracoesDadosLojaRoute
   '/admin/configuracoes/dominios': typeof AdminConfiguracoesDominiosRoute
+  '/admin/configuracoes/loja': typeof AdminConfiguracoesLojaRoute
   '/admin/configuracoes/pagamento': typeof AdminConfiguracoesPagamentoRoute
   '/admin/configuracoes/redirects': typeof AdminConfiguracoesRedirectsRoute
   '/admin/design/cores': typeof AdminDesignCoresRoute
@@ -726,6 +742,7 @@ export interface FileRoutesById {
   '/admin/lista-espera': typeof AdminListaEsperaRoute
   '/admin/marcas': typeof AdminMarcasRouteWithChildren
   '/admin/metricas': typeof AdminMetricasRoute
+  '/admin/paginas-informativas': typeof AdminPaginasInformativasRoute
   '/admin/pbms': typeof AdminPbmsRoute
   '/admin/perguntas': typeof AdminPerguntasRoute
   '/admin/produtos': typeof AdminProdutosRouteWithChildren
@@ -735,6 +752,7 @@ export interface FileRoutesById {
   '/admin/variacoes': typeof AdminVariacoesRouteWithChildren
   '/inscricao/$token': typeof InscricaoTokenRoute
   '/painel-loja/$lojaId': typeof PainelLojaLojaIdRoute
+  '/painel-loja/old': typeof PainelLojaOldRoute
   '/admin/': typeof AdminIndexRoute
   '/_store/ajuda/$page': typeof StoreAjudaPageRoute
   '/_store/c/$slug': typeof StoreCSlugRoute
@@ -746,8 +764,8 @@ export interface FileRoutesById {
   '/admin/canais/google-shopping': typeof AdminCanaisGoogleShoppingRoute
   '/admin/canais/ifood': typeof AdminCanaisIfoodRoute
   '/admin/clientes/leads': typeof AdminClientesLeadsRoute
-  '/admin/configuracoes/dados-loja': typeof AdminConfiguracoesDadosLojaRoute
   '/admin/configuracoes/dominios': typeof AdminConfiguracoesDominiosRoute
+  '/admin/configuracoes/loja': typeof AdminConfiguracoesLojaRoute
   '/admin/configuracoes/pagamento': typeof AdminConfiguracoesPagamentoRoute
   '/admin/configuracoes/redirects': typeof AdminConfiguracoesRedirectsRoute
   '/admin/design/cores': typeof AdminDesignCoresRoute
@@ -813,6 +831,7 @@ export interface FileRouteTypes {
     | '/admin/lista-espera'
     | '/admin/marcas'
     | '/admin/metricas'
+    | '/admin/paginas-informativas'
     | '/admin/pbms'
     | '/admin/perguntas'
     | '/admin/produtos'
@@ -822,6 +841,7 @@ export interface FileRouteTypes {
     | '/admin/variacoes'
     | '/inscricao/$token'
     | '/painel-loja/$lojaId'
+    | '/painel-loja/old'
     | '/admin/'
     | '/ajuda/$page'
     | '/c/$slug'
@@ -833,8 +853,8 @@ export interface FileRouteTypes {
     | '/admin/canais/google-shopping'
     | '/admin/canais/ifood'
     | '/admin/clientes/leads'
-    | '/admin/configuracoes/dados-loja'
     | '/admin/configuracoes/dominios'
+    | '/admin/configuracoes/loja'
     | '/admin/configuracoes/pagamento'
     | '/admin/configuracoes/redirects'
     | '/admin/design/cores'
@@ -897,6 +917,7 @@ export interface FileRouteTypes {
     | '/admin/lista-espera'
     | '/admin/marcas'
     | '/admin/metricas'
+    | '/admin/paginas-informativas'
     | '/admin/pbms'
     | '/admin/perguntas'
     | '/admin/produtos'
@@ -906,6 +927,7 @@ export interface FileRouteTypes {
     | '/admin/variacoes'
     | '/inscricao/$token'
     | '/painel-loja/$lojaId'
+    | '/painel-loja/old'
     | '/admin'
     | '/ajuda/$page'
     | '/c/$slug'
@@ -917,8 +939,8 @@ export interface FileRouteTypes {
     | '/admin/canais/google-shopping'
     | '/admin/canais/ifood'
     | '/admin/clientes/leads'
-    | '/admin/configuracoes/dados-loja'
     | '/admin/configuracoes/dominios'
+    | '/admin/configuracoes/loja'
     | '/admin/configuracoes/pagamento'
     | '/admin/configuracoes/redirects'
     | '/admin/design/cores'
@@ -983,6 +1005,7 @@ export interface FileRouteTypes {
     | '/admin/lista-espera'
     | '/admin/marcas'
     | '/admin/metricas'
+    | '/admin/paginas-informativas'
     | '/admin/pbms'
     | '/admin/perguntas'
     | '/admin/produtos'
@@ -992,6 +1015,7 @@ export interface FileRouteTypes {
     | '/admin/variacoes'
     | '/inscricao/$token'
     | '/painel-loja/$lojaId'
+    | '/painel-loja/old'
     | '/admin/'
     | '/_store/ajuda/$page'
     | '/_store/c/$slug'
@@ -1003,8 +1027,8 @@ export interface FileRouteTypes {
     | '/admin/canais/google-shopping'
     | '/admin/canais/ifood'
     | '/admin/clientes/leads'
-    | '/admin/configuracoes/dados-loja'
     | '/admin/configuracoes/dominios'
+    | '/admin/configuracoes/loja'
     | '/admin/configuracoes/pagamento'
     | '/admin/configuracoes/redirects'
     | '/admin/design/cores'
@@ -1048,6 +1072,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   InscricaoTokenRoute: typeof InscricaoTokenRoute
   PainelLojaLojaIdRoute: typeof PainelLojaLojaIdRoute
+  PainelLojaOldRoute: typeof PainelLojaOldRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1079,6 +1104,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/painel-loja/old': {
+      id: '/painel-loja/old'
+      path: '/painel-loja/old'
+      fullPath: '/painel-loja/old'
+      preLoaderRoute: typeof PainelLojaOldRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/painel-loja/$lojaId': {
       id: '/painel-loja/$lojaId'
@@ -1141,6 +1173,13 @@ declare module '@tanstack/react-router' {
       path: '/pbms'
       fullPath: '/admin/pbms'
       preLoaderRoute: typeof AdminPbmsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/paginas-informativas': {
+      id: '/admin/paginas-informativas'
+      path: '/paginas-informativas'
+      fullPath: '/admin/paginas-informativas'
+      preLoaderRoute: typeof AdminPaginasInformativasRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/metricas': {
@@ -1528,18 +1567,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConfiguracoesPagamentoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/configuracoes/loja': {
+      id: '/admin/configuracoes/loja'
+      path: '/configuracoes/loja'
+      fullPath: '/admin/configuracoes/loja'
+      preLoaderRoute: typeof AdminConfiguracoesLojaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/configuracoes/dominios': {
       id: '/admin/configuracoes/dominios'
       path: '/configuracoes/dominios'
       fullPath: '/admin/configuracoes/dominios'
       preLoaderRoute: typeof AdminConfiguracoesDominiosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/configuracoes/dados-loja': {
-      id: '/admin/configuracoes/dados-loja'
-      path: '/configuracoes/dados-loja'
-      fullPath: '/admin/configuracoes/dados-loja'
-      preLoaderRoute: typeof AdminConfiguracoesDadosLojaRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/clientes/leads': {
@@ -1766,6 +1805,7 @@ interface AdminRouteChildren {
   AdminListaEsperaRoute: typeof AdminListaEsperaRoute
   AdminMarcasRoute: typeof AdminMarcasRouteWithChildren
   AdminMetricasRoute: typeof AdminMetricasRoute
+  AdminPaginasInformativasRoute: typeof AdminPaginasInformativasRoute
   AdminPbmsRoute: typeof AdminPbmsRoute
   AdminPerguntasRoute: typeof AdminPerguntasRoute
   AdminProdutosRoute: typeof AdminProdutosRouteWithChildren
@@ -1778,8 +1818,8 @@ interface AdminRouteChildren {
   AdminCanaisGoogleShoppingRoute: typeof AdminCanaisGoogleShoppingRoute
   AdminCanaisIfoodRoute: typeof AdminCanaisIfoodRoute
   AdminClientesLeadsRoute: typeof AdminClientesLeadsRoute
-  AdminConfiguracoesDadosLojaRoute: typeof AdminConfiguracoesDadosLojaRoute
   AdminConfiguracoesDominiosRoute: typeof AdminConfiguracoesDominiosRoute
+  AdminConfiguracoesLojaRoute: typeof AdminConfiguracoesLojaRoute
   AdminConfiguracoesPagamentoRoute: typeof AdminConfiguracoesPagamentoRoute
   AdminConfiguracoesRedirectsRoute: typeof AdminConfiguracoesRedirectsRoute
   AdminDesignCoresRoute: typeof AdminDesignCoresRoute
@@ -1822,6 +1862,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminListaEsperaRoute: AdminListaEsperaRoute,
   AdminMarcasRoute: AdminMarcasRouteWithChildren,
   AdminMetricasRoute: AdminMetricasRoute,
+  AdminPaginasInformativasRoute: AdminPaginasInformativasRoute,
   AdminPbmsRoute: AdminPbmsRoute,
   AdminPerguntasRoute: AdminPerguntasRoute,
   AdminProdutosRoute: AdminProdutosRouteWithChildren,
@@ -1834,8 +1875,8 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCanaisGoogleShoppingRoute: AdminCanaisGoogleShoppingRoute,
   AdminCanaisIfoodRoute: AdminCanaisIfoodRoute,
   AdminClientesLeadsRoute: AdminClientesLeadsRoute,
-  AdminConfiguracoesDadosLojaRoute: AdminConfiguracoesDadosLojaRoute,
   AdminConfiguracoesDominiosRoute: AdminConfiguracoesDominiosRoute,
+  AdminConfiguracoesLojaRoute: AdminConfiguracoesLojaRoute,
   AdminConfiguracoesPagamentoRoute: AdminConfiguracoesPagamentoRoute,
   AdminConfiguracoesRedirectsRoute: AdminConfiguracoesRedirectsRoute,
   AdminDesignCoresRoute: AdminDesignCoresRoute,
@@ -1872,6 +1913,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   InscricaoTokenRoute: InscricaoTokenRoute,
   PainelLojaLojaIdRoute: PainelLojaLojaIdRoute,
+  PainelLojaOldRoute: PainelLojaOldRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
