@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link2, Copy, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/admin/lojas/link-inscricao")({
   component: LinkInscricaoAssociado,
@@ -12,6 +13,8 @@ export const Route = createFileRoute("/admin/lojas/link-inscricao")({
 function LinkInscricaoAssociado() {
   const { currentUser, registrationTokens, generateRegistrationToken, deleteRegistrationToken, clearRegistrationTokens } = useAdmin();
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
+  const [deleteTokenItem, setDeleteTokenItem] = useState<string | null>(null);
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
 
   if (!isGlobalAdmin) {
@@ -67,12 +70,7 @@ function LinkInscricaoAssociado() {
               variant="outline" 
               size="sm" 
               className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-              onClick={() => {
-                if (confirm("Tem certeza que deseja excluir todo o histórico de links?")) {
-                  clearRegistrationTokens();
-                  toast.success("Histórico limpo com sucesso!");
-                }
-              }}
+              onClick={() => setIsClearHistoryModalOpen(true)}
             >
               <Trash2 className="w-4 h-4 mr-1.5" />
               Limpar Histórico
@@ -125,12 +123,7 @@ function LinkInscricaoAssociado() {
                         variant="ghost"
                         size="icon"
                         className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8"
-                        onClick={() => {
-                          if (confirm("Excluir este link?")) {
-                            deleteRegistrationToken(t.token);
-                            toast.success("Link excluído!");
-                          }
-                        }}
+                        onClick={() => setDeleteTokenItem(t.token)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -142,6 +135,32 @@ function LinkInscricaoAssociado() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={isClearHistoryModalOpen}
+        onClose={() => setIsClearHistoryModalOpen(false)}
+        onConfirm={() => {
+          clearRegistrationTokens();
+          toast.success("Histórico limpo com sucesso!");
+        }}
+        title="Limpar Histórico"
+        description="Tem certeza que deseja excluir todo o histórico de links de inscrição? Esta ação não pode ser desfeita e os links antigos não funcionarão mais."
+        confirmText="Limpar"
+      />
+
+      <ConfirmDialog
+        isOpen={!!deleteTokenItem}
+        onClose={() => setDeleteTokenItem(null)}
+        onConfirm={() => {
+          if (deleteTokenItem) {
+            deleteRegistrationToken(deleteTokenItem);
+            toast.success("Link excluído!");
+          }
+        }}
+        title="Excluir Link"
+        description="Tem certeza que deseja excluir este link de inscrição? Associados não poderão mais se cadastrar usando-o."
+        confirmText="Excluir"
+      />
     </div>
   );
 }
