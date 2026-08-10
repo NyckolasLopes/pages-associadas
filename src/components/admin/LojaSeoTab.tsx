@@ -14,7 +14,7 @@ export function LojaSeoTab({ lojaId }: { lojaId: string }) {
   const pharmacy = pharmacies.find((p) => p.id === lojaId);
 
   const [pageTitle, setPageTitle] = useState(
-    pharmacy?.pageTitle || `Farmácias Associadas - ${pharmacy?.nome || "Minha Loja"}`
+    pharmacy?.pageTitle || `Farmácias Associadas - ${pharmacy?.nome || "Nova Loja"}`
   );
   
   const [metaDesc, setMetaDesc] = useState(
@@ -22,11 +22,8 @@ export function LojaSeoTab({ lojaId }: { lojaId: string }) {
     `Sua farmácia completa em ${pharmacy?.cidade || "sua região"}. Medicamentos, perfumaria, dermocosméticos e ofertas exclusivas com entrega rápida.`
   );
 
-  const [bairrosAtendidos, setBairrosAtendidos] = useState(
-    pharmacy?.bairrosAtendidos?.join(", ") || `${pharmacy?.bairro || "Centro"}, Bela Vista, Menino Deus`
-  );
-
-  const [raioEntregaKm, setRaioEntregaKm] = useState(pharmacy?.raioEntregaKm?.toString() || "8");
+  const [facebookPixelId, setFacebookPixelId] = useState(pharmacy?.facebookPixelId || "");
+  const [googleAnalyticsId, setGoogleAnalyticsId] = useState(pharmacy?.googleAnalyticsId || "");
 
   if (!pharmacy) {
     return <div className="text-sm text-slate-500">Loja não encontrada.</div>;
@@ -35,22 +32,17 @@ export function LojaSeoTab({ lojaId }: { lojaId: string }) {
   const handleSaveSeo = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const cleanBairros = bairrosAtendidos
-      .split(",")
-      .map((b) => sanitizeText(b.trim(), 50))
-      .filter(Boolean);
-
     const updated: Pharmacy = {
       ...pharmacy,
       pageTitle: sanitizeText(pageTitle, 100),
       metaDescription: sanitizeText(metaDesc, 250),
       seoDescricao: sanitizeText(metaDesc, 250), // mantendo legado atualizado
-      bairrosAtendidos: cleanBairros,
-      raioEntregaKm: parseFloat(raioEntregaKm) || 8,
+      facebookPixelId: facebookPixelId,
+      googleAnalyticsId: googleAnalyticsId,
     };
 
     updatePharmacy(pharmacy.id, updated);
-    toast.success("Otimização de Buscas Locais (SEO) salva com sucesso!");
+    toast.success("SEO e Pixels salvos com sucesso!");
   };
 
   return (
@@ -153,32 +145,41 @@ export function LojaSeoTab({ lojaId }: { lojaId: string }) {
                   </div>
                 </div>
 
-                <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                  <Label className="text-sm font-bold text-slate-700">Regiões e Bairros Atendidos</Label>
-                  <Input
-                    value={bairrosAtendidos}
-                    onChange={(e) => setBairrosAtendidos(e.target.value)}
-                    className="border-slate-300"
-                    placeholder="Ex: Centro, Cidade Baixa, Praia de Belas"
-                  />
-                  <p className="text-[11px] text-slate-500">
-                    Separe por vírgula. Isso ajuda clientes que buscam por "farmácia que entrega no bairro X".
-                  </p>
+                <div className="space-y-1.5 pt-4 border-t border-slate-100 mt-4">
+                  <h3 className="text-base font-bold text-slate-800 mb-4">Pixels e Rastreamento</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-bold text-slate-700">Meta (Facebook) Pixel ID</Label>
+                      <Input
+                        value={facebookPixelId}
+                        onChange={(e) => setFacebookPixelId(e.target.value)}
+                        className="border-slate-300"
+                        placeholder="Ex: 123456789012345"
+                      />
+                      <p className="text-[11px] text-slate-500">
+                        Usado para rastrear conversões de anúncios no Instagram e Facebook.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-bold text-slate-700">Google Analytics (G4) ID</Label>
+                      <Input
+                        value={googleAnalyticsId}
+                        onChange={(e) => setGoogleAnalyticsId(e.target.value)}
+                        className="border-slate-300"
+                        placeholder="Ex: G-XXXXXXXXXX"
+                      />
+                      <p className="text-[11px] text-slate-500">
+                        Usado para análise de tráfego através do Google Analytics 4.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-bold text-slate-700">Raio Máximo de Entrega (em KM)</Label>
-                  <Input
-                    type="number"
-                    value={raioEntregaKm}
-                    onChange={(e) => setRaioEntregaKm(e.target.value)}
-                    className="border-slate-300 bg-slate-50 max-w-[150px]"
-                  />
-                </div>
-
-                <Button type="submit" className="w-full font-bold gap-2 mt-4 bg-blue-600 hover:bg-blue-700 text-white h-11">
+                <Button type="submit" className="w-full font-bold gap-2 mt-6 bg-blue-600 hover:bg-blue-700 text-white h-11">
                   <CheckCircle2 className="w-4 h-4" />
-                  Salvar Dados para Buscas
+                  Salvar Configurações
                 </Button>
               </form>
             </CardContent>
