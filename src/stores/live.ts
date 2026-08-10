@@ -99,39 +99,76 @@ export const useLive = create<LiveStore>((set, get) => ({
       channel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           let realCity = getCityByIPMock();
-          try {
-            const res = await fetch(`https://get.geojs.io/v1/ip/geo.json?_t=${Date.now()}`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.city && data.region) {
-                let x = 50;
-                let y = 50;
-                let lat = parseFloat(data.latitude);
-                let lng = parseFloat(data.longitude);
-                
-                const found = CIDADES.find(c => c.nome.toLowerCase() === data.city.toLowerCase());
-                if (found) {
-                  x = found.x;
-                  y = found.y;
-                  lat = found.lat;
-                  lng = found.lng;
-                } else if (data.longitude && data.latitude) {
-                   x = ((data.longitude + 74) / 40) * 100;
-                   y = ((5.2 - data.latitude) / 38.9) * 100;
-                }
+          let gotGps = false;
+
+          // Tentativa de usar GPS Exato
+          if (typeof window !== 'undefined' && navigator.geolocation) {
+            try {
+              const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+              });
+              
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+              
+              const nomRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+              if (nomRes.ok) {
+                const nomData = await nomRes.json();
+                const addr = nomData.address || {};
+                const city = addr.city || addr.town || addr.village || addr.municipality || "Desconhecida";
+                const uf = addr.state || "";
                 
                 realCity = {
-                  nome: data.city,
-                  uf: data.region,
-                  x,
-                  y,
+                  nome: city,
+                  uf: uf,
+                  x: 50,
+                  y: 50,
                   lat,
                   lng
                 };
+                gotGps = true;
               }
+            } catch (e) {
+              console.warn("GPS ignorado ou falhou, caindo para IP:", e);
             }
-          } catch (e) {
-            console.error("GeoIP Fetch Error:", e);
+          }
+
+          // Se GPS falhou ou foi negado, usa IP
+          if (!gotGps) {
+            try {
+              const res = await fetch(`https://get.geojs.io/v1/ip/geo.json?_t=${Date.now()}`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data.city && data.region) {
+                  let x = 50;
+                  let y = 50;
+                  let lat = parseFloat(data.latitude);
+                  let lng = parseFloat(data.longitude);
+                  
+                  const found = CIDADES.find(c => c.nome.toLowerCase() === data.city.toLowerCase());
+                  if (found) {
+                    x = found.x;
+                    y = found.y;
+                    lat = found.lat;
+                    lng = found.lng;
+                  } else if (data.longitude && data.latitude) {
+                     x = ((data.longitude + 74) / 40) * 100;
+                     y = ((5.2 - data.latitude) / 38.9) * 100;
+                  }
+                  
+                  realCity = {
+                    nome: data.city,
+                    uf: data.region,
+                    x,
+                    y,
+                    lat,
+                    lng
+                  };
+                }
+              }
+            } catch (e) {
+              console.error("GeoIP Fetch Error:", e);
+            }
           }
 
           await channel!.track({
