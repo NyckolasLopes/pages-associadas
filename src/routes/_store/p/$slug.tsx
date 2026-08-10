@@ -26,6 +26,7 @@ import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates, 
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
 import { PromoProductPageBanner, PromoLevePagueOfferBox } from "@/components/storefront/PromoCountdown";
+import { getDeterministicStock } from "@/lib/stock";
 
 const PromoIcon = ({ id, className }: { id: string, className?: string }) => {
   if (id === 'gift') return <Gift className={className} />;
@@ -610,6 +611,7 @@ function PDP() {
   let maxStock = 0;
   let activeFornecedor = null;
   let isLocalStock = false;
+  let isLojaPromoActiva = false;
 
   if (availablePharmacies.length > 0) {
     maxStock = Math.max(0, ...availablePharmacies.map(f => f._calculatedStock));
@@ -835,7 +837,7 @@ function PDP() {
             {/* Mobile Promotional Displays */}
             {padraoPromo && (
               <div className="lg:hidden mt-3 mb-2">
-                <PromoProductPageBanner promo={padraoPromo} precoOriginal={finalPrecoDe} precoAtual={finalPrecoPor} />
+                <PromoProductPageBanner promo={padraoPromo} precoOriginal={finalPrecoDe} precoPromocional={finalPrecoPor} />
               </div>
             )}
 
@@ -843,7 +845,7 @@ function PDP() {
               <div className="lg:hidden mt-3 mb-2">
                 <PromoLevePagueOfferBox 
                   promo={levePaguePromo} 
-                  precoOriginal={finalPrecoDe} 
+                  precoUnitarioOriginal={finalPrecoDe ?? finalPrecoPor} 
                   onAddToCart={() => {
                     add({ ...p, estoque: maxStock }, levePaguePromo.levePague_quantidade || 1);
                     toast.success("Oferta Leve + Pague adicionada ao carrinho!");
@@ -1240,7 +1242,7 @@ function PDP() {
             {/* Desktop Promotional Displays */}
             {padraoPromo && (
               <div className="hidden lg:block mt-2 mb-2">
-                <PromoProductPageBanner promo={padraoPromo} precoOriginal={finalPrecoDe} precoAtual={finalPrecoPor} />
+                <PromoProductPageBanner promo={padraoPromo} precoOriginal={finalPrecoDe} precoPromocional={finalPrecoPor} />
               </div>
             )}
 
@@ -1248,7 +1250,7 @@ function PDP() {
               <div className="hidden lg:block mt-2 mb-2">
                 <PromoLevePagueOfferBox 
                   promo={levePaguePromo} 
-                  precoOriginal={finalPrecoDe} 
+                  precoUnitarioOriginal={finalPrecoDe ?? finalPrecoPor} 
                   onAddToCart={() => {
                     add({ ...p, estoque: maxStock }, levePaguePromo.levePague_quantidade || 1);
                     toast.success("Oferta Leve + Pague adicionada ao carrinho!");

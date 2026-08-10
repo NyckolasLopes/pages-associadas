@@ -1,6 +1,14 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import { secureSession } from "@/lib/secureStorage";
+import { supabase } from "@/integrations/supabase/client";
+
+// Limpeza de segurança: remove credenciais antigas do localStorage legado
+if (typeof window !== "undefined") {
+  try {
+    localStorage.removeItem("fa-auth");
+    localStorage.removeItem("fa-auth-storage");
+    localStorage.removeItem("supabase.auth.token");
+  } catch {}
+}
 
 interface User {
   id?: string;
@@ -9,56 +17,107 @@ interface User {
   email: string;
   cpf?: string;
   celular?: string;
-  token?: string;
   provider?: "email" | "google" | "apple" | "facebook";
 }
 
 interface AuthState {
   user: User | null;
   loginOpen: boolean;
-  login: (u: User) => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  loginWithProvider: (provider: "google" | "apple" | "facebook") => Promise<void>;
+  logout: () => Promise<void>;
   setLoginOpen: (open: boolean) => void;
+  _initListener: () => void;
 }
 
-// Session-only storage adapter: Limpa automaticamente quando a aba é fechada
-const volatileSessionStorage = {
-  getItem: (name: string): string | null => {
-    return secureSession.get(name);
-  },
-  setItem: (name: string, value: string): void => {
-    secureSession.set(name, value);
-  },
-  removeItem: (name: string): void => {
-    secureSession.remove(name);
-  },
-};
+export const useAuth = create<AuthState>((set, get) => ({
+  user: null,
+  loginOpen: false,
 
-// Limpeza de segurança: remove credenciais antigas do localStorage persistente
-if (typeof window !== "undefined") {
-  try {
-    localStorage.removeItem("fa-auth");
-    localStorage.removeItem("supabase.auth.token");
-    localStorage.removeItem("sb-uqwxpoxwwvyqnwgquxit-auth-token");
-  } catch {}
-}
+  login: async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) return false;
 
-export const useAuth = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      loginOpen: false,
-      login: (user) => set({ user, loginOpen: false }),
-      logout: () => {
-        secureSession.remove("fa-auth");
-        set({ user: null });
+    const u = data.user;
+    // Fetch extended profile (nome, cpf, celular) from profiles table
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("nome, cpf, telefone")
+      .eq("id", u.id)
+      .single();
+
+    set({
+      user: {
+        id: u.id,
+        email: u.email!,
+        name: profile?.nome || u.email!.split("@")[0],
+        nome: profile?.nome || undefined,
+        cpf: profile?.cpf || undefined,
+        celular: profile?.telefone || undefined,
+        provider: "email",
       },
-      setLoginOpen: (open) => set({ loginOpen: open }),
-    }),
-    { 
-      name: "fa-auth",
-      storage: createJSONStorage(() => volatileSessionStorage),
-    },
-  ),
-);
+      loginOpen: false,
+    });
+    return true;
+  },
 
+  loginWithProvider: async (provider) => {
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin },
+    });
+  },
+
+  logout: async () => {
+    // Invalidates refresh token on Supabase server
+    await supabase.auth.signOut();
+    set({ user: null });
+  },
+
+  setLoginOpen: (open) => set({ loginOpen: open }),
+
+  // Call once on app mount to restore session and listen for changes
+  _initListener: () => {
+    // Restore current session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const u = session.user;
+        supabase
+          .from("profiles")
+          .select("nome, cpf, telefone")
+          .eq("id", u.id)
+          .single()
+          .then(({ data: profile }) => {
+            set({
+              user: {
+                id: u.id,
+                email: u.email!,
+                name: profile?.nome || u.email!.split("@")[0],
+                nome: profile?.nome || undefined,
+                cpf: profile?.cpf || undefined,
+                celular: profile?.telefone || undefined,
+              },
+            });
+          });
+      }
+    });
+
+    // Listen for auth state changes (login/logout from any tab)
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        set({ user: null });
+      } else if (session?.user) {
+        const u = session.user;
+        if (!get().user || get().user?.id !== u.id) {
+          set({
+            user: {
+              id: u.id,
+              email: u.email!,
+              name: u.email!.split("@")[0],
+            },
+          });
+        }
+      }
+    });
+  },
+}));

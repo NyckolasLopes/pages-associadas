@@ -11,11 +11,13 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login({ id: "1", nome: "Cliente", email, token: "mock-jwt-token" });
-    onOpenChange(false);
-    onLoginSuccess();
+    const ok = await login(email, senha);
+    if (ok) {
+      onOpenChange(false);
+      onLoginSuccess();
+    }
   };
 
   return (

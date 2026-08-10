@@ -71,7 +71,7 @@ function PerfilPage() {
 
   useEffect(() => {
     setMounted(true);
-    useAuth.persist.rehydrate();
+    // Auth session is restored globally via useAuth._initListener() in __root.tsx
   }, []);
 
   useEffect(() => {
@@ -126,8 +126,12 @@ function PerfilPage() {
       return;
     }
     
-    // Updates the stored user object with the newly saved data
-    login({ ...user, name: editName, email: editEmail, celular: editPhone, cpf: editCpf } as any);
+    // Update profile in Supabase
+    const { supabase } = await import("@/integrations/supabase/client");
+    const userId = user?.id;
+    if (userId) {
+      await supabase.from("profiles").update({ nome: editName, telefone: editPhone, cpf: editCpf }).eq("id", userId);
+    }
     toast.success("Informações pessoais atualizadas com sucesso!");
   };
 

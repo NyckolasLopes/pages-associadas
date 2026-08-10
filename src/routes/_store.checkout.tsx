@@ -211,7 +211,7 @@ function Checkout() {
 
   useEffect(() => {
     setMounted(true);
-    useAuth.persist.rehydrate();
+    // Auth session is restored globally via useAuth._initListener() in __root.tsx
   }, []);
 
   useEffect(() => {

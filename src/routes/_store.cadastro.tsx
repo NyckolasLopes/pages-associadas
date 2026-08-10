@@ -46,12 +46,19 @@ function CadastroPage() {
     setCelular(v);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome || !email || !senha) return;
     
-    // Simulate registration by logging the user in directly
-    login({ name: nome, email, cpf, celular, provider: "email" });
+    // Register via Supabase Auth (trigger will create profile automatically)
+    const { error } = await (await import("@/integrations/supabase/client")).supabase.auth.signUp({
+      email,
+      password: senha,
+      options: { data: { nome, cpf, celular } },
+    });
+    if (error) { toast.error(error.message); return; }
+    // Login after registration
+    await login(email, senha);
     navigate({ to: redirect as any });
   };
 

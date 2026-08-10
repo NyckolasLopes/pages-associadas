@@ -26,10 +26,11 @@ function LoginPage() {
   const { redirect } = Route.useSearch();
   const navigate = useNavigate();
   const login = useAuth((s) => s.login);
+  const loginWithProvider = useAuth((s) => s.loginWithProvider);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       loginSchema.parse({ email, pass });
@@ -40,13 +41,13 @@ function LoginPage() {
       }
     }
     
-    login({ name: email.split("@")[0], email, provider: "email" });
-    navigate({ to: redirect as any });
+    const ok = await login(email, pass);
+    if (ok) navigate({ to: redirect as any });
+    else toast.error("E-mail ou senha incorretos.");
   };
 
-  const social = (provider: "google" | "apple" | "facebook") => {
-    login({ name: `Usuário ${provider}`, email: `usuario@${provider}.com`, provider });
-    navigate({ to: redirect as any });
+  const social = async (provider: "google" | "apple" | "facebook") => {
+    await loginWithProvider(provider);
   };
 
   return (

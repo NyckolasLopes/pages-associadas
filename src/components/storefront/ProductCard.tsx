@@ -115,6 +115,9 @@ function ProductCardComponent({
   let activeStoreId: string | null = null;
   let activeFornecedor = null;
   let isLocalStock = false;
+  // isStoreContext: true when rendered inside a specific store route (has storeSlug param)
+  const params = useParams({ strict: false });
+  const isStoreContext = !!((params as any)?.storeSlug);
 
   if (cep && Object.keys(distances).length > 0) {
     const rawCity = globalCity || getCityFromCep(cep, pharmacies);

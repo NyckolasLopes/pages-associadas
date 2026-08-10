@@ -249,7 +249,7 @@ export function RelatorioTop100Produtos({
 
       const lojasNomes = Object.keys(item.lojasDistrib).map(lId => {
         const found = pharmacies.find(p => p.id === lId);
-        return found ? (found.nomeFantasia || found.nome) : `Loja #${lId}`;
+        return found ? (found.nome || found.id) : `Loja #${lId}`;
       });
 
       return {
@@ -728,7 +728,7 @@ export function RelatorioTop100Produtos({
                       name === "faturamento" ? formatBRL(Number(val)) : `${val} unidades`,
                       name === "faturamento" ? "Faturamento" : "Qtd. Vendida"
                     ]}
-                    labelFormatter={(_, items) => items?.[0]?.payload?.fullName || ""}
+                    labelFormatter={(_: any, items: any) => items?.[0]?.payload?.fullName || ""}
                   />
                   <Bar 
                     dataKey={criterio === "quantidade" ? "qtd" : "faturamento"} 

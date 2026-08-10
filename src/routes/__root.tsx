@@ -176,6 +176,7 @@ function RootComponent() {
   }, [location.pathname, redirects]);
 
   useEffect(() => {
+    useAuth.getState()._initListener();
     useCart.persist.rehydrate();
     useGeoCep.persist.rehydrate();
     useAdmin.persist.rehydrate();
