@@ -13,14 +13,22 @@ export const Route = createFileRoute("/admin/ao-vivo")({
 
 function AoVivo() {
   const { visitors: rawVisitors, totalAcessos, stats } = useLive();
-  const { currentUser } = useAdmin();
-  const selectedStoreId = "1";
+  const { currentUser, activeStoreId, pharmacies } = useAdmin();
+  
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
-  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
-  const visitors = isGlobalAdmin ? rawVisitors : rawVisitors.filter(v => v.lojaId === effectiveStoreId || v.lojaId === `admin-loja-${effectiveStoreId}`);
+  
+  // Se for admin global e não tiver loja selecionada, vê tudo. Se tiver selecionada, vê da loja.
+  // Se for associado, usa a loja ativa (que sempre terá uma).
+  const effectiveStoreId = activeStoreId;
+
+  const visitors = (!isGlobalAdmin || effectiveStoreId) 
+    ? rawVisitors.filter(v => v.lojaId === effectiveStoreId || v.lojaId === `admin-loja-${effectiveStoreId}`)
+    : rawVisitors;
+
   const getLojaName = (id: string) => {
     if (id === "admin-sede") return "Admin da Sede";
-    return lojas.find(l => String(l.id) === String(id))?.nomeFantasia || "Loja Desconhecida";
+    const realId = id.replace('admin-loja-', '');
+    return pharmacies.find(l => String(l.id) === String(realId))?.nomeFantasia || "Loja Desconhecida";
   };
   const pedidos = useOrders((state) => state.orders);
 
