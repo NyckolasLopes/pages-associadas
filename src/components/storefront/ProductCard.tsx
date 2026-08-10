@@ -410,30 +410,6 @@ function ProductCardComponent({
             )}
           </div>
 
-          {isLocalStock && activeStoreId && maxStock > 0 && !isService && (() => {
-            const activePharmacy = pharmacies.find(f => f.id === activeStoreId);
-            const est = getDeliveryEstimation(activePharmacy);
-            if (!est) return null;
-            return (
-              <div className={`text-[11px] ${est.color} font-bold mt-1 inline-flex items-center gap-1`}>
-                {est.text}
-                {est.hasLightning && <Zap className="h-3 w-3 fill-current" />}
-              </div>
-            );
-          })()}
-
-          {!isLocalStock && activeFornecedor && maxStock > 0 && !isService && (
-            <div className="text-[11px] text-orange-600 font-bold mt-1">
-              Chegará em {activeFornecedor.prazo} dias úteis
-            </div>
-          )}
-          
-          {isService && (
-            <div className="text-[11px] text-primary font-bold mt-1 inline-flex items-center gap-1">
-              Agendamento rápido <Zap className="h-3 w-3 fill-primary text-primary" />
-            </div>
-          )}
-
           <div className="flex flex-wrap gap-1 mt-1 mb-3 min-h-[18px]">
             {p.tarja && p.tarja !== "none" && (
               <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm ${tarjaColor(p.tarja)}`}>
@@ -450,6 +426,12 @@ function ProductCardComponent({
               </span>
             ) : null)}
           </div>
+
+          {isService && (
+            <div className="text-[11px] text-primary font-bold mb-3 inline-flex items-center gap-1">
+              Agendamento rápido <Zap className="h-3 w-3 fill-primary text-primary" />
+            </div>
+          )}
 
           <div className="flex flex-col gap-2 mt-auto">
             {isAvailable ? (
