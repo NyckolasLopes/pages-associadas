@@ -16,7 +16,7 @@ function AoVivo() {
   const { currentUser, selectedStoreId } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
-  const visitors = isGlobalAdmin ? rawVisitors : rawVisitors.filter(v => v.lojaId === effectiveStoreId);
+  const visitors = isGlobalAdmin ? rawVisitors : rawVisitors.filter(v => v.lojaId === effectiveStoreId || v.lojaId === `admin-loja-${effectiveStoreId}`);
   const getLojaName = (id) => {
     if (id === "admin-sede") return "Admin da Sede";
     return lojas.find(l => String(l.id) === String(id))?.nomeFantasia || "Loja Desconhecida";

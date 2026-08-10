@@ -193,20 +193,40 @@ function RootComponent() {
     // Gerar ID de sessão único para esta aba
     const sessionId = Math.random().toString(36).substring(2, 9);
     
+    const getPingData = () => {
+      const isPathAdmin = location.pathname.startsWith("/admin");
+      if (!isPathAdmin) return { lojaId: undefined, storeName: undefined };
+      
+      const { currentUser, pharmacies } = useAdmin.getState();
+      const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+      
+      if (!isGlobalAdmin && currentUser?.lojasVinculadas?.length) {
+        const storeId = currentUser.lojasVinculadas[0];
+        const store = pharmacies.find(p => p.id === storeId);
+        return { 
+          lojaId: `admin-loja-${storeId}`, 
+          storeName: store ? store.nome : undefined 
+        };
+      }
+      return { lojaId: "admin-sede", storeName: undefined };
+    };
+
     // Ping inicial
-    const pingLojaId = location.pathname.startsWith("/admin") ? "admin-sede" : undefined;
-    useLive.getState().pingSession(sessionId, pingLojaId);
+    const initialPing = getPingData();
+    useLive.getState().pingSession(sessionId, initialPing.lojaId, initialPing.storeName);
     
     // Manter a sessão viva com heartbeat eficiente (20s e somente se a aba estiver visível)
     const interval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        useLive.getState().pingSession(sessionId, location.pathname.startsWith("/admin") ? "admin-sede" : undefined);
+        const ping = getPingData();
+        useLive.getState().pingSession(sessionId, ping.lojaId, ping.storeName);
       }
     }, 20000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        useLive.getState().pingSession(sessionId, location.pathname.startsWith("/admin") ? "admin-sede" : undefined);
+        const ping = getPingData();
+        useLive.getState().pingSession(sessionId, ping.lojaId, ping.storeName);
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);

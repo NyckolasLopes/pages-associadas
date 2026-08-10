@@ -47,7 +47,7 @@ interface LiveStore {
   totalAcessos: number;
   stats: Record<string, number>;
   lojasAcessos: Record<string, LojaAcessoStat>;
-  pingSession: (sessionId: string, lojaId?: string) => void;
+  pingSession: (sessionId: string, lojaId?: string, adminStoreName?: string) => void;
   recordLojaAccess: (lojaId: string) => void;
   removeSession: (sessionId: string) => void;
   cleanup: () => void;
@@ -60,8 +60,9 @@ export const useLive = create<LiveStore>()(
       totalAcessos: 0,
       stats: {},
       lojasAcessos: {
-        "farmacia-matriz": { total: 342, mes: 342, hoje: 28, lastAccess: Date.now() },
-        "filial-centro": { total: 215, mes: 215, hoje: 17, lastAccess: Date.now() },
+        "1": { total: 1530, mes: 1530, hoje: 112, lastAccess: Date.now() },
+        "2": { total: 940, mes: 940, hoje: 65, lastAccess: Date.now() },
+        "3": { total: 420, mes: 420, hoje: 28, lastAccess: Date.now() },
         "filial-norte": { total: 184, mes: 184, hoje: 14, lastAccess: Date.now() },
         "filial-sul": { total: 129, mes: 129, hoje: 9, lastAccess: Date.now() },
       },
@@ -84,7 +85,7 @@ export const useLive = create<LiveStore>()(
           };
         });
       },
-      pingSession: (sessionId: string, lojaId?: string) => {
+      pingSession: (sessionId: string, lojaId?: string, adminStoreName?: string) => {
         const now = Date.now();
         const visitors = [...get().visitors];
         const existingIdx = visitors.findIndex((v) => v.sessionId === sessionId);
@@ -99,6 +100,9 @@ export const useLive = create<LiveStore>()(
           let isResolved = false;
           if (lojaId === "admin-sede") {
             userCity = { nome: "Admin Sede", uf: "RS", x: 52.5, y: 88.5 }; // Close to Porto Alegre on map
+            isResolved = true;
+          } else if (lojaId && lojaId.startsWith("admin-loja-")) {
+            userCity = { nome: `Admin ${adminStoreName || 'da Loja'}`, uf: "RS", x: 52.5, y: 88.5 };
             isResolved = true;
           }
           
