@@ -100,7 +100,7 @@ export const useLive = create<LiveStore>((set, get) => ({
         if (status === 'SUBSCRIBED') {
           let realCity = getCityByIPMock();
           try {
-            const res = await fetch("https://get.geojs.io/v1/ip/geo.json");
+            const res = await fetch(`https://get.geojs.io/v1/ip/geo.json?_t=${Date.now()}`);
             if (res.ok) {
               const data = await res.json();
               if (data.city && data.region) {
