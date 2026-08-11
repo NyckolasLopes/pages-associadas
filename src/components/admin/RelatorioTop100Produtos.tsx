@@ -346,7 +346,7 @@ export function RelatorioTop100Produtos({
         "Faturamento Total (R$)": item.faturamento.toFixed(2),
         "Representatividade (%)": (criterio === "quantidade" ? item.percentQtd : item.percentFaturamento).toFixed(2) + "%",
         "Nº de Pedidos": item.pedidosCount,
-        "Lojas com Vendas": item.lojasNomes.join(", ") || "Todas"
+        "Lojas com Pedidos": item.lojasNomes.join(", ") || "Todas"
       }));
 
       const wb = XLSX.utils.book_new();
@@ -440,7 +440,7 @@ export function RelatorioTop100Produtos({
               )}
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {titlePrefix || (selectedLoja === "all" ? "TOP 100 Produtos Mais Vendidos da Rede" : "Produtos Mais Vendidos da Minha Loja")}
+              {titlePrefix || (selectedLoja === "all" ? "TOP 100 Produtos Mais Pedidos da Rede" : "Produtos Mais Pedidos da Minha Loja")}
             </h1>
           </div>
         </div>
@@ -472,7 +472,7 @@ export function RelatorioTop100Produtos({
           <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-400/20 rounded-full blur-xl pointer-events-none" />
           <CardHeader className="pb-2">
             <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-amber-700 flex items-center justify-between">
-              <span>Campeão de Vendas (1º Lugar)</span>
+              <span>Campeão de Pedidos (1º Lugar)</span>
               <Award className="w-4 h-4 text-amber-600" />
             </CardTitle>
           </CardHeader>
@@ -756,7 +756,7 @@ export function RelatorioTop100Produtos({
             <div>
               <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <ListOrdered className="w-5 h-5 text-emerald-600" />
-                {selectedLoja === "all" ? "Tabela do Ranking Oficial TOP 100" : "Tabela de Produtos Mais Vendidos"}
+                {selectedLoja === "all" ? "Tabela do Ranking Oficial TOP 100" : "Tabela de Produtos Mais Pedidos"}
               </CardTitle>
               <p className="text-xs text-slate-500 font-medium mt-1">
                 {selectedLoja === "all"

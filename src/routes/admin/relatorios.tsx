@@ -83,10 +83,10 @@ function Relatorios() {
     return userGroup?.permissoes?.includes(permissionId) || false;
   };
 
-  const vendasProdutoTitulo = effectiveStoreId ? "Produtos mais vendidos da minha loja" : "TOP 100 Produtos Mais Vendidos";
+  const vendasProdutoTitulo = effectiveStoreId ? "Produtos mais pedidos da minha loja" : "TOP 100 Produtos Mais Pedidos";
   const vendasProdutoDesc = effectiveStoreId 
     ? "Acompanhe os produtos que mais vendem da sua loja por unidade ou faturamento"
-    : "Ranking dos 100 produtos mais vendidos da rede com filtros por quantidade e faturamento.";
+    : "Ranking dos 100 produtos mais pedidos da rede com filtros por quantidade e faturamento.";
   const repasseTitulo = activeStoreId ? "Repasse Financeiro da loja" : "Repasse Financeiro";
   const retiradaTitulo = activeStoreId ? "Retirada vs Entrega da unidade" : "Retirada vs Entrega";
   const medControladosTitulo = activeStoreId ? "Medicamentos Controlados da unidade" : "Medicamentos Controlados";
@@ -96,7 +96,7 @@ function Relatorios() {
 
   let gruposRelatoriosRaw: any[] = [
     {
-      categoria: "Vendas e Conversão",
+      categoria: "Pedidos e Conversão",
       itens: [
         {
           id: "top-100-produtos",
@@ -238,7 +238,7 @@ function Relatorios() {
   // Calculations for charts based on real data
   
   // 1. Repasses e Desempenho (grouped by Loja)
-  const lojasMap: Record<string, { faturamento: number, repasse: number, qtdVendas: number }> = {};
+  const lojasMap: Record<string, { faturamento: number, repasse: number, qtdPedidos: number }> = {};
   let faturamentoGeral = 0;
   orders.forEach(o => {
     const total = o.valores.total;
@@ -267,10 +267,10 @@ function Relatorios() {
     if (!isOffline) {
       const repasseLiquido = total - taxa;
 
-      if (!lojasMap[o.lojaId || "unknown"]) lojasMap[o.lojaId || "unknown"] = { faturamento: 0, repasse: 0, qtdVendas: 0 };
+      if (!lojasMap[o.lojaId || "unknown"]) lojasMap[o.lojaId || "unknown"] = { faturamento: 0, repasse: 0, qtdPedidos: 0 };
       lojasMap[o.lojaId || "unknown"].faturamento += total;
       lojasMap[o.lojaId || "unknown"].repasse += repasseLiquido > 0 ? repasseLiquido : 0;
-      lojasMap[o.lojaId || "unknown"].qtdVendas += 1;
+      lojasMap[o.lojaId || "unknown"].qtdPedidos += 1;
     }
   });
   
@@ -281,13 +281,13 @@ function Relatorios() {
       name: nome,
       faturamento: data.faturamento,
       repasse: data.repasse,
-      qtdVendas: data.qtdVendas
+      qtdPedidos: data.qtdPedidos
     };
   }).sort((a, b) => b.faturamento - a.faturamento);
 
   const ticketMedioGeral = orders.length > 0 ? faturamentoGeral / orders.length : 0;
 
-  // 2. Vendas ao longo do tempo (grouped by Date)
+  // 2. Pedidos ao longo do tempo (grouped by Date)
   const dateMap: Record<string, number> = {};
   orders.forEach(o => {
     const datePart = o.data.split(" ")[0] || o.data;
@@ -324,7 +324,7 @@ function Relatorios() {
     { name: 'Novos', value: novos },
   ];
 
-  // 5. Vendas por Produto (Ranking Top 100 & Competitividade)
+  // 5. Pedidos por Produto (Ranking Top 100 & Competitividade)
   const produtosMap: Record<string, { nome: string, sku: string, qtd: number, faturamento: number }> = {};
   orders.forEach(o => {
     (o.produtos || []).forEach(p => {
@@ -343,17 +343,17 @@ function Relatorios() {
 
   // 6. Vendas por Canais
   const canaisMap: Record<string, { faturamento: number, qtd: number }> = {
-    "Vendas Orgânicas": { faturamento: 0, qtd: 0 },
-    "Vendas Campanhas": { faturamento: 0, qtd: 0 }
+    "Pedidos Orgânicos": { faturamento: 0, qtd: 0 },
+    "Pedidos de Campanhas": { faturamento: 0, qtd: 0 }
   };
   
   orders.forEach((o, index) => {
-    let canal = "Vendas Orgânicas";
+    let canal = "Pedidos Orgânicos";
     
     if (o.utm && o.utm.source?.toLowerCase().includes("google")) {
-      canal = "Vendas Campanhas";
+      canal = "Pedidos de Campanhas";
     } else {
-      const canaisMock = ["Vendas Orgânicas", "Vendas Campanhas"];
+      const canaisMock = ["Pedidos Orgânicos", "Pedidos de Campanhas"];
       canal = canaisMock[index % canaisMock.length];
     }
     
@@ -501,7 +501,7 @@ function Relatorios() {
                   <p className="text-2xl font-black text-slate-800">{faturamentoGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
                 </div>
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <p className="text-slate-500 text-sm font-bold">Lojas com Vendas</p>
+                  <p className="text-slate-500 text-sm font-bold">Lojas com Pedidos</p>
                   <p className="text-2xl font-black text-slate-800">{Object.keys(lojasMap).length} unidades</p>
                 </div>
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
@@ -537,7 +537,7 @@ function Relatorios() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {barChartData.length === 0 && (
-                        <tr><td colSpan={4} className="p-6 text-center text-slate-500 font-medium">Nenhuma venda registrada.</td></tr>
+                        <tr><td colSpan={4} className="p-6 text-center text-slate-500 font-medium">Nenhum pedido registrado.</td></tr>
                       )}
                       {barChartData.map((loja, idx) => (
                         <tr key={loja.name} className="hover:bg-slate-50 transition-colors">
@@ -564,7 +564,7 @@ function Relatorios() {
                   <p className="text-2xl font-black text-slate-800">{faturamentoGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
                 </div>
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <p className="text-slate-500 text-sm font-bold">Lojas com Vendas</p>
+                  <p className="text-slate-500 text-sm font-bold">Lojas com Pedidos</p>
                   <p className="text-2xl font-black text-slate-800">{Object.keys(lojasMap).length} unidades</p>
                 </div>
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
@@ -582,7 +582,7 @@ function Relatorios() {
                     <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} formatter={(value: number, name: string) => name === "Faturamento Bruto" ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : value} />
                     <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontWeight: 600, color: '#475569'}} />
                     <Bar yAxisId="left" dataKey="faturamento" name="Faturamento Bruto" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
-                    <Bar yAxisId="right" dataKey="qtdVendas" name="Número de Vendas" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={40} />
+                    <Bar yAxisId="right" dataKey="qtdPedidos" name="Número de Pedidos" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={40} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -595,20 +595,20 @@ function Relatorios() {
                       <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
                         <th className="p-4 w-16 text-center">Pos</th>
                         <th className="p-4">Farmácia / Unidade</th>
-                        <th className="p-4 text-center">Número de Vendas</th>
+                        <th className="p-4 text-center">Número de Pedidos</th>
                         <th className="p-4 text-right">Faturamento Bruto</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {barChartData.length === 0 && (
-                        <tr><td colSpan={4} className="p-6 text-center text-slate-500 font-medium">Nenhuma venda registrada.</td></tr>
+                        <tr><td colSpan={4} className="p-6 text-center text-slate-500 font-medium">Nenhum pedido registrado.</td></tr>
                       )}
                       {barChartData.map((loja, idx) => (
                         <tr key={loja.name} className="hover:bg-slate-50 transition-colors">
                           <td className="p-4 text-center font-bold text-slate-400">{idx + 1}º</td>
                           <td className="p-4 font-bold text-slate-700">{loja.name}</td>
                           <td className="p-4 text-center font-black text-sky-600">
-                            {loja.qtdVendas}
+                            {loja.qtdPedidos}
                           </td>
                           <td className="p-4 text-right font-black text-emerald-600">
                             {loja.faturamento.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
@@ -669,7 +669,7 @@ function Relatorios() {
             <div className="p-6 space-y-8">
               <div>
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Gráfico de Competitividade</h3>
-                <p className="text-sm text-slate-500 mb-6">Comparativo entre Faturamento (Receita Gerada) e Volume de Vendas (Quantidade).</p>
+                <p className="text-sm text-slate-500 mb-6">Comparativo entre Faturamento (Receita Gerada) e Volume de Pedidos (Quantidade).</p>
                 <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={produtosRanking.slice(0, 10)}>
@@ -701,7 +701,7 @@ function Relatorios() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {produtosRanking.length === 0 && (
-                        <tr><td colSpan={5} className="p-6 text-center text-slate-500 font-medium">Nenhuma venda registrada.</td></tr>
+                        <tr><td colSpan={5} className="p-6 text-center text-slate-500 font-medium">Nenhum pedido registrado.</td></tr>
                       )}
                       {produtosRanking.map((prod, idx) => (
                         <tr key={prod.sku} className="hover:bg-slate-50 transition-colors">
@@ -722,7 +722,7 @@ function Relatorios() {
           ) : activeReport === "vendas-canais" ? (
             <div className="p-6 space-y-8">
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Competitividade de Canais de Venda</h3>
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Competitividade de Canais de Pedidos</h3>
                 <p className="text-sm text-slate-500 mb-6">Comparativo entre Faturamento (Receita Gerada) e Número de Pedidos por Canal.</p>
                 <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">

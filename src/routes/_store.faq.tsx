@@ -40,7 +40,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: "Quem entrega os meus produtos?",
-        a: <>A venda, separação e logística são realizadas <strong>exclusivamente pela farmácia parceira</strong> escolhida. O motoboy pertence à equipe daquela loja.</>,
+        a: <>A pedido, separação e logística são realizadas <strong>exclusivamente pela farmácia parceira</strong> escolhida. O motoboy pertence à equipe daquela loja.</>,
       },
       {
         q: "Qual é o prazo de entrega do meu pedido?",

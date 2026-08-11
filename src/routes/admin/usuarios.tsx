@@ -74,7 +74,7 @@ const PERMISSION_CATEGORIES = [
     permissions: [
       { id: "dash_view", label: "Acessar Dashboard" },
       { id: "rel_metricas_pedidos", label: "Análises: Métricas de Pedidos" },
-      { id: "rel_vendas_produto", label: "Relatório: Vendas por Produto" },
+      { id: "rel_vendas_produto", label: "Relatório: Pedidos por Produto" },
       { id: "rel_desempenho", label: "Relatório: Desempenho por Unidade" },
       { id: "rel_logistica_retirada", label: "Relatório: Retirada vs Entrega" },
       { id: "rel_aovivo", label: "Monitoramento Ao Vivo" },

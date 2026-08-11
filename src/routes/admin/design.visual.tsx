@@ -108,7 +108,7 @@ function AdminDesignVisual() {
               </label>
               <label className="flex items-center gap-2 text-sm text-slate-700">
                 <input type="checkbox" className="rounded text-primary focus:ring-primary" />
-                Mais vendidos
+                Mais pedidos
               </label>
               
               <div className="pt-2">

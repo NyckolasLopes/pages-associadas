@@ -187,7 +187,7 @@ function AdminDashboard() {
   const qtdAnterior = pedidosAnterior.length;
   const ticketAnterior = qtdAnterior > 0 ? valorAnterior / qtdAnterior : 0;
 
-  const crescVendas = calcCrescimento(valorAtual, valorAnterior);
+  const crescFaturamento = calcCrescimento(valorAtual, valorAnterior);
   const crescPedidos = calcCrescimento(qtdAtual, qtdAnterior);
   const crescTicket = calcCrescimento(ticketAtual, ticketAnterior);
   
@@ -245,9 +245,9 @@ function AdminDashboard() {
                 {valorAtual.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
               </span>
               <div className="flex items-center gap-1.5 mt-2">
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${crescVendas.isPositivo ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                  {crescVendas.isPositivo ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {crescVendas.percent}
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${crescFaturamento.isPositivo ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                  {crescFaturamento.isPositivo ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {crescFaturamento.percent}
                 </span>
                 <span className="text-xs font-medium text-slate-500">em relação ao {periodos.labelAnterior}</span>
               </div>

@@ -32,7 +32,7 @@ function IfoodIntegrationPage() {
             <Store className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Canais de Venda: iFood</h1>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Canais de Pedidos: iFood</h1>
             <p className="text-muted-foreground text-sm font-medium mt-1">
               Gerencie a participação das suas farmácias no iFood.
             </p>

@@ -1393,7 +1393,7 @@ function StoreColorsConfig() {
             {/* Fake Content */}
             <div className="p-5 space-y-5">
               <div className="flex items-center justify-between">
-                <div className="font-black text-base text-slate-800">Mais Vendidos</div>
+                <div className="font-black text-base text-slate-800">Mais Pedidos</div>
                 <div className="text-xs font-bold hover:opacity-80 cursor-pointer" style={{ color: colors.primary || "#00B5AD" }}>VER TODOS</div>
               </div>
 

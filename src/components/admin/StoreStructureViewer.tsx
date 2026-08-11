@@ -251,7 +251,7 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
                     </span>
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Configuração de carrosséis e grades: Lançamentos, Mais Vendidos, Destaques e Categorias ({storefrontVitrineConfig.produtosPorVitrine} itens por vitrine)
+                    Configuração de carrosséis e grades: Lançamentos, Mais Pedidos, Destaques e Categorias ({storefrontVitrineConfig.produtosPorVitrine} itens por vitrine)
                   </p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {storefrontVitrineConfig.lancamentos && (
@@ -261,7 +261,7 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
                     )}
                     {storefrontVitrineConfig.maisVendidos && (
                       <span className="text-[11px] font-bold bg-white text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-                        ✓ Mais Vendidos
+                        ✓ Mais Pedidos
                       </span>
                     )}
                     {storefrontVitrineConfig.destaques && (
