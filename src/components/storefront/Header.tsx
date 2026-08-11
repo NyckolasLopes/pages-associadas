@@ -1184,7 +1184,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
 }
 
 function CartDrawer() {
-  const items = useCart((s) => s.items);
+    const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+    const items = useCart((s) => s.items);
   const remove = useCart((s) => s.remove);
   const setQty = useCart((s) => s.setQty);
   const add = useCart((s) => s.add);
