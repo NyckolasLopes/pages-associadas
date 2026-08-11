@@ -148,6 +148,36 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Informações básicas</h3>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <Switch 
+                  id="ativo" 
+                  checked={formData.ativo} 
+                  onCheckedChange={checked => setFormData({...formData, ativo: checked})}
+                />
+                <Label htmlFor="ativo" className="font-medium cursor-pointer">Produto Ativo</Label>
+              </div>
+              <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <Switch 
+                  id="buscavel" 
+                  checked={formData.buscavel} 
+                  onCheckedChange={checked => setFormData({...formData, buscavel: checked})}
+                />
+                <Label htmlFor="buscavel" className="font-medium cursor-pointer">Buscável (Visível na busca)</Label>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Tipo de Produto</Label>
+                <Select value={formData.tipoProduto || "fisico"} onValueChange={v => setFormData({...formData, tipoProduto: v})}>
+                  <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fisico">Produto Físico</SelectItem>
+                    <SelectItem value="servico">Serviço</SelectItem>
+                    <SelectItem value="digital">Produto Digital</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">ID / Código Interno*</Label>
@@ -285,6 +315,116 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" />
                   <Upload className="h-6 w-6 mb-2" />
                   <span className="text-xs font-medium text-center px-2">Upload Imagem</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Detalhes e Precificação */}
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
+            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Detalhes e Precificação</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">NCM</Label>
+                <Input value={formData.ncm || ""} onChange={e => setFormData({...formData, ncm: e.target.value})} className="bg-white" placeholder="Nomenclatura Comum do Mercosul" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Preço Base (R$)</Label>
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  value={formData.precoBase || ""} 
+                  onChange={e => setFormData({...formData, precoBase: parseFloat(e.target.value) || 0})} 
+                  className="bg-white" 
+                  placeholder="0.00" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Nível de Relevância (Prioridade)</Label>
+                <Input 
+                  type="number" 
+                  value={formData.nivelRelevancia || 0} 
+                  onChange={e => setFormData({...formData, nivelRelevancia: parseInt(e.target.value) || 0})} 
+                  className="bg-white" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Termos de Pesquisa</Label>
+                <Input 
+                  value={formData.termosPesquisa || ""} 
+                  onChange={e => setFormData({...formData, termosPesquisa: e.target.value})} 
+                  className="bg-white" 
+                  placeholder="Ex: remedio, dor de cabeca (separados por vírgula)" 
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Google / SEO */}
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
+            <div className="flex items-center gap-2 pb-4 border-b">
+              <Search className="h-6 w-6 text-blue-600" />
+              <h3 className="font-bold text-2xl text-slate-800">Google / SEO</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label className="font-bold text-xs uppercase text-slate-500">Título da Página (SEO)</Label>
+                    <span className="text-xs text-slate-400">{(formData.seoTitulo || "").length}/70</span>
+                  </div>
+                  <Input 
+                    maxLength={70}
+                    value={formData.seoTitulo || ""} 
+                    onChange={e => setFormData({...formData, seoTitulo: e.target.value})} 
+                    className="bg-white" 
+                    placeholder="Título otimizado para o Google" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Link da Página (Slug)</Label>
+                  <Input 
+                    value={formData.url || ""} 
+                    onChange={e => setFormData({...formData, url: e.target.value})} 
+                    className="bg-white" 
+                    placeholder="nome-do-produto" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Descrição da Página (SEO)</Label>
+                  <Textarea 
+                    value={formData.seoDescricao || ""} 
+                    onChange={e => setFormData({...formData, seoDescricao: e.target.value})} 
+                    className="bg-white min-h-[100px]" 
+                    placeholder="Resumo do produto que vai aparecer abaixo do título no Google" 
+                  />
+                </div>
+              </div>
+
+              {/* Preview do Google */}
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Visualização de como vai ficar no Google</Label>
+                <div className="bg-white p-4 border border-slate-200 rounded-lg shadow-sm max-w-full font-sans">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-7 h-7 bg-slate-100 rounded-full flex items-center justify-center">
+                      <Search className="h-3 w-3 text-slate-500" />
+                    </div>
+                    <div>
+                      <div className="text-[14px] text-[#202124] leading-tight">Sua Loja</div>
+                      <div className="text-[12px] text-[#4d5156] leading-tight flex items-center gap-1">
+                        <span>https://sualoja.com.br</span>
+                        <span>›</span>
+                        <span>{formData.url || "nome-do-produto"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-[20px] text-[#1a0dab] hover:underline cursor-pointer leading-tight mb-1 truncate">
+                    {formData.seoTitulo || formData.nome || "Título da Página"}
+                  </div>
+                  <div className="text-[14px] text-[#4d5156] leading-snug line-clamp-2">
+                    {formData.seoDescricao || "Sua descrição SEO aparecerá aqui. Escreva um texto atraente para incentivar as pessoas a clicarem e conhecerem o seu produto."}
+                  </div>
                 </div>
               </div>
             </div>

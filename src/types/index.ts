@@ -68,6 +68,12 @@ export interface Produto {
   acaoSemEstoque?: string;
   comVariacao?: boolean;
   visivel?: boolean;
+  buscavel?: boolean;
+  nivelRelevancia?: number;
+  termosPesquisa?: string;
+  precoBase?: number;
+  seoTitulo?: string;
+  seoDescricao?: string;
   aVenda?: boolean;
   tipoProduto?: string;
   selo?: string; // Ação PBM
