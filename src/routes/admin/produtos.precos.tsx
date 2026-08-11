@@ -454,36 +454,40 @@ function AdminProdutosPrecos() {
             <Upload className="h-4 w-4" /> Importar meus preços
           </Button>
 
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 h-10">
-            <FileSpreadsheet className="mr-2 h-4 w-4" /> Planilha Encarte
-          </Button>
-          <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
+          {isGlobalAdmin() && (
+            <>
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 h-10">
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Planilha Encarte
+              </Button>
+              <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-              try {
-                const bstr = evt.target?.result;
-                const wb = XLSX.read(bstr, { type: "binary" });
-                const wsname = wb.SheetNames[0];
-                const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
-                setPendingImportData(data);
-                setImportManualDates(false);
-                setImportStartDate("");
-                setImportEndDate("");
-                setIsImportModalOpen(true);
-              } catch (err) {
-                console.error(err);
-                toast.error("Erro ao processar a planilha.");
-              }
-              if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-              }
-            };
-            reader.readAsBinaryString(file);
-          }} />
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                  try {
+                    const bstr = evt.target?.result;
+                    const wb = XLSX.read(bstr, { type: "binary" });
+                    const wsname = wb.SheetNames[0];
+                    const ws = wb.Sheets[wsname];
+                    const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                    setPendingImportData(data);
+                    setImportManualDates(false);
+                    setImportStartDate("");
+                    setImportEndDate("");
+                    setIsImportModalOpen(true);
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Erro ao processar a planilha.");
+                  }
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
+                };
+                reader.readAsBinaryString(file);
+              }} />
+            </>
+          )}
         </div>
       </div>
 
