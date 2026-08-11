@@ -207,24 +207,28 @@ function AdminBanners() {
     setModalOpen(true);
   };
 
-  const saveBanner = () => {
-    if (!editingBanner?.nome || !editingBanner?.posicao || !editingBanner?.paginaPublicacao) {
-      toast.error("Preencha os campos obrigatórios (Nome, Posição e Página)");
+  const saveBanner = async () => {
+    if (!editingBanner?.nome || !editingBanner?.posicao) {
+      toast.error("Nome e posição são obrigatórios");
       return;
     }
-
-    if (editingBanner.id) {
-      updateBanner(editingBanner.id, editingBanner);
-      toast.success("Banner atualizado com sucesso!");
-    } else {
-      addBanner({
-        ...editingBanner,
-        id: `banner_${Date.now()}`,
+    
+    try {
+      if (editingBanner.id) {
+        await updateBanner(editingBanner.id, editingBanner);
+        toast.success("Banner atualizado com sucesso!");
+      } else {
+        await addBanner({
+          ...editingBanner,
+          id: `banner_${Date.now()}`,
           lojaId: activeStoreId || undefined,
-      } as AdminBanner);
-      toast.success("Banner criado com sucesso!");
+        } as AdminBanner);
+        toast.success("Banner criado com sucesso!");
+      }
+      setModalOpen(false);
+    } catch (e: any) {
+      toast.error("Erro ao salvar o banner: " + (e.message || "Erro desconhecido"));
     }
-    setModalOpen(false);
   };
 
   const dimensions = editingBanner?.posicao ? getDimensionsForPosition(editingBanner.posicao) : null;

@@ -737,7 +737,11 @@ export const useAdmin = create<AdminState>()(
           link3: banner.link3,
         };
         const { data, error } = await supabase.from('banners' as any).insert(payload).select().single();
-        if (!error && data) {
+        if (error) {
+          console.error("Erro ao adicionar banner:", error);
+          throw error;
+        }
+        if (data) {
           get().fetchBanners(banner.lojaId);
         }
       },

@@ -20,7 +20,7 @@ export function Logo({ className = "h-10" }: { className?: string }) {
   const displayLogo = activePharmacy?.logoUrl || globalLogoUrl || logoUrlDefault;
 
   return (
-    <Link to={storeSlug ? "/_store/$storeSlug" : "/"} params={storeSlug ? { storeSlug } : {}} className="inline-flex items-center" aria-label="Farmácias Associadas – Início">
+    <Link to={storeSlug ? "/$storeSlug" : "/"} params={storeSlug ? { storeSlug } : {}} className="inline-flex items-center" aria-label="Farmácias Associadas – Início">
       <img
         src={mounted ? displayLogo : logoUrlDefault}
         alt="Farmácias Associadas"

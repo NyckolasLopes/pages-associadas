@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
+import { useAdmin } from "@/stores/admin";
+import { useCart } from "@/stores/cart";
 
 export function FloatingElements() {
   const [show, setShow] = useState(false);
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const pharmacies = useAdmin((s) => s.pharmacies);
+  
+  const activePharmacy = pharmacies.find((p) => p.id === selectedPharmacyId) || pharmacies[0] || null;
+  const whatsappNumber = activePharmacy?.whatsapp ? activePharmacy.whatsapp.replace(/\D/g, "") : "5508000000000";
+  const whatsappLink = whatsappNumber.startsWith("55") ? `https://wa.me/${whatsappNumber}` : `https://wa.me/55${whatsappNumber}`;
 
   useEffect(() => {
     const onScroll = () => setShow(window.scrollY > 300);
@@ -26,7 +34,7 @@ export function FloatingElements() {
 
       {/* Desktop-only WhatsApp */}
       <a
-        href="https://wa.me/5508000000000"
+        href={whatsappLink}
         target="_blank"
         rel="noreferrer"
         aria-label="Fale conosco no WhatsApp"

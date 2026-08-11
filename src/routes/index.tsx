@@ -32,7 +32,7 @@ function Index() {
       if (!store) store = pharmacies[0];
       
       const slug = slugify(store.nome);
-      navigate({ to: "/_store/$storeSlug", params: { storeSlug: slug } as any, replace: true });
+      navigate({ to: "/$storeSlug", params: { storeSlug: slug } as any, replace: true });
     }
   }, [pharmacies, selectedPharmacyId, navigate]);
 
