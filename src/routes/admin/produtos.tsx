@@ -83,12 +83,16 @@ function AdminProdutos() {
     updateProductDescriptions, 
     bulkUpdateProducts,
     getStoreEffectiveProducts,
-    resetStoreProductsToGeneral
+    resetStoreProductsToGeneral,
+    updateStoreProductStatus,
+    bulkUpdateStoreProductStatus
   } = useAdminProducts();
   const { regions, prices } = useRegionsStore();
   const { pharmacies, activeStoreId, currentUser } = useAdmin();
   const location = useLocation();
   const isRoot = location.pathname === "/admin/produtos" || location.pathname === "/admin/produtos/";
+
+  const isGlobalAdmin = currentUser?.is_global_admin === true;
 
   // Resolved store context
   const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
@@ -487,42 +491,46 @@ function AdminProdutos() {
           {/* Top row: Exports and Sync */}
           <div className="flex flex-wrap gap-2 justify-end items-center">
             <StoreSelector className="mb-1" />
-            <Button
-              size="sm"
-              onClick={() => setSubirDadosOpen(true)}
-              className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              <FileUp className="h-3.5 w-3.5 mr-1.5" />
-              Subir Dados para Loja
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportJson}
-              disabled={currentProductsList.length === 0}
-              className="font-bold text-xs"
-            >
-              <FileDown className="h-3.5 w-3.5 mr-1.5" />
-              Exportar JSON
-            </Button>
-            <Button
-              size="sm"
-              onClick={simulateApiSync}
-              className="font-bold text-xs bg-slate-800 text-white hover:bg-slate-700 hover:text-white"
-            >
-              <FileUp className="h-3.5 w-3.5 mr-1.5" />
-              Sincronizar via API
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleDeleteAll}
-              disabled={currentProductsList.length === 0}
-              variant="destructive"
-              className="font-bold text-xs"
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              {currentLojaId ? "Limpar da Loja" : "Excluir Todos"}
-            </Button>
+            {isGlobalAdmin && (
+              <>
+                <Button
+                  size="sm"
+                  onClick={() => setSubirDadosOpen(true)}
+                  className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <FileUp className="h-3.5 w-3.5 mr-1.5" />
+                  Subir Dados para Loja
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportJson}
+                  disabled={currentProductsList.length === 0}
+                  className="font-bold text-xs"
+                >
+                  <FileDown className="h-3.5 w-3.5 mr-1.5" />
+                  Exportar JSON
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={simulateApiSync}
+                  className="font-bold text-xs bg-slate-800 text-white hover:bg-slate-700 hover:text-white"
+                >
+                  <FileUp className="h-3.5 w-3.5 mr-1.5" />
+                  Sincronizar via API
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleDeleteAll}
+                  disabled={currentProductsList.length === 0}
+                  variant="destructive"
+                  className="font-bold text-xs"
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  {currentLojaId ? "Limpar da Loja" : "Excluir Todos"}
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Bottom row: Import Actions */}
@@ -535,56 +543,60 @@ function AdminProdutos() {
               <Layers className="h-3.5 w-3.5 mr-1.5" />
               Alterações em Massa
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setDescImporterOpen(true)}
-              className="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
-              <FileText className="h-3.5 w-3.5 mr-1.5" />
-              Importar Descrições
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            {isGlobalAdmin && (
+              <>
                 <Button
                   size="sm"
-                  className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto"
+                  onClick={() => setDescImporterOpen(true)}
+                  className="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
-                  <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
-                  Novo Cadastro
+                  <FileText className="h-3.5 w-3.5 mr-1.5" />
+                  Importar Descrições
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <Link to="/admin/produtos/novo" search={{ tipo: 'fisico' } as any}>
-                  <DropdownMenuItem className="cursor-pointer font-medium">
-                    <Package className="h-4 w-4 mr-2 text-emerald-600" />
-                    Produto Físico
-                  </DropdownMenuItem>
-                </Link>
-                <Link to="/admin/produtos/novo" search={{ tipo: 'servico' } as any}>
-                  <DropdownMenuItem className="cursor-pointer font-medium">
-                    <Stethoscope className="h-4 w-4 mr-2 text-indigo-600" />
-                    Serviço de Saúde
-                  </DropdownMenuItem>
-                </Link>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              size="sm"
-              onClick={() => setImporterOpen(true)}
-              className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700"
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
-              Importar Planilha
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={generateTemplate}
-              className="font-bold text-xs"
-            >
-              <Download className="h-3.5 w-3.5 mr-1.5" />
-              Baixar Modelo Planilha
-            </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto"
+                    >
+                      <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
+                      Novo Cadastro
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <Link to="/admin/produtos/novo" search={{ tipo: 'fisico' } as any}>
+                      <DropdownMenuItem className="cursor-pointer font-medium">
+                        <Package className="h-4 w-4 mr-2 text-emerald-600" />
+                        Produto Físico
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link to="/admin/produtos/novo" search={{ tipo: 'servico' } as any}>
+                      <DropdownMenuItem className="cursor-pointer font-medium">
+                        <Stethoscope className="h-4 w-4 mr-2 text-indigo-600" />
+                        Serviço de Saúde
+                      </DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  size="sm"
+                  onClick={() => setImporterOpen(true)}
+                  className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
+                  Importar Planilha
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateTemplate}
+                  className="font-bold text-xs"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                  Baixar Modelo Planilha
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -780,42 +792,67 @@ function AdminProdutos() {
                         <td className="px-4 py-3 text-center">
                           <Switch
                             checked={p.ativo !== false}
-                            onCheckedChange={(checked) => addOrUpdateProduct({ ...p, ativo: checked }, currentLojaId)}
+                            onCheckedChange={(checked) => {
+                              if (isGlobalAdmin) {
+                                addOrUpdateProduct({ ...p, ativo: checked }, currentLojaId);
+                              } else {
+                                updateStoreProductStatus(currentLojaId!, p.id, checked);
+                              }
+                            }}
                             className="data-[state=checked]:bg-emerald-500 scale-75"
                           />
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => addOrUpdateProduct({ ...p, destaque: !p.destaque }, currentLojaId)}
-                            className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
-                            title="Destacar produto"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                          </Button>
+                          {isGlobalAdmin ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => addOrUpdateProduct({ ...p, destaque: !p.destaque }, currentLojaId)}
+                              className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
+                              title="Destacar produto"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </Button>
+                          ) : (
+                            <div className="flex justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "#fbbf24" : "none"} stroke={p.destaque ? "#fbbf24" : "#cbd5e1"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50"
-                              onClick={() => handleEditProduct(p)}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
-                              onClick={() => {
-                                removeProduct(p.id, currentLojaId);
-                                toast.success(currentLojaId ? "Produto removido da sua loja!" : "Produto removido da rede!");
-                              }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            {isGlobalAdmin && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50"
+                                  onClick={() => handleEditProduct(p)}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Duplicar Produto"
+                                  className="h-7 w-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                                  onClick={() => handleDuplicate(p)}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                  onClick={() => {
+                                    removeProduct(p.id, currentLojaId);
+                                    toast.success(currentLojaId ? "Produto removido da sua loja!" : "Produto removido da rede!");
+                                  }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>

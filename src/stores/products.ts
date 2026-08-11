@@ -50,6 +50,8 @@ interface ProductsState {
   updateProductDescriptions: (updates: { ean: string; descricao: string }[]) => void;
   bulkUpdateProducts: (productIds: string[], updates: Partial<Produto>, lojaId?: string | null) => void;
   updateStoreProductPrice: (lojaId: string, productId: string, precoPor: number, precoDe?: number, estoque?: number, ativo?: boolean) => void;
+  updateStoreProductStatus: (lojaId: string, productId: string, ativo: boolean) => Promise<void>;
+  bulkUpdateStoreProductStatus: (lojaId: string, productIds: string[], ativo: boolean) => Promise<void>;
   importStoreSpreadsheet: (lojaId: string, items: StorePriceItem[]) => { updated: number; notFound: number; total: number };
 }
 
@@ -396,6 +398,82 @@ export const useAdminProducts = create<ProductsState>()(
           precos_por_loja: newPrecosPorLoja,
           estoques_por_loja: newEstoquesPorLoja
         }).eq('id', productId);
+      },
+      updateStoreProductStatus: async (lojaId, productId, ativo) => {
+        const state = get();
+        const product = state.customProducts.find(p => p.id === productId);
+        if (!product) return;
+
+        const prevStore = product.precosPorLoja || {};
+        const newPrecosPorLoja = {
+          ...prevStore,
+          [lojaId]: {
+            ...prevStore[lojaId],
+            ativo
+          }
+        };
+
+        // Optimistic UI Update
+        set((s) => ({
+          customProducts: s.customProducts.map(x => x.id === productId ? {
+            ...x,
+            precosPorLoja: newPrecosPorLoja
+          } : x)
+        }));
+
+        // Supabase DB Update
+        await supabase.from('produtos').update({
+          precos_por_loja: newPrecosPorLoja
+        }).eq('id', productId);
+      },
+      bulkUpdateStoreProductStatus: async (lojaId, productIds, ativo) => {
+        const state = get();
+        const idsSet = new Set(productIds);
+        
+        // Prepare updates for DB
+        const dbUpdates = state.customProducts
+          .filter(p => idsSet.has(p.id))
+          .map(product => {
+            const prevStore = product.precosPorLoja || {};
+            const newPrecosPorLoja = {
+              ...prevStore,
+              [lojaId]: {
+                ...prevStore[lojaId],
+                ativo
+              }
+            };
+            return {
+              id: product.id,
+              precos_por_loja: newPrecosPorLoja
+            };
+          });
+
+        // Optimistic UI Update
+        set((s) => ({
+          customProducts: s.customProducts.map(x => {
+            if (idsSet.has(x.id)) {
+              const prevStore = x.precosPorLoja || {};
+              return {
+                ...x,
+                precosPorLoja: {
+                  ...prevStore,
+                  [lojaId]: {
+                    ...prevStore[lojaId],
+                    ativo
+                  }
+                }
+              };
+            }
+            return x;
+          })
+        }));
+
+        // Supabase DB Update (Sequential due to JSONB constraints, but safe)
+        for (const update of dbUpdates) {
+          await supabase.from('produtos').update({
+            precos_por_loja: update.precos_por_loja
+          }).eq('id', update.id);
+        }
       },
       importStoreSpreadsheet: async (lojaId, items) => {
         const state = get();
