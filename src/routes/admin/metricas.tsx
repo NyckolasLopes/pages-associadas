@@ -95,9 +95,8 @@ function Metricas() {
   const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || (typeof grupos !== 'undefined' && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total) || currentUser?.lojasVinculadas === undefined;
   
-  // Se for administrador global, o painel padrão é a visão geral de todas as lojas (effectiveStoreId = null)
-  // Se houver activeStoreId selecionado explicitamente ou usuário de loja vinculada, foca na loja
-  const effectiveStoreId = activeStoreId || (!isGlobalAdmin && currentUser?.lojasVinculadas?.[0]) || null;
+  // Se for administrador global, a visão é SEMPRE global, independente da loja selecionada no menu superior
+  const effectiveStoreId = isGlobalAdmin ? null : (activeStoreId || currentUser?.lojasVinculadas?.[0] || null);
   const isGlobalView = !effectiveStoreId;
 
   const { orders: rawOrders } = useOrders();
