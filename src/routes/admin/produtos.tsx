@@ -88,11 +88,11 @@ function AdminProdutos() {
     bulkUpdateStoreProductStatus
   } = useAdminProducts();
   const { regions, prices } = useRegionsStore();
-  const { pharmacies, activeStoreId, currentUser } = useAdmin();
+  const { pharmacies, activeStoreId, currentUser, grupos } = useAdmin();
   const location = useLocation();
   const isRoot = location.pathname === "/admin/produtos" || location.pathname === "/admin/produtos/";
 
-  const isGlobalAdmin = currentUser?.is_global_admin === true;
+  const isGlobalAdmin = currentUser?.proprietario || grupos?.find((g: any) => g.id === currentUser?.grupoId)?.permissao_total === true;
 
   // Resolved store context
   const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;

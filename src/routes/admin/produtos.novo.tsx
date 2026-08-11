@@ -79,18 +79,7 @@ function AdminNovoProduto() {
   };
 
   return (
-    <div className="bg-slate-50 min-h-[80vh] relative">
-      <div className="absolute top-4 right-4 z-10 flex gap-2 items-center">
-        <StoreSelector className="mb-0" />
-        <Button
-          size="sm"
-          onClick={() => setSubirDadosOpen(true)}
-          className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-        >
-          <FileUp className="h-3.5 w-3.5 mr-1.5" />
-          Subir Dados para Loja
-        </Button>
-      </div>
+    <div className="bg-slate-50 min-h-[80vh]">
       <ProductEditorForm 
         open={true}
         onOpenChange={(open) => !open && handleCancel()}
@@ -98,8 +87,25 @@ function AdminNovoProduto() {
         onSave={handleSave}
         asPage={true}
         lojaId={currentLojaId}
+        headerActions={
+          <>
+            <StoreSelector className="mb-0" />
+            <Button
+              size="sm"
+              onClick={() => setSubirDadosOpen(true)}
+              className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+            >
+              <FileUp className="h-3.5 w-3.5 mr-1.5" />
+              Subir Dados para Loja
+            </Button>
+          </>
+        }
       />
-      <SubirDadosLojaModal open={subirDadosOpen} onOpenChange={setSubirDadosOpen} />
+      
+      <SubirDadosLojaModal
+        open={subirDadosOpen}
+        onOpenChange={setSubirDadosOpen}
+      />
     </div>
   );
 }

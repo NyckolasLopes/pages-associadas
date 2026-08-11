@@ -31,9 +31,10 @@ interface ProductEditorFormProps {
   onSave: (product: Produto) => void;
   asPage?: boolean;
   lojaId?: string | null;
+  headerActions?: React.ReactNode;
 }
 
-export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage, lojaId }: ProductEditorFormProps) {
+export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage, lojaId, headerActions }: ProductEditorFormProps) {
   const [formData, setFormData] = useState<Produto | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [saveStep, setSaveStep] = useState<"idle" | "saving" | "syncing" | "done">("idle");
@@ -132,6 +133,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="text-sm text-slate-500 mt-1">Código: {product.codigoInterno || product.id} • Cadastrado via {product.origem || "Sistema"}</div>
           </div>
           <div className="flex items-center gap-3">
+            {headerActions}
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button onClick={handleSaveClick} disabled={saveStep !== "idle"} className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-8">
               Salvar produto
@@ -157,9 +159,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
               <div className="flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-2 rounded-full font-bold text-sm">
                 <Star className="w-4 h-4" /> DESTAQUE <Switch checked={formData.destaque} onCheckedChange={c => setFormData({...formData, destaque: c})} className="scale-90 data-[state=checked]:bg-amber-500" />
-              </div>
-              <div className="flex items-center gap-2 bg-pink-100 text-pink-800 px-4 py-2 rounded-full font-bold text-sm">
-                <ShoppingBag className="w-4 h-4" /> ORDER BUMP <Switch checked={formData.orderBump} onCheckedChange={c => setFormData({...formData, orderBump: c})} className="scale-90 data-[state=checked]:bg-pink-600" />
               </div>
               <div className="flex items-center gap-2 bg-sky-100 text-sky-800 px-4 py-2 rounded-full font-bold text-sm">
                 PRODUTO NOVO <Switch checked={formData.isNovo || false} onCheckedChange={c => setFormData({...formData, isNovo: c})} className="scale-90 data-[state=checked]:bg-sky-600" />
@@ -187,22 +186,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
             </div>
 
-            {formData.tipoProduto !== "servico" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="font-bold flex items-center gap-2">Desconto de laboratório</Label>
-                  <Select value={formData.selo} onValueChange={v => setFormData({...formData, selo: v})}>
-                    <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione uma ação" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Nenhuma ação</SelectItem>
-                      <SelectItem value="dermaclub">Dermaclub</SelectItem>
-                      <SelectItem value="scantech">Scantech</SelectItem>
-                      <SelectItem value="e-pharma">E-pharma</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-2">
               <div className="flex justify-between items-center"><Label className="font-bold">Nome do produto*</Label><span className="text-xs text-slate-400">{(formData.nome || "").length} de 120 caracteres</span></div>
@@ -220,7 +203,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             </div>
 
             <div className="space-y-2">
-              <Label className="font-bold flex items-center gap-2">Termos de pesquisa ocultos <Info className="h-4 w-4 text-slate-400" /></Label>
+              <Label className="font-bold flex items-center gap-2">Termos de pesquisa ocultos</Label>
               <p className="text-xs text-slate-500 mb-1">Palavras-chave separadas por vírgula que ajudam os clientes a encontrar este produto na busca, mas não aparecem na página. (Ex: chiclete, bala, goma)</p>
               <Input 
                 defaultValue={formData.internalTags?.join(', ') || ""} 
@@ -242,7 +225,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             </div>
 
             <div className="space-y-2 max-w-sm">
-              <Label className="font-bold flex items-center gap-2">Marca <Info className="h-4 w-4 text-slate-400" /></Label>
+              <Label className="font-bold flex items-center gap-2">Marca</Label>
               <Select value={formData.marca || ""} onValueChange={v => setFormData({...formData, marca: v})}>
                 <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione uma marca" /></SelectTrigger>
                 <SelectContent>
@@ -256,7 +239,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 border-t pt-6">
               <div className="space-y-2">
                 <Label className="font-bold flex items-center gap-2">
-                  Qual o nível de relevância? <span title="Nível de prioridade nas buscas do produto em sua loja."><Info className="h-4 w-4 text-slate-400" /></span>
+                  Qual o nível de relevância? <span title="Nível de prioridade nas buscas do produto em sua loja."></span>
                 </Label>
                 <div className="flex bg-slate-100 p-1 rounded-md w-full border border-slate-200">
                   <button 
@@ -282,7 +265,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
               <div className="space-y-2">
                 <Label className="font-bold flex items-center gap-2">
-                  Código NCM <span className="text-muted-foreground font-normal">(opcional)</span> <Info className="h-4 w-4 text-slate-400" />
+                  Código NCM <span className="text-muted-foreground font-normal">(opcional)</span>
                 </Label>
                 <Input 
                   value={formData.ncm || ""} 
@@ -294,7 +277,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
             <div className="space-y-2 mt-6">
               <Label className="font-bold flex items-center gap-2">
-                Termos de pesquisa <Info className="h-4 w-4 text-slate-400" />
+                Termos de pesquisa
               </Label>
               <Textarea 
                 value={(formData.internalTags || []).join(", ")}
@@ -305,96 +288,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             </div>
           </div>
 
-          {/* Card: Mídias Adicionais (Opcional) */}
-          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-6">
-            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Mídias Adicionais (Opcional)</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="font-bold flex items-center gap-2">Link do Produto <Info className="h-4 w-4 text-slate-400" /></Label>
-                  <p className="text-xs text-slate-500 mb-1">URL de referência ou do fornecedor original do produto.</p>
-                  <Input 
-                    placeholder="https://..." 
-                    className="bg-white" 
-                    value={formData.linkProduto || ""} 
-                    onChange={e => setFormData({...formData, linkProduto: e.target.value})} 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-bold flex items-center gap-2">Vídeo Flutuante (Até 2MB / 30s) <Info className="h-4 w-4 text-slate-400" /></Label>
-                  <p className="text-xs text-slate-500 mb-1">Anexe o arquivo de vídeo (.mp4, .webm) que aparecerá no canto inferior esquerdo (estilo GIF/Autoplay).</p>
-                  
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-slate-500 group relative">
-                    {formData.videoFlutuante ? (
-                      <div className="flex flex-col items-center">
-                        <Video className="w-10 h-10 mb-2 text-emerald-600" />
-                        <span className="font-bold text-sm text-slate-700">Vídeo anexado</span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="mt-2 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={(e) => { e.stopPropagation(); setFormData({...formData, videoFlutuante: ""}); }}
-                        >
-                          Remover
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <Video className="w-10 h-10 mb-2 text-slate-400 group-hover:text-emerald-800 transition-colors" />
-                        <div className="text-sm font-bold text-slate-700 group-hover:text-emerald-800 mb-1">Arraste o vídeo aqui</div>
-                        <div className="text-xs text-center">Ou clique para buscar no computador</div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="font-bold flex items-center gap-2">Stories do Produto <Info className="h-4 w-4 text-slate-400" /></Label>
-                  <p className="text-xs text-slate-500 mb-1">Anexe imagens ou vídeos curtos para exibição em formato de stories.</p>
-                  
-                  <div className="space-y-3">
-                    {(formData.storiesProduto || []).length > 0 && (
-                      <div className="grid grid-cols-2 gap-3">
-                        {(formData.storiesProduto || []).map((story, i) => (
-                          <div key={i} className="relative group border rounded-md overflow-hidden aspect-[9/16] bg-slate-100 flex items-center justify-center">
-                            <span className="text-xs font-bold text-slate-400">Story {i+1}</span>
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={() => {
-                                  const newStories = [...(formData.storiesProduto || [])];
-                                  newStories.splice(i, 1);
-                                  setFormData({...formData, storiesProduto: newStories});
-                                }}
-                              >
-                                Remover
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div 
-                      className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-slate-500 group"
-                      onClick={() => {
-                        // Mock adding a story
-                        const newStories = [...(formData.storiesProduto || []), "mock_story_url"];
-                        setFormData({...formData, storiesProduto: newStories});
-                      }}
-                    >
-                      <ImagePlus className="w-8 h-8 mb-2 text-slate-400 group-hover:text-emerald-800 transition-colors" />
-                      <div className="text-sm font-bold text-slate-700 group-hover:text-emerald-800">Adicionar Story</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
           {/* Card: Organização do Produto */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-6">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Organização do Produto</h3>
@@ -540,7 +434,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-bold flex items-center gap-2">Variações <Info className="h-4 w-4 text-slate-400" /></Label>
+                  <Label className="font-bold flex items-center gap-2">Variações</Label>
                   <p className="text-xs text-slate-500 mb-1">Selecione produtos com o mesmo nome em dosagens diferentes.</p>
                   <Select>
                     <SelectTrigger className="bg-white border-slate-200"><SelectValue placeholder="Adicionar variação..." /></SelectTrigger>
@@ -552,7 +446,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-bold flex items-center gap-2">Compre Junto Fixo <Info className="h-4 w-4 text-slate-400" /></Label>
+                  <Label className="font-bold flex items-center gap-2">Compre Junto Fixo</Label>
                   <p className="text-xs text-slate-500 mb-1">Escolha um produto para ser oferecido em destaque como parceiro deste produto.</p>
                   <Popover open={comboOpen} onOpenChange={setComboOpen}>
                     <PopoverTrigger asChild>
@@ -663,7 +557,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="font-bold flex items-center gap-2">Código Interno (SKU) <Info className="h-4 w-4 text-slate-400" /></Label>
+                  <Label className="font-bold flex items-center gap-2">Código Interno (SKU)</Label>
                   {formData.tipoProduto !== "servico" ? (
                     <p className="text-xs text-slate-500 mb-1">O código interno do produto deve ser o mesmo ID da API.</p>
                   ) : (
@@ -681,15 +575,15 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 {formData.tipoProduto !== "servico" && (
                   <>
                     <div className="space-y-2">
-                      <Label className="font-bold flex items-center gap-2">Código de Barras (EAN-13)* <Info className="h-4 w-4 text-slate-400" /></Label>
+                      <Label className="font-bold flex items-center gap-2">Código de Barras (EAN-13)*</Label>
                       <Input value={formData.ean || ""} onChange={e => setFormData({...formData, ean: e.target.value})} className="bg-white" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="font-bold flex items-center gap-2">EAN Secundário <Info className="h-4 w-4 text-slate-400" /></Label>
+                      <Label className="font-bold flex items-center gap-2">EAN Secundário</Label>
                       <Input value={formData.ean2 || ""} onChange={e => setFormData({...formData, ean2: e.target.value})} className="bg-white" placeholder="Opcional" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="font-bold flex items-center gap-2">EAN Terciário <Info className="h-4 w-4 text-slate-400" /></Label>
+                      <Label className="font-bold flex items-center gap-2">EAN Terciário</Label>
                       <Input value={formData.ean3 || ""} onChange={e => setFormData({...formData, ean3: e.target.value})} className="bg-white" placeholder="Opcional" />
                     </div>
                   </>
@@ -1130,7 +1024,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           {/* Card: Google / SEO */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-6">
             <div className="flex items-center justify-between border-b pb-4">
-              <h3 className="font-bold text-2xl flex items-center gap-2 text-slate-800">Google / SEO <Info className="h-5 w-5 text-slate-400" /></h3>
+              <h3 className="font-bold text-2xl flex items-center gap-2 text-slate-800">Google / SEO</h3>
             </div>
             
             <div className="space-y-6 max-w-4xl">
@@ -1156,7 +1050,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
               
               <div className="space-y-2 pt-4">
-                <Label className="flex items-center gap-2 font-bold">URL canônica (opcional) <Info className="h-4 w-4 text-slate-400" /></Label>
+                <Label className="flex items-center gap-2 font-bold">URL canônica (opcional)</Label>
                 <Input placeholder="link-da-pagina" className="bg-white h-12" />
                 <div className="text-sm text-slate-500">Endereço principal para indexação quando há o mesmo produto cadastrado várias vezes.</div>
               </div>
@@ -1214,7 +1108,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
   if (asPage) {
     return (
-      <div className="flex flex-col w-full h-full bg-slate-100">
+      <div className="flex flex-col bg-slate-100 -mt-4 md:-mt-8 -mx-4 md:-mx-8 min-h-[calc(100vh-4rem)]">
         {content}
         {syncModal}
       </div>
