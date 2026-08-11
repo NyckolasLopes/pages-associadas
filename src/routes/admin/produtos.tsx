@@ -41,7 +41,8 @@ import {
   RefreshCw,
   Info,
   ShieldCheck,
-  Store
+  Store,
+  Copy
 } from "lucide-react";
 import { getCityFromCep, searchProductsMatch } from "@/lib/utils";
 import type { Produto } from "@/types";
