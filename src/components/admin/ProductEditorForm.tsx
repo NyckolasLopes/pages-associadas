@@ -1214,7 +1214,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
   if (asPage) {
     return (
-      <div className="flex flex-col w-full h-full bg-slate-100 -m-8" style={{ width: 'calc(100% + 4rem)' }}>
+      <div className="flex flex-col w-full h-full bg-slate-100">
         {content}
         {syncModal}
       </div>
