@@ -139,8 +139,17 @@ function GerarLojaPage() {
                     <Store className="w-6 h-6" />
                   </div>
                   <div className="min-w-0 flex-1 pr-16">
-                    <h3 className="font-bold text-slate-900 text-base truncate">
+                    <h3 className="font-bold text-slate-900 text-base truncate flex items-center gap-2">
                       {pharmacy.nome}
+                      {pharmacy.categoriaAssociado && (
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          pharmacy.categoriaAssociado === 'Pleno' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-purple-100 text-purple-700'
+                        }`}>
+                          {pharmacy.categoriaAssociado}
+                        </span>
+                      )}
                     </h3>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
                       <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />

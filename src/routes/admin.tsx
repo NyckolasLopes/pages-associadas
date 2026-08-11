@@ -416,7 +416,7 @@ function AdminLayout() {
               {isGlobalAdmin && can('prod_novo') && <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>Novo produto</Link>}
               {isGlobalAdmin && can('prod_categorias') && <Link to="/admin/categorias" className={subLinkClass}>Categorias</Link>}
               {isGlobalAdmin && can('prod_marcas') && <Link to="/admin/marcas" className={subLinkClass}>Marcas</Link>}
-              {(can('prod_colecoes') || !isGlobalAdmin) && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
+              {(isGlobalAdmin && can('prod_colecoes')) && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
               {isGlobalAdmin && can('prod_filtros') && <Link to="/admin/filtros" className={subLinkClass}>Filtros</Link>}
             </NavSection>
           )}

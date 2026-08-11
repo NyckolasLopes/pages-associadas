@@ -516,38 +516,15 @@ function AdminProdutos() {
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
                   Exportar JSON
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={simulateApiSync}
-                  className="font-bold text-xs bg-slate-800 text-white hover:bg-slate-700 hover:text-white"
-                >
-                  <FileUp className="h-3.5 w-3.5 mr-1.5" />
-                  Sincronizar via API
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleDeleteAll}
-                  disabled={currentProductsList.length === 0}
-                  variant="destructive"
-                  className="font-bold text-xs"
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                  {currentLojaId ? "Limpar da Loja" : "Excluir Todos"}
-                </Button>
+                
+                
               </>
             )}
           </div>
 
           {/* Bottom row: Import Actions */}
           <div className="flex flex-wrap gap-2 justify-end mt-2">
-            <Button
-              size="sm"
-              onClick={() => setBulkEditOpen(true)}
-              className="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
-              <Layers className="h-3.5 w-3.5 mr-1.5" />
-              Alterações em Massa
-            </Button>
+            
             {isGlobalAdmin && (
               <>
                 <Button

@@ -38,7 +38,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const [formData, setFormData] = useState<Produto | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [saveStep, setSaveStep] = useState<"idle" | "saving" | "syncing" | "done">("idle");
-  const { pharmacies } = useAdmin();
+  const { pharmacies, currentUser, grupos } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total === true;
   const { vitrines, customProducts } = useAdminProducts();
   const { filtros } = useAdminFiltros();
   const { marcas } = useMarcasStore();
@@ -150,7 +151,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <Switch 
+                <Switch disabled={!isGlobalAdmin} 
                   id="ativo" 
                   checked={formData.ativo} 
                   onCheckedChange={checked => setFormData({...formData, ativo: checked})}
@@ -158,7 +159,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <Label htmlFor="ativo" className="font-medium cursor-pointer">Produto Ativo</Label>
               </div>
               <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <Switch 
+                <Switch disabled={!isGlobalAdmin} 
                   id="buscavel" 
                   checked={formData.buscavel} 
                   onCheckedChange={checked => setFormData({...formData, buscavel: checked})}
@@ -167,7 +168,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Tipo de Produto</Label>
-                <Select value={formData.tipoProduto || "fisico"} onValueChange={v => setFormData({...formData, tipoProduto: v})}>
+                <Select disabled={!isGlobalAdmin} value={formData.tipoProduto || "fisico"} onValueChange={v => setFormData({...formData, tipoProduto: v})}>
                   <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="fisico">Produto Físico</SelectItem>
@@ -181,22 +182,22 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">ID / Código Interno*</Label>
-                <Input value={formData.id || ""} onChange={e => setFormData({...formData, id: e.target.value})} className="bg-white" />
+                <Input disabled={!isGlobalAdmin} value={formData.id || ""} onChange={e => setFormData({...formData, id: e.target.value})} className="bg-white" />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">EAN / Código de Barras*</Label>
-                <Input value={formData.ean || ""} onChange={e => setFormData({...formData, ean: e.target.value})} className="bg-white" />
+                <Input disabled={!isGlobalAdmin} value={formData.ean || ""} onChange={e => setFormData({...formData, ean: e.target.value})} className="bg-white" />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label className="font-bold text-xs uppercase text-slate-500">Descrição Comercial / Nome do Produto*</Label>
-              <Input maxLength={120} value={formData.nome || ""} onChange={e => setFormData({...formData, nome: e.target.value})} className="bg-white text-lg h-12" />
+              <Input disabled={!isGlobalAdmin} maxLength={120} value={formData.nome || ""} onChange={e => setFormData({...formData, nome: e.target.value})} className="bg-white text-lg h-12" />
             </div>
 
             <div className="space-y-2">
               <Label className="font-bold text-xs uppercase text-slate-500">Descrição Longa</Label>
-              <RichTextEditor 
+              <RichTextEditor disabled={!isGlobalAdmin} 
                 value={formData.descricao || ""} 
                 onChange={val => setFormData({...formData, descricao: val})}
                 placeholder="Digite a descrição ou insira HTML aqui..."
@@ -206,7 +207,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Categoria (com ID)</Label>
-                <Select value={formData.categoriaId || ""} onValueChange={v => setFormData({...formData, categoriaId: v, subcategoriaId: ""})}>
+                <Select disabled={!isGlobalAdmin} value={formData.categoriaId || ""} onValueChange={v => setFormData({...formData, categoriaId: v, subcategoriaId: ""})}>
                   <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
                   <SelectContent>
                     {categorias.filter((c: any) => !c.parentId).map((c: any) => (
@@ -218,7 +219,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Subcategoria (com ID)</Label>
-                <Select value={formData.subcategoriaId || ""} onValueChange={v => setFormData({...formData, subcategoriaId: v})} disabled={!formData.categoriaId}>
+                <Select disabled={!isGlobalAdmin} value={formData.subcategoriaId || ""} onValueChange={v => setFormData({...formData, subcategoriaId: v})} disabled={!formData.categoriaId}>
                   <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione a subcategoria" /></SelectTrigger>
                   <SelectContent>
                     {categorias.filter((c: any) => c.parentId === formData.categoriaId).length > 0 ? (
@@ -240,11 +241,11 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Fabricante (Marca)</Label>
-                <Input value={formData.marca || formData.fabricante || ""} onChange={e => setFormData({...formData, marca: e.target.value, fabricante: e.target.value})} className="bg-white" />
+                <Input disabled={!isGlobalAdmin} value={formData.marca || formData.fabricante || ""} onChange={e => setFormData({...formData, marca: e.target.value, fabricante: e.target.value})} className="bg-white" />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">DCB / Princípio Ativo</Label>
-                <Input 
+                <Input disabled={!isGlobalAdmin} 
                   value={(formData.principiosAtivosDetalhes || []).map((p:any) => p.nome).join(", ")} 
                   onChange={e => {
                      setFormData({...formData, principiosAtivosDetalhes: [{ nome: e.target.value, concentracao: "", unidadeMedida: "" }]})
@@ -265,14 +266,14 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">MS / Registro ANVISA</Label>
-                  <Input value={formData.registroAnvisa || ""} onChange={e => setFormData({...formData, registroAnvisa: e.target.value})} className="bg-white" />
+                  <Input disabled={!isGlobalAdmin} value={formData.registroAnvisa || ""} onChange={e => setFormData({...formData, registroAnvisa: e.target.value})} className="bg-white" />
                 </div>
               </div>
 
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">Retém Receita?</Label>
-                  <Select value={formData.retemReceita ? "retem" : formData.retemReceita === false ? "nao_retem" : "nao_aplica"} onValueChange={v => {
+                  <Select disabled={!isGlobalAdmin} value={formData.retemReceita ? "retem" : formData.retemReceita === false ? "nao_retem" : "nao_aplica"} onValueChange={v => {
                     if (v === "retem") setFormData({...formData, retemReceita: true});
                     else if (v === "nao_retem") setFormData({...formData, retemReceita: false});
                     else setFormData({...formData, retemReceita: false});
@@ -288,7 +289,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">Tarja</Label>
-                  <Select value={formData.tarja || "Sem Tarja"} onValueChange={v => setFormData({...formData, tarja: v})}>
+                  <Select disabled={!isGlobalAdmin} value={formData.tarja || "Sem Tarja"} onValueChange={v => setFormData({...formData, tarja: v})}>
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione a tarja" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Sem Tarja">Sem Tarja</SelectItem>
@@ -320,17 +321,68 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             </div>
           </div>
 
+          
+          {/* Precificação da Loja (Associado/Global) */}
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
+            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">
+              {isGlobalAdmin ? "Precificação Padrão da Rede" : "Minha Precificação"}
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {!isGlobalAdmin && (
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Preço Base da Rede (R$)</Label>
+                  <Input 
+                    disabled 
+                    value={customProducts.find(p => p.id === formData.id)?.precoPor?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "R$ 0,00"} 
+                    className="bg-slate-50 text-slate-500 font-medium" 
+                  />
+                  <div className="text-xs text-slate-400 font-medium">Preço sugerido pela sede</div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">{isGlobalAdmin ? "Preço Base da Rede (R$)" : "Meu Preço (R$)"}</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    value={formData.precoPor || ""} 
+                    onChange={e => setFormData({...formData, precoPor: parseFloat(e.target.value) || 0})} 
+                    className="bg-white pl-9 font-bold text-emerald-700" 
+                    placeholder="0.00" 
+                  />
+                </div>
+                {!isGlobalAdmin && (
+                  <div className="mt-1 text-xs font-bold">
+                    {(() => {
+                      const basePrice = customProducts.find(p => p.id === formData.id)?.precoPor || 0;
+                      const myPrice = formData.precoPor || 0;
+                      if (!basePrice || !myPrice) return null;
+                      
+                      const diff = myPrice - basePrice;
+                      if (diff < 0) return <span className="text-emerald-600">Mais barato {Math.abs(diff).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>;
+                      if (diff > 0) return <span className="text-red-600">Mais caro {Math.abs(diff).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>;
+                      return <span className="text-slate-500">Igual ao preço base da rede</span>;
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Card: Detalhes e Precificação */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Detalhes e Precificação</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">NCM</Label>
-                <Input value={formData.ncm || ""} onChange={e => setFormData({...formData, ncm: e.target.value})} className="bg-white" placeholder="Nomenclatura Comum do Mercosul" />
+                <Input disabled={!isGlobalAdmin} value={formData.ncm || ""} onChange={e => setFormData({...formData, ncm: e.target.value})} className="bg-white" placeholder="Nomenclatura Comum do Mercosul" />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Preço Base (R$)</Label>
-                <Input 
+                <Input disabled={!isGlobalAdmin} 
                   type="number" 
                   step="0.01" 
                   value={formData.precoBase || ""} 
@@ -341,7 +393,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Nível de Relevância (Prioridade)</Label>
-                <Input 
+                <Input disabled={!isGlobalAdmin} 
                   type="number" 
                   value={formData.nivelRelevancia || 0} 
                   onChange={e => setFormData({...formData, nivelRelevancia: parseInt(e.target.value) || 0})} 
@@ -350,7 +402,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Termos de Pesquisa</Label>
-                <Input 
+                <Input disabled={!isGlobalAdmin} 
                   value={formData.termosPesquisa || ""} 
                   onChange={e => setFormData({...formData, termosPesquisa: e.target.value})} 
                   className="bg-white" 
@@ -374,7 +426,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     <Label className="font-bold text-xs uppercase text-slate-500">Título da Página (SEO)</Label>
                     <span className="text-xs text-slate-400">{(formData.seoTitulo || "").length}/70</span>
                   </div>
-                  <Input 
+                  <Input disabled={!isGlobalAdmin} 
                     maxLength={70}
                     value={formData.seoTitulo || ""} 
                     onChange={e => setFormData({...formData, seoTitulo: e.target.value})} 
@@ -384,7 +436,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">Link da Página (Slug)</Label>
-                  <Input 
+                  <Input disabled={!isGlobalAdmin} 
                     value={formData.url || ""} 
                     onChange={e => setFormData({...formData, url: e.target.value})} 
                     className="bg-white" 
@@ -393,7 +445,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">Descrição da Página (SEO)</Label>
-                  <Textarea 
+                  <Textarea disabled={!isGlobalAdmin} 
                     value={formData.seoDescricao || ""} 
                     onChange={e => setFormData({...formData, seoDescricao: e.target.value})} 
                     className="bg-white min-h-[100px]" 
