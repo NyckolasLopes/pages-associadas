@@ -237,6 +237,21 @@ function NovaLojaAdmin() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {(form.categoriaAssociado === "Pleno" || !form.categoriaAssociado) && (
+                <div className="space-y-1.5">
+                  <FieldLabel required>Trabalha com encarte Associadas?</FieldLabel>
+                  <Select value={form.trabalhaComEncarte !== false ? "sim" : "nao"} onValueChange={(val) => update({ trabalhaComEncarte: val === "sim" })}>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sim">Sim</SelectItem>
+                      <SelectItem value="nao">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <FieldLabel required>Sua loja oferece serviços de aplicação e testes?</FieldLabel>
                 <Select value={form.offersServices ? "true" : "false"} onValueChange={(val) => update({ offersServices: val === "true" })}>

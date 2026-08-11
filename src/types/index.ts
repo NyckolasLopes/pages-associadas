@@ -170,6 +170,7 @@ export type MetodoPagamento =
 export interface Loja {
   id: string;
   categoriaAssociado?: 'Pleno' | 'Parceiro';
+  trabalhaComEncarte?: boolean;
   cnpj: string;
   razaoSocial: string;
   nomeFantasia: string;

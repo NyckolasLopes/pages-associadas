@@ -278,6 +278,21 @@ function InscricaoLojaPublic() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {(form.categoriaAssociado === "Pleno" || !form.categoriaAssociado) && (
+                  <div className="space-y-2">
+                    <FieldLabel required>Trabalha com encarte Associadas?</FieldLabel>
+                    <Select value={form.trabalhaComEncarte !== false ? "sim" : "nao"} onValueChange={(val) => update({ trabalhaComEncarte: val === "sim" })}>
+                      <SelectTrigger className="bg-white h-11">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sim">Sim</SelectItem>
+                        <SelectItem value="nao">Não</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <FieldLabel required>Nome Fantasia</FieldLabel>
                   <Input
