@@ -54,30 +54,32 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
       .select('*')
       .order('nome', { ascending: true });
 
-    if (!error && data) {
-      if (data.length === 0) {
-        // Se estiver vazio, insere as marcas iniciais
-        for (const m of initialMarcas) {
-          await supabase.from('marcas' as any).upsert({
-            id: m.id,
-            nome: m.nome,
-            slug: m.slug,
-            descricao: m.descricao,
-            logo: m.logo,
-            ativo: m.ativo,
-            destaque: m.destaque,
-            seo_url: m.seoUrl,
-            marca_propria: m.marcaPropria,
-            global_pleno: m.global_pleno
-          });
-        }
-        
-        // Recarrega apos inserir
-        const res = await supabase.from('marcas' as any).select('*').order('nome', { ascending: true });
-        if (res.data) set({ marcas: res.data.map(mapRowToMarca) });
-      } else {
-        set({ marcas: data.map(mapRowToMarca) });
+    if (error) {
+      console.error("Erro ao carregar marcas, usando padrao fallback:", error);
+      set({ marcas: initialMarcas as Marca[] });
+    } else if (data && data.length === 0) {
+      // Se estiver vazio, popula as marcas locais com os padrões
+      set({ marcas: initialMarcas as Marca[] });
+      
+      // E tenta salvar em background no banco de dados (ignorando erros se for bloqueado por RLS)
+      for (const m of initialMarcas) {
+        supabase.from('marcas' as any).upsert({
+          id: m.id,
+          nome: m.nome,
+          slug: m.slug,
+          descricao: m.descricao,
+          logo: m.logo,
+          ativo: m.ativo,
+          destaque: m.destaque,
+          seo_url: m.seoUrl,
+          marca_propria: m.marcaPropria,
+          global_pleno: m.global_pleno
+        }).then(({ error: upsertError }) => {
+          if (upsertError) console.warn("Aviso ao tentar salvar marca padrao:", upsertError.message);
+        });
       }
+    } else if (data) {
+      set({ marcas: data.map(mapRowToMarca) });
     }
   },
 
