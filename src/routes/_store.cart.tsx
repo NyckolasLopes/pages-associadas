@@ -892,7 +892,7 @@ function CartPage() {
                   <div className="flex flex-wrap gap-2 mt-1">
                     {i.categoriaId === "142" && i.tarja && i.tarja !== "none" && (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm ${tarjaColor(i.tarja)}`}>
-                        {i.tarja === "Vermelha" || i.tarja === "Preta" || i.tarja === "Amarela" ? `Tarja ${i.tarja}` : i.tarja}
+                        {i.tarja === "Vermelha" || i.tarja === "Amarela" ? `Tarja ${i.tarja}` : i.tarja}
                       </span>
                     )}
                     {i.categoriaId === "142" && i.retemReceita && (

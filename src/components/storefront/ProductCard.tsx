@@ -413,7 +413,7 @@ function ProductCardComponent({
           <div className="flex flex-wrap gap-1 mt-1 mb-3 min-h-[18px]">
             {p.tarja && p.tarja !== "none" && (
               <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm ${tarjaColor(p.tarja)}`}>
-                {p.tarja === "Vermelha" || p.tarja === "Preta" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
+                {p.tarja === "Vermelha" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
               </span>
             )}
             {p.retemReceita ? (

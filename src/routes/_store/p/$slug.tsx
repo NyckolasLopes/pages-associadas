@@ -1288,7 +1288,7 @@ function PDP() {
           <div className="flex flex-wrap gap-2">
             {p.tarja && p.tarja !== "none" && (
               <span className={`text-[11px] px-2 py-0.5 rounded font-bold shadow-sm ${tarjaColor(p.tarja)}`}>
-                {p.tarja === "Vermelha" || p.tarja === "Preta" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
+                {p.tarja === "Vermelha" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
               </span>
             )}
             {p.retemReceita ? (
