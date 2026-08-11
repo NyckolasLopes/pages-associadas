@@ -37,7 +37,7 @@ interface ProductsState {
   removeProduct: (id: string, lojaId?: string | null) => void;
   getStoreEffectiveProducts: (lojaId?: string | null) => Produto[];
   resetStoreProductsToGeneral: (lojaId: string) => void;
-  importProducts: (products: Produto[], lojaId?: string | null) => void;
+  importProducts: (products: Produto[], lojaId?: string | null) => Promise<void>;
   applyBadgeToProducts: (badgeId: string, productIds: string[]) => void;
   clearProducts: (lojaId?: string | null) => void;
   formatAllTitles: () => void;
@@ -214,32 +214,71 @@ export const useAdminProducts = create<ProductsState>()(
           storeRemovedProductIds: newRemoved
         };
       }),
-      importProducts: (products, lojaId) => set((s) => {
-        if (lojaId) {
-          const currentStoreProducts = s.storeCustomProducts[lojaId] || [];
-          const newMap = new Map(currentStoreProducts.map(x => [x.id, x]));
-          products.forEach(p => {
-            newMap.set(p.id, { ...p, nome: toTitleCase(p.nome), lojaId, isIndividualLoja: true, origem: "Loja Individual", isNovo: true, isRevisado: false });
-          });
-          return {
-            storeCustomProducts: {
-              ...s.storeCustomProducts,
-              [lojaId]: Array.from(newMap.values())
-            }
-          };
-        }
-
-        // Merge without duplicates based on ID for General Base
-        const newMap = new Map(s.customProducts.map(x => [x.id, x]));
-        products.forEach(p => {
-          if (!newMap.has(p.id)) {
-            newMap.set(p.id, { ...p, nome: toTitleCase(p.nome), isNovo: true, isRevisado: false });
-          } else {
-            newMap.set(p.id, { ...p, nome: toTitleCase(p.nome) });
+      importProducts: async (products, lojaId) => {
+        // Optimistic UI Update
+        set((s) => {
+          if (lojaId) {
+            const currentStoreProducts = s.storeCustomProducts[lojaId] || [];
+            const newMap = new Map(currentStoreProducts.map(x => [x.id, x]));
+            products.forEach(p => {
+              newMap.set(p.id, { ...p, nome: toTitleCase(p.nome), lojaId, isIndividualLoja: true, origem: "Loja Individual", isNovo: true, isRevisado: false });
+            });
+            return {
+              storeCustomProducts: {
+                ...s.storeCustomProducts,
+                [lojaId]: Array.from(newMap.values())
+              }
+            };
           }
+
+          // Merge without duplicates based on ID for General Base
+          const newMap = new Map(s.customProducts.map(x => [x.id, x]));
+          products.forEach(p => {
+            if (!newMap.has(p.id)) {
+              newMap.set(p.id, { ...p, nome: toTitleCase(p.nome), isNovo: true, isRevisado: false });
+            } else {
+              newMap.set(p.id, { ...p, nome: toTitleCase(p.nome) });
+            }
+          });
+          return { customProducts: Array.from(newMap.values()) };
         });
-        return { customProducts: Array.from(newMap.values()) };
-      }),
+
+        // Supabase DB Update for global products
+        if (!lojaId) {
+          const chunkSize = 100;
+          for (let i = 0; i < products.length; i += chunkSize) {
+            const chunk = products.slice(i, i + chunkSize);
+            const upsertData = chunk.map(p => ({
+              id: p.id,
+              ean: p.ean || null,
+              codigo_interno: p.codigoInterno || null,
+              nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
+              descricao: p.descricao || null,
+              slug: p.slug || p.url || p.id,
+              fabricante: p.fabricante || null,
+              marca: p.marca || null,
+              preco_de: p.precoDe || 0,
+              preco_por: p.precoPor || 0,
+              estoque: p.estoque || 0,
+              registro_anvisa: p.registroAnvisa || null,
+              tarja: p.tarja || null,
+              retem_receita: p.retemReceita || false,
+              generico: p.generico || false,
+              possui_imagem: p.possuiImagem || false,
+              categoria_id: p.categoriaId || null,
+              subcategoria_id: p.subcategoriaId || null,
+              categorias_adicionais: p.categoriasAdicionais || [],
+              internal_tags: p.internalTags || [],
+              ativo: p.ativo ?? true
+            }));
+            
+            const { error } = await supabase.from('produtos').upsert(upsertData, { onConflict: 'id' });
+            if (error) {
+              console.error('Error batch upserting products:', error);
+            }
+          }
+        }
+      },
       applyBadgeToProducts: (badgeId, productIds) => set((s) => {
         const idSet = new Set(productIds);
         const updated = s.customProducts.map(p => {
