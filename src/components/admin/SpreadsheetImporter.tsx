@@ -45,20 +45,16 @@ interface FieldMapping {
 }
 
 const FIELD_MAPPINGS: FieldMapping[] = [
-  { key: "id", label: "Código Interno", aliases: ["codigo interno", "código interno", "codigo", "código", "code", "cod", "idproduto", "id_produto", "id"], required: true, type: "string" },
-  { key: "ean", label: "EAN / Código de Barras", aliases: ["ean", "gtin", "codigo de barras", "código de barras", "barcode", "cod barras", "codbarras", "cod_barras"], required: true, type: "string" },
-  { key: "nome", label: "Nome do Produto", aliases: ["nome", "name", "produto", "descricao", "descrição", "descrição do produto", "desc", "titulo", "título"], required: true, type: "string" },
-  { key: "descricao", label: "Descrição", aliases: ["descricao", "descrição", "description", "desc_longa", "descricao_completa"], required: false, type: "string" },
-  { key: "fabricante", label: "Fabricante / Marca", aliases: ["fabricante", "marca", "laboratório", "laboratorio", "lab", "brand", "manufacturer", "fornecedor"], required: false, type: "string" },
-  { key: "precoDe", label: "Preço De (Original)", aliases: ["preço de", "preco de", "preço original", "pmc", "preco_de", "preçode", "pmc_max", "preco original", "preco_original"], required: false, type: "number" },
-  { key: "precoPor", label: "Preço Por (Venda)", aliases: ["preço por", "preco por", "preço venda", "preco_por", "preçopor", "preco", "preço", "valor", "preco_venda", "preço de venda", "price"], required: true, type: "number" },
-  { key: "estoque", label: "Estoque", aliases: ["estoque", "stock", "qty", "quantidade", "qtd", "qtde", "saldo", "estoque_disponivel"], required: false, type: "number" },
-  { key: "registroAnvisa", label: "Registro ANVISA", aliases: ["registro anvisa", "anvisa", "ms", "registro ms", "reg_anvisa", "registroanvisa", "registro"], required: false, type: "string" },
-  { key: "tarja", label: "Tarja", aliases: ["tarja", "tipo tarja", "classificação", "classificacao"], required: false, type: "tarja" },
-  { key: "retemReceita", label: "Retém Receita", aliases: ["retem receita", "retemreceita", "receita", "retem_receita", "retém receita", "controle especial"], required: false, type: "boolean" },
-  { key: "generico", label: "Genérico", aliases: ["generico", "genérico", "é genérico", "is_generic"], required: false, type: "boolean" },
-  { key: "categoriaId", label: "Categoria (Nome ou ID)", aliases: ["categoria", "categoriaid", "categoria_id", "cat_id", "cat", "category", "departamento"], required: false, type: "string" },
-  { key: "subcategoriaId", label: "Subcategoria (Nome ou ID)", aliases: ["subcategoria", "subcategoriaid", "subcategoria_id", "subcat_id", "subcat", "subcategory", "secao"], required: false, type: "string" },
+  { key: "id", label: "ID/CÓDIGO INTERNO", aliases: ["id/código interno", "codigo interno", "código interno", "codigo", "código", "idproduto", "id_produto", "id"], required: true, type: "string" },
+  { key: "ean", label: "EAN/CÓDIGO DE BARRAS", aliases: ["ean/código de barras", "ean", "gtin", "codigo de barras", "código de barras", "barcode"], required: true, type: "string" },
+  { key: "nome", label: "DESCRIÇÃO COMERCIAL/NOME DO PRODUTO", aliases: ["descrição comercial/nome do produto", "descrição comercial", "descricao comercial", "nome do produto", "nome", "produto", "titulo"], required: true, type: "string" },
+  { key: "descricao", label: "DESCRIÇÃO LONGA", aliases: ["descrição longa", "descricao longa", "descrição", "descricao"], required: false, type: "string" },
+  { key: "categoriaId", label: "ID CATEGORIA", aliases: ["id categoria", "categoriaid", "id_categoria", "cat_id"], required: false, type: "string" },
+  { key: "subcategoriaId", label: "ID SUBCATEGORIA", aliases: ["id subcategoria", "subcategoriaid", "id_subcategoria", "subcat_id"], required: false, type: "string" },
+  { key: "fabricante", label: "FABRICANTE (MARCA)", aliases: ["fabricante (marca)", "fabricante", "marca", "laboratório", "laboratorio", "brand"], required: false, type: "string" },
+  { key: "registroAnvisa", label: "MS/REGISTRO ANVISA", aliases: ["ms/registro anvisa", "registro anvisa", "ms", "registro ms", "reg_anvisa", "registroanvisa", "registro"], required: false, type: "string" },
+  { key: "tarja", label: "TARJA", aliases: ["tarja", "tipo tarja", "classificação"], required: false, type: "tarja" },
+  { key: "retemReceita", label: "RETÉM RECEITA", aliases: ["retém receita", "retem receita", "retemreceita", "receita", "controle especial"], required: false, type: "boolean" },
 ];
 
 const TARJA_VALUES: Tarja[] = ["Sem Tarja", "Vermelha", "Vermelha Retém Receita", "Preta", "Amarela"];

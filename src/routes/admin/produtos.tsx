@@ -153,24 +153,28 @@ function AdminProdutos() {
 
 
   const handleExportJson = () => {
-    // Exportar apenas um produto como modelo de API
-    const baseProduct = currentProductsList.length > 0 ? currentProductsList[0] : {} as any;
-    
-    // Forçar estrutura completa do JSON para documentar a API
-    const modelProduct = {
-      ...baseProduct,
-      ean: baseProduct.ean || "",
-      ean2: baseProduct.ean2 || "",
-      ean3: baseProduct.ean3 || "",
-      estoqueExterno: baseProduct.estoqueExterno || {
-        distribuidor: "",
-        cidadeDistribuidor: "",
-        prazoEntregaDias: 0,
-        apiUrl: ""
-      }
-    };
-    
-    const exportData = currentProductsList.length > 0 ? [modelProduct] : [];
+    const exportData = currentProductsList.map(p => {
+      // Find category and subcategory names if possible
+      const cat = categorias.find((c: any) => c.id === p.categoriaId);
+      const sub = categorias.find((c: any) => c.id === p.subcategoriaId);
+
+      return {
+        "ID/CÓDIGO INTERNO": p.id,
+        "EAN/CÓDIGO DE BARRAS": p.ean || "",
+        "DESCRIÇÃO COMERCIAL/NOME DO PRODUTO": p.nome,
+        "DESCRIÇÃO LONGA": p.descricao || "",
+        "CATEGORIA": cat ? cat.nome : (p.categoria || ""),
+        "ID CATEGORIA": p.categoriaId || "",
+        "SUBCATEGORIA": sub ? sub.nome : "",
+        "ID SUBCATEGORIA": p.subcategoriaId || "",
+        "FABRICANTE (MARCA)": p.marca || p.fabricante || "",
+        "DCB/ PRINCIPIO ATIVO": (p.principiosAtivosDetalhes || []).map((pa: any) => pa.nome).join(', ') || "",
+        "MS/REGISTRO ANVISA": p.registroAnvisa || "",
+        "RETÉM RECEITA": p.retemReceita ? "SIM" : "NÃO",
+        "TARJA": p.tarja || "Sem Tarja"
+      };
+    });
+
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
     const dlAnchorElem = document.createElement("a");
     dlAnchorElem.setAttribute("href", dataStr);
