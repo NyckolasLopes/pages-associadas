@@ -296,10 +296,9 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
   if (asPage) {
     return (
-      <div className="flex flex-col bg-slate-100 -mt-4 md:-mt-8 -mx-4 md:-mx-8 min-h-[calc(100vh-4rem)]">
-        {content}
-        {syncModal}
-      </div>
+        <div className="flex flex-col bg-slate-100 -mt-4 md:-mt-8 -mx-4 md:-mx-8 min-h-[calc(100vh-4rem)]">
+          {content}
+        </div>
     );
   }
 
@@ -311,7 +310,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           {content}
         </DialogContent>
       </Dialog>
-      {syncModal}
     </>
   );
 }
