@@ -801,6 +801,7 @@ export const useAdmin = create<AdminState>()(
             latitude: l.latitude,
             longitude: l.longitude,
             categoriaAssociado: l.categoria_associado as any,
+            trabalhaComEncarte: l.trabalha_com_encarte,
             isVirtualStoreGenerated: !!l.status_loja_virtual,
             virtualStoreStatus: l.status_loja_virtual,
           })) as unknown as Pharmacy[];
@@ -812,6 +813,7 @@ export const useAdmin = create<AdminState>()(
           id: p.id,
           ativa: p.ativo ?? true,
           categoria_associado: p.categoriaAssociado,
+          trabalha_com_encarte: p.trabalhaComEncarte,
           cnpj: p.cnpj,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,
@@ -841,6 +843,7 @@ export const useAdmin = create<AdminState>()(
         const { error } = await supabase.from('lojas').update({
           ativa: p.ativo ?? true,
           categoria_associado: p.categoriaAssociado,
+          trabalha_com_encarte: p.trabalhaComEncarte,
           cnpj: p.cnpj,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,
