@@ -109,18 +109,26 @@ export const useAdminProducts = create<ProductsState>()(
       loadProducts: async () => {
         if (get()._loaded) return;
         
-        // Em um sistema multi-tenant completo, nós não carregaríamos TUDO.
-        // Porém, como o sistema ainda possui dependências síncronas que filtram localmente,
-        // continuaremos carregando todos os produtos e o RLS fará o filtro (ou a query).
-        const { data, error } = await supabase
-          .from('produtos')
-          .select('*')
-          .order('nome', { ascending: true });
+        let allData = [];
+        let from = 0;
+        const step = 999;
         
-        if (!error && data) {
-          const mapped = data.map(mapRowToProduto);
-          set({ customProducts: mapped, _loaded: true });
+        while (true) {
+          const { data, error } = await supabase
+            .from('produtos')
+            .select('*')
+            .order('nome', { ascending: true })
+            .range(from, from + step);
+            
+          if (error || !data || data.length === 0) break;
+          allData = allData.concat(data);
+          
+          if (data.length < step + 1) break;
+          from += step + 1;
         }
+        
+        const mapped = allData.map(mapRowToProduto);
+        set({ customProducts: mapped, _loaded: true });
       },
       addOrUpdateProduct: async (p, lojaId) => {
         const formattedProduct = { ...p, nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "" };

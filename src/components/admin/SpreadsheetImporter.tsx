@@ -316,7 +316,7 @@ type Step = "upload" | "mapping" | "preview" | "processing" | "done" | "error";
 interface SpreadsheetImporterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (products: Produto[]) => void;
+  onImport: (products: Produto[]) => Promise<void> | void;
 }
 
 export function SpreadsheetImporter({ open, onOpenChange, onImport }: SpreadsheetImporterProps) {

@@ -250,8 +250,8 @@ function AdminProdutos() {
     toast.success("Feed do Google Shopping XML gerado com sucesso!");
   };
 
-  const handleSpreadsheetImport = (products: Produto[]) => {
-    importProducts(products, currentLojaId);
+  const handleSpreadsheetImport = async (products: Produto[]) => {
+    await importProducts(products, currentLojaId);
     toast.success(
       currentLojaId
         ? `Planilha importada com sucesso exclusivamente para a loja ${currentLoja?.nome || ""}!`
