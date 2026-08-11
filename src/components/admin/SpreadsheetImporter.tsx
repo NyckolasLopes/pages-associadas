@@ -439,7 +439,7 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
     // Simula erro APENAS se o nome do arquivo contiver a palavra "erro" (para fins de teste do usuário)
     const simulateError = fileName.toLowerCase().includes("erro");
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         if (simulateError) {
           setImportError("Não foi possível subir seus produtos. O motivo do erro foi: Falha de conexão com o banco de dados (ERR_TIMEOUT_504)");
@@ -451,12 +451,10 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
             dataImportacao: new Date().toISOString()
           }));
           
-          // Execute state update before calling parent onImport, 
-          // just in case parent's onImport throws an error or blocks the thread
+          await onImport(enrichedProducts);
+          
           setStep("done");
           toast.success(`${parsedProducts.length} produtos importados com sucesso!`);
-          
-          onImport(enrichedProducts);
           
           setTimeout(() => {
             handleClose();
