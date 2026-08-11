@@ -44,7 +44,31 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      let normalized = await normalizeCatastrophicSsrResponse(response);
+
+      // Edge Caching Strategy
+      try {
+        const url = new URL(request.url);
+        const noCachePaths = ['/admin', '/login', '/cart', '/checkout', '/perfil', '/pedidos', '/cadastro', '/inscricao', '/painel-loja'];
+        const shouldCache = request.method === 'GET' && 
+                            normalized.status === 200 && 
+                            !noCachePaths.some(p => url.pathname.startsWith(p));
+        
+        if (shouldCache) {
+          const newHeaders = new Headers(normalized.headers);
+          // Cache on Vercel CDN for 60 seconds, serve stale for up to 5 minutes while revalidating
+          newHeaders.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+          normalized = new Response(normalized.body, {
+            status: normalized.status,
+            statusText: normalized.statusText,
+            headers: newHeaders
+          });
+        }
+      } catch (e) {
+        // Ignore URL parsing errors
+      }
+
+      return normalized;
     } catch (error: any) {
       console.error(error);
       return new Response(renderErrorPage(error?.stack || error?.message || String(error)), {

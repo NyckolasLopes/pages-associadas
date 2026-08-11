@@ -6,8 +6,8 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60 * 1000, // 1 minuto de cache local ativo
-        gcTime: 10 * 60 * 1000, // 10 minutos de coleta de lixo
+        staleTime: 5 * 60 * 1000, // 5 minutos de cache local ativo
+        gcTime: 30 * 60 * 1000, // 30 minutos de coleta de lixo
         refetchOnWindowFocus: false, // Previne thundering herd em alternância de abas
         refetchOnReconnect: false,
         retry: 1,
