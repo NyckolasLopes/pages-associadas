@@ -40,9 +40,10 @@ function AdminProdutosPrecos() {
     return userGroup?.permissao_total || false;
   };
 
-  const userStores = isGlobalAdmin() 
+  const userStores = (isGlobalAdmin() 
     ? pharmacies 
-    : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id));
+    : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id)))
+    .filter(p => p.categoriaAssociado !== 'Parceiro' && p.trabalhaComEncarte !== false);
 
   const defaultSelection = userStores[0]?.id || "";
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>(defaultSelection);

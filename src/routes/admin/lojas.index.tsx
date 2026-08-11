@@ -869,53 +869,6 @@ function LojasAdmin() {
             )}
           </div>
         </FormSection>
-
-        {/* ========== DADOS DE RASTREAMENTO (TRACKING) ========== */}
-        <FormSection icon={<Zap className="h-4 w-4 text-orange-600" />} title="Pixels e Rastreamento">
-          <div className="grid gap-4 border rounded-lg p-4 bg-slate-50">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <FieldLabel>Google Analytics ID</FieldLabel>
-                <Input
-                  value={form.googleAnalyticsId || ""}
-                  onChange={(e) => update({ googleAnalyticsId: e.target.value })}
-                  placeholder="Ex: G-XXXXXXXX"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Google Ads ID</FieldLabel>
-                <Input
-                  value={form.googleAdsId || ""}
-                  onChange={(e) => update({ googleAdsId: e.target.value })}
-                  placeholder="Ex: AW-XXXXXXXX"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Google Tag Manager ID</FieldLabel>
-                <Input
-                  value={form.googleTagManagerId || ""}
-                  onChange={(e) => update({ googleTagManagerId: e.target.value })}
-                  placeholder="Ex: GTM-XXXXXXX"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Pixel do Facebook ID</FieldLabel>
-                <Input
-                  value={form.facebookPixelId || ""}
-                  onChange={(e) => update({ facebookPixelId: e.target.value })}
-                  placeholder="Ex: 1234567890"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <FieldLabel>ChatGPT Ads ID</FieldLabel>
-                <Input
-                  value={form.chatgptAdsId || ""}
-                  onChange={(e) => update({ chatgptAdsId: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-        </FormSection>
           </div>
 
           <DialogFooter className="pt-4 border-t">
