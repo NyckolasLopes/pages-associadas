@@ -251,8 +251,8 @@ function AdminLayout() {
 
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
   const userStores = isGlobalAdmin 
-    ? pharmacies 
-    : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id));
+      ? pharmacies 
+      : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id) || p.id === currentUser?.lojaId);
 
   // If user only has one store, auto-select it if none selected
   useEffect(() => {
