@@ -124,6 +124,8 @@ function getSubcategoryIcon(name: string) {
 }
 
 export function Header() {
+    const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
+    const activePharmacy = useAdmin.getState().pharmacies.find((p) => p.id === selectedPharmacyId) || useAdmin.getState().pharmacies[0] || null;
   const params = useParams({ strict: false });
   const isStoreContext = !!(params && (params as any).storeSlug);
   const customProducts = useAdminProducts(s => s.customProducts);
@@ -1191,7 +1193,7 @@ function CartDrawer() {
   const pbmDisc = useCart((s) => s.pbmDiscount());
   const total = useCart((s) => s.total());
   const pbm = useCart((s) => s.pbm);
-  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  
   const cartNotifications = useCart((s) => s.notifications);
   const clearCartNotifications = useCart((s) => s.clearNotifications);
   const promocoes = useMarketing((s) => s.promocoes);
