@@ -27,6 +27,24 @@ function mapRowToMarca(d: any): Marca {
   };
 }
 
+const initialMarcas = [
+  { id: "301", nome: "Revitart", slug: "revitart", descricao: "Produtos da linha Revitart.", logo: "/marcas/revitart.png", ativo: true, destaque: true, seoUrl: "revitart", marcaPropria: true, global_pleno: true },
+  { id: "302", nome: "Santo Hábito", slug: "santo-habito", descricao: "Produtos da linha Santo Hábito.", logo: "/marcas/santo-habito.png", ativo: true, destaque: true, seoUrl: "santo-habito", marcaPropria: true, global_pleno: true },
+  { id: "303", nome: "Revigore", slug: "revigore", descricao: "Produtos da linha Revigore.", logo: "/marcas/revigore.png", ativo: true, destaque: true, seoUrl: "revigore", marcaPropria: true, global_pleno: true },
+  { id: "304", nome: "Revimel", slug: "revimel", descricao: "Produtos da linha Revimel.", logo: "/marcas/revimel.png", ativo: true, destaque: true, seoUrl: "revimel", marcaPropria: true, global_pleno: true },
+  { id: "305", nome: "Crescendo", slug: "crescendo", descricao: "Produtos da linha Crescendo.", logo: "/marcas/crescendo.png", ativo: true, destaque: true, seoUrl: "crescendo", marcaPropria: true, global_pleno: true },
+  { id: "306", nome: "Vita Magna", slug: "vita-magna", descricao: "Produtos da linha Vita Magna.", logo: "/marcas/vita-magna.png", ativo: true, destaque: true, seoUrl: "vita-magna", marcaPropria: true, global_pleno: true },
+  { id: "m1", nome: "CIMED", slug: "cimed", descricao: "Produtos Cimed.", logo: "/marcas/cimed.png", ativo: true, destaque: true, seoUrl: "cimed", marcaPropria: false, global_pleno: true },
+  { id: "m2", nome: "NEO QUÍMICA", slug: "neo-quimica", descricao: "Produtos Neo Química.", logo: "/marcas/neo-quimica.png", ativo: true, destaque: true, seoUrl: "neo-quimica", marcaPropria: false, global_pleno: true },
+  { id: "m3", nome: "PFIZER", slug: "pfizer", descricao: "Produtos Pfizer.", logo: "/marcas/pfizer.png", ativo: true, destaque: true, seoUrl: "pfizer", marcaPropria: false, global_pleno: true },
+  { id: "m4", nome: "ROCHE", slug: "roche", descricao: "Produtos Roche.", logo: "/marcas/roche.png", ativo: true, destaque: true, seoUrl: "roche", marcaPropria: false, global_pleno: true },
+  { id: "m5", nome: "L'ORÉAL", slug: "loreal", descricao: "Produtos L'Oréal.", logo: "/marcas/loreal.png", ativo: true, destaque: true, seoUrl: "loreal", marcaPropria: false, global_pleno: true },
+  { id: "m6", nome: "NIVEA", slug: "nivea", descricao: "Produtos Nivea.", logo: "/marcas/nivea.png", ativo: true, destaque: true, seoUrl: "nivea", marcaPropria: false, global_pleno: true },
+  { id: "m7", nome: "VICK", slug: "vick", descricao: "Produtos Vick.", logo: "/marcas/vick.png", ativo: true, destaque: true, seoUrl: "vick", marcaPropria: false, global_pleno: true },
+  { id: "m8", nome: "REXONA", slug: "rexona", descricao: "Produtos Rexona.", logo: "/marcas/rexona.png", ativo: true, destaque: true, seoUrl: "rexona", marcaPropria: false, global_pleno: true },
+  { id: "m9", nome: "JOHNSON'S", slug: "johnsons", descricao: "Produtos Johnson's.", logo: "/marcas/johnsons.png", ativo: true, destaque: true, seoUrl: "johnsons", marcaPropria: false, global_pleno: true }
+];
+
 export const useMarcasStore = create<MarcasState>((set, get) => ({
   marcas: [],
 
@@ -37,7 +55,29 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
       .order('nome', { ascending: true });
 
     if (!error && data) {
-      set({ marcas: data.map(mapRowToMarca) });
+      if (data.length === 0) {
+        // Se estiver vazio, insere as marcas iniciais
+        for (const m of initialMarcas) {
+          await supabase.from('marcas' as any).upsert({
+            id: m.id,
+            nome: m.nome,
+            slug: m.slug,
+            descricao: m.descricao,
+            logo: m.logo,
+            ativo: m.ativo,
+            destaque: m.destaque,
+            seo_url: m.seoUrl,
+            marca_propria: m.marcaPropria,
+            global_pleno: m.global_pleno
+          });
+        }
+        
+        // Recarrega apos inserir
+        const res = await supabase.from('marcas' as any).select('*').order('nome', { ascending: true });
+        if (res.data) set({ marcas: res.data.map(mapRowToMarca) });
+      } else {
+        set({ marcas: data.map(mapRowToMarca) });
+      }
     }
   },
 
