@@ -346,6 +346,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
                   <Input 
+                    disabled={!isGlobalAdmin && isMedicamento}
                     type="number" 
                     step="0.01" 
                     value={formData.precoPor || ""} 
@@ -354,7 +355,10 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     placeholder="0.00" 
                   />
                 </div>
-                {!isGlobalAdmin && (
+                {!isGlobalAdmin && isMedicamento && (
+                  <div className="mt-1 text-xs text-red-500 font-medium">Preço de medicamentos bloqueado para edição.</div>
+                )}
+                {!isGlobalAdmin && !isMedicamento && (
                   <div className="mt-1 text-xs font-bold">
                     {(() => {
                       const basePrice = customProducts.find(p => p.id === formData.id)?.precoPor || 0;

@@ -1,9 +1,44 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useAdmin } from "@/stores/admin";
+import { useCart } from "@/stores/cart";
 
 export const Route = createFileRoute("/")({
   component: Index,
 });
 
+function slugify(text: string): string {
+  if (!text) return "";
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]+/g, "")
+    .replace(/--+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "");
+}
+
 function Index() {
-  return <Navigate to="/admin" replace />;
+  const navigate = useNavigate();
+  const pharmacies = useAdmin((s) => s.pharmacies);
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  
+  useEffect(() => {
+    if (pharmacies && pharmacies.length > 0) {
+      let store = pharmacies.find((p) => p.id === selectedPharmacyId);
+      if (!store) store = pharmacies[0];
+      
+      const slug = slugify(store.nome);
+      navigate({ to: "/_store/$storeSlug", params: { storeSlug: slug } as any, replace: true });
+    }
+  }, [pharmacies, selectedPharmacyId, navigate]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
+  );
 }

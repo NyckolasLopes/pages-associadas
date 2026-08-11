@@ -68,6 +68,17 @@ const adminLoginSchema = z.object({
   pass: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.")
 });
 
+function slugify(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
 });
@@ -118,6 +129,40 @@ function NavSection({
 const subLinkClass =
   "flex items-center gap-2.5 px-3 py-1.5 text-[13px] rounded-md text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary transition-colors";
 
+
+// ---- Inactivity Hook ----
+function useInactivityTimeout(timeoutMs: number, onTimeout: () => void, isActive: boolean) {
+  useEffect(() => {
+    if (!isActive) return;
+
+    let timeoutId: NodeJS.Timeout;
+    let lastActivity = Date.now();
+
+    const resetTimer = () => {
+      if (Date.now() - lastActivity > timeoutMs) {
+         onTimeout();
+         return;
+      }
+      lastActivity = Date.now();
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        onTimeout();
+      }, timeoutMs);
+    };
+
+    resetTimer();
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+    const handleEvent = () => resetTimer();
+    events.forEach(e => window.addEventListener(e, handleEvent));
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(e => window.removeEventListener(e, handleEvent));
+    };
+  }, [timeoutMs, onTimeout, isActive]);
+}
+
 function AdminLayout() {
   const { currentUser, login, logout, register, users, pharmacies, hasPermission, activeStoreId, setActiveStoreId, grupos } = useAdmin();
   const can = (perm: string) => currentUser?.proprietario || hasPermission(perm);
@@ -128,9 +173,17 @@ function AdminLayout() {
   const [mounted, setMounted] = useState(false);
   const [openNavSection, setOpenNavSection] = useState<string>("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [storeSelectorOpen, setStoreSelectorOpen] = useState(false);
 
   const { orders } = useOrders();
   const prevOrdersRef = useRef(orders);
+
+  useInactivityTimeout(3 * 60 * 1000, () => {
+    toast.error("Sessão expirada por inatividade. Faça login novamente.", { duration: 5000 });
+    logout();
+    setTimeout(() => window.location.reload(), 1000);
+  }, !!currentUser);
+
 
   useEffect(() => {
     setMounted(true);
@@ -497,7 +550,23 @@ function AdminLayout() {
           <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50" onClick={logout}>
             <LogOut className="h-4 w-4 mr-2" /> Sair
           </Button>
-          <Link to="/" className="w-full block text-center mt-4 text-xs text-muted-foreground hover:underline">Voltar à loja</Link>
+          {!isGlobalAdmin && (
+              <button 
+                onClick={() => {
+                  const userStores = pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id) || p.id === currentUser?.lojaId);
+                  if (userStores.length === 1) {
+                    window.open(`/${slugify(userStores[0].nome)}`, '_blank');
+                  } else if (userStores.length > 1) {
+                    setStoreSelectorOpen(true);
+                  } else {
+                    window.open('/', '_blank');
+                  }
+                }}
+                className="w-full block text-center mt-4 text-xs text-muted-foreground hover:underline"
+              >
+                Voltar à loja
+              </button>
+            )}
         </div>
       </aside>
       

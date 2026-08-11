@@ -606,11 +606,7 @@ function CartPage() {
                   setPharmacyDialogOpen(open);
                 }}
               >
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full md:w-auto shrink-0">
-                    {selectedPharmacy ? "Alterar farmácia" : "Selecionar farmácia"}
-                  </Button>
-                </DialogTrigger>
+                
                 <DialogContent className="max-w-md">
                   <DialogHeader>
                     <DialogTitle>Selecione uma farmácia</DialogTitle>
@@ -996,6 +992,69 @@ function CartPage() {
 
         <aside className="lg:sticky lg:top-32 h-fit space-y-4">
           <div className="bg-card border rounded-xl p-5 shadow-sm">
+            <h3 className="font-bold mb-2">{items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Local do Atendimento:" : "Opções de Frete & Entrega:"}</h3>
+            {!selectedPharmacy ? (
+              <p className="text-sm text-muted-foreground bg-slate-50 p-3 rounded text-center font-medium border border-slate-100">
+                Por favor, selecione uma farmácia para ver as opções disponíveis para o seu carrinho.
+              </p>
+            ) : (
+              <>
+                <div className="flex gap-2 mb-1">
+                  <Input placeholder="00000-000" maxLength={9} value={cep} disabled={isCalcLoading} onChange={(e) => setCep(e.target.value)} />
+                  <Button variant="outline" disabled={isCalcLoading} onClick={calcFreight}>
+                    {isCalcLoading ? "Calculando..." : items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Buscar unidades" : "Calcular"}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mb-3">Preencha seu CEP para estimar o valor e o prazo de entrega.</p>
+                <div className="mt-3 space-y-2">
+                  {items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) && (
+                    <div className="bg-blue-50 text-blue-800 text-xs font-bold p-3 rounded border border-blue-200">
+                      O carrinho contém serviços de saúde. A realização é feita presencialmente na farmácia.
+                    </div>
+                  )}
+                  {items.some(i => i.retemReceita) && (
+                    <div className="bg-red-50 text-red-800 text-xs font-bold p-3 rounded border border-red-200">
+                      O carrinho contém produtos com retenção de receita. Portanto, apenas a opção de retirada está disponível.
+                    </div>
+                  )}
+                  {freight?.map((f) => {
+                    const Icon = f.icon;
+                    const active = selected === f.id;
+                    return (
+                      <label
+                        key={f.id}
+                        className={`flex items-center gap-2 border rounded-lg p-3 cursor-pointer ${active ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="freight"
+                          checked={active}
+                          onChange={() => setSelected(f.id)}
+                        />
+                        <Icon className={`h-4 w-4 ${f.price === 0 ? "text-green-600" : "text-primary"}`} />
+                        <div className="flex-1">
+                          <div className="text-sm font-bold">{f.label}</div>
+                          <div className="text-xs text-muted-foreground">{f.eta}</div>
+                        </div>
+                        <span className={`text-sm font-bold ${f.price === 0 ? "text-green-600" : ""}`}>
+                          {f.price === 0 ? "Grátis" : brl(f.price)}
+                        </span>
+                      </label>
+                    );
+                  })}
+
+                  {selected === "pickup" && selectedPharmacy && (
+                    <div className="bg-emerald-50 text-emerald-900 text-xs p-3 rounded border border-emerald-200 mt-3 animate-in fade-in slide-in-from-top-2">
+                      <div className="font-bold flex items-center gap-1.5 mb-1.5"><MapPin className="h-4 w-4"/> {hasService ? "Local de Realização do Serviço" : "Atenção ao Endereço de Retirada"}</div>
+                      <p>{hasService ? "Dirija-se ao local abaixo para realização do serviço:" : "O seu pedido deverá ser retirado presencialmente no seguinte endereço:"}</p>
+                      <p className="mt-1.5 font-bold text-sm bg-white p-2 rounded shadow-sm border border-emerald-100">{selectedPharmacy.endereco}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        \n\n            <div className="bg-card border rounded-xl p-5 shadow-sm">
             <h2 className="font-bold mb-3 flex items-center gap-2 text-base">
               <ShoppingBag className="h-5 w-5 text-primary" /> Resumo do Pedido
             </h2>
@@ -1079,7 +1138,7 @@ function CartPage() {
               size="lg"
               onClick={goToCheckout}
             >
-              <MessageCircle className="h-5 w-5" /> Finalizar Pedido no WhatsApp
+              <MessageCircle className="h-5 w-5" /> Finalizar Pedido
             </Button>
             <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -1087,70 +1146,7 @@ function CartPage() {
             </p>
           </div>
 
-          <div className="bg-card border rounded-xl p-5 shadow-sm">
-            <h3 className="font-bold mb-2">{items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Local do Atendimento:" : "Opções de Frete & Entrega:"}</h3>
-            {!selectedPharmacy ? (
-              <p className="text-sm text-muted-foreground bg-slate-50 p-3 rounded text-center font-medium border border-slate-100">
-                Por favor, selecione uma farmácia para ver as opções disponíveis para o seu carrinho.
-              </p>
-            ) : (
-              <>
-                <div className="flex gap-2 mb-1">
-                  <Input placeholder="00000-000" maxLength={9} value={cep} disabled={isCalcLoading} onChange={(e) => setCep(e.target.value)} />
-                  <Button variant="outline" disabled={isCalcLoading} onClick={calcFreight}>
-                    {isCalcLoading ? "Calculando..." : items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Buscar unidades" : "Calcular"}
-                  </Button>
-                </div>
-                <p className="text-[10px] text-muted-foreground mb-3">Preencha seu CEP para estimar o valor e o prazo de entrega.</p>
-                <div className="mt-3 space-y-2">
-                  {items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) && (
-                    <div className="bg-blue-50 text-blue-800 text-xs font-bold p-3 rounded border border-blue-200">
-                      O carrinho contém serviços de saúde. A realização é feita presencialmente na farmácia.
-                    </div>
-                  )}
-                  {items.some(i => i.retemReceita) && (
-                    <div className="bg-red-50 text-red-800 text-xs font-bold p-3 rounded border border-red-200">
-                      O carrinho contém produtos com retenção de receita. Portanto, apenas a opção de retirada está disponível.
-                    </div>
-                  )}
-                  {freight?.map((f) => {
-                    const Icon = f.icon;
-                    const active = selected === f.id;
-                    return (
-                      <label
-                        key={f.id}
-                        className={`flex items-center gap-2 border rounded-lg p-3 cursor-pointer ${active ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}
-                      >
-                        <input
-                          type="radio"
-                          name="freight"
-                          checked={active}
-                          onChange={() => setSelected(f.id)}
-                        />
-                        <Icon className={`h-4 w-4 ${f.price === 0 ? "text-green-600" : "text-primary"}`} />
-                        <div className="flex-1">
-                          <div className="text-sm font-bold">{f.label}</div>
-                          <div className="text-xs text-muted-foreground">{f.eta}</div>
-                        </div>
-                        <span className={`text-sm font-bold ${f.price === 0 ? "text-green-600" : ""}`}>
-                          {f.price === 0 ? "Grátis" : brl(f.price)}
-                        </span>
-                      </label>
-                    );
-                  })}
-
-                  {selected === "pickup" && selectedPharmacy && (
-                    <div className="bg-emerald-50 text-emerald-900 text-xs p-3 rounded border border-emerald-200 mt-3 animate-in fade-in slide-in-from-top-2">
-                      <div className="font-bold flex items-center gap-1.5 mb-1.5"><MapPin className="h-4 w-4"/> {hasService ? "Local de Realização do Serviço" : "Atenção ao Endereço de Retirada"}</div>
-                      <p>{hasService ? "Dirija-se ao local abaixo para realização do serviço:" : "O seu pedido deverá ser retirado presencialmente no seguinte endereço:"}</p>
-                      <p className="mt-1.5 font-bold text-sm bg-white p-2 rounded shadow-sm border border-emerald-100">{selectedPharmacy.endereco}</p>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </aside>
+\n          </aside>
       </div>
 
       {/* Modal de Finalização via WhatsApp */}
