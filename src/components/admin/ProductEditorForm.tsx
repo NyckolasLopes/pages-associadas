@@ -123,7 +123,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const content = (
     <>
         {/* Header Fixo */}
-        <div className="flex items-center justify-between px-8 py-4 bg-white border-b sticky top-0 z-20 shadow-sm">
+        <div className="flex items-center justify-between px-8 py-4 bg-white border-b sticky -top-4 md:-top-8 z-20 shadow-sm">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-800">
