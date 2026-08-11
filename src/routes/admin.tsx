@@ -389,7 +389,7 @@ function AdminLayout() {
           {/* ---- PEDIDOS ---- */}
           {(can('vendas_pedidos') || !isGlobalAdmin) && (
             <NavSection icon={<Inbox className="h-4 w-4" />} label="Pedidos" open={openNavSection === "Pedidos" || openNavSection === "Vendas"} onToggle={() => setOpenNavSection(openNavSection === "Pedidos" ? "" : "Pedidos")}>
-              <Link to="/admin/pedidos" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? 'Pedidos de Lojas' : 'Meus pedidos'}</Link>
+              <Link to="/admin/pedidos" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? 'Pedidos Lojas' : 'Meus pedidos'}</Link>
             </NavSection>
           )}
 
