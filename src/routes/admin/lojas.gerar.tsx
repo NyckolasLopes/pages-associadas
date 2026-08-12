@@ -139,31 +139,33 @@ function GerarLojaPage() {
                     <Store className="w-6 h-6" />
                   </div>
                   <div className="min-w-0 flex-1 pr-16">
-                    <h3 className="font-bold text-slate-900 text-base truncate flex items-center gap-2">
+                    <h3 className="font-bold text-slate-900 text-lg truncate mb-1">
                       {pharmacy.nome}
+                    </h3>
+                    <div className="flex flex-col gap-2">
                       {(() => {
                         const cat = pharmacy.categoriaAssociado || 'Parceiro';
                         const displayCat = cat.toLowerCase() === 'padrão' ? 'Parceiro' : cat;
                         return (
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border w-fit ${
                             displayCat === 'Pleno' 
-                              ? 'bg-blue-100 text-blue-700' 
-                              : 'bg-purple-100 text-purple-700'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm' 
+                              : 'bg-purple-50 text-purple-700 border-purple-200 shadow-sm'
                           }`}>
-                            {displayCat}
-                          </span>
+                            {displayCat === 'Pleno' ? 'Loja Pleno' : 'Loja Parceiro'}
+                          </div>
                         );
                       })()}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
-                      <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
-                      <span className="truncate">
-                        {pharmacy.bairro && pharmacy.cidade
-                          ? `${pharmacy.bairro}, ${pharmacy.cidade}/${pharmacy.uf}`
-                          : pharmacy.cidade
-                          ? `${pharmacy.cidade}/${pharmacy.uf}`
-                          : pharmacy.endereco || "Endereço não informado"}
-                      </span>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+                        <span className="truncate">
+                          {pharmacy.bairro && pharmacy.cidade
+                            ? `${pharmacy.bairro}, ${pharmacy.cidade}/${pharmacy.uf}`
+                            : pharmacy.cidade
+                            ? `${pharmacy.cidade}/${pharmacy.uf}`
+                            : pharmacy.endereco || "Endereço não informado"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
