@@ -47,7 +47,7 @@ interface ProductsState {
   updateVitrine: (v: Vitrine, lojaId?: string | null) => void;
   removeVitrine: (id: number, lojaId?: string | null) => void;
   toggleVitrine: (id: number, lojaId?: string | null) => void;
-  updateProductDescriptions: (updates: { ean: string; descricao: string }[]) => void;
+  updateProductDescriptions: (updates: { ean: string; nome: string; descricao: string }[]) => Promise<void>;
   bulkUpdateProducts: (productIds: string[], updates: Partial<Produto>, lojaId?: string | null) => void;
   updateStoreProductPrice: (lojaId: string, productId: string, precoPor: number, precoDe?: number, estoque?: number, ativo?: boolean) => void;
   updateStoreProductStatus: (lojaId: string, productId: string, ativo: boolean) => Promise<void>;
@@ -389,17 +389,42 @@ export const useAdminProducts = create<ProductsState>()(
         const storeVits = s.storeVitrines[lojaId] || [];
         return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v) } };
       }),
-      updateProductDescriptions: (updates) => set((s) => {
-        const updateMap = new Map(updates.filter(u => u.ean).map(u => [u.ean, u.descricao]));
-        return {
+      updateProductDescriptions: async (updates) => {
+        const state = get();
+        const updateMap = new Map(
+          updates
+            .filter(u => u.ean && u.nome)
+            .map(u => [`${u.ean.trim().toLowerCase()}-${u.nome.trim().toLowerCase()}`, u.descricao])
+        );
+        
+        const matchedProducts: Produto[] = [];
+
+        // Optimistic UI Update
+        set((s) => ({
           customProducts: s.customProducts.map(p => {
-            if (p.ean && updateMap.has(p.ean)) {
-              return { ...p, descricao: updateMap.get(p.ean) as string };
+            if (p.ean && p.nome) {
+              const key = `${p.ean.trim().toLowerCase()}-${p.nome.trim().toLowerCase()}`;
+              if (updateMap.has(key)) {
+                const newDesc = updateMap.get(key) as string;
+                matchedProducts.push({ ...p, descricao: newDesc });
+                return { ...p, descricao: newDesc };
+              }
             }
             return p;
           })
-        };
-      }),
+        }));
+
+        // Supabase DB Update
+        if (matchedProducts.length > 0) {
+          const chunkSize = 100;
+          for (let i = 0; i < matchedProducts.length; i += chunkSize) {
+            const chunk = matchedProducts.slice(i, i + chunkSize);
+            for (const product of chunk) {
+               await supabase.from('produtos').update({ descricao: product.descricao }).eq('id', product.id);
+            }
+          }
+        }
+      },
       bulkUpdateProducts: (productIds, updates, lojaId) => set((s) => {
         const idSet = new Set(productIds);
         if (lojaId) {

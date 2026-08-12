@@ -27,13 +27,13 @@ type Step = "upload" | "preview" | "processing" | "done" | "error";
 interface DescriptionImporterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (updates: { ean: string; descricao: string }[]) => void;
+  onImport: (updates: { ean: string; nome: string; descricao: string }[]) => void;
 }
 
 export function DescriptionImporter({ open, onOpenChange, onImport }: DescriptionImporterProps) {
   const [step, setStep] = useState<Step>("upload");
   const [fileName, setFileName] = useState("");
-  const [updates, setUpdates] = useState<{ ean: string; descricao: string }[]>([]);
+  const [updates, setUpdates] = useState<{ ean: string; nome: string; descricao: string }[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [importError, setImportError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,31 +80,36 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
         
         let eanCol = "";
         let descCol = "";
+        let nomeCol = "";
 
         detectedHeaders.forEach((h, i) => {
           const nh = normalizedHeaders[i];
           if (["ean", "codigo de barras", "código de barras", "gtin", "barcode"].includes(nh)) {
             eanCol = h;
           }
-          if (["descricao", "descrição", "description", "nome", "produto"].includes(nh) && !descCol) {
+          if (["descricao", "descrição", "description", "descrição longa", "descricao longa"].includes(nh) && !descCol) {
             descCol = h;
+          }
+          if (["nome do produto", "nome", "produto"].includes(nh) && !nomeCol) {
+            nomeCol = h;
           }
         });
 
-        if (!eanCol || !descCol) {
-          toast.error("Não foi possível encontrar as colunas EAN e Descrição na planilha.");
+        if (!eanCol || !nomeCol || !descCol) {
+          toast.error("Não foi possível encontrar as colunas EAN, Nome do Produto e Descrição Longa na planilha.");
           return;
         }
 
         const extractedUpdates = jsonData
           .map(row => ({
             ean: String(row[eanCol] || "").trim(),
+            nome: String(row[nomeCol] || "").trim(),
             descricao: String(row[descCol] || "").trim()
           }))
-          .filter(u => u.ean && u.descricao);
+          .filter(u => u.ean && u.nome && u.descricao);
 
         if (extractedUpdates.length === 0) {
-          toast.error("Nenhuma linha com EAN e Descrição válidos foi encontrada.");
+          toast.error("Nenhuma linha com EAN, Nome e Descrição válidos foi encontrada.");
           return;
         }
 
@@ -132,24 +137,22 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
     e.target.value = "";
   }, [processFile]);
 
-  const handleConfirmImport = useCallback(() => {
+  const handleConfirmImport = useCallback(async () => {
     setStep("processing");
     
-    setTimeout(() => {
-      try {
-        onImport(updates);
-        setStep("done");
-        toast.success(`Descrições de ${updates.length} produtos atualizadas com sucesso!`);
-        
-        setTimeout(() => {
-          handleClose();
-        }, 2000);
-      } catch (err) {
-        console.error("Erro ao importar descrições:", err);
-        setImportError(err instanceof Error ? err.message : String(err));
-        setStep("error");
-      }
-    }, 1500); 
+    try {
+      await onImport(updates);
+      setStep("done");
+      toast.success(`Descrições de ${updates.length} produtos atualizadas com sucesso!`);
+      
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
+    } catch (err) {
+      console.error("Erro ao importar descrições:", err);
+      setImportError(err instanceof Error ? err.message : String(err));
+      setStep("error");
+    }
   }, [updates, onImport, handleClose]);
 
   return (
@@ -245,7 +248,9 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
                 <div className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
                 <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
               </div>
-              <p className="text-lg font-bold text-slate-700 mt-4">Processando...</p>
+              <p className="text-lg font-bold text-slate-700 mt-4 text-center max-w-md">
+                Aguarde um momento enquanto estamos importanto sua planilha de descrições longas
+              </p>
             </div>
           )}
 
