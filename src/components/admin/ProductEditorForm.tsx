@@ -385,12 +385,12 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <Input disabled={!isGlobalAdmin} value={formData.ncm || ""} onChange={e => setFormData({...formData, ncm: e.target.value})} className="bg-white" placeholder="Nomenclatura Comum do Mercosul" />
               </div>
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Preço Original (De) - Opcional</Label>
+                <Label className="font-bold text-xs uppercase text-slate-500">Preço de Comparação (De) - Opcional</Label>
                 <Input disabled={!isGlobalAdmin} 
                   type="number" 
                   step="0.01" 
-                  value={formData.precoBase || ""} 
-                  onChange={e => setFormData({...formData, precoBase: parseFloat(e.target.value) || 0})} 
+                  value={formData.precoDe || ""} 
+                  onChange={e => setFormData({...formData, precoDe: parseFloat(e.target.value) || 0})} 
                   className="bg-white" 
                   placeholder="0.00" 
                 />
@@ -454,6 +454,15 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     onChange={e => setFormData({...formData, seoDescricao: e.target.value})} 
                     className="bg-white min-h-[100px]" 
                     placeholder="Resumo do produto que vai aparecer abaixo do título no Google" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Texto Alternativo da Imagem (Alt SEO)</Label>
+                  <Input disabled={!isGlobalAdmin} 
+                    value={formData.imagemAlt || ""} 
+                    onChange={e => setFormData({...formData, imagemAlt: e.target.value})} 
+                    className="bg-white" 
+                    placeholder="Descrição da imagem para leitores de tela e Google Imagens" 
                   />
                 </div>
               </div>

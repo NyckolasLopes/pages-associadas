@@ -74,6 +74,7 @@ export interface Produto {
   precoBase?: number;
   seoTitulo?: string;
   seoDescricao?: string;
+  imagemAlt?: string;
   aVenda?: boolean;
   tipoProduto?: string;
   selo?: string; // Ação PBM
