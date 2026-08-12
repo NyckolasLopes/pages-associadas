@@ -1882,17 +1882,17 @@ function PDP() {
             <p className="text-sm text-slate-500">Deixe seus dados e entraremos em contato via WhatsApp assim que este produto voltar ao estoque.</p>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2 md:col-span-1">
-                <label className="text-sm font-medium">Nome completo</label>
+                <label className="text-sm font-medium">Nome completo <span className="text-red-500">*</span></label>
                 <Input placeholder="Seu nome" value={wlName} onChange={(e) => setWlName(e.target.value)} />
               </div>
               <div className="space-y-2 col-span-2 md:col-span-1">
-                <label className="text-sm font-medium">WhatsApp</label>
+                <label className="text-sm font-medium">WhatsApp <span className="text-red-500">*</span></label>
                 <Input placeholder="(00) 00000-0000" value={wlPhone} onChange={(e) => setWlPhone(e.target.value)} />
               </div>
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">Quantidade desejada</label>
+              <label className="text-sm font-medium">Quantidade desejada <span className="text-red-500">*</span></label>
               <div className="flex items-center gap-3">
                 <Button 
                   variant="outline" 
@@ -1933,7 +1933,7 @@ Quantidade desejada: ${wlQty}`}
                 onChange={(e) => setWlAccepted(e.target.checked)}
               />
               <label htmlFor="wl-accept" className="text-xs text-slate-600 leading-tight cursor-pointer">
-                Estou ciente de que o preço exibido é válido apenas no momento desta solicitação e pode sofrer alterações sem aviso prévio.
+                Estou ciente de que o preço exibido é válido apenas no momento desta solicitação e pode sofrer alterações sem aviso prévio. <span className="text-red-500">*</span>
               </label>
             </div>
           </div>
