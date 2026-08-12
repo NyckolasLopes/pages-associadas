@@ -472,7 +472,7 @@ export const catalog = {
     }
 
     const produtos = getAllProdutos();
-    let others = produtos.filter((p) => p && !cartIds.includes(p.id));
+    let others = produtos.filter((p) => p && !cartIds.includes(p.id) && p.categoriaId !== "142");
     
     if (settings) {
       others = others.filter(p => (p.precoPor || p.precoDe || 0) <= settings.maxPrice);
@@ -482,8 +482,6 @@ export const catalog = {
       } else if (referenceCategoryId) {
         others = others.filter(p => p.categoriaId === referenceCategoryId);
       }
-    } else {
-      others = others.filter(p => p.categoriaId !== "142");
     }
 
     const seedStr = cartIds.sort().join(",");

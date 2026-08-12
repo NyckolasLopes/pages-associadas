@@ -597,7 +597,7 @@ function CartPage() {
                 <div className="bg-primary/10 p-2 rounded-full shrink-0">
                   <MapPin className="h-5 w-5 text-primary" />
                 </div>
-                <span>{selectedPharmacy ? "Farmácia Selecionada" : (items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Escolha a farmácia onde deseja ser atendido" : "Escolha uma farmácia para entregar ou para você retirar")}</span>
+                <span>{selectedPharmacy ? selectedPharmacy.nome : (items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Escolha a farmácia onde deseja ser atendido" : "Escolha uma farmácia para entregar ou para você retirar")}</span>
               </div>
               <Dialog 
                 open={pharmacyDialogOpen} 
@@ -858,10 +858,11 @@ function CartPage() {
             
             {selectedPharmacy && (
               <div className="text-xs text-muted-foreground border-t pt-3 space-y-1">
-                <p className="font-bold text-foreground mb-2 flex items-center gap-2">
-                  {selectedPharmacy.nome} 
-                  {selectedPharmacyId === closestPharmacyId && <span className="inline-flex items-center text-[9px] text-green-800 bg-green-100 px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">Mais próxima</span>}
-                </p>
+                {selectedPharmacyId === closestPharmacyId && (
+                  <p className="mb-2">
+                    <span className="inline-flex items-center text-[9px] text-green-800 bg-green-100 px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">Mais próxima da sua localização</span>
+                  </p>
+                )}
                 <p>{selectedPharmacy.endereco}</p>
                 <p><strong className="text-foreground">Horário de funcionamento:</strong> {selectedPharmacy.horarioFuncionamento || "Seg a Sáb: 08:00 às 22:00"}</p>
                 <p><strong className="text-foreground">CNPJ:</strong> {selectedPharmacy.cnpj}</p>
@@ -969,7 +970,7 @@ function CartPage() {
           {/* Cross-sell — never medicines */}
           {crossSell.length > 0 && (
             <div className="bg-card border rounded-xl p-4 mt-6">
-              <h2 className="font-bold mb-3">Compre Junto</h2>
+              <h2 className="font-bold mb-3">Produtos que podem te interessar</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {crossSell.map((p) => (
                   <div key={p.id} className="border rounded-lg p-2 text-xs flex flex-col">
@@ -1054,7 +1055,8 @@ function CartPage() {
               </>
             )}
           </div>
-        \n\n            <div className="bg-card border rounded-xl p-5 shadow-sm">
+
+          <div className="bg-card border rounded-xl p-5 shadow-sm">
             <h2 className="font-bold mb-3 flex items-center gap-2 text-base">
               <ShoppingBag className="h-5 w-5 text-primary" /> Resumo do Pedido
             </h2>
