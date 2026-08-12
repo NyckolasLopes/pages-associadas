@@ -1103,61 +1103,7 @@ function PDP() {
               </div>
             </section>
 
-            {!isStoreContext && (
-              <section id="avaliacoes" className={`grid grid-cols-1 ${!isMedication ? 'md:grid-cols-2' : ''} gap-6 pt-4`}>
-              <div className="bg-white border rounded-xl p-6 shadow-sm relative overflow-hidden">
-                <h2 className="text-xl font-bold mb-4">Perguntas</h2>
-                
-                <div className="space-y-4">
-                  <div className={`space-y-4 ${!user ? 'blur-sm pointer-events-none opacity-40' : ''}`}>
-                    <Input 
-                      placeholder="Faça uma pergunta sobre o produto..." 
-                      className="bg-slate-50" 
-                      value={newQuestion}
-                      onChange={(e) => setNewQuestion(e.target.value)}
-                    />
-                    <Button className="w-full font-bold" onClick={handleAskQuestion}>Enviar pergunta</Button>
-                  </div>
-                  
-                  <div className="pt-4 border-t border-slate-100">
-                    {productQuestions.length === 0 ? (
-                      <div className="text-sm text-muted-foreground text-center">
-                        Ainda não há perguntas para este produto. Seja o primeiro a perguntar!
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {productQuestions.map(q => (
-                          <div key={q.id} className="bg-slate-50 p-4 rounded-lg">
-                            <div className="flex justify-between items-start mb-2">
-                              <span className="font-bold text-slate-800 text-sm">{q.clienteNome}</span>
-                              <span className="text-[10px] text-slate-500">{new Date(q.data).toLocaleDateString('pt-BR')}</span>
-                            </div>
-                            <p className="text-sm text-slate-600 mb-3">{q.pergunta}</p>
-                            
-                            {q.resposta ? (
-                              <div className="bg-white p-3 rounded border border-slate-200 ml-4 relative">
-                                <div className="absolute -left-2 top-3 w-2 h-2 bg-white border-l border-t border-slate-200 rotate-[-45deg]"></div>
-                                <p className="text-xs font-bold text-emerald-800 mb-1">Farmácias Associadas Responde:</p>
-                                <p className="text-sm text-slate-700">{q.resposta}</p>
-                              </div>
-                            ) : (
-                              <div className="ml-4 text-xs text-slate-400 italic">Aguardando resposta...</div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {!user && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/40">
-                    <Button className="font-bold shadow-lg" onClick={() => setLoginOpen(true)}>
-                      Você precisa estar logado para perguntar
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <section id="avaliacoes" className={`grid grid-cols-1 gap-6 pt-4`}>
               {!isMedication && (() => {
 
                 return (
@@ -1494,24 +1440,6 @@ function PDP() {
             </div>
 
             <div className="mt-6 border-t pt-5">
-              {!isLocalStock && activeFornecedor && maxStock > 0 ? (
-                <>
-                  <div className="text-sm font-bold mb-3 flex items-center gap-2">
-                    Disponibilidade Prateleira Infinita
-                  </div>
-                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg text-orange-800 text-sm relative overflow-hidden group">
-                    <div className="blur-sm pointer-events-none opacity-50 select-none">
-                      <p className="font-bold flex items-center gap-2 mb-1"><Truck className="h-4 w-4" /> Entregue por parceiro logístico</p>
-                      <p>O prazo estimado para sua região é de <strong>{activeFornecedor.prazo} dias úteis</strong>.</p>
-                    </div>
-                    <div className="absolute inset-0 z-10 flex items-center justify-center">
-                      <span className="font-black text-lg text-orange-900 bg-orange-100/80 px-4 py-2 rounded-lg backdrop-blur-md shadow-sm border border-orange-200/50">
-                        Prateleira infinita em breve
-                      </span>
-                    </div>
-                  </div>
-                </>
-              ) : (
                 <>
                   <div className="text-sm font-bold mb-3 flex items-center gap-2">
                     Esse produto está disponível na(s) unidade(s):
@@ -1629,40 +1557,8 @@ function PDP() {
                       </div>
                   </div>
                 </>
-              )}
             </div>
-
-            {maxStock > 0 ? (
-                <Button 
-                  size="lg" 
-                  className="w-full h-12 text-base font-bold shadow-sm mt-6" 
-                  onClick={() => {
-                    const effectiveFreight = selectedFreight === "pickup" ? "pickup" : "pickup"; // Force pickup selection internally when choosing a pharmacy
-                    if (availablePharmacies.length > 0) {
-                      const selectedPharm = availablePharmacies.find(f => f.id === selectedPharmacyId);
-                      if (!selectedPharmacyId || (selectedPharm && selectedPharm._calculatedStock < qty)) {
-                        const firstAvailable = availablePharmacies.find(f => f._calculatedStock >= qty);
-                        if (firstAvailable) {
-                          setSelectedPharmacyId(firstAvailable.id);
-                        }
-                      }
-                    }
-                    setSelectedFreight(effectiveFreight);
-
-                    if (freteCalculado && effectiveFreight !== "pickup" && cep && !isService) {
-                      setConfirmDeliveryOpen(true);
-                    } else {
-                      add({ ...p, estoque: maxStock }, qty);
-                    }
-                  }}
-                >
-                  {isService ? "AGENDAR AGORA" : (
-                    <span className="flex items-center justify-center gap-2">
-                      <ShoppingBasket className="h-5 w-5" /> COMPRAR AGORA
-                    </span>
-                  )}
-                </Button>
-              ) : (
+            {maxStock === 0 && (
                 <div className="mt-6 flex flex-col gap-3">
                   <div className="p-3 bg-slate-100 text-slate-500 rounded-lg text-center font-bold border border-slate-200">
                     Produto Indisponível
@@ -1676,7 +1572,7 @@ function PDP() {
                     Avise-me quando chegar
                   </Button>
                 </div>
-              )}
+            )}
 
             <ul className="mt-6 space-y-3 text-xs font-medium bg-muted/30 p-4 rounded-lg">
               {isService ? (
