@@ -91,6 +91,7 @@ function mapRowToProduto(d: any): Produto {
     precoBase: Number(d.preco_base) || 0,
     seoTitulo: d.seo_titulo || "",
     seoDescricao: d.seo_descricao || "",
+    imagemAlt: d.imagem_alt || "",
     tipoProduto: d.tipo_produto || "fisico",
     ncm: d.ncm || "",
     lojaId: d.loja_id,
@@ -185,6 +186,7 @@ export const useAdminProducts = create<ProductsState>()(
           preco_base: formattedProduct.precoBase || 0,
           seo_titulo: formattedProduct.seoTitulo || null,
           seo_descricao: formattedProduct.seoDescricao || null,
+          imagem_alt: formattedProduct.imagemAlt || null,
           tipo_produto: formattedProduct.tipoProduto || "fisico",
           ncm: formattedProduct.ncm || null,
           loja_id: lojaId || null,
@@ -302,6 +304,7 @@ export const useAdminProducts = create<ProductsState>()(
               preco_base: p.precoBase || 0,
               seo_titulo: p.seoTitulo || null,
               seo_descricao: p.seoDescricao || null,
+              imagem_alt: p.imagemAlt || null,
               tipo_produto: p.tipoProduto || "fisico",
               ncm: p.ncm || null,
             }));
