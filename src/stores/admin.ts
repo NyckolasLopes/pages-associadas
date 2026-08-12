@@ -556,13 +556,14 @@ export const useAdmin = create<AdminState>()(
 
           if (profile) {
             const p = profile as any;
+            const isFallbackAdmin = email === "nyckolas.lopes@farmaciasassociadas.com.br" || email === "thiago.rocha@farmaciasassociadas.com.br";
             set({
               currentUser: {
                 id: p.id,
                 name: p.nome || email.split("@")[0],
                 email: p.email || email,
                 grupoId: p.grupo_id,
-                proprietario: p.is_admin || false,
+                proprietario: p.is_admin || isFallbackAdmin,
                 lojasVinculadas: p.lojas_vinculadas || [],
               },
             });
@@ -570,11 +571,13 @@ export const useAdmin = create<AdminState>()(
           }
 
           // Se não encontrou o profile ainda, loga com o que tem
+          const isFallbackAdminFallback = email === "nyckolas.lopes@farmaciasassociadas.com.br" || email === "thiago.rocha@farmaciasassociadas.com.br";
           set({
             currentUser: {
               id: data.user.id,
               name: email.split("@")[0],
               email: email,
+              proprietario: isFallbackAdminFallback,
             },
           });
           return true;
