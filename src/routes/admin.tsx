@@ -601,8 +601,9 @@ function AdminLayout() {
           </div>
           <div className="flex items-center gap-4">
               {isGlobalAdmin && (
-                <div className="flex items-center gap-3 bg-emerald-50/50 p-1.5 pr-2 rounded-lg border border-emerald-200 shadow-sm">
-                  <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider ml-2 hidden lg:block">
+                <div className="flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 p-2 pr-3 rounded-xl shadow-lg border border-emerald-500/30">
+                  <span className="text-[11px] font-black text-emerald-50 uppercase tracking-wider ml-2 hidden lg:flex items-center gap-2">
+                    <Store className="h-4 w-4" />
                     Visualizar dados de:
                   </span>
                   <div className="w-[280px] md:w-[320px]">
@@ -610,7 +611,7 @@ function AdminLayout() {
                       value={activeStoreId || "all"} 
                       onValueChange={(val) => setActiveStoreId(val === "all" ? null : val)}
                     >
-                      <SelectTrigger className="h-9 bg-white border-emerald-300 text-emerald-900 font-bold shadow-sm focus:ring-emerald-500">
+                      <SelectTrigger className="h-10 bg-white/10 hover:bg-white/20 border-white/20 text-white font-bold shadow-none focus:ring-white/50 rounded-lg transition-colors">
                         <SelectValue placeholder="Selecione a sua loja" />
                       </SelectTrigger>
                       <SelectContent>
