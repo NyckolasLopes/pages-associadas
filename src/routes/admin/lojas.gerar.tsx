@@ -145,7 +145,7 @@ function GerarLojaPage() {
                     <div className="flex flex-col gap-2">
                       {(() => {
                         const cat = pharmacy.categoriaAssociado || 'Parceiro';
-                        const displayCat = cat.toLowerCase() === 'padrão' ? 'Parceiro' : cat;
+                        const displayCat = cat.toLowerCase() === 'padrão' ? 'Pleno' : cat;
                         return (
                           <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border w-fit ${
                             displayCat === 'Pleno' 

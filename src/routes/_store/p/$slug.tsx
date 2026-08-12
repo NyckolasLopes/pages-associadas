@@ -270,7 +270,7 @@ function AnvisaDisclaimer({
                       <div className="text-xs text-muted-foreground space-y-1 mt-2">
                         <p>{f.endereco}</p>
                         {f.horarioFuncionamento && <p><strong className="text-foreground">Horário:</strong> {f.horarioFuncionamento}</p>}
-                        <p className="mt-1"><strong className="text-foreground">Distância:</strong> <span className="inline-flex items-center text-primary bg-primary/10 px-1.5 rounded text-[10px] ml-1"><MapPin className="h-3 w-3 mr-0.5"/>{f._distance !== null ? (f._distance === -1 ? 'Indisponível' : `${f._distance.toFixed(1)} km`) : "Calculando..."}</span></p>
+                        <p className="mt-1"><strong className="text-foreground">Distância:</strong> <span className="inline-flex items-center text-primary bg-primary/10 px-1.5 rounded text-[10px] ml-1"><MapPin className="h-3 w-3 mr-0.5"/>{f._distance != null ? (f._distance === -1 ? 'Indisponível' : `${Number(f._distance).toFixed(1)} km`) : "Calculando..."}</span></p>
                       </div>
                     </button>
                   );
@@ -425,7 +425,7 @@ function PDP() {
       return;
     }
     
-    const productPrice = p.precoPromocional && isCampanhaAtiva(p.campanha) ? p.precoPromocional : p.preco;
+    const productPrice = p.precoPromocional && isCampanhaAtiva(p.campanha) ? p.precoPromocional : (p.precoPor || 0);
     
     addWaitlistEntry({
       produtoId: p.id,
@@ -1606,7 +1606,7 @@ function PDP() {
                                   <p><strong className="text-foreground">CNPJ:</strong> {f.cnpj}</p>
                                   <p><strong className="text-foreground">Farmacêutico:</strong> {f.respTecnico} | <strong className="text-foreground">CRF/RS:</strong> {(f as any).crf}</p>
                                   <p><strong className="text-foreground">AFE:</strong> {f.afe}</p>
-                                  <p className="mt-1"><strong className="text-foreground">Distância:</strong> <span className="inline-flex items-center text-primary bg-primary/10 px-1.5 rounded text-[10px] ml-1"><MapPin className="h-3 w-3 mr-0.5"/>{f._distance !== null ? (f._distance === -1 ? 'Indisponível' : `${f._distance.toFixed(1)} km`) : "Calculando..."}</span></p>
+                                  <p className="mt-1"><strong className="text-foreground">Distância:</strong> <span className="inline-flex items-center text-primary bg-primary/10 px-1.5 rounded text-[10px] ml-1"><MapPin className="h-3 w-3 mr-0.5"/>{f._distance != null ? (f._distance === -1 ? 'Indisponível' : `${Number(f._distance).toFixed(1)} km`) : "Calculando..."}</span></p>
                                 </div>
                                 {!isDisabled && !isService && (() => {
                                   const est = getDeliveryEstimation(f);
@@ -1919,7 +1919,7 @@ function PDP() {
               <div className="p-3 bg-slate-50 rounded-lg border text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
                 {`Gostaria desse produto mas notei que não possui estoque, consegue me avisar quando voltar ao estoque?
 Produto: ${p.nome}
-Valor: R$ ${(p.precoPromocional && isCampanhaAtiva(p.campanha) ? p.precoPromocional : p.preco).toFixed(2).replace('.', ',')}
+Valor: R$ ${(p.precoPromocional && isCampanhaAtiva(p.campanha) ? p.precoPromocional : (p.precoPor || 0)).toFixed(2).replace('.', ',')}
 Quantidade desejada: ${wlQty}`}
               </div>
             </div>
