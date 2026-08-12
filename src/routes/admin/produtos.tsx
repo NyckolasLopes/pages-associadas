@@ -904,11 +904,10 @@ function AdminProdutos() {
         onImport={handleSpreadsheetImport}
       />
 
-      {/* Description Importer Dialog */}
       <DescriptionImporter
         open={descImporterOpen}
         onOpenChange={setDescImporterOpen}
-        onImport={updateProductDescriptions}
+        onImport={(updates) => updateProductDescriptions(updates, currentLojaId)}
       />
 
       {/* Bulk Edit Dialog */}

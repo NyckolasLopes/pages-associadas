@@ -187,7 +187,9 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
     map.set(enhanced.id, enforceHealthServicesCategory(enhanced));
   });
   
-  const merged = Array.from(map.values()).filter(p => p && p.id);
+  const merged = Array.from(map.values())
+    .filter(p => p && p.id)
+    .sort((a, b) => (b.nivelRelevancia || 0) - (a.nivelRelevancia || 0));
   
   // Pre-calculate search strings for faster exact matching
   merged.forEach((p: any) => {

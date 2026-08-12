@@ -47,7 +47,7 @@ interface ProductsState {
   updateVitrine: (v: Vitrine, lojaId?: string | null) => void;
   removeVitrine: (id: number, lojaId?: string | null) => void;
   toggleVitrine: (id: number, lojaId?: string | null) => void;
-  updateProductDescriptions: (updates: { ean: string; nome: string; descricao: string }[]) => Promise<void>;
+  updateProductDescriptions: (updates: { ean: string; nome: string; descricao: string }[], lojaId?: string) => Promise<{successCount: number; errorCount: number; errors: {ean: string, error: string}[]}>;
   bulkUpdateProducts: (productIds: string[], updates: Partial<Produto>, lojaId?: string | null) => void;
   updateStoreProductPrice: (lojaId: string, productId: string, precoPor: number, precoDe?: number, estoque?: number, ativo?: boolean) => void;
   updateStoreProductStatus: (lojaId: string, productId: string, ativo: boolean) => Promise<void>;
@@ -389,7 +389,7 @@ export const useAdminProducts = create<ProductsState>()(
         const storeVits = s.storeVitrines[lojaId] || [];
         return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v) } };
       }),
-      updateProductDescriptions: async (updates) => {
+      updateProductDescriptions: async (updates, lojaId) => {
         const state = get();
         const updateMap = new Map(
           updates
@@ -397,33 +397,80 @@ export const useAdminProducts = create<ProductsState>()(
             .map(u => [`${u.ean.trim().toLowerCase()}-${u.nome.trim().toLowerCase()}`, u.descricao])
         );
         
+        let successCount = 0;
+        let errorCount = 0;
+        const errors: {ean: string, error: string}[] = [];
+        
+        // Find matched products against the base customProducts
         const matchedProducts: Produto[] = [];
+        const notFound: {ean: string, nome: string}[] = [];
 
-        // Optimistic UI Update
-        set((s) => ({
-          customProducts: s.customProducts.map(p => {
-            if (p.ean && p.nome) {
-              const key = `${p.ean.trim().toLowerCase()}-${p.nome.trim().toLowerCase()}`;
-              if (updateMap.has(key)) {
-                const newDesc = updateMap.get(key) as string;
-                matchedProducts.push({ ...p, descricao: newDesc });
-                return { ...p, descricao: newDesc };
-              }
-            }
-            return p;
-          })
-        }));
+        updates.forEach(u => {
+           const p = state.customProducts.find(cp => cp.ean?.trim().toLowerCase() === u.ean.trim().toLowerCase() && cp.nome.trim().toLowerCase() === u.nome.trim().toLowerCase());
+           if (p) {
+               matchedProducts.push({ ...p, descricao: u.descricao });
+           } else {
+               notFound.push(u);
+           }
+        });
 
-        // Supabase DB Update
+        notFound.forEach(u => {
+           errorCount++;
+           errors.push({ ean: u.ean, error: "Produto não encontrado no catálogo pelo EAN e Nome informados." });
+        });
+
         if (matchedProducts.length > 0) {
-          const chunkSize = 100;
-          for (let i = 0; i < matchedProducts.length; i += chunkSize) {
-            const chunk = matchedProducts.slice(i, i + chunkSize);
-            for (const product of chunk) {
-               await supabase.from('produtos').update({ descricao: product.descricao }).eq('id', product.id);
-            }
+          if (!lojaId) {
+             // Sede updating global catalog
+             set((s) => ({
+                customProducts: s.customProducts.map(p => {
+                  const match = matchedProducts.find(m => m.id === p.id);
+                  return match ? { ...p, descricao: match.descricao } : p;
+                })
+             }));
+             
+             // Update Supabase in chunks
+             const chunkSize = 100;
+             for (let i = 0; i < matchedProducts.length; i += chunkSize) {
+               const chunk = matchedProducts.slice(i, i + chunkSize);
+               for (const product of chunk) {
+                  try {
+                     await supabase.from('produtos').update({ descricao: product.descricao }).eq('id', product.id);
+                     successCount++;
+                  } catch (e: any) {
+                     errorCount++;
+                     errors.push({ ean: product.ean || "", error: e.message || "Erro no banco" });
+                  }
+               }
+             }
+          } else {
+             // Loja Local overriding catalog
+             const updatesObj: Record<string, any> = {};
+             matchedProducts.forEach(m => {
+                 updatesObj[m.id] = { descricao: m.descricao };
+                 successCount++;
+             });
+             
+             set((s) => {
+               const storeCustom = s.storeCustomProducts[lojaId] || [];
+               const updatedCustom = storeCustom.map(p => updatesObj[p.id] ? { ...p, ...updatesObj[p.id] } : p);
+               const prevOverrides = s.storeProductOverrides[lojaId] || {};
+               const newOverrides = { ...prevOverrides };
+               
+               Object.keys(updatesObj).forEach(id => {
+                  if (!storeCustom.some(x => x.id === id)) {
+                      newOverrides[id] = { ...(newOverrides[id] || {}), ...updatesObj[id] };
+                  }
+               });
+               return {
+                  storeCustomProducts: { ...s.storeCustomProducts, [lojaId]: updatedCustom },
+                  storeProductOverrides: { ...s.storeProductOverrides, [lojaId]: newOverrides }
+               };
+             });
           }
         }
+
+        return { successCount, errorCount, errors };
       },
       bulkUpdateProducts: (productIds, updates, lojaId) => set((s) => {
         const idSet = new Set(productIds);

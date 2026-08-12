@@ -385,7 +385,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <Input disabled={!isGlobalAdmin} value={formData.ncm || ""} onChange={e => setFormData({...formData, ncm: e.target.value})} className="bg-white" placeholder="Nomenclatura Comum do Mercosul" />
               </div>
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Preço Base (R$)</Label>
+                <Label className="font-bold text-xs uppercase text-slate-500">Preço Original (De) - Opcional</Label>
                 <Input disabled={!isGlobalAdmin} 
                   type="number" 
                   step="0.01" 
@@ -404,15 +404,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   className="bg-white" 
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Termos de Pesquisa</Label>
-                <Input disabled={!isGlobalAdmin} 
-                  value={formData.termosPesquisa || ""} 
-                  onChange={e => setFormData({...formData, termosPesquisa: e.target.value})} 
-                  className="bg-white" 
-                  placeholder="Ex: remedio, dor de cabeca (separados por vírgula)" 
-                />
-              </div>
             </div>
           </div>
 
@@ -420,7 +411,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <div className="flex items-center gap-2 pb-4 border-b">
               <Search className="h-6 w-6 text-blue-600" />
-              <h3 className="font-bold text-2xl text-slate-800">Google / SEO</h3>
+              <h3 className="font-bold text-2xl text-slate-800">Google / SEO / AEO / GEO</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -445,6 +436,15 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     onChange={e => setFormData({...formData, url: e.target.value})} 
                     className="bg-white" 
                     placeholder="nome-do-produto" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Palavras-Chave Foco (GEO / AEO)</Label>
+                  <Input disabled={!isGlobalAdmin} 
+                    value={formData.termosPesquisa || ""} 
+                    onChange={e => setFormData({...formData, termosPesquisa: e.target.value})} 
+                    className="bg-white" 
+                    placeholder="Ex: remedio, dor de cabeca (separados por vírgula)" 
                   />
                 </div>
                 <div className="space-y-2">

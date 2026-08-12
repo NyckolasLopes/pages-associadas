@@ -27,7 +27,7 @@ type Step = "upload" | "preview" | "processing" | "done" | "error";
 interface DescriptionImporterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (updates: { ean: string; nome: string; descricao: string }[]) => void;
+  onImport: (updates: { ean: string; nome: string; descricao: string }[]) => Promise<{successCount: number; errorCount: number; errors: {ean: string, error: string}[]}>;
 }
 
 export function DescriptionImporter({ open, onOpenChange, onImport }: DescriptionImporterProps) {
@@ -36,6 +36,7 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
   const [updates, setUpdates] = useState<{ ean: string; nome: string; descricao: string }[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [importError, setImportError] = useState<string>("");
+  const [importResult, setImportResult] = useState<{successCount: number; errorCount: number; errors: {ean: string, error: string}[]}>({successCount: 0, errorCount: 0, errors: []});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const reset = useCallback(() => {
@@ -44,6 +45,7 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
     setUpdates([]);
     setDragOver(false);
     setImportError("");
+    setImportResult({successCount: 0, errorCount: 0, errors: []});
   }, []);
 
   const handleClose = useCallback(() => {
@@ -141,19 +143,16 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
     setStep("processing");
     
     try {
-      await onImport(updates);
+      const result = await onImport(updates);
+      setImportResult(result);
       setStep("done");
-      toast.success(`Descrições de ${updates.length} produtos atualizadas com sucesso!`);
-      
-      setTimeout(() => {
-        handleClose();
-      }, 2000);
+      toast.success(`Foram atualizadas ${result.successCount} descrições!`);
     } catch (err) {
       console.error("Erro ao importar descrições:", err);
       setImportError(err instanceof Error ? err.message : String(err));
       setStep("error");
     }
-  }, [updates, onImport, handleClose]);
+  }, [updates, onImport]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else onOpenChange(true); }}>
@@ -167,7 +166,7 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
             {step === "upload" && "Faça upload de uma planilha com as colunas EAN e Descrição."}
             {step === "preview" && `Encontramos ${updates.length} descrições prontas para atualizar.`}
             {step === "processing" && "Atualizando descrições..."}
-            {step === "done" && "Atualização concluída!"}
+            {step === "done" && "Importação processada!"}
             {step === "error" && "Erro na importação"}
           </DialogDescription>
         </DialogHeader>
@@ -205,7 +204,7 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
                     ou clique para selecionar um arquivo
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    A planilha precisa ter as colunas <strong>EAN</strong> e <strong>Descrição</strong>.
+                    A planilha precisa ter as colunas <strong>EAN</strong>, <strong>Nome</strong> e <strong>Descrição</strong>.
                   </p>
                 </div>
               </div>
@@ -255,14 +254,52 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
           )}
 
           {step === "done" && (
-            <div className="flex flex-col items-center gap-4 py-12">
-              <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center">
-                <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+            <div className="flex flex-col items-center gap-4 py-6">
+              <div className={`h-16 w-16 rounded-full flex items-center justify-center ${importResult.errorCount === 0 ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+                {importResult.errorCount === 0 ? (
+                  <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                ) : (
+                  <AlertTriangle className="h-8 w-8 text-amber-600" />
+                )}
               </div>
-              <p className="text-lg font-bold text-emerald-700">Importação Concluída!</p>
-              <p className="text-sm text-muted-foreground text-center">
-                As descrições foram atualizadas de acordo com os EANs encontrados.
-              </p>
+              
+              <div className="text-center">
+                <p className={`text-lg font-bold ${importResult.errorCount === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  Importação Processada
+                </p>
+                <div className="flex gap-4 mt-2 justify-center">
+                   <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{importResult.successCount} Sucessos</Badge>
+                   {importResult.errorCount > 0 && <Badge className="bg-red-100 text-red-800 hover:bg-red-100">{importResult.errorCount} Erros</Badge>}
+                </div>
+              </div>
+
+              {importResult.errorCount > 0 && (
+                <div className="w-full max-w-2xl mt-4">
+                  <p className="text-sm font-bold text-slate-700 mb-2">Relatório de Erros:</p>
+                  <div className="border rounded-md max-h-60 overflow-y-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-slate-50 sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2 font-semibold">EAN</th>
+                          <th className="px-3 py-2 font-semibold">Motivo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                         {importResult.errors.map((e, idx) => (
+                           <tr key={idx} className="border-t">
+                              <td className="px-3 py-2 font-mono">{e.ean}</td>
+                              <td className="px-3 py-2 text-red-600">{e.error}</td>
+                           </tr>
+                         ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <Button onClick={handleClose} className="mt-4" variant="outline">
+                Fechar
+              </Button>
             </div>
           )}
 
