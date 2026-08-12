@@ -562,7 +562,7 @@ export const useAdmin = create<AdminState>()(
                 name: p.nome || email.split("@")[0],
                 email: p.email || email,
                 grupoId: p.grupo_id,
-                proprietario: p.proprietario,
+                proprietario: p.is_admin || false,
                 lojasVinculadas: p.lojas_vinculadas || [],
               },
             });
