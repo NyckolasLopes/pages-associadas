@@ -358,6 +358,8 @@ function PDP() {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const [wlName, setWlName] = useState("");
   const [wlPhone, setWlPhone] = useState("");
+  const [wlQty, setWlQty] = useState(1);
+  const [wlAccepted, setWlAccepted] = useState(false);
   const addWaitlistEntry = useWaitlist((s) => s.addEntry);
   const [forcedPharmacyModal, setForcedPharmacyModal] = useState(false);
   const [isCalcLoading, setIsCalcLoading] = useState(false);
@@ -418,15 +420,26 @@ function PDP() {
       toast.error("Preencha todos os campos");
       return;
     }
+    if (!wlAccepted) {
+      toast.error("É necessário aceitar os termos de preço para continuar.");
+      return;
+    }
+    
+    const productPrice = p.precoPromocional && isCampanhaAtiva(p.campanha) ? p.precoPromocional : p.preco;
+    
     addWaitlistEntry({
       produtoId: p.id,
       clienteNome: wlName,
-      whatsapp: wlPhone
+      whatsapp: wlPhone,
+      quantidade: wlQty,
+      mensagem: `Gostaria desse produto mas notei que não possui estoque, consegue me avisar quando voltar ao estoque?\nProduto: ${p.nome}\nValor: R$ ${productPrice.toFixed(2).replace('.', ',')}\nQuantidade desejada: ${wlQty}`
     });
     toast.success("Avisaremos você quando o produto chegar!");
     setWaitlistOpen(false);
     setWlName("");
     setWlPhone("");
+    setWlQty(1);
+    setWlAccepted(false);
   };
 
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
@@ -1861,24 +1874,72 @@ function PDP() {
       <ProductStory videoUrl={p.videoUrl} productName={p.nome} />
 
       <Dialog open={waitlistOpen} onOpenChange={setWaitlistOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Avise-me quando chegar</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-slate-500">Deixe seus dados e entraremos em contato via WhatsApp assim que este produto voltar ao estoque.</p>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Nome completo</label>
-              <Input placeholder="Seu nome" value={wlName} onChange={(e) => setWlName(e.target.value)} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2 col-span-2 md:col-span-1">
+                <label className="text-sm font-medium">Nome completo</label>
+                <Input placeholder="Seu nome" value={wlName} onChange={(e) => setWlName(e.target.value)} />
+              </div>
+              <div className="space-y-2 col-span-2 md:col-span-1">
+                <label className="text-sm font-medium">WhatsApp</label>
+                <Input placeholder="(00) 00000-0000" value={wlPhone} onChange={(e) => setWlPhone(e.target.value)} />
+              </div>
             </div>
+            
             <div className="space-y-2">
-              <label className="text-sm font-medium">WhatsApp</label>
-              <Input placeholder="(00) 00000-0000" value={wlPhone} onChange={(e) => setWlPhone(e.target.value)} />
+              <label className="text-sm font-medium">Quantidade desejada</label>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => setWlQty(Math.max(1, wlQty - 1))}
+                  className="h-9 w-9"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="font-bold w-4 text-center">{wlQty}</span>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => setWlQty(wlQty + 1)}
+                  className="h-9 w-9"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Mensagem que será enviada à loja:</label>
+              <div className="p-3 bg-slate-50 rounded-lg border text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                {`Gostaria desse produto mas notei que não possui estoque, consegue me avisar quando voltar ao estoque?
+Produto: ${p.nome}
+Valor: R$ ${(p.precoPromocional && isCampanhaAtiva(p.campanha) ? p.precoPromocional : p.preco).toFixed(2).replace('.', ',')}
+Quantidade desejada: ${wlQty}`}
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 pt-2">
+              <input 
+                type="checkbox" 
+                id="wl-accept" 
+                className="mt-1" 
+                checked={wlAccepted}
+                onChange={(e) => setWlAccepted(e.target.checked)}
+              />
+              <label htmlFor="wl-accept" className="text-xs text-slate-600 leading-tight cursor-pointer">
+                Estou ciente de que o preço exibido é válido apenas no momento desta solicitação e pode sofrer alterações sem aviso prévio.
+              </label>
             </div>
           </div>
           <div className="flex gap-3 justify-end mt-2">
             <Button variant="outline" onClick={() => setWaitlistOpen(false)}>Cancelar</Button>
-            <Button onClick={handleWaitlistSubmit}>Avisar-me</Button>
+            <Button onClick={handleWaitlistSubmit} disabled={!wlAccepted}>Avisar-me</Button>
           </div>
         </DialogContent>
       </Dialog>

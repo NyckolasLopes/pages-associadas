@@ -91,6 +91,8 @@ function AdminListaDeEspera() {
                   <th className="px-6 py-4 font-bold">Cliente</th>
                   <th className="px-6 py-4 font-bold">WhatsApp</th>
                   <th className="px-6 py-4 font-bold">Produto Desejado</th>
+                  <th className="px-6 py-4 font-bold">Qtd</th>
+                  <th className="px-6 py-4 font-bold">Mensagem</th>
                   <th className="px-6 py-4 font-bold text-right">Ações</th>
                 </tr>
               </thead>
@@ -119,6 +121,14 @@ function AdminListaDeEspera() {
                             Produto não encontrado (ID: {entry.produtoId})
                           </div>
                         )}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-600 whitespace-nowrap">
+                        {entry.quantidade || 1}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-xs text-slate-500 line-clamp-2 max-w-xs whitespace-pre-wrap" title={entry.mensagem}>
+                          {entry.mensagem || "-"}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap">
                         <Button 

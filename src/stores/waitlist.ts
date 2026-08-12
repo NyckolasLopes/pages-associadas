@@ -8,6 +8,8 @@ export interface WaitlistEntry {
   clienteNome: string;
   whatsapp: string;
   data: string;
+  quantidade?: number;
+  mensagem?: string;
 }
 
 interface WaitlistStore {
