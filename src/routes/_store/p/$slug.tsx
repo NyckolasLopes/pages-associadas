@@ -1190,7 +1190,6 @@ function PDP() {
                 );
               })()}
             </section>
-            )}
             </div>
         </div>
 
