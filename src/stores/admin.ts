@@ -554,17 +554,19 @@ export const useAdmin = create<AdminState>()(
             .eq("id", data.user.id)
             .single();
 
+          const localUser = get().users.find(u => u.email === email);
+
           if (profile) {
             const p = profile as any;
             const isFallbackAdmin = email === "nyckolas.lopes@farmaciasassociadas.com.br" || email === "thiago.rocha@farmaciasassociadas.com.br";
             set({
               currentUser: {
                 id: p.id,
-                name: p.nome || email.split("@")[0],
+                name: p.nome || localUser?.name || email.split("@")[0],
                 email: p.email || email,
-                grupoId: p.grupo_id,
-                proprietario: p.is_admin || isFallbackAdmin,
-                lojasVinculadas: p.lojas_vinculadas || [],
+                grupoId: p.grupo_id || localUser?.grupoId,
+                proprietario: p.is_admin || localUser?.proprietario || isFallbackAdmin,
+                lojasVinculadas: p.lojas_vinculadas || localUser?.lojasVinculadas || [],
               },
             });
             return true;
@@ -575,9 +577,11 @@ export const useAdmin = create<AdminState>()(
           set({
             currentUser: {
               id: data.user.id,
-              name: email.split("@")[0],
+              name: localUser?.name || email.split("@")[0],
               email: email,
-              proprietario: isFallbackAdminFallback,
+              grupoId: localUser?.grupoId,
+              lojasVinculadas: localUser?.lojasVinculadas || [],
+              proprietario: localUser?.proprietario || isFallbackAdminFallback,
             },
           });
           return true;
