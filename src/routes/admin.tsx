@@ -600,10 +600,10 @@ function AdminLayout() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-              {(isGlobalAdmin || userStores.length > 1) && (
+              {isGlobalAdmin && (
                 <div className="flex items-center gap-3 bg-emerald-50/50 p-1.5 pr-2 rounded-lg border border-emerald-200 shadow-sm">
                   <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider ml-2 hidden lg:block">
-                    {isGlobalAdmin ? "Visualizar dados de:" : "Selecione a sua loja:"}
+                    Visualizar dados de:
                   </span>
                   <div className="w-[280px] md:w-[320px]">
                     <Select 

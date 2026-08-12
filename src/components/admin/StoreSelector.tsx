@@ -20,15 +20,14 @@ export function StoreSelector({ className }: StoreSelectorProps) {
     ? pharmacies 
     : pharmacies.filter(p => currentUser.lojasVinculadas?.includes(p.id));
 
+  if (isGlobalAdmin) return null;
   if (userStores.length === 0) return null;
-  // If not global admin and only has 1 store, optionally don't show selector at all?
-  // The user said: "CASO O ASSOCIADO TIVER MAIS DE UMA LOJA APARECE AS SUAS LOJAS VINCULADO PARA SELECIONAR"
   if (!isGlobalAdmin && userStores.length <= 1) return null;
 
   return (
     <div className={cn("flex items-center gap-3 bg-emerald-50/50 p-1.5 pr-2 rounded-lg border border-emerald-200 shadow-sm", className)}>
       <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider ml-2 hidden lg:block">
-        {isGlobalAdmin ? "Visualizar dados de:" : "Selecione a sua loja:"}
+        Selecione a sua loja:
       </span>
       <div className="w-[280px] md:w-[320px]">
         <Select 
