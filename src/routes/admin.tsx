@@ -600,7 +600,7 @@ function AdminLayout() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-              {isGlobalAdmin && (
+              {(isGlobalAdmin || userStores.length > 0) && (
                 <div className="flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 p-2 pr-3 rounded-xl shadow-lg border border-emerald-500/30">
                   <span className="text-[11px] font-black text-emerald-50 uppercase tracking-wider ml-2 hidden lg:flex items-center gap-2">
                     <Store className="h-4 w-4" />
