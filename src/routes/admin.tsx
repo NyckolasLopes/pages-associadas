@@ -617,13 +617,13 @@ function AdminLayout() {
                       <SelectContent>
                         {isGlobalAdmin && (
                           <SelectItem value="all">
-                            <span className="font-bold text-emerald-800">Todas as Lojas (Visão Global)</span>
+                            <span className="font-bold">Todas as Lojas (Visão Global)</span>
                           </SelectItem>
                         )}
                         {userStores.map(loja => (
                           <SelectItem key={loja.id} value={loja.id}>
-                            <span className="font-bold text-slate-800">{(loja as any).nomeFantasia || loja.nome}</span>
-                            {loja.cidade && <span className="text-slate-500 text-xs ml-2 font-normal">({loja.cidade})</span>}
+                            <span className="font-bold">{(loja as any).nomeFantasia || loja.nome}</span>
+                            {loja.cidade && <span className="opacity-70 text-xs ml-2 font-normal">({loja.cidade})</span>}
                           </SelectItem>
                         ))}
                       </SelectContent>
