@@ -86,7 +86,8 @@ function AdminProdutos() {
     getStoreEffectiveProducts,
     resetStoreProductsToGeneral,
     updateStoreProductStatus,
-    bulkUpdateStoreProductStatus
+    bulkUpdateStoreProductStatus,
+    _loaded
   } = useAdminProducts();
   const { regions, prices } = useRegionsStore();
   const { pharmacies, activeStoreId, currentUser, grupos } = useAdmin();
@@ -657,7 +658,15 @@ function AdminProdutos() {
         </div>
 
         {/* Table content */}
-        {currentProductsList.length === 0 ? (
+        {!_loaded ? (
+          <div className="p-16 flex flex-col items-center justify-center text-center">
+            <Spinner className="h-12 w-12 text-emerald-600 mb-6" />
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Aguarde um momento...</h3>
+            <p className="text-slate-500 font-medium">
+              Estamos carregando todos os produtos da base de dados.
+            </p>
+          </div>
+        ) : currentProductsList.length === 0 ? (
           <div className="p-12 text-center">
             <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
               <FileSpreadsheet className="h-8 w-8 text-slate-400" />
