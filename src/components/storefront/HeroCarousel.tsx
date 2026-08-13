@@ -3,9 +3,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 
-export function HeroCarousel({ page = "Página inicial" }: { page?: string }) {
-  const { banners: adminBanners } = useAdmin();
+export function HeroCarousel({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
+  const { banners: adminBanners, pharmacies } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const effectiveLojaId = lojaId || selectedPharmacyId;
+  const isParceiro = pharmacies?.find(p => p.id === effectiveLojaId)?.categoriaAssociado === 'Parceiro';
+
   const [i, setI] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
@@ -24,7 +27,16 @@ export function HeroCarousel({ page = "Página inicial" }: { page?: string }) {
   const activeBanners = adminBanners.filter(b => {
     if (b.posicao !== "Full Banner") return false;
     if (!b.active) return false;
-    if (b.lojaId && b.lojaId !== selectedPharmacyId) return false;
+    
+    // Filtro de Loja: Só mostra se for banner específico da loja, ou se for global e a loja não for parceira
+    if (effectiveLojaId) {
+      if (b.lojaId && b.lojaId !== effectiveLojaId) return false;
+      if (!b.lojaId && isParceiro) return false;
+    } else {
+      // Se não tem loja selecionada (ex: página inicial global), não mostra banners de lojas específicas
+      if (b.lojaId) return false;
+    }
+
     if (b.paginaPublicacao && b.paginaPublicacao !== "Todas as páginas" && b.paginaPublicacao !== page) return false;
     const now = new Date();
     if (b.startDate && new Date(b.startDate) > now) return false;
@@ -73,11 +85,18 @@ export function HeroCarousel({ page = "Página inicial" }: { page?: string }) {
   const next = () => setI((prev) => (prev + 1) % totalSlides);
 
   // Allow rendering the first slide immediately from initial state to prevent LCP delays
-  const bannersToRender = hydrated ? activeBanners : adminBanners.filter(b => 
-    b.posicao === "Full Banner" && 
-    b.active && 
-    (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  );
+  const bannersToRender = hydrated ? activeBanners : adminBanners.filter(b => {
+    if (b.posicao !== "Full Banner" || !b.active) return false;
+    if (b.paginaPublicacao && b.paginaPublicacao !== "Todas as páginas" && b.paginaPublicacao !== page) return false;
+    
+    if (effectiveLojaId) {
+      if (b.lojaId && b.lojaId !== effectiveLojaId) return false;
+      if (!b.lojaId && isParceiro) return false;
+    } else {
+      if (b.lojaId) return false;
+    }
+    return true;
+  });
   const totalSlidesToRender = bannersToRender.length;
 
   if (totalSlidesToRender === 0) {

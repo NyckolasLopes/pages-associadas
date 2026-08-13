@@ -548,8 +548,8 @@ function StoreHome() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       
       <main className="flex-1 pb-16 md:pb-0 overflow-x-hidden">
-        <HeroCarousel />
-        <SquarePromoGrid />
+        <HeroCarousel lojaId={lojaId} />
+        <SquarePromoGrid lojaId={lojaId} />
 
         {/* Advantages Banner (Imagem 2) */}
         <DynamicTarja lojaId={lojaId} />

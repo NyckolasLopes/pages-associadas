@@ -1,12 +1,26 @@
 import { useAdmin } from "@/stores/admin";
 
-export function SquarePromoGrid({ page = "Página inicial" }: { page?: string }) {
-  const banners = useAdmin(s => s.banners);
-  const miniBanners = banners.filter(b => 
-    b.posicao === "Mini Banner" && 
-    b.active && 
-    (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  );
+import { useCart } from "@/stores/cart";
+
+export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
+  const { banners, pharmacies } = useAdmin();
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const effectiveLojaId = lojaId || selectedPharmacyId;
+  const isParceiro = pharmacies?.find(p => p.id === effectiveLojaId)?.categoriaAssociado === 'Parceiro';
+
+  const miniBanners = banners.filter(b => {
+    if (b.posicao !== "Mini Banner" || !b.active) return false;
+    
+    if (effectiveLojaId) {
+      if (b.lojaId && b.lojaId !== effectiveLojaId) return false;
+      if (!b.lojaId && isParceiro) return false;
+    } else {
+      if (b.lojaId) return false;
+    }
+    
+    if (b.paginaPublicacao && b.paginaPublicacao !== "Todas as páginas" && b.paginaPublicacao !== page) return false;
+    return true;
+  });
 
   return (
     <section className="container-fa py-6">
