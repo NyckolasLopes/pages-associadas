@@ -357,13 +357,6 @@ export function Header() {
         <div className="container-fa flex items-center justify-between h-9 gap-4">
           <span className="hidden md:inline">Aqui você tem amigos.</span>
           <div className="flex items-center gap-2 md:gap-4 ml-auto overflow-x-auto whitespace-nowrap scrollbar-none">
-              <PBMAuthModal
-                trigger={
-                  <button className="hidden sm:inline-flex items-center gap-1 hover:underline">
-                    <Percent className="h-3.5 w-3.5" /> Desconto de Laboratório
-                  </button>
-                }
-              />
             {contentPages.filter(p => p.location === "header" || p.location === "both").map(p => (
               p.type === "external" ? (
                 <a key={p.id} href={p.externalUrl} target="_blank" rel="noreferrer" className="hidden lg:inline-flex items-center gap-1 hover:underline">

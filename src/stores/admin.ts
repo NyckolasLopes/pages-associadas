@@ -770,6 +770,9 @@ export const useAdmin = create<AdminState>()(
         if (banner.imageUrl2 !== undefined) payload.image_url2 = banner.imageUrl2;
         if (banner.mobileImageUrl2 !== undefined) payload.mobile_image_url2 = banner.mobileImageUrl2;
         if (banner.link2 !== undefined) payload.link2 = banner.link2;
+        if (banner.imageUrl3 !== undefined) payload.image_url3 = banner.imageUrl3;
+        if (banner.mobileImageUrl3 !== undefined) payload.mobile_image_url3 = banner.mobileImageUrl3;
+        if (banner.link3 !== undefined) payload.link3 = banner.link3;
         
         const { error } = await supabase.from('banners' as any).update(payload).eq('id', id);
         if (error) {
