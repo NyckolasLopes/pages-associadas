@@ -118,24 +118,13 @@ export const useAdminProducts = create<ProductsState>()(
       loadProducts: async () => {
         if (get()._loaded) return;
         
-        let allData = [];
-        let from = 0;
-        const step = 999;
-        
-        while (true) {
-          const { data, error } = await supabase
-            .from('produtos')
-            .select('*')
-            .order('nome', { ascending: true })
-            .range(from, from + step);
-            
-          if (error || !data || data.length === 0) break;
-          allData = allData.concat(data);
+        const { data, error } = await supabase
+          .from('produtos')
+          .select('*')
+          .order('nome', { ascending: true })
+          .limit(500);
           
-          if (data.length < step + 1) break;
-          from += step + 1;
-        }
-        
+        const allData = (error || !data) ? [] : data;
         const mapped = allData.map(mapRowToProduto);
         set({ customProducts: mapped, _loaded: true });
       },

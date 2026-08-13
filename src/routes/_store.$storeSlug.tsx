@@ -10,6 +10,7 @@ import { SquarePromoGrid } from "@/components/storefront/SquarePromoGrid";
 import { ServicesSection } from "@/components/storefront/ServicesSection";
 import { Clock, Store, Percent, Activity, ScanBarcode, Pill, Sparkles, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Sun, TrendingUp, Heart, Handshake, Tag, Droplets, HeartPulse, Eye, Smile, User, Scale, Coffee, Dumbbell, Thermometer, BriefcaseMedical, Battery, Wind, Flame, Truck, MapPin, ShieldCheck, Banknote, ChevronLeft, ChevronRight, ExternalLink, Star } from "lucide-react";
 import { isCampanhaAtiva } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
 
 import { GeoPopup } from "@/components/storefront/GeoPopup";
 // InstallPrompt are rendered globally in __root.tsx
@@ -30,18 +31,18 @@ const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: VitrineLocal; page?: string; lojaId?: string }) {
-  const allVitrines = useAdminProducts((s) => s.vitrines || []);
+  const allVitrines = useAdminProducts((s) => s.vitrines);
   const customProducts = useAdminProducts((s) => s.customProducts);
   
   const vitrines = useMemo(() => 
-    allVitrines
+    (allVitrines || [])
       .filter(v => v.ativa && v.local === local)
       .sort((a, b) => (a.ordem || 0) - (b.ordem || 0)),
     [allVitrines, local]
   );
   const [data, setData] = useState<Record<number, Produto[]>>({});
-  const allBanners = useAdmin((s) => s.banners || []);
-  const pharmacies = useAdmin((s) => s.pharmacies || []);
+  const allBanners = useAdmin((s) => s.banners);
+  const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
 
   useEffect(() => {
@@ -206,11 +207,11 @@ function getSubcategoryIcon(name: string) {
 }
 
 function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
-  const allBanners = useAdmin((s) => s.banners || []);
-  const pharmacies = useAdmin((s) => s.pharmacies || []);
+  const allBanners = useAdmin((s) => s.banners);
+  const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
-  const tarjas = useMemo(() => allBanners.filter(b => 
+  const tarjas = useMemo(() => (allBanners || []).filter(b => 
     b.active && 
     b.posicao === "Banner Tarja" &&
     (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
@@ -271,11 +272,11 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
 }
 
 function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
-  const allBanners = useAdmin((s) => s.banners || []);
-  const pharmacies = useAdmin((s) => s.pharmacies || []);
+  const allBanners = useAdmin((s) => s.banners);
+  const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
-  const categorias = useMemo(() => allBanners.filter(b => 
+  const categorias = useMemo(() => (allBanners || []).filter(b => 
     b.active && 
     b.posicao === "Banner Categoria" &&
     (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
@@ -341,7 +342,7 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: 
 }
 
 function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[] }) {
-  const children = allBanners.filter(b => b.active && b.posicao === "Banner Extra" && b.bannerVinculado === banner.id);
+  const children = (allBanners || []).filter(b => b.active && b.posicao === "Banner Extra" && b.bannerVinculado === banner.id);
   
   return (
     <>
@@ -380,11 +381,11 @@ function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[
 }
 
 function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
-  const allBanners = useAdmin((s) => s.banners || []);
-  const pharmacies = useAdmin((s) => s.pharmacies || []);
+  const allBanners = useAdmin((s) => s.banners);
+  const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
-  const extras = useMemo(() => allBanners.filter(b => 
+  const extras = useMemo(() => (allBanners || []).filter(b => 
     b.active && 
     b.posicao === "Banner Extra" && 
     (!b.vitrineVinculada || b.vitrineVinculada === "none") && 
@@ -522,7 +523,7 @@ function StoreHome() {
   if (pharmacies.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Spinner className="h-16 w-16" />
       </div>
     );
   }
@@ -574,6 +575,19 @@ function StoreHome() {
 
         {/* Produtos em Campanha - Destaque */}
         <CampaignHighlight lojaId={lojaId} />
+
+        {/* Produtos em Destaque */}
+        {grid.length > 0 && (
+          <section className="container-fa pt-4 pb-6">
+            <div className="flex items-end justify-between mb-4">
+              <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+                <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                Destaques da Loja
+              </h2>
+            </div>
+            <ProductCarousel products={grid} />
+          </section>
+        )}
 
         <section className="container-fa pt-2 pb-6 relative group">
           <h1 className="text-xl md:text-2xl font-bold mb-4">Compre por categoria</h1>
