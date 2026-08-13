@@ -1329,7 +1329,7 @@ function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
                     alt=""
                     className="h-16 w-full object-contain bg-white"
                   />
-                  <div className="font-bold mt-1 min-h-[36px] line-clamp-2 text-[11px] leading-tight">{p.nome}</div>
+                  <div className="font-bold mt-1 h-[2.5em] overflow-hidden line-clamp-2 text-[11px] leading-tight text-ellipsis">{p.nome}</div>
                   <div className="text-foreground font-bold mt-1">{brl(p.precoPor)}</div>
                   <button
                     onClick={() => add(p)}

@@ -21,6 +21,8 @@ import {
   Check,
   X,
   Key,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -164,6 +166,7 @@ function LojasAdmin() {
   const [motivoOpen, setMotivoOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [showKey, setShowKey] = useState(false);
   const navigate = useNavigate();
 
   const filteredPharmacies = pharmacies.filter(
@@ -882,11 +885,22 @@ function LojasAdmin() {
               <div className="flex flex-col sm:flex-row gap-3 items-end">
                 <div className="flex-1 space-y-1.5 w-full">
                   <FieldLabel>Chave de API (Secret Key)</FieldLabel>
-                  <Input 
-                    value={form.apiKeyTemp || "••••••••••••••••••••••••••••••••"} 
-                    readOnly 
-                    className="font-mono bg-white text-xs h-9"
-                  />
+                  <div className="relative">
+                    <Input 
+                      type={showKey ? "text" : "password"}
+                      value={form.apiKeyTemp || form.api_key || ""} 
+                      placeholder="••••••••••••••••••••••••••••••••"
+                      readOnly 
+                      className="font-mono bg-white text-xs h-9 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowKey(!showKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button 
                   onClick={async (e) => {

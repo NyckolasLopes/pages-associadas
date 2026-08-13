@@ -979,7 +979,7 @@ function CartPage() {
                       alt=""
                       className="h-20 w-full object-contain bg-white"
                     />
-                    <div className="line-clamp-2 font-bold mt-1 min-h-[28px]">{p.nome}</div>
+                    <div className="font-bold mt-1 h-[2.5em] overflow-hidden line-clamp-2 leading-tight text-ellipsis">{p.nome}</div>
                     <div className="text-foreground font-bold mt-1">{brl(p.precoPor)}</div>
                     <Button size="sm" variant="outline" className="mt-1" onClick={() => add(p)}>
                       Adicionar
