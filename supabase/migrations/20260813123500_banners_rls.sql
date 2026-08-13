@@ -5,24 +5,17 @@ DROP POLICY IF EXISTS "Banners: admin update" ON public.banners;
 DROP POLICY IF EXISTS "Banners: admin delete" ON public.banners;
 DROP POLICY IF EXISTS "Banners: all access for authenticated" ON public.banners;
 
--- Cria políticas seguras permitindo que admins gerenciem os banners
+-- Cria política permitindo leitura pública
 CREATE POLICY "Banners: public read" 
 ON public.banners 
 FOR SELECT 
 USING (true);
 
-CREATE POLICY "Banners: admin insert" 
+-- Permite que usuários autenticados gerenciem banners 
+-- (segue o mesmo padrão que as outras tabelas do banco atualmente)
+CREATE POLICY "Banners: all access for authenticated" 
 ON public.banners 
-FOR INSERT 
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
-
-CREATE POLICY "Banners: admin update" 
-ON public.banners 
-FOR UPDATE 
-USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)) 
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
-
-CREATE POLICY "Banners: admin delete" 
-ON public.banners 
-FOR DELETE 
-USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
+FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);
