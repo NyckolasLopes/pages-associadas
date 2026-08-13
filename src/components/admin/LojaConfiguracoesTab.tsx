@@ -11,7 +11,7 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
   const { pharmacies, updatePharmacy } = useAdmin();
   const loja = pharmacies.find((p) => p.id === lojaId);
 
-  const [formData, setFormData] = useState<Partial<Pharmacy>>({});
+  const [formData, setFormData] = useState<Partial<Pharmacy> & { apiKeyTemp?: string }>({});
 
   useEffect(() => {
     if (loja) {
@@ -25,7 +25,7 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
     }
   }, [loja]);
 
-  const handleChange = (field: keyof Pharmacy, value: string) => {
+  const handleChange = (field: keyof Pharmacy | "apiKeyTemp", value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -155,6 +155,69 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
               rows={12}
               placeholder="Ex: Farmacias Associadas - Sua Farmácia | CNPJ: ..."
             />
+          </div>
+        </div>
+
+        <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">Integração ERP (API Privada)</h3>
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 space-y-4">
+          <p className="text-sm text-slate-500 mb-4">
+            Gere uma chave de API para permitir que o ERP desta loja atualize automaticamente os preços e estoques através dos nossos endpoints.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex-1 space-y-2 w-full">
+              <Label>Chave de API (Secret Key)</Label>
+              <Input 
+                value={formData.apiKeyTemp || "••••••••••••••••••••••••••••••••"} 
+                readOnly 
+                className="font-mono bg-white"
+              />
+            </div>
+            <Button 
+              onClick={async () => {
+                const { supabase } = await import('@/lib/supabase');
+                const { data, error } = await supabase.rpc('create_loja_api_key', { p_loja_id: lojaId });
+                if (error) {
+                  toast.error("Erro ao gerar chave: " + error.message);
+                } else {
+                  handleChange("apiKeyTemp", data);
+                  toast.success("Chave gerada! Copie-a agora, ela não será exibida novamente.");
+                }
+              }} 
+              className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto"
+            >
+              Gerar Nova Chave
+            </Button>
+          </div>
+          
+          <div className="pt-4 mt-4 border-t border-slate-200 flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex-1 space-y-2 w-full">
+              <Label>Validador de Chave (Teste)</Label>
+              <Input 
+                placeholder="Cole uma chave de API aqui para testar..." 
+                id="api_key_test"
+                className="font-mono bg-white"
+              />
+            </div>
+            <Button 
+              variant="outline"
+              onClick={async () => {
+                const testKey = (document.getElementById('api_key_test') as HTMLInputElement).value;
+                if (!testKey) return toast.error("Insira uma chave para testar.");
+                
+                const { supabase } = await import('@/lib/supabase');
+                const { data, error } = await supabase.rpc('validate_loja_api_key', { p_raw_key: testKey, p_loja_id: lojaId });
+                
+                if (error || !data) {
+                  toast.error("Chave INVÁLIDA para esta loja.");
+                } else {
+                  toast.success("✅ Chave VÁLIDA e funcionando perfeitamente.");
+                }
+              }}
+              className="w-full sm:w-auto"
+            >
+              Testar Chave
+            </Button>
           </div>
         </div>
       </div>
