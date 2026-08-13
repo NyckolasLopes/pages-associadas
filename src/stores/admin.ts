@@ -730,8 +730,8 @@ export const useAdmin = create<AdminState>()(
           pagina_publicacao: banner.paginaPublicacao,
           titulo: banner.titulo,
           ativo: banner.active,
-          start_date: banner.startDate || null,
-          end_date: banner.endDate || null,
+          start_date: (banner.startDate && banner.startDate.trim() !== "") ? banner.startDate : null,
+          end_date: (banner.endDate && banner.endDate.trim() !== "") ? banner.endDate : null,
           loja_id: banner.lojaId || null,
           vitrine_vinculada: banner.vitrineVinculada,
           banner_vinculado: banner.bannerVinculado,
@@ -745,7 +745,7 @@ export const useAdmin = create<AdminState>()(
         };
         const { data, error } = await supabase.from('banners' as any).insert(payload).select().single();
         if (error) {
-          console.error("Erro ao adicionar banner:", error);
+          console.error("Erro ao adicionar banner:", error, "Payload enviado:", payload);
           throw error;
         }
         if (data) {
@@ -762,8 +762,8 @@ export const useAdmin = create<AdminState>()(
         if (banner.paginaPublicacao !== undefined) payload.pagina_publicacao = banner.paginaPublicacao;
         if (banner.titulo !== undefined) payload.titulo = banner.titulo;
         if (banner.active !== undefined) payload.ativo = banner.active;
-        if (banner.startDate !== undefined) payload.start_date = banner.startDate || null;
-        if (banner.endDate !== undefined) payload.end_date = banner.endDate || null;
+        if (banner.startDate !== undefined) payload.start_date = (banner.startDate && banner.startDate.trim() !== "") ? banner.startDate : null;
+        if (banner.endDate !== undefined) payload.end_date = (banner.endDate && banner.endDate.trim() !== "") ? banner.endDate : null;
         if (banner.vitrineVinculada !== undefined) payload.vitrine_vinculada = banner.vitrineVinculada;
         if (banner.bannerVinculado !== undefined) payload.banner_vinculado = banner.bannerVinculado;
         if (banner.formatoExtra !== undefined) payload.formato_extra = banner.formatoExtra;
@@ -772,6 +772,10 @@ export const useAdmin = create<AdminState>()(
         if (banner.link2 !== undefined) payload.link2 = banner.link2;
         
         const { error } = await supabase.from('banners' as any).update(payload).eq('id', id);
+        if (error) {
+          console.error("Erro ao atualizar banner:", error, "Payload enviado:", payload);
+          throw error;
+        }
         if (!error) {
           get().fetchBanners(get().activeStoreId || undefined);
         }
