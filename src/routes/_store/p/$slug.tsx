@@ -1260,39 +1260,6 @@ function PDP() {
             ) : null)}
           </div>
 
-          {variations.length > 0 && (
-            <div className="border-y py-4 my-4">
-              <div className="text-sm font-bold mb-3 flex items-center gap-2">
-                Outras opções deste produto
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 pt-2 scrollbar-none items-start">
-                {/* Current Product */}
-                <div className="w-[80px] shrink-0 flex flex-col items-center">
-                  <div className="border-2 border-primary rounded-xl p-2 relative bg-primary/5 cursor-default flex items-center justify-center h-[80px] w-full">
-                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full z-10 whitespace-nowrap shadow-sm">
-                      Selecionado
-                    </div>
-                    <img src={defaultImg} alt={p.nome} className="w-full h-full object-contain mix-blend-multiply" />
-                  </div>
-                  <div className="text-[10px] font-bold text-center text-primary leading-tight mt-1.5 line-clamp-2 px-1">
-                    {p.nome.replace(new RegExp(normalizedTarget, 'ig'), '').trim() || "Atual"}
-                  </div>
-                </div>
-                
-                {/* Other Variations */}
-                {variations.map((v: any) => (
-                  <Link key={v.id} to="/p/$slug" params={{ slug: v.url }} className="w-[80px] shrink-0 flex flex-col items-center group">
-                    <div className="border border-slate-200 group-hover:border-primary/50 transition-colors rounded-xl p-2 bg-white flex items-center justify-center h-[80px] w-full cursor-pointer relative">
-                      <img src={v.imagens?.[0] || productImage(v)} alt={v.nome} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div className="text-[10px] font-medium text-center text-slate-500 group-hover:text-primary leading-tight mt-1.5 line-clamp-2 px-1 transition-colors">
-                      {v.nome.replace(new RegExp(normalizedTarget, 'ig'), '').trim() || v.nome}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="bg-card border rounded-xl p-5 shadow-elevated">
             {p.precoSobConsulta ? (
