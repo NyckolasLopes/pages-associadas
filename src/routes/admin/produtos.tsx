@@ -251,12 +251,20 @@ function AdminProdutos() {
   };
 
   const handleSpreadsheetImport = async (products: Produto[]) => {
-    await importProducts(products, currentLojaId);
-    toast.success(
-      currentLojaId
-        ? `Planilha importada com sucesso exclusivamente para a loja ${currentLoja?.nome || ""}!`
-        : `Planilha importada no Catálogo Geral da Rede!`
-    );
+    // Forçar salvamento no catálogo geral (para refletir em todas as lojas) se for admin global
+    const targetLojaId = isGlobalAdmin ? null : currentLojaId;
+    
+    try {
+      await importProducts(products, targetLojaId);
+      toast.success(
+        targetLojaId
+          ? `Planilha importada com sucesso exclusivamente para a loja ${currentLoja?.nome || ""}!`
+          : `Planilha importada no Catálogo Geral da Rede e refletirá em todas as lojas!`
+      );
+    } catch (err) {
+      console.error(err);
+      throw err; // Repassa o erro para o SpreadsheetImporter exibir o erro
+    }
   };
 
   const simulateApiSync = () => {
