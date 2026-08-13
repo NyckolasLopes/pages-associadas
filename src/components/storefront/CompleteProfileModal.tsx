@@ -29,17 +29,52 @@ export function CompleteProfileModal() {
     }
   }, [isMissingData]);
 
+  const formatCpfCnpj = (value: string) => {
+    const v = value.replace(/\D/g, "");
+    if (v.length <= 11) {
+      return v
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    } else {
+      return v
+        .replace(/^(\d{2})(\d)/, "$1.$2")
+        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/\.(\d{3})(\d)/, ".$1/$2")
+        .replace(/(\d{4})(\d)/, "$1-$2")
+        .substring(0, 18);
+    }
+  };
+
+  const formatPhone = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 11) v = v.substring(0, 11);
+    if (v.length <= 10) {
+      return v
+        .replace(/(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{4})(\d)/, "$1-$2");
+    } else {
+      return v
+        .replace(/(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{5})(\d)/, "$1-$2");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) return;
-    if (cpf.length < 11 || celular.length < 10) {
-      return toast.error("Preencha CPF e Celular corretamente.");
+    
+    const unmaskedCpf = cpf.replace(/\D/g, '');
+    const unmaskedPhone = celular.replace(/\D/g, '');
+    
+    if (unmaskedCpf.length < 11 || unmaskedPhone.length < 10) {
+      return toast.error("Preencha CPF/CNPJ e Celular corretamente.");
     }
     
     setLoading(true);
     const { error } = await supabase.from("profiles").update({
-      cpf: cpf.replace(/\D/g, ''),
-      telefone: celular.replace(/\D/g, '')
+      cpf: unmaskedCpf,
+      telefone: unmaskedPhone
     }).eq("id", user.id);
 
     setLoading(false);
@@ -50,7 +85,7 @@ export function CompleteProfileModal() {
       toast.success("Perfil atualizado com sucesso!");
       // Atualiza estado local da Auth pra sumir o modal
       useAuth.setState((state) => ({
-        user: state.user ? { ...state.user, cpf, celular } : null
+        user: state.user ? { ...state.user, cpf: unmaskedCpf, celular: unmaskedPhone } : null
       }));
       setOpen(false);
     }
@@ -62,16 +97,16 @@ export function CompleteProfileModal() {
         <DialogHeader>
           <DialogTitle>Complete seu cadastro</DialogTitle>
           <DialogDescription>
-            Como você entrou usando uma rede social, precisamos que você informe seu CPF e Celular para podermos processar seus pedidos com segurança e emitir as notas fiscais.
+            Como você entrou usando uma rede social, precisamos que você informe seu CPF ou CNPJ e Celular para podermos processar seus pedidos com segurança e emitir as notas fiscais.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-2">
-            <Label>CPF</Label>
+            <Label>CPF / CNPJ</Label>
             <Input 
               placeholder="000.000.000-00" 
               value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
+              onChange={(e) => setCpf(formatCpfCnpj(e.target.value))}
               required
             />
           </div>
@@ -80,7 +115,7 @@ export function CompleteProfileModal() {
             <Input 
               placeholder="(11) 90000-0000" 
               value={celular}
-              onChange={(e) => setCelular(e.target.value)}
+              onChange={(e) => setCelular(formatPhone(e.target.value))}
               required
             />
           </div>

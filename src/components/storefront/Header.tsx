@@ -460,7 +460,7 @@ export function Header() {
 
         {/* Account & Pedidos */}
         <div className="hidden lg:flex items-center gap-4 ml-4">
-          <Link to="/pedidos" className="flex items-center gap-2 hover:opacity-80 transition group">
+          <Link to={user ? "/pedidos" : "/login"} search={user ? undefined : { redirect: "/pedidos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
             <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition">
               <Package className="h-5 w-5 text-primary" />
             </div>
@@ -470,7 +470,7 @@ export function Header() {
             </div>
           </Link>
 
-          <Link to="/perfil" search={{ tab: "favoritos" }} className="flex items-center gap-2 hover:opacity-80 transition group">
+          <Link to={user ? "/perfil" : "/login"} search={user ? { tab: "favoritos" } : { redirect: "/perfil", tab: "favoritos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
             <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition">
               <Heart className="h-5 w-5 text-primary" />
             </div>
@@ -483,7 +483,7 @@ export function Header() {
           <div className="w-px h-8 bg-border"></div>
 
           {mounted && user ? (
-            <Link to="/pedidos" className="flex flex-col items-start text-sm max-w-[120px] hover:opacity-80 transition cursor-pointer">
+            <Link to="/perfil" className="flex flex-col items-start text-sm max-w-[120px] hover:opacity-80 transition cursor-pointer">
               <span className="text-[10px] font-bold text-muted-foreground leading-tight truncate w-full">
                 {getGreeting()}
               </span>
@@ -765,7 +765,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               </div>
               <div className="flex-1 overflow-hidden">
                 <SheetTitle className="truncate text-base leading-tight text-primary">{getGreeting()} {user?.name?.split(" ")[0]}</SheetTitle>
-                <Link to="/pedidos" className="text-muted-foreground text-xs font-bold hover:underline" onClick={() => setOpen(false)}>Minha conta</Link>
+                <Link to="/perfil" className="text-muted-foreground text-xs font-bold hover:underline" onClick={() => setOpen(false)}>Meus Dados</Link>
               </div>
             </div>
           ) : (
@@ -795,12 +795,12 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               </button>
             )}
 
-            <Link to="/pedidos" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
+            <Link to={user ? "/pedidos" : "/login"} search={user ? undefined : { redirect: "/pedidos" } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
               <Package className="h-5 w-5 text-primary shrink-0" />
               <span className="text-sm font-bold flex-1">Acompanhe seus pedidos</span>
             </Link>
 
-            <Link to="/perfil" search={{ tab: "favoritos" }} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
+            <Link to={user ? "/perfil" : "/login"} search={user ? { tab: "favoritos" } : { redirect: "/perfil", tab: "favoritos" } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
               <Heart className="h-5 w-5 text-primary shrink-0" />
               <span className="text-sm font-bold flex-1">Meus Favoritos</span>
             </Link>
