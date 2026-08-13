@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Save } from "lucide-react";
+import { Save, Eye, EyeOff } from "lucide-react";
 
 export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
   const { pharmacies, updatePharmacy } = useAdmin();
   const loja = pharmacies.find((p) => p.id === lojaId);
 
   const [formData, setFormData] = useState<Partial<Pharmacy> & { apiKeyTemp?: string }>({});
+  const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
     if (loja) {
@@ -167,11 +168,22 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
           <div className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="flex-1 space-y-2 w-full">
               <Label>Chave de API (Secret Key)</Label>
-              <Input 
-                value={formData.apiKeyTemp || "••••••••••••••••••••••••••••••••"} 
-                readOnly 
-                className="font-mono bg-white"
-              />
+              <div className="relative">
+                <Input 
+                  type={showKey ? "text" : "password"}
+                  value={formData.apiKeyTemp || formData.api_key || ""} 
+                  placeholder="••••••••••••••••••••••••••••••••"
+                  readOnly 
+                  className="font-mono bg-white pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <Button 
               onClick={async () => {

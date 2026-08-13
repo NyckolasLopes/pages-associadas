@@ -94,24 +94,33 @@ export default function ApiPage() {
     toast.success("Chave removida.");
   };
 
-  const createKey = () => {
+  const createKey = async () => {
     if (!newName.trim()) { toast.error("Informe um nome para a chave."); return; }
-    const novaChave: ApiKey = {
-      id: Date.now().toString(),
-      nome: newName,
-      chave: `fa_live_sk_${Array.from({ length: 36 }, () => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 62)]).join("")}`,
-      criado: new Date().toISOString().slice(0, 10),
-      ultimoUso: null,
-      status: "ativa",
-      permissoes: newPerms,
-    };
-    setKeys(prev => [novaChave, ...prev]);
-    setShowCreate(false);
-    setNewName("");
-    setNewPerms([]);
-    toast.success("Chave de API criada com sucesso!");
-    // Mostrar a chave recém criada
-    setVisibleKeys(prev => new Set([...prev, novaChave.id]));
+    
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: rawKey, error } = await supabase.rpc('create_master_api_key', { p_nome: newName });
+      
+      if (error) throw error;
+      
+      toast.success("Chave Master gerada com sucesso! Copie agora pois não será exibida novamente.");
+      // Adicionamos a nova chave na lista local temporariamente para exibição
+      const novaChave: ApiKey = {
+        id: Date.now().toString(),
+        nome: newName,
+        chave: rawKey,
+        criado: new Date().toISOString().split('T')[0],
+        ultimoUso: null,
+        status: "ativa",
+        permissoes: ["master"],
+      };
+      setKeys(prev => [novaChave, ...prev]);
+      setShowCreate(false);
+      setNewName("");
+      setVisibleKeys(prev => new Set([...prev, novaChave.id]));
+    } catch (err: any) {
+      toast.error("Erro ao gerar chave: " + err.message);
+    }
   };
 
   return (

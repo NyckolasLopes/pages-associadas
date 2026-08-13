@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { Fragment } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
-  Search, MapPin, ShoppingBasket, Menu, Phone, User, X, Truck, Sparkles,
+  Search, MapPin, ShoppingBasket, Menu, Phone, User, X, Truck, Sparkles, Trash2,
   Pill, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Plus, Camera, Package, Home, Tag, ShieldCheck, ChevronDown, Flame, HeartPulse, Navigation,
   Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell
 } from "lucide-react";
@@ -1269,24 +1269,24 @@ function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
               </div>
               <div className="mt-2 flex flex-col gap-2">
 
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setQty(i.id, i.qty - 1)} className="h-7 w-7 border rounded">
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => setQty(i.id, i.qty - 1)} className="h-8 w-8 border rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
                     −
                   </button>
-                  <div className="w-8 text-center text-sm font-bold">{i.qty}</div>
+                  <div className="w-8 text-center text-sm font-bold text-slate-800">{i.qty}</div>
                   <button 
                     onClick={() => setQty(i.id, i.qty + 1)} 
                     disabled={i.qty >= i.estoque}
-                    className="h-7 w-7 border rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="h-8 w-8 border rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     +
                   </button>
                   <button
                     onClick={() => remove(i.id)}
-                    className="ml-auto text-muted-foreground hover:text-destructive"
+                    className="ml-3 h-8 w-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                     aria-label="Remover"
                   >
-                    <X className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>

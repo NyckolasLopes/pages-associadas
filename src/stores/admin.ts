@@ -97,6 +97,7 @@ export interface Pharmacy {
   entregaExpressa?: boolean;
   // Dados da Loja
   cnpj: string;
+  api_key?: string;
   logoUrl?: string;
   faviconUrl?: string;
   themeColors?: Record<string, string>;
@@ -833,6 +834,7 @@ export const useAdmin = create<AdminState>()(
             trabalhaComEncarte: l.trabalha_com_encarte,
             isVirtualStoreGenerated: !!l.status_loja_virtual,
             virtualStoreStatus: l.status_loja_virtual,
+            api_key: l.api_key,
           })) as unknown as Pharmacy[];
           set({ pharmacies: loadedPharmacies });
         }
