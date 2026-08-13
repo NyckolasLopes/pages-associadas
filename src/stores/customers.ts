@@ -32,11 +32,18 @@ interface CustomersStore {
 export const useCustomers = create<CustomersStore>((set, get) => ({
   customers: [],
   loadCustomers: async () => {
-    const { data, error } = await supabase.from('vw_clientes_estatisticas' as any).select('*');
+    // Buscar todos os perfis reais do banco
+    const { data, error } = await supabase.from('profiles' as any).select('*');
     if (data && !error) {
       const mapped = data.map((d: any) => {
         const principalEndereco = Array.isArray(d.enderecos) && d.enderecos.length > 0 ? d.enderecos[0] : null;
         
+        // Detectar método de login pelo provider salvo ou pelo e-mail
+        let metodoLogin: Customer['metodoLogin'] = 'Email';
+        if (d.provider === 'google' || d.auth_provider === 'google') metodoLogin = 'Google';
+        else if (d.provider === 'facebook' || d.auth_provider === 'facebook') metodoLogin = 'Facebook';
+        else if (d.provider === 'apple' || d.auth_provider === 'apple') metodoLogin = 'Apple';
+
         return {
           id: d.id,
           nome: d.nome || 'Sem Nome',
@@ -47,15 +54,19 @@ export const useCustomers = create<CustomersStore>((set, get) => ({
           cidade: principalEndereco ? principalEndereco.cidade : '',
           uf: principalEndereco ? principalEndereco.estado : '',
           cep: principalEndereco ? principalEndereco.cep : '',
-          dataCadastro: d.data_cadastro ? new Date(d.data_cadastro).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          metodoLogin: 'Email', // Fallback for views
-          totalPedidos: parseInt(d.total_pedidos) || 0,
-          valorUltimoPedido: parseFloat(d.valor_ultimo_pedido) || 0,
-          anotacoes: d.anotacoes,
-          enderecos: d.enderecos
+          dataCadastro: d.created_at ? new Date(d.created_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
+          metodoLogin,
+          totalPedidos: 0,
+          valorUltimoPedido: 0,
+          anotacoes: d.anotacoes || '',
+          enderecos: d.enderecos || [],
+          lojaId: d.loja_id || undefined,
         };
       }) as unknown as Customer[];
-      set({ customers: mapped });
+      
+      // Filtrar clientes admin (is_admin = true) para não aparecer na lista de clientes
+      const clientesReais = mapped.filter((c: any) => !(data.find((d: any) => d.id === c.id)?.is_admin));
+      set({ customers: clientesReais });
     }
   },
   addCustomer: async (customer) => {
