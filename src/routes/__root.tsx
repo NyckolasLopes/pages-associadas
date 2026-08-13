@@ -184,6 +184,7 @@ function RootComponent() {
     useAdminCategories.getState().loadCategories();
     useMarcasStore.getState().loadMarcas();
     useOrders.getState().loadOrders();
+    useAdmin.getState().loadPharmacies();
     
     // Register PWA Service Worker
     if ('serviceWorker' in navigator) {

@@ -446,9 +446,15 @@ function CampaignHighlight({ lojaId }: { lojaId?: string }) {
 function StoreHome() {
 
   const { storeSlug } = Route.useParams();
-  const { pharmacies } = useAdmin();
+  const { pharmacies, fetchBanners } = useAdmin();
   const loja = useMemo(() => pharmacies.find((p) => safeSlugify(p.nome || p.id) === storeSlug), [pharmacies, storeSlug]);
   const lojaId = loja?.id;
+
+  useEffect(() => {
+    if (lojaId) {
+      fetchBanners(lojaId);
+    }
+  }, [lojaId, fetchBanners]);
 
   const { setSelectedPharmacyId } = useCart();
   const { recordLojaAccess, initPresence } = useLive();
