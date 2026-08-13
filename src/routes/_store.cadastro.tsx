@@ -37,12 +37,22 @@ function CadastroPage() {
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
-    if (v.length > 11) v = v.slice(0, 11);
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    if (v.length <= 11) {
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    } else {
+      if (v.length > 14) v = v.slice(0, 14);
+      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    }
     setCpf(v);
   };
+
+  const cpfDigits = cpf.replace(/\D/g, "").length;
+  const isCnpj = cpfDigits > 11;
 
   const handleCelularChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
@@ -129,12 +139,12 @@ function CadastroPage() {
       <form onSubmit={submit} className="space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <Label>CPF</Label>
+            <Label>CPF / CNPJ</Label>
             <Input
               type="text"
               value={cpf}
               onChange={handleCpfChange}
-              placeholder="000.000.000-00"
+              placeholder={isCnpj ? "00.000.000/0000-00" : "000.000.000-00"}
               required
             />
           </div>
