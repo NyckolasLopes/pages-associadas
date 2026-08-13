@@ -302,9 +302,9 @@ export function Footer() {
         </Col>
       </div>
 
-      {/* Brand + Social + Payment */}
+      {/* Brand + Social */}
       <div className="border-t border-white/15">
-        <div className="container-fa py-8 grid lg:grid-cols-3 gap-8 items-start">
+        <div className="container-fa py-8 grid lg:grid-cols-2 gap-8 items-start">
           <div>
             <Logo className="h-12 bg-white rounded-md p-2" />
             <p className="mt-3 text-sm opacity-90">
@@ -334,15 +334,6 @@ export function Footer() {
             <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {activePharmacy?.email || dadosLoja.email}</div>
           </div>
 
-          <div className="flex flex-col gap-5 lg:col-span-1">
-            <div>
-              <h3 className="font-bold uppercase text-xs tracking-wider opacity-80 mb-3">Formas de pagamento</h3>
-              <div className="bg-white p-3 rounded-lg border border-transparent shadow-sm">
-                <img src={paymentMethodsImg} alt="Formas de Pagamento" className="w-full h-auto object-contain mix-blend-multiply" width={300} height={40} loading="lazy" decoding="async" />
-              </div>
-            </div>
-
-          </div>
         </div>
       </div>
 

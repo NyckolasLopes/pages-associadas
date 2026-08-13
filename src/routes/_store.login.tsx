@@ -47,7 +47,7 @@ function LoginPage() {
   };
 
   const social = async (provider: "google" | "apple" | "facebook") => {
-    await loginWithProvider(provider);
+    await loginWithProvider(provider, redirect);
   };
 
   return (

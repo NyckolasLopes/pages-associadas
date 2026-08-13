@@ -24,7 +24,7 @@ interface AuthState {
   user: User | null;
   loginOpen: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  loginWithProvider: (provider: "google" | "apple" | "facebook") => Promise<void>;
+  loginWithProvider: (provider: "google" | "apple" | "facebook", redirectPath?: string) => Promise<void>;
   logout: () => Promise<void>;
   setLoginOpen: (open: boolean) => void;
   _initListener: () => void;
@@ -61,10 +61,14 @@ export const useAuth = create<AuthState>((set, get) => ({
     return true;
   },
 
-  loginWithProvider: async (provider) => {
+  loginWithProvider: async (provider, redirectPath) => {
+    const redirectTo = redirectPath 
+      ? `${window.location.origin}${redirectPath}`
+      : window.location.origin;
+      
     await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo },
     });
   },
 
