@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getGreeting, brl, productImage } from "@/lib/format";
 import { toast } from "sonner";
 import { catalog } from "@/services/catalog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/_store/perfil")({
   validateSearch: (search: Record<string, unknown>): { tab?: string } => {
@@ -429,9 +430,28 @@ function PerfilPage() {
               <p className="text-sm text-red-800">
                 Ao excluir sua conta, todos os seus dados pessoais, endereços e histórico de pedidos serão removidos permanentemente. Esta ação não pode ser desfeita.
               </p>
-              <Button variant="destructive" onClick={() => { logout(); navigate({ to: "/" }); }}>
-                Excluir conta definitivamente
-              </Button>
+              <ConfirmDialog
+                title="Você tem certeza que deseja excluir sua conta pra sempre?"
+                description="Você perderá todos os dados de pedidos já feitos e todas as configurações salvas. Esta ação é irreversível."
+                confirmText="Sim, excluir conta"
+                cancelText="Cancelar"
+                onConfirm={async () => {
+                  try {
+                    const { supabase } = await import("@/integrations/supabase/client");
+                    const { error } = await supabase.rpc("delete_own_account");
+                    if (error) throw error;
+                    toast.success("Conta excluída com sucesso.");
+                    logout();
+                    navigate({ to: "/" });
+                  } catch (e: any) {
+                    toast.error("Erro ao excluir conta: " + e.message);
+                  }
+                }}
+              >
+                <Button variant="destructive">
+                  Excluir conta definitivamente
+                </Button>
+              </ConfirmDialog>
             </div>
           </>
         ) : (

@@ -770,9 +770,7 @@ function CartPage() {
                                   )}
                                 </div>
                                 <div className="flex flex-wrap gap-1.5 items-center">
-                                  {isMaisProxima && <span className="inline-flex items-center bg-green-100 text-green-700 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded shadow-sm">Mais próxima</span>}
                                   {isMelhorPreco && <span className="inline-flex items-center bg-amber-100 text-amber-800 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded shadow-sm">Melhor Preço</span>}
-                                </div>
                               </div>
                               <div className="text-right flex-shrink-0">
                                 <div className={`font-bold ${isDisabled ? 'text-slate-400' : 'text-slate-900'}`}>
@@ -843,7 +841,6 @@ function CartPage() {
                               <p><strong className="text-foreground">CNPJ:</strong> {p.cnpj}</p>
                               <p><strong className="text-foreground">Farmacêutico:</strong> {p.respTecnico} | <strong className="text-foreground">CRF/RS:</strong> {(p as any).crf}</p>
                               <p><strong className="text-foreground">AFE:</strong> {p.afe}</p>
-                              <p className="mt-1"><strong className="text-foreground">Distância:</strong> <span className="inline-flex items-center text-primary bg-primary/10 px-1.5 rounded text-[10px] ml-1"><MapPin className="h-3 w-3 mr-0.5"/> {distance !== null ? (distance === -1 ? 'Indisponível' : `${distance.toFixed(1)} km`) : "Calculando..."}</span></p>
                             </div>
                             </div>
                           );
@@ -857,18 +854,28 @@ function CartPage() {
             </div>
             
             {selectedPharmacy && (
-              <div className="text-xs text-muted-foreground border-t pt-3 space-y-1">
-                {selectedPharmacyId === closestPharmacyId && (
-                  <p className="mb-2">
-                    <span className="inline-flex items-center text-[9px] text-green-800 bg-green-100 px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">Mais próxima da sua localização</span>
-                  </p>
-                )}
-                <p>{selectedPharmacy.endereco}</p>
-                <p><strong className="text-foreground">Horário de funcionamento:</strong> {selectedPharmacy.horarioFuncionamento || "Seg a Sáb: 08:00 às 22:00"}</p>
-                <p><strong className="text-foreground">CNPJ:</strong> {selectedPharmacy.cnpj}</p>
-                <p><strong className="text-foreground">Farmacêutico:</strong> {selectedPharmacy.respTecnico} | <strong className="text-foreground">CRF/RS:</strong> {(selectedPharmacy as any).crf}</p>
-                <p><strong className="text-foreground">AFE:</strong> {selectedPharmacy.afe}</p>
-                <p className="mt-1"><strong>Distância:</strong> <span className="inline-flex items-center text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[10px] font-medium ml-1"><MapPin className="h-3 w-3 mr-0.5"/> {selectedPharmacyId ? ((geoLat && geoLng && selectedPharmacy?.lat && selectedPharmacy?.lng) ? calculateDistance(geoLat, geoLng, selectedPharmacy.lat, selectedPharmacy.lng).toFixed(1) + " km" : (pharmDistances[selectedPharmacyId] !== null && pharmDistances[selectedPharmacyId] !== undefined ? (pharmDistances[selectedPharmacyId] === -1 ? 'Indisponível' : pharmDistances[selectedPharmacyId]!.toFixed(1) + " km") : "Calculando...")) : "1.5 km"}</span></p>
+              <div className="border-t pt-4 mt-2">
+                <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 space-y-3">
+                  <h4 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-primary" />
+                    Dados da Loja
+                  </h4>
+                  <div className="text-xs text-slate-600 grid gap-2">
+                    <p className="flex items-start gap-2">
+                      <MapPin className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" />
+                      <span>{selectedPharmacy.endereco}</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <Clock className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" />
+                      <span><strong className="text-slate-800">Horário:</strong> {selectedPharmacy.horarioFuncionamento || "Seg a Sáb: 08:00 às 22:00"}</span>
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-200/60">
+                      <p><strong className="text-slate-800">CNPJ:</strong> {selectedPharmacy.cnpj}</p>
+                      <p><strong className="text-slate-800">AFE:</strong> {selectedPharmacy.afe}</p>
+                      <p className="sm:col-span-2"><strong className="text-slate-800">Farmacêutico:</strong> {selectedPharmacy.respTecnico} <span className="text-slate-300 mx-1">|</span> <strong className="text-slate-800">CRF/RS:</strong> {(selectedPharmacy as any).crf}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

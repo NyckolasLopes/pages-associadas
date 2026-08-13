@@ -26,9 +26,13 @@ function LoginPage() {
   const { redirect } = Route.useSearch();
   const navigate = useNavigate();
   const login = useAuth((s) => s.login);
+  const verifyOtp = useAuth((s) => s.verifyOtp);
   const loginWithProvider = useAuth((s) => s.loginWithProvider);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  
+  const [isOtpMode, setIsOtpMode] = useState(false);
+  const [token, setToken] = useState("");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,9 +45,27 @@ function LoginPage() {
       }
     }
     
-    const ok = await login(email, pass);
-    if (ok) navigate({ to: redirect as any });
-    else toast.error("E-mail ou senha incorretos.");
+    const result = await login(email, pass);
+    if (result === "otp_required") {
+      setIsOtpMode(true);
+      toast.success("Código de segurança enviado para o seu e-mail!");
+    } else if (result === true) {
+      navigate({ to: redirect as any });
+    } else {
+      toast.error("E-mail ou senha incorretos.");
+    }
+  };
+
+  const submitOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (token.length < 6) return toast.error("Código inválido.");
+    const ok = await verifyOtp(email, token);
+    if (ok) {
+      toast.success("Verificação concluída!");
+      navigate({ to: redirect as any });
+    } else {
+      toast.error("Código incorreto ou expirado.");
+    }
   };
 
   const social = async (provider: "google" | "apple" | "facebook") => {
@@ -53,61 +75,94 @@ function LoginPage() {
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center bg-primary/5 py-12 px-4">
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border-t-4 border-t-primary">
-        <h1 className="text-2xl font-bold text-slate-800 text-center">Entrar para finalizar</h1>
-        <p className="text-sm text-slate-500 mt-2 text-center">
-          É necessário entrar na sua conta para concluir com segurança.
-        </p>
+        
+        {isOtpMode ? (
+          <>
+            <h1 className="text-2xl font-bold text-slate-800 text-center">Verificação em 2 Etapas</h1>
+            <p className="text-sm text-slate-500 mt-2 text-center">
+              Como medida de segurança, enviamos um código de 6 dígitos para o e-mail <br/><strong>{email}</strong>.
+            </p>
+            <form onSubmit={submitOtp} className="mt-6 space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-slate-700 font-bold text-center block">Código de Segurança</Label>
+                <Input
+                  type="text"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder="000000"
+                  className="h-12 bg-slate-50 text-center text-xl tracking-widest font-mono font-bold"
+                  maxLength={6}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full h-11 text-base font-bold">
+                Confirmar e Entrar
+              </Button>
+              <Button type="button" variant="ghost" className="w-full text-slate-500" onClick={() => setIsOtpMode(false)}>
+                Voltar
+              </Button>
+            </form>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold text-slate-800 text-center">Entrar para finalizar</h1>
+            <p className="text-sm text-slate-500 mt-2 text-center">
+              É necessário entrar na sua conta para concluir com segurança.
+            </p>
 
-        <div className="mt-8 space-y-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-center gap-2 h-11"
-            onClick={() => social("google")}
-          >
-            <GoogleIcon /> Continuar com Google
-          </Button>
-        </div>
+            <div className="mt-8 space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-center gap-2 h-11"
+                onClick={() => social("google")}
+              >
+                <GoogleIcon /> Continuar com Google
+              </Button>
+            </div>
 
-        <div className="flex items-center gap-3 my-8">
-          <div className="h-px flex-1 bg-slate-200" />
-          <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">ou</span>
-          <div className="h-px flex-1 bg-slate-200" />
-        </div>
+            <div className="flex items-center gap-3 my-8">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">ou</span>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
 
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="text-slate-700 font-bold">E-mail</Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="voce@email.com"
-              className="h-11 bg-slate-50"
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-slate-700 font-bold">Senha</Label>
-            <Input
-              type="password"
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-              placeholder="••••••••"
-              className="h-11 bg-slate-50"
-              required
-            />
-          </div>
-          <Button type="submit" className="w-full h-12 text-base mt-2 bg-primary text-primary-foreground hover:bg-primary-dark font-bold shadow-lg shadow-primary/20">
-            <Mail className="h-5 w-5 mr-2" /> Entrar com e-mail
-          </Button>
-        </form>
-        <div className="mt-8 text-center text-sm text-muted-foreground border-t pt-6">
-          Ainda não tem conta?{" "}
-          <Link to="/cadastro" search={{ redirect }} className="text-primary font-bold hover:underline">
-            Cadastre-se grátis
-          </Link>
-        </div>
+            <form onSubmit={submit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-slate-700 font-bold">E-mail</Label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@email.com"
+                  className="h-11 bg-slate-50"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-slate-700 font-bold">Senha</Label>
+                <Input
+                  type="password"
+                  value={pass}
+                  onChange={(e) => setPass(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-11 bg-slate-50"
+                  required
+                />
+              </div>
+              
+              <Button type="submit" className="w-full h-11 text-base font-bold">
+                Entrar
+              </Button>
+            </form>
+            <div className="mt-8 text-center text-sm text-muted-foreground border-t pt-6">
+              Ainda não tem conta?{" "}
+              <Link to="/cadastro" search={{ redirect }} className="text-primary font-bold hover:underline">
+                Cadastre-se grátis
+              </Link>
+            </div>
+          </>
+        )}
         <div className="text-center pt-8 text-xs text-slate-400 font-medium">
           Versão 1.0
         </div>

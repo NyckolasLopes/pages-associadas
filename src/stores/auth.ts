@@ -23,7 +23,8 @@ interface User {
 interface AuthState {
   user: User | null;
   loginOpen: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean | "otp_required">;
+  verifyOtp: (email: string, token: string) => Promise<boolean>;
   loginWithProvider: (provider: "google" | "apple" | "facebook", redirectPath?: string) => Promise<void>;
   logout: () => Promise<void>;
   setLoginOpen: (open: boolean) => void;
@@ -39,7 +40,44 @@ export const useAuth = create<AuthState>((set, get) => ({
     if (error || !data.user) return false;
 
     const u = data.user;
-    // Fetch extended profile (nome, cpf, celular) from profiles table
+    // Fetch extended profile (nome, cpf, celular, has_logged_in_before)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("nome, cpf, telefone, has_logged_in_before")
+      .eq("id", u.id)
+      .single();
+
+    if (profile?.has_logged_in_before) {
+      // 2FA Flow: already logged in before, require OTP.
+      await supabase.auth.signOut(); // silent logout
+      const { error: otpError } = await supabase.auth.signInWithOtp({ email });
+      if (otpError) return false;
+      return "otp_required" as any; // Cast for now, will fix interface below
+    } else {
+      // First time login with email/password. Mark as logged in.
+      await supabase.from("profiles").update({ has_logged_in_before: true }).eq("id", u.id);
+    }
+
+    set({
+      user: {
+        id: u.id,
+        email: u.email!,
+        name: profile?.nome || u.email!.split("@")[0],
+        nome: profile?.nome || undefined,
+        cpf: profile?.cpf || undefined,
+        celular: profile?.telefone || undefined,
+        provider: "email",
+      },
+      loginOpen: false,
+    });
+    return true;
+  },
+
+  verifyOtp: async (email: string, token: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+    if (error || !data.user) return false;
+
+    const u = data.user;
     const { data: profile } = await supabase
       .from("profiles")
       .select("nome, cpf, telefone")

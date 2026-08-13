@@ -8,6 +8,7 @@ const Footer = lazy(() => import("@/components/storefront/Footer").then(m => ({ 
 const FloatingElements = lazy(() => import("@/components/storefront/BackToTop").then(m => ({ default: m.FloatingElements })));
 const CookieBanner = lazy(() => import("@/components/storefront/CookieBanner").then(m => ({ default: m.CookieBanner })));
 const GeoPopup = lazy(() => import("@/components/storefront/GeoPopup").then(m => ({ default: m.GeoPopup })));
+import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 
 export const Route = createFileRoute("/_store")({
   component: StoreLayout,
@@ -102,6 +103,7 @@ function StoreLayout() {
         <GeoPopup />
         {isHome && <CookieBanner />}
       </Suspense>
+      <CompleteProfileModal />
     </div>
   );
 }
