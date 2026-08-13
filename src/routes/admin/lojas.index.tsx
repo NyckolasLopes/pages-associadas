@@ -20,6 +20,7 @@ import {
   Zap,
   Check,
   X,
+  Key,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -869,6 +870,75 @@ function LojasAdmin() {
             )}
           </div>
         </FormSection>
+
+        {/* ========== INTEGRAÇÃO ERP ========== */}
+        {editingId && (
+          <FormSection icon={<Key className="h-4 w-4 text-indigo-600" />} title="Integração ERP (API Privada)">
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
+              <p className="text-xs text-slate-500 mb-4">
+                Gere uma chave de API para permitir que o ERP desta loja atualize automaticamente os preços e estoques.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-3 items-end">
+                <div className="flex-1 space-y-1.5 w-full">
+                  <FieldLabel>Chave de API (Secret Key)</FieldLabel>
+                  <Input 
+                    value={form.apiKeyTemp || "••••••••••••••••••••••••••••••••"} 
+                    readOnly 
+                    className="font-mono bg-white text-xs h-9"
+                  />
+                </div>
+                <Button 
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    const { supabase } = await import('@/integrations/supabase/client');
+                    const { data, error } = await supabase.rpc('create_loja_api_key', { p_loja_id: editingId });
+                    if (error) {
+                      toast.error("Erro ao gerar chave: " + error.message);
+                    } else {
+                      update({ apiKeyTemp: data });
+                      toast.success("Chave gerada! Copie-a agora, ela não será exibida novamente.");
+                    }
+                  }} 
+                  className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto h-9 text-xs"
+                >
+                  Gerar Chave
+                </Button>
+              </div>
+              
+              <div className="pt-3 mt-3 border-t border-slate-200 flex flex-col sm:flex-row gap-3 items-end">
+                <div className="flex-1 space-y-1.5 w-full">
+                  <FieldLabel>Validador de Chave (Teste)</FieldLabel>
+                  <Input 
+                    placeholder="Cole uma chave de API aqui para testar..." 
+                    id="api_key_test_global"
+                    className="font-mono bg-white text-xs h-9"
+                  />
+                </div>
+                <Button 
+                  variant="outline"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    const testKey = (document.getElementById('api_key_test_global') as HTMLInputElement).value;
+                    if (!testKey) return toast.error("Insira uma chave para testar.");
+                    
+                    const { supabase } = await import('@/integrations/supabase/client');
+                    const { data, error } = await supabase.rpc('validate_loja_api_key', { p_raw_key: testKey, p_loja_id: editingId });
+                    
+                    if (error || !data) {
+                      toast.error("Chave INVÁLIDA para esta loja.");
+                    } else {
+                      toast.success("✅ Chave VÁLIDA e funcionando.");
+                    }
+                  }}
+                  className="w-full sm:w-auto h-9 text-xs"
+                >
+                  Testar
+                </Button>
+              </div>
+            </div>
+          </FormSection>
+        )}
           </div>
 
           <DialogFooter className="pt-4 border-t">
