@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAdmin } from "@/stores/admin";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Loja } from "@/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";

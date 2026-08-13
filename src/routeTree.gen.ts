@@ -30,6 +30,7 @@ import { Route as AdminListaEsperaRouteImport } from './routes/admin/lista-esper
 import { Route as AdminLinksCarrinhoRouteImport } from './routes/admin/links-carrinho'
 import { Route as AdminIntegracoesRouteImport } from './routes/admin/integracoes'
 import { Route as AdminFiltrosRouteImport } from './routes/admin/filtros'
+import { Route as AdminEstoqueRouteImport } from './routes/admin/estoque'
 import { Route as AdminDescontosRouteImport } from './routes/admin/descontos'
 import { Route as AdminColecoesRouteImport } from './routes/admin/colecoes'
 import { Route as AdminCategoriasRouteImport } from './routes/admin/categorias'
@@ -199,6 +200,11 @@ const AdminIntegracoesRoute = AdminIntegracoesRouteImport.update({
 const AdminFiltrosRoute = AdminFiltrosRouteImport.update({
   id: '/filtros',
   path: '/filtros',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEstoqueRoute = AdminEstoqueRouteImport.update({
+  id: '/estoque',
+  path: '/estoque',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminDescontosRoute = AdminDescontosRouteImport.update({
@@ -561,6 +567,7 @@ export interface FileRoutesByFullPath {
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/colecoes': typeof AdminColecoesRoute
   '/admin/descontos': typeof AdminDescontosRoute
+  '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/filtros': typeof AdminFiltrosRoute
   '/admin/integracoes': typeof AdminIntegracoesRouteWithChildren
   '/admin/links-carrinho': typeof AdminLinksCarrinhoRoute
@@ -647,6 +654,7 @@ export interface FileRoutesByTo {
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/colecoes': typeof AdminColecoesRoute
   '/admin/descontos': typeof AdminDescontosRoute
+  '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/filtros': typeof AdminFiltrosRoute
   '/admin/integracoes': typeof AdminIntegracoesRouteWithChildren
   '/admin/links-carrinho': typeof AdminLinksCarrinhoRoute
@@ -736,6 +744,7 @@ export interface FileRoutesById {
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/colecoes': typeof AdminColecoesRoute
   '/admin/descontos': typeof AdminDescontosRoute
+  '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/filtros': typeof AdminFiltrosRoute
   '/admin/integracoes': typeof AdminIntegracoesRouteWithChildren
   '/admin/links-carrinho': typeof AdminLinksCarrinhoRoute
@@ -825,6 +834,7 @@ export interface FileRouteTypes {
     | '/admin/categorias'
     | '/admin/colecoes'
     | '/admin/descontos'
+    | '/admin/estoque'
     | '/admin/filtros'
     | '/admin/integracoes'
     | '/admin/links-carrinho'
@@ -911,6 +921,7 @@ export interface FileRouteTypes {
     | '/admin/categorias'
     | '/admin/colecoes'
     | '/admin/descontos'
+    | '/admin/estoque'
     | '/admin/filtros'
     | '/admin/integracoes'
     | '/admin/links-carrinho'
@@ -999,6 +1010,7 @@ export interface FileRouteTypes {
     | '/admin/categorias'
     | '/admin/colecoes'
     | '/admin/descontos'
+    | '/admin/estoque'
     | '/admin/filtros'
     | '/admin/integracoes'
     | '/admin/links-carrinho'
@@ -1222,6 +1234,13 @@ declare module '@tanstack/react-router' {
       path: '/filtros'
       fullPath: '/admin/filtros'
       preLoaderRoute: typeof AdminFiltrosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/estoque': {
+      id: '/admin/estoque'
+      path: '/estoque'
+      fullPath: '/admin/estoque'
+      preLoaderRoute: typeof AdminEstoqueRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/descontos': {
@@ -1799,6 +1818,7 @@ interface AdminRouteChildren {
   AdminCategoriasRoute: typeof AdminCategoriasRoute
   AdminColecoesRoute: typeof AdminColecoesRoute
   AdminDescontosRoute: typeof AdminDescontosRoute
+  AdminEstoqueRoute: typeof AdminEstoqueRoute
   AdminFiltrosRoute: typeof AdminFiltrosRoute
   AdminIntegracoesRoute: typeof AdminIntegracoesRouteWithChildren
   AdminLinksCarrinhoRoute: typeof AdminLinksCarrinhoRoute
@@ -1856,6 +1876,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCategoriasRoute: AdminCategoriasRoute,
   AdminColecoesRoute: AdminColecoesRoute,
   AdminDescontosRoute: AdminDescontosRoute,
+  AdminEstoqueRoute: AdminEstoqueRoute,
   AdminFiltrosRoute: AdminFiltrosRoute,
   AdminIntegracoesRoute: AdminIntegracoesRouteWithChildren,
   AdminLinksCarrinhoRoute: AdminLinksCarrinhoRoute,

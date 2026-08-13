@@ -175,7 +175,7 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
             </div>
             <Button 
               onClick={async () => {
-                const { supabase } = await import('@/lib/supabase');
+                const { supabase } = await import('@/integrations/supabase/client');
                 const { data, error } = await supabase.rpc('create_loja_api_key', { p_loja_id: lojaId });
                 if (error) {
                   toast.error("Erro ao gerar chave: " + error.message);
@@ -205,7 +205,7 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
                 const testKey = (document.getElementById('api_key_test') as HTMLInputElement).value;
                 if (!testKey) return toast.error("Insira uma chave para testar.");
                 
-                const { supabase } = await import('@/lib/supabase');
+                const { supabase } = await import('@/integrations/supabase/client');
                 const { data, error } = await supabase.rpc('validate_loja_api_key', { p_raw_key: testKey, p_loja_id: lojaId });
                 
                 if (error || !data) {
