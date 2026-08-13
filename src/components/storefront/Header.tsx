@@ -159,6 +159,16 @@ export function Header() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
+  const handleCheckoutClick = () => {
+    if (!useAuth.getState().user) {
+      setDrawer(false);
+      navigate({ to: "/login", search: { redirect: "/cart" } as any });
+    } else {
+      setDrawer(false);
+      navigate({ to: "/cart" });
+    }
+  };
+
   useEffect(() => {
     const handleOpenGeo = () => setCepDialogOpen(true);
     document.addEventListener("open-geo-popup", handleOpenGeo);
@@ -498,7 +508,7 @@ export function Header() {
               )}
             </Button>
           </SheetTrigger>
-          <CartDrawer />
+          <CartDrawer onCheckoutClick={handleCheckoutClick} />
         </Sheet>
       </div>
 
@@ -534,7 +544,7 @@ export function Header() {
                   )}
                 </button>
               </SheetTrigger>
-              <CartDrawer />
+              <CartDrawer onCheckoutClick={handleCheckoutClick} />
             </Sheet>
             <MobileMenu cats={cats} />
           </div>
@@ -1176,7 +1186,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
   );
 }
 
-function CartDrawer() {
+function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
     const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
     const items = useCart((s) => s.items);
   const remove = useCart((s) => s.remove);
@@ -1353,10 +1363,7 @@ function CartDrawer() {
           className="w-full" 
           size="lg" 
           disabled={items.length === 0}
-          onClick={() => {
-            useCart.getState().setDrawer(false);
-            navigate({ to: "/cart" });
-          }}
+          onClick={onCheckoutClick}
         >
           Ir para a cesta
         </Button>
