@@ -730,8 +730,8 @@ export const useAdmin = create<AdminState>()(
           pagina_publicacao: banner.paginaPublicacao,
           titulo: banner.titulo,
           ativo: banner.active,
-          start_date: banner.startDate,
-          end_date: banner.endDate,
+          start_date: banner.startDate || null,
+          end_date: banner.endDate || null,
           loja_id: banner.lojaId || null,
           vitrine_vinculada: banner.vitrineVinculada,
           banner_vinculado: banner.bannerVinculado,
@@ -762,8 +762,8 @@ export const useAdmin = create<AdminState>()(
         if (banner.paginaPublicacao !== undefined) payload.pagina_publicacao = banner.paginaPublicacao;
         if (banner.titulo !== undefined) payload.titulo = banner.titulo;
         if (banner.active !== undefined) payload.ativo = banner.active;
-        if (banner.startDate !== undefined) payload.start_date = banner.startDate;
-        if (banner.endDate !== undefined) payload.end_date = banner.endDate;
+        if (banner.startDate !== undefined) payload.start_date = banner.startDate || null;
+        if (banner.endDate !== undefined) payload.end_date = banner.endDate || null;
         if (banner.vitrineVinculada !== undefined) payload.vitrine_vinculada = banner.vitrineVinculada;
         if (banner.bannerVinculado !== undefined) payload.banner_vinculado = banner.bannerVinculado;
         if (banner.formatoExtra !== undefined) payload.formato_extra = banner.formatoExtra;
