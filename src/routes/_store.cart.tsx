@@ -1169,10 +1169,6 @@ function CartPage() {
             >
               Finalizar Pedido
             </Button>
-            <p className="text-[11px] text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-              Atendimento direto e imediato com a farmácia
-            </p>
           </div>
 
           </aside>

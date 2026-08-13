@@ -1309,7 +1309,7 @@ function CartDrawer() {
         {items.length > 0 && crossSell.length > 0 && (
           <div className="py-4">
             <div className="text-xs font-bold uppercase text-muted-foreground mb-2">
-              Aproveite e leve também
+              Produtos que podem te interessar
             </div>
             <div className="flex overflow-x-auto gap-2 pb-2 snap-x scrollbar-none -mx-6 px-6">
               {crossSell.map((p) => (
