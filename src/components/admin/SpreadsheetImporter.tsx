@@ -180,8 +180,8 @@ function guessCategory(nome: string): { categoriaId: string; subcategoriaId: str
     }
   }
 
-  // Fallback category Se nada bater, categoriza como Medicamento -> Dor e Febre (genérico)
-  return { categoriaId: "142", subcategoriaId: "882" };
+  // Return empty if no rule matches, so products don't falsely appear in Medicamentos
+  return { categoriaId: "", subcategoriaId: "" };
 }
 
 function resolveCategory(catInput: string, subcatInput: string): { categoriaId: string; subcategoriaId: string } | null {
