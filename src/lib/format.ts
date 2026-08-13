@@ -81,8 +81,8 @@ export const productImage = (p: any) => {
     return retencao ? "/produtos/ref-vermelha-retencao.webp" : "/produtos/ref-vermelha.webp";
   }
 
-  // 1x1 transparent PNG pixel so no placeholder is shown
-  return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+  // Placeholder for products without an image
+  return "/produtos/sem-imagem.webp";
 };
 
 export const tarjaColor = (tarja: any) => {
