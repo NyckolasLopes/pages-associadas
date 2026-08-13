@@ -353,16 +353,14 @@ function AdminLayout() {
         </div>
 
         {/* Right Side - Image Cover */}
-        <div className="hidden lg:block lg:w-1/2 relative bg-slate-100">
+        <div className="hidden lg:block lg:w-1/2 relative bg-white">
           <img 
-            src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop" 
-            alt="Pessoa feliz segurando medicamento" 
-            className="absolute inset-0 w-full h-full object-cover object-center"
+            src="/admin-login-cover.jpg" 
+            alt="Farmácias Associadas Evento" 
+            className="absolute inset-0 w-full h-full object-contain object-center p-8"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#00AFA9]/90 via-black/20 to-transparent flex items-end p-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-white max-w-lg leading-tight drop-shadow-md">
-              A maior rede associativa do país
-            </h2>
+          <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/10 to-transparent flex items-end p-16 pointer-events-none">
+            {/* The previous text overlay was removed as requested to perfectly frame the image without covering it up too much */}
           </div>
         </div>
       </div>

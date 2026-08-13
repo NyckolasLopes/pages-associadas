@@ -31,6 +31,8 @@ const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 
 function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: VitrineLocal; page?: string; lojaId?: string }) {
   const allVitrines = useAdminProducts((s) => s.vitrines || []);
+  const customProducts = useAdminProducts((s) => s.customProducts);
+  
   const vitrines = useMemo(() => 
     allVitrines
       .filter(v => v.ativa && v.local === local)
@@ -73,7 +75,7 @@ function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: V
     return () => {
       isCancelled = true;
     };
-  }, [vitrines]);
+  }, [vitrines, customProducts, lojaId]);
 
   return (
     <>
@@ -408,7 +410,7 @@ function CampaignHighlight({ lojaId }: { lojaId?: string }) {
 
   useEffect(() => {
     catalog.featured().then(setAllProducts);
-  }, []);
+  }, [customProducts]);
 
   const campaignProducts = useMemo(() => {
     // Check customProducts for emCampanha flag
@@ -480,6 +482,8 @@ function StoreHome() {
   const grid = featured.slice(0, 12);
   const brandsRef = useRef<HTMLDivElement>(null);
 
+  const customProducts = useAdminProducts((s) => s.customProducts);
+  
   useEffect(() => {
     async function loadFeatured() {
       const data = await Promise.all(
@@ -492,7 +496,7 @@ function StoreHome() {
       setFeaturedCategoriesData(data.filter(Boolean) as any);
     }
     loadFeatured();
-  }, [featuredCategoriesIds]);
+  }, [featuredCategoriesIds, customProducts]);
 
   const { marcas } = useMarcasStore();
   const activeMarcas = marcas.filter(m => m.ativo && m.destaque);
