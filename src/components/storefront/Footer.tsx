@@ -145,13 +145,13 @@ export function Footer() {
               <p className="text-xs opacity-90">Tenha a farmácia na palma da sua mão e ofertas exclusivas.</p>
             </div>
           </a>
-          <a href="tel:5133633900" className="flex items-center gap-4 bg-white text-primary p-4 rounded-lg border border-transparent hover:border-primary transition shadow-sm group">
+          <a href={`tel:${(activePharmacy?.telefone || dadosLoja.telefone)?.replace(/\\D/g, "") || "5133633900"}`} className="flex items-center gap-4 bg-white text-primary p-4 rounded-lg border border-transparent hover:border-primary transition shadow-sm group">
             <div className="h-12 w-12 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition">
               <Phone className="h-6 w-6" />
             </div>
             <div>
               <h4 className="font-bold text-sm">Fale Conosco</h4>
-              <p className="text-xs opacity-90">Ligue (51) 3363-3900 ou WhatsApp (51) 98944-4818.</p>
+              <p className="text-xs opacity-90">Ligue {activePharmacy?.telefone || dadosLoja.telefone} ou WhatsApp {activePharmacy?.whatsapp || dadosLoja.whatsapp}.</p>
             </div>
           </a>
         </div>
@@ -324,7 +324,7 @@ export function Footer() {
             <h3 className="font-bold uppercase text-xs tracking-wider opacity-80">Central de Relacionamento</h3>
             <div className="flex items-start gap-2"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{activePharmacy?.endereco || dadosLoja.endereco}, {activePharmacy?.numero || dadosLoja.numero}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} — {activePharmacy?.bairro || dadosLoja.bairro}, {activePharmacy?.cidade || dadosLoja.cidade}/{activePharmacy?.uf || dadosLoja.estado} — CEP {activePharmacy?.cep || dadosLoja.cep}</div>
             <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {activePharmacy?.telefone || dadosLoja.telefone}</div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> SAC WhatsApp: {activePharmacy?.whatsapp || dadosLoja.whatsapp}</div>
+            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> WhatsApp: {activePharmacy?.whatsapp || dadosLoja.whatsapp}</div>
             <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {activePharmacy?.email || dadosLoja.email}</div>
           </div>
 

@@ -84,7 +84,7 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
             />
           </div>
           <div className="space-y-2">
-            <Label>WhatsApp (SAC)</Label>
+            <Label>WhatsApp</Label>
             <Input 
               value={formData.whatsapp || ""} 
               onChange={(e) => handleChange("whatsapp", e.target.value)} 
