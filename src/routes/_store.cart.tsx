@@ -772,6 +772,7 @@ function CartPage() {
                                 </div>
                                 <div className="flex flex-wrap gap-1.5 items-center">
                                   {isMelhorPreco && <span className="inline-flex items-center bg-amber-100 text-amber-800 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded shadow-sm">Melhor Preço</span>}
+                                </div>
                               </div>
                               <div className="text-right flex-shrink-0">
                                 <div className={`font-bold ${isDisabled ? 'text-slate-400' : 'text-slate-900'}`}>
