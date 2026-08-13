@@ -141,13 +141,21 @@ export default function ApiPage() {
       </div>
 
       {/* Docs Banner */}
-      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
-        <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-        <div className="text-sm">
-          <span className="font-semibold text-primary">Base URL: </span>
-          <code className="bg-white border rounded px-2 py-0.5 text-xs font-mono">https://api.associadas.com.br/v1</code>
-          <span className="text-muted-foreground ml-2">· Autenticação via header</span>
-          <code className="bg-white border rounded px-2 py-0.5 text-xs font-mono ml-1">Authorization: Bearer {"<chave>"}</code>
+      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col gap-3">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <span className="font-semibold text-primary">Base URL: </span>
+            <code className="bg-white border rounded px-2 py-0.5 text-xs font-mono ml-1">POST {import.meta.env.VITE_SUPABASE_URL || 'https://seu-projeto.supabase.co'}/rest/v1/rpc/sync_produtos_master</code>
+          </div>
+        </div>
+        <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2">
+          <span className="font-semibold mr-2">Headers requeridos:</span>
+          <code className="bg-white border rounded px-2 py-0.5 text-xs font-mono ml-1">apikey: {"<sua_chave>"}</code>
+        </div>
+        <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
+          <span className="font-semibold mr-2">Authorization Header:</span>
+          <code className="bg-white border rounded px-2 py-0.5 text-xs font-mono ml-1">Authorization: Bearer {"<sua_chave>"}</code>
         </div>
       </div>
 
