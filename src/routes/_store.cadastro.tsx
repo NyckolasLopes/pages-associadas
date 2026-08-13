@@ -6,7 +6,7 @@ import { useAuth } from "@/stores/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_store/cadastro")({
@@ -33,6 +33,7 @@ function CadastroPage() {
   const [celular, setCelular] = useState("");
   const [nascimento, setNascimento] = useState("");
   const [senha, setSenha] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [marketing, setMarketing] = useState(true);
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,13 +196,23 @@ function CadastroPage() {
 
         <div>
           <Label>Senha</Label>
-          <Input
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            placeholder="••••••••"
-            required
-          />
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              placeholder="••••••••"
+              className="pr-10"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
         <div className="flex items-start gap-3 mt-4 pt-2">
