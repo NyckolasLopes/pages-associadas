@@ -735,7 +735,10 @@ function AdminProdutos() {
                                 {p.categoriaId === "142" ? (
                                   <>
                                     {Boolean(p.tarja && p.tarja !== "Sem Tarja") && (
-                                      <Badge variant={p.tarja === "Sem Tarja" ? "secondary" : "destructive"} className="text-[8px] px-1.5 py-0 h-4">
+                                      <Badge 
+                                        variant={String(p.tarja).toLowerCase().includes("preta") ? "default" : "destructive"} 
+                                        className={`text-[8px] px-1.5 py-0 h-4 ${String(p.tarja).toLowerCase().includes("preta") ? "bg-black text-white hover:bg-slate-900" : ""}`}
+                                      >
                                         {p.tarja}
                                       </Badge>
                                     )}
@@ -1052,6 +1055,16 @@ function AdminProdutos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Floating Delete All Button */}
+      <Button
+        variant="destructive"
+        className="fixed bottom-6 right-6 shadow-xl rounded-full px-6 h-14 gap-2 font-bold z-50 hover:bg-red-700"
+        onClick={() => setDeleteAllModalOpen(true)}
+      >
+        <Trash2 className="h-5 w-5" />
+        EXCLUIR TODOS OS PRODUTOS
+      </Button>
     </div>
   );
 }

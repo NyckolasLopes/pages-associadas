@@ -227,12 +227,31 @@ export const useAdminProducts = create<ProductsState>()(
         };
       }),
       importProducts: async (products, lojaId) => {
+        const state = get();
+        // Match existing products by EAN or slug if ID is a generic 'gen-' ID
+        const matchedProducts = products.map(p => {
+          if (p.id.startsWith("gen-")) {
+            const existing = state.customProducts.find(
+              ep => (p.ean && ep.ean === p.ean) || (ep.slug || ep.url) === p.url
+            );
+            if (existing) {
+              return { ...p, id: existing.id };
+            }
+          }
+          return p;
+        });
+
+        // Deduplicate matchedProducts internally so we don't have duplicate IDs in the same chunk
+        const uniqueMatchedProducts = Array.from(
+          new Map(matchedProducts.map(p => [p.id, p])).values()
+        );
+
         // Optimistic UI Update
         set((s) => {
           if (lojaId) {
             const currentStoreProducts = s.storeCustomProducts[lojaId] || [];
             const newMap = new Map(currentStoreProducts.map(x => [x.id, x]));
-            products.forEach(p => {
+            uniqueMatchedProducts.forEach(p => {
               newMap.set(p.id, { ...p, nome: toTitleCase(p.nome), lojaId, isIndividualLoja: true, origem: "Loja Individual", isNovo: true, isRevisado: false });
             });
             return {
@@ -245,7 +264,7 @@ export const useAdminProducts = create<ProductsState>()(
 
           // Merge without duplicates based on ID for General Base
           const newMap = new Map(s.customProducts.map(x => [x.id, x]));
-          products.forEach(p => {
+          uniqueMatchedProducts.forEach(p => {
             if (!newMap.has(p.id)) {
               newMap.set(p.id, { ...p, nome: toTitleCase(p.nome), isNovo: true, isRevisado: false });
             } else {
@@ -257,8 +276,8 @@ export const useAdminProducts = create<ProductsState>()(
 
         // Supabase DB Update
         const chunkSize = 100;
-        for (let i = 0; i < products.length; i += chunkSize) {
-          const chunk = products.slice(i, i + chunkSize);
+        for (let i = 0; i < uniqueMatchedProducts.length; i += chunkSize) {
+          const chunk = uniqueMatchedProducts.slice(i, i + chunkSize);
           const upsertData = chunk.map(p => ({
             id: p.id,
             ean: p.ean || null,

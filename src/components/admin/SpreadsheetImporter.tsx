@@ -55,6 +55,9 @@ const FIELD_MAPPINGS: FieldMapping[] = [
   { key: "registroAnvisa", label: "MS/REGISTRO ANVISA", aliases: ["ms/registro anvisa", "registro anvisa", "ms", "registro ms", "reg_anvisa", "registroanvisa", "registro"], required: false, type: "string" },
   { key: "tarja", label: "TARJA", aliases: ["tarja", "tipo tarja", "classificação"], required: false, type: "tarja" },
   { key: "retemReceita", label: "RETÉM RECEITA", aliases: ["retém receita", "retem receita", "retemreceita", "receita", "controle especial"], required: false, type: "boolean" },
+  { key: "precoPor", label: "PREÇO POR", aliases: ["preço por", "preco por", "preço venda", "preco venda", "preco", "preço", "valor", "venda"], required: false, type: "number" },
+  { key: "precoDe", label: "PREÇO DE", aliases: ["preço de", "preco de", "preço custo", "preco original"], required: false, type: "number" },
+  { key: "estoque", label: "ESTOQUE", aliases: ["estoque", "quantidade", "qtd", "saldo"], required: false, type: "number" },
 ];
 
 const TARJA_VALUES: Tarja[] = ["Sem Tarja", "Vermelha", "Vermelha Retém Receita", "Preta", "Amarela"];
@@ -135,9 +138,15 @@ function parseBoolean(value: unknown): boolean {
 
 function parseNumber(value: unknown): number {
   if (typeof value === "number") return value;
-  const s = String(value || "")
-    .replace(/[R$\s]/g, "")
-    .replace(",", ".");
+  let s = String(value || "")
+    .replace(/[R$\s]/g, "");
+  
+  if (s.includes(".") && s.includes(",")) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else if (s.includes(",")) {
+    s = s.replace(",", ".");
+  }
+  
   const n = parseFloat(s);
   return isNaN(n) ? 0 : n;
 }

@@ -479,7 +479,7 @@ export const catalog = {
       
       if (settings.categoryId !== "all") {
         others = others.filter(p => p.categoriaId === settings.categoryId || String(p.subcategoriaId).startsWith(settings.categoryId));
-      } else if (referenceCategoryId) {
+      } else if (referenceCategoryId && referenceCategoryId !== "142") {
         others = others.filter(p => p.categoriaId === referenceCategoryId);
       }
     }
