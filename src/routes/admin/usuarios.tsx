@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 import { useAdmin } from "@/stores/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -262,7 +263,7 @@ function AdminUsuarios() {
     setIsNovoUsuarioOpen(true);
   };
 
-  const handleSalvarUsuario = () => {
+  const handleSalvarUsuario = async () => {
     if (!novoUsuarioNome.trim() || !novoUsuarioEmail.trim() || !novoUsuarioGrupo) {
       toast.error("Preencha todos os campos obrigatórios.");
       return;
@@ -301,10 +302,47 @@ function AdminUsuarios() {
       
       toast.success("Usuário atualizado com sucesso!");
     } else {
-      // Create new user in local state
+      // Criar usuário no Supabase Auth usando cliente secundário para não sobrescrever a sessão atual do Admin
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+      const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+      
+      const adminAuthClient = createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+      });
+
+      const { data: authData, error: authError } = await adminAuthClient.auth.signUp({
+        email: novoUsuarioEmail,
+        password: novoUsuarioSenha,
+        options: {
+          data: {
+            nome: novoUsuarioNome,
+            name: novoUsuarioNome,
+          }
+        }
+      });
+
+      if (authError) {
+        toast.error(`Erro ao registrar credenciais: ${authError.message}`);
+        return;
+      }
+
       const isGlobal = isGlobalGroup();
+      
+      // Se criou no auth mas não inseriu o profile por trigger, inserimos manualmente
+      if (authData?.user) {
+         await supabase.from('profiles').upsert({
+           id: authData.user.id,
+           email: novoUsuarioEmail,
+           nome: novoUsuarioNome,
+           grupo_id: novoUsuarioGrupo,
+           lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
+           is_admin: isGlobal
+         });
+      }
+
+      // Create new user in local state
       setUsuarios([...usuarios, { 
-        id: `user-${Date.now()}`, 
+        id: authData?.user?.id || `user-${Date.now()}`, 
         name: novoUsuarioNome, 
         email: novoUsuarioEmail, 
         password: novoUsuarioSenha,
@@ -312,15 +350,6 @@ function AdminUsuarios() {
         proprietario: false,
         lojasVinculadas: isGlobal ? undefined : novoUsuarioLojas
       }]);
-
-      // Sync to Supabase profiles if it exists
-      supabase.from('profiles').update({
-        grupo_id: novoUsuarioGrupo,
-        lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
-        is_admin: isGlobal
-      }).eq('email', novoUsuarioEmail).then(({ error }) => {
-        if (error) console.error("Failed to sync profile:", error);
-      });
 
       toast.success("Usuário criado com sucesso!");
     }
