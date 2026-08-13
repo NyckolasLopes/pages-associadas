@@ -248,7 +248,7 @@ function rowToProduct(
     foto: "",
     nome,
     descricao: String(get("descricao") || nome),
-    url: nome.toLowerCase().replace(/[\s\W-]+/g, '-') + (ean ? `-${ean}` : ""),
+    url: nome.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-|-$/g, '') + `-${id}`,
     fabricante: String(get("fabricante") || ""),
     precoDe,
     precoPor,

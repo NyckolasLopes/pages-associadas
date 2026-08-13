@@ -158,7 +158,7 @@ export const useAdminProducts = create<ProductsState>()(
           ean: formattedProduct.ean || null,
           nome: formattedProduct.nome,
           descricao: formattedProduct.descricao || null,
-          slug: formattedProduct.slug || formattedProduct.url || formattedProduct.id,
+          slug: formattedProduct.slug || formattedProduct.url || `${formattedProduct.nome?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${formattedProduct.id}`,
           fabricante: formattedProduct.fabricante || null,
           marca: formattedProduct.marca || null,
           preco_de: formattedProduct.precoDe || 0,
@@ -283,7 +283,7 @@ export const useAdminProducts = create<ProductsState>()(
             ean: p.ean || null,
             nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
             descricao: p.descricao || null,
-            slug: p.slug || p.url || p.id,
+            slug: p.slug || p.url || `${(p.nome || 'produto').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${p.id}`,
             fabricante: p.fabricante || null,
             marca: p.marca || null,
             preco_de: p.precoDe || 0,
@@ -301,7 +301,7 @@ export const useAdminProducts = create<ProductsState>()(
             ativo: p.ativo ?? true,
           }));
           
-          const { error } = await supabase.from('produtos').upsert(upsertData, { onConflict: 'id' });
+          const { error } = await supabase.from('produtos').upsert(upsertData, { onConflict: 'id', ignoreDuplicates: false });
           if (error) {
             console.error('Error batch upserting products:', error);
             throw new Error(`Erro ao salvar no banco de dados: ${error.message}`);
