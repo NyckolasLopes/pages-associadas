@@ -269,50 +269,50 @@ export const useAdminProducts = create<ProductsState>()(
           return { customProducts: Array.from(newMap.values()) };
         });
 
-        // Supabase DB Update for global products
-        if (!lojaId) {
-          const chunkSize = 100;
-          for (let i = 0; i < products.length; i += chunkSize) {
-            const chunk = products.slice(i, i + chunkSize);
-            const upsertData = chunk.map(p => ({
-              id: p.id,
-              ean: p.ean || null,
-              codigo_interno: p.codigoInterno || null,
-              nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
-              descricao: p.descricao || null,
-              slug: p.slug || p.url || p.id,
-              fabricante: p.fabricante || null,
-              marca: p.marca || null,
-              preco_de: p.precoDe || 0,
-              preco_por: p.precoPor || 0,
-              estoque: p.estoque || 0,
-              registro_anvisa: p.registroAnvisa || null,
-              tarja: p.tarja || null,
-              retem_receita: p.retemReceita || false,
-              generico: p.generico || false,
-              possui_imagem: p.possuiImagem || false,
-              categoria_id: p.categoriaId || null,
-              subcategoria_id: p.subcategoriaId || null,
-              categorias_adicionais: p.categoriasAdicionais || [],
-              internal_tags: p.internalTags || [],
-              ativo: p.ativo ?? true,
-              a_venda: p.aVenda !== false,
-              visivel: p.visivel !== false,
-              buscavel: p.buscavel !== false,
-              nivel_relevancia: p.nivelRelevancia || 0,
-              termos_pesquisa: p.termosPesquisa || null,
-              preco_base: p.precoBase || 0,
-              seo_titulo: p.seoTitulo || null,
-              seo_descricao: p.seoDescricao || null,
-              imagem_alt: p.imagemAlt || null,
-              tipo_produto: p.tipoProduto || "fisico",
-              ncm: p.ncm || null,
-            }));
-            
-            const { error } = await supabase.from('produtos').upsert(upsertData, { onConflict: 'id' });
-            if (error) {
-              console.error('Error batch upserting products:', error);
-            }
+        // Supabase DB Update
+        const chunkSize = 100;
+        for (let i = 0; i < products.length; i += chunkSize) {
+          const chunk = products.slice(i, i + chunkSize);
+          const upsertData = chunk.map(p => ({
+            id: p.id,
+            ean: p.ean || null,
+            codigo_interno: p.codigoInterno || null,
+            nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
+            descricao: p.descricao || null,
+            slug: p.slug || p.url || p.id,
+            fabricante: p.fabricante || null,
+            marca: p.marca || null,
+            preco_de: p.precoDe || 0,
+            preco_por: p.precoPor || 0,
+            estoque: p.estoque || 0,
+            registro_anvisa: p.registroAnvisa || null,
+            tarja: p.tarja || null,
+            retem_receita: p.retemReceita || false,
+            generico: p.generico || false,
+            possui_imagem: p.possuiImagem || false,
+            categoria_id: p.categoriaId || null,
+            subcategoria_id: p.subcategoriaId || null,
+            categorias_adicionais: p.categoriasAdicionais || [],
+            internal_tags: p.internalTags || [],
+            ativo: p.ativo ?? true,
+            a_venda: p.aVenda !== false,
+            visivel: p.visivel !== false,
+            buscavel: p.buscavel !== false,
+            nivel_relevancia: p.nivelRelevancia || 0,
+            termos_pesquisa: p.termosPesquisa || null,
+            preco_base: p.precoBase || 0,
+            seo_titulo: p.seoTitulo || null,
+            seo_descricao: p.seoDescricao || null,
+            imagem_alt: p.imagemAlt || null,
+            tipo_produto: p.tipoProduto || "fisico",
+            ncm: p.ncm || null,
+            loja_id: lojaId || null,
+          }));
+          
+          const { error } = await supabase.from('produtos').upsert(upsertData, { onConflict: 'id' });
+          if (error) {
+            console.error('Error batch upserting products:', error);
+            throw new Error(`Erro ao salvar no banco de dados: ${error.message}`);
           }
         }
       },
