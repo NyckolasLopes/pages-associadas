@@ -213,7 +213,37 @@ function AdminBanners() {
       toast.error("Nome e posição são obrigatórios");
       return;
     }
-    
+    if (!editingBanner?.imageUrl) {
+      toast.error("Você precisa enviar a imagem ou informar o ícone do banner.");
+      return;
+    }
+
+    if (editingBanner.startDate) {
+      const start = new Date(editingBanner.startDate);
+      // Remove 5 minutes from now to allow slight delays when selecting current time
+      if (start.getTime() < Date.now() - 5 * 60000) {
+        // Se for um novo banner, não permite data passada
+        if (!editingBanner.id) {
+          toast.error("A data de início não pode estar no passado.");
+          return;
+        }
+      }
+    }
+
+    if (editingBanner.endDate) {
+      const end = new Date(editingBanner.endDate);
+      if (end.getTime() < Date.now() - 5 * 60000) {
+        if (!editingBanner.id) {
+          toast.error("A data de fim não pode estar no passado.");
+          return;
+        }
+      }
+      if (editingBanner.startDate && end.getTime() <= new Date(editingBanner.startDate).getTime()) {
+        toast.error("A data de término deve ser posterior à data de início.");
+        return;
+      }
+    }
+
     try {
       if (editingBanner.id) {
         await updateBanner(editingBanner.id, editingBanner);

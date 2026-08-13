@@ -95,6 +95,10 @@ export function HeroCarousel({ page = "Página inicial", lojaId }: { page?: stri
     } else {
       if (b.lojaId) return false;
     }
+
+    const now = new Date();
+    if (b.startDate && new Date(b.startDate) > now) return false;
+    if (b.endDate && new Date(b.endDate) < now) return false;
     return true;
   });
   const totalSlidesToRender = bannersToRender.length;

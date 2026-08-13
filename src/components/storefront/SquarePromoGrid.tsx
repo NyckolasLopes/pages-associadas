@@ -19,6 +19,11 @@ export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: s
     }
     
     if (b.paginaPublicacao && b.paginaPublicacao !== "Todas as páginas" && b.paginaPublicacao !== page) return false;
+    
+    const now = new Date();
+    if (b.startDate && new Date(b.startDate) > now) return false;
+    if (b.endDate && new Date(b.endDate) < now) return false;
+    
     return true;
   });
 

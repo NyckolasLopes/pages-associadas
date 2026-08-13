@@ -47,7 +47,13 @@ export function Footer() {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const banners = useAdmin((s) => s.banners);
-  const diferenciaisBanners = banners.filter((b) => b.posicao === "Banner Diferenciais" && b.active);
+  const diferenciaisBanners = banners.filter((b) => {
+    if (b.posicao !== "Banner Diferenciais" || !b.active) return false;
+    const now = new Date();
+    if (b.startDate && new Date(b.startDate) > now) return false;
+    if (b.endDate && new Date(b.endDate) < now) return false;
+    return true;
+  });
   const addLead = useLeads((s) => s.addLead);
 
   const { pharmacies } = useAdmin();
