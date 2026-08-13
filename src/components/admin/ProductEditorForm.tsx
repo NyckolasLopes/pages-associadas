@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Produto, Categoria } from "@/types";
 import { catalog } from "@/services/catalog";
-import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, Loader2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X } from "lucide-react";
+import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X } from "lucide-react";
 import { getDeterministicStock } from "@/lib/stock";
 import { brl, getInstallmentText } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,6 +24,7 @@ import { useAdminFiltros } from "@/stores/filtros";
 import { useMarcasStore } from "@/stores/marcas";
 import { useVariacoesStore } from "@/stores/variacoes";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
+import { Spinner } from "@/components/ui/spinner";
 
 interface ProductEditorFormProps {
   open: boolean;

@@ -17,9 +17,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Layers, Loader2, Check } from "lucide-react";
+import { Layers, Check } from "lucide-react";
 import type { Produto, Tarja } from "@/types";
 import categoriesData from "@/data/categories.json";
+import { Spinner } from "@/components/ui/spinner";
 
 interface BulkEditModalProps {
   open: boolean;
@@ -111,7 +112,7 @@ export function BulkEditModal({ open, onOpenChange, filteredProducts, onBulkUpda
 
         {isProcessing ? (
           <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <Loader2 className="h-10 w-10 text-indigo-600 animate-spin" />
+            <Spinner className="h-10 w-10 text-indigo-600 animate-spin" />
             <p className="font-medium text-slate-600">Aplicando alterações...</p>
           </div>
         ) : (

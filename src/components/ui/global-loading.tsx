@@ -11,11 +11,11 @@ export function GlobalLoading() {
           <img src={dadosLoja.logoUrl} alt="Logo da Farmácia" className="h-12 w-auto mb-6 object-contain" />
         ) : (
           <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-            <Spinner className="w-6 h-6 text-primary" />
+            <Spinner className="w-8 h-8" />
           </div>
         )}
         
-        {dadosLoja?.logoUrl && <Spinner className="w-6 h-6 text-primary mb-4" />}
+        {dadosLoja?.logoUrl && <Spinner className="w-8 h-8 mb-4" />}
         
         <h3 className="text-lg font-bold text-slate-800">Carregando...</h3>
         <p className="text-sm text-muted-foreground mt-2">

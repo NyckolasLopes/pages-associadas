@@ -34,7 +34,6 @@ import {
   ChevronLeft,
   ChevronRight,
   PlusCircle,
-  Loader2,
   Layers,
   FileText,
   Stethoscope,
@@ -64,6 +63,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { SubirDadosLojaModal } from "@/components/admin/SubirDadosLojaModal";
+import { Spinner } from "@/components/ui/spinner";
 
 export const Route = createFileRoute("/admin/produtos")({
   component: AdminProdutos,
@@ -522,7 +522,7 @@ function AdminProdutos() {
                 >
                   {isSyncingApi ? (
                     <>
-                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      <Spinner className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                       Recebendo dados via api...
                     </>
                   ) : (
@@ -968,7 +968,7 @@ function AdminProdutos() {
           <div className="flex flex-col items-center justify-center py-6 text-center space-y-4">
             {isSyncing ? (
               <>
-                <Loader2 className="h-12 w-12 text-slate-800 animate-spin" />
+                <Spinner className="h-12 w-12 text-slate-800 animate-spin" />
                 <div className="space-y-2 w-full">
                   <p className="font-bold text-slate-700">
                     Sincronizando seus {customProducts.length} produtos, aguarde um momento...
