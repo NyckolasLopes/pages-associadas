@@ -205,7 +205,7 @@ export const useAdminProducts = create<ProductsState>()(
       getStoreEffectiveProducts: (lojaId) => {
         const state = get();
         if (!lojaId) {
-          return state.customProducts || [];
+          return (state.customProducts || []).filter(p => !p.lojaId);
         }
 
         const removedIds = new Set(state.storeRemovedProductIds?.[lojaId] || []);
@@ -213,6 +213,7 @@ export const useAdminProducts = create<ProductsState>()(
         const storeCreated = state.storeCustomProducts?.[lojaId] || [];
 
         const baseMerged = (state.customProducts || [])
+          .filter(p => !p.lojaId || p.lojaId === lojaId)
           .filter(p => !removedIds.has(p.id))
           .map(p => {
             const ov = overrides[p.id] || {};
@@ -715,7 +716,6 @@ export const useAdminProducts = create<ProductsState>()(
       // Only persist local-only fields (vitrines, fornecedores, overrides).
       // customProducts now comes from Supabase via loadProducts().
       partialize: (state) => ({
-        storeCustomProducts: state.storeCustomProducts,
         storeProductOverrides: state.storeProductOverrides,
         storeRemovedProductIds: state.storeRemovedProductIds,
         fornecedores: state.fornecedores,
