@@ -2,6 +2,8 @@ import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
+import { GlobalLoading } from "./components/ui/global-loading";
+
 export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -21,6 +23,9 @@ export const getRouter = () => {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 30 * 1000,
+    defaultPendingComponent: GlobalLoading,
+    defaultPendingMinMs: 500, // Tempo mínimo para mostrar o loader (evita piscar rápido)
+    defaultPendingMs: 300, // Só mostra o loader se demorar mais que 300ms
   });
 
   return router;

@@ -353,11 +353,11 @@ function AdminLayout() {
         </div>
 
         {/* Right Side - Image Cover */}
-        <div className="hidden lg:block lg:w-1/2 relative bg-white">
+        <div className="hidden lg:block lg:w-1/2 relative bg-slate-100">
           <img 
             src="/admin-login-cover.jpg" 
             alt="Farmácias Associadas Evento" 
-            className="absolute inset-0 w-full h-full object-contain object-center p-8"
+            className="absolute inset-0 w-full h-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/10 to-transparent flex items-end p-16 pointer-events-none">
             {/* The previous text overlay was removed as requested to perfectly frame the image without covering it up too much */}
