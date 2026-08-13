@@ -178,21 +178,6 @@ export const useAdminProducts = create<ProductsState>()(
           video_url: formattedProduct.videoUrl || null,
           destaque: formattedProduct.destaque || false,
           ativo: formattedProduct.ativo !== false,
-          a_venda: formattedProduct.aVenda !== false,
-          visivel: formattedProduct.visivel !== false,
-          buscavel: formattedProduct.buscavel !== false,
-          nivel_relevancia: formattedProduct.nivelRelevancia || 0,
-          termos_pesquisa: formattedProduct.termosPesquisa || null,
-          preco_base: formattedProduct.precoBase || 0,
-          seo_titulo: formattedProduct.seoTitulo || null,
-          seo_descricao: formattedProduct.seoDescricao || null,
-          imagem_alt: formattedProduct.imagemAlt || null,
-          tipo_produto: formattedProduct.tipoProduto || "fisico",
-          ncm: formattedProduct.ncm || null,
-          loja_id: lojaId || null,
-          precos_por_loja: formattedProduct.precosPorLoja || {},
-          estoques_por_loja: formattedProduct.estoquesPorLoja || {},
-          global_pleno: globalPleno
         });
       },
       removeProduct: async (id, lojaId) => {
@@ -277,7 +262,6 @@ export const useAdminProducts = create<ProductsState>()(
           const upsertData = chunk.map(p => ({
             id: p.id,
             ean: p.ean || null,
-            codigo_interno: p.codigoInterno || null,
             nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
             descricao: p.descricao || null,
             slug: p.slug || p.url || p.id,
@@ -296,18 +280,6 @@ export const useAdminProducts = create<ProductsState>()(
             categorias_adicionais: p.categoriasAdicionais || [],
             internal_tags: p.internalTags || [],
             ativo: p.ativo ?? true,
-            a_venda: p.aVenda !== false,
-            visivel: p.visivel !== false,
-            buscavel: p.buscavel !== false,
-            nivel_relevancia: p.nivelRelevancia || 0,
-            termos_pesquisa: p.termosPesquisa || null,
-            preco_base: p.precoBase || 0,
-            seo_titulo: p.seoTitulo || null,
-            seo_descricao: p.seoDescricao || null,
-            imagem_alt: p.imagemAlt || null,
-            tipo_produto: p.tipoProduto || "fisico",
-            ncm: p.ncm || null,
-            loja_id: lojaId || null,
           }));
           
           const { error } = await supabase.from('produtos').upsert(upsertData, { onConflict: 'id' });
