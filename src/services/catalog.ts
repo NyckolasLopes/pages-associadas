@@ -434,10 +434,8 @@ export const catalog = {
       results = [...all].reverse();
     } else if (categoriaId === "novidades") {
       results = all.filter(p => p.isNovo);
-      if (results.length === 0) results = all.slice(0, 10);
     } else if (categoriaId === "protetores") {
       results = all.filter(p => String(p.nome).toLowerCase().includes("protetor") || String(p.nome).toLowerCase().includes("solar"));
-      if (results.length === 0) results = all.slice(0, 10);
     } else {
       const categorias = getCategorias();
       const validCategoryIds = [categoriaId, ...categorias.filter(c => c.parentId === categoriaId).map(c => c.id)];

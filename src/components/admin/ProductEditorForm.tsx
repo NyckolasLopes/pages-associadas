@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Produto, Categoria } from "@/types";
 import { catalog } from "@/services/catalog";
-import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, Loader2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload } from "lucide-react";
+import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, Loader2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X } from "lucide-react";
 import { getDeterministicStock } from "@/lib/stock";
 import { brl, getInstallmentText } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -232,6 +233,90 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Categorias Adicionais Section */}
+            <div className="space-y-4 pt-6 border-t border-slate-100">
+              <div className="flex flex-col gap-1">
+                <Label className="font-bold text-xs uppercase text-slate-500">Categorias Adicionais</Label>
+                <span className="text-xs text-slate-400">Adicione este produto a quantas categorias extras precisar.</span>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                {(formData.categoriasIds || []).map(catId => {
+                  const cat = categorias.find((c: any) => c.id === catId);
+                  if (!cat) return null;
+                  return (
+                    <Badge key={`cat-${catId}`} variant="secondary" className="flex items-center gap-1 py-1">
+                      {cat.nome}
+                      {!isGlobalAdmin ? null : (
+                        <button 
+                          onClick={() => setFormData({...formData, categoriasIds: (formData.categoriasIds || []).filter(id => id !== catId)})}
+                          className="ml-1 hover:bg-slate-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  );
+                })}
+                {(formData.subcategoriasIds || []).map(subId => {
+                  const sub = categorias.find((c: any) => c.id === subId);
+                  if (!sub) return null;
+                  const parent = categorias.find((c: any) => c.id === sub.parentId);
+                  return (
+                    <Badge key={`sub-${subId}`} variant="secondary" className="flex items-center gap-1 py-1 bg-slate-100 border-slate-200">
+                      {parent ? `${parent.nome} > ` : ""}{sub.nome}
+                      {!isGlobalAdmin ? null : (
+                        <button 
+                          onClick={() => setFormData({...formData, subcategoriasIds: (formData.subcategoriasIds || []).filter(id => id !== subId)})}
+                          className="ml-1 hover:bg-slate-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  );
+                })}
+                {((formData.categoriasIds || []).length === 0 && (formData.subcategoriasIds || []).length === 0) && (
+                  <span className="text-sm text-slate-400 italic">Nenhuma categoria adicional selecionada.</span>
+                )}
+              </div>
+
+              {isGlobalAdmin && (
+                <div className="flex items-center gap-2 max-w-sm">
+                  <Select 
+                    onValueChange={v => {
+                      if (v === "none" || !v) return;
+                      const isSub = categorias.find((c: any) => c.id === v)?.parentId;
+                      if (isSub) {
+                        if (!(formData.subcategoriasIds || []).includes(v)) {
+                          setFormData({...formData, subcategoriasIds: [...(formData.subcategoriasIds || []), v]});
+                        }
+                      } else {
+                        if (!(formData.categoriasIds || []).includes(v)) {
+                          setFormData({...formData, categoriasIds: [...(formData.categoriasIds || []), v]});
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="bg-white"><SelectValue placeholder="Adicionar categoria ou subcategoria..." /></SelectTrigger>
+                    <SelectContent>
+                      {categorias.filter((c: any) => !c.parentId && c.id !== formData.categoriaId && !(formData.categoriasIds || []).includes(c.id)).map((c: any) => (
+                        <SelectItem key={`add-${c.id}`} value={c.id}>[Categoria] {c.nome}</SelectItem>
+                      ))}
+                      {categorias.filter((c: any) => c.parentId && c.id !== formData.subcategoriaId && !(formData.subcategoriasIds || []).includes(c.id)).map((c: any) => {
+                        const parent = categorias.find((p: any) => p.id === c.parentId);
+                        return (
+                          <SelectItem key={`add-sub-${c.id}`} value={c.id}>
+                            [Subcategoria] {parent ? `${parent.nome} > ` : ""}{c.nome}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
 

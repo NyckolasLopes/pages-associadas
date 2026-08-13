@@ -90,14 +90,6 @@ function AdminNovoProduto() {
         headerActions={
           <>
             <StoreSelector className="mb-0" />
-            <Button
-              size="sm"
-              onClick={() => setSubirDadosOpen(true)}
-              className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-            >
-              <FileUp className="h-3.5 w-3.5 mr-1.5" />
-              Subir Dados para Loja
-            </Button>
           </>
         }
       />

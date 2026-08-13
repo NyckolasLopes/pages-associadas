@@ -122,7 +122,7 @@ function AdminProdutos() {
   const [jsonFile, setJsonFile] = useState<File | null>(null);
   const [deleteAllModalOpen, setDeleteAllModalOpen] = useState(false);
   const [subirDadosOpen, setSubirDadosOpen] = useState(false);
-
+  const [isSyncingApi, setIsSyncingApi] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const estoque = params.get("estoque");
@@ -150,7 +150,15 @@ function AdminProdutos() {
     );
   };
 
-
+  const handleSyncApi = async () => {
+    setIsSyncingApi(true);
+    // TODO: Implement the actual API request here when provided by the user
+    // Simulate a fast API sync (0.5 seconds as requested)
+    setTimeout(() => {
+      setIsSyncingApi(false);
+      toast.success("Produtos e estoque atualizados via API com sucesso!");
+    }, 500);
+  };
 
   const handleExportJson = () => {
     const exportData = currentProductsList.map(p => {
@@ -508,11 +516,21 @@ function AdminProdutos() {
               <>
                 <Button
                   size="sm"
-                  onClick={() => setSubirDadosOpen(true)}
+                  onClick={handleSyncApi}
+                  disabled={isSyncingApi}
                   className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
-                  <FileUp className="h-3.5 w-3.5 mr-1.5" />
-                  Subir Dados para Loja
+                  {isSyncingApi ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      Recebendo dados via api...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                      Receber Dados via API
+                    </>
+                  )}
                 </Button>
                 <Button
                   variant="outline"

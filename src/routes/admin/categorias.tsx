@@ -170,12 +170,7 @@ function AdminCategorias() {
             </>
           )}
 
-          <Button 
-            onClick={() => setSubirDadosOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-5 gap-2 shadow-sm"
-          >
-            <FileUp className="w-4 h-4" /> Subir Dados para Loja
-          </Button>
+
 
           <Button 
             onClick={() => {

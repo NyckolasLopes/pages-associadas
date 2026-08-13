@@ -687,8 +687,8 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
                           <td className="px-3 py-2 text-right">{p.estoque}</td>
                           <td className="px-3 py-2">
                             <Badge
-                              variant={p.tarja === "Sem Tarja" ? "secondary" : "destructive"}
-                              className="text-[10px]"
+                              variant={String(p.tarja).toLowerCase().includes("preta") ? "default" : (p.tarja === "Sem Tarja" ? "secondary" : "destructive")}
+                              className={`text-[10px] ${String(p.tarja).toLowerCase().includes("preta") ? "bg-black text-white hover:bg-slate-900" : ""}`}
                             >
                               {p.tarja}
                             </Badge>
