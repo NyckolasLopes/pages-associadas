@@ -467,6 +467,7 @@ function AdminLayout() {
               {isGlobalAdmin && can('lojas_gerar') && <Link to={"/admin/lojas/gerar" as any} className={subLinkClass} activeOptions={{ exact: true }}>Gerar Loja</Link>}
               {isGlobalAdmin && can('lojas_link') && <Link to="/admin/lojas/link-inscricao" className={subLinkClass} activeOptions={{ exact: true }}>Link Inscrição Associado</Link>}
               {!isGlobalAdmin && can('lojas_precos') && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Meus preços</Link>}
+              {!isGlobalAdmin && <Link to="/admin/estoque" className={subLinkClass} activeOptions={{ exact: true }}>Meu Estoque</Link>}
             </NavSection>
           )}
 

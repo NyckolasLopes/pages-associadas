@@ -658,14 +658,18 @@ function AdminProdutos() {
         </div>
 
         {/* Table content */}
-        {!_loaded ? (
-          <div className="p-16 flex flex-col items-center justify-center text-center">
-            <Spinner className="h-12 w-12 text-emerald-600 mb-6" />
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Aguarde um momento...</h3>
-            <p className="text-slate-500 font-medium">
-              Estamos carregando todos os produtos da base de dados.
+        <Dialog open={!_loaded} onOpenChange={() => {}}>
+          <DialogContent className="sm:max-w-md [&>button]:hidden flex flex-col items-center justify-center p-8 bg-white/95 backdrop-blur-sm">
+            <Spinner className="h-16 w-16 text-emerald-600 mb-6" />
+            <DialogTitle className="text-2xl font-bold text-slate-800 mb-2">Aguarde um momento...</DialogTitle>
+            <p className="text-slate-500 font-medium text-center">
+              Estamos carregando os produtos até concluir o aparecimento.
             </p>
-          </div>
+          </DialogContent>
+        </Dialog>
+
+        {!_loaded ? (
+          <div className="h-96" /> // Placeholder vazio durante o loading
         ) : currentProductsList.length === 0 ? (
           <div className="p-12 text-center">
             <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">

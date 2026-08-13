@@ -58,6 +58,27 @@ export interface Produto {
   youtubeVideoUrl?: string;
   imagens?: string[];
   codigoInterno?: string;
+  resumoDescricao?: string;
+  tituloSeo?: string;
+  metaDescription?: string;
+  alertaRegulatorio?: boolean;
+  alertaTexto?: string;
+  kit?: boolean;
+  peso?: number;
+  quantidadeEmbalagem?: number;
+  quantidadeConteudo?: number;
+  unidadeEmbalagem?: string;
+  unidadeConteudo?: string;
+  prescricao?: string;
+  apresentacao?: string;
+  viaAdministracao?: string;
+  dosagem?: string;
+  sabor?: string;
+  tamanho?: string;
+  areaAplicacao?: string;
+  fps?: number;
+  faixaEtaria?: string;
+  categoriasSecundarias?: string[]; // IDs
   precoCusto?: number;
   bloquearPreco?: boolean;
   destaque?: boolean;

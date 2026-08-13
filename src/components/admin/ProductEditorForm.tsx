@@ -342,6 +342,75 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             </div>
           </div>
 
+          {/* Novos Campos (Características, Pesos e Embalagem) */}
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
+            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b flex items-center gap-2">
+              <Info className="h-6 w-6 text-emerald-800" /> Detalhes Técnicos e Características
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Resumo / Descrição Curta</Label>
+                <Textarea disabled={!isGlobalAdmin} value={formData.resumoDescricao || ""} onChange={e => setFormData({...formData, resumoDescricao: e.target.value})} className="bg-white" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Alerta Regulatório (Texto)</Label>
+                <Textarea disabled={!isGlobalAdmin} value={formData.alertaTexto || ""} onChange={e => setFormData({...formData, alertaTexto: e.target.value})} className="bg-white" placeholder="Ex: Ao persistirem os sintomas, o médico deverá ser consultado." />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Peso Bruto (KG)</Label>
+                <Input type="number" step="0.001" disabled={!isGlobalAdmin} value={formData.peso || ""} onChange={e => setFormData({...formData, peso: parseFloat(e.target.value) || 0})} className="bg-white" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Qtd Embalagem</Label>
+                <Input type="number" disabled={!isGlobalAdmin} value={formData.quantidadeEmbalagem || ""} onChange={e => setFormData({...formData, quantidadeEmbalagem: parseInt(e.target.value) || 0})} className="bg-white" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Qtd Conteúdo</Label>
+                <Input type="number" disabled={!isGlobalAdmin} value={formData.quantidadeConteudo || ""} onChange={e => setFormData({...formData, quantidadeConteudo: parseInt(e.target.value) || 0})} className="bg-white" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Apresentação</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.apresentacao || ""} onChange={e => setFormData({...formData, apresentacao: e.target.value})} className="bg-white" placeholder="Ex: EM_COMPRIMIDO" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Via de Administração</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.viaAdministracao || ""} onChange={e => setFormData({...formData, viaAdministracao: e.target.value})} className="bg-white" placeholder="Ex: VIA_ORAL" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Dosagem</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.dosagem || ""} onChange={e => setFormData({...formData, dosagem: e.target.value})} className="bg-white" placeholder="Ex: 750mg" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Faixa Etária</Label>
+                <Select disabled={!isGlobalAdmin} value={formData.faixaEtaria || "ADULTO"} onValueChange={v => setFormData({...formData, faixaEtaria: v})}>
+                  <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ADULTO">Adulto</SelectItem>
+                    <SelectItem value="PEDIATRICO">Pediátrico</SelectItem>
+                    <SelectItem value="GERIATRICO">Geriátrico</SelectItem>
+                    <SelectItem value="USO_GERAL">Uso Geral</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
+              <Switch disabled={!isGlobalAdmin} 
+                id="alertaRegulatorio" 
+                checked={formData.alertaRegulatorio} 
+                onCheckedChange={checked => setFormData({...formData, alertaRegulatorio: checked})}
+              />
+              <Label htmlFor="alertaRegulatorio" className="font-medium cursor-pointer">Requer Exibição do Alerta Regulatório</Label>
+            </div>
+          </div>
+
           {/* Card: Classificação Farmacêutica */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b flex items-center gap-2">
