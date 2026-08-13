@@ -146,16 +146,11 @@ export default function ApiPage() {
           <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
           <div className="text-sm">
             <span className="font-semibold text-primary">Base URL: </span>
-            <code className="bg-white border rounded px-2 py-0.5 text-xs font-mono ml-1">POST {import.meta.env.VITE_SUPABASE_URL || 'https://seu-projeto.supabase.co'}/rest/v1/rpc/sync_produtos_master</code>
+            <code className="bg-white border rounded px-2 py-0.5 text-xs font-mono ml-1">POST {import.meta.env.VITE_SUPABASE_URL || 'https://seu-projeto.supabase.co'}/rest/v1/rpc/sync_produtos_master?apikey={"<sua_chave_gerada>"}</code>
           </div>
         </div>
-        <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2">
-          <span className="font-semibold mr-2">Headers requeridos:</span>
-          <code className="bg-white border rounded px-2 py-0.5 text-xs font-mono ml-1">apikey: {"<sua_chave>"}</code>
-        </div>
-        <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
-          <span className="font-semibold mr-2">Authorization Header:</span>
-          <code className="bg-white border rounded px-2 py-0.5 text-xs font-mono ml-1">Authorization: Bearer {"<sua_chave>"}</code>
+        <div className="text-[11px] text-slate-500 mt-1">
+          O parâmetro <code className="bg-slate-200 px-1 py-0.5 rounded text-slate-700">?apikey=</code> na URL é obrigatório. A chave master também deve ser enviada dentro do JSON (body) do POST, como o campo <code>api_key</code>.
         </div>
       </div>
 

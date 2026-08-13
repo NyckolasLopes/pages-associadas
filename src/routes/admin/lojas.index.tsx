@@ -954,11 +954,11 @@ function LojasAdmin() {
               <div className="pt-4 mt-4 border-t border-slate-200 space-y-2">
                 <FieldLabel>Endpoint de Integração (URL da API)</FieldLabel>
                 <p className="text-[11px] text-slate-500">
-                  O seu sistema (ERP) deve fazer uma requisição <strong>POST</strong> para o endereço abaixo, enviando a chave de API no cabeçalho (Header) como <code className="bg-slate-200 px-1 py-0.5 rounded text-slate-700">apikey: SUA_CHAVE</code>.
+                  O seu sistema (ERP) deve fazer uma requisição <strong>POST</strong> para o endereço abaixo. A chave já está embutida na URL final como parâmetro `?apikey=`.
                 </p>
                 <div className="flex items-center gap-2">
                   <Input 
-                    value={`${import.meta.env.VITE_SUPABASE_URL || 'https://seu-projeto.supabase.co'}/rest/v1/rpc/sync_produtos_loja`}
+                    value={`${import.meta.env.VITE_SUPABASE_URL || 'https://seu-projeto.supabase.co'}/rest/v1/rpc/sync_produtos_loja?apikey=${form.apiKeyTemp || form.api_key || 'SUA_CHAVE_GERADA'}`}
                     readOnly
                     className="font-mono bg-slate-100 text-[11px] h-9 text-slate-600 truncate"
                   />
@@ -967,8 +967,8 @@ function LojasAdmin() {
                     className="h-9 shrink-0 text-xs"
                     onClick={(e) => {
                       e.preventDefault();
-                      navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL || 'https://seu-projeto.supabase.co'}/rest/v1/rpc/sync_produtos_loja`);
-                      toast.success("URL copiada!");
+                      navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL || 'https://seu-projeto.supabase.co'}/rest/v1/rpc/sync_produtos_loja?apikey=${form.apiKeyTemp || form.api_key || 'SUA_CHAVE_GERADA'}`);
+                      toast.success("URL copiada com a chave incluída!");
                     }}
                   >
                     Copiar URL
