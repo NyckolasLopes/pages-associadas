@@ -73,6 +73,7 @@ function AdminBanners() {
   const updateBanner = useAdmin(s => s.updateBanner);
 
   const activeStoreId = useAdmin(s => s.activeStoreId);
+  const currentUser = useAdmin(s => s.currentUser);
   const allBanners = useAdmin(s => s.banners);
   const banners = activeStoreId ? allBanners.filter(b => b.lojaId === activeStoreId) : allBanners.filter(b => !b.lojaId);
   const setBanners = useAdmin(s => s.setBanners);
@@ -221,7 +222,7 @@ function AdminBanners() {
         await addBanner({
           ...editingBanner,
           id: `banner_${Date.now()}`,
-          lojaId: activeStoreId || undefined,
+          lojaId: activeStoreId || (!currentUser?.proprietario ? currentUser?.lojasVinculadas?.[0] : undefined) || undefined,
         } as AdminBanner);
         toast.success("Banner criado com sucesso!");
       }
