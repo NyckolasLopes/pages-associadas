@@ -930,14 +930,14 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       setOpen(id);
-    }, 150);
+    }, 50);
   };
 
   const handleMouseLeave = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       setOpen(null);
-    }, 150);
+    }, 100);
   };
 
   useEffect(() => {
@@ -1093,7 +1093,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
               })()}
             </div>
           </div>
-        ) : open && active && subs.length > 0 ? (
+        ) : open && active && (subs.length > 0 || catProducts.length > 0 || active.id === "300") ? (
           <div
             key="cat"
             className="absolute left-0 right-0 top-full z-50 bg-popover text-foreground border-b shadow-elevated pointer-events-none animate-in slide-in-from-top-2 fade-in duration-200"
