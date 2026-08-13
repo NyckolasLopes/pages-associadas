@@ -694,6 +694,14 @@ export const useAdmin = create<AdminState>()(
         }
         const { data, error } = await query;
         if (!error && data) {
+          const formatToLocalDatetime = (isoString: string) => {
+            if (!isoString) return "";
+            const d = new Date(isoString);
+            if (isNaN(d.getTime())) return "";
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          };
+
           const parsedBanners = data.map((b: any) => ({
             id: b.id,
             nome: b.nome,
@@ -704,8 +712,8 @@ export const useAdmin = create<AdminState>()(
             paginaPublicacao: b.pagina_publicacao,
             titulo: b.titulo,
             active: b.ativo,
-            startDate: b.start_date,
-            endDate: b.end_date,
+            startDate: b.start_date ? formatToLocalDatetime(b.start_date) : "",
+            endDate: b.end_date ? formatToLocalDatetime(b.end_date) : "",
             lojaId: b.loja_id,
             vitrineVinculada: b.vitrine_vinculada,
             bannerVinculado: b.banner_vinculado,
@@ -730,8 +738,8 @@ export const useAdmin = create<AdminState>()(
           pagina_publicacao: banner.paginaPublicacao,
           titulo: banner.titulo,
           ativo: banner.active,
-          start_date: (banner.startDate && banner.startDate.trim() !== "") ? banner.startDate : null,
-          end_date: (banner.endDate && banner.endDate.trim() !== "") ? banner.endDate : null,
+          start_date: (banner.startDate && banner.startDate.trim() !== "") ? new Date(banner.startDate).toISOString() : null,
+          end_date: (banner.endDate && banner.endDate.trim() !== "") ? new Date(banner.endDate).toISOString() : null,
           loja_id: banner.lojaId || null,
           vitrine_vinculada: banner.vitrineVinculada,
           banner_vinculado: banner.bannerVinculado,
@@ -762,8 +770,8 @@ export const useAdmin = create<AdminState>()(
         if (banner.paginaPublicacao !== undefined) payload.pagina_publicacao = banner.paginaPublicacao;
         if (banner.titulo !== undefined) payload.titulo = banner.titulo;
         if (banner.active !== undefined) payload.ativo = banner.active;
-        if (banner.startDate !== undefined) payload.start_date = (banner.startDate && banner.startDate.trim() !== "") ? banner.startDate : null;
-        if (banner.endDate !== undefined) payload.end_date = (banner.endDate && banner.endDate.trim() !== "") ? banner.endDate : null;
+        if (banner.startDate !== undefined) payload.start_date = (banner.startDate && banner.startDate.trim() !== "") ? new Date(banner.startDate).toISOString() : null;
+        if (banner.endDate !== undefined) payload.end_date = (banner.endDate && banner.endDate.trim() !== "") ? new Date(banner.endDate).toISOString() : null;
         if (banner.vitrineVinculada !== undefined) payload.vitrine_vinculada = banner.vitrineVinculada;
         if (banner.bannerVinculado !== undefined) payload.banner_vinculado = banner.bannerVinculado;
         if (banner.formatoExtra !== undefined) payload.formato_extra = banner.formatoExtra;
