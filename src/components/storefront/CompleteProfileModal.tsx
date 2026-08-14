@@ -15,6 +15,7 @@ export function CompleteProfileModal() {
   const isMissingData = user && (!user.cpf || !user.celular) && user.provider === 'google';
   const [open, setOpen] = useState(false);
 
+  const [nome, setNome] = useState(user?.name || "");
   const [cpf, setCpf] = useState("");
   const [celular, setCelular] = useState("");
   const [loading, setLoading] = useState(false);
@@ -77,13 +78,14 @@ export function CompleteProfileModal() {
       email: user.email,
       cpf: unmaskedCpf,
       telefone: unmaskedPhone,
-      nome: user.name
+      nome: nome
     });
 
     setLoading(false);
 
     if (error) {
-      toast.error("Erro ao salvar dados.");
+      console.error("Erro no upsert do perfil:", error);
+      toast.error(`Erro ao salvar: ${error.message}`);
     } else {
       toast.success("Perfil atualizado com sucesso!");
       // Atualiza estado local da Auth pra sumir o modal
@@ -104,6 +106,15 @@ export function CompleteProfileModal() {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label>Nome Completo</Label>
+            <Input 
+              placeholder="Digite seu nome completo" 
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+            />
+          </div>
           <div className="space-y-2">
             <Label>CPF / CNPJ</Label>
             <Input 
