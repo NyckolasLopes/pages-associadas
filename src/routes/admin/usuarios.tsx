@@ -364,11 +364,54 @@ function AdminUsuarios() {
           const { data: existingProfile, error: profileError } = await supabase
             .from('profiles')
             .select('id, email, nome')
-            .eq('email', novoUsuarioEmail)
+            .ilike('email', novoUsuarioEmail)
             .single();
 
           if (profileError || !existingProfile) {
-            toast.error("O usuário já existe na autenticação, mas não encontramos o perfil dele.");
+            // Tenta fazer login com a senha informada para recuperar o ID do usuário da tabela auth
+            const { data: loginData, error: loginError } = await adminAuthClient.auth.signInWithPassword({
+              email: novoUsuarioEmail,
+              password: novoUsuarioSenha
+            });
+
+            if (loginError || !loginData.user) {
+              toast.error("O usuário já existe na autenticação, mas não encontramos o perfil. A senha informada também não confere para recuperá-lo.");
+              return;
+            }
+
+            targetUserId = loginData.user.id;
+            alreadyExisted = true;
+            
+            // Tenta inserir o perfil que estava faltando
+            const { error: insertError } = await supabase.from('profiles').upsert({
+               id: targetUserId,
+               email: novoUsuarioEmail,
+               nome: novoUsuarioNome,
+               is_admin: isGlobal,
+               grupo_id: novoUsuarioGrupo,
+               lojas_vinculadas: isGlobal ? null : novoUsuarioLojas
+            });
+
+            if (insertError) {
+               toast.error(`Falha ao recriar perfil do usuário: ${insertError.message}`);
+               return;
+            }
+            
+            toast.success("Perfil recuperado e vinculado com sucesso!");
+            setUsuarios([...usuarios, {
+              id: targetUserId,
+              name: novoUsuarioNome,
+              email: novoUsuarioEmail,
+              grupoId: novoUsuarioGrupo,
+              lojasVinculadas: isGlobal ? undefined : novoUsuarioLojas,
+              proprietario: false
+            }]);
+            setIsNovoUsuarioOpen(false);
+            setNovoUsuarioNome("");
+            setNovoUsuarioEmail("");
+            setNovoUsuarioSenha("");
+            setNovoUsuarioGrupo("");
+            setNovoUsuarioLojas([]);
             return;
           }
           

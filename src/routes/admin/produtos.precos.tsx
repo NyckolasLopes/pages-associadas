@@ -61,6 +61,15 @@ function AdminProdutosPrecos() {
   const [isDragging, setIsDragging] = useState(false);
   const meusPrecosFileInputRef = useRef<HTMLInputElement>(null);
 
+  // States for PMC Import
+  const [isImportPmcOpen, setIsImportPmcOpen] = useState(false);
+  const [importPmcFileName, setImportPmcFileName] = useState("");
+  const [pmcHeaders, setPmcHeaders] = useState<string[]>([]);
+  const [pmcRows, setPmcRows] = useState<any[]>([]);
+  const [selectedPmcIdentifierCol, setSelectedPmcIdentifierCol] = useState("");
+  const [selectedPmcPriceCol, setSelectedPmcPriceCol] = useState("");
+  const pmcFileInputRef = useRef<HTMLInputElement>(null);
+
   // States for Encarte Import
   const [pendingImportData, setPendingImportData] = useState<any[] | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -126,6 +135,109 @@ function AdminProdutosPrecos() {
       }
     };
     reader.readAsBinaryString(file);
+  };
+
+  const handlePmcFileUpload = (file: File) => {
+    if (!file) return;
+    setImportPmcFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const rawJson: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+        if (!rawJson || rawJson.length === 0) {
+          toast.error("A planilha selecionada está vazia.");
+          return;
+        }
+
+        setPmcRows(rawJson);
+        const headers = Object.keys(rawJson[0] || {});
+        setPmcHeaders(headers);
+
+        const lowerHeaders = headers.map(h => h.toLowerCase());
+        const idCol = headers[lowerHeaders.findIndex(h => h.includes("ean") || h.includes("codigo") || h.includes("id"))];
+        const priceCol = headers[lowerHeaders.findIndex(h => h.includes("preco") || h.includes("preço") || h.includes("pmc") || h.includes("liquido") || h.includes("líquido"))];
+
+        if (idCol) setSelectedPmcIdentifierCol(idCol);
+        if (priceCol) setSelectedPmcPriceCol(priceCol);
+
+        toast.success(`Planilha PMC "${file.name}" carregada com ${rawJson.length} itens!`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Erro ao ler o arquivo. Certifique-se de que é um formato válido (.xlsx, .xls ou .csv).");
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleConfirmImportPmc = () => {
+    if (!selectedPmcIdentifierCol || !selectedPmcPriceCol) {
+      toast.error("Selecione as colunas de EAN e de Preço Líquido.");
+      return;
+    }
+
+    const pmcMap = new Map<string, number>();
+    let invalidCount = 0;
+
+    pmcRows.forEach(row => {
+      const idRaw = String(row[selectedPmcIdentifierCol] ?? "").trim();
+      const priceRaw = row[selectedPmcPriceCol];
+
+      if (!idRaw || priceRaw === undefined || priceRaw === null || priceRaw === "") {
+        invalidCount++;
+        return;
+      }
+
+      let priceNum = 0;
+      if (typeof priceRaw === "number") {
+        priceNum = priceRaw;
+      } else {
+        const cleanStr = String(priceRaw)
+          .replace("R$", "")
+          .replace(/\s/g, "")
+          .replace(/\./g, "")
+          .replace(",", ".");
+        priceNum = parseFloat(cleanStr);
+      }
+
+      if (isNaN(priceNum) || priceNum <= 0) {
+        invalidCount++;
+        return;
+      }
+
+      if (/^\d{7,14}$/.test(idRaw)) {
+        pmcMap.set(idRaw, priceNum);
+      }
+    });
+
+    if (pmcMap.size === 0) {
+      toast.error("Nenhum EAN/Preço válido foi identificado.");
+      return;
+    }
+
+    let updatedCount = 0;
+
+    customProducts.forEach(p => {
+      const isMedicamento = p.categoriaId === "142" || p.categoriasAdicionais?.includes("142");
+      if (isMedicamento && p.ean) {
+        const pmcPrice = pmcMap.get(p.ean);
+        if (pmcPrice !== undefined) {
+          const newProduct = { ...p, precoDe: pmcPrice, precoPor: pmcPrice };
+          addOrUpdateProduct(newProduct);
+          updatedCount++;
+        }
+      }
+    });
+
+    toast.success(`🎉 ${updatedCount} medicamentos atualizados com base na tabela PMC!`);
+    setIsImportPmcOpen(false);
+    setPmcRows([]);
+    setImportPmcFileName("");
   };
 
   const handleConfirmImportMeusPrecos = () => {
@@ -460,6 +572,9 @@ function AdminProdutosPrecos() {
               <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 h-10">
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Planilha Encarte
               </Button>
+              <Button variant="outline" onClick={() => pmcFileInputRef.current?.click()} className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800 h-10">
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Planilha PMC
+              </Button>
               <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -486,6 +601,13 @@ function AdminProdutosPrecos() {
                   }
                 };
                 reader.readAsBinaryString(file);
+              }} />
+              <input type="file" ref={pmcFileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handlePmcFileUpload(file);
+                if (pmcFileInputRef.current) {
+                  pmcFileInputRef.current.value = "";
+                }
               }} />
             </>
           )}
@@ -583,6 +705,7 @@ function AdminProdutosPrecos() {
                 const hasCustomPrice = !!lojaPreco;
                 const isCampanhaInterna = !isGlobal && hasCustomPrice && (lojaPreco.precoDe > lojaPreco.precoPor);
                 const disponivel = lojaPreco?.ativo ?? true;
+                const isMedicamento = produto.categoriaId === "142" || produto.categoriasAdicionais?.includes("142");
 
                 return (
                   <tr key={produto.id} className="hover:bg-slate-50 transition-colors group">
@@ -699,27 +822,34 @@ function AdminProdutosPrecos() {
                                   <div className="text-[10px] text-orange-700 italic">Após isso vai retornar automaticamente para o preço original.</div>
                                 </div>
                               ) : (
-                                <PriceDiscountInput
-                                  basePrice={globalPor}
-                                  initialPromoPrice={parseFloat(displayPor || "0") || undefined}
-                                  onChange={(val) => handleEditChange(produto.id, "precoPor", val.toString())}
-                                  disabled={campanhaAtiva}
-                                />
+                                <>
+                                  <PriceDiscountInput
+                                    basePrice={globalPor}
+                                    initialPromoPrice={parseFloat(displayPor || "0") || undefined}
+                                    onChange={(val) => handleEditChange(produto.id, "precoPor", val.toString())}
+                                    disabled={campanhaAtiva || isMedicamento}
+                                  />
+                                  {isMedicamento && (
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 mt-2 text-[10px]">
+                                      Preço Bloqueado (Tabela PMC)
+                                    </Badge>
+                                  )}
+                                </>
                               )}
                             </div>
                             
                             <div className="flex flex-col gap-1 mt-4">
-                              {edits !== undefined && !campanhaAtiva ? (
+                              {edits !== undefined && !campanhaAtiva && !isMedicamento ? (
                                 <Button size="sm" onClick={() => handleSavePrice(produto)} className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold">
                                   Salvar
                                 </Button>
-                              ) : hasCustomPrice && !campanhaAtiva ? (
+                              ) : hasCustomPrice && !campanhaAtiva && !isMedicamento ? (
                                 <Button size="sm" variant="outline" onClick={() => handleEditChange(produto.id, "precoDe", lojaPreco.precoDe.toString())} className="h-8 px-3 text-xs text-emerald-700 border-emerald-200">
                                   Editar
                                 </Button>
                               ) : null}
                               
-                              {hasCustomPrice && edits === undefined && (
+                              {hasCustomPrice && edits === undefined && !isMedicamento && (
                                 <Button 
                                   size="sm" 
                                   variant="ghost" 
@@ -1160,6 +1290,200 @@ function AdminProdutosPrecos() {
             >
               <Check className="h-4 w-4 mr-1.5" />
               Confirmar e Importar Preços
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- MODAL: IMPORTAR PLANILHA PMC ---- */}
+      <Dialog open={isImportPmcOpen} onOpenChange={setIsImportPmcOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-800 flex items-center gap-2">
+              <Upload className="h-5 w-5 text-blue-600" />
+              Importar Planilha PMC
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Anexe sua planilha PMC (Preço Máximo ao Consumidor). O preço configurado aqui <strong>sobrescreverá o preço global</strong> e bloqueará edições para todas as farmácias associadas, caso o produto pertença à categoria <strong>Medicamentos</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto pr-1 py-4 space-y-4">
+            {/* Input Oculto de Arquivo */}
+            <input 
+              type="file" 
+              ref={pmcFileInputRef} 
+              className="hidden" 
+              accept=".xlsx, .xls, .csv" 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handlePmcFileUpload(file);
+                if (pmcFileInputRef.current) pmcFileInputRef.current.value = "";
+              }} 
+            />
+
+            {!importPmcFileName ? (
+              <div 
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handlePmcFileUpload(file);
+                }}
+                onClick={() => pmcFileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
+                  isDragging 
+                    ? "border-blue-500 bg-blue-50/50" 
+                    : "border-slate-300 hover:border-blue-400 bg-slate-50/50 hover:bg-slate-50"
+                }`}
+              >
+                <div className="p-4 rounded-full bg-blue-100 text-blue-700">
+                  <FileSpreadsheet className="h-8 w-8" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">
+                    Clique para selecionar ou arraste sua planilha PMC aqui
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Formatos aceitos: <strong>.XLSX, .XLS ou .CSV</strong>
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-blue-50/60 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2.5 rounded-lg bg-blue-100 text-blue-700 shrink-0">
+                      <FileSpreadsheet className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate" title={importPmcFileName}>
+                        {importPmcFileName}
+                      </p>
+                      <p className="text-xs text-blue-700 font-medium">
+                        {pmcRows.length} linhas identificadas na planilha PMC
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => pmcFileInputRef.current?.click()}
+                    className="text-xs border-blue-300 text-blue-800 hover:bg-blue-100 shrink-0"
+                  >
+                    Trocar Arquivo
+                  </Button>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Mapeamento das Colunas da Planilha
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                        <span>Coluna EAN do Produto</span>
+                      </label>
+                      <Select value={selectedPmcIdentifierCol} onValueChange={setSelectedPmcIdentifierCol}>
+                        <SelectTrigger className="h-9 bg-white text-xs">
+                          <SelectValue placeholder="Selecione a coluna..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pmcHeaders.map(header => (
+                            <SelectItem key={header} value={header} className="text-xs">
+                              {header}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                        <span>Coluna Preço Líquido (PMC)</span>
+                      </label>
+                      <Select value={selectedPmcPriceCol} onValueChange={setSelectedPmcPriceCol}>
+                        <SelectTrigger className="h-9 bg-white text-xs border-blue-300 focus:ring-blue-500">
+                          <SelectValue placeholder="Selecione a coluna de preço..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pmcHeaders.map(header => (
+                            <SelectItem key={header} value={header} className="text-xs font-medium">
+                              {header}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="bg-slate-100/80 px-3.5 py-2 border-b border-slate-200 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700">Prévia da Importação (Primeiras 5 linhas)</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 border-b text-slate-500 font-medium">
+                        <tr>
+                          <th className="p-2.5 pl-3.5">#</th>
+                          <th className="p-2.5">EAN ({selectedPmcIdentifierCol || "—"})</th>
+                          <th className="p-2.5 text-right pr-3.5">PMC ({selectedPmcPriceCol || "—"})</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {pmcRows.slice(0, 5).map((row, idx) => {
+                          const idVal = row[selectedPmcIdentifierCol] ?? "—";
+                          const priceVal = row[selectedPmcPriceCol];
+                          let formattedPrice = "—";
+                          if (priceVal !== undefined && priceVal !== null && priceVal !== "") {
+                            if (typeof priceVal === "number") {
+                              formattedPrice = priceVal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+                            } else {
+                              const cleanStr = String(priceVal).replace("R$", "").trim().replace(/\./g, "").replace(",", ".");
+                              const n = parseFloat(cleanStr);
+                              formattedPrice = !isNaN(n) ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : String(priceVal);
+                            }
+                          }
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50/60">
+                              <td className="p-2.5 pl-3.5 font-mono text-slate-400">{idx + 1}</td>
+                              <td className="p-2.5 font-medium text-slate-800">{String(idVal)}</td>
+                              <td className="p-2.5 pr-3.5 text-right font-bold text-blue-700">{formattedPrice}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-2 pt-3 border-t border-slate-100">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsImportPmcOpen(false);
+                setPmcRows([]);
+                setPmcHeaders([]);
+                setImportPmcFileName("");
+              }}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleConfirmImportPmc} 
+              disabled={!importPmcFileName || pmcRows.length === 0 || !selectedPmcPriceCol || !selectedPmcIdentifierCol}
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold"
+            >
+              <Check className="h-4 w-4 mr-1.5" />
+              Confirmar e Aplicar PMC
             </Button>
           </DialogFooter>
         </DialogContent>
