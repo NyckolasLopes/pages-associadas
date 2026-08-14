@@ -62,35 +62,75 @@ export function BarcodeScannerModal({ open, onOpenChange, onScan, scanError, onC
 
     const startScanner = async () => {
       try {
-        const html5QrCode = new window.Html5Qrcode("reader");
-        scannerRef.current = html5QrCode;
+        // Verifica se o navegador suporta mediaDevices (exige HTTPS ou localhost)
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error("SECURE_CONTEXT_REQUIRED");
+        }
 
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 150 },
-            aspectRatio: 1.0,
-          },
-          (decodedText: string) => {
+        const cameras = await window.Html5Qrcode.getCameras();
+        if (isUnmounted) return;
+
+        if (cameras && cameras.length > 0) {
+          const html5QrCode = new window.Html5Qrcode("reader");
+          scannerRef.current = html5QrCode;
+          
+          // Tenta usar a câmera especificada (geralmente a última é a traseira em celulares)
+          // Mas se falhar, o html5QrCode fará fallback usando apenas { facingMode: "environment" }
+          
+          await html5QrCode.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 150 },
+              aspectRatio: 1.0,
+            },
+            (decodedText: string) => {
+              if (isUnmounted) return;
+              if (scannerRef.current) {
+                try {
+                  if (scannerRef.current.getState() === 2) { // 2 = SCANNING
+                     scannerRef.current.pause();
+                  }
+                } catch(e) {}
+              }
+              latestOnScan.current(decodedText);
+            },
+            (errorMessage: string) => {
+              // Ignore scan failures
+            }
+          ).catch(async (err: any) => {
+            // Fallback se "environment" falhar (ex: desktop sem câmera traseira)
             if (isUnmounted) return;
-            if (scannerRef.current) {
-              try {
-                if (scannerRef.current.getState() === 2) { // 2 = SCANNING
+            await html5QrCode.start(
+              cameras[0].id,
+              {
+                fps: 10,
+                qrbox: { width: 250, height: 150 },
+                aspectRatio: 1.0,
+              },
+              (decodedText: string) => {
+                if (isUnmounted) return;
+                if (scannerRef.current && scannerRef.current.getState() === 2) {
                    scannerRef.current.pause();
                 }
-              } catch(e) {}
-            }
-            latestOnScan.current(decodedText);
-          },
-          (errorMessage: string) => {
-            // Ignore scan failures
-          }
-        );
-      } catch (err) {
+                latestOnScan.current(decodedText);
+              },
+              () => {}
+            );
+          });
+        } else {
+          throw new Error("NO_CAMERAS");
+        }
+      } catch (err: any) {
         console.error("Scanner init error:", err);
         if (!isUnmounted) {
-          setErrorMsg("Não foi possível iniciar a câmera. Por favor, permita o acesso à câmera e tente novamente.");
+          if (err.message === "SECURE_CONTEXT_REQUIRED") {
+             setErrorMsg("O uso da câmera requer uma conexão segura (HTTPS). Se estiver testando no celular via IP local, digite o código manualmente.");
+          } else if (err.message === "NO_CAMERAS") {
+             setErrorMsg("Nenhuma câmera encontrada neste dispositivo.");
+          } else {
+             setErrorMsg("Não foi possível iniciar a câmera. Por favor, permita o acesso e verifique se ela não está em uso por outro aplicativo.");
+          }
         }
       }
     };
