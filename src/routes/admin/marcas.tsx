@@ -119,11 +119,11 @@ function AdminMarcas() {
           <h2 className="text-[22px] font-bold text-[#1a1a1a]">Marcas</h2>
           <span className="text-sm font-medium text-slate-500">{filteredMarcas.length} marcas</span>
         </div>
-        <Link to="/admin/marcas/nova">
-          <Button className="bg-[#00AFA9] hover:bg-[#008f8a] text-white font-bold h-10 px-6">
+        <Button asChild className="bg-[#00AFA9] hover:bg-[#008f8a] text-white font-bold h-10 px-6">
+          <Link to="/admin/marcas/nova">
             + Nova marca
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       <div className="bg-white rounded-md border border-slate-200 shadow-sm">
