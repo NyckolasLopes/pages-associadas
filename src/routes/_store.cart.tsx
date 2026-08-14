@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { 
   Flame, Store, Truck, X, MapPin, AlertTriangle, Bike, 
   MessageCircle, Send, CheckCircle2, Tag, Sparkles, DollarSign, CreditCard, ShoppingBag,
-  Building2, Clock
+  Building2, Clock, Edit2
 } from "lucide-react";
 import { toast } from "sonner";
 import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
@@ -119,6 +119,7 @@ function CartPage() {
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "cartao_credito" | "cartao_debito" | "dinheiro">("pix");
   const [trocoPara, setTrocoPara] = useState("");
   const [orderNotes, setOrderNotes] = useState("");
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
 
   // Auto-fill and calculate freight if geoCep is present
   useEffect(() => {
@@ -1226,8 +1227,9 @@ function CartPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">CPF (Opcional p/ Nota)</Label>
+                  <Label className="text-xs">CPF / CNPJ (Obrigatório p/ nota) *</Label>
                   <Input
+                    required
                     placeholder="000.000.000-00"
                     value={clientCpf}
                     onChange={(e) => setClientCpf(e.target.value)}
@@ -1261,55 +1263,94 @@ function CartPage() {
                 </button>
               </div>
 
+              {items.some(i => i.retemReceita) && (
+                <div className="bg-red-50 text-red-700 p-2.5 rounded border border-red-200 text-xs mt-2">
+                  <AlertTriangle className="w-4 h-4 inline mr-1 -mt-0.5" />
+                  <strong>Atenção:</strong> Seu pedido contém medicamentos de controle especial. Conforme normas da Anvisa, é necessário reter a receita original. A entrega está desabilitada e você deve retirar na farmácia.
+                </div>
+              )}
+
               {deliveryMethod === "retirada" ? (
-                <div className="text-xs text-muted-foreground bg-white p-2.5 rounded border">
-                  📍 <strong>Endereço de retirada:</strong> {selectedPharmacy?.endereco}, {selectedPharmacy?.bairro} - {selectedPharmacy?.cidade}/{selectedPharmacy?.uf}
+                <div className="text-xs text-muted-foreground bg-white p-2.5 rounded border space-y-1.5">
+                  <div>📍 <strong>Endereço de retirada:</strong> {selectedPharmacy?.endereco}, {selectedPharmacy?.bairro} - {selectedPharmacy?.cidade}/{selectedPharmacy?.uf}</div>
+                  {selectedPharmacy?.horario_funcionamento && (
+                    <div className="flex items-center gap-1.5 text-slate-600 mt-1">
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <span>{selectedPharmacy.horario_funcionamento}</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2">
-                      <Label className="text-xs">Endereço (Rua / Av.) *</Label>
-                      <Input
-                        required
-                        placeholder="Ex: Av. Central"
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        className="mt-1 bg-white h-9"
-                      />
+                  {!isEditingAddress && (addressStr || deliveryAddress) ? (
+                    <div className="bg-white p-3 rounded-lg border text-sm flex justify-between items-start gap-2">
+                      <div>
+                        <div className="font-bold flex items-center gap-1 text-slate-700 mb-1">
+                          <MapPin className="w-4 h-4 text-emerald-600" /> Endereço de Entrega
+                        </div>
+                        <div className="text-slate-600">
+                          {deliveryAddress ? `${deliveryAddress}, ${deliveryNumber ? deliveryNumber : 'S/N'}${deliveryComplement ? ' - ' + deliveryComplement : ''} - ${deliveryBairro}` : addressStr}
+                        </div>
+                        {(!deliveryNumber || deliveryNumber.trim() === "") && (
+                          <div className="text-red-500 font-bold text-xs mt-1">
+                            Atenção: Número não preenchido! Clique em Editar.
+                          </div>
+                        )}
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditingAddress(true)} className="text-emerald-600 h-8 px-2 shrink-0">
+                        <Edit2 className="w-4 h-4 mr-1" /> Editar
+                      </Button>
                     </div>
-                    <div>
-                      <Label className="text-xs">Número *</Label>
-                      <Input
-                        required
-                        placeholder="123"
-                        value={deliveryNumber}
-                        onChange={(e) => setDeliveryNumber(e.target.value)}
-                        className="mt-1 bg-white h-9"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Bairro *</Label>
-                      <Input
-                        required
-                        placeholder="Centro"
-                        value={deliveryBairro}
-                        onChange={(e) => setDeliveryBairro(e.target.value)}
-                        className="mt-1 bg-white h-9"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Complemento</Label>
-                      <Input
-                        placeholder="Apto 101, Bloco B"
-                        value={deliveryComplement}
-                        onChange={(e) => setDeliveryComplement(e.target.value)}
-                        className="mt-1 bg-white h-9"
-                      />
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="col-span-2">
+                          <Label className="text-xs">Endereço (Rua / Av.) *</Label>
+                          <Input
+                            required
+                            placeholder="Ex: Av. Central"
+                            value={deliveryAddress}
+                            onChange={(e) => setDeliveryAddress(e.target.value)}
+                            className="mt-1 bg-white h-9"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Número *</Label>
+                          <Input
+                            required
+                            placeholder="123"
+                            value={deliveryNumber}
+                            onChange={(e) => setDeliveryNumber(e.target.value)}
+                            className="mt-1 bg-white h-9"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">Bairro *</Label>
+                          <Input
+                            required
+                            placeholder="Centro"
+                            value={deliveryBairro}
+                            onChange={(e) => setDeliveryBairro(e.target.value)}
+                            className="mt-1 bg-white h-9"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Complemento</Label>
+                          <Input
+                            placeholder="Apto 101, Bloco B"
+                            value={deliveryComplement}
+                            onChange={(e) => setDeliveryComplement(e.target.value)}
+                            className="mt-1 bg-white h-9"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end pt-1">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setIsEditingAddress(false)} disabled={!deliveryAddress || !deliveryNumber}>Confirmar Endereço</Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -1365,24 +1406,41 @@ function CartPage() {
             </div>
 
             {/* Resumo do Valor */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex justify-between items-center">
-              <div>
-                <span className="text-xs text-emerald-800 font-bold block">{items.length} produto(s) no carrinho</span>
-                <span className="text-[11px] text-emerald-700">Pagamento acertado na entrega ou retirada</span>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+              <div className="space-y-1.5 mb-3 border-b border-emerald-200/50 pb-3">
+                <div className="flex justify-between text-sm text-emerald-800">
+                  <span>Subtotal ({items.length} itens)</span>
+                  <span>{brl(subtotal)}</span>
+                </div>
+                {(storeDiscount + pbmDisc + couponDisc) > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                    <span>Descontos</span>
+                    <span>-{brl(storeDiscount + pbmDisc + couponDisc)}</span>
+                  </div>
+                )}
+                {deliveryMethod === "entrega" && (
+                  <div className="flex justify-between text-sm text-emerald-800">
+                    <span>Frete</span>
+                    <span>{freightPrice === 0 ? "Grátis" : brl(freightPrice)}</span>
+                  </div>
+                )}
               </div>
-              <div className="text-right">
-                <span className="text-xs text-emerald-800 block">Total</span>
-                <span className="text-lg font-bold text-emerald-900">{brl(grandTotal)}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-emerald-700">Pagamento acertado na {deliveryMethod}</span>
+                <div className="text-right flex items-center gap-2">
+                  <span className="text-xs text-emerald-800 font-bold uppercase">Total</span>
+                  <span className="text-lg font-bold text-emerald-900">{brl(grandTotal)}</span>
+                </div>
               </div>
             </div>
 
             <Button
               type="submit"
-              disabled={isSubmittingOrder}
+              disabled={isSubmittingOrder || (deliveryMethod === "entrega" && (!deliveryNumber || isEditingAddress))}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-6 text-base shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
             >
               <Send className="h-5 w-5" />
-              {isSubmittingOrder ? "Gerando Pedido..." : "Confirmar e Abrir no WhatsApp 💬"}
+              {isSubmittingOrder ? "Processando..." : "Finalizar Pedido"}
             </Button>
           </form>
         </DialogContent>
