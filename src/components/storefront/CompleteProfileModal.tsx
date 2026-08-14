@@ -97,8 +97,8 @@ export function CompleteProfileModal() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[425px]" hideClose>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Complete seu cadastro</DialogTitle>
           <DialogDescription>
