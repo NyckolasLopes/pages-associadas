@@ -111,7 +111,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
     onClose();
   };
 
-  const filteredProducts = produtosOpcoes.filter(p => p.nome.toLowerCase().includes(searchProduto.toLowerCase())).slice(0, 50);
+  const filteredProducts = produtosOpcoes.filter(p => (p.nome || "").toLowerCase().includes(searchProduto.toLowerCase())).slice(0, 50);
 
   const toggleProduct = (id: string) => {
     if (produtoIds.includes(id)) {
@@ -239,7 +239,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
               <div className="max-h-[200px] overflow-y-auto border rounded divide-y">
                 {filteredProducts.map(p => (
                   <div key={p.id} className="p-2 flex items-center justify-between hover:bg-slate-50">
-                    <span className="text-sm font-medium line-clamp-1">{p.nome}</span>
+                    <span className="text-sm font-medium line-clamp-1">{p.nome || "Produto sem nome"}</span>
                     <Button 
                       variant={produtoIds.includes(p.id) ? "destructive" : "secondary"} 
                       size="sm"

@@ -352,19 +352,41 @@ function AdminUsuarios() {
         }
       });
 
-      // Se a conta já existir no Auth, o Supabase retorna identities vazio. Precisamos bloquear.
-      if (authData?.user?.identities && authData.user.identities.length === 0) {
-        toast.error("Este e-mail já está registrado no sistema de autenticação.");
-        return;
-      }
+      // Se a conta já existir no Auth, o Supabase retorna identities vazio. Precisamos bloquear apenas se não formos vincular o usuário.
+      // Neste caso vamos aproveitar o usuário existente.
+
+      let targetUserId = authData?.user?.id;
+      let alreadyExisted = false;
 
       if (authError) {
-        toast.error(`Erro ao registrar credenciais: ${authError.message}`);
-        return;
-      }
-      
-      // Se criou no auth mas não inseriu o profile por trigger, inserimos manualmente
-      if (authData?.user) {
+        if (authError.message.includes("User already registered") || authError.status === 422 || authError.message.includes("registered")) {
+          // O usuário já existe, vamos atualizar o perfil dele
+          const { data: existingProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, email, nome')
+            .eq('email', novoUsuarioEmail)
+            .single();
+
+          if (profileError || !existingProfile) {
+            toast.error("O usuário já existe na autenticação, mas não encontramos o perfil dele.");
+            return;
+          }
+          
+          targetUserId = existingProfile.id;
+          alreadyExisted = true;
+          
+          await supabase.from('profiles').update({
+             grupo_id: novoUsuarioGrupo,
+             lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
+             is_admin: isGlobal
+          }).eq('id', targetUserId);
+          
+        } else {
+          toast.error(`Erro ao registrar credenciais: ${authError.message}`);
+          return;
+        }
+      } else if (authData?.user) {
+         // Se criou no auth mas não inseriu o profile por trigger, inserimos manualmente
          await supabase.from('profiles').upsert({
            id: authData.user.id,
            email: novoUsuarioEmail,
@@ -377,7 +399,7 @@ function AdminUsuarios() {
 
       // Create new user in local state
       setUsuarios([...usuarios, { 
-        id: authData?.user?.id || `user-${Date.now()}`, 
+        id: targetUserId || `user-${Date.now()}`, 
         name: novoUsuarioNome, 
         email: novoUsuarioEmail, 
         password: novoUsuarioSenha,
@@ -386,7 +408,11 @@ function AdminUsuarios() {
         lojasVinculadas: isGlobal ? undefined : novoUsuarioLojas
       }]);
 
-      toast.success("Usuário criado com sucesso!");
+      if (alreadyExisted) {
+        toast.success("O usuário já existia no sistema e foi vinculado com sucesso!");
+      } else {
+        toast.success("Usuário criado com sucesso!");
+      }
     }
     setIsNovoUsuarioOpen(false);
     resetUsuarioForm();

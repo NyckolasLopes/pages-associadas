@@ -72,10 +72,13 @@ export function CompleteProfileModal() {
     }
     
     setLoading(true);
-    const { error } = await supabase.from("profiles").update({
+    const { error } = await supabase.from("profiles").upsert({
+      id: user.id,
+      email: user.email,
       cpf: unmaskedCpf,
-      telefone: unmaskedPhone
-    }).eq("id", user.id);
+      telefone: unmaskedPhone,
+      nome: user.name
+    });
 
     setLoading(false);
 

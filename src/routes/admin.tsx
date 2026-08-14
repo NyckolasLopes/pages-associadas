@@ -520,6 +520,30 @@ function AdminLayout() {
 
             </NavSection>
           )}
+
+          {/* ---- DESIGN DA REDE (apenas para admin global) ---- */}
+          {isGlobalAdmin && (
+            <NavSection 
+              icon={<Palette className="h-4 w-4" />} 
+              label="Design da Rede" 
+              open={openNavSection === "DesignGlobal"} 
+              onToggle={() => setOpenNavSection(openNavSection === "DesignGlobal" ? "" : "DesignGlobal")}
+            >
+              <Link to="/admin/design/logo" className={subLinkClass} activeOptions={{ exact: true }}>
+                Logo e Favicon
+              </Link>
+              <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
+                Banners Globais
+              </Link>
+              <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
+                Estrutura da Rede
+              </Link>
+              <Link to="/admin/design/redes" className={subLinkClass} activeOptions={{ exact: true }}>
+                Redes Sociais
+              </Link>
+            </NavSection>
+          )}
+
           {isGlobalAdmin && (
             <Link to="/admin/paginas-informativas" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
               <FileText className="h-4 w-4" /> Páginas Informativas
