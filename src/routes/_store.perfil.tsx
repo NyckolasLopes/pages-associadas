@@ -105,10 +105,17 @@ function PerfilPage() {
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
-    if (v.length > 11) v = v.slice(0, 11);
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    if (v.length > 14) v = v.slice(0, 14);
+    if (v.length <= 11) {
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    } else {
+      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    }
     setEditCpf(v);
   };
 
@@ -235,7 +242,7 @@ function PerfilPage() {
                 <h2 className="font-bold text-lg border-b pb-2">Informações Pessoais</h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="col-span-2 sm:col-span-1">
-                    <Label>Nome Completo</Label>
+                    <Label>Nome Completo ou Razão Social</Label>
                     <Input value={editName} onChange={e => setEditName(e.target.value)} />
                   </div>
                   <div className="col-span-2 sm:col-span-1">
@@ -244,8 +251,8 @@ function PerfilPage() {
                   </div>
                   <div className="col-span-2 sm:col-span-2 grid sm:grid-cols-2 gap-4">
                     <div>
-                      <Label>CPF</Label>
-                      <Input type="text" value={editCpf} onChange={handleCpfChange} placeholder="000.000.000-00" />
+                      <Label>CPF ou CNPJ</Label>
+                      <Input type="text" value={editCpf} onChange={handleCpfChange} placeholder="000.000.000-00 ou 00.000.000/0001-00" />
                     </div>
                     <div>
                       <Label>Celular / Telefone</Label>
