@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export const Route = createFileRoute("/admin/clientes/leads")({
+export const Route = createFileRoute("/admin/marketing/leads")({
   component: LeadsAdmin,
 });
 

@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import logoAnvisa from "@/assets/logo-anvisa.png";
+import logoUrlDefault from "@/assets/logo.png";
 import asaasLogo from "@/assets/asaas-logo.png";
 import paymentMethodsImg from "@/assets/payment-methods.png";
 import { useAdmin } from "@/stores/admin";
@@ -63,7 +64,19 @@ export function Footer() {
   }, [pharmacies, selectedPharmacyId]);
 
   // Fallback to global config if no pharmacy has a description, though typically we use the active pharmacy
-  const descricaoLoja = activePharmacy?.pageTitle || dadosLoja.descricao;
+  const descricaoLoja = activePharmacy?.footerDescricao || activePharmacy?.pageTitle || dadosLoja.descricao || "Somos a maior rede associativa do Brasil.";
+  const tituloCentralRelacionamento = activePharmacy?.footerTituloContato || "CENTRAL DE RELACIONAMENTO";
+
+  const storeSocials = useMemo(() => {
+    if (!activePharmacy?.socialLinks) return socialNetworks;
+    const links = [];
+    if (activePharmacy.socialLinks.instagram) links.push({ id: 'ig', label: 'Instagram', href: activePharmacy.socialLinks.instagram, iconName: 'Instagram' });
+    if (activePharmacy.socialLinks.facebook) links.push({ id: 'fb', label: 'Facebook', href: activePharmacy.socialLinks.facebook, iconName: 'Facebook' });
+    if (activePharmacy.socialLinks.tiktok) links.push({ id: 'tk', label: 'TikTok', href: activePharmacy.socialLinks.tiktok, iconName: 'Music' });
+    if (activePharmacy.socialLinks.linkedin) links.push({ id: 'in', label: 'LinkedIn', href: activePharmacy.socialLinks.linkedin, iconName: 'Linkedin' });
+    if (activePharmacy.socialLinks.youtube) links.push({ id: 'yt', label: 'YouTube', href: activePharmacy.socialLinks.youtube, iconName: 'Youtube' });
+    return links;
+  }, [activePharmacy?.socialLinks, socialNetworks]);
 
   return (
     <>
@@ -206,7 +219,9 @@ export function Footer() {
                     email,
                     dataCadastro: new Date().toLocaleString('pt-BR'),
                     origem: "Newsletter",
-                    status: "Ativo"
+                    status: "Ativo",
+                    lojaId: activePharmacy?.id,
+                    lojaNome: activePharmacy?.pageTitle || dadosLoja.nomeDaLoja
                   });
                   toast.success("Inscrição realizada — bem-vindo(a)!"); 
                   e.currentTarget.reset();
@@ -254,26 +269,51 @@ export function Footer() {
         </Col>
 
         <Col title="Navegação">
-          <li><Link to={"/mapa-site" as any} className="hover:underline">Mapa do Site</Link></li>
-          <li><Link to={"/departamentos" as any} className="hover:underline">Categorias</Link></li>
-          <li><Link to={"/busca" as any} search={{ q: "marcas" } as any} className="hover:underline">Marcas</Link></li>
-          <li><Link to="/busca" search={{ q: "principios-ativos" }} className="hover:underline">Princípios Ativos</Link></li>
-          <li><Link to="/busca" search={{ q: "classes-terapeuticas" }} className="hover:underline">Classes Terapêuticas</Link></li>
-          <li><Link to="/busca" search={{ q: "bulas" }} className="hover:underline">Bulas de A a Z</Link></li>
+          {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Navegação").map(p => (
+            <li key={p.id}>
+              {p.type === "external" ? (
+                <a href={p.externalUrl} target={p.externalUrl?.startsWith("/") ? "_self" : "_blank"} rel="noreferrer" className="hover:underline">
+                  {p.title}
+                </a>
+              ) : (
+                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
+                  {p.title}
+                </Link>
+              )}
+            </li>
+          ))}
         </Col>
 
         <Col title="Serviços">
-          <li><Link to="/busca" search={{ q: "servicos" }} className="hover:underline">Serviços de Saúde</Link></li>
-          <li><Link to="/busca" search={{ q: "vacinas" }} className="hover:underline">Vacinas</Link></li>
-          <li><Link to="/busca" search={{ q: "testes rapidos" }} className="hover:underline">Testes Rápidos</Link></li>
-          <li><Link to="/busca" search={{ q: "afericao" }} className="hover:underline">Aferição de Pressão</Link></li>
+          {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Serviços").map(p => (
+            <li key={p.id}>
+              {p.type === "external" ? (
+                <a href={p.externalUrl} target={p.externalUrl?.startsWith("/") ? "_self" : "_blank"} rel="noreferrer" className="hover:underline">
+                  {p.title}
+                </a>
+              ) : (
+                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
+                  {p.title}
+                </Link>
+              )}
+            </li>
+          ))}
         </Col>
 
         <Col title="Perfil">
-          <li><Link to="/login" className="hover:underline">Criar Cadastro</Link></li>
-          <li><Link to="/perfil" className="hover:underline">Alterar Dados</Link></li>
-          <li><Link to="/perfil" className="hover:underline">Endereços</Link></li>
-          <li><Link to="/perfil" className="hover:underline">Acompanhar Pedido</Link></li>
+          {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Perfil").map(p => (
+            <li key={p.id}>
+              {p.type === "external" ? (
+                <a href={p.externalUrl} target={p.externalUrl?.startsWith("/") ? "_self" : "_blank"} rel="noreferrer" className="hover:underline">
+                  {p.title}
+                </a>
+              ) : (
+                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
+                  {p.title}
+                </Link>
+              )}
+            </li>
+          ))}
         </Col>
 
         <Col title="Atendimento">
@@ -313,12 +353,19 @@ export function Footer() {
       <div className="border-t border-white/15">
         <div className="container-fa py-8 grid lg:grid-cols-2 gap-8 items-start">
           <div>
-            <Logo className="h-12 bg-white rounded-md p-2" />
+            <Link to="/" className="inline-flex items-center">
+              <img
+                src={activePharmacy?.footerLogoUrl || activePharmacy?.logoUrl || dadosLoja.logoUrl || logoUrlDefault}
+                alt="Logo Rodapé"
+                className="h-12 bg-white rounded-md p-2 w-auto object-contain"
+                loading="lazy"
+              />
+            </Link>
             <p className="mt-3 text-sm opacity-90">
               {descricaoLoja}
             </p>
             <div className="flex flex-wrap gap-3 mt-4">
-              {socialNetworks.map((net) => {
+              {storeSocials.map((net) => {
                 const IconComp = net.iconName ? (SOCIAL_ICON_MAP[net.iconName] || LinkIcon) : LinkIcon;
                 return (
                   <Social key={net.id} label={net.label} href={net.href}>
@@ -334,7 +381,7 @@ export function Footer() {
           </div>
 
           <div className="text-sm space-y-2 opacity-95">
-            <h3 className="font-bold uppercase text-xs tracking-wider opacity-80">Central de Relacionamento</h3>
+            <h3 className="font-bold uppercase text-xs tracking-wider opacity-80">{tituloCentralRelacionamento}</h3>
             <div className="flex items-start gap-2"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{activePharmacy?.endereco || dadosLoja.endereco}, {activePharmacy?.numero || dadosLoja.numero}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} — {activePharmacy?.bairro || dadosLoja.bairro}, {activePharmacy?.cidade || dadosLoja.cidade}/{activePharmacy?.uf || dadosLoja.estado} — CEP {activePharmacy?.cep || dadosLoja.cep}</div>
             <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {activePharmacy?.telefone || dadosLoja.telefone}</div>
             <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> WhatsApp: {activePharmacy?.whatsapp || dadosLoja.whatsapp}</div>
@@ -351,17 +398,19 @@ export function Footer() {
             {activePharmacy?.footerPlataformaTexto ? (
               <p className="whitespace-pre-wrap">{activePharmacy.footerPlataformaTexto}</p>
             ) : (
-              <p>
-                <strong>Plataforma Digital de Vendas da Rede:</strong> {activePharmacy?.razaoSocial || dadosLoja.razaoSocial} | CNPJ: {activePharmacy?.cnpj || dadosLoja.cnpj} | {activePharmacy?.endereco || dadosLoja.endereco}, {activePharmacy?.numero || dadosLoja.numero}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} - {activePharmacy?.bairro || dadosLoja.bairro} - {activePharmacy?.cidade || dadosLoja.cidade}/{activePharmacy?.uf || dadosLoja.estado} - CEP: {activePharmacy?.cep || dadosLoja.cep}
-              </p>
-            )}
-            
-            {activePharmacy?.footerAvisoLegal ? (
-              <p className="mt-2 text-justify whitespace-pre-wrap">{activePharmacy.footerAvisoLegal}</p>
-            ) : (
-              <p className="mt-2 text-justify">
-                <strong>AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009):</strong> Este site é uma vitrine digital de intermediação. A venda, a conferência de estoque, o faturamento (emissão da Nota Fiscal), a dispensação e a entrega dos produtos são de responsabilidade exclusiva da Farmácia Parceira da rede selecionada pelo consumidor no momento da compra. Os dados técnicos específicos do estabelecimento vendedor (Razão Social, CNPJ, AFE, CRF e Nome do Farmacêutico Responsável) serão apresentados detalhadamente na tela de resumo do pedido (checkout) e constarão obrigatoriamente no documento fiscal impresso entregue junto com as mercadorias. As informações contidas neste site não devem ser usadas para automedicação e não substituem, em hipótese alguma, as orientações dadas pelo profissional da área. Somente o médico e o farmacêutico estão aptos a diagnosticar qualquer problema de saúde e prescrever o tratamento adequado. Ao persistirem os sintomas, um médico deverá ser consultado. Os preços e promoções divulgados no site são válidos apenas para compras feitas pela internet. Todos os pedidos efetuados estão sujeitos à confirmação da disponibilidade de produto em nosso estoque. Maiores esclarecimentos, consultar o site: <a href="https://www.anvisa.gov.br" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">www.anvisa.gov.br</a>.
-              </p>
+              <>
+                <p>
+                  <strong>Plataforma Digital de Vendas da Rede:</strong> {activePharmacy?.razaoSocial || dadosLoja.razaoSocial} | CNPJ: {activePharmacy?.cnpj || dadosLoja.cnpj} | {activePharmacy?.endereco || dadosLoja.endereco}, {activePharmacy?.numero || dadosLoja.numero}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} - {activePharmacy?.bairro || dadosLoja.bairro} - {activePharmacy?.cidade || dadosLoja.cidade}/{activePharmacy?.uf || dadosLoja.estado} - CEP: {activePharmacy?.cep || dadosLoja.cep}
+                </p>
+                
+                {activePharmacy?.footerAvisoLegal ? (
+                  <p className="mt-2 text-justify whitespace-pre-wrap">{activePharmacy.footerAvisoLegal}</p>
+                ) : (
+                  <p className="mt-2 text-justify">
+                    <strong>AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009):</strong> Este site é uma vitrine digital de intermediação. A venda, a conferência de estoque, o faturamento (emissão da Nota Fiscal), a dispensação e a entrega dos produtos são de responsabilidade exclusiva da Farmácia Parceira da rede selecionada pelo consumidor no momento da compra. Os dados técnicos específicos do estabelecimento vendedor (Razão Social, CNPJ, AFE, CRF e Nome do Farmacêutico Responsável) serão apresentados detalhadamente na tela de resumo do pedido (checkout) e constarão obrigatoriamente no documento fiscal impresso entregue junto com as mercadorias. As informações contidas neste site não devem ser usadas para automedicação e não substituem, em hipótese alguma, as orientações dadas pelo profissional da área. Somente o médico e o farmacêutico estão aptos a diagnosticar qualquer problema de saúde e prescrever o tratamento adequado. Ao persistirem os sintomas, um médico deverá ser consultado. Os preços e promoções divulgados no site são válidos apenas para compras feitas pela internet. Todos os pedidos efetuados estão sujeitos à confirmação da disponibilidade de produto em nosso estoque. Maiores esclarecimentos, consultar o site: <a href="https://www.anvisa.gov.br" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">www.anvisa.gov.br</a>.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -370,7 +419,7 @@ export function Footer() {
           <div className="container-fa py-8 flex flex-col gap-8">
             <div className="flex flex-col md:flex-row items-center justify-center w-full gap-10">
               <img
-                src={logoAnvisa}
+                src={activePharmacy?.anvisaLogoUrl || logoAnvisa}
                 alt="A Farmácias Associadas segue as normas e regulamentações da ANVISA"
                 className="h-12 md:h-[68px] w-auto object-contain"
                 width={120}

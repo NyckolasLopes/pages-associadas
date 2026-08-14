@@ -6,6 +6,7 @@ import { Upload, Trash2, Image as ImageIcon } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
 import logoUrlDefault from "@/assets/logo.png";
+import logoAnvisaDefault from "@/assets/logo-anvisa.png";
 
 export const Route = createFileRoute("/admin/design/logo")({
   component: AdminDesignLogo,
@@ -27,9 +28,13 @@ function AdminDesignLogo() {
 
   const defaultLogo = isParceiro ? "" : logoUrlDefault;
   const defaultFavicon = isParceiro ? "" : "/favicon.png";
+  const defaultFooterLogo = isParceiro ? "" : logoUrlDefault;
+  const defaultAnvisaLogo = logoAnvisaDefault;
 
   const currentLogo = currentPharmacy?.logoUrl || defaultLogo;
   const currentFavicon = currentPharmacy?.faviconUrl || defaultFavicon;
+  const currentFooterLogo = currentPharmacy?.footerLogoUrl || defaultFooterLogo;
+  const currentAnvisaLogo = currentPharmacy?.anvisaLogoUrl || defaultAnvisaLogo;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
     const file = e.target.files?.[0];
@@ -173,6 +178,88 @@ function AdminDesignLogo() {
             <p className="text-xs text-muted-foreground max-w-[250px] mt-4">
               Máximo de 1 imagem. Tamanho máximo <strong>100KB</strong>.
               Todos os ícones são redimensionados para o tamanho máximo de 128 x 128px.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-sm">Logo do Rodapé</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
+              updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: base64 });
+              toast.success("Logo do rodapé atualizado!");
+            })}>
+              <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+            </Button>
+          </div>
+          <div className="p-12 flex flex-col items-center justify-center text-center">
+            <div className="relative group inline-block">
+              {currentFooterLogo ? (
+                <img src={currentFooterLogo} alt="Logo Rodapé" className="h-16 object-contain border rounded-lg bg-slate-50 p-2" />
+              ) : (
+                <div className="h-16 w-32 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400">
+                  <ImageIcon className="w-6 h-6" />
+                </div>
+              )}
+              {currentPharmacy.footerLogoUrl && (
+                <button onClick={() => {
+                  updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: "" });
+                  toast.success("Logo do rodapé removido!");
+                }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            {!currentPharmacy.footerLogoUrl && (
+              <p className="text-xs font-medium text-slate-400 mt-4">
+                Exibindo logo padrão. Envie para alterar.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground max-w-[300px] mt-4">
+              Tamanho recomendado: <strong>300 x 100px</strong> (formato retangular horizontal). Tamanho máximo <strong>1MB</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-sm">Selo da Anvisa</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
+              updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: base64 });
+              toast.success("Selo da Anvisa atualizado!");
+            })}>
+              <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+            </Button>
+          </div>
+          <div className="p-12 flex flex-col items-center justify-center text-center">
+            <div className="relative group inline-block">
+              {currentAnvisaLogo ? (
+                <img src={currentAnvisaLogo} alt="Logo Anvisa" className="h-16 object-contain border rounded-lg bg-slate-50 p-2" />
+              ) : (
+                <div className="h-16 w-32 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400">
+                  <ImageIcon className="w-6 h-6" />
+                </div>
+              )}
+              {currentPharmacy.anvisaLogoUrl && (
+                <button onClick={() => {
+                  updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: "" });
+                  toast.success("Selo da Anvisa removido!");
+                }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            {!currentPharmacy.anvisaLogoUrl && (
+              <p className="text-xs font-medium text-slate-400 mt-4">
+                Exibindo selo padrão da Anvisa.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground max-w-[300px] mt-4">
+              Tamanho ideal: <strong>240 x 136px</strong>. Tamanho máximo <strong>1MB</strong>.
             </p>
           </div>
         </div>

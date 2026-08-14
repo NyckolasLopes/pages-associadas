@@ -81,7 +81,7 @@ export interface ContentPage {
   title: string;
   slug: string;
   location: "header" | "footer" | "both" | "none";
-  footerColumn?: "Institucional" | "Atendimento" | "Segurança";
+  footerColumn?: "Institucional" | "Navegação" | "Serviços" | "Perfil" | "Atendimento" | "Segurança";
   type: "external" | "text";
   externalUrl?: string;
   content?: string;
@@ -133,6 +133,17 @@ export interface Pharmacy {
   // Footer Customization
   footerPlataformaTexto?: string;
   footerAvisoLegal?: string;
+  footerDescricao?: string;
+  footerTituloContato?: string;
+  footerLogoUrl?: string;
+  anvisaLogoUrl?: string;
+  socialLinks?: {
+    instagram?: string;
+    facebook?: string;
+    tiktok?: string;
+    linkedin?: string;
+    youtube?: string;
+  };
   // Dados de Entrega
   aceitaEntrega: boolean;
   modeloFrete: "cep" | "fixo" | "raio";
@@ -644,16 +655,38 @@ export const useAdmin = create<AdminState>()(
 
       // Content Pages
       contentPages: [
+        // Institucional
         { id: "p1", title: "Quem Somos", slug: "quem-somos", location: "footer", footerColumn: "Institucional", type: "text", content: "<h1>Quem Somos</h1><p>Conteúdo da página quem somos.</p>" },
         { id: "p2", title: "Política de Privacidade", slug: "politica-de-privacidade", location: "footer", footerColumn: "Institucional", type: "text", content: "<h1>Política de Privacidade</h1><p>Conteúdo da página de política de privacidade.</p>" },
         { id: "p3", title: "Trocas e Devoluções", slug: "trocas-e-devolucoes", location: "footer", footerColumn: "Institucional", type: "text", content: "<h1>Trocas e Devoluções</h1><p>Conteúdo da página de trocas e devoluções.</p>" },
-        { id: "p4", title: "Nossas Lojas", slug: "nossas-lojas", location: "footer", footerColumn: "Institucional", type: "text", content: "<h1>Nossas Lojas</h1><p>Encontre a loja mais próxima de você.</p>" },
+        { id: "p4", title: "Nossas Lojas", slug: "nossas-lojas", location: "footer", footerColumn: "Institucional", type: "external", externalUrl: "/lojas" },
         { id: "p5", title: "Trabalhe Conosco", slug: "trabalhe-conosco", location: "footer", footerColumn: "Institucional", type: "text", content: "<h1>Trabalhe Conosco</h1><p>Venha fazer parte da nossa equipe.</p>" },
         { id: "p6", title: "Blog Farmácias Associadas", slug: "blog", location: "footer", footerColumn: "Institucional", type: "external", externalUrl: "https://blog.farmaciasassociadas.com.br" },
         { id: "p7", title: "Revista", slug: "revista", location: "footer", footerColumn: "Institucional", type: "external", externalUrl: "https://www.farmaciasassociadas.com.br/revista" },
         { id: "p8", title: "Seja um associado", slug: "seja-associado", location: "footer", footerColumn: "Institucional", type: "external", externalUrl: "https://www.farmaciasassociadas.com.br/seja-um-associado" },
         { id: "p9", title: "Portal do associado", slug: "portal-associado", location: "footer", footerColumn: "Institucional", type: "external", externalUrl: "https://portal.farmaciasassociadas.com.br" },
         
+        // Navegação
+        { id: "pn1", title: "Mapa do Site", slug: "mapa-site", location: "footer", footerColumn: "Navegação", type: "external", externalUrl: "/mapa" },
+        { id: "pn2", title: "Categorias", slug: "todas-categorias", location: "footer", footerColumn: "Navegação", type: "external", externalUrl: "/c" },
+        { id: "pn3", title: "Marcas", slug: "todas-marcas", location: "footer", footerColumn: "Navegação", type: "external", externalUrl: "/m" },
+        { id: "pn4", title: "Princípios Ativos", slug: "principios-ativos", location: "footer", footerColumn: "Navegação", type: "text", content: "<h1>Princípios Ativos</h1>" },
+        { id: "pn5", title: "Classes Terapêuticas", slug: "classes-terapeuticas", location: "footer", footerColumn: "Navegação", type: "text", content: "<h1>Classes Terapêuticas</h1>" },
+        { id: "pn6", title: "Bulas de A a Z", slug: "bulas", location: "footer", footerColumn: "Navegação", type: "text", content: "<h1>Bulas de A a Z</h1>" },
+
+        // Serviços
+        { id: "ps1", title: "Serviços de Saúde", slug: "servicos-de-saude", location: "footer", footerColumn: "Serviços", type: "external", externalUrl: "/servicos" },
+        { id: "ps2", title: "Vacinas", slug: "vacinas", location: "footer", footerColumn: "Serviços", type: "external", externalUrl: "/servicos/vacinas" },
+        { id: "ps3", title: "Testes Rápidos", slug: "testes-rapidos", location: "footer", footerColumn: "Serviços", type: "external", externalUrl: "/servicos/testes-rapidos" },
+        { id: "ps4", title: "Aferição de Pressão", slug: "afericao-pressao", location: "footer", footerColumn: "Serviços", type: "external", externalUrl: "/servicos/afericao" },
+
+        // Perfil
+        { id: "pp1", title: "Criar Cadastro", slug: "criar-cadastro", location: "footer", footerColumn: "Perfil", type: "external", externalUrl: "/conta/login?mode=register" },
+        { id: "pp2", title: "Alterar Dados", slug: "alterar-dados", location: "footer", footerColumn: "Perfil", type: "external", externalUrl: "/conta/perfil" },
+        { id: "pp3", title: "Endereços", slug: "enderecos", location: "footer", footerColumn: "Perfil", type: "external", externalUrl: "/conta/enderecos" },
+        { id: "pp4", title: "Acompanhar Pedido", slug: "acompanhar-pedido", location: "footer", footerColumn: "Perfil", type: "external", externalUrl: "/conta/pedidos" },
+
+        // Atendimento
         { id: "p10", title: "Central de Atendimento", slug: "central-atendimento", location: "footer", footerColumn: "Atendimento", type: "text", content: "<h1>Central de Atendimento</h1><p>Entre em contato conosco pelos nossos canais oficiais.</p>" },
         { id: "p11", title: "WhatsApp", slug: "whatsapp", location: "footer", footerColumn: "Atendimento", type: "external", externalUrl: "https://wa.me/5551989444818" },
         { id: "p12", title: "Como Comprar", slug: "como-comprar", location: "footer", footerColumn: "Atendimento", type: "text", content: "<h1>Como Comprar</h1><p>Aprenda o passo a passo de como realizar sua compra.</p>" },
@@ -662,9 +695,10 @@ export const useAdmin = create<AdminState>()(
         { id: "p15", title: "Reembolso", slug: "cancelamento", location: "footer", footerColumn: "Atendimento", type: "text", content: "<h1>Política de Reembolso</h1><p>Como funciona o cancelamento e estorno.</p>" },
         { id: "p16", title: "FAQ", slug: "faq", location: "footer", footerColumn: "Atendimento", type: "text", content: "<h1>FAQ - Perguntas Frequentes</h1><p>Tire suas dúvidas.</p>" },
         
+        // Segurança
         { id: "p17", title: "Proteção de Dados", slug: "protecao-dados", location: "footer", footerColumn: "Segurança", type: "text", content: "<h1>Proteção de Dados</h1><p>Saiba como tratamos os seus dados pessoais.</p>" },
         { id: "p18", title: "Termos de Uso", slug: "termos-de-uso", location: "footer", footerColumn: "Segurança", type: "text", content: "<h1>Termos de Uso</h1><p>Termos e condições para uso da plataforma.</p>" },
-        { id: "p19", title: "Portal do Titular", slug: "portal-titular", location: "footer", footerColumn: "Segurança", type: "external", externalUrl: "https://www.farmaciasassociadas.com.br/portal-titular" },
+        { id: "p19", title: "Portal do Titular", slug: "portal-titular", location: "footer", footerColumn: "Segurança", type: "external", externalUrl: "https://www.farmaciasassociadas.com.br/portal-titular" }
       ],
       setContentPages: (pages) => set({ contentPages: pages }),
 
@@ -1065,9 +1099,33 @@ export const useAdmin = create<AdminState>()(
             });
           }
         }
+        if (version < 10) {
+          const defaultNav = [
+            { id: "pn1", title: "Mapa do Site", slug: "mapa-site", location: "footer" as const, footerColumn: "Navegação" as const, type: "external" as const, externalUrl: "/mapa" },
+            { id: "pn2", title: "Categorias", slug: "todas-categorias", location: "footer" as const, footerColumn: "Navegação" as const, type: "external" as const, externalUrl: "/c" },
+            { id: "pn3", title: "Marcas", slug: "todas-marcas", location: "footer" as const, footerColumn: "Navegação" as const, type: "external" as const, externalUrl: "/m" },
+            { id: "pn4", title: "Princípios Ativos", slug: "principios-ativos", location: "footer" as const, footerColumn: "Navegação" as const, type: "text" as const, content: "<h1>Princípios Ativos</h1>" },
+            { id: "pn5", title: "Classes Terapêuticas", slug: "classes-terapeuticas", location: "footer" as const, footerColumn: "Navegação" as const, type: "text" as const, content: "<h1>Classes Terapêuticas</h1>" },
+            { id: "pn6", title: "Bulas de A a Z", slug: "bulas", location: "footer" as const, footerColumn: "Navegação" as const, type: "text" as const, content: "<h1>Bulas de A a Z</h1>" },
+
+            { id: "ps1", title: "Serviços de Saúde", slug: "servicos-de-saude", location: "footer" as const, footerColumn: "Serviços" as const, type: "external" as const, externalUrl: "/servicos" },
+            { id: "ps2", title: "Vacinas", slug: "vacinas", location: "footer" as const, footerColumn: "Serviços" as const, type: "external" as const, externalUrl: "/servicos/vacinas" },
+            { id: "ps3", title: "Testes Rápidos", slug: "testes-rapidos", location: "footer" as const, footerColumn: "Serviços" as const, type: "external" as const, externalUrl: "/servicos/testes-rapidos" },
+            { id: "ps4", title: "Aferição de Pressão", slug: "afericao-pressao", location: "footer" as const, footerColumn: "Serviços" as const, type: "external" as const, externalUrl: "/servicos/afericao" },
+
+            { id: "pp1", title: "Criar Cadastro", slug: "criar-cadastro", location: "footer" as const, footerColumn: "Perfil" as const, type: "external" as const, externalUrl: "/conta/login?mode=register" },
+            { id: "pp2", title: "Alterar Dados", slug: "alterar-dados", location: "footer" as const, footerColumn: "Perfil" as const, type: "external" as const, externalUrl: "/conta/perfil" },
+            { id: "pp3", title: "Endereços", slug: "enderecos", location: "footer" as const, footerColumn: "Perfil" as const, type: "external" as const, externalUrl: "/conta/enderecos" },
+            { id: "pp4", title: "Acompanhar Pedido", slug: "acompanhar-pedido", location: "footer" as const, footerColumn: "Perfil" as const, type: "external" as const, externalUrl: "/conta/pedidos" },
+          ];
+          
+          if (!persistedState.contentPages || !persistedState.contentPages.some((p: any) => p.footerColumn === "Navegação")) {
+            persistedState.contentPages = [...(persistedState.contentPages || []), ...defaultNav];
+          }
+        }
         return persistedState;
       },
-      version: 9,
+      version: 10,
     }
   )
 );

@@ -197,7 +197,10 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
     const tags = (p.internalTags || []).map((t: string) => removeAccents(String(t || "").toLowerCase()));
     const pa = removeAccents(String(p.principiosAtivos || "").toLowerCase());
     const fab = removeAccents(String(p.fabricante || "").toLowerCase());
-    p._searchString = [n, ...tags, pa, fab].join(" ");
+    const terms = removeAccents(String(p.termosPesquisa || "").toLowerCase());
+    const desc = removeAccents(String(p.descricao || "").toLowerCase());
+    const brand = removeAccents(String(p.marca || "").toLowerCase());
+    p._searchString = [n, ...tags, pa, fab, terms, desc, brand].join(" ");
   });
   
   if (!lojaId) {
@@ -217,17 +220,21 @@ const getFuse = () => {
 
   cachedFuse = new Fuse(produtos, {
     keys: [
-      { name: "nome", weight: 2.0 },
-      { name: "ean", weight: 1.5 },
-      { name: "principiosAtivos", weight: 1.2 },
-      { name: "internalTags", weight: 1.0 },
+      { name: "nome", weight: 4.0 },
+      { name: "termosPesquisa", weight: 3.5 },
+      { name: "internalTags", weight: 3.0 },
+      { name: "principiosAtivos", weight: 2.5 },
+      { name: "ean", weight: 2.0 },
+      { name: "marca", weight: 1.5 },
+      { name: "fabricante", weight: 1.0 },
       { name: "descricao", weight: 0.5 },
-      { name: "fabricante", weight: 0.5 },
+      { name: "resumoDescricao", weight: 0.5 },
     ],
-    threshold: 0.35, // Tighter tolerance to avoid completely unrelated results
-    ignoreLocation: true,
-    ignoreFieldNorm: true, // Don't penalize long descriptions/names
+    threshold: 0.45, // Mais tolerante a erros de ortografia
+    ignoreLocation: true, // Ignora a posição da palavra
+    ignoreFieldNorm: true, // Não penaliza campos muito grandes como a descrição inteira
     minMatchCharLength: 2,
+    useExtendedSearch: true,
   });
   return cachedFuse;
 };

@@ -198,6 +198,9 @@ function AdminPaginasInformativas() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Institucional">Institucional</SelectItem>
+                    <SelectItem value="Navegação">Navegação</SelectItem>
+                    <SelectItem value="Serviços">Serviços</SelectItem>
+                    <SelectItem value="Perfil">Perfil</SelectItem>
                     <SelectItem value="Atendimento">Atendimento</SelectItem>
                     <SelectItem value="Segurança">Segurança</SelectItem>
                   </SelectContent>

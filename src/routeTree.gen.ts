@@ -62,6 +62,7 @@ import { Route as AdminProdutosNovoRouteImport } from './routes/admin/produtos.n
 import { Route as AdminProdutosEstoqueRouteImport } from './routes/admin/produtos.estoque'
 import { Route as AdminPedidosNovoRouteImport } from './routes/admin/pedidos/novo'
 import { Route as AdminMarketingOrderBumpsRouteImport } from './routes/admin/marketing.order-bumps'
+import { Route as AdminMarketingLeadsRouteImport } from './routes/admin/marketing/leads'
 import { Route as AdminMarketingCompreJuntoRouteImport } from './routes/admin/marketing.compre-junto'
 import { Route as AdminMarcasNovaRouteImport } from './routes/admin/marcas.nova'
 import { Route as AdminLojasTabelasPrecosRouteImport } from './routes/admin/lojas.tabelas-precos'
@@ -82,7 +83,6 @@ import { Route as AdminConfiguracoesRedirectsRouteImport } from './routes/admin/
 import { Route as AdminConfiguracoesPagamentoRouteImport } from './routes/admin/configuracoes.pagamento'
 import { Route as AdminConfiguracoesLojaRouteImport } from './routes/admin/configuracoes.loja'
 import { Route as AdminConfiguracoesDominiosRouteImport } from './routes/admin/configuracoes.dominios'
-import { Route as AdminClientesLeadsRouteImport } from './routes/admin/clientes/leads'
 import { Route as AdminCanaisIfoodRouteImport } from './routes/admin/canais.ifood'
 import { Route as AdminCanaisGoogleShoppingRouteImport } from './routes/admin/canais.google-shopping'
 import { Route as AdminCanaisFarmaciasappRouteImport } from './routes/admin/canais.farmaciasapp'
@@ -365,6 +365,11 @@ const AdminMarketingOrderBumpsRoute =
     path: '/marketing/order-bumps',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminMarketingLeadsRoute = AdminMarketingLeadsRouteImport.update({
+  id: '/marketing/leads',
+  path: '/marketing/leads',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMarketingCompreJuntoRoute =
   AdminMarketingCompreJuntoRouteImport.update({
     id: '/marketing/compre-junto',
@@ -470,11 +475,6 @@ const AdminConfiguracoesDominiosRoute =
     path: '/configuracoes/dominios',
     getParentRoute: () => AdminRoute,
   } as any)
-const AdminClientesLeadsRoute = AdminClientesLeadsRouteImport.update({
-  id: '/clientes/leads',
-  path: '/clientes/leads',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminCanaisIfoodRoute = AdminCanaisIfoodRouteImport.update({
   id: '/canais/ifood',
   path: '/canais/ifood',
@@ -595,7 +595,6 @@ export interface FileRoutesByFullPath {
   '/admin/canais/farmaciasapp': typeof AdminCanaisFarmaciasappRoute
   '/admin/canais/google-shopping': typeof AdminCanaisGoogleShoppingRoute
   '/admin/canais/ifood': typeof AdminCanaisIfoodRoute
-  '/admin/clientes/leads': typeof AdminClientesLeadsRoute
   '/admin/configuracoes/dominios': typeof AdminConfiguracoesDominiosRoute
   '/admin/configuracoes/loja': typeof AdminConfiguracoesLojaRoute
   '/admin/configuracoes/pagamento': typeof AdminConfiguracoesPagamentoRoute
@@ -616,6 +615,7 @@ export interface FileRoutesByFullPath {
   '/admin/lojas/tabelas-precos': typeof AdminLojasTabelasPrecosRoute
   '/admin/marcas/nova': typeof AdminMarcasNovaRoute
   '/admin/marketing/compre-junto': typeof AdminMarketingCompreJuntoRoute
+  '/admin/marketing/leads': typeof AdminMarketingLeadsRoute
   '/admin/marketing/order-bumps': typeof AdminMarketingOrderBumpsRoute
   '/admin/pedidos/novo': typeof AdminPedidosNovoRoute
   '/admin/produtos/estoque': typeof AdminProdutosEstoqueRoute
@@ -682,7 +682,6 @@ export interface FileRoutesByTo {
   '/admin/canais/farmaciasapp': typeof AdminCanaisFarmaciasappRoute
   '/admin/canais/google-shopping': typeof AdminCanaisGoogleShoppingRoute
   '/admin/canais/ifood': typeof AdminCanaisIfoodRoute
-  '/admin/clientes/leads': typeof AdminClientesLeadsRoute
   '/admin/configuracoes/dominios': typeof AdminConfiguracoesDominiosRoute
   '/admin/configuracoes/loja': typeof AdminConfiguracoesLojaRoute
   '/admin/configuracoes/pagamento': typeof AdminConfiguracoesPagamentoRoute
@@ -703,6 +702,7 @@ export interface FileRoutesByTo {
   '/admin/lojas/tabelas-precos': typeof AdminLojasTabelasPrecosRoute
   '/admin/marcas/nova': typeof AdminMarcasNovaRoute
   '/admin/marketing/compre-junto': typeof AdminMarketingCompreJuntoRoute
+  '/admin/marketing/leads': typeof AdminMarketingLeadsRoute
   '/admin/marketing/order-bumps': typeof AdminMarketingOrderBumpsRoute
   '/admin/pedidos/novo': typeof AdminPedidosNovoRoute
   '/admin/produtos/estoque': typeof AdminProdutosEstoqueRoute
@@ -772,7 +772,6 @@ export interface FileRoutesById {
   '/admin/canais/farmaciasapp': typeof AdminCanaisFarmaciasappRoute
   '/admin/canais/google-shopping': typeof AdminCanaisGoogleShoppingRoute
   '/admin/canais/ifood': typeof AdminCanaisIfoodRoute
-  '/admin/clientes/leads': typeof AdminClientesLeadsRoute
   '/admin/configuracoes/dominios': typeof AdminConfiguracoesDominiosRoute
   '/admin/configuracoes/loja': typeof AdminConfiguracoesLojaRoute
   '/admin/configuracoes/pagamento': typeof AdminConfiguracoesPagamentoRoute
@@ -793,6 +792,7 @@ export interface FileRoutesById {
   '/admin/lojas/tabelas-precos': typeof AdminLojasTabelasPrecosRoute
   '/admin/marcas/nova': typeof AdminMarcasNovaRoute
   '/admin/marketing/compre-junto': typeof AdminMarketingCompreJuntoRoute
+  '/admin/marketing/leads': typeof AdminMarketingLeadsRoute
   '/admin/marketing/order-bumps': typeof AdminMarketingOrderBumpsRoute
   '/admin/pedidos/novo': typeof AdminPedidosNovoRoute
   '/admin/produtos/estoque': typeof AdminProdutosEstoqueRoute
@@ -862,7 +862,6 @@ export interface FileRouteTypes {
     | '/admin/canais/farmaciasapp'
     | '/admin/canais/google-shopping'
     | '/admin/canais/ifood'
-    | '/admin/clientes/leads'
     | '/admin/configuracoes/dominios'
     | '/admin/configuracoes/loja'
     | '/admin/configuracoes/pagamento'
@@ -883,6 +882,7 @@ export interface FileRouteTypes {
     | '/admin/lojas/tabelas-precos'
     | '/admin/marcas/nova'
     | '/admin/marketing/compre-junto'
+    | '/admin/marketing/leads'
     | '/admin/marketing/order-bumps'
     | '/admin/pedidos/novo'
     | '/admin/produtos/estoque'
@@ -949,7 +949,6 @@ export interface FileRouteTypes {
     | '/admin/canais/farmaciasapp'
     | '/admin/canais/google-shopping'
     | '/admin/canais/ifood'
-    | '/admin/clientes/leads'
     | '/admin/configuracoes/dominios'
     | '/admin/configuracoes/loja'
     | '/admin/configuracoes/pagamento'
@@ -970,6 +969,7 @@ export interface FileRouteTypes {
     | '/admin/lojas/tabelas-precos'
     | '/admin/marcas/nova'
     | '/admin/marketing/compre-junto'
+    | '/admin/marketing/leads'
     | '/admin/marketing/order-bumps'
     | '/admin/pedidos/novo'
     | '/admin/produtos/estoque'
@@ -1038,7 +1038,6 @@ export interface FileRouteTypes {
     | '/admin/canais/farmaciasapp'
     | '/admin/canais/google-shopping'
     | '/admin/canais/ifood'
-    | '/admin/clientes/leads'
     | '/admin/configuracoes/dominios'
     | '/admin/configuracoes/loja'
     | '/admin/configuracoes/pagamento'
@@ -1059,6 +1058,7 @@ export interface FileRouteTypes {
     | '/admin/lojas/tabelas-precos'
     | '/admin/marcas/nova'
     | '/admin/marketing/compre-junto'
+    | '/admin/marketing/leads'
     | '/admin/marketing/order-bumps'
     | '/admin/pedidos/novo'
     | '/admin/produtos/estoque'
@@ -1460,6 +1460,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMarketingOrderBumpsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/marketing/leads': {
+      id: '/admin/marketing/leads'
+      path: '/marketing/leads'
+      fullPath: '/admin/marketing/leads'
+      preLoaderRoute: typeof AdminMarketingLeadsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/marketing/compre-junto': {
       id: '/admin/marketing/compre-junto'
       path: '/marketing/compre-junto'
@@ -1598,13 +1605,6 @@ declare module '@tanstack/react-router' {
       path: '/configuracoes/dominios'
       fullPath: '/admin/configuracoes/dominios'
       preLoaderRoute: typeof AdminConfiguracoesDominiosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/clientes/leads': {
-      id: '/admin/clientes/leads'
-      path: '/clientes/leads'
-      fullPath: '/admin/clientes/leads'
-      preLoaderRoute: typeof AdminClientesLeadsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/canais/ifood': {
@@ -1837,7 +1837,6 @@ interface AdminRouteChildren {
   AdminCanaisFarmaciasappRoute: typeof AdminCanaisFarmaciasappRoute
   AdminCanaisGoogleShoppingRoute: typeof AdminCanaisGoogleShoppingRoute
   AdminCanaisIfoodRoute: typeof AdminCanaisIfoodRoute
-  AdminClientesLeadsRoute: typeof AdminClientesLeadsRoute
   AdminConfiguracoesDominiosRoute: typeof AdminConfiguracoesDominiosRoute
   AdminConfiguracoesLojaRoute: typeof AdminConfiguracoesLojaRoute
   AdminConfiguracoesPagamentoRoute: typeof AdminConfiguracoesPagamentoRoute
@@ -1854,6 +1853,7 @@ interface AdminRouteChildren {
   AdminLojasPaineisRoute: typeof AdminLojasPaineisRoute
   AdminLojasTabelasPrecosRoute: typeof AdminLojasTabelasPrecosRoute
   AdminMarketingCompreJuntoRoute: typeof AdminMarketingCompreJuntoRoute
+  AdminMarketingLeadsRoute: typeof AdminMarketingLeadsRoute
   AdminMarketingOrderBumpsRoute: typeof AdminMarketingOrderBumpsRoute
   AdminPedidosNovoRoute: typeof AdminPedidosNovoRoute
   AdminSolucoesAplicativosRoute: typeof AdminSolucoesAplicativosRoute
@@ -1895,7 +1895,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCanaisFarmaciasappRoute: AdminCanaisFarmaciasappRoute,
   AdminCanaisGoogleShoppingRoute: AdminCanaisGoogleShoppingRoute,
   AdminCanaisIfoodRoute: AdminCanaisIfoodRoute,
-  AdminClientesLeadsRoute: AdminClientesLeadsRoute,
   AdminConfiguracoesDominiosRoute: AdminConfiguracoesDominiosRoute,
   AdminConfiguracoesLojaRoute: AdminConfiguracoesLojaRoute,
   AdminConfiguracoesPagamentoRoute: AdminConfiguracoesPagamentoRoute,
@@ -1912,6 +1911,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLojasPaineisRoute: AdminLojasPaineisRoute,
   AdminLojasTabelasPrecosRoute: AdminLojasTabelasPrecosRoute,
   AdminMarketingCompreJuntoRoute: AdminMarketingCompreJuntoRoute,
+  AdminMarketingLeadsRoute: AdminMarketingLeadsRoute,
   AdminMarketingOrderBumpsRoute: AdminMarketingOrderBumpsRoute,
   AdminPedidosNovoRoute: AdminPedidosNovoRoute,
   AdminSolucoesAplicativosRoute: AdminSolucoesAplicativosRoute,
