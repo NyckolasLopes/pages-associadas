@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminProducts } from "@/stores/products";
 import { Vitrine, VitrineLocal, Categoria, Produto } from "@/types";
@@ -205,11 +205,23 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
                   <SelectValue placeholder={loading ? "Carregando..." : "Selecione uma categoria"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoriasOpcoes.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    <SelectLabel className="font-bold text-primary">Vitrines Dinâmicas</SelectLabel>
+                    <SelectItem value="all">Todos os Produtos</SelectItem>
+                    <SelectItem value="campanha">Produtos em Campanha (Ofertas do Mês)</SelectItem>
+                    <SelectItem value="ofertas">Ofertas da Semana</SelectItem>
+                    <SelectItem value="destaques">Destaques da Loja</SelectItem>
+                    <SelectItem value="novidades">Novidades / Lançamentos</SelectItem>
+                    <SelectItem value="protetores">Protetores Solares</SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className="font-bold text-primary border-t pt-2 mt-2">Categorias de Produtos</SelectLabel>
+                    {categoriasOpcoes.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
