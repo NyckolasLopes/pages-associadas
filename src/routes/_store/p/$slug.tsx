@@ -1,4 +1,5 @@
 import { createFileRoute, notFound, Link, useParams } from "@tanstack/react-router";
+import mascotNotFound from "@/assets/produto-nao-encontrado.png";
 import { catalog } from "@/services/catalog";
 import { brl, productImage, tarjaColor, checkIsGenerico, getInstallmentText, formatPbmName } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,15 @@ export const Route = createFileRoute("/_store/p/$slug")({
     };
   },
   notFoundComponent: () => (
-    <div className="container-fa py-12 text-center">Produto não encontrado.</div>
+    <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-8 bg-slate-50">
+      <img src={mascotNotFound} alt="Produto não encontrado" className="w-full max-w-xl h-auto mb-8 drop-shadow-md" />
+      <a 
+        href="/" 
+        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center justify-center gap-2 px-6 py-3 rounded-md transition-colors"
+      >
+        <ChevronLeft className="w-5 h-5" /> Voltar para o início
+      </a>
+    </div>
   ),
   errorComponent: ({ error }) => (
     <div className="container-fa py-12 text-center text-red-500">

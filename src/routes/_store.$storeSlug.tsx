@@ -532,13 +532,12 @@ function StoreHome() {
   if (!loja) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center p-8 bg-slate-50">
-        <img src={mascot404} alt="Loja não encontrada" className="w-64 max-w-full h-auto mb-4 drop-shadow-md" />
-        <h1 className="text-3xl font-bold text-slate-800 mb-4">Loja não encontrada</h1>
-        <p className="text-muted-foreground text-lg mb-8 max-w-md">
-          Não conseguimos localizar nenhuma Farmácia Associada com esse endereço.
-        </p>
-        <a href="/" className="text-blue-600 font-medium hover:underline flex items-center gap-2">
-          <ChevronLeft className="w-4 h-4" /> Voltar para o início
+        <img src={mascot404} alt="Página não encontrada" className="w-full max-w-xl h-auto mb-8 drop-shadow-md" />
+        <a 
+          href="/" 
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center justify-center gap-2 px-6 py-3 rounded-md transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" /> Voltar para o início
         </a>
       </div>
     );
