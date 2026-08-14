@@ -96,7 +96,7 @@ function AdminVitrines() {
                 </td>
                 <td className="p-4 text-right flex justify-end gap-2">
                   <Button variant="ghost" size="sm" onClick={() => toggleVitrine(v.id, activeStoreId)}>
-                    {v.ativa ? <EyeOff className="h-4 w-4 text-slate-500" /> : <Eye className="h-4 w-4 text-slate-500" />}
+                    {v.ativa ? <Eye className="h-4 w-4 text-slate-500" /> : <EyeOff className="h-4 w-4 text-slate-500" />}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => handleEdit(v)}>
                     <Edit className="h-4 w-4 text-slate-500" />
