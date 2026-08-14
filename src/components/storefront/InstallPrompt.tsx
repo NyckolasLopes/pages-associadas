@@ -41,6 +41,25 @@ export function InstallPrompt() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  useEffect(() => {
+    const customTriggerHandler = async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setShowPrompt(false);
+        }
+        setDeferredPrompt(null);
+      } else {
+        // Se for iOS ou se o prompt não estiver disponível (ex: já instalado), mostra o modal de instrução
+        setShowPrompt(true);
+      }
+    };
+
+    window.addEventListener('trigger-pwa-install', customTriggerHandler);
+    return () => window.removeEventListener('trigger-pwa-install', customTriggerHandler);
+  }, [deferredPrompt]);
+
   const handleInstall = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
