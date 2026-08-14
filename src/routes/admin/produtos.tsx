@@ -110,6 +110,7 @@ function AdminProdutos() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
+  const [lojaApiDataMap, setLojaApiDataMap] = useState<Record<string, { estoque: number, precoPor: number, precoDe: number }>>({});
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState("15");
@@ -130,6 +131,29 @@ function AdminProdutos() {
     if (estoque === "zerado") setListFilter("out-of-stock");
     if (estoque === "baixo") setListFilter("low-stock");
   }, [location.search]);
+
+  useEffect(() => {
+    async function loadLojaApiData() {
+      if (currentLojaId) {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data } = await supabase
+          .from("produto_precos_loja")
+          .select("produto_id, estoque, preco_por, preco_de")
+          .eq("loja_id", currentLojaId);
+        
+        if (data) {
+          const map: Record<string, any> = {};
+          data.forEach(d => {
+            map[d.produto_id] = { estoque: d.estoque, precoPor: d.preco_por, precoDe: d.preco_de };
+          });
+          setLojaApiDataMap(map);
+        }
+      } else {
+        setLojaApiDataMap({});
+      }
+    }
+    loadLojaApiData();
+  }, [currentLojaId]);
 
   const handleEditProduct = (product: Produto) => {
     setEditingProduct(product);
@@ -801,17 +825,23 @@ function AdminProdutos() {
                         <td className="px-4 py-3 text-right">
                           {p.precoDe > p.precoPor && (
                             <div className="text-xs text-muted-foreground line-through">
-                              {p.precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                              {(!isGlobalAdmin && lojaApiDataMap[p.id]?.precoDe) ? lojaApiDataMap[p.id].precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : p.precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                             </div>
                           )}
                           <div className="font-bold text-sm text-emerald-700">
-                            {p.precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            {(!isGlobalAdmin && lojaApiDataMap[p.id]?.precoPor) ? lojaApiDataMap[p.id].precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : p.precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className={`text-sm font-bold ${pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0) > 0 ? "text-slate-700" : "text-red-500"}`}>
-                            {pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0)}
-                          </span>
+                          {isGlobalAdmin ? (
+                            <span className={`text-sm font-bold ${pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0) > 0 ? "text-slate-700" : "text-red-500"}`}>
+                              {pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0)}
+                            </span>
+                          ) : (
+                            <span className={`text-sm font-bold ${(lojaApiDataMap[p.id]?.estoque ?? 0) > 0 ? "text-slate-700" : "text-red-500"}`}>
+                              {lojaApiDataMap[p.id]?.estoque ?? 0}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <Switch
