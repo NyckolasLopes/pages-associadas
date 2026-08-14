@@ -39,6 +39,32 @@ export const Route = createFileRoute("/_store/cart")({
 
 type FreightOption = { id: string; label: string; price: number; eta: string; icon: typeof Truck };
 
+const formatCpfCnpj = (value: string) => {
+  if (!value) return "";
+  let v = value.replace(/\D/g, "");
+  if (v.length > 14) v = v.slice(0, 14);
+  if (v.length <= 11) {
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  } else {
+    v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+    v = v.replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  return v;
+};
+
+const formatPhone = (value: string) => {
+  if (!value) return "";
+  let v = value.replace(/\D/g, "");
+  if (v.length > 11) v = v.slice(0, 11);
+  v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+  v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+  return v;
+};
+
 function CartPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -106,8 +132,8 @@ function CartPage() {
 
   // Form details
   const [clientName, setClientName] = useState(user?.name || "");
-  const [clientPhone, setClientPhone] = useState((user as any)?.phone || "");
-  const [clientCpf, setClientCpf] = useState((user as any)?.cpf || "");
+  const [clientPhone, setClientPhone] = useState(formatPhone((user as any)?.telefone || (user as any)?.celular || (user as any)?.phone || ""));
+  const [clientCpf, setClientCpf] = useState(formatCpfCnpj((user as any)?.cpf || (user as any)?.cnpj || ""));
   const [clientEmail, setClientEmail] = useState(user?.email || "");
   const [deliveryMethod, setDeliveryMethod] = useState<"entrega" | "retirada">("retirada");
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -127,6 +153,16 @@ function CartPage() {
       setCep(geoCep);
     }
   }, [geoCep, cep]);
+
+  // Sync user profile to form
+  useEffect(() => {
+    if (user) {
+      setClientName(user.name || "");
+      setClientEmail(user.email || "");
+      setClientPhone(formatPhone((user as any)?.telefone || (user as any)?.celular || (user as any)?.phone || ""));
+      setClientCpf(formatCpfCnpj((user as any)?.cpf || (user as any)?.cnpj || ""));
+    }
+  }, [user]);
 
   // Force open pharmacy dialog if shared link and no pharmacy selected
   useEffect(() => {
@@ -207,6 +243,9 @@ function CartPage() {
       const data = await res.json();
       if (!data.erro) {
         setAddressStr(`${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`);
+        setDeliveryAddress(data.logradouro || "");
+        setDeliveryBairro(data.bairro || "");
+        setDeliveryCity(data.localidade || "");
       } else {
         setAddressStr(cep);
       }
@@ -1222,7 +1261,7 @@ function CartPage() {
                     required
                     placeholder="(99) 99999-9999"
                     value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
+                    onChange={(e) => setClientPhone(formatPhone(e.target.value))}
                     className="mt-1 bg-white h-9"
                   />
                 </div>
@@ -1230,9 +1269,9 @@ function CartPage() {
                   <Label className="text-xs">CPF / CNPJ (Obrigatório p/ nota) *</Label>
                   <Input
                     required
-                    placeholder="000.000.000-00"
+                    placeholder="000.000.000-00 ou 00.000.000/0001-00"
                     value={clientCpf}
-                    onChange={(e) => setClientCpf(e.target.value)}
+                    onChange={(e) => setClientCpf(formatCpfCnpj(e.target.value))}
                     className="mt-1 bg-white h-9"
                   />
                 </div>

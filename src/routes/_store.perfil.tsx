@@ -23,6 +23,32 @@ export const Route = createFileRoute("/_store/perfil")({
   component: PerfilPage,
 });
 
+const formatCpfCnpj = (value: string) => {
+  if (!value) return "";
+  let v = value.replace(/\D/g, "");
+  if (v.length > 14) v = v.slice(0, 14);
+  if (v.length <= 11) {
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  } else {
+    v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+    v = v.replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  return v;
+};
+
+const formatPhone = (value: string) => {
+  if (!value) return "";
+  let v = value.replace(/\D/g, "");
+  if (v.length > 11) v = v.slice(0, 11);
+  v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+  v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+  return v;
+};
+
 function PerfilPage() {
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
@@ -79,8 +105,12 @@ function PerfilPage() {
     if (user) {
       setEditName(user.name || "");
       setEditEmail(user.email || "");
-      setEditPhone((user as any).celular || (user as any).phone || "");
-      setEditCpf((user as any).cpf || "");
+      
+      const phoneStr = (user as any).telefone || (user as any).celular || (user as any).phone || "";
+      setEditPhone(formatPhone(phoneStr));
+      
+      const cpfStr = (user as any).cpf || (user as any).cnpj || "";
+      setEditCpf(formatCpfCnpj(cpfStr));
     }
   }, [user]);
 
@@ -104,27 +134,11 @@ function PerfilPage() {
   };
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let v = e.target.value.replace(/\D/g, "");
-    if (v.length > 14) v = v.slice(0, 14);
-    if (v.length <= 11) {
-      v = v.replace(/(\d{3})(\d)/, "$1.$2");
-      v = v.replace(/(\d{3})(\d)/, "$1.$2");
-      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    } else {
-      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
-      v = v.replace(/(\d{4})(\d)/, "$1-$2");
-    }
-    setEditCpf(v);
+    setEditCpf(formatCpfCnpj(e.target.value));
   };
 
   const handleCelularChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let v = e.target.value.replace(/\D/g, "");
-    if (v.length > 11) v = v.slice(0, 11);
-    v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
-    v = v.replace(/(\d)(\d{4})$/, "$1-$2");
-    setEditPhone(v);
+    setEditPhone(formatPhone(e.target.value));
   };
 
   const handleSavePersonalInfo = async () => {
