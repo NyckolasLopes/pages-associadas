@@ -70,6 +70,7 @@ export function Footer() {
   const tituloCentralRelacionamento = activePharmacy?.footerTituloContato || "CENTRAL DE RELACIONAMENTO";
 
   const storeSocials = useMemo(() => {
+    if (activePharmacy?.customSocialNetworks) return activePharmacy.customSocialNetworks;
     if (!activePharmacy?.socialLinks) return socialNetworks;
     const links = [];
     if (activePharmacy.socialLinks.instagram) links.push({ id: 'ig', label: 'Instagram', href: activePharmacy.socialLinks.instagram, iconName: 'Instagram' });
@@ -77,8 +78,8 @@ export function Footer() {
     if (activePharmacy.socialLinks.tiktok) links.push({ id: 'tk', label: 'TikTok', href: activePharmacy.socialLinks.tiktok, iconName: 'Music' });
     if (activePharmacy.socialLinks.linkedin) links.push({ id: 'in', label: 'LinkedIn', href: activePharmacy.socialLinks.linkedin, iconName: 'Linkedin' });
     if (activePharmacy.socialLinks.youtube) links.push({ id: 'yt', label: 'YouTube', href: activePharmacy.socialLinks.youtube, iconName: 'Youtube' });
-    return links;
-  }, [activePharmacy?.socialLinks, socialNetworks]);
+    return links.length > 0 ? links : socialNetworks;
+  }, [activePharmacy?.socialLinks, activePharmacy?.customSocialNetworks, socialNetworks]);
 
   const [topTerms, setTopTerms] = useState<string[]>(TOP_TERMS);
 

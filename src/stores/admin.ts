@@ -144,6 +144,7 @@ export interface Pharmacy {
     linkedin?: string;
     youtube?: string;
   };
+  customSocialNetworks?: { id: string; label: string; href: string; iconUrl?: string; iconName?: string }[];
   // Dados de Entrega
   aceitaEntrega: boolean;
   modeloFrete: "cep" | "fixo" | "raio";

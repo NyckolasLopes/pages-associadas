@@ -11,12 +11,24 @@ export const Route = createFileRoute("/admin/design/redes")({
 });
 
 function AdminDesignRedes() {
-  const { socialNetworks, setSocialNetworks } = useAdmin();
-  const [networks, setNetworks] = useState([...socialNetworks]);
+  const { socialNetworks, setSocialNetworks, currentUser, activeStoreId, pharmacies, updatePharmacy } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
+  const activePharmacy = pharmacies.find(p => p.id === activeStoreId);
+  
+  const initialNetworks = !isGlobalAdmin && activePharmacy?.customSocialNetworks 
+    ? activePharmacy.customSocialNetworks 
+    : socialNetworks;
+
+  const [networks, setNetworks] = useState([...initialNetworks]);
 
   const handleSave = () => {
-    setSocialNetworks(networks);
-    toast.success("Configurações de redes sociais salvas!");
+    if (isGlobalAdmin) {
+      setSocialNetworks(networks);
+      toast.success("Configurações de redes sociais salvas globalmente!");
+    } else if (activePharmacy) {
+      updatePharmacy({ ...activePharmacy, customSocialNetworks: networks });
+      toast.success("Redes sociais da sua loja foram salvas!");
+    }
   };
 
   const handleAdd = () => {

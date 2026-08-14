@@ -245,6 +245,9 @@ function AdminLayout() {
     }
   }, [mounted, currentUser, isGlobalAdmin, userStores, activeStoreId, setActiveStoreId]);
 
+  const activeStore = pharmacies.find(p => p.id === activeStoreId);
+  const isParceiro = activeStore?.categoriaAssociado === 'Parceiro';
+
   if (!mounted) return null;
 
   if (!currentUser) {
@@ -491,8 +494,8 @@ function AdminLayout() {
           )}
 
 
-          {/* ---- PERSONALIZAR MINHA LOJA (apenas para associados) ---- */}
-          {!isGlobalAdmin && (
+          {/* ---- PERSONALIZAR MINHA LOJA (apenas para associados parceiros) ---- */}
+          {!isGlobalAdmin && isParceiro && (
             <NavSection 
               icon={<Store className="h-4 w-4" />} 
               label="Personalizar Minha Loja" 
@@ -519,6 +522,13 @@ function AdminLayout() {
               
 
             </NavSection>
+          )}
+
+          {/* ---- REDES SOCIAIS (para associados) ---- */}
+          {!isGlobalAdmin && (
+            <Link to="/admin/design/redes" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
+              <Share2 className="h-4 w-4" /> Redes Sociais
+            </Link>
           )}
 
           {/* ---- DESIGN DA REDE (apenas para admin global) ---- */}
