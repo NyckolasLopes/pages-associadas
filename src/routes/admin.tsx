@@ -290,9 +290,9 @@ function AdminLayout() {
                 }
               }
 
-              const success = await login(email, pass);
-              if(!success) {
-                toast.error("Credenciais inválidas");
+              const result = await login(email, pass);
+              if(!result.success) {
+                toast.error(result.message || "Credenciais inválidas");
               } else {
                 toast.success("Login realizado com sucesso!");
                 navigate({ to: "/admin" });

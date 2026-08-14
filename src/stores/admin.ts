@@ -204,7 +204,7 @@ interface AdminState {
   users: AdminUser[];
   grupos: AdminGroup[];
   currentUser: AdminUser | null;
-  login: (email: string, pass: string) => Promise<boolean>;
+  login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   register: (user: AdminUser) => void;
   setUsers: (users: AdminUser[]) => void;
@@ -545,7 +545,7 @@ export const useAdmin = create<AdminState>()(
 
           if (error || !data.user) {
             console.error("Login Supabase falhou:", error?.message);
-            return false;
+            return { success: false, message: error?.message === "Email not confirmed" ? "E-mail não confirmado. Verifique sua caixa de entrada." : "Credenciais inválidas." };
           }
 
           // Fetch the profile
@@ -570,7 +570,7 @@ export const useAdmin = create<AdminState>()(
                 lojasVinculadas: p.lojas_vinculadas || localUser?.lojasVinculadas || [],
               },
             });
-            return true;
+            return { success: true };
           }
 
           // Se não encontrou o profile ainda, loga com o que tem
@@ -585,10 +585,10 @@ export const useAdmin = create<AdminState>()(
               proprietario: localUser?.proprietario || isFallbackAdminFallback,
             },
           });
-          return true;
-        } catch (e) {
+          return { success: true };
+        } catch (e: any) {
           console.error(e);
-          return false;
+          return { success: false, message: e.message || "Erro desconhecido" };
         }
       },
       logout: async () => {
