@@ -211,6 +211,7 @@ export type Database = {
           metodo_pagamento: string | null
           numero: string
           observacoes: string | null
+          origem: string | null
           status: string
           subtotal: number
           total: number
@@ -229,6 +230,7 @@ export type Database = {
           metodo_pagamento?: string | null
           numero?: string
           observacoes?: string | null
+          origem?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -247,6 +249,7 @@ export type Database = {
           metodo_pagamento?: string | null
           numero?: string
           observacoes?: string | null
+          origem?: string | null
           status?: string
           subtotal?: number
           total?: number

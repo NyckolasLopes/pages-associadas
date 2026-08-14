@@ -110,10 +110,10 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     if (!error && data) {
       const mappedOrders: Pedido[] = data.map((d: any) => ({
-        id: d.id,
+        id: d.numero ? `FA-${d.numero}` : d.id,
         lojaId: d.loja_id,
         data: d.created_at,
-        origem: "site",
+        origem: d.origem || "site",
         status: d.status,
         modalidade: d.metodo_entrega,
         cupomAplicado: d.cupom_codigo,
@@ -163,6 +163,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
       numero: order.id.replace('FA-', ''),
       user_id: userId as string,
       loja_id: order.lojaId,
+      origem: order.origem || 'site',
       status: order.status || 'novo',
       subtotal: order.valores.subtotal || 0,
       desconto: order.valores.desconto || 0,
@@ -194,7 +195,10 @@ export const useOrders = create<OrdersState>((set, get) => ({
   },
 
   updateOrderStatus: async (id, status) => {
-    const { error } = await supabase.from('pedidos').update({ status }).eq('id', id);
+    const query = id.startsWith('FA-') 
+      ? supabase.from('pedidos').update({ status }).eq('numero', id.replace('FA-', ''))
+      : supabase.from('pedidos').update({ status }).eq('id', id);
+    const { error } = await query;
     if (!error) {
       set((state) => ({
         orders: state.orders.map(o => o.id === id ? { ...o, status } : o),
@@ -203,7 +207,10 @@ export const useOrders = create<OrdersState>((set, get) => ({
   },
 
   updateOrderTracking: async (id, tracking) => {
-    await supabase.from('pedidos').update({ rastreio: tracking } as any).eq('id', id);
+    const query = id.startsWith('FA-') 
+      ? supabase.from('pedidos').update({ rastreio: tracking } as any).eq('numero', id.replace('FA-', ''))
+      : supabase.from('pedidos').update({ rastreio: tracking } as any).eq('id', id);
+    await query;
     set((state) => ({
       orders: state.orders.map(o => o.id === id ? {
         ...o,
@@ -217,7 +224,10 @@ export const useOrders = create<OrdersState>((set, get) => ({
   },
 
   deleteOrder: async (id) => {
-    const { error } = await supabase.from('pedidos').delete().eq('id', id);
+    const query = id.startsWith('FA-') 
+      ? supabase.from('pedidos').delete().eq('numero', id.replace('FA-', ''))
+      : supabase.from('pedidos').delete().eq('id', id);
+    const { error } = await query;
     if (!error) {
       set((state) => ({
         orders: state.orders.filter(o => o.id !== id),
