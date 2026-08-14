@@ -27,7 +27,8 @@ import { useAdmin } from "@/stores/admin";
 import { useConfig } from "@/stores/config";
 import { useLeads } from "@/stores/leads";
 import { useCart } from "@/stores/cart";
-import { useMemo } from "react";
+import { useSearchHistory } from "@/stores/searchHistory";
+import { useMemo, useEffect, useState } from "react";
 
 const TOP_TERMS = [
   "Dipirona", "Vitamina D", "Paracetamol", "Protetor solar", "Whey protein",
@@ -56,6 +57,7 @@ export function Footer() {
     return true;
   });
   const addLead = useLeads((s) => s.addLead);
+  const getTopTerms = useSearchHistory((s) => s.getTopTerms);
 
   const { pharmacies } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
@@ -77,6 +79,23 @@ export function Footer() {
     if (activePharmacy.socialLinks.youtube) links.push({ id: 'yt', label: 'YouTube', href: activePharmacy.socialLinks.youtube, iconName: 'Youtube' });
     return links;
   }, [activePharmacy?.socialLinks, socialNetworks]);
+
+  const [topTerms, setTopTerms] = useState<string[]>(TOP_TERMS);
+
+  useEffect(() => {
+    if (activePharmacy?.id) {
+      const dynamicTerms = getTopTerms(activePharmacy.id, 15);
+      if (dynamicTerms.length < 15) {
+        // Fallback: merge with default TOP_TERMS, removing duplicates
+        const merged = Array.from(new Set([...dynamicTerms, ...TOP_TERMS])).slice(0, 15);
+        setTopTerms(merged);
+      } else {
+        setTopTerms(dynamicTerms);
+      }
+    } else {
+      setTopTerms(TOP_TERMS);
+    }
+  }, [activePharmacy?.id, getTopTerms]);
 
   return (
     <>
@@ -191,7 +210,7 @@ export function Footer() {
               Termos mais procurados
             </h3>
             <div className="flex flex-wrap gap-2">
-              {TOP_TERMS.map((t) => (
+              {topTerms.map((t) => (
                 <Link
                   key={t}
                   to="/busca"

@@ -7,6 +7,8 @@ import { ProductCard } from "@/components/storefront/ProductCard";
 import type { Produto } from "@/types";
 import { ProductFilterSidebar } from "@/components/storefront/ProductFilterSidebar";
 import { Button } from "@/components/ui/button";
+import { useSearchHistory } from "@/stores/searchHistory";
+import { useCart } from "@/stores/cart";
 
 export const Route = createFileRoute("/_store/busca")({
   validateSearch: zodValidator(
@@ -29,6 +31,8 @@ function SearchPage() {
   const [unfilteredResults, setUnfilteredResults] = useState<Produto[]>([]);
   const [filteredResults, setFilteredResults] = useState<Produto[]>([]);
   const [visibleCount, setVisibleCount] = useState(24);
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const logSearch = useSearchHistory((s) => s.logSearch);
 
   // Reset pagination when search params change
   useEffect(() => {
@@ -42,7 +46,11 @@ function SearchPage() {
       setUnfilteredResults(res);
     };
     fetchUnfiltered();
-  }, [q]);
+    
+    if (q && selectedPharmacyId) {
+      logSearch(selectedPharmacyId, q);
+    }
+  }, [q, selectedPharmacyId, logSearch]);
 
   useEffect(() => {
     // Fetch filtered for display
