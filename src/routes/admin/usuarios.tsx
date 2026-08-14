@@ -280,8 +280,21 @@ function AdminUsuarios() {
     }
 
     if (editingUsuarioId) {
-      // Update existing user in local state
+      // Validation for store linking
       const isGlobal = isGlobalGroup();
+      if (!isGlobal) {
+        const alreadyLinkedStores = usuarios.flatMap(u => 
+          (u.id !== editingUsuarioId && u.lojasVinculadas) ? u.lojasVinculadas : []
+        );
+        const conflictingStoreId = novoUsuarioLojas.find(lojaId => alreadyLinkedStores.includes(lojaId));
+        if (conflictingStoreId) {
+          const pharmacy = pharmacies.find(p => p.id === conflictingStoreId);
+          toast.error(`A loja ${pharmacy?.id || conflictingStoreId} já está vinculada a outro usuário.`);
+          return;
+        }
+      }
+
+      // Update existing user in local state
       setUsuarios(usuarios.map(u => u.id === editingUsuarioId ? {
         ...u,
         name: novoUsuarioNome,
@@ -302,6 +315,24 @@ function AdminUsuarios() {
       
       toast.success("Usuário atualizado com sucesso!");
     } else {
+      // Validate if email already exists locally to prevent overwrite
+      if (usuarios.some(u => u.email.toLowerCase() === novoUsuarioEmail.toLowerCase())) {
+        toast.error("Já existe um usuário com este e-mail.");
+        return;
+      }
+
+      // Validation for store linking
+      const isGlobal = isGlobalGroup();
+      if (!isGlobal) {
+        const alreadyLinkedStores = usuarios.flatMap(u => u.lojasVinculadas || []);
+        const conflictingStoreId = novoUsuarioLojas.find(lojaId => alreadyLinkedStores.includes(lojaId));
+        if (conflictingStoreId) {
+          const pharmacy = pharmacies.find(p => p.id === conflictingStoreId);
+          toast.error(`A loja ${pharmacy?.id || conflictingStoreId} já está vinculada a outro usuário.`);
+          return;
+        }
+      }
+
       // Criar usuário no Supabase Auth usando cliente secundário para não sobrescrever a sessão atual do Admin
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
       const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
@@ -321,12 +352,16 @@ function AdminUsuarios() {
         }
       });
 
+      // Se a conta já existir no Auth, o Supabase retorna identities vazio. Precisamos bloquear.
+      if (authData?.user?.identities && authData.user.identities.length === 0) {
+        toast.error("Este e-mail já está registrado no sistema de autenticação.");
+        return;
+      }
+
       if (authError) {
         toast.error(`Erro ao registrar credenciais: ${authError.message}`);
         return;
       }
-
-      const isGlobal = isGlobalGroup();
       
       // Se criou no auth mas não inseriu o profile por trigger, inserimos manualmente
       if (authData?.user) {

@@ -176,6 +176,24 @@ function RootComponent() {
     useAuth.getState()._initListener();
     useCart.persist.rehydrate();
     useGeoCep.persist.rehydrate();
+    
+    // Security check: Force logout on new tab/browser window
+    if (!sessionStorage.getItem('fa_admin_session')) {
+      sessionStorage.setItem('fa_admin_session', 'true');
+      try {
+        const raw = localStorage.getItem("fa-admin-store-v4");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.state) {
+            parsed.state.currentUser = null;
+            localStorage.setItem("fa-admin-store-v4", JSON.stringify(parsed));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to clean legacy session", e);
+      }
+    }
+    
     useAdmin.persist.rehydrate();
     useAdminProducts.persist.rehydrate();
     useAdminCategories.getState().loadCategories();

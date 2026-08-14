@@ -188,15 +188,7 @@ function AdminLayout() {
   useEffect(() => {
     setMounted(true);
     
-    // Verifica se a sessão atual do navegador já foi inicializada.
-    // Se não, forçamos o logout para garantir que o usuário precise logar de novo
-    // toda vez que abrir o painel após fechar a aba/navegador.
-    if (!sessionStorage.getItem('fa_admin_session')) {
-      sessionStorage.setItem('fa_admin_session', 'true');
-      if (currentUser) {
-        logout();
-      }
-    }
+
     
     // Carregar lojas do banco de dados (Supabase)
     const { loadPharmacies } = useAdmin.getState();
