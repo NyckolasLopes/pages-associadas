@@ -4,10 +4,7 @@ export const brl = (n: number | undefined | null) => {
 };
 
 export const getInstallmentText = (price: number | undefined | null) => {
-  if (!price || price < 30) return null;
-  const maxInstallments = Math.min(6, Math.floor(price / 30));
-  if (maxInstallments <= 1) return null;
-  return `em até ${maxInstallments}x de ${brl(price / maxInstallments)} sem juros`;
+  return null;
 };
 
 export const formatPbmName = (selo: string | undefined | null) => {
