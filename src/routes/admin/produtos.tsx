@@ -825,15 +825,15 @@ function AdminProdutos() {
                         <td className="px-4 py-3 text-right">
                           {p.precoDe > p.precoPor && (
                             <div className="text-xs text-muted-foreground line-through">
-                              {(!isGlobalAdmin && lojaApiDataMap[p.id]?.precoDe) ? lojaApiDataMap[p.id].precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : p.precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                              {(currentLojaId && lojaApiDataMap[p.id]?.precoDe) ? lojaApiDataMap[p.id].precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : p.precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                             </div>
                           )}
                           <div className="font-bold text-sm text-emerald-700">
-                            {(!isGlobalAdmin && lojaApiDataMap[p.id]?.precoPor) ? lojaApiDataMap[p.id].precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : p.precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            {(currentLojaId && lojaApiDataMap[p.id]?.precoPor) ? lojaApiDataMap[p.id].precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : p.precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {isGlobalAdmin ? (
+                          {!currentLojaId ? (
                             <span className={`text-sm font-bold ${pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0) > 0 ? "text-slate-700" : "text-red-500"}`}>
                               {pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0)}
                             </span>
