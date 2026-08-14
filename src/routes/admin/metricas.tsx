@@ -267,12 +267,13 @@ function Metricas() {
   const distribuicaoLojas = useMemo(() => {
     return pharmacies.map(loja => {
       const pedidosDaLoja = allUnifiedOrders.filter(o => o.lojaId === loja.id);
-      const total = pedidosDaLoja.length;
-      const concluidos = pedidosDaLoja.filter(o => o.status === "Concluído").length;
-      const pendentes = pedidosDaLoja.filter(o => o.status === "Pendente").length;
-      const valorTotal = pedidosDaLoja.reduce((acc, o) => acc + o.valorTotal, 0);
+      const pedidosReais = pedidosDaLoja.filter(o => o.tipoRegistro === "pedido");
+      const total = pedidosReais.length;
+      const concluidos = pedidosReais.filter(o => o.status === "Concluído").length;
+      const pendentes = pedidosDaLoja.filter(o => o.tipoRegistro === "carrinho").length;
+      const valorTotal = pedidosReais.reduce((acc, o) => acc + o.valorTotal, 0);
       const taxaConclusao = total > 0 ? Math.round((concluidos / total) * 100) : 0;
-      const ultimoPedido = pedidosDaLoja[0]?.data || "Nenhum";
+      const ultimoPedido = pedidosReais[0]?.data || "Nenhum";
 
       return {
         id: loja.id,
