@@ -10,6 +10,7 @@ import { HeroCarousel } from "@/components/storefront/HeroCarousel";
 import { SquarePromoGrid } from "@/components/storefront/SquarePromoGrid";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
+import mascot404 from "@/assets/404-mascot.png";
 
 export const Route = createFileRoute("/_store/c/$slug")({
   validateSearch: zodValidator(
@@ -55,7 +56,12 @@ export const Route = createFileRoute("/_store/c/$slug")({
     <div className="container-fa py-12 text-center">{error.message}</div>
   ),
   notFoundComponent: () => (
-    <div className="container-fa py-12 text-center">Categoria não encontrada.</div>
+    <div className="container-fa py-12 text-center flex flex-col items-center">
+      <img src={mascot404} alt="Categoria não encontrada" className="w-64 max-w-full h-auto mb-4 drop-shadow-md" />
+      <h1 className="text-2xl font-bold mb-2">Categoria não encontrada</h1>
+      <p className="text-muted-foreground mb-6">A categoria que você tentou acessar não existe.</p>
+      <Link to="/" className="text-blue-600 font-medium hover:underline">Voltar para o início</Link>
+    </div>
   ),
   component: CategoryPage,
 });

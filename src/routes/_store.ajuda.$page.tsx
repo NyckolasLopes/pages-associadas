@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { POLICIES } from "@/data/policies";
 import { ChevronRight } from "lucide-react";
+import mascot404 from "@/assets/404-mascot.png";
 
 export const Route = createFileRoute("/_store/ajuda/$page")({
   head: ({ params }) => {
@@ -22,9 +23,10 @@ export const Route = createFileRoute("/_store/ajuda/$page")({
   },
   component: PolicyPage,
   notFoundComponent: () => (
-    <div className="container-fa py-16 text-center">
+    <div className="container-fa py-16 text-center flex flex-col items-center">
+      <img src={mascot404} alt="Página não encontrada" className="w-64 max-w-full h-auto mb-6 drop-shadow-md" />
       <h1 className="text-2xl font-bold">Página não encontrada</h1>
-      <Link to="/" className="text-primary underline mt-4 inline-block">Voltar para a home</Link>
+      <Link to="/" className="text-primary font-medium hover:underline mt-4 inline-block">Voltar para a home</Link>
     </div>
   ),
 });

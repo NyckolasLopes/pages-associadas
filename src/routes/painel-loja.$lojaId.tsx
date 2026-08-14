@@ -31,9 +31,10 @@ export const Route = createFileRoute("/painel-loja/$lojaId")({
 import { LojaPromocoesTab } from "@/components/admin/LojaPromocoesTab";
 import { LojaBannersTab } from "@/components/admin/LojaBannersTab";
 import { LojaCuponsTab } from "@/components/admin/LojaCuponsTab";
+import { LojaLeadsTab } from "@/components/admin/LojaLeadsTab";
 import { LojaSeoTab } from "@/components/admin/LojaSeoTab";
 import { LojaConfiguracoesTab } from "@/components/admin/LojaConfiguracoesTab";
-import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, Settings } from "lucide-react";
+import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, Settings, Users } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "Abandonado no carrinho",
@@ -530,6 +531,12 @@ function PainelLoja() {
                 Cupons
               </TabsTrigger>
             )}
+            {can('loja_leads') && (
+              <TabsTrigger value="leads" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
+                <Users className="w-4 h-4 mr-1.5 shrink-0" />
+                Leads
+              </TabsTrigger>
+            )}
             {can('loja_seo') && (
               <TabsTrigger value="seo" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
                 <Compass className="w-4 h-4 mr-1.5 shrink-0" />
@@ -580,6 +587,12 @@ function PainelLoja() {
           {can('loja_cupons') && (
             <TabsContent value="cupons" className="space-y-6">
               <LojaCuponsTab lojaId={lojaId} />
+            </TabsContent>
+          )}
+
+          {can('loja_leads') && (
+            <TabsContent value="leads" className="space-y-6 mt-4">
+              <LojaLeadsTab lojaId={lojaId} />
             </TabsContent>
           )}
 

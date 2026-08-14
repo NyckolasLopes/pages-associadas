@@ -8,6 +8,7 @@ import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { useAdminProducts } from "@/stores/products";
 import { catalog } from "@/services/catalog";
+import mascot404 from "@/assets/404-mascot.png";
 import { Flame, Sparkles, TrendingUp, Percent, Tag, Heart, ShoppingBag, Pill, Leaf, Baby, Flower2, Stethoscope, Sun, Dumbbell, Activity, ShieldCheck, Thermometer, Battery, Wind, Droplets, Eye, Smile, Coffee, HeartPulse, Scale, BriefcaseMedical } from "lucide-react";
 
 const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -63,7 +64,12 @@ export const Route = createFileRoute("/_store/v/$slug")({
     <div className="container-fa py-12 text-center">{error.message}</div>
   ),
   notFoundComponent: () => (
-    <div className="container-fa py-12 text-center">Vitrine não encontrada.</div>
+    <div className="container-fa py-12 text-center flex flex-col items-center">
+      <img src={mascot404} alt="Vitrine não encontrada" className="w-64 max-w-full h-auto mb-4 drop-shadow-md" />
+      <h1 className="text-2xl font-bold mb-2">Vitrine não encontrada</h1>
+      <p className="text-muted-foreground mb-6">A vitrine que você tentou acessar não existe.</p>
+      <Link to="/" className="text-blue-600 font-medium hover:underline">Voltar para o início</Link>
+    </div>
   ),
   component: VitrinePage,
 });

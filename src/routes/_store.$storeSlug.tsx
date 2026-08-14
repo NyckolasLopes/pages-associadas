@@ -16,7 +16,8 @@ import { GeoPopup } from "@/components/storefront/GeoPopup";
 // InstallPrompt are rendered globally in __root.tsx
 import type { Produto, Categoria, VitrineLocal } from "@/types";
 import { useAdmin } from "@/stores/admin";
-import { useCart } from "@/stores/cart";
+import { useCart, useGeoCep } from "@/stores/cart";
+import mascot404 from "@/assets/404-mascot.png";
 import { useLive } from "@/stores/live";
 import { useAdminProducts } from "@/stores/products";
 import { useMarcasStore } from "@/stores/marcas";
@@ -531,9 +532,7 @@ function StoreHome() {
   if (!loja) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center p-8 bg-slate-50">
-        <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-6">
-          <Store className="w-8 h-8 text-slate-400" />
-        </div>
+        <img src={mascot404} alt="Loja não encontrada" className="w-64 max-w-full h-auto mb-4 drop-shadow-md" />
         <h1 className="text-3xl font-bold text-slate-800 mb-4">Loja não encontrada</h1>
         <p className="text-muted-foreground text-lg mb-8 max-w-md">
           Não conseguimos localizar nenhuma Farmácia Associada com esse endereço.

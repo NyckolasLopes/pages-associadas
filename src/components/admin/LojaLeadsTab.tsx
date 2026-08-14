@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useLeads } from "@/stores/leads";
 import { 
@@ -28,18 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export const Route = createFileRoute("/admin/marketing/leads")({
-  component: LeadsAdmin,
-});
-
-function LeadsAdmin() {
+export function LojaLeadsTab({ lojaId }: { lojaId: string }) {
   const { leads, toggleStatus, removeLead } = useLeads();
-  const { currentUser, activeStoreId } = useAdmin();
+  const { currentUser } = useAdmin();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
   
-  const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
-  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
@@ -57,9 +50,7 @@ function LeadsAdmin() {
     }
   };
 
-  const baseLeads = (isGlobalAdmin && !activeStoreId)
-    ? leads
-    : leads.filter(l => l.lojaId === currentLojaId);
+  const baseLeads = leads.filter(l => l.lojaId === lojaId);
 
   const filteredLeads = baseLeads.filter(
     (l) => {
@@ -188,7 +179,6 @@ function LeadsAdmin() {
               <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
                 <th className="px-4 py-3 w-10 text-center"><Checkbox /></th>
                 <th className="px-4 py-3">Lead / E-mail</th>
-                {isGlobalAdmin && !activeStoreId && <th className="px-4 py-3">Loja</th>}
                 <th className="px-4 py-3">Origem</th>
                 <th className="px-4 py-3">Data de Inscrição</th>
                 <th className="px-4 py-3 text-center">Status</th>
@@ -219,20 +209,6 @@ function LeadsAdmin() {
                       </div>
                     </div>
                   </td>
-                  {isGlobalAdmin && !activeStoreId && (
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        {lead.lojaNome ? (
-                          <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
-                            <Store className="w-3.5 h-3.5 mr-1" />
-                            {lead.lojaNome}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-slate-400">Geral</span>
-                        )}
-                      </div>
-                    </td>
-                  )}
                   <td className="px-4 py-4">
                     <Badge variant="secondary" className="font-bold bg-slate-100 text-slate-600">
                       {lead.origem}

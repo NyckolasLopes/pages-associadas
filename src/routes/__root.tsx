@@ -26,22 +26,19 @@ import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/storefront/InstallPrompt";
 import { FloatingElements } from "@/components/storefront/BackToTop";
 import { PriceDropTracker } from "@/components/storefront/PriceDropTracker";
+import mascot404 from "@/assets/404-mascot.png";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <div className="mt-6">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 pt-20">
+      <div className="max-w-md text-center flex flex-col items-center">
+        <img src={mascot404} alt="Erro 404 - Página não encontrada" className="w-96 max-w-full h-auto mb-2 drop-shadow-md" />
+        <div className="mt-2">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-base font-bold text-primary-foreground transition-all hover:bg-primary/90 hover:scale-105 shadow-sm"
           >
-            Go home
+            Voltar ao Início
           </Link>
         </div>
       </div>
