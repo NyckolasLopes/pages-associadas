@@ -336,7 +336,8 @@ export const useAdminProducts = create<ProductsState>()(
         { id: 1, distribuidor: "Distribuidora Santa Cruz", cidade: "Porto Alegre / RS", prazo: "3", apiUrl: "https://api.santacruz.com.br/v1/estoque" }
       ],
       vitrines: [
-
+        { id: 1, nome: "Ofertas do Mês", categoriaId: "campanha", local: "espaco_1", ativa: true, icone: "Flame", modo: "categoria", ordem: 1, linkSeo: "ofertas-do-mes", tituloSeo: "Ofertas do Mês", descricaoSeo: "Preços exclusivos da campanha." },
+        { id: 2, nome: "Destaques da Loja", categoriaId: "destaques", local: "espaco_1", ativa: true, icone: "Sparkles", modo: "categoria", ordem: 2, linkSeo: "destaques", tituloSeo: "Destaques da Loja", descricaoSeo: "Produtos em destaque na loja." },
         { id: 3, nome: "Mais pedidos", categoriaId: "all", local: "espaco_2", ativa: true, icone: "TrendingUp", modo: "categoria", ordem: 1, linkSeo: "mais-vendidos", tituloSeo: "Mais Pedidos", descricaoSeo: "Os produtos mais pedidos e procurados nas Farmácias Associadas." },
         { id: 4, nome: "Ofertas da Semana", categoriaId: "ofertas", local: "espaco_2", ativa: true, icone: "Percent", modo: "categoria", ordem: 2, linkSeo: "ofertas-da-semana", tituloSeo: "Ofertas da Semana", descricaoSeo: "As melhores promoções da semana." },
         { id: 5, nome: "Novidades", categoriaId: "novidades", local: "espaco_3", ativa: true, icone: "Sparkles", modo: "categoria", ordem: 1, linkSeo: "novidades", tituloSeo: "Novidades", descricaoSeo: "Lançamentos e novos produtos." },
@@ -708,7 +709,19 @@ export const useAdminProducts = create<ProductsState>()(
           state.loadProducts();
 
           // Add default vitrines if missing (migration for existing localStorage)
-          if (!state.vitrines || !state.vitrines.some(v => v.categoriaId === "all")) {
+          let currentVitrines = state.vitrines || [];
+          let hasChanged = false;
+          
+          if (!currentVitrines.some(v => v.categoriaId === "campanha")) {
+            currentVitrines = [
+              { id: 1, nome: "Ofertas do Mês", categoriaId: "campanha", local: "espaco_1" as const, ativa: true, icone: "Flame", modo: "categoria" as const, ordem: 1, linkSeo: "ofertas-do-mes", tituloSeo: "Ofertas do Mês", descricaoSeo: "Preços exclusivos da campanha." },
+              { id: 2, nome: "Destaques da Loja", categoriaId: "destaques", local: "espaco_1" as const, ativa: true, icone: "Sparkles", modo: "categoria" as const, ordem: 2, linkSeo: "destaques", tituloSeo: "Destaques da Loja", descricaoSeo: "Produtos em destaque na loja." },
+              ...currentVitrines
+            ];
+            hasChanged = true;
+          }
+          
+          if (!currentVitrines.some(v => v.categoriaId === "all")) {
             const defaults = [
               { id: 3, nome: "Mais pedidos", categoriaId: "all", local: "espaco_2" as const, ativa: true, icone: "TrendingUp", modo: "categoria" as const, ordem: 1, linkSeo: "mais-vendidos", tituloSeo: "Mais Pedidos", descricaoSeo: "Os produtos mais pedidos e procurados nas Farmácias Associadas." },
               { id: 4, nome: "Ofertas da Semana", categoriaId: "ofertas", local: "espaco_2" as const, ativa: true, icone: "Percent", modo: "categoria" as const, ordem: 2, linkSeo: "ofertas-da-semana", tituloSeo: "Ofertas da Semana", descricaoSeo: "As melhores promoções da semana." },
@@ -716,7 +729,12 @@ export const useAdminProducts = create<ProductsState>()(
               { id: 6, nome: "Mamãe e Bebê", categoriaId: "144", local: "espaco_3" as const, ativa: true, icone: "Baby", modo: "categoria" as const, ordem: 2, linkSeo: "mamae-e-bebe", tituloSeo: "Mamãe e Bebê", descricaoSeo: "Produtos para o cuidado da mamãe e do bebê." },
               { id: 7, nome: "Protetores Solares e Bronzeadores", categoriaId: "protetores", local: "espaco_3" as const, ativa: true, icone: "Sun", modo: "categoria" as const, ordem: 3, linkSeo: "protetores-solares-e-bronzeadores", tituloSeo: "Protetores Solares", descricaoSeo: "Proteção solar e bronzeadores." },
             ];
-            useAdminProducts.setState((s) => ({ vitrines: [...(s.vitrines || []), ...defaults] }));
+            currentVitrines = [...currentVitrines, ...defaults];
+            hasChanged = true;
+          }
+          
+          if (hasChanged) {
+            useAdminProducts.setState({ vitrines: currentVitrines });
           }
         }
       }

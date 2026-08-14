@@ -4,7 +4,7 @@ import { useMarcasStore } from "@/stores/marcas";
 
 import { useAdmin } from "@/stores/admin";
 import type { Produto, Categoria, Loja } from "@/types";
-import { removeAccents } from "@/lib/utils";
+import { removeAccents, isCampanhaAtiva } from "@/lib/utils";
 import { checkIsGenerico } from "@/lib/format";
 
 const getCategorias = () => {
@@ -430,8 +430,10 @@ export const catalog = {
     
     if (categoriaId === "all") {
       results = all;
-    } else if (categoriaId === "ofertas") {
-      results = [...all].reverse();
+    } else if (categoriaId === "ofertas" || categoriaId === "campanha") {
+      results = all.filter(p => isCampanhaAtiva(p));
+    } else if (categoriaId === "destaques") {
+      results = all.filter(p => p.destaque);
     } else if (categoriaId === "novidades") {
       results = all.filter(p => p.isNovo);
     } else if (categoriaId === "protetores") {

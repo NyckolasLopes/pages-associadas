@@ -573,21 +573,7 @@ function StoreHome() {
         {/* Advantages Banner (Imagem 2) */}
         <DynamicTarja lojaId={lojaId} />
 
-        {/* Produtos em Campanha - Destaque */}
-        <CampaignHighlight lojaId={lojaId} />
-
-        {/* Produtos em Destaque */}
-        {grid.length > 0 && (
-          <section className="container-fa pt-4 pb-6">
-            <div className="flex items-end justify-between mb-4">
-              <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-                <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                Destaques da Loja
-              </h2>
-            </div>
-            <ProductCarousel products={grid} />
-          </section>
-        )}
+        {/* As vitrines agora são todas gerenciadas dinamicamente via Admin */}
 
         <section className="container-fa pt-2 pb-6 relative group">
           <h1 className="text-xl md:text-2xl font-bold mb-4">Compre por categoria</h1>
