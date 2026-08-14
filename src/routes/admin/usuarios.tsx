@@ -375,11 +375,16 @@ function AdminUsuarios() {
           targetUserId = existingProfile.id;
           alreadyExisted = true;
           
-          await supabase.from('profiles').update({
+          const { error: updateError } = await supabase.from('profiles').update({
              grupo_id: novoUsuarioGrupo,
              lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
              is_admin: isGlobal
           }).eq('id', targetUserId);
+          
+          if (updateError) {
+            toast.error(`Falha ao vincular usuário no banco: ${updateError.message}`);
+            return;
+          }
           
         } else {
           toast.error(`Erro ao registrar credenciais: ${authError.message}`);

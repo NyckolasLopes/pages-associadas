@@ -103,10 +103,39 @@ export const useOrders = create<OrdersState>((set, get) => ({
   orders: [],
 
   loadOrders: async () => {
-    const { data, error } = await supabase
+    // Obter sessão atual do usuário
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    
+    if (!user) {
+      set({ orders: [] });
+      return;
+    }
+    
+    // Obter perfil para checar se é admin global ou tem lojas vinculadas
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin, lojas_vinculadas')
+      .eq('id', user.id)
+      .single();
+
+    let query = supabase
       .from('pedidos')
       .select('*, pedido_itens(*), profiles(*)')
       .order('created_at', { ascending: false });
+
+    // Restringir a query se não for admin global
+    if (!profile?.is_admin) {
+      if (profile?.lojas_vinculadas && profile.lojas_vinculadas.length > 0) {
+        // Associado: vê as ordens das suas lojas
+        query = query.in('loja_id', profile.lojas_vinculadas);
+      } else {
+        // Cliente final: vê apenas as suas ordens
+        query = query.eq('user_id', user.id);
+      }
+    }
+
+    const { data, error } = await query;
 
     if (!error && data) {
       const mappedOrders: Pedido[] = data.map((d: any) => ({
