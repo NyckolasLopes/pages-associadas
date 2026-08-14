@@ -234,16 +234,6 @@ function AdminLayout() {
       needsUpdate = true;
     }
 
-    // Ensure Eduardo is in the system without proprietary flag
-    const eduardoIndex = updatedUsers.findIndex(u => u.email === "eduardo@ri.com.br");
-    if (eduardoIndex === -1) {
-      updatedUsers.push({ id: "admin-3", name: "Eduardo", email: "eduardo@ri.com.br", password: "Aspro@2026", grupoId: "grupo-admin", proprietario: false });
-      needsUpdate = true;
-    } else if (updatedUsers[eduardoIndex].proprietario || updatedUsers[eduardoIndex].grupoId !== "grupo-admin") {
-      updatedUsers[eduardoIndex] = { ...updatedUsers[eduardoIndex], grupoId: "grupo-admin", proprietario: false };
-      needsUpdate = true;
-    }
-
     if (needsUpdate) {
       useAdmin.getState().setUsers(updatedUsers);
     }

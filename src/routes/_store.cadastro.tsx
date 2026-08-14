@@ -29,6 +29,7 @@ function CadastroPage() {
 
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
+  const [tipoPessoa, setTipoPessoa] = useState<"PF" | "PJ">("PF");
   const [email, setEmail] = useState("");
   const [celular, setCelular] = useState("");
   const [nascimento, setNascimento] = useState("");
@@ -36,9 +37,10 @@ function CadastroPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [marketing, setMarketing] = useState(true);
 
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
-    if (v.length <= 11) {
+    if (tipoPessoa === "PF") {
+      if (v.length > 11) v = v.slice(0, 11);
       v = v.replace(/(\d{3})(\d)/, "$1.$2");
       v = v.replace(/(\d{3})(\d)/, "$1.$2");
       v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
@@ -51,9 +53,6 @@ function CadastroPage() {
     }
     setCpf(v);
   };
-
-  const cpfDigits = cpf.replace(/\D/g, "").length;
-  const isCnpj = cpfDigits > 11;
 
   const handleCelularChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
@@ -138,24 +137,41 @@ function CadastroPage() {
       </div>
 
       <form onSubmit={submit} className="space-y-4">
+        <div className="flex gap-4 p-1 bg-slate-100 rounded-lg w-fit mb-4">
+          <button
+            type="button"
+            onClick={() => { setTipoPessoa("PF"); setCpf(""); }}
+            className={`px-4 py-2 text-sm font-bold rounded-md transition ${tipoPessoa === "PF" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            Pessoa Física (CPF)
+          </button>
+          <button
+            type="button"
+            onClick={() => { setTipoPessoa("PJ"); setCpf(""); }}
+            className={`px-4 py-2 text-sm font-bold rounded-md transition ${tipoPessoa === "PJ" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            Pessoa Jurídica (CNPJ)
+          </button>
+        </div>
+
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <Label>CPF / CNPJ</Label>
+            <Label>{tipoPessoa === "PF" ? "CPF" : "CNPJ"}</Label>
             <Input
               type="text"
               value={cpf}
-              onChange={handleCpfChange}
-              placeholder={isCnpj ? "00.000.000/0000-00" : "000.000.000-00"}
+              onChange={handleDocumentChange}
+              placeholder={tipoPessoa === "PF" ? "000.000.000-00" : "00.000.000/0000-00"}
               required
             />
           </div>
           <div>
-            <Label>Nome Completo</Label>
+            <Label>{tipoPessoa === "PF" ? "Nome Completo" : "Razão Social"}</Label>
             <Input
               type="text"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              placeholder="João da Silva"
+              placeholder={tipoPessoa === "PF" ? "João da Silva" : "Sua Empresa LTDA"}
               required
             />
           </div>

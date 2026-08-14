@@ -407,6 +407,16 @@ function AdminProdutos() {
         const estoquesProduto = estoquesData.filter((est: any) => est.codigoInterno === p.codigoInterno) || [];
         const estoqueTotal = estoquesProduto.reduce((acc: number, cur: any) => acc + (cur.quantidade || 0), 0);
         
+        const estoquesMapeados: Record<string, number> = {};
+        estoquesProduto.forEach((est: any) => {
+          const pharm = pharmacies.find(ph => ph.cnpj === est.lojaCnpj);
+          if (pharm) {
+            estoquesMapeados[pharm.id] = est.quantidade;
+          } else if (est.lojaCnpj) {
+            estoquesMapeados[est.lojaCnpj] = est.quantidade;
+          }
+        });
+
         return {
           id: p.codigoInterno || `api-${Date.now()}-${Math.random()}`,
           ean: p.ean || "",
@@ -430,6 +440,7 @@ function AdminProdutos() {
           precoPor: precoInfo.precoPor || 0,
           percentualDesconto: precoInfo.percentualDesconto,
           estoque: estoqueTotal,
+          estoquesPorLoja: estoquesMapeados,
           estoquePorLoja: estoquesProduto,
           fabricante: "Sincronizado via API",
           possuiImagem: false,
@@ -838,8 +849,8 @@ function AdminProdutos() {
                               {pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0)}
                             </span>
                           ) : (
-                            <span className={`text-sm font-bold ${(lojaApiDataMap[p.id]?.estoque ?? 0) > 0 ? "text-slate-700" : "text-red-500"}`}>
-                              {lojaApiDataMap[p.id]?.estoque ?? 0}
+                            <span className={`text-sm font-bold ${(lojaApiDataMap[p.id]?.estoque ?? p.estoquesPorLoja?.[currentLojaId] ?? 0) > 0 ? "text-slate-700" : "text-red-500"}`}>
+                              {lojaApiDataMap[p.id]?.estoque ?? p.estoquesPorLoja?.[currentLojaId] ?? 0}
                             </span>
                           )}
                         </td>
