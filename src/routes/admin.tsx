@@ -455,30 +455,34 @@ function AdminLayout() {
           )}
 
           {/* ---- LOJAS ---- */}
-          {(can('lojas_todas') || can('lojas_nova') || can('lojas_tabelas') || can('lojas_precos') || can('lojas_paineis') || !isGlobalAdmin) && (
+          {isGlobalAdmin && (can('lojas_todas') || can('lojas_nova') || can('lojas_tabelas') || can('lojas_paineis')) && (
             <NavSection 
-              icon={isGlobalAdmin ? <Store className="h-4 w-4" /> : <DollarSign className="h-4 w-4" />} 
-              label={isGlobalAdmin ? "Lojas" : "Preços"} 
-              open={openNavSection === (isGlobalAdmin ? "Lojas" : "Preços")} 
-              onToggle={() => setOpenNavSection(openNavSection === (isGlobalAdmin ? "Lojas" : "Preços") ? "" : (isGlobalAdmin ? "Lojas" : "Preços"))}
+              icon={<Store className="h-4 w-4" />} 
+              label="Lojas" 
+              open={openNavSection === "Lojas"} 
+              onToggle={() => setOpenNavSection(openNavSection === "Lojas" ? "" : "Lojas")}
             >
-              {isGlobalAdmin && can('lojas_todas') && <Link to="/admin/lojas" className={subLinkClass} activeOptions={{ exact: true }}>Ver todas</Link>}
-              {isGlobalAdmin && can('lojas_nova') && <Link to="/admin/lojas/nova" className={subLinkClass} activeOptions={{ exact: true }}>Nova loja</Link>}
-              {isGlobalAdmin && can('lojas_gerar') && <Link to={"/admin/lojas/gerar" as any} className={subLinkClass} activeOptions={{ exact: true }}>Gerar Loja</Link>}
-              {isGlobalAdmin && can('lojas_link') && <Link to="/admin/lojas/link-inscricao" className={subLinkClass} activeOptions={{ exact: true }}>Link Inscrição Associado</Link>}
-              {!isGlobalAdmin && can('lojas_precos') && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Meus preços</Link>}
-              {!isGlobalAdmin && <Link to="/admin/estoque" className={subLinkClass} activeOptions={{ exact: true }}>Meu Estoque</Link>}
+              {can('lojas_todas') && <Link to="/admin/lojas" className={subLinkClass} activeOptions={{ exact: true }}>Ver todas</Link>}
+              {can('lojas_nova') && <Link to="/admin/lojas/nova" className={subLinkClass} activeOptions={{ exact: true }}>Nova loja</Link>}
+              {can('lojas_gerar') && <Link to={"/admin/lojas/gerar" as any} className={subLinkClass} activeOptions={{ exact: true }}>Gerar Loja</Link>}
+              {can('lojas_link') && <Link to="/admin/lojas/link-inscricao" className={subLinkClass} activeOptions={{ exact: true }}>Link Inscrição Associado</Link>}
             </NavSection>
           )}
 
           {/* ---- PRODUTOS ---- */}
           {(can('prod_todos') || can('prod_novo') || can('prod_categorias') || can('prod_colecoes') || can('prod_filtros') || can('prod_marcas') || !isGlobalAdmin) && (
             <NavSection icon={<Package className="h-4 w-4" />} label="Produtos" open={openNavSection === "Produtos"} onToggle={() => setOpenNavSection(openNavSection === "Produtos" ? "" : "Produtos")}>
-              {(can('prod_todos') || !isGlobalAdmin) && <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>Ver todos</Link>}
+              {isGlobalAdmin ? (
+                can('prod_todos') && <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>Ver todos</Link>
+              ) : (
+                <Link to="/admin/produtos" className={subLinkClass} activeOptions={{ exact: true }}>Catálogo Geral</Link>
+              )}
+              {!isGlobalAdmin && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Meus Preços</Link>}
+              {!isGlobalAdmin && <Link to="/admin/estoque" className={subLinkClass} activeOptions={{ exact: true }}>Meu Estoque</Link>}
               {isGlobalAdmin && can('prod_novo') && <Link to="/admin/produtos/novo" className={subLinkClass} activeOptions={{ exact: true }}>Novo produto</Link>}
               {isGlobalAdmin && can('prod_categorias') && <Link to="/admin/categorias" className={subLinkClass}>Categorias</Link>}
               {isGlobalAdmin && can('prod_marcas') && <Link to="/admin/marcas" className={subLinkClass}>Marcas</Link>}
-              {(isGlobalAdmin && can('prod_colecoes')) && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
+              {isGlobalAdmin && can('prod_colecoes') && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
               {isGlobalAdmin && can('prod_filtros') && <Link to="/admin/filtros" className={subLinkClass}>Filtros</Link>}
             </NavSection>
           )}
