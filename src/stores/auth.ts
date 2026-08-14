@@ -138,6 +138,7 @@ export const useAuth = create<AuthState>((set, get) => ({
                 nome: profile?.nome || undefined,
                 cpf: profile?.cpf || undefined,
                 celular: profile?.telefone || undefined,
+                provider: u.app_metadata?.provider as any,
               },
             });
           });
@@ -150,15 +151,24 @@ export const useAuth = create<AuthState>((set, get) => ({
         set({ user: null });
       } else if (session?.user) {
         const u = session.user;
-        if (!get().user || get().user?.id !== u.id) {
-          set({
-            user: {
-              id: u.id,
-              email: u.email!,
-              name: u.email!.split("@")[0],
-            },
+        supabase
+          .from("profiles")
+          .select("nome, cpf, telefone")
+          .eq("id", u.id)
+          .single()
+          .then(({ data: profile }) => {
+            set({
+              user: {
+                id: u.id,
+                email: u.email!,
+                name: profile?.nome || u.email!.split("@")[0],
+                nome: profile?.nome || undefined,
+                cpf: profile?.cpf || undefined,
+                celular: profile?.telefone || undefined,
+                provider: u.app_metadata?.provider as any,
+              },
+            });
           });
-        }
       }
     });
   },

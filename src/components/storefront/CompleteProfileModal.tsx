@@ -12,7 +12,7 @@ export function CompleteProfileModal() {
   
   // O modal deve aparecer se o usuário estiver logado E (não tiver CPF OU não tiver Celular).
   // E o provedor for o google (opcional, mas vamos forçar pra todos caso esteja faltando dados vitais).
-  const isMissingData = user && (!user.cpf || !user.celular);
+  const isMissingData = user && (!user.cpf || !user.celular) && user.provider === 'google';
   const [open, setOpen] = useState(false);
 
   const [cpf, setCpf] = useState("");
