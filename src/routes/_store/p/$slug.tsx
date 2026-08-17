@@ -683,8 +683,8 @@ function PDP() {
   // 3. Store-specific & Global Promotions
   const lojaPromocoes = activeStoreId ? marketingState.lojaPromocoes[activeStoreId] || [] : [];
   const globalPromocoes = promocoes.filter((p: any) => !p.lojaId);
-  const padraoPromo = getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes);
-  const levePaguePromo = getLevePaguePromotion(p, globalPromocoes, lojaPromocoes);
+  const padraoPromo = isAvailable ? getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes) : null;
+  const levePaguePromo = isAvailable ? getLevePaguePromotion(p, globalPromocoes, lojaPromocoes) : null;
 
   if (padraoPromo) {
     if (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0) {

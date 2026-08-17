@@ -54,34 +54,13 @@ export function StoreVitrinesConfig() {
 
   return (
     <div className="space-y-6">
-      {/* Header & Quick Action Buttons */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div>
           <h3 className="text-xl font-bold text-slate-800">Minhas Vitrines</h3>
           <p className="text-sm text-slate-500 mt-1">
             Configure a exibição e ordenação dos produtos na vitrine principal da sua loja.
           </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Link to="/admin/produtos/novo">
-            <Button className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-4 shadow-sm">
-              <Plus className="w-4 h-4 mr-1.5" />
-              Criar Produto
-            </Button>
-          </Link>
-          <Link to="/admin/produtos">
-            <Button variant="outline" className="border-slate-300 text-slate-700 font-bold hover:bg-slate-50 h-10 px-4">
-              <Package className="w-4 h-4 mr-1.5 text-slate-500" />
-              Ver Produtos
-            </Button>
-          </Link>
-          <Link to="/admin/categorias">
-            <Button variant="outline" className="border-slate-300 text-slate-700 font-bold hover:bg-slate-50 h-10 px-4">
-              <Layers className="w-4 h-4 mr-1.5 text-slate-500" />
-              Categorias
-            </Button>
-          </Link>
         </div>
       </div>
 
