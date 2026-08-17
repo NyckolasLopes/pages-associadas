@@ -58,11 +58,22 @@ export function getEffectivePrice(item: any, pharmacyId: string | null): { preco
     // 3. Store-specific Oferta do Mês
     const marketingState = useMarketing.getState();
     const storePromos = marketingState.lojaPromocoes[pharmacyId] || [];
-    const storeOferta = storePromos.find(p => p.ativa && p.tipoCampanha === 'padrao' && p.alvosId.includes(item.id));
-    if (storeOferta && storeOferta.levePague_precoPorItem) {
-      // It overrides the previous price 
-      precoDe = precoPor; // The old price becomes the "precoDe"
-      precoPor = storeOferta.levePague_precoPorItem;
+    const globalPromos = marketingState.promocoes || [];
+    const storeOferta = storePromos.find(p => p.ativa && p.tipoCampanha === 'padrao' && p.alvosId.some((id: any) => String(id) === String(item.id)));
+    const globalOferta = storeOferta ? null : globalPromos.find(p => p.ativa && p.tipoCampanha === 'padrao' && p.alvosId.some((id: any) => String(id) === String(item.id)));
+    const activeOferta = storeOferta || globalOferta;
+    
+    if (activeOferta) {
+      if (activeOferta.precoPromocional && activeOferta.precoPromocional > 0) {
+        precoDe = precoPor;
+        precoPor = activeOferta.precoPromocional;
+      } else if (activeOferta.descontoPercentual && activeOferta.descontoPercentual > 0) {
+        precoDe = precoPor;
+        precoPor = precoPor * (1 - activeOferta.descontoPercentual / 100);
+      } else if (activeOferta.levePague_precoPorItem && activeOferta.levePague_precoPorItem > 0) {
+        precoDe = precoPor;
+        precoPor = activeOferta.levePague_precoPorItem;
+      }
     }
   }
 

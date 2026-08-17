@@ -60,10 +60,10 @@ function getDimensionsForPosition(pos: string) {
   switch (pos) {
     case "Full Banner": return { desktop: "1800x600px", mobile: "800x800px" };
     case "Mini Banner": return { desktop: "600x600px", mobile: "600x600px" };
-    case "Banner Tarja": return { desktop: "1920x200px", mobile: "800x300px" };
+    case "Banner Tarja": return { desktop: "1920x200px", mobile: "800x200px" };
     case "Banner Categoria": return { desktop: "200x200px", mobile: "200x200px" };
-    case "Banner Extra": return { desktop: "1200x300px", mobile: "800x300px" };
-    case "Banner Diferenciais": return { desktop: "300x400px", mobile: "300x400px" };
+    case "Banner Extra": return { desktop: "800x400px", mobile: "600x400px" };
+    case "Banner Diferenciais": return { desktop: "400x400px", mobile: "400x400px" };
     default: return { desktop: "Auto", mobile: "Auto" };
   }
 }

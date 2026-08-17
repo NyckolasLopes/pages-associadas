@@ -913,7 +913,7 @@ function PDP() {
                 fetchPriority="high"
                 className={`w-full h-full object-contain p-4 pb-8 transition-opacity duration-300 ${isZoomed ? 'opacity-0' : 'opacity-100'}`}
               />
-              {p.tarja && p.tarja !== 'Sem Tarja' && p.tarja !== 'none' && (
+              {isMedication && p.tarja && p.tarja !== 'Sem Tarja' && p.tarja !== 'none' && (
                 <div className={`absolute bottom-0 left-0 w-full h-8 flex items-center justify-center font-black text-[10px] uppercase tracking-wider z-20 ${tarjaColor(p.tarja)}`}>
                   {p.retemReceita ? "Venda sob prescrição médica - Retém Receita" : "Venda sob prescrição médica"}
                 </div>

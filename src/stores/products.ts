@@ -52,6 +52,7 @@ interface ProductsState {
   bulkUpdateProducts: (productIds: string[], updates: Partial<Produto>, lojaId?: string | null) => void;
   updateStoreProductPrice: (lojaId: string, productId: string, precoPor: number, precoDe?: number, estoque?: number, ativo?: boolean) => void;
   updateStoreProductStatus: (lojaId: string, productId: string, ativo: boolean) => Promise<void>;
+  updateStoreProductDestaque: (lojaId: string, productId: string, destaque: boolean) => Promise<void>;
   bulkUpdateStoreProductStatus: (lojaId: string, productIds: string[], ativo: boolean) => Promise<void>;
   importStoreSpreadsheet: (lojaId: string, items: StorePriceItem[]) => { updated: number; notFound: number; total: number };
 }
@@ -224,6 +225,7 @@ export const useAdminProducts = create<ProductsState>()(
               precoDe: storePrice?.precoDe !== undefined ? storePrice.precoDe : (ov.precoDe !== undefined ? ov.precoDe : p.precoDe),
               estoque: storeStock !== undefined ? storeStock : (ov.estoque !== undefined ? ov.estoque : p.estoque),
               ativo: storePrice?.ativo !== undefined ? storePrice.ativo : (ov.ativo !== undefined ? ov.ativo : (p.ativo ?? true)),
+              destaque: storePrice?.destaque !== undefined ? storePrice.destaque : (ov.destaque !== undefined ? ov.destaque : (p.destaque ?? false)),
             };
           });
 
@@ -564,6 +566,33 @@ export const useAdminProducts = create<ProductsState>()(
           [lojaId]: {
             ...prevStore[lojaId],
             ativo
+          }
+        };
+
+        // Optimistic UI Update
+        set((s) => ({
+          customProducts: s.customProducts.map(x => x.id === productId ? {
+            ...x,
+            precosPorLoja: newPrecosPorLoja
+          } : x)
+        }));
+
+        // Supabase DB Update
+        await supabase.from('produtos').update({
+          precos_por_loja: newPrecosPorLoja
+        }).eq('id', productId);
+      },
+      updateStoreProductDestaque: async (lojaId, productId, destaque) => {
+        const state = get();
+        const product = state.customProducts.find(p => p.id === productId);
+        if (!product) return;
+
+        const prevStore = product.precosPorLoja || {};
+        const newPrecosPorLoja = {
+          ...prevStore,
+          [lojaId]: {
+            ...prevStore[lojaId],
+            destaque
           }
         };
 

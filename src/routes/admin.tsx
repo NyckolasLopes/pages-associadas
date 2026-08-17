@@ -263,7 +263,7 @@ function AdminLayout() {
   const cat = activeStore?.categoriaAssociado?.toString().toLowerCase() || '';
   const isParceiro = cat === 'parceiro' || activeStore?.nome?.toLowerCase().includes('parceiro');
   const isPleno = cat === 'pleno' || cat === 'padrão' || cat === 'padrao' || activeStore?.nome?.toLowerCase().includes('pleno');
-  const canDesign = isParceiro || isPleno || can('pers_logo') || can('pers_cores') || can('pers_banners') || can('pers_redes');
+  const canDesign = !isGlobalAdmin && (isParceiro || isPleno || can('pers_logo') || can('pers_cores') || can('pers_banners') || can('pers_redes'));
 
 
   if (!mounted) return null;
@@ -538,11 +538,6 @@ function AdminLayout() {
               {(isParceiro || can('pers_cores')) && (
                 <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
                   Minhas Cores
-                </Link>
-              )}
-              {(isParceiro || isPleno || can('pers_redes')) && (
-                <Link to="/admin/design/redes" className={subLinkClass} activeOptions={{ exact: true }}>
-                  Redes Sociais
                 </Link>
               )}
             </NavSection>

@@ -328,7 +328,7 @@ export function getLevePaguePromotion(produto: any, promocoes: any[] = [], store
     }
     
     // Apenas produto individual
-    if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.includes(produto.id)) {
+    if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.id))) {
       return true;
     }
     
@@ -370,7 +370,7 @@ export function getPadraoPromotionWithTimer(produto: any, promocoes: any[] = [],
     }
     
     // Apenas produto individual
-    if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.includes(produto.id)) {
+    if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.id))) {
       return true;
     }
     

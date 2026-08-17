@@ -104,6 +104,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const dadosLoja = useConfig.getState().dadosLoja;
     const title = dadosLoja?.nomeLoja || "Farmácias Associadas | Muito mais farmácia";
     const description = dadosLoja?.descricao || "Medicamentos, dermocosméticos, vitaminas e cuidado para toda a família, com entrega rápida e farmacêutico responsável. Aqui você tem amigos.";
+    const bairro = dadosLoja?.bairro || "Matriz";
+
+    const manifestData = {
+      name: `Farm Associadas - ${bairro}`,
+      short_name: `FA - ${bairro}`,
+      description: description,
+      start_url: "/",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#00B5AD",
+      icons: [
+        { src: "/favicon.png", sizes: "192x192", type: "image/png" },
+        { src: "/favicon.png", sizes: "512x512", type: "image/png" }
+      ]
+    };
+    
+    const manifestUri = `data:application/manifest+json;charset=utf-8,${encodeURIComponent(JSON.stringify(manifestData))}`;
 
     return {
       meta: [
@@ -120,17 +137,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },
       ],
-    links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: appCss },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;500;700;900&display=swap",
-      },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-      { rel: "manifest", href: "/manifest.json" },
-    ],
+      links: [
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        { rel: "stylesheet", href: appCss },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;500;700;900&display=swap",
+        },
+        { rel: "icon", type: "image/png", href: "/favicon.png" },
+        { rel: "manifest", href: manifestUri },
+      ],
     };
   },
 

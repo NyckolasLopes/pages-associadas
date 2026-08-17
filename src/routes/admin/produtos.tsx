@@ -86,6 +86,7 @@ function AdminProdutos() {
     getStoreEffectiveProducts,
     resetStoreProductsToGeneral,
     updateStoreProductStatus,
+    updateStoreProductDestaque,
     bulkUpdateStoreProductStatus,
     _loaded
   } = useAdminProducts();
@@ -884,14 +885,20 @@ function AdminProdutos() {
                               size="icon"
                               onClick={() => addOrUpdateProduct({ ...p, destaque: !p.destaque }, currentLojaId)}
                               className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
-                              title="Destacar produto"
+                              title="Destacar produto na rede"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                             </Button>
                           ) : (
-                            <div className="flex justify-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "#fbbf24" : "none"} stroke={p.destaque ? "#fbbf24" : "#cbd5e1"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => updateStoreProductDestaque(currentLojaId!, p.id, !p.destaque)}
+                              className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
+                              title="Destacar produto na sua loja"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </Button>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">

@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
 import { 
   Store, Search, DollarSign, Package, Upload, 
-  FileSpreadsheet, AlertCircle, CheckCircle2, FileText, ArrowRight, Check, Calendar 
+  FileSpreadsheet, AlertCircle, CheckCircle2, FileText, ArrowRight, Check, Calendar, Megaphone
 } from "lucide-react";
 import {
   Select,
@@ -632,7 +632,6 @@ function AdminProdutosPrecos() {
                 </Select>
                 {!isGlobalAdmin() && (
                   <Button 
-                    variant="outline" 
                     onClick={() => {
                       setIsCampanhaModalOpen(true);
                       setCampanhaStep(1);
@@ -640,9 +639,10 @@ function AdminProdutosPrecos() {
                       setSelectedCampanhaProducts([]);
                       setCampanhaPrices({});
                     }}
-                    className="h-11 border-dashed border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 whitespace-nowrap"
+                    className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md font-bold transition-all whitespace-nowrap px-6"
                   >
-                    Criar campanha interna
+                    <Megaphone className="h-4 w-4 mr-2" />
+                    Criar Campanha Interna
                   </Button>
                 )}
               </div>
@@ -992,6 +992,28 @@ function AdminProdutosPrecos() {
 
           {campanhaStep === 2 && (
             <div className="space-y-6 py-4 max-h-[500px] overflow-y-auto pr-2">
+              <div className="bg-slate-100 p-4 rounded-lg flex flex-col sm:flex-row gap-4 border border-slate-200">
+                <div className="flex-1 space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Início da Campanha (Opcional)</label>
+                  <Input 
+                    type="date" 
+                    value={campanhaInicioModal} 
+                    onChange={e => setCampanhaInicioModal(e.target.value)} 
+                    className="bg-white"
+                  />
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Fim da Campanha (Opcional)</label>
+                  <Input 
+                    type="date" 
+                    value={campanhaFimModal} 
+                    onChange={e => setCampanhaFimModal(e.target.value)} 
+                    className="bg-white"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-4">
               {selectedCampanhaProducts.map(productId => {
                 const product = customProducts.find(p => p.id === productId);
                 if (!product) return null;
@@ -1021,6 +1043,7 @@ function AdminProdutosPrecos() {
                   </div>
                 );
               })}
+              </div>
             </div>
           )}
 

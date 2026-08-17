@@ -409,8 +409,8 @@ function ProductCardComponent({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1 mt-1 mb-3 min-h-[18px]">
-            {p.tarja && p.tarja !== "none" && (
+          <div className="flex flex-wrap gap-1 mt-1 mb-1 min-h-[18px]">
+            {isMedicamento && p.tarja && p.tarja !== "none" && (
               <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm ${tarjaColor(p.tarja)}`}>
                 {p.tarja === "Vermelha" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
               </span>
@@ -425,6 +425,12 @@ function ProductCardComponent({
               </span>
             ) : null)}
           </div>
+          
+          {isMedicamento && (
+            <div className="text-[7.5px] leading-[1.2] font-semibold text-slate-500 uppercase mb-2 line-clamp-2" title="AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO.">
+              {p.alertaTexto || "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."}
+            </div>
+          )}
 
           {isService && (
             <div className="text-[11px] text-primary font-bold mb-3 inline-flex items-center gap-1">
