@@ -617,15 +617,7 @@ export const useAdmin = create<AdminState>()(
         set({ currentUser: null, activeStoreId: null });
         
         try {
-          const raw = localStorage.getItem("admin-storage");
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (parsed.state) {
-              parsed.state.currentUser = null;
-              parsed.state.activeStoreId = null;
-              localStorage.setItem("admin-storage", JSON.stringify(parsed));
-            }
-          }
+          localStorage.removeItem("admin-storage-local");
         } catch (e) {}
 
         window.location.href = '/admin';

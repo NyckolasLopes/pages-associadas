@@ -20,8 +20,20 @@ export const supabaseStorage: StateStorage = {
       }
       
       if (data) {
-        // Zustand persist expects a stringified JSON
-        return JSON.stringify(data.value);
+        const globalValue = data.value as any;
+        // Restaura a sessão local
+        try {
+          const localData = localStorage.getItem(`${name}-local`);
+          if (localData && globalValue.state) {
+            const localParsed = JSON.parse(localData);
+            globalValue.state.currentUser = localParsed.currentUser ?? null;
+            globalValue.state.activeStoreId = localParsed.activeStoreId ?? null;
+          } else if (globalValue.state) {
+            globalValue.state.currentUser = null;
+            globalValue.state.activeStoreId = null;
+          }
+        } catch(e) {}
+        return JSON.stringify(globalValue);
       }
       return null;
     } catch (err) {
@@ -32,8 +44,20 @@ export const supabaseStorage: StateStorage = {
   
   setItem: async (name: string, value: string): Promise<void> => {
     try {
-      // Parse the value back to JSON so it's stored nicely in jsonb
       const parsedValue = JSON.parse(value);
+      
+      // Salva sessão apenas localmente
+      if (parsedValue.state) {
+        const localState = {
+          currentUser: parsedValue.state.currentUser,
+          activeStoreId: parsedValue.state.activeStoreId
+        };
+        localStorage.setItem(`${name}-local`, JSON.stringify(localState));
+        
+        // Remove do global para não logar todo mundo
+        delete parsedValue.state.currentUser;
+        delete parsedValue.state.activeStoreId;
+      }
       
       const { error } = await supabase
         .from('app_state')
