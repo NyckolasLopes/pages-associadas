@@ -495,17 +495,14 @@ function AdminLayout() {
           )}
 
 
-          {/* ---- PERSONALIZAR MINHA LOJA ---- */}
+          {/* ---- DESIGN DA LOJA (para associados) ---- */}
           {!isGlobalAdmin && (isParceiro || isPleno) && (
             <NavSection 
-              icon={<Store className="h-4 w-4" />} 
-              label="Personalizar Minha Loja" 
-              open={openNavSection === "Personalizar"} 
-              onToggle={() => setOpenNavSection(openNavSection === "Personalizar" ? "" : "Personalizar")}
+              icon={<Palette className="h-4 w-4" />} 
+              label="Design da Loja" 
+              open={openNavSection === "DesignGlobal"} 
+              onToggle={() => setOpenNavSection(openNavSection === "DesignGlobal" ? "" : "DesignGlobal")}
             >
-              <div className="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400 mt-1 mb-1">
-                Design
-              </div>
               <Link to="/admin/design/logo" className={subLinkClass} activeOptions={{ exact: true }}>
                 Logo e Favicon
               </Link>
@@ -522,38 +519,13 @@ function AdminLayout() {
                   Minhas Cores
                 </Link>
               )}
-            </NavSection>
-          )}
-
-          {/* ---- REDES SOCIAIS (para associados) ---- */}
-          {!isGlobalAdmin && (
-            <Link to="/admin/design/redes" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
-              <Share2 className="h-4 w-4" /> Redes Sociais
-            </Link>
-          )}
-
-          {/* ---- DESIGN DA REDE (apenas para admin global) ---- */}
-          {isGlobalAdmin && (
-            <NavSection 
-              icon={<Palette className="h-4 w-4" />} 
-              label="Design da Rede" 
-              open={openNavSection === "DesignGlobal"} 
-              onToggle={() => setOpenNavSection(openNavSection === "DesignGlobal" ? "" : "DesignGlobal")}
-            >
-              <Link to="/admin/design/logo" className={subLinkClass} activeOptions={{ exact: true }}>
-                Logo e Favicon
-              </Link>
-              <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
-                Banners Globais
-              </Link>
-              <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
-                Estrutura da Rede
-              </Link>
               <Link to="/admin/design/redes" className={subLinkClass} activeOptions={{ exact: true }}>
                 Redes Sociais
               </Link>
             </NavSection>
           )}
+
+
 
           {isGlobalAdmin && (
             <Link to="/admin/paginas-informativas" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
