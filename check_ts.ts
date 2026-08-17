@@ -1,0 +1,1 @@
+import { supabase } from './src/integrations/supabase/client'; supabase.from('promocoes').select('id, alvos_id, titulo, tipo_campanha').then(({data}) => { console.log(JSON.stringify(data, null, 2)); process.exit(0); });

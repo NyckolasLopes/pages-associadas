@@ -213,8 +213,9 @@ function ProductCardComponent({
 
   // 3. Store-specific & Global Promotions
   const lojaPromocoes = activeStoreId ? lojaPromocoesMap?.[activeStoreId] || [] : [];
-  const padraoPromo = getPadraoPromotionWithTimer(p, promocoes, lojaPromocoes);
-  const levePaguePromo = getLevePaguePromotion(p, promocoes, lojaPromocoes);
+  const globalPromocoes = promocoes.filter(p => !p.lojaId);
+  const padraoPromo = getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes);
+  const levePaguePromo = getLevePaguePromotion(p, globalPromocoes, lojaPromocoes);
 
   if (padraoPromo) {
     if (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0) {

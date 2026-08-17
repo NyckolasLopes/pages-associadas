@@ -21,6 +21,7 @@ import { useOrders } from "../stores/orders";
 import { useAdminCategories } from "../stores/categories";
 import { useMarcasStore } from "../stores/marcas";
 import { useConfig } from "../stores/config";
+import { useMarketing } from "../stores/marketing";
 import { Toaster } from "@/components/ui/sonner";
 
 import { InstallPrompt } from "@/components/storefront/InstallPrompt";
@@ -221,6 +222,7 @@ function RootComponent() {
     useMarcasStore.getState().loadMarcas();
     useOrders.getState().loadOrders();
     useAdmin.getState().loadPharmacies();
+    useMarketing.getState().loadMarketing();
     
     // Register PWA Service Worker
     if ('serviceWorker' in navigator) {
