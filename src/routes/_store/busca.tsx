@@ -30,6 +30,7 @@ function SearchPage() {
   
   const [unfilteredResults, setUnfilteredResults] = useState<Produto[]>([]);
   const [filteredResults, setFilteredResults] = useState<Produto[]>([]);
+  const [didYouMean, setDidYouMean] = useState<string | undefined>(undefined);
   const [visibleCount, setVisibleCount] = useState(24);
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const logSearch = useSearchHistory((s) => s.logSearch);
@@ -55,8 +56,15 @@ function SearchPage() {
   useEffect(() => {
     // Fetch filtered for display
     const fetchFiltered = async () => {
-      const res = q ? await catalog.search(q, filters) : await catalog.listProducts(filters);
-      setFilteredResults(res);
+      if (q) {
+        const { results, didYouMean: dym } = await catalog.searchWithSuggestions(q, filters);
+        setFilteredResults(results);
+        setDidYouMean(dym);
+      } else {
+        const results = await catalog.listProducts(filters);
+        setFilteredResults(results);
+        setDidYouMean(undefined);
+      }
     };
     fetchFiltered();
   }, [q, filters]);
@@ -90,6 +98,20 @@ function SearchPage() {
           <div className="flex items-center justify-between mb-4 border-b pb-4">
             <h2 className="text-xl font-bold">Produtos</h2>
           </div>
+          
+          {didYouMean && (
+            <div className="mb-6 p-4 bg-primary/10 rounded-lg border border-primary/20 flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground">Você quis dizer</span>
+              <Button 
+                variant="link" 
+                className="p-0 h-auto font-bold text-primary text-base"
+                onClick={() => navigate({ search: { q: didYouMean } as any, replace: true })}
+              >
+                {didYouMean}?
+              </Button>
+            </div>
+          )}
+
           <div className="text-sm text-muted-foreground mb-4">
             {filteredResults.length} produto{filteredResults.length === 1 ? "" : "s"} encontrado{filteredResults.length === 1 ? "" : "s"}
           </div>

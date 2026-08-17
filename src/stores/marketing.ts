@@ -232,8 +232,24 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
     const dbUpdate: any = {};
     if (updatedFields.titulo !== undefined) dbUpdate.titulo = updatedFields.titulo;
     if (updatedFields.subtitulo !== undefined) dbUpdate.subtitulo = updatedFields.subtitulo;
+    if (updatedFields.tipoAlvo !== undefined) dbUpdate.tipo_alvo = updatedFields.tipoAlvo;
+    if (updatedFields.alvosId !== undefined) dbUpdate.alvos_id = updatedFields.alvosId;
+    if (updatedFields.dataFim !== undefined) dbUpdate.data_fim = updatedFields.dataFim;
+    if (updatedFields.horaFim !== undefined) dbUpdate.hora_fim = updatedFields.horaFim;
+    if (updatedFields.icone !== undefined) dbUpdate.icone = updatedFields.icone;
     if (updatedFields.ativa !== undefined) dbUpdate.ativa = updatedFields.ativa;
-    // (outros mapeamentos podem ser adicionados conforme necessário no admin)
+    if (updatedFields.tipoCampanha !== undefined) dbUpdate.tipo_campanha = updatedFields.tipoCampanha;
+    if (updatedFields.descontoPercentual !== undefined) dbUpdate.desconto_percentual = updatedFields.descontoPercentual;
+    if (updatedFields.precoPromocional !== undefined) dbUpdate.preco_promocional = updatedFields.precoPromocional;
+    if (updatedFields.levePague_quantidade !== undefined) dbUpdate.leve_pague_quantidade = updatedFields.levePague_quantidade;
+    if (updatedFields.levePague_precoPorItem !== undefined) dbUpdate.leve_pague_preco_por_item = updatedFields.levePague_precoPorItem;
+    if (updatedFields.produtosConfig !== undefined) dbUpdate.produtos_config = updatedFields.produtosConfig;
+    if (updatedFields.corSelo !== undefined) dbUpdate.cor_selo = updatedFields.corSelo;
+    if (updatedFields.corIcone !== undefined) dbUpdate.cor_icone = updatedFields.corIcone;
+    if (updatedFields.corTextoBotao !== undefined) dbUpdate.cor_texto_botao = updatedFields.corTextoBotao;
+    if (updatedFields.corBotao !== undefined) dbUpdate.cor_botao = updatedFields.corBotao;
+    if (updatedFields.textoBotao !== undefined) dbUpdate.texto_botao = updatedFields.textoBotao;
+    if (updatedFields.lojaId !== undefined) dbUpdate.loja_id = updatedFields.lojaId;
 
     const { error } = await supabase.from('promocoes' as any).update(dbUpdate).eq('id', id);
     if (!error) await get().loadMarketing();

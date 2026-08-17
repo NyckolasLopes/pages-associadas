@@ -24,6 +24,7 @@ interface AuthState {
   user: User | null;
   loginOpen: boolean;
   login: (email: string, password: string) => Promise<boolean | "otp_required">;
+  sendOtp: (email: string) => Promise<boolean>;
   verifyOtp: (email: string, token: string) => Promise<boolean>;
   loginWithProvider: (provider: "google" | "apple" | "facebook", redirectPath?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -73,6 +74,11 @@ export const useAuth = create<AuthState>((set, get) => ({
     return true;
   },
 
+  sendOtp: async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    return !error;
+  },
+
   verifyOtp: async (email: string, token: string) => {
     const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
     if (error || !data.user) return false;
@@ -114,6 +120,10 @@ export const useAuth = create<AuthState>((set, get) => ({
     // Invalidates refresh token on Supabase server
     await supabase.auth.signOut();
     set({ user: null });
+    try {
+      const { useFavorites } = await import("./favorites");
+      useFavorites.getState().clearAll();
+    } catch (e) {}
   },
 
   setLoginOpen: (open) => set({ loginOpen: open }),
@@ -149,6 +159,11 @@ export const useAuth = create<AuthState>((set, get) => ({
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || !session) {
         set({ user: null });
+        try {
+          import("./favorites").then(({ useFavorites }) => {
+            useFavorites.getState().clearAll();
+          });
+        } catch (e) {}
       } else if (session?.user) {
         const u = session.user;
         supabase

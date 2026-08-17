@@ -1,4 +1,4 @@
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useParams, useNavigate } from "@tanstack/react-router";
 import { Heart, ShoppingBasket, Zap, Star, StarHalf, Calendar, Stethoscope, Truck, Bell, Flame, Gift, ShoppingBag, Youtube } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import type { Produto } from "@/types";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/stores/favorites";
 import { useAuth } from "@/stores/auth";
-import { LoginModal } from "@/components/storefront/LoginModal";
+import { useAuth } from "@/stores/auth";
 import { useGeoCep } from "@/stores/cart";
 import { isPbmEligible } from "@/lib/pbm";
 import { useAdmin } from "@/stores/admin";
@@ -62,7 +62,7 @@ function ProductCardComponent({
   const p = customProducts?.find(c => c.id === initialProduct.id) || initialProduct;
   const regionalPrices = useRegionsStore(s => s.prices);
   const user = useAuth((s) => s.user);
-  const [loginOpen, setLoginOpen] = useState(false);
+  const navigate = useNavigate();
   const promocoes = useMarketing((s) => s.promocoes);
   const lojaPromocoesMap = useMarketing((s) => s.lojaPromocoes);
   const recentlyAdded = isRecentlyAdded(p);
@@ -275,7 +275,7 @@ function ProductCardComponent({
             e.preventDefault();
             if (!user) {
               toast.info("Por favor, faça login para adicionar aos favoritos.");
-              setLoginOpen(true);
+              navigate({ to: "/login", search: { redirect: window.location.pathname } as any });
               return;
             }
             toggleFav(p.id, finalPrecoPor);
@@ -521,7 +521,6 @@ function ProductCardComponent({
           </div>
         </DialogContent>
       </Dialog>
-      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} onLoginSuccess={() => {}} />
     </article>
   );
 }

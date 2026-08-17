@@ -247,6 +247,7 @@ function AdminLayout() {
 
   const activeStore = pharmacies.find(p => p.id === activeStoreId);
   const isParceiro = activeStore?.categoriaAssociado === 'Parceiro';
+  const isPleno = activeStore?.categoriaAssociado === 'Pleno';
 
   if (!mounted) return null;
 
@@ -487,15 +488,15 @@ function AdminLayout() {
           {/* ---- MARKETING ---- */}
           {(can('mkt_cupons') || !isGlobalAdmin) && (
             <NavSection icon={<Megaphone className="h-4 w-4" />} label="Marketing" open={openNavSection === "Marketing"} onToggle={() => setOpenNavSection(openNavSection === "Marketing" ? "" : "Marketing")}>
-              {can('mkt_cupons') && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Cupons das lojas" : "Meus cupons"}</Link>}
+              {(can('mkt_cupons') || !isGlobalAdmin) && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Cupons das lojas" : "Meus cupons"}</Link>}
               {!isGlobalAdmin && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
               {isGlobalAdmin && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Campanha Encarte</Link>}
             </NavSection>
           )}
 
 
-          {/* ---- PERSONALIZAR MINHA LOJA (apenas para associados parceiros) ---- */}
-          {!isGlobalAdmin && isParceiro && (
+          {/* ---- PERSONALIZAR MINHA LOJA ---- */}
+          {!isGlobalAdmin && (isParceiro || isPleno) && (
             <NavSection 
               icon={<Store className="h-4 w-4" />} 
               label="Personalizar Minha Loja" 
@@ -511,16 +512,16 @@ function AdminLayout() {
               <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
                 Banners
               </Link>
-              <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
-                Estrutura da Loja
-              </Link>
-              {pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado === 'Parceiro' && (
+              {isParceiro && (
+                <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
+                  Estrutura da Loja
+                </Link>
+              )}
+              {isParceiro && (
                 <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
                   Minhas Cores
                 </Link>
               )}
-              
-
             </NavSection>
           )}
 

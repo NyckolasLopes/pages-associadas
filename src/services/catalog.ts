@@ -524,17 +524,18 @@ export const catalog = {
     
     return wait([]);
   },
-  search: async (q: string, filters?: FilterOptions) => {
+  searchWithSuggestions: async (q: string, filters?: FilterOptions): Promise<{ results: Produto[], didYouMean?: string }> => {
     await ensureHydrated();
     if (!q || q.length < 2) {
       if (filters && Object.keys(filters).length > 0) {
-        return wait(applyFilters(getAllProdutos(), filters).slice(0, 40));
+        return wait({ results: applyFilters(getAllProdutos(), filters).slice(0, 40) });
       }
-      return wait([] as Produto[]);
+      return wait({ results: [] });
     }
     const produtos = getAllProdutos();
 
     let results: Produto[] = [];
+    let didYouMean: string | undefined = undefined;
 
     // Exact number search (EAN or ID)
     if (/^\d+$/.test(q)) {
@@ -554,7 +555,21 @@ export const catalog = {
 
       // Fuzzy search for fallbacks and typos
       const fuse = getFuse();
-      const hits = fuse.search(q, { limit: 20 }).map((r) => r.item);
+      const hitsWithScore = fuse.search(q, { limit: 20 });
+      const hits = hitsWithScore.map((r) => r.item);
+
+      // Check if we should suggest a "did you mean"
+      if (exactMatches.length === 0 && hitsWithScore.length > 0) {
+        const topHit = hitsWithScore[0];
+        // If it's a very good fuzzy match (score is low, but not perfect)
+        if (topHit.score && topHit.score < 0.4) {
+          const topNameLower = removeAccents(String(topHit.item.nome || "").toLowerCase());
+          // Only suggest if they didn't just type a substring of the word
+          if (!topNameLower.includes(cleanQ)) {
+             didYouMean = topHit.item.nome;
+          }
+        }
+      }
 
       // Merge and deduplicate (exact matches first)
       const resultMap = new Map<string, Produto>();
@@ -566,7 +581,11 @@ export const catalog = {
       results = Array.from(resultMap.values()).slice(0, 20);
     }
 
-    return wait(applyFilters(results, filters));
+    return wait({ results: applyFilters(results, filters), didYouMean });
+  },
+  search: async (q: string, filters?: FilterOptions) => {
+    const { results } = await catalog.searchWithSuggestions(q, filters);
+    return results;
   },
   featured: async () => {
     await ensureHydrated();

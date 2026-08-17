@@ -45,6 +45,7 @@ import { useAdminProducts } from "@/stores/products";
 import { useAdminCategories } from "@/stores/categories";
 import { useMarcasStore } from "@/stores/marcas";
 import { useMarketing } from "@/stores/marketing";
+import { useSearchHistory } from "@/stores/searchHistory";
 
 const FALLBACK_CATS_IDS = ["142", "143", "147", "144", "148", "200", "300"];
 const getSafeCategories = () => Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
@@ -141,6 +142,19 @@ export function Header() {
       .map(id => allCategories.find((c: any) => c.id === id && !c.parentId))
       .filter(Boolean) as Categoria[];
   }, [allCategories, featuredCategories]);
+  
+  const searchHistory = useSearchHistory(s => s.history);
+  const topSearchTerms = useMemo(() => {
+    if (!selectedPharmacyId) return [];
+    const storeHistory = searchHistory[selectedPharmacyId];
+    if (!storeHistory) return [];
+    const sortedEntries = Object.entries(storeHistory)
+      .sort(([, countA], [, countB]) => countB - countA);
+    return sortedEntries.slice(0, 5).map(([term]) => term);
+  }, [searchHistory, selectedPharmacyId]);
+
+  const defaultSuggestions = ["vitamina c", "dor de cabeça", "fralda", "desodorante", "shampoo"];
+  const suggestions = topSearchTerms.length > 0 ? topSearchTerms : defaultSuggestions;
   
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Produto[]>([]);
@@ -395,12 +409,13 @@ export function Header() {
 
         {/* Search */}
         <form onSubmit={onSubmit} className="flex-1 relative">
-          <Popover open={searchOpen && results.length > 0} onOpenChange={setSearchOpen}>
+          <Popover open={searchOpen && (results.length > 0 || q.length < 2)} onOpenChange={setSearchOpen}>
             <PopoverTrigger asChild>
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={q}
+                  onFocus={() => setSearchOpen(true)}
                   onChange={(e) => {
                     setQ(e.target.value);
                     setSearchOpen(true);
@@ -423,27 +438,64 @@ export function Header() {
               align="start"
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
-              {results.map((p) => (
-                <Link
-                  key={p.id}
-                  to={"/p/$slug" as any}
+              {q.length < 2 ? (
+                <div className="p-3">
+                  <div className="text-xs font-bold text-muted-foreground mb-2 uppercase">Sugestões de busca</div>
+                  {suggestions.map((sug, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="flex items-center gap-2 w-full text-left p-2 hover:bg-muted rounded text-sm"
+                      onClick={() => {
+                        setQ(sug);
+                        setSearchOpen(false);
+                        navigate({ to: "/busca", search: { q: sug } as any });
+                      }}
+                    >
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                      {sug}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {results.map((p) => (
+                    <Link
+                      key={p.id}
+                      to={"/p/$slug" as any}
                       params={{ slug: p.url } as any}
-                  onClick={() => setSearchOpen(false)}
-                  className="flex items-center gap-3 p-3 hover:bg-muted border-b last:border-0"
-                >
-                  <img
-                    src={productImage(p)}
-                    alt=""
-                    loading="lazy"
-                    className="h-12 w-12 object-contain rounded bg-white border"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold truncate">{p.nome}</div>
-                    <div className="text-xs text-muted-foreground">{p.fabricante}</div>
-                  </div>
-                  <div className="text-sm font-bold text-foreground">{brl(p.precoPor)}</div>
-                </Link>
-              ))}
+                      onClick={() => setSearchOpen(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted border-b last:border-0"
+                    >
+                      <img
+                        src={productImage(p)}
+                        alt=""
+                        loading="lazy"
+                        className="h-12 w-12 object-contain rounded bg-white border"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold truncate">{p.nome}</div>
+                        <div className="text-xs text-muted-foreground">{p.fabricante}</div>
+                      </div>
+                      <div className="text-sm font-bold text-foreground">{brl(p.precoPor)}</div>
+                    </Link>
+                  ))}
+                  {results.length > 0 && (
+                    <div className="p-2 border-t">
+                      <button
+                        type="button"
+                        className="w-full text-center text-sm font-bold text-primary py-2 hover:underline"
+                        onClick={() => {
+                          setSearchOpen(false);
+                          navigate({ to: "/busca", search: { q } as any });
+                        }}
+                      >
+                        Ver todos os resultados
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </PopoverContent>
           </Popover>
         </form>
@@ -544,21 +596,100 @@ export function Header() {
           {/* Linha 2: Busca 100% com lupa e câmera */}
           <div className="container-fa pb-2 pt-1">
             <form onSubmit={onSubmit} className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Escreva o que procura ou escaneie o codigo de barras"
-                className="pl-10 pr-12 h-11 rounded-full border-2 w-full"
-              />
-              <button
-                type="button"
-                aria-label="Escanear código"
-                onClick={() => setScannerOpen(true)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
-              >
-                <Camera className="h-5 w-5" />
-              </button>
+              <Popover open={mobileSearchOpen && searchOpen && (results.length > 0 || q.length < 2)} onOpenChange={setSearchOpen}>
+                <PopoverTrigger asChild>
+                  <div className="relative w-full">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={q}
+                      onFocus={() => setSearchOpen(true)}
+                      onChange={(e) => {
+                        setQ(e.target.value);
+                        setSearchOpen(true);
+                      }}
+                      placeholder="Escreva o que procura ou escaneie o codigo de barras"
+                      className="pl-10 pr-12 h-11 rounded-full border-2 w-full"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Escanear código"
+                      onClick={() => setScannerOpen(true)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
+                    >
+                      <Camera className="h-5 w-5" />
+                    </button>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] p-0 max-h-[60vh] overflow-auto"
+                  align="start"
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  {q.length < 2 ? (
+                    <div className="p-3">
+                      <div className="text-xs font-bold text-muted-foreground mb-2 uppercase">Sugestões de busca</div>
+                      {suggestions.map((sug, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          className="flex items-center gap-2 w-full text-left p-2 hover:bg-muted rounded text-sm"
+                          onClick={() => {
+                            setQ(sug);
+                            setSearchOpen(false);
+                            setMobileSearchOpen(false);
+                            navigate({ to: "/busca", search: { q: sug } as any });
+                          }}
+                        >
+                          <Search className="h-4 w-4 text-muted-foreground" />
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      {results.map((p) => (
+                        <Link
+                          key={p.id}
+                          to={"/p/$slug" as any}
+                          params={{ slug: p.url } as any}
+                          onClick={() => {
+                            setSearchOpen(false);
+                            setMobileSearchOpen(false);
+                          }}
+                          className="flex items-center gap-3 p-3 hover:bg-muted border-b last:border-0"
+                        >
+                          <img
+                            src={productImage(p)}
+                            alt=""
+                            loading="lazy"
+                            className="h-12 w-12 object-contain rounded bg-white border"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold truncate">{p.nome}</div>
+                            <div className="text-xs text-muted-foreground">{p.fabricante}</div>
+                          </div>
+                          <div className="text-sm font-bold text-foreground">{brl(p.precoPor)}</div>
+                        </Link>
+                      ))}
+                      {results.length > 0 && (
+                        <div className="p-2 border-t">
+                          <button
+                            type="button"
+                            className="w-full text-center text-sm font-bold text-primary py-2 hover:underline"
+                            onClick={() => {
+                              setSearchOpen(false);
+                              setMobileSearchOpen(false);
+                              navigate({ to: "/busca", search: { q } as any });
+                            }}
+                          >
+                            Ver todos os resultados
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </PopoverContent>
+              </Popover>
             </form>
           </div>
         </div>

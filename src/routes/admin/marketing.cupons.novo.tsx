@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMarketing, Coupon } from "@/stores/marketing";
+import { useAdmin } from "@/stores/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,12 +51,22 @@ function NovoCupomPage() {
     setFormData((prev) => ({ ...prev, codigo: code }));
   };
 
+  const { currentUser, activeStoreId, grupos } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
+  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : activeStoreId;
+
   const handleSave = () => {
     if (!formData.codigo) {
       toast.error("Preencha o código do cupom!");
       return;
     }
-    addCoupon(formData);
+    
+    const payload = {
+      ...formData,
+      lojaId: isGlobalAdmin ? undefined : effectiveStoreId || undefined
+    };
+    
+    addCoupon(payload);
     toast.success("Cupom criado com sucesso!");
     navigate({ to: "/admin/marketing/cupons" });
   };

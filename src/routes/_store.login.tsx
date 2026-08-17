@@ -28,9 +28,11 @@ function LoginPage() {
   const login = useAuth((s) => s.login);
   const verifyOtp = useAuth((s) => s.verifyOtp);
   const loginWithProvider = useAuth((s) => s.loginWithProvider);
+  const sendOtp = useAuth((s) => s.sendOtp);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   
+  const [isForgotMode, setIsForgotMode] = useState(false);
   const [isOtpMode, setIsOtpMode] = useState(false);
   const [token, setToken] = useState("");
 
@@ -68,6 +70,21 @@ function LoginPage() {
     }
   };
 
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) {
+      return toast.error("Por favor, insira um e-mail válido.");
+    }
+    const ok = await sendOtp(email);
+    if (ok) {
+      setIsForgotMode(false);
+      setIsOtpMode(true);
+      toast.success("Código de recuperação enviado para o seu e-mail!");
+    } else {
+      toast.error("Erro ao enviar o código. Tente novamente.");
+    }
+  };
+
   const social = async (provider: "google" | "apple" | "facebook") => {
     await loginWithProvider(provider, redirect);
   };
@@ -100,6 +117,32 @@ function LoginPage() {
               </Button>
               <Button type="button" variant="ghost" className="w-full text-slate-500" onClick={() => setIsOtpMode(false)}>
                 Voltar
+              </Button>
+            </form>
+          </>
+        ) : isForgotMode ? (
+          <>
+            <h1 className="text-2xl font-bold text-slate-800 text-center">Recuperar Senha</h1>
+            <p className="text-sm text-slate-500 mt-2 text-center">
+              Insira o e-mail associado à sua conta. Enviaremos um código para você acessar sua conta.
+            </p>
+            <form onSubmit={handleForgotSubmit} className="mt-6 space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-slate-700 font-bold">E-mail</Label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@email.com"
+                  className="h-11 bg-slate-50"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full h-11 text-base font-bold">
+                Enviar Código
+              </Button>
+              <Button type="button" variant="ghost" className="w-full text-slate-500" onClick={() => setIsForgotMode(false)}>
+                Voltar para o Login
               </Button>
             </form>
           </>
@@ -140,7 +183,16 @@ function LoginPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-slate-700 font-bold">Senha</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-slate-700 font-bold">Senha</Label>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsForgotMode(true)}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
                 <Input
                   type="password"
                   value={pass}

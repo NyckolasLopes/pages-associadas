@@ -11,6 +11,7 @@ interface FavState {
   updatePrice: (id: string, preco: number) => void;
   addNotification: (id: string, oldPrice: number, newPrice: number, storeName: string) => void;
   clearNotifications: () => void;
+  clearAll: () => void;
 }
 
 export const useFavorites = create<FavState>()(
@@ -43,6 +44,7 @@ export const useFavorites = create<FavState>()(
           return { notifications: [{ id, oldPrice, newPrice, storeName }, ...filtered] };
         }),
       clearNotifications: () => set({ notifications: [] }),
+      clearAll: () => set({ ids: [], prices: {}, notifications: [] }),
     }),
     { 
       name: "fa-favorites",

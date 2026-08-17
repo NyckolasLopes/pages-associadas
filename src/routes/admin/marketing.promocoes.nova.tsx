@@ -21,8 +21,7 @@ export const Route = createFileRoute("/admin/marketing/promocoes/nova")({
   component: NovaPromocaoPage,
 });
 
-const getSafeProducts = () => Array.isArray(productsData) ? productsData : (productsData as any)?.default || [];
-
+import { useAdminProducts } from "@/stores/products";
 const ICONS = [
   { id: "flame", icon: Flame, label: "Fogo" },
   { id: "gift", icon: Gift, label: "Presente" },
@@ -59,7 +58,8 @@ function NovaPromocaoPage() {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const defaultDateFim = tomorrow.toISOString().split("T")[0];
 
-  const produtos = useMemo(() => getSafeProducts(), []);
+  const { getStoreEffectiveProducts } = useAdminProducts();
+  const produtos = useMemo(() => getStoreEffectiveProducts(effectiveStoreId), [getStoreEffectiveProducts, effectiveStoreId]);
 
   // Per-product configuration state for Leve + Pague
   const [produtosConfig, setProdutosConfig] = useState<Record<string, LevePagueProdutoConfig>>({});

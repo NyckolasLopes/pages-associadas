@@ -1,59 +1,59 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAdmin } from "@/stores/admin";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminProducts } from "@/stores/products";
+import { getDeterministicStock } from "@/lib/stock";
 import { Loja } from "@/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, RefreshCw, Box } from "lucide-react";
-import { Spinner } from "@/components/ui/spinner";
+import { Search, Box, RefreshCw } from "lucide-react";
 import { brl } from "@/lib/format";
 
 export function EstoqueLojaTab({ loja }: { loja: Loja }) {
-  const [estoque, setEstoque] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { getStoreEffectiveProducts, _loaded } = useAdminProducts();
   const [search, setSearch] = useState("");
-
-  const fetchEstoque = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("produto_precos_loja")
-      .select(`
-        id,
-        preco_de,
-        preco_por,
-        estoque,
-        ativo,
-        produtos (
-          id,
-          nome,
-          ean,
-          codigo_interno
-        )
-      `)
-      .eq("loja_id", loja.id);
-
-    if (data && !error) {
-      setEstoque(data);
-    }
-    setLoading(false);
-  };
-
+  
+  const [lojaApiDataMap, setLojaApiDataMap] = useState<Record<string, { estoque: number, precoPor: number, precoDe: number }>>({});
+  
+  // Load explicit stock info if available (similar to admin/produtos.tsx)
   useEffect(() => {
-    fetchEstoque();
+    async function loadLojaApiData() {
+      if (loja.id) {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data } = await supabase
+          .from("produto_precos_loja")
+          .select("produto_id, estoque, preco_por, preco_de")
+          .eq("loja_id", loja.id);
+        
+        if (data) {
+          const map: Record<string, any> = {};
+          data.forEach(d => {
+            map[d.produto_id] = { estoque: d.estoque, precoPor: d.preco_por, precoDe: d.preco_de };
+          });
+          setLojaApiDataMap(map);
+        }
+      }
+    }
+    loadLojaApiData();
   }, [loja.id]);
 
-  const filtered = estoque.filter(item => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    const p = item.produtos;
-    if (!p) return false;
-    return (
-      (p.nome && p.nome.toLowerCase().includes(s)) ||
-      (p.ean && p.ean.toLowerCase().includes(s)) ||
-      (p.codigo_interno && p.codigo_interno.toLowerCase().includes(s))
-    );
-  });
+  const effectiveProducts = useMemo(() => getStoreEffectiveProducts(loja.id), [getStoreEffectiveProducts, loja.id]);
+
+  const filtered = useMemo(() => {
+    return effectiveProducts.filter(p => {
+      if (!search) return true;
+      const s = search.toLowerCase();
+      return (
+        (p.nome && p.nome.toLowerCase().includes(s)) ||
+        (p.ean && p.ean.toLowerCase().includes(s)) ||
+        (p.codigoInterno && p.codigoInterno.toLowerCase().includes(s))
+      );
+    });
+  }, [effectiveProducts, search]);
+
+  const handleRefresh = () => {
+    // Optionally refetch lojaApiDataMap here
+  };
 
   return (
     <div className="space-y-6">
@@ -76,8 +76,8 @@ export function EstoqueLojaTab({ loja }: { loja: Loja }) {
               className="pl-9"
             />
           </div>
-          <Button variant="outline" onClick={fetchEstoque} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" onClick={handleRefresh} disabled={!_loaded}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${!_loaded ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
         </div>
@@ -95,10 +95,10 @@ export function EstoqueLojaTab({ loja }: { loja: Loja }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {!_loaded ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-48 text-center">
-                  <Spinner className="w-8 h-8 mx-auto text-emerald-600" />
+                <TableCell colSpan={5} className="h-48 text-center text-slate-500">
+                  Carregando estoque...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
@@ -108,19 +108,25 @@ export function EstoqueLojaTab({ loja }: { loja: Loja }) {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.slice(0, 100).map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.produtos?.nome}</TableCell>
-                  <TableCell className="text-slate-500">{item.produtos?.ean || item.produtos?.codigo_interno || "-"}</TableCell>
-                  <TableCell className="text-right">
-                    <span className={`inline-block px-2 py-1 rounded text-sm font-semibold ${item.estoque > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
-                      {item.estoque} un
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">{brl(item.preco_de)}</TableCell>
-                  <TableCell className="text-right text-emerald-700 font-bold">{brl(item.preco_por)}</TableCell>
-                </TableRow>
-              ))
+              filtered.slice(0, 100).map((item) => {
+                const stock = lojaApiDataMap[item.id]?.estoque ?? getDeterministicStock(item, loja.id);
+                const precoPor = lojaApiDataMap[item.id]?.precoPor ?? item.precoPor;
+                const precoDe = lojaApiDataMap[item.id]?.precoDe ?? item.precoDe;
+                
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.nome}</TableCell>
+                    <TableCell className="text-slate-500">{item.ean || item.codigoInterno || "-"}</TableCell>
+                    <TableCell className="text-right">
+                      <span className={`inline-block px-2 py-1 rounded text-sm font-semibold ${stock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                        {stock} un
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">{brl(precoDe)}</TableCell>
+                    <TableCell className="text-right text-emerald-700 font-bold">{brl(precoPor)}</TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

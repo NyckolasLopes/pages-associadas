@@ -489,10 +489,20 @@ function AdminProdutos() {
     let result = currentProductsList;
     
     if (listFilter !== "all") {
+      const getProductStock = (p: Produto) => {
+        if (currentLojaId) {
+          return lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId);
+        }
+        return pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0);
+      };
+
       if (listFilter === "out-of-stock") {
-        result = result.filter(p => p.estoque === 0);
+        result = result.filter(p => getProductStock(p) === 0);
       } else if (listFilter === "low-stock") {
-        result = result.filter(p => p.estoque > 0 && p.estoque <= 5);
+        result = result.filter(p => {
+          const s = getProductStock(p);
+          return s > 0 && s <= 5;
+        });
       } else if (listFilter === "cat1") {
         result = result.filter(p => p.categoriaId === "142");
       } else if (listFilter === "not-cat1") {
@@ -849,8 +859,8 @@ function AdminProdutos() {
                               {pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0)}
                             </span>
                           ) : (
-                            <span className={`text-sm font-bold ${(lojaApiDataMap[p.id]?.estoque ?? p.estoquesPorLoja?.[currentLojaId] ?? 0) > 0 ? "text-slate-700" : "text-red-500"}`}>
-                              {lojaApiDataMap[p.id]?.estoque ?? p.estoquesPorLoja?.[currentLojaId] ?? 0}
+                            <span className={`text-sm font-bold ${(lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId)) > 0 ? "text-slate-700" : "text-red-500"}`}>
+                              {lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId)}
                             </span>
                           )}
                         </td>
