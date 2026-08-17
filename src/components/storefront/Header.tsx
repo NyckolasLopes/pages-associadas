@@ -126,10 +126,10 @@ function getSubcategoryIcon(name: string) {
 
 export function Header() {
     const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
-    const allStorePharmacies = useAdmin(s => s.pharmacies);
     const activePharmacy = useMemo(() => {
-      return allStorePharmacies.find((p) => p.id === selectedPharmacyId) || allStorePharmacies[0] || null;
-    }, [allStorePharmacies, selectedPharmacyId]);
+      const ph = useAdmin.getState().pharmacies;
+      return ph.find((p) => p.id === selectedPharmacyId) || ph[0] || null;
+    }, [selectedPharmacyId]);
   const params = useParams({ strict: false });
   const isStoreContext = !!(params && (params as any).storeSlug);
   const customProducts = useAdminProducts(s => s.customProducts);
