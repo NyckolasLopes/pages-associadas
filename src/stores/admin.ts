@@ -529,10 +529,7 @@ const defaultBanners: AdminBanner[] = [
 export const useAdmin = create<AdminState>()(
   persist(
     (set, get) => ({
-      users: [
-        { id: "admin-1", name: "Nyckolas Lopes", email: "nyckolas.lopes@farmaciasassociadas.com.br", password: "Aspro@2026", grupoId: "grupo-admin", proprietario: true },
-        { id: "admin-2", name: "Thiago Rocha", email: "thiago.rocha@farmaciasassociadas.com.br", password: "Aspro@2026", grupoId: "grupo-admin", proprietario: true },
-      ],
+      users: [],
       grupos: [
         { 
           id: "grupo-admin", 
@@ -613,22 +610,20 @@ export const useAdmin = create<AdminState>()(
         const { data, error } = await supabase.from('profiles').select('*');
         if (error || !data) return;
         
-        // Mantém os hardcoded + os do banco, sem duplicar por ID
         set((s) => {
-          const currentMap = new Map(s.users.map(u => [u.id, u]));
+          // Filtrar apenas usuários que são admin ou que pertencem a algum grupo administrativo
+          const adminUsers = data.filter(p => p.is_admin || p.grupo_id);
           
-          data.forEach(p => {
-            currentMap.set(p.id, {
+          return { 
+            users: adminUsers.map(p => ({
               id: p.id,
               name: p.nome || p.email?.split("@")[0] || "Usuário",
               email: p.email,
               grupoId: p.grupo_id || undefined,
               proprietario: p.is_admin || false,
               lojasVinculadas: p.lojas_vinculadas || []
-            });
-          });
-
-          return { users: Array.from(currentMap.values()) };
+            })) 
+          };
         });
       },
       setGrupos: (grupos) => set({ grupos }),
