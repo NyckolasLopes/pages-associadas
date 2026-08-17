@@ -268,6 +268,7 @@ interface AdminState {
   togglePharmacyStatus: (id: string) => Promise<void>;
   removePharmacy: (id: string) => Promise<void>;
   loadPharmacies: () => Promise<void>;
+  loadUsers: () => Promise<void>;
 
   // Category Icons & Features
   categoryIcons: Record<string, string>; // categoryId -> base64/url
@@ -608,6 +609,28 @@ export const useAdmin = create<AdminState>()(
       },
       register: (user) => set((s) => ({ users: [...s.users, user] })),
       setUsers: (users) => set({ users }),
+      loadUsers: async () => {
+        const { data, error } = await supabase.from('profiles').select('*');
+        if (error || !data) return;
+        
+        // Mantém os hardcoded + os do banco, sem duplicar por ID
+        set((s) => {
+          const currentMap = new Map(s.users.map(u => [u.id, u]));
+          
+          data.forEach(p => {
+            currentMap.set(p.id, {
+              id: p.id,
+              name: p.nome || p.email?.split("@")[0] || "Usuário",
+              email: p.email,
+              grupoId: p.grupo_id || undefined,
+              proprietario: p.is_admin || false,
+              lojasVinculadas: p.lojas_vinculadas || []
+            });
+          });
+
+          return { users: Array.from(currentMap.values()) };
+        });
+      },
       setGrupos: (grupos) => set({ grupos }),
       hasPermission: (permissionId) => {
         const { currentUser, grupos } = get();

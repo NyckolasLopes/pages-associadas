@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { createClient } from "@supabase/supabase-js";
 import { useAdmin } from "@/stores/admin";
@@ -144,7 +145,11 @@ const PERMISSION_CATEGORIES = [
 const ALL_PERMISSION_IDS = PERMISSION_CATEGORIES.flatMap(c => c.permissions.map(p => p.id));
 
 function AdminUsuarios() {
-  const { users: usuarios, setUsers: setUsuarios, grupos, setGrupos, pharmacies } = useAdmin();
+  const { users: usuarios, setUsers: setUsuarios, grupos, setGrupos, pharmacies, loadUsers } = useAdmin();
+
+  React.useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   // Selections
   const [selectedGrupos, setSelectedGrupos] = useState<string[]>([]);
@@ -280,19 +285,8 @@ function AdminUsuarios() {
     }
 
     if (editingUsuarioId) {
-      // Validation for store linking
+      // Removed unique store constraint
       const isGlobal = isGlobalGroup();
-      if (!isGlobal) {
-        const alreadyLinkedStores = usuarios.flatMap(u => 
-          (u.id !== editingUsuarioId && u.lojasVinculadas) ? u.lojasVinculadas : []
-        );
-        const conflictingStoreId = novoUsuarioLojas.find(lojaId => alreadyLinkedStores.includes(lojaId));
-        if (conflictingStoreId) {
-          const pharmacy = pharmacies.find(p => p.id === conflictingStoreId);
-          toast.error(`A loja ${pharmacy?.id || conflictingStoreId} já está vinculada a outro usuário.`);
-          return;
-        }
-      }
 
       // Update existing user in local state
       setUsuarios(usuarios.map(u => u.id === editingUsuarioId ? {
@@ -321,17 +315,8 @@ function AdminUsuarios() {
         return;
       }
 
-      // Validation for store linking
+      // Removed unique store constraint
       const isGlobal = isGlobalGroup();
-      if (!isGlobal) {
-        const alreadyLinkedStores = usuarios.flatMap(u => u.lojasVinculadas || []);
-        const conflictingStoreId = novoUsuarioLojas.find(lojaId => alreadyLinkedStores.includes(lojaId));
-        if (conflictingStoreId) {
-          const pharmacy = pharmacies.find(p => p.id === conflictingStoreId);
-          toast.error(`A loja ${pharmacy?.id || conflictingStoreId} já está vinculada a outro usuário.`);
-          return;
-        }
-      }
 
       // Criar usuário no Supabase Auth usando cliente secundário para não sobrescrever a sessão atual do Admin
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
