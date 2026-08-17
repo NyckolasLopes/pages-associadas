@@ -36,6 +36,7 @@ import { useAdmin } from "@/stores/admin";
 import { useAbandonedCartsStore, AbandonedCart } from "@/stores/abandoned-carts";
 import { useCart } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
+import { AbandonedCartsWidget } from "@/components/admin/AbandonedCartsWidget";
 
 export const Route = createFileRoute("/admin/pedidos/")({
   component: PedidosAdmin,
@@ -309,39 +310,6 @@ export function PedidosAdmin() {
         total: order.valores?.total || 0,
         tipo: "pedido",
         rawOrder: order,
-      });
-    });
-
-    // 2. Carrinhos Abandonados / Pedidos Pendentes
-    allAbandonedCarts.forEach(cart => {
-      if (seenIds.has(cart.id)) return;
-      const totalItemsCount = (cart.items || []).reduce((acc, i) => acc + (i.qtd || 1), 0) || 1;
-      const itemsListText = (cart.items || []).map(i => `${i.qtd || 1}x ${i.nome}`).join(", ");
-
-      list.push({
-        id: cart.id,
-        data: cart.createdAt || cart.abandonedAt || "Recente",
-        dataOriginal: cart.createdAt || new Date().toISOString(),
-        clienteNome: cart.client || "Cliente Carrinho",
-        clienteTelefone: cart.phone || "Não informado",
-        clienteEmail: cart.email,
-        clienteCpf: undefined,
-        clienteEndereco: cart.address,
-        lojaId: cart.lojaId,
-        lojaNome: getLojaName(cart.lojaId, cart.lojaNome),
-        status: "Pendente",
-        statusDesc: "Pendente (Carrinho)",
-        itensQtd: totalItemsCount,
-        itensDesc: itemsListText,
-        produtos: (cart.items || []).map(i => ({
-          nome: i.nome,
-          qtd: i.qtd || 1,
-          valorUnitario: i.valorUnitario,
-          foto: i.foto,
-        })),
-        total: cart.total || 0,
-        tipo: "carrinho",
-        rawCart: cart,
       });
     });
 

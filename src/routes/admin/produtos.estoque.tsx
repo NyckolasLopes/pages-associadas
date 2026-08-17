@@ -144,6 +144,22 @@ function AdminProdutosEstoque() {
         return updated;
       });
 
+      // Update the global zustand store directly so the UI reflects stock changes immediately without reload
+      useAdminProducts.setState(state => ({
+        customProducts: state.customProducts.map(p => {
+          if (pendingChanges[p.id]) {
+            return {
+              ...p,
+              estoquesPorLoja: {
+                ...(p.estoquesPorLoja || {}),
+                ...pendingChanges[p.id]
+              }
+            };
+          }
+          return p;
+        })
+      }));
+
       setPendingChanges({});
       toast.success(`${upserts.length} estoque(s) atualizado(s) com sucesso!`);
     } catch (err) {
@@ -207,7 +223,7 @@ function AdminProdutosEstoque() {
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-6">
           <div className="bg-emerald-100 p-4 rounded-full text-emerald-800">
             <Package className="h-8 w-8" />
@@ -228,17 +244,7 @@ function AdminProdutosEstoque() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-6">
-          <div className="bg-sky-100 p-4 rounded-full text-sky-700">
-            <Truck className="h-8 w-8" />
-          </div>
-          <div>
-            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fornecedores Externos</div>
-            <div className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              {fornecedores.length} Fornecedor{fornecedores.length !== 1 && 'es'} <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            </div>
-          </div>
-        </div>
+
       </div>
 
       {/* Resumo por loja */}
@@ -330,9 +336,12 @@ function AdminProdutosEstoque() {
                   <th className="p-3 min-w-[100px]">EAN</th>
                   <th className="p-3 min-w-[70px] text-right bg-slate-100 font-black">TOTAL</th>
                   {activePharmacies.map(loja => (
-                    <th key={loja.id} className="p-3 min-w-[110px] text-center">
-                      <div className="truncate max-w-[100px]" title={loja.nome || loja.razaoSocial}>
-                        {(loja.nome || loja.razaoSocial || "Loja").substring(0, 15)}
+                    <th key={loja.id} className="p-3 min-w-[140px] text-center">
+                      <div className="text-xs font-bold text-slate-700 truncate max-w-[140px]" title={loja.nome || loja.razaoSocial}>
+                        {loja.nome || loja.razaoSocial || "Loja"}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-normal truncate max-w-[140px]" title={`${loja.cidade} ${loja.bairro ? `- ${loja.bairro}` : ''}`}>
+                        {loja.cidade} {loja.bairro ? `- ${loja.bairro}` : ''}
                       </div>
                     </th>
                   ))}
@@ -414,116 +423,7 @@ function AdminProdutosEstoque() {
         )}
       </div>
 
-      {/* Card: Tabela Fornecedores Externos */}
-      <div className="bg-white rounded-xl border border-sky-200 shadow-sm overflow-hidden mt-8 opacity-70">
-        <div className="p-6 border-b border-sky-100 bg-sky-50/30 flex justify-between items-start">
-          <div>
-            <h2 className="font-bold text-xl text-slate-800 flex items-center gap-2">
-              <Truck className="h-5 w-5 text-sky-600" />
-              Fornecedores Externos <Badge variant="secondary" className="bg-sky-200 text-sky-800 ml-2">em breve</Badge>
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">Integração com distribuidores parceiros para usar em caso de falta de estoque local.</p>
-          </div>
-          <Button onClick={openNewFornecedor} className="bg-sky-600 hover:bg-sky-700" disabled>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Fornecedor
-          </Button>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-          <thead className="bg-slate-50 text-slate-600 font-bold border-b text-sm">
-            <tr>
-              <th className="p-4">Distribuidor</th>
-              <th className="p-4">Centro de Distribuição</th>
-              <th className="p-4">Prazo (Dias Úteis)</th>
-              <th className="p-4">URL da API</th>
-              <th className="p-4 text-right">Ação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fornecedores.length === 0 ? (
-               <tr>
-                 <td colSpan={5} className="p-8 text-center text-slate-500">Nenhum fornecedor externo configurado.</td>
-               </tr>
-            ) : fornecedores.map((f, idx) => (
-              <tr key={idx} className="border-b last:border-0 hover:bg-slate-50 transition-colors text-sm">
-                <td className="p-4 font-bold text-sky-900">{f.distribuidor}</td>
-                <td className="p-4 text-slate-600">{f.cidade}</td>
-                <td className="p-4 text-slate-600">{f.prazo}</td>
-                <td className="p-4 text-slate-400 font-mono text-xs">{f.apiUrl}</td>
-                <td className="p-4 text-right flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => openEditFornecedor(f)}>
-                    <Edit className="h-4 w-4 mr-2" /> Configurar
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => removeFornecedor(f.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-      </div>
 
-      {/* Modal: Configuração do Fornecedor */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-sky-600" />
-              {editingId ? "Configuração de Estoque Externo" : "Novo Fornecedor Externo"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="font-bold">Distribuidor Principal</Label>
-                <Input 
-                  value={formDataFornecedor.distribuidor} 
-                  onChange={(e) => setFormDataFornecedor({ ...formDataFornecedor, distribuidor: e.target.value })} 
-                  placeholder="Ex: Panvel, Santa Cruz, Profarma..." 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold">Cidade Base do CD</Label>
-                <Input 
-                  value={formDataFornecedor.cidade} 
-                  onChange={(e) => setFormDataFornecedor({ ...formDataFornecedor, cidade: e.target.value })} 
-                  placeholder="Ex: Porto Alegre / RS" 
-                />
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="font-bold">Prazo de Entrega (Dias Úteis)</Label>
-                <Input 
-                  type="number" 
-                  value={formDataFornecedor.prazo} 
-                  onChange={(e) => setFormDataFornecedor({ ...formDataFornecedor, prazo: e.target.value })} 
-                  placeholder="Ex: 3" 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold">URL da API (EANs)</Label>
-                <Input 
-                  value={formDataFornecedor.apiUrl} 
-                  onChange={(e) => setFormDataFornecedor({ ...formDataFornecedor, apiUrl: e.target.value })} 
-                  placeholder="https://api.distribuidor.com.br/estoque" 
-                />
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveFornecedor} disabled={isSavingFornecedor} className="bg-sky-600 hover:bg-sky-700">
-              <Save className="h-4 w-4 mr-2" />
-              {isSavingFornecedor ? "Salvando..." : "Salvar Configuração"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

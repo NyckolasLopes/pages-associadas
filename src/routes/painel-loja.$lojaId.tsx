@@ -34,6 +34,7 @@ import { LojaCuponsTab } from "@/components/admin/LojaCuponsTab";
 import { LojaLeadsTab } from "@/components/admin/LojaLeadsTab";
 import { LojaSeoTab } from "@/components/admin/LojaSeoTab";
 import { LojaConfiguracoesTab } from "@/components/admin/LojaConfiguracoesTab";
+import { AbandonedCartsWidget } from "@/components/admin/AbandonedCartsWidget";
 import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, Settings, Users } from "lucide-react";
 
 const STATUS_OPTIONS = [
@@ -169,23 +170,6 @@ function PainelLoja() {
       });
     });
 
-    // Carrinhos abandonados desta loja
-    const storeCarts = (allCarts || []).filter(c => normalizeLojaId(c.lojaId) === normalizeLojaId(lojaId));
-    storeCarts.forEach(c => {
-      const itemsList = c.items || [];
-      const totalQtd = itemsList.reduce((acc, it) => acc + (it.qtd || 1), 0) || 1;
-      list.push({
-        id: c.id,
-        data: c.createdAt || c.abandonedAt || "Recente",
-        dataRaw: c.createdAt || new Date().toISOString(),
-        clienteNome: c.client || "Cliente Carrinho",
-        clienteTelefone: c.phone || "Não informado",
-        status: "Pendente",
-        itensQtd: totalQtd,
-        valorTotal: c.total || 0,
-        origem: "carrinho"
-      });
-    });
 
     return list.sort((a, b) => {
       const tA = new Date(a.dataRaw).getTime() || 0;
@@ -1068,6 +1052,8 @@ function PainelLoja() {
                 </div>
               </CardContent>
             </Card>
+
+            <AbandonedCartsWidget lojaId={loja.id} />
           </TabsContent>
           )}
         </Tabs>
