@@ -223,7 +223,7 @@ function AnvisaDisclaimer({
                 const hasDifferentPrices = validPharmacies.some(f => f._preco > lowestPrice);
 
                 return availablePharmacies.map((f, i) => {
-                  const id = f.id || f._originalIndex.toString();
+                  const id = f.id || String(f._originalIndex);
                   const stock = f._calculatedStock;
                   const isDisabled = stock < qty;
                   const isSelected = selectedPharmacyId === id;
@@ -818,7 +818,7 @@ function PDP() {
       "@type": "Offer",
       "url": `https://associadas.com.br/p/${p.url || p.slug || p.id}`,
       "priceCurrency": "BRL",
-      "price": finalPrecoPor.toString(),
+      "price": (finalPrecoPor || 0).toString(),
       "availability": maxStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
     },
     ...(hasReviews ? {
