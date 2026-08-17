@@ -299,13 +299,17 @@ function AdminUsuarios() {
       } : u));
       
       // Sync to Supabase profiles
-      supabase.from('profiles').update({
+      const { error: syncError } = await supabase.from('profiles').update({
         grupo_id: novoUsuarioGrupo,
         lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
         is_admin: isGlobal
-      }).eq('email', novoUsuarioEmail).then(({ error }) => {
-        if (error) console.error("Failed to sync profile:", error);
-      });
+      }).eq('id', editingUsuarioId);
+      
+      if (syncError) {
+        console.error("Failed to sync profile:", syncError);
+        toast.error("Erro ao sincronizar permissões no banco de dados.");
+        return;
+      }
       
       toast.success("Usuário atualizado com sucesso!");
     } else {
