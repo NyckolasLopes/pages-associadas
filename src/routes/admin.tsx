@@ -606,16 +606,14 @@ function AdminLayout() {
         <header className="h-16 border-b bg-white flex items-center px-4 md:px-8 justify-between shrink-0 sticky top-0 z-20">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-              <h1 className="font-bold text-slate-800 hidden md:block">Painel de Controle</h1>
-              {activeStoreId ? (
-                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200 hidden md:block">
-                  {pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || "Padrão"}
-                </span>
-              ) : isGlobalAdmin ? (
+              <h1 className="font-bold text-slate-800 hidden md:block">
+                Painel de Controle {activeStoreId ? (pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || "Pleno") : ""}
+              </h1>
+              {!activeStoreId && isGlobalAdmin && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 hidden md:block">
                   Sede Administrativa
                 </span>
-              ) : null}
+              )}
 
             </div>
           </div>
