@@ -608,11 +608,27 @@ export const useAdmin = create<AdminState>()(
         }
       },
       logout: async () => {
-        await supabase.auth.signOut();
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.error("Erro ao fazer logout no Supabase", e);
+        }
+        
         set({ currentUser: null, activeStoreId: null });
-        setTimeout(() => {
-          window.location.href = '/admin';
-        }, 100);
+        
+        try {
+          const raw = localStorage.getItem("admin-storage");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed.state) {
+              parsed.state.currentUser = null;
+              parsed.state.activeStoreId = null;
+              localStorage.setItem("admin-storage", JSON.stringify(parsed));
+            }
+          }
+        } catch (e) {}
+
+        window.location.href = '/admin';
       },
       register: (user) => set((s) => ({ users: [...s.users, user] })),
       setUsers: (users) => set({ users }),
