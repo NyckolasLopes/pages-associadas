@@ -251,8 +251,11 @@ function AdminLayout() {
   }, [mounted, currentUser, isGlobalAdmin, userStores, activeStoreId, setActiveStoreId]);
 
   const activeStore = pharmacies.find(p => p.id === activeStoreId);
-  const isParceiro = activeStore?.categoriaAssociado === 'Parceiro';
-  const isPleno = activeStore?.categoriaAssociado === 'Pleno';
+  const cat = activeStore?.categoriaAssociado?.toString().toLowerCase() || '';
+  const isParceiro = cat === 'parceiro' || activeStore?.nome?.toLowerCase().includes('parceiro');
+  const isPleno = cat === 'pleno' || cat === 'padrão' || cat === 'padrao' || activeStore?.nome?.toLowerCase().includes('pleno');
+  const canDesign = isParceiro || isPleno || can('pers_logo') || can('pers_cores') || can('pers_banners') || can('pers_redes');
+
 
   if (!mounted) return null;
 
@@ -501,32 +504,38 @@ function AdminLayout() {
 
 
           {/* ---- DESIGN DA LOJA (para associados) ---- */}
-          {!isGlobalAdmin && (isParceiro || isPleno) && (
+          {canDesign && (
             <NavSection 
               icon={<Palette className="h-4 w-4" />} 
               label="Design da Loja" 
               open={openNavSection === "DesignGlobal"} 
               onToggle={() => setOpenNavSection(openNavSection === "DesignGlobal" ? "" : "DesignGlobal")}
             >
-              <Link to="/admin/design/logo" className={subLinkClass} activeOptions={{ exact: true }}>
-                Logo e Favicon
-              </Link>
-              <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
-                Banners
-              </Link>
-              {isParceiro && (
+              {(isParceiro || isPleno || can('pers_logo')) && (
+                <Link to="/admin/design/logo" className={subLinkClass} activeOptions={{ exact: true }}>
+                  Logo e Favicon
+                </Link>
+              )}
+              {(isParceiro || isPleno || can('pers_banners')) && (
+                <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
+                  Banners
+                </Link>
+              )}
+              {(isParceiro || can('pers_paginas')) && (
                 <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
                   Estrutura da Loja
                 </Link>
               )}
-              {isParceiro && (
+              {(isParceiro || can('pers_cores')) && (
                 <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
                   Minhas Cores
                 </Link>
               )}
-              <Link to="/admin/design/redes" className={subLinkClass} activeOptions={{ exact: true }}>
-                Redes Sociais
-              </Link>
+              {(isParceiro || isPleno || can('pers_redes')) && (
+                <Link to="/admin/design/redes" className={subLinkClass} activeOptions={{ exact: true }}>
+                  Redes Sociais
+                </Link>
+              )}
             </NavSection>
           )}
 
@@ -584,7 +593,10 @@ function AdminLayout() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <h1 className="font-bold text-slate-800 hidden md:block">
-                Painel de Controle {activeStoreId ? (pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || "Pleno") : ""}
+                Painel de Controle {activeStoreId ? (() => {
+                  const rawCat = pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || "Pleno";
+                  return rawCat.toLowerCase() === 'padrão' || rawCat.toLowerCase() === 'padrao' ? "Pleno" : rawCat;
+                })() : ""}
               </h1>
               {!activeStoreId && isGlobalAdmin && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 hidden md:block">
