@@ -125,7 +125,30 @@ export const useAdminProducts = create<ProductsState>()(
           .limit(500);
           
         const allData = (error || !data) ? [] : data;
-        const mapped = allData.map(mapRowToProduto);
+        let mapped = allData.map(mapRowToProduto);
+
+        // Fetch local store prices and stocks
+        const { data: precosData } = await supabase
+          .from('produto_precos_loja')
+          .select('produto_id, loja_id, preco_de, preco_por, estoque, ativo');
+
+        if (precosData && precosData.length > 0) {
+          mapped = mapped.map(p => {
+            const precosLoja = precosData.filter(pr => pr.produto_id === p.id);
+            if (precosLoja.length > 0) {
+              p.precosPorLoja = {};
+              p.estoquesPorLoja = {};
+              precosLoja.forEach(pr => {
+                if (pr.loja_id) {
+                  p.precosPorLoja![pr.loja_id] = { precoDe: pr.preco_de, precoPor: pr.preco_por, ativo: pr.ativo ?? true };
+                  p.estoquesPorLoja![pr.loja_id] = pr.estoque || 0;
+                }
+              });
+            }
+            return p;
+          });
+        }
+
         set({ customProducts: mapped, _loaded: true });
       },
       addOrUpdateProduct: async (p, lojaId) => {
