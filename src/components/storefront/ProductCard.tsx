@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/stores/favorites";
 import { useAuth } from "@/stores/auth";
-import { useAuth } from "@/stores/auth";
 import { useGeoCep } from "@/stores/cart";
 import { isPbmEligible } from "@/lib/pbm";
 import { useAdmin } from "@/stores/admin";
