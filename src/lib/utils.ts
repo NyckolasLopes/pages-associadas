@@ -379,11 +379,29 @@ export function getPadraoPromotionWithTimer(produto: any, promocoes: any[] = [],
 
   // 1. Try store specific first
   const storePromo = storePromocoes?.find(checkPromo);
-  if (storePromo) return storePromo;
+  let foundPromo = storePromo || promocoes?.find(checkPromo) || null;
+  
+  if (!foundPromo) return null;
 
-  // 2. Fallback to global
-  const globalPromo = promocoes?.find(checkPromo);
-  return globalPromo || null;
+  // Resolve per-product individual config if present
+  const prodId = String(produto.id || '');
+  const pConfig = foundPromo.produtosConfig?.[prodId] || foundPromo.produtosConfig?.[produto.id];
+  
+  if (pConfig) {
+    const parseNum = (val: any) => {
+      if (val === undefined || val === null || val === '') return undefined;
+      const parsed = Number(String(val).replace(',', '.'));
+      return isNaN(parsed) ? undefined : parsed;
+    };
+
+    return {
+      ...foundPromo,
+      precoPromocional: parseNum(pConfig.precoPromocional) ?? foundPromo.precoPromocional,
+      descontoPercentual: parseNum(pConfig.descontoPercentual) ?? foundPromo.descontoPercentual
+    };
+  }
+  
+  return foundPromo;
 }
 
 export function calculatePromoTimeRemaining(dataFim?: string, horaFim?: string) {

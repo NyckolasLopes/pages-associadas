@@ -163,7 +163,7 @@ function ProductCardComponent({
       activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
       
       const supplierStock = getDeterministicStock(p.id, String(activeFornecedor.id) + "supp");
-      maxStock = supplierStock > 0 ? supplierStock : 10;
+      maxStock = supplierStock > 0 ? supplierStock : 0;
     }
   } else if (!cep) {
     // Find the first pharmacy in the region that has stock
@@ -198,8 +198,8 @@ function ProductCardComponent({
     // 2. Specific store override
     if (p.precosPorLoja?.[activeStoreId]) {
       const pLoja = p.precosPorLoja[activeStoreId];
-      finalPrecoPor = pLoja.precoPor;
-      finalPrecoDe = pLoja.precoDe;
+      finalPrecoPor = pLoja.precoPor ?? finalPrecoPor;
+      finalPrecoDe = pLoja.precoDe ?? finalPrecoDe;
       
       if (pLoja.campanhaInicio || pLoja.campanhaFim) {
         const now = new Date();
@@ -415,11 +415,11 @@ function ProductCardComponent({
                 {p.tarja === "Vermelha" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
               </span>
             )}
-            {p.retemReceita ? (
+            {isMedicamento && p.retemReceita ? (
               <span className="text-[9px] px-1.5 py-0.5 rounded shadow-sm bg-red-600 text-white font-bold">
                 Retém receita
               </span>
-            ) : (p.retemReceita === false ? (
+            ) : (isMedicamento && p.retemReceita === false ? (
               <span className="text-[9px] px-1.5 py-0.5 rounded shadow-sm bg-slate-100 text-slate-700 font-bold border border-slate-200">
                 Não retém receita
               </span>

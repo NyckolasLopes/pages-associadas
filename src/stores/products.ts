@@ -53,6 +53,7 @@ interface ProductsState {
   updateStoreProductPrice: (lojaId: string, productId: string, precoPor: number, precoDe?: number, estoque?: number, ativo?: boolean) => void;
   updateStoreProductStatus: (lojaId: string, productId: string, ativo: boolean) => Promise<void>;
   updateStoreProductDestaque: (lojaId: string, productId: string, destaque: boolean) => Promise<void>;
+  updateStoreProductStock: (lojaId: string, productId: string, estoque: number) => Promise<void>;
   bulkUpdateStoreProductStatus: (lojaId: string, productIds: string[], ativo: boolean) => Promise<void>;
   importStoreSpreadsheet: (lojaId: string, items: StorePriceItem[]) => { updated: number; notFound: number; total: number };
 }
@@ -608,6 +609,36 @@ export const useAdminProducts = create<ProductsState>()(
         await supabase.from('produtos').update({
           precos_por_loja: newPrecosPorLoja
         }).eq('id', productId);
+      },
+      updateStoreProductStock: async (lojaId, productId, estoque) => {
+        const state = get();
+        const product = state.customProducts.find(p => p.id === productId);
+        if (!product) return;
+
+        const prevStore = product.estoquesPorLoja || {};
+        const newEstoquesPorLoja = {
+          ...prevStore,
+          [lojaId]: estoque
+        };
+
+        // Optimistic UI Update
+        set((s) => ({
+          customProducts: s.customProducts.map(x => x.id === productId ? {
+            ...x,
+            estoquesPorLoja: newEstoquesPorLoja
+          } : x)
+        }));
+
+        try {
+          // Também atualizamos a tabela produto_precos_loja para manter sincronia
+          await supabase.from("produto_precos_loja").upsert({
+            loja_id: lojaId,
+            produto_id: productId,
+            estoque: estoque
+          }, { onConflict: "loja_id, produto_id" });
+        } catch (e) {
+          console.error("Supabase might be offline, stock updated locally", e);
+        }
       },
       bulkUpdateStoreProductStatus: async (lojaId, productIds, ativo) => {
         const state = get();

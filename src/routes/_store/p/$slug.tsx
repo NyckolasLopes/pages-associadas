@@ -360,7 +360,7 @@ function PDP() {
   const [pharmDistances, setPharmDistances] = useState<Record<string, number>>({});
   const selectedFreight = useCart((s) => s.selectedFreight);
   const setSelectedFreight = useCart((s) => s.setSelectedFreight);
-  const isRetencao = !!p.retemReceita;
+  const isRetencao = (p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142"))) && !!p.retemReceita;
   const [freightTab, setFreightTab] = useState<"entrega" | "retirada">(isRetencao ? "retirada" : "entrega");
   const [confirmDeliveryOpen, setConfirmDeliveryOpen] = useState(false);
   
@@ -646,7 +646,7 @@ function PDP() {
     activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
     
     const supplierStock = getDeterministicStock(p, String(activeFornecedor.id) + "supp");
-    maxStock = supplierStock > 0 ? supplierStock : 10;
+    maxStock = supplierStock > 0 ? supplierStock : 0;
   }
 
   const activeStoreId = selectedPharmacyId || (availablePharmacies.length > 0 ? availablePharmacies[0].id : null);
@@ -667,8 +667,8 @@ function PDP() {
     // 2. Specific store override
       if (p.precosPorLoja?.[activeStoreId]) {
         const pLoja = p.precosPorLoja[activeStoreId];
-        finalPrecoPor = pLoja.precoPor;
-        finalPrecoDe = pLoja.precoDe;
+        finalPrecoPor = pLoja.precoPor ?? finalPrecoPor;
+        finalPrecoDe = pLoja.precoDe ?? finalPrecoDe;
         
         if (pLoja.campanhaInicio || pLoja.campanhaFim) {
           const now = new Date();
@@ -734,7 +734,9 @@ function PDP() {
     useFavorites.persist.rehydrate();
     window.scrollTo(0, 0);
     setSelectedImage(p.imagens?.[0] || productImage(p));
-    setFreightTab(!!p.retemReceita ? "retirada" : "entrega");
+    
+    const isMedicationCheck = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142"));
+    setFreightTab((isMedicationCheck && !!p.retemReceita) ? "retirada" : "entrega");
 
     if (isShared && !globalCep) {
       setForcedPharmacyModal(true);
@@ -1032,14 +1034,18 @@ function PDP() {
                             <td className="py-3 px-4 font-bold text-slate-900">{p.tarja}</td>
                           </tr>
                         )}
-                        <tr className={`${p.tarja ? 'bg-slate-50 ' : ''}border-b`}>
-                          <td className="py-3 px-4 text-slate-500">Retém receita</td>
-                          <td className="py-3 px-4 font-bold text-slate-900">{p.retemReceita ? 'Sim' : 'Não'}</td>
-                        </tr>
-                        <tr className={`${!p.tarja ? 'bg-slate-50 ' : ''}border-b`}>
-                          <td className="py-3 px-4 text-slate-500">Tipo de medicamento</td>
-                          <td className="py-3 px-4 font-bold text-slate-900">{p.tipoMedicamento ? p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) : 'Referência'}</td>
-                        </tr>
+                        {isMedication && (
+                          <>
+                            <tr className={`${p.tarja ? 'bg-slate-50 ' : ''}border-b`}>
+                              <td className="py-3 px-4 text-slate-500">Retém receita</td>
+                              <td className="py-3 px-4 font-bold text-slate-900">{p.retemReceita ? 'Sim' : 'Não'}</td>
+                            </tr>
+                            <tr className={`${!p.tarja ? 'bg-slate-50 ' : ''}border-b`}>
+                              <td className="py-3 px-4 text-slate-500">Tipo de medicamento</td>
+                              <td className="py-3 px-4 font-bold text-slate-900">{p.tipoMedicamento ? p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) : 'Referência'}</td>
+                            </tr>
+                          </>
+                        )}
                         <tr className={`${p.tarja ? 'bg-slate-50 ' : ''}`}>
                           <td className="py-3 px-4 text-slate-500">É kit</td>
                           <td className="py-3 px-4 font-bold text-slate-900">{String(p.tipoProduto || '').toLowerCase() === 'kit' ? 'Sim' : 'Não'}</td>
@@ -1259,11 +1265,11 @@ function PDP() {
                 {p.tarja === "Vermelha" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
               </span>
             )}
-            {p.retemReceita ? (
+            {isMedication && p.retemReceita ? (
               <span className="text-[11px] px-2 py-0.5 rounded shadow-sm bg-red-600 text-white font-bold">
                 Retém receita
               </span>
-            ) : (p.retemReceita === false ? (
+            ) : (isMedication && p.retemReceita === false ? (
               <span className="text-[11px] px-2 py-0.5 rounded shadow-sm bg-slate-100 text-slate-700 font-bold border border-slate-200">
                 Não retém receita
               </span>

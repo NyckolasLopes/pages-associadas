@@ -74,7 +74,6 @@ import { Route as AdminIntegracoesCofreRouteImport } from './routes/admin/integr
 import { Route as AdminIntegracoesApiRouteImport } from './routes/admin/integracoes.api'
 import { Route as AdminDesignVisualRouteImport } from './routes/admin/design.visual'
 import { Route as AdminDesignScriptsRouteImport } from './routes/admin/design.scripts'
-import { Route as AdminDesignRedesRouteImport } from './routes/admin/design.redes'
 import { Route as AdminDesignPaginasRouteImport } from './routes/admin/design.paginas'
 import { Route as AdminDesignLogoRouteImport } from './routes/admin/design.logo'
 import { Route as AdminDesignCoresRouteImport } from './routes/admin/design.cores'
@@ -426,11 +425,6 @@ const AdminDesignScriptsRoute = AdminDesignScriptsRouteImport.update({
   path: '/design/scripts',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminDesignRedesRoute = AdminDesignRedesRouteImport.update({
-  id: '/design/redes',
-  path: '/design/redes',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminDesignPaginasRoute = AdminDesignPaginasRouteImport.update({
   id: '/design/paginas',
   path: '/design/paginas',
@@ -596,7 +590,6 @@ export interface FileRoutesByFullPath {
   '/admin/design/cores': typeof AdminDesignCoresRoute
   '/admin/design/logo': typeof AdminDesignLogoRoute
   '/admin/design/paginas': typeof AdminDesignPaginasRoute
-  '/admin/design/redes': typeof AdminDesignRedesRoute
   '/admin/design/scripts': typeof AdminDesignScriptsRoute
   '/admin/design/visual': typeof AdminDesignVisualRoute
   '/admin/integracoes/api': typeof AdminIntegracoesApiRoute
@@ -682,7 +675,6 @@ export interface FileRoutesByTo {
   '/admin/design/cores': typeof AdminDesignCoresRoute
   '/admin/design/logo': typeof AdminDesignLogoRoute
   '/admin/design/paginas': typeof AdminDesignPaginasRoute
-  '/admin/design/redes': typeof AdminDesignRedesRoute
   '/admin/design/scripts': typeof AdminDesignScriptsRoute
   '/admin/design/visual': typeof AdminDesignVisualRoute
   '/admin/integracoes/api': typeof AdminIntegracoesApiRoute
@@ -771,7 +763,6 @@ export interface FileRoutesById {
   '/admin/design/cores': typeof AdminDesignCoresRoute
   '/admin/design/logo': typeof AdminDesignLogoRoute
   '/admin/design/paginas': typeof AdminDesignPaginasRoute
-  '/admin/design/redes': typeof AdminDesignRedesRoute
   '/admin/design/scripts': typeof AdminDesignScriptsRoute
   '/admin/design/visual': typeof AdminDesignVisualRoute
   '/admin/integracoes/api': typeof AdminIntegracoesApiRoute
@@ -860,7 +851,6 @@ export interface FileRouteTypes {
     | '/admin/design/cores'
     | '/admin/design/logo'
     | '/admin/design/paginas'
-    | '/admin/design/redes'
     | '/admin/design/scripts'
     | '/admin/design/visual'
     | '/admin/integracoes/api'
@@ -946,7 +936,6 @@ export interface FileRouteTypes {
     | '/admin/design/cores'
     | '/admin/design/logo'
     | '/admin/design/paginas'
-    | '/admin/design/redes'
     | '/admin/design/scripts'
     | '/admin/design/visual'
     | '/admin/integracoes/api'
@@ -1034,7 +1023,6 @@ export interface FileRouteTypes {
     | '/admin/design/cores'
     | '/admin/design/logo'
     | '/admin/design/paginas'
-    | '/admin/design/redes'
     | '/admin/design/scripts'
     | '/admin/design/visual'
     | '/admin/integracoes/api'
@@ -1532,13 +1520,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDesignScriptsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/design/redes': {
-      id: '/admin/design/redes'
-      path: '/design/redes'
-      fullPath: '/admin/design/redes'
-      preLoaderRoute: typeof AdminDesignRedesRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/design/paginas': {
       id: '/admin/design/paginas'
       path: '/design/paginas'
@@ -1825,7 +1806,6 @@ interface AdminRouteChildren {
   AdminDesignCoresRoute: typeof AdminDesignCoresRoute
   AdminDesignLogoRoute: typeof AdminDesignLogoRoute
   AdminDesignPaginasRoute: typeof AdminDesignPaginasRoute
-  AdminDesignRedesRoute: typeof AdminDesignRedesRoute
   AdminDesignScriptsRoute: typeof AdminDesignScriptsRoute
   AdminDesignVisualRoute: typeof AdminDesignVisualRoute
   AdminLojasGerarRoute: typeof AdminLojasGerarRoute
@@ -1882,7 +1862,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDesignCoresRoute: AdminDesignCoresRoute,
   AdminDesignLogoRoute: AdminDesignLogoRoute,
   AdminDesignPaginasRoute: AdminDesignPaginasRoute,
-  AdminDesignRedesRoute: AdminDesignRedesRoute,
   AdminDesignScriptsRoute: AdminDesignScriptsRoute,
   AdminDesignVisualRoute: AdminDesignVisualRoute,
   AdminLojasGerarRoute: AdminLojasGerarRoute,

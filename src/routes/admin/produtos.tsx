@@ -8,6 +8,7 @@ import categoriesData from "@/data/categories.json";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useState, useMemo, useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -159,6 +160,39 @@ function AdminProdutos() {
   const handleEditProduct = (product: Produto) => {
     setEditingProduct(product);
     setEditorOpen(true);
+  };
+
+  const [stockModalOpen, setStockModalOpen] = useState(false);
+  const [editingStockProduct, setEditingStockProduct] = useState<Produto | null>(null);
+  const [newStockValue, setNewStockValue] = useState<string>("0");
+
+  const handleOpenStockModal = (p: Produto) => {
+    setEditingStockProduct(p);
+    const currentStock = lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId);
+    setNewStockValue(String(currentStock));
+    setStockModalOpen(true);
+  };
+
+  const handleSaveStock = async () => {
+    if (!editingStockProduct || !currentLojaId) return;
+    const store = pharmacies.find(s => s.id === currentLojaId);
+    
+    const stockVal = parseInt(newStockValue, 10);
+    if (isNaN(stockVal)) return;
+
+    await useAdminProducts.getState().updateStoreProductStock(currentLojaId, editingStockProduct.id, stockVal);
+    
+    setLojaApiDataMap(prev => ({
+      ...prev,
+      [editingStockProduct.id]: {
+        ...(prev[editingStockProduct.id] || { precoPor: editingStockProduct.precoPor, precoDe: editingStockProduct.precoDe }),
+        estoque: stockVal
+      }
+    }));
+
+    toast.success(`Estoque atualizado para a loja ${store?.nome || store?.razaoSocial}`);
+    setStockModalOpen(false);
+    setEditingStockProduct(null);
   };
 
   const handleSaveProduct = (updatedProduct: Produto) => {
@@ -860,9 +894,22 @@ function AdminProdutos() {
                               {pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0)}
                             </span>
                           ) : (
-                            <span className={`text-sm font-bold ${(lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId)) > 0 ? "text-slate-700" : "text-red-500"}`}>
-                              {lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId)}
-                            </span>
+                            <div className="flex items-center justify-end gap-2 group">
+                              <span className={`text-sm font-bold ${(lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId)) > 0 ? "text-slate-700" : "text-red-500"}`}>
+                                {lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId)}
+                              </span>
+                              {isGlobalAdmin && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleOpenStockModal(p)}
+                                  title="Editar Estoque"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                </Button>
+                              )}
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-center">
@@ -994,6 +1041,34 @@ function AdminProdutos() {
           </>
         )}
       </div>
+      <Dialog open={stockModalOpen} onOpenChange={setStockModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Estoque</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-slate-500 mb-4">
+              Tem certeza que deseja alterar o estoque da loja <span className="font-bold">{currentLoja?.nome || currentLoja?.razaoSocial}</span> para o produto <span className="font-bold">{editingStockProduct?.nome}</span>?
+            </p>
+            <div className="space-y-2">
+              <Label>Quantidade em Estoque</Label>
+              <Input 
+                type="number" 
+                value={newStockValue} 
+                onChange={e => setNewStockValue(e.target.value)} 
+                min="0"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleSaveStock();
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStockModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveStock}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <SubirDadosLojaModal open={subirDadosOpen} onOpenChange={setSubirDadosOpen} />
       

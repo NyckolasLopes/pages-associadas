@@ -618,8 +618,17 @@ function PainelLoja() {
             <TabsContent value="pedidos" className="space-y-6">
               <Card className="border-slate-200 shadow-sm">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-slate-800">
-                  Pedidos Recebidos
+                <CardTitle className="text-xl font-bold text-slate-800 flex justify-between items-center">
+                  <span>Pedidos Recebidos</span>
+                  <Link to="/admin/carrinhos-abandonados">
+                    <Button variant="outline" className="gap-2 text-amber-700 border-amber-200 hover:bg-amber-50">
+                      <ShoppingCart className="w-4 h-4" /> 
+                      Carrinhos Abandonados
+                      {pendentesLojaCount > 0 && (
+                        <Badge className="ml-1 bg-amber-600 hover:bg-amber-700">{pendentesLojaCount}</Badge>
+                      )}
+                    </Button>
+                  </Link>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
