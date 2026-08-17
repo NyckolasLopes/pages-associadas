@@ -189,7 +189,16 @@ function AdminLayout() {
     setMounted(true);
     
 
-    
+    // Hard logout failsafe
+    if (window.location.search.includes("logout")) {
+      useAdmin.setState({ currentUser: null, activeStoreId: null });
+      try {
+        localStorage.removeItem("admin-storage-local");
+      } catch (e) {}
+      window.history.replaceState({}, document.title, "/admin");
+      return;
+    }
+
     // Carregar lojas do banco de dados (Supabase)
     const { loadPharmacies } = useAdmin.getState();
     loadPharmacies();

@@ -620,7 +620,7 @@ export const useAdmin = create<AdminState>()(
           localStorage.removeItem("admin-storage-local");
         } catch (e) {}
 
-        window.location.href = '/admin';
+        window.location.href = '/admin?logout=1';
       },
       register: (user) => set((s) => ({ users: [...s.users, user] })),
       setUsers: (users) => set({ users }),
