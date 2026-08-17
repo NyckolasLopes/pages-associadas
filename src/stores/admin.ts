@@ -610,7 +610,9 @@ export const useAdmin = create<AdminState>()(
       logout: async () => {
         await supabase.auth.signOut();
         set({ currentUser: null, activeStoreId: null });
-        window.location.href = '/admin';
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 100);
       },
       register: (user) => set((s) => ({ users: [...s.users, user] })),
       setUsers: (users) => set({ users }),
