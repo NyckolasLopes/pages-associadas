@@ -702,15 +702,6 @@ function AdminProdutos() {
             <Badge variant="secondary" className="text-xs">{currentProductsList.length}</Badge>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button
-              variant="destructive"
-              className="h-8 text-xs font-bold w-full sm:w-auto bg-red-600 hover:bg-red-700 shadow-sm"
-              onClick={() => setDeleteAllModalOpen(true)}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              Excluir Todos os Produtos
-            </Button>
-            
             {currentProductsList.length > 0 && (
               <div className="w-full sm:w-48">
                 <Select value={listFilter} onValueChange={(v) => { setListFilter(v); setPage(0); }}>
@@ -1228,6 +1219,16 @@ function AdminProdutos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Floating Delete All Button */}
+      <Button
+        variant="destructive"
+        className="fixed bottom-6 right-6 shadow-xl rounded-full px-6 h-14 gap-2 font-bold z-50 hover:bg-red-700"
+        onClick={() => setDeleteAllModalOpen(true)}
+      >
+        <Trash2 className="h-5 w-5" />
+        EXCLUIR TODOS OS PRODUTOS
+      </Button>
     </div>
   );
 }

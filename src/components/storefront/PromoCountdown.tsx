@@ -186,8 +186,7 @@ export function PromoProductPageBanner({
                 <>
                   <div className="flex flex-col items-center">
                     <div 
-                      className="min-w-[42px] sm:min-w-[48px] h-11 sm:h-12 text-white rounded-lg flex items-center justify-center font-mono text-lg sm:text-xl font-black shadow-md"
-                      style={{ backgroundColor: themeColor }}
+                      className="min-w-[42px] sm:min-w-[48px] h-11 sm:h-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-mono text-lg sm:text-xl font-black shadow-md border border-slate-700"
                     >
                       {pad(time.days)}
                     </div>
@@ -199,8 +198,7 @@ export function PromoProductPageBanner({
 
               <div className="flex flex-col items-center">
                 <div 
-                  className="min-w-[42px] sm:min-w-[48px] h-11 sm:h-12 text-white rounded-lg flex items-center justify-center font-mono text-lg sm:text-xl font-black shadow-md"
-                  style={{ backgroundColor: themeColor }}
+                  className="min-w-[42px] sm:min-w-[48px] h-11 sm:h-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-mono text-lg sm:text-xl font-black shadow-md border border-slate-700"
                 >
                   {pad(time.hours)}
                 </div>
@@ -210,8 +208,7 @@ export function PromoProductPageBanner({
 
               <div className="flex flex-col items-center">
                 <div 
-                  className="min-w-[42px] sm:min-w-[48px] h-11 sm:h-12 text-white rounded-lg flex items-center justify-center font-mono text-lg sm:text-xl font-black shadow-md"
-                  style={{ backgroundColor: themeColor }}
+                  className="min-w-[42px] sm:min-w-[48px] h-11 sm:h-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-mono text-lg sm:text-xl font-black shadow-md border border-slate-700"
                 >
                   {pad(time.minutes)}
                 </div>
