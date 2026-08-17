@@ -884,11 +884,11 @@ export const useAdmin = create<AdminState>()(
             nome: l.nome_fantasia,
             email: l.email,
             telefone: l.telefone,
-            horarioFuncionamento: l.horario_funcionamento,
-            respTecnico: l.farmaceutico_responsavel,
-            inscricaoFarmaceutico: l.crf,
-            alvara: l.alvara_sanitario,
-            afe: l.afe,
+            horarioFuncionamento: l.horario_funcionamento || l.tema_cores?.horario_funcionamento,
+            respTecnico: l.farmaceutico_responsavel || l.tema_cores?.farmaceutico_responsavel,
+            inscricaoFarmaceutico: l.crf || l.tema_cores?.crf,
+            alvara: l.alvara_sanitario || l.tema_cores?.alvara_sanitario,
+            afe: l.afe || l.tema_cores?.afe,
             cep: l.cep || '',
             endereco: l.logradouro || '',
             numero: l.numero || '',
@@ -896,15 +896,20 @@ export const useAdmin = create<AdminState>()(
             bairro: l.bairro || '',
             cidade: l.cidade || '',
             uf: l.estado || '',
-            whatsapp: l.whatsapp || '',
-            footerPlataformaTexto: l.footer_plataforma_texto || '',
-            footerDescricao: l.footer_descricao || '',
-            footerTituloContato: l.footer_titulo_contato || '',
-            socialLinks: l.social_links || {},
+            whatsapp: l.whatsapp || l.tema_cores?.whatsapp || '',
+            footerPlataformaTexto: l.footer_plataforma_texto || l.tema_cores?.footer_plataforma_texto || '',
+            footerDescricao: l.footer_descricao || l.tema_cores?.footer_descricao || '',
+            footerTituloContato: l.footer_titulo_contato || l.tema_cores?.footer_titulo_contato || '',
+            socialLinks: l.social_links || l.tema_cores?.social_links || {},
+            topBarText: l.tema_cores?.topBarText || '',
+            topBarBgColor: l.tema_cores?.topBarBgColor || '',
+            topBarTextColor: l.tema_cores?.topBarTextColor || '',
             latitude: l.latitude,
             longitude: l.longitude,
-            categoriaAssociado: l.categoria_associado as any,
-            trabalhaComEncarte: l.trabalha_com_encarte,
+            categoriaAssociado: l.categoria_associado || l.tema_cores?.categoria_associado,
+            trabalhaComEncarte: l.trabalha_com_encarte || l.tema_cores?.trabalha_com_encarte,
+            entregaExpressa: l.entrega_expressa || l.tema_cores?.entrega_expressa,
+            virtualStoreStatus: l.status_loja_virtual || l.tema_cores?.status_loja_virtual,
             isVirtualStoreGenerated: !!l.status_loja_virtual,
             virtualStoreStatus: l.status_loja_virtual,
             api_key: l.api_key,
@@ -913,6 +918,27 @@ export const useAdmin = create<AdminState>()(
         }
       },
       addPharmacy: async (p) => {
+        const tema_cores_payload = {
+          ...(p.themeColors || {}),
+          footer_plataforma_texto: p.footerPlataformaTexto,
+          footer_descricao: p.footerDescricao,
+          footer_titulo_contato: p.footerTituloContato,
+          social_links: p.socialLinks,
+          topBarText: p.topBarText,
+          topBarBgColor: p.topBarBgColor,
+          topBarTextColor: p.topBarTextColor,
+          whatsapp: p.whatsapp,
+          horario_funcionamento: p.horarioFuncionamento,
+          farmaceutico_responsavel: p.respTecnico,
+          crf: p.inscricaoFarmaceutico,
+          alvara_sanitario: p.alvara,
+          afe: p.afe,
+          entrega_expressa: p.entregaExpressa,
+          status_loja_virtual: p.virtualStoreStatus,
+          categoria_associado: p.categoriaAssociado,
+          trabalha_com_encarte: p.trabalhaComEncarte,
+        };
+
         const { error } = await supabase.from('lojas').insert({
           id: p.id,
           ativa: p.ativo ?? true,
@@ -936,20 +962,66 @@ export const useAdmin = create<AdminState>()(
           cidade: p.cidade,
           estado: p.uf,
           whatsapp: p.whatsapp,
-          footer_plataforma_texto: p.footerPlataformaTexto,
-          footer_descricao: p.footerDescricao,
-          footer_titulo_contato: p.footerTituloContato,
-          social_links: p.socialLinks,
+          tema_cores: tema_cores_payload,
           latitude: p.lat,
           longitude: p.lng,
           entrega_expressa: p.entregaExpressa,
           status_loja_virtual: p.virtualStoreStatus,
         } as any);
-        if (!error) {
+
+        if (error) {
+          console.error("Insert failed with all columns, trying minimal insert:", error);
+          const { error: minError } = await supabase.from('lojas').insert({
+            id: p.id,
+            ativa: p.ativo ?? true,
+            cnpj: p.cnpj,
+            razao_social: p.razaoSocial,
+            nome_fantasia: p.nome,
+            email: p.email,
+            telefone: p.telefone,
+            cep: p.cep,
+            logradouro: p.endereco,
+            numero: p.numero,
+            complemento: p.complemento,
+            bairro: p.bairro,
+            cidade: p.cidade,
+            estado: p.uf,
+            tema_cores: tema_cores_payload,
+            latitude: p.lat,
+            longitude: p.lng,
+          } as any);
+          if (!minError) {
+             set((s) => ({ pharmacies: [...s.pharmacies, { ...p, ativo: p.ativo ?? true }] }));
+          }
+        } else {
           set((s) => ({ pharmacies: [...s.pharmacies, { ...p, ativo: p.ativo ?? true }] }));
         }
       },
       updatePharmacy: async (id, p) => {
+        // Obter tema_cores atual
+        const s = get();
+        const currentPharmacy = s.pharmacies.find(x => x.id === id);
+        const tema_cores_payload = {
+          ...(currentPharmacy?.themeColors || {}),
+          footer_plataforma_texto: p.footerPlataformaTexto,
+          footer_descricao: p.footerDescricao,
+          footer_titulo_contato: p.footerTituloContato,
+          social_links: p.socialLinks,
+          topBarText: p.topBarText,
+          topBarBgColor: p.topBarBgColor,
+          topBarTextColor: p.topBarTextColor,
+          whatsapp: p.whatsapp,
+          horario_funcionamento: p.horarioFuncionamento,
+          farmaceutico_responsavel: p.respTecnico,
+          crf: p.inscricaoFarmaceutico,
+          alvara_sanitario: p.alvara,
+          afe: p.afe,
+          entrega_expressa: p.entregaExpressa,
+          status_loja_virtual: p.virtualStoreStatus,
+          categoria_associado: p.categoriaAssociado,
+          trabalha_com_encarte: p.trabalhaComEncarte,
+        };
+
         const { error } = await supabase.from('lojas').update({
           ativa: p.ativo ?? true,
           categoria_associado: p.categoriaAssociado,
@@ -972,10 +1044,7 @@ export const useAdmin = create<AdminState>()(
           cidade: p.cidade,
           estado: p.uf,
           whatsapp: p.whatsapp,
-          footer_plataforma_texto: p.footerPlataformaTexto,
-          footer_descricao: p.footerDescricao,
-          footer_titulo_contato: p.footerTituloContato,
-          social_links: p.socialLinks,
+          tema_cores: tema_cores_payload,
           latitude: p.lat,
           longitude: p.lng,
           entrega_expressa: p.entregaExpressa,
@@ -984,21 +1053,14 @@ export const useAdmin = create<AdminState>()(
         if (error) {
           console.error("Erro ao atualizar loja com novas colunas (possivelmente faltam migrations no Supabase):", error);
           
-          // Tentar fallback sem as colunas novas
-          const { error: fallbackError } = await supabase.from('lojas').update({
+          // Tentar fallback minimalista SEM colunas recém adicionadas (que costumam quebrar)
+          const { error: minError } = await supabase.from('lojas').update({
             ativa: p.ativo ?? true,
-            categoria_associado: p.categoriaAssociado,
-            trabalha_com_encarte: p.trabalhaComEncarte,
             cnpj: p.cnpj,
             razao_social: p.razaoSocial,
             nome_fantasia: p.nome,
             email: p.email,
             telefone: p.telefone,
-            horario_funcionamento: p.horarioFuncionamento,
-            farmaceutico_responsavel: p.respTecnico,
-            crf: p.inscricaoFarmaceutico,
-            alvara_sanitario: p.alvara,
-            afe: p.afe,
             cep: p.cep,
             logradouro: p.endereco,
             numero: p.numero,
@@ -1006,19 +1068,16 @@ export const useAdmin = create<AdminState>()(
             bairro: p.bairro,
             cidade: p.cidade,
             estado: p.uf,
-            whatsapp: p.whatsapp,
-            footer_plataforma_texto: p.footerPlataformaTexto,
+            tema_cores: tema_cores_payload,
             latitude: p.lat,
             longitude: p.lng,
-            entrega_expressa: p.entregaExpressa,
-            status_loja_virtual: p.virtualStoreStatus,
           } as any).eq('id', id);
 
-          if (!fallbackError) {
+          if (!minError) {
             set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) }));
-            console.log("Fallback bem-sucedido. Porém, os campos do rodapé não foram salvos no banco.");
+            console.log("Fallback minimalista bem-sucedido.");
           } else {
-            console.error("Erro também no fallback:", fallbackError);
+            console.error("Erro também no fallback minimalista:", minError);
           }
         } else {
           set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) }));

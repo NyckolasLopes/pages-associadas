@@ -614,13 +614,16 @@ function AdminBanners() {
               <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-8">
                 {editingBanner.posicao === "Banner Tarja" || editingBanner.posicao === "Banner Categoria" ? (
                   <div className="bg-orange-50 border border-orange-200 rounded p-6 space-y-4">
-                    <div>
-                      <h3 className="font-bold text-orange-800 text-lg">Configuração de Cartão ({editingBanner.posicao})</h3>
-                      <p className="text-sm text-orange-700">
-                        {editingBanner.posicao === "Banner Tarja" 
-                          ? 'Os Banners Tarja são os cartões de vantagens que aparecem na loja (ex: "Compre pelo site...").' 
-                          : 'Os Banners Categoria são os ícones redondos que aparecem na seção "Compre por categoria".'}
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-orange-800 text-lg">Configuração de Cartão ({editingBanner.posicao})</h3>
+                        <p className="text-sm text-orange-700">
+                          {editingBanner.posicao === "Banner Tarja" 
+                            ? 'Os Banners Tarja são os cartões de vantagens que aparecem na loja (ex: "Compre pelo site...").' 
+                            : 'Os Banners Categoria são os ícones redondos que aparecem na seção "Compre por categoria".'}
+                        </p>
+                      </div>
+                      {dimensions && <span className="text-xs bg-orange-100 px-2 py-1 rounded text-orange-800 font-bold font-mono border border-orange-200 shadow-sm">{dimensions.desktop}</span>}
                     </div>
                     <div className="space-y-3">
                       <Label className="font-bold text-slate-700">Ícone, URL ou Upload de Imagem</Label>

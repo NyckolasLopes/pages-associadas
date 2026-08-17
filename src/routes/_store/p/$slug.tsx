@@ -787,6 +787,7 @@ function PDP() {
   const showPrincipioAtivo = isMedication;
   const hideReviews = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142")) || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
   const isService = p.tipoProduto === "servico" || !!(p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20")));
+  const isAvailable = maxStock > 0 || isService;
 
   const marcasProprias = ["revitart", "santo habito", "santo hábito", "revigore", "revimel", "crescendo", "vita magna", "associadas"];
   const isMarcaPropria = p.fabricante && marcasProprias.some(m => p.fabricante.toLowerCase().includes(m));
@@ -1321,7 +1322,7 @@ function PDP() {
               </>
             )}
 
-            {maxStock > 0 ? (
+            {isAvailable ? (
               <div className="flex flex-col gap-3 mt-6">
                 <div className="flex items-center gap-3">
                   {!p.precoSobConsulta && (

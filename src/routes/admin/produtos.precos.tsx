@@ -421,6 +421,31 @@ function AdminProdutosPrecos() {
     toast.success(checked ? "Produto ativado para esta filial." : "Produto indisponível nesta filial.");
   };
 
+  const handleToggleDestaque = (produto: Produto, checked: boolean) => {
+    if (!selectedPharmacyId) {
+      toast.error("Selecione uma loja primeiro.");
+      return;
+    }
+
+    const updatedProduct = { ...produto };
+    if (!updatedProduct.precosPorLoja) {
+      updatedProduct.precosPorLoja = {};
+    }
+
+    const currentPreco = updatedProduct.precosPorLoja[selectedPharmacyId] || {
+      precoDe: produto.precoDe,
+      precoPor: produto.precoPor
+    };
+
+    updatedProduct.precosPorLoja[selectedPharmacyId] = {
+      ...currentPreco,
+      destaque: checked
+    };
+
+    addOrUpdateProduct(updatedProduct);
+    toast.success(checked ? "Produto destacado na sua vitrine." : "Destaque removido da sua vitrine.");
+  };
+
   const handleConfirmImport = () => {
     if (!pendingImportData) return;
     if (!selectedPharmacyId || selectedPharmacyId === "global") {
@@ -505,6 +530,11 @@ function AdminProdutosPrecos() {
   };
 
   const handleSaveCampanha = (isDefinitive: boolean = false) => {
+    if (!isDefinitive && (!campanhaInicioModal || !campanhaFimModal)) {
+      toast.error("Por favor, preencha as datas de início e fim da campanha.");
+      return;
+    }
+
     let updatedCount = 0;
     
     selectedCampanhaProducts.forEach(productId => {
@@ -639,10 +669,10 @@ function AdminProdutosPrecos() {
                       setSelectedCampanhaProducts([]);
                       setCampanhaPrices({});
                     }}
-                    className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md font-bold transition-all whitespace-nowrap px-6"
+                    className="h-11 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/30 font-black transition-all whitespace-nowrap px-6 border border-orange-400 animate-pulse-subtle"
                   >
-                    <Megaphone className="h-4 w-4 mr-2" />
-                    Criar Campanha Interna
+                    <Flame className="h-5 w-5 mr-2 animate-pulse" />
+                    CRIAR CAMPANHA INTERNA
                   </Button>
                 )}
               </div>
@@ -877,6 +907,15 @@ function AdminProdutosPrecos() {
                             <span className={`text-[10px] font-bold uppercase ${disponivel ? 'text-emerald-600' : 'text-slate-400'}`}>
                               {disponivel ? 'Disponível' : 'Indisponível'}
                             </span>
+                            <div className="w-full h-px bg-slate-200 my-1" />
+                            <Switch 
+                              checked={lojaPreco?.destaque ?? false}
+                              onCheckedChange={(checked) => handleToggleDestaque(produto, checked)}
+                              className="data-[state=checked]:bg-amber-500"
+                            />
+                            <span className={`text-[10px] font-bold uppercase ${lojaPreco?.destaque ? 'text-amber-600' : 'text-slate-400'}`}>
+                              {lojaPreco?.destaque ? 'Destacado' : 'Não Destacado'}
+                            </span>
                           </div>
                         </td>
                       </>
@@ -992,23 +1031,23 @@ function AdminProdutosPrecos() {
 
           {campanhaStep === 2 && (
             <div className="space-y-6 py-4 max-h-[500px] overflow-y-auto pr-2">
-              <div className="bg-slate-100 p-4 rounded-lg flex flex-col sm:flex-row gap-4 border border-slate-200">
+              <div className="bg-orange-50 p-4 rounded-lg flex flex-col sm:flex-row gap-4 border border-orange-200">
                 <div className="flex-1 space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Início da Campanha (Opcional)</label>
+                  <label className="text-xs font-bold text-orange-800 flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Início da Campanha (Obrigatório)</label>
                   <Input 
                     type="date" 
                     value={campanhaInicioModal} 
                     onChange={e => setCampanhaInicioModal(e.target.value)} 
-                    className="bg-white"
+                    className="bg-white border-orange-200 focus-visible:ring-orange-500"
                   />
                 </div>
                 <div className="flex-1 space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Fim da Campanha (Opcional)</label>
+                  <label className="text-xs font-bold text-orange-800 flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Fim da Campanha (Obrigatório)</label>
                   <Input 
                     type="date" 
                     value={campanhaFimModal} 
                     onChange={e => setCampanhaFimModal(e.target.value)} 
-                    className="bg-white"
+                    className="bg-white border-orange-200 focus-visible:ring-orange-500"
                   />
                 </div>
               </div>

@@ -370,11 +370,19 @@ export function Header() {
       />
       <header className="sticky top-0 z-40 bg-background border-b shadow-sm">
       {/* Top Announcement Bar */}
-      <div className="bg-accent text-accent-foreground text-center text-xs py-1.5 font-bold flex items-center justify-center overflow-hidden">
-        <div>
-          Cupom de primeira compra: use 10OFF em compras acima de R$ 100,00
+      {(activePharmacy?.topBarText || !activePharmacy) && (
+        <div 
+          className="text-center text-xs py-1.5 font-bold flex items-center justify-center overflow-hidden"
+          style={{ 
+            backgroundColor: activePharmacy?.topBarBgColor || 'var(--accent)', 
+            color: activePharmacy?.topBarTextColor || 'var(--accent-foreground)' 
+          }}
+        >
+          <div>
+            {activePharmacy?.topBarText || "Cupom de primeira compra: use 10OFF em compras acima de R$ 100,00"}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Top utility bar */}
       <div className="bg-primary text-primary-foreground text-xs hidden md:block">
@@ -392,12 +400,16 @@ export function Header() {
                 </Link>
               )
             ))}
-            <a href="tel:5133633900" className="hidden lg:inline-flex items-center gap-1 hover:underline">
-              <Phone className="h-3.5 w-3.5" /> (51) 3363-3900
-            </a>
-            <a href="https://wa.me/5551989444818" target="_blank" rel="noreferrer" className="hidden lg:inline-flex items-center gap-1 hover:underline">
-              SAC Whatsapp: (51) 98944-4818
-            </a>
+            {(activePharmacy?.telefone || !activePharmacy) && (
+              <a href={`tel:${(activePharmacy?.telefone || "5133633900").replace(/\D/g, '')}`} className="hidden lg:inline-flex items-center gap-1 hover:underline">
+                <Phone className="h-3.5 w-3.5" /> {activePharmacy?.telefone || "(51) 3363-3900"}
+              </a>
+            )}
+            {(activePharmacy?.whatsapp || !activePharmacy) && (
+              <a href={`https://wa.me/55${(activePharmacy?.whatsapp || "51989444818").replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="hidden lg:inline-flex items-center gap-1 hover:underline">
+                SAC Whatsapp: {activePharmacy?.whatsapp || "(51) 98944-4818"}
+              </a>
+            )}
           </div>
         </div>
       </div>

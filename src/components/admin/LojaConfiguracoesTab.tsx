@@ -149,6 +149,68 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
           </div>
         </div>
 
+        <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">Informações no Topo (Faixa de Aviso)</h3>
+        <p className="text-xs text-slate-500 mb-4">Esta faixa aparece no topo do site, acima do menu e do banner.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2 md:col-span-2">
+            <Label>Texto da Faixa</Label>
+            <Input 
+              value={formData.topBarText || ""} 
+              onChange={(e) => handleChange("topBarText", e.target.value)} 
+              placeholder="Ex: Cupom de primeira compra: use 10OFF..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Cor de Fundo da Faixa</Label>
+            <div className="flex gap-2">
+              <Input 
+                type="color" 
+                className="w-14 h-10 p-1 cursor-pointer" 
+                value={formData.topBarBgColor || "#f97316"} 
+                onChange={(e) => handleChange("topBarBgColor", e.target.value)} 
+              />
+              <Input 
+                value={formData.topBarBgColor || "#f97316"} 
+                onChange={(e) => handleChange("topBarBgColor", e.target.value)} 
+                placeholder="#HexColor"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Cor do Texto da Faixa</Label>
+            <div className="flex gap-2">
+              <Input 
+                type="color" 
+                className="w-14 h-10 p-1 cursor-pointer" 
+                value={formData.topBarTextColor || "#ffffff"} 
+                onChange={(e) => handleChange("topBarTextColor", e.target.value)} 
+              />
+              <Input 
+                value={formData.topBarTextColor || "#ffffff"} 
+                onChange={(e) => handleChange("topBarTextColor", e.target.value)} 
+                placeholder="#HexColor"
+              />
+            </div>
+          </div>
+          <div className="space-y-2 pt-2 border-t md:col-span-2 mt-2">
+            <Label className="text-muted-foreground text-xs">O Telefone e WhatsApp configurados abaixo também aparecerão no menu utilitário superior.</Label>
+          </div>
+          <div className="space-y-2">
+            <Label>Telefone (Topo/Rodapé)</Label>
+            <Input 
+              value={formData.telefone || ""} 
+              onChange={(e) => handleChange("telefone", e.target.value)} 
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>WhatsApp (Topo/Rodapé)</Label>
+            <Input 
+              value={formData.whatsapp || ""} 
+              onChange={(e) => handleChange("whatsapp", e.target.value)} 
+            />
+          </div>
+        </div>
+
         <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">Rodapé (Footer)</h3>
         <div className="grid grid-cols-1 gap-6">
           <div className="space-y-2 mt-2">

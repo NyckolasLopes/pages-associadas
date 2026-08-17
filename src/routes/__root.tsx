@@ -61,15 +61,15 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-2xl text-center w-full px-6">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Página não encontrada
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end.
+          Ocorreu um erro ou a página que você tentou acessar não existe.
         </p>
         <div className="mt-4 p-4 bg-red-50 text-red-900 border border-red-200 rounded text-left overflow-auto text-xs font-mono w-full">
-          <strong>Error:</strong> {error?.message}
+          <strong>Erro:</strong> {error?.message}
           <br /><br />
-          <strong>Stack:</strong>
+          <strong>Detalhes:</strong>
           <pre className="whitespace-pre-wrap">{error?.stack}</pre>
         </div>
         <div className="mt-4 p-4 text-xs text-left text-red-500 bg-red-50 rounded overflow-auto border border-red-200 max-h-[300px]">
@@ -85,13 +85,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            Tentar novamente
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Voltar ao início
           </a>
         </div>
       </div>
@@ -226,6 +226,35 @@ function RootComponent() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch((err) => console.log('SW registration failed:', err));
     }
+    
+    // Configurar manifest PWA dinâmico
+    const currentStore = useAdmin.getState().pharmacies.find((p) => p.id === useAdmin.getState().activeStoreId);
+    if (currentStore) {
+      // Extrair bairro do endereço ou tentar outras propriedades
+      const storeSuffix = (currentStore as any).bairro || (currentStore as any).cidade || currentStore.nomeFantasia.replace('Farmácias Associadas - ', '');
+      const pwaName = `Farm Associadas - ${storeSuffix}`;
+      
+      fetch('/manifest.json')
+        .then(response => response.json())
+        .then(manifest => {
+          manifest.name = pwaName;
+          manifest.short_name = pwaName.length > 12 ? "Associadas" : pwaName;
+          
+          const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          
+          let link = document.querySelector('link[rel="manifest"]');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'manifest';
+            document.head.appendChild(link);
+          } else {
+            (link as HTMLLinkElement).href = url;
+          }
+        })
+        .catch(console.error);
+    }
+
   }, []);
 
   useEffect(() => {
