@@ -786,11 +786,6 @@ function AdminUsuarios() {
                       </div>
                       <div>
                         <div className="font-bold text-slate-800 text-sm uppercase">{u.name}</div>
-                        {u.proprietario && (
-                          <div className="inline-block bg-slate-200 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded mt-1 uppercase">
-                            Proprietário
-                          </div>
-                        )}
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[13px] text-slate-500">{u.email}</span>
