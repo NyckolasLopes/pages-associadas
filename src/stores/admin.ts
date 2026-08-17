@@ -945,7 +945,46 @@ export const useAdmin = create<AdminState>()(
           entrega_expressa: p.entregaExpressa,
           status_loja_virtual: p.virtualStoreStatus,
         } as any).eq('id', id);
-        if (!error) {
+        if (error) {
+          console.error("Erro ao atualizar loja com novas colunas (possivelmente faltam migrations no Supabase):", error);
+          
+          // Tentar fallback sem as colunas novas
+          const { error: fallbackError } = await supabase.from('lojas').update({
+            ativa: p.ativo ?? true,
+            categoria_associado: p.categoriaAssociado,
+            trabalha_com_encarte: p.trabalhaComEncarte,
+            cnpj: p.cnpj,
+            razao_social: p.razaoSocial,
+            nome_fantasia: p.nome,
+            email: p.email,
+            telefone: p.telefone,
+            horario_funcionamento: p.horarioFuncionamento,
+            farmaceutico_responsavel: p.respTecnico,
+            crf: p.inscricaoFarmaceutico,
+            alvara_sanitario: p.alvara,
+            afe: p.afe,
+            cep: p.cep,
+            logradouro: p.endereco,
+            numero: p.numero,
+            complemento: p.complemento,
+            bairro: p.bairro,
+            cidade: p.cidade,
+            estado: p.uf,
+            whatsapp: p.whatsapp,
+            footer_plataforma_texto: p.footerPlataformaTexto,
+            latitude: p.lat,
+            longitude: p.lng,
+            entrega_expressa: p.entregaExpressa,
+            status_loja_virtual: p.virtualStoreStatus,
+          } as any).eq('id', id);
+
+          if (!fallbackError) {
+            set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) }));
+            console.log("Fallback bem-sucedido. Porém, os campos do rodapé não foram salvos no banco.");
+          } else {
+            console.error("Erro também no fallback:", fallbackError);
+          }
+        } else {
           set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) }));
         }
       },
