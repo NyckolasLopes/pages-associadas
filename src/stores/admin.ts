@@ -538,8 +538,14 @@ export const useAdmin = create<AdminState>()(
           permissoes: ["dash_view", "rel_metricas_pedidos", "rel_vendas_produto", "rel_desempenho", "rel_logistica_retirada", "rel_aovivo", "vendas_pedidos", "vendas_criar", "vendas_carrinhos", "vendas_links", "lojas_todas", "lojas_nova", "lojas_gerar", "lojas_link", "lojas_tabelas", "lojas_precos", "lojas_paineis", "prod_todos", "prod_novo", "prod_estoque", "prod_avaliacoes", "prod_categorias", "prod_colecoes", "prod_filtros", "prod_espera", "prod_marcas", "prod_perguntas", "prod_selos", "prod_variacoes", "cli_todos", "cli_leads", "canais_google", "canais_ifood", "canais_farmaciasapp", "pbms_view", "pers_logo", "pers_cores", "pers_banners", "pers_redes", "pers_paginas", "int_api", "int_cofre", "mkt_cupons", "mkt_promocoes", "mkt_orderbumps", "mkt_comprejunto", "sol_apps", "conf_dados", "conf_dominios", "conf_pagamentos", "conf_usuarios", "loja_pedidos", "loja_promocoes", "loja_cupons", "loja_seo", "loja_metricas", "loja_relatorios", "loja_personalizar", "loja_configuracoes"] 
         },
         { 
-          id: "grupo-associado", 
-          nome: "Painel do Associado", 
+          id: "grupo-associado-pleno", 
+          nome: "Painel do Associado (Pleno)", 
+          padrao: true, 
+          permissoes: ["lojas_precos", "loja_pedidos", "loja_promocoes", "loja_cupons", "loja_seo", "loja_metricas", "loja_relatorios", "loja_personalizar", "loja_configuracoes", "prod_novo", "prod_todos", "prod_categorias", "prod_estoque", "prod_avaliacoes", "prod_colecoes", "prod_filtros", "prod_espera", "prod_marcas", "prod_perguntas", "prod_selos", "prod_variacoes", "vendas_pedidos"] 
+        },
+        { 
+          id: "grupo-associado-parceiro", 
+          nome: "Painel do Associado (Parceiro)", 
           padrao: true, 
           permissoes: ["lojas_precos", "loja_pedidos", "loja_promocoes", "loja_cupons", "loja_seo", "loja_metricas", "loja_relatorios", "loja_personalizar", "loja_configuracoes", "prod_novo", "prod_todos", "prod_categorias", "prod_estoque", "prod_avaliacoes", "prod_colecoes", "prod_filtros", "prod_espera", "prod_marcas", "prod_perguntas", "prod_selos", "prod_variacoes", "vendas_pedidos"] 
         }
@@ -647,7 +653,7 @@ export const useAdmin = create<AdminState>()(
         // Se a permissão começa com loja_ e o grupo não tem NENHUMA permissão loja_ (cache antigo), 
         // e é o grupo Associado ou Admin, libera o acesso para não sumir do nada.
         if (permissionId.startsWith("loja_") && !grupo.permissoes.some(p => p.startsWith("loja_"))) {
-          if (grupo.id === "grupo-associado" || grupo.id === "grupo-admin") {
+          if (grupo.id.startsWith("grupo-associado") || grupo.id === "grupo-admin") {
             return true;
           }
         }
