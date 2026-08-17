@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Truck, Store, Package, Settings, Save, CheckCircle2, Plus, Edit, Trash2 } from "lucide-react";
+import { Package, Store, Save, Search, Truck, CheckCircle2, Plus, Edit, Trash2, Settings, AlertTriangle } from "lucide-react";
 import { useAdminProducts } from "@/stores/products";
 import { useAdmin } from "@/stores/admin";
 import { getDeterministicStock } from "@/lib/stock";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/produtos/estoque")({
   component: AdminProdutosEstoque,
@@ -17,86 +18,222 @@ export const Route = createFileRoute("/admin/produtos/estoque")({
 
 function AdminProdutosEstoque() {
   const { customProducts, fornecedores, setFornecedores, removeFornecedor } = useAdminProducts();
-  const globalTotalStock = customProducts.reduce((acc, p) => acc + (p.estoque || 0), 0);
-
   const { pharmacies } = useAdmin();
+  const activePharmacies = pharmacies.filter(p => p.ativo !== false);
 
-  // State for Lojas Ativas with their ERP Systems
-  const lojas = pharmacies.map(pharmacy => {
-    const realStock = customProducts.reduce((total, p) => {
-      return total + getDeterministicStock(p, pharmacy.id);
-    }, 0);
-    
-    return {
-      nome: pharmacy.nome || pharmacy.razaoSocial,
-      bairro: pharmacy.bairro || "N/A",
-      cidade: pharmacy.cidade && pharmacy.uf ? `${pharmacy.cidade}/${pharmacy.uf}` : "N/A",
-      sistema: pharmacy.sistemaUtilizado || "N/A",
-      stock: realStock
-    };
-  });
+  // ─── Stock data from Supabase ───
+  const [stockData, setStockData] = useState<Record<string, Record<string, number>>>({});
+  // stockData shape: { [produtoId]: { [lojaId]: estoque } }
+  const [pendingChanges, setPendingChanges] = useState<Record<string, Record<string, number>>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
-  const realGlobalTotalStock = lojas.reduce((acc, loja) => acc + loja.stock, 0);
+  // Load all stock data from produto_precos_loja
+  useEffect(() => {
+    async function loadAllStock() {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("produto_precos_loja")
+        .select("produto_id, loja_id, estoque");
 
-  // Modal State for Fornecedor
+      if (!error && data) {
+        const map: Record<string, Record<string, number>> = {};
+        data.forEach((row: any) => {
+          if (!map[row.produto_id]) map[row.produto_id] = {};
+          map[row.produto_id][row.loja_id] = row.estoque ?? 0;
+        });
+        setStockData(map);
+      }
+      setIsLoading(false);
+    }
+    loadAllStock();
+  }, []);
+
+  // ─── Computed values ───
+  const filteredProducts = useMemo(() => {
+    if (!search) return customProducts;
+    const s = search.toLowerCase();
+    return customProducts.filter(p =>
+      (p.nome && p.nome.toLowerCase().includes(s)) ||
+      (p.ean && p.ean.toLowerCase().includes(s)) ||
+      (p.codigoInterno && p.codigoInterno.toLowerCase().includes(s)) ||
+      (p.id && p.id.toLowerCase().includes(s))
+    );
+  }, [customProducts, search]);
+
+  const getStock = useCallback((produtoId: string, lojaId: string) => {
+    // Pending changes take priority
+    if (pendingChanges[produtoId]?.[lojaId] !== undefined) {
+      return pendingChanges[produtoId][lojaId];
+    }
+    // Then Supabase data
+    if (stockData[produtoId]?.[lojaId] !== undefined) {
+      return stockData[produtoId][lojaId];
+    }
+    // Fallback to product's estoquesPorLoja or global estoque
+    const product = customProducts.find(p => p.id === produtoId);
+    if (product) {
+      return getDeterministicStock(product, lojaId);
+    }
+    return 0;
+  }, [pendingChanges, stockData, customProducts]);
+
+  const getTotalStock = useCallback((produtoId: string) => {
+    return activePharmacies.reduce((acc, loja) => acc + getStock(produtoId, loja.id), 0);
+  }, [activePharmacies, getStock]);
+
+  const globalTotalStock = useMemo(() => {
+    return customProducts.reduce((acc, p) => acc + getTotalStock(p.id), 0);
+  }, [customProducts, getTotalStock]);
+
+  const hasPendingChanges = Object.keys(pendingChanges).length > 0;
+
+  // ─── Handlers ───
+  const handleStockChange = (produtoId: string, lojaId: string, value: string) => {
+    const numVal = value === "" ? 0 : parseInt(value, 10);
+    if (isNaN(numVal) || numVal < 0) return;
+
+    setPendingChanges(prev => ({
+      ...prev,
+      [produtoId]: {
+        ...(prev[produtoId] || {}),
+        [lojaId]: numVal,
+      }
+    }));
+  };
+
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+    try {
+      const upserts: Array<{ produto_id: string; loja_id: string; estoque: number }> = [];
+      
+      for (const [produtoId, lojas] of Object.entries(pendingChanges)) {
+        for (const [lojaId, estoque] of Object.entries(lojas)) {
+          upserts.push({ produto_id: produtoId, loja_id: lojaId, estoque });
+        }
+      }
+
+      if (upserts.length === 0) {
+        toast.info("Nenhuma alteração para salvar.");
+        setIsSaving(false);
+        return;
+      }
+
+      // Upsert in batches of 50
+      for (let i = 0; i < upserts.length; i += 50) {
+        const batch = upserts.slice(i, i + 50);
+        const { error } = await supabase
+          .from("produto_precos_loja")
+          .upsert(batch, { onConflict: "produto_id,loja_id" });
+
+        if (error) {
+          console.error("Erro ao salvar estoque:", error);
+          toast.error(`Erro ao salvar: ${error.message}`);
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Merge pending changes into stockData
+      setStockData(prev => {
+        const updated = { ...prev };
+        for (const [produtoId, lojas] of Object.entries(pendingChanges)) {
+          updated[produtoId] = { ...(updated[produtoId] || {}), ...lojas };
+        }
+        return updated;
+      });
+
+      setPendingChanges({});
+      toast.success(`${upserts.length} estoque(s) atualizado(s) com sucesso!`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro inesperado ao salvar estoques.");
+    }
+    setIsSaving(false);
+  };
+
+  // ─── Fornecedor Modal ───
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ distribuidor: "", cidade: "", prazo: "", apiUrl: "" });
-  const [isSaving, setIsSaving] = useState(false);
+  const [formDataFornecedor, setFormDataFornecedor] = useState({ distribuidor: "", cidade: "", prazo: "", apiUrl: "" });
+  const [isSavingFornecedor, setIsSavingFornecedor] = useState(false);
 
   const openNewFornecedor = () => {
     setEditingId(null);
-    setFormData({ distribuidor: "", cidade: "", prazo: "", apiUrl: "" });
+    setFormDataFornecedor({ distribuidor: "", cidade: "", prazo: "", apiUrl: "" });
     setIsModalOpen(true);
   };
 
   const openEditFornecedor = (f: any) => {
     setEditingId(f.id);
-    setFormData(f);
+    setFormDataFornecedor(f);
     setIsModalOpen(true);
   };
 
   const handleSaveFornecedor = () => {
-    setIsSaving(true);
+    setIsSavingFornecedor(true);
     setTimeout(() => {
       if (editingId) {
-        setFornecedores(fornecedores.map(f => f.id === editingId ? { ...formData, id: editingId } as any : f));
+        setFornecedores(fornecedores.map(f => f.id === editingId ? { ...formDataFornecedor, id: editingId } as any : f));
       } else {
         const newId = Math.max(0, ...fornecedores.map(f => f.id)) + 1;
-        setFornecedores([...fornecedores, { ...formData, id: newId } as any]);
+        setFornecedores([...fornecedores, { ...formDataFornecedor, id: newId } as any]);
       }
-      setIsSaving(false);
+      setIsSavingFornecedor(false);
       setIsModalOpen(false);
       toast.success("Fornecedor externo salvo com sucesso!");
     }, 800);
   };
 
+  // ─── Per-store stock totals ───
+  const storeStockTotals = useMemo(() => {
+    return activePharmacies.map(pharmacy => ({
+      id: pharmacy.id,
+      nome: pharmacy.nome || pharmacy.razaoSocial || "Loja",
+      bairro: pharmacy.bairro || "N/A",
+      cidade: pharmacy.cidade && pharmacy.uf ? `${pharmacy.cidade}/${pharmacy.uf}` : "N/A",
+      total: customProducts.reduce((acc, p) => acc + getStock(p.id, pharmacy.id), 0),
+    }));
+  }, [activePharmacies, customProducts, getStock]);
+
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+    <div className="space-y-8 max-w-full mx-auto pb-12">
       <div>
-        <h1 className="text-3xl font-bold text-slate-800">
-          Estoques
-        </h1>
-        <p className="text-slate-500 mt-2 text-lg">Gerencie o volume armazenado em todas as lojas (Sistema ERP: SPA) e configure a Prateleira Infinita (Estoque Externo).</p>
+        <h1 className="text-3xl font-bold text-slate-800">Estoques</h1>
+        <p className="text-slate-500 mt-2 text-lg">
+          Gerencie o estoque de todos os produtos em todas as lojas.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Cards de resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-6">
           <div className="bg-emerald-100 p-4 rounded-full text-emerald-800">
             <Package className="h-8 w-8" />
           </div>
           <div>
-            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total de estoque de produtos em todas as lojas</div>
-            <div className="text-4xl font-bold text-slate-800">{realGlobalTotalStock.toLocaleString("pt-BR")}</div>
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Estoque Total (todas as lojas)</div>
+            <div className="text-4xl font-bold text-slate-800">{globalTotalStock.toLocaleString("pt-BR")}</div>
           </div>
         </div>
-        
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-6">
+          <div className="bg-indigo-100 p-4 rounded-full text-indigo-700">
+            <Store className="h-8 w-8" />
+          </div>
+          <div>
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Lojas Ativas</div>
+            <div className="text-4xl font-bold text-slate-800">{activePharmacies.length}</div>
+          </div>
+        </div>
+
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-6">
           <div className="bg-sky-100 p-4 rounded-full text-sky-700">
             <Truck className="h-8 w-8" />
           </div>
           <div>
-            <div className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Estoque Externo Configurado</div>
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fornecedores Externos</div>
             <div className="text-xl font-bold text-slate-800 flex items-center gap-2">
               {fornecedores.length} Fornecedor{fornecedores.length !== 1 && 'es'} <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
@@ -104,46 +241,177 @@ function AdminProdutosEstoque() {
         </div>
       </div>
 
-      {/* Card: Tabela Lojas Ativas */}
+      {/* Resumo por loja */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-            <h2 className="font-bold text-xl text-slate-800">Estoque Físico das Lojas (SPA)</h2>
-            <p className="text-sm text-slate-500">Volume físico real atual nas prateleiras das unidades parceiras (baseado no total do cadastro).</p>
-          </div>
-          <Input placeholder="Buscar loja..." className="max-w-xs bg-white" />
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="font-bold text-xl text-slate-800">Estoque por Loja</h2>
+          <p className="text-sm text-slate-500">Volume total de unidades em cada loja.</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-          <thead className="bg-slate-50 text-slate-600 font-bold border-b text-sm">
-            <tr>
-              <th className="p-4">Unidade / Loja</th>
-              <th className="p-4">Bairro</th>
-              <th className="p-4">Cidade/UF</th>
-              <th className="p-4">Sistema (ERP)</th>
-              <th className="p-4 text-right">Estoque Físico (Unid.)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lojas.map((loja, idx) => (
-              <tr key={idx} className="border-b last:border-0 hover:bg-slate-50 transition-colors text-sm">
-                <td className="p-4 font-medium text-slate-800 flex items-center gap-3">
-                  <Store className="h-4 w-4 text-slate-400" />
-                  {loja.nome}
-                </td>
-                <td className="p-4 text-slate-500">{loja.bairro}</td>
-                <td className="p-4 text-slate-500">{loja.cidade}</td>
-                <td className="p-4 text-slate-500 font-medium text-sky-800">{loja.sistema}</td>
-                <td className="p-4 text-right">
-                  <span className="inline-block bg-emerald-50 text-emerald-800 font-bold px-3 py-1 rounded-full">
-                    {loja.stock.toLocaleString('pt-BR')}
-                  </span>
-                </td>
+            <thead className="bg-slate-50 text-slate-600 font-bold border-b text-sm">
+              <tr>
+                <th className="p-4">Unidade / Loja</th>
+                <th className="p-4">Bairro</th>
+                <th className="p-4">Cidade/UF</th>
+                <th className="p-4 text-right">Estoque Total (Unid.)</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {storeStockTotals.map((loja) => (
+                <tr key={loja.id} className="border-b last:border-0 hover:bg-slate-50 transition-colors text-sm">
+                  <td className="p-4 font-medium text-slate-800 flex items-center gap-3">
+                    <Store className="h-4 w-4 text-slate-400" />
+                    {loja.nome}
+                  </td>
+                  <td className="p-4 text-slate-500">{loja.bairro}</td>
+                  <td className="p-4 text-slate-500">{loja.cidade}</td>
+                  <td className="p-4 text-right">
+                    <span className="inline-block bg-emerald-50 text-emerald-800 font-bold px-3 py-1 rounded-full">
+                      {loja.total.toLocaleString('pt-BR')}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      </div>
+
+      {/* Inventário Editável — Produto x Loja */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h2 className="font-bold text-xl text-slate-800">Inventário por Produto × Loja</h2>
+            <p className="text-sm text-slate-500">
+              Visualize e edite o estoque de cada produto em cada loja. Clique no campo para editar.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Buscar produto (nome, EAN)..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 bg-white"
+              />
+            </div>
+            {hasPendingChanges && (
+              <Button
+                onClick={handleSaveAll}
+                disabled={isSaving}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold whitespace-nowrap"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? "Salvando..." : `Salvar (${Object.values(pendingChanges).reduce((a, b) => a + Object.keys(b).length, 0)})`}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {hasPendingChanges && (
+          <div className="px-6 py-3 bg-amber-50 border-b border-amber-200 flex items-center gap-2 text-sm text-amber-800">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="font-medium">
+              Você tem {Object.values(pendingChanges).reduce((a, b) => a + Object.keys(b).length, 0)} alteração(ões) não salva(s).
+            </span>
+          </div>
+        )}
+
+        <div className="overflow-x-auto max-h-[600px]">
+          {isLoading ? (
+            <div className="p-12 text-center text-slate-500">Carregando estoques...</div>
+          ) : (
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-slate-600 font-bold border-b text-xs sticky top-0 z-10">
+                <tr>
+                  <th className="p-3 min-w-[250px] sticky left-0 bg-slate-50 z-20">Produto</th>
+                  <th className="p-3 min-w-[100px]">EAN</th>
+                  <th className="p-3 min-w-[70px] text-right bg-slate-100 font-black">TOTAL</th>
+                  {activePharmacies.map(loja => (
+                    <th key={loja.id} className="p-3 min-w-[110px] text-center">
+                      <div className="truncate max-w-[100px]" title={loja.nome || loja.razaoSocial}>
+                        {(loja.nome || loja.razaoSocial || "Loja").substring(0, 15)}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.slice(0, 200).map((p) => {
+                  const total = getTotalStock(p.id);
+                  return (
+                    <tr key={p.id} className="border-b last:border-0 hover:bg-slate-50/50 transition-colors text-sm">
+                      <td className="p-3 sticky left-0 bg-white z-10 border-r border-slate-100">
+                        <div className="flex items-center gap-2">
+                          {p.imagem ? (
+                            <img src={p.imagem} alt="" className="w-8 h-8 object-contain bg-white rounded border shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 bg-slate-100 rounded border flex items-center justify-center text-slate-400 shrink-0">
+                              <Package className="w-4 h-4" />
+                            </div>
+                          )}
+                          <span className="line-clamp-1 max-w-[200px] text-slate-800 font-medium">{p.nome}</span>
+                        </div>
+                      </td>
+                      <td className="p-3 text-slate-500 font-mono text-xs">{p.ean || p.codigoInterno || "-"}</td>
+                      <td className="p-3 text-right bg-slate-50/50 border-x border-slate-100">
+                        <span className={`inline-block font-bold px-2 py-0.5 rounded-full text-xs ${
+                          total > 5 ? 'bg-emerald-50 text-emerald-800' : 
+                          total > 0 ? 'bg-orange-50 text-orange-800' : 
+                          'bg-red-50 text-red-800'
+                        }`}>
+                          {total}
+                        </span>
+                      </td>
+                      {activePharmacies.map(loja => {
+                        const stock = getStock(p.id, loja.id);
+                        const isPending = pendingChanges[p.id]?.[loja.id] !== undefined;
+                        return (
+                          <td key={loja.id} className="p-1 text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              value={stock}
+                              onChange={(e) => handleStockChange(p.id, loja.id, e.target.value)}
+                              className={`w-full text-center text-sm py-1.5 px-1 rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                                isPending 
+                                  ? 'border-amber-400 bg-amber-50 font-bold text-amber-900' 
+                                  : stock > 0 
+                                    ? 'border-slate-200 bg-white text-slate-700'
+                                    : 'border-slate-200 bg-red-50/50 text-red-400'
+                              }`}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {filteredProducts.length > 200 && (
+          <div className="p-4 text-center text-sm text-slate-500 border-t">
+            Mostrando 200 de {filteredProducts.length} produtos. Use a busca para encontrar itens específicos.
+          </div>
+        )}
+
+        {hasPendingChanges && (
+          <div className="p-4 border-t bg-slate-50 flex justify-end">
+            <Button
+              onClick={handleSaveAll}
+              disabled={isSaving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Card: Tabela Fornecedores Externos */}
@@ -199,59 +467,6 @@ function AdminProdutosEstoque() {
         </div>
       </div>
 
-      {/* Card: Inventário de Produtos */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-8">
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-            <h2 className="font-bold text-xl text-slate-800">Inventário de Produtos</h2>
-            <p className="text-sm text-slate-500">Visão geral do estoque disponível por produto em todas as lojas.</p>
-          </div>
-          <Input placeholder="Buscar produto..." className="max-w-xs bg-white" />
-        </div>
-        <div className="overflow-x-auto max-h-[500px]">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 text-slate-600 font-bold border-b text-sm sticky top-0 z-10">
-              <tr>
-                <th className="p-4">Produto</th>
-                <th className="p-4">Código (SKU/EAN)</th>
-                <th className="p-4">Marca</th>
-                <th className="p-4 text-right">Estoque Global (Unid.)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customProducts.slice(0, 50).map((p, idx) => (
-                <tr key={idx} className="border-b last:border-0 hover:bg-slate-50 transition-colors text-sm">
-                  <td className="p-4 font-medium text-slate-800 flex items-center gap-3">
-                    {p.imagem ? (
-                      <img src={p.imagem} alt={p.nome} className="w-10 h-10 object-contain bg-white rounded border" />
-                    ) : (
-                      <div className="w-10 h-10 bg-slate-100 rounded border flex items-center justify-center text-slate-400 shrink-0">
-                        <Package className="w-5 h-5" />
-                      </div>
-                    )}
-                    <span className="line-clamp-2 max-w-[300px]">{p.nome}</span>
-                  </td>
-                  <td className="p-4 text-slate-500 font-mono text-xs">{p.id}</td>
-                  <td className="p-4 text-slate-500">{p.marca || "-"}</td>
-                  <td className="p-4 text-right">
-                    <span className={`inline-block font-bold px-3 py-1 rounded-full ${p.estoque > 5 ? 'bg-emerald-50 text-emerald-800' : p.estoque > 0 ? 'bg-orange-50 text-orange-800' : 'bg-red-50 text-red-800'}`}>
-                      {p.estoque || 0}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {customProducts.length > 50 && (
-                <tr>
-                  <td colSpan={4} className="p-4 text-center text-slate-500 text-sm">
-                    Mostrando 50 de {customProducts.length} produtos. Utilize a busca para encontrar itens específicos.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* Modal: Configuração do Fornecedor */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl">
@@ -266,16 +481,16 @@ function AdminProdutosEstoque() {
               <div className="space-y-2">
                 <Label className="font-bold">Distribuidor Principal</Label>
                 <Input 
-                  value={formData.distribuidor} 
-                  onChange={(e) => setFormData({ ...formData, distribuidor: e.target.value })} 
+                  value={formDataFornecedor.distribuidor} 
+                  onChange={(e) => setFormDataFornecedor({ ...formDataFornecedor, distribuidor: e.target.value })} 
                   placeholder="Ex: Panvel, Santa Cruz, Profarma..." 
                 />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold">Cidade Base do CD</Label>
                 <Input 
-                  value={formData.cidade} 
-                  onChange={(e) => setFormData({ ...formData, cidade: e.target.value })} 
+                  value={formDataFornecedor.cidade} 
+                  onChange={(e) => setFormDataFornecedor({ ...formDataFornecedor, cidade: e.target.value })} 
                   placeholder="Ex: Porto Alegre / RS" 
                 />
               </div>
@@ -285,16 +500,16 @@ function AdminProdutosEstoque() {
                 <Label className="font-bold">Prazo de Entrega (Dias Úteis)</Label>
                 <Input 
                   type="number" 
-                  value={formData.prazo} 
-                  onChange={(e) => setFormData({ ...formData, prazo: e.target.value })} 
+                  value={formDataFornecedor.prazo} 
+                  onChange={(e) => setFormDataFornecedor({ ...formDataFornecedor, prazo: e.target.value })} 
                   placeholder="Ex: 3" 
                 />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold">URL da API (EANs)</Label>
                 <Input 
-                  value={formData.apiUrl} 
-                  onChange={(e) => setFormData({ ...formData, apiUrl: e.target.value })} 
+                  value={formDataFornecedor.apiUrl} 
+                  onChange={(e) => setFormDataFornecedor({ ...formDataFornecedor, apiUrl: e.target.value })} 
                   placeholder="https://api.distribuidor.com.br/estoque" 
                 />
               </div>
@@ -302,9 +517,9 @@ function AdminProdutosEstoque() {
           </div>
           <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveFornecedor} disabled={isSaving} className="bg-sky-600 hover:bg-sky-700">
+            <Button onClick={handleSaveFornecedor} disabled={isSavingFornecedor} className="bg-sky-600 hover:bg-sky-700">
               <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Salvando..." : "Salvar Configuração"}
+              {isSavingFornecedor ? "Salvando..." : "Salvar Configuração"}
             </Button>
           </div>
         </DialogContent>
@@ -312,4 +527,3 @@ function AdminProdutosEstoque() {
     </div>
   );
 }
-
