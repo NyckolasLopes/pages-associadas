@@ -194,6 +194,11 @@ function AdminLayout() {
     const { loadPharmacies } = useAdmin.getState();
     loadPharmacies();
 
+    // Carregar produtos
+    import("@/stores/products").then(({ useAdminProducts }) => {
+      useAdminProducts.getState().loadProducts();
+    });
+
     // Migration / Clean-up for old cached localStorage
     const currentUsers = useAdmin.getState().users;
     let updatedUsers = [...currentUsers];
