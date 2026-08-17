@@ -1195,9 +1195,36 @@ export const useAdmin = create<AdminState>()(
             persistedState.contentPages = [...(persistedState.contentPages || []), ...defaultNav];
           }
         }
+        if (version < 11) {
+          if (persistedState.grupos) {
+            // Remove o antigo grupo associado
+            persistedState.grupos = persistedState.grupos.filter((g: any) => g.id !== "grupo-associado");
+            
+            // Adiciona os dois novos
+            const newGroups = [
+              { 
+                id: "grupo-associado-pleno", 
+                nome: "Painel do Associado (Pleno)", 
+                padrao: true, 
+                permissoes: ["lojas_precos", "loja_pedidos", "loja_promocoes", "loja_cupons", "loja_seo", "loja_metricas", "loja_relatorios", "loja_personalizar", "loja_configuracoes", "prod_novo", "prod_todos", "prod_categorias", "prod_estoque", "prod_avaliacoes", "prod_colecoes", "prod_filtros", "prod_espera", "prod_marcas", "prod_perguntas", "prod_selos", "prod_variacoes", "vendas_pedidos"] 
+              },
+              { 
+                id: "grupo-associado-parceiro", 
+                nome: "Painel do Associado (Parceiro)", 
+                padrao: true, 
+                permissoes: ["lojas_precos", "loja_pedidos", "loja_promocoes", "loja_cupons", "loja_seo", "loja_metricas", "loja_relatorios", "loja_personalizar", "loja_configuracoes", "prod_novo", "prod_todos", "prod_categorias", "prod_estoque", "prod_avaliacoes", "prod_colecoes", "prod_filtros", "prod_espera", "prod_marcas", "prod_perguntas", "prod_selos", "prod_variacoes", "vendas_pedidos"] 
+              }
+            ];
+            
+            // Verifica se já não existem para não duplicar se rodar de novo
+            if (!persistedState.grupos.some((g: any) => g.id === "grupo-associado-pleno")) {
+              persistedState.grupos.push(...newGroups);
+            }
+          }
+        }
         return persistedState;
       },
-      version: 10,
+      version: 11,
     }
   )
 );
