@@ -64,8 +64,11 @@ export const useCustomers = create<CustomersStore>((set, get) => ({
         };
       }) as unknown as Customer[];
       
-      // Filtrar clientes admin (is_admin = true) para não aparecer na lista de clientes
-      const clientesReais = mapped.filter((c: any) => !(data.find((d: any) => d.id === c.id)?.is_admin));
+      // Filtrar clientes admin (is_admin = true ou que tenham grupo_id) para não aparecer na lista de clientes
+      const clientesReais = mapped.filter((c: any) => {
+        const profile = data.find((d: any) => d.id === c.id);
+        return !(profile?.is_admin || profile?.grupo_id);
+      });
       set({ customers: clientesReais });
     }
   },
