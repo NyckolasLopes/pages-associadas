@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { supabaseStorage } from "@/lib/supabaseStorage";
 
 export interface FiltroOpcao {
   id: string;
@@ -106,6 +107,7 @@ export const useAdminFiltros = create<FiltroStore>()(
     }),
     {
       name: "admin-filtros-storage",
+      storage: createJSONStorage(() => supabaseStorage),
       version: 1,
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {

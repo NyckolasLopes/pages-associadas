@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { supabaseStorage } from "@/lib/supabaseStorage";
 
 export interface AppConfig {
   installed: boolean;
@@ -35,6 +36,7 @@ export const useApps = create<AppsState>()(
     }),
     {
       name: "apps-storage",
+      storage: createJSONStorage(() => supabaseStorage),
     }
   )
 );

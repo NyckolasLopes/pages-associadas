@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { idbStorage } from "@/lib/idb";
+import { supabaseStorage } from "@/lib/supabaseStorage";
 
 export interface Variacao {
   id: string;
@@ -34,7 +34,7 @@ export const useVariacoesStore = create<VariacoesState>()(
     }),
     {
       name: "fa-variacoes-storage",
-      storage: createJSONStorage(() => idbStorage)
+      storage: createJSONStorage(() => supabaseStorage)
     }
   )
 );

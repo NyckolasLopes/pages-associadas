@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseStorage } from "@/lib/supabaseStorage";
 
 export interface AdminUser {
   id: string;
@@ -1225,6 +1226,7 @@ export const useAdmin = create<AdminState>()(
         return persistedState;
       },
       version: 11,
+      storage: createJSONStorage(() => supabaseStorage),
     }
   )
 );

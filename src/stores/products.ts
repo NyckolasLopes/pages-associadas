@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Produto, Vitrine } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseStorage } from "@/lib/supabaseStorage";
 import { toTitleCase } from "@/lib/utils";
 
 export interface Fornecedor {
@@ -761,6 +762,11 @@ export const useAdminProducts = create<ProductsState>()(
           }
         }
       }
+    },
+    {
+      name: "admin-products-storage",
+      version: 2,
+      storage: createJSONStorage(() => supabaseStorage),
     }
   )
 );
