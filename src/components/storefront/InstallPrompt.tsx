@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Download, Share } from "lucide-react";
+import { toast } from "sonner";
 
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -62,12 +63,20 @@ export function InstallPrompt() {
 
   const handleInstall = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setShowPrompt(false);
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setShowPrompt(false);
+        }
+        setDeferredPrompt(null);
+      } catch (err) {
+        console.error("Install prompt error", err);
       }
-      setDeferredPrompt(null);
+    } else {
+      toast("Para instalar, acesse o menu do navegador (⋮) e clique em 'Instalar Aplicativo' ou 'Adicionar à tela inicial'.", {
+        duration: 5000,
+      });
     }
   };
 
@@ -99,6 +108,10 @@ export function InstallPrompt() {
           <span>Toque em</span>
           <Share className="h-4 w-4 shrink-0" />
           <span>e depois <strong>Adicionar à Tela de Início</strong></span>
+        </div>
+      ) : !deferredPrompt ? (
+        <div className="bg-black/10 rounded-lg px-3 py-2 text-[11px] flex flex-col items-center justify-center gap-1 mt-1 text-center">
+          <span>Para instalar, acesse o menu do seu navegador (⋮) e clique em <strong>Instalar Aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>.</span>
         </div>
       ) : (
         <Button onClick={handleInstall} variant="secondary" className="w-full h-9 font-bold text-xs bg-white text-primary hover:bg-slate-50 mt-1 shadow-sm">
