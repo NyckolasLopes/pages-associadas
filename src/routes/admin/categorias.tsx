@@ -23,7 +23,7 @@ export const Route = createFileRoute("/admin/categorias")({
 
 function AdminCategorias() {
   const navigate = useNavigate();
-  const { featuredCategories, toggleFeaturedCategory, activeStoreId, pharmacies, currentUser } = useAdmin();
+  const { featuredCategories, toggleFeaturedCategory, storeFeaturedCategories, toggleStoreFeaturedCategory, categoryIcons, activeStoreId, pharmacies, currentUser } = useAdmin();
   const { 
     categories: networkCategories, 
     storeCategories, 
@@ -51,18 +51,30 @@ function AdminCategorias() {
   const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
   const currentLoja = pharmacies.find(p => p.id === currentLojaId);
   const isStoreCustom = currentLojaId ? !!isStoreUsingCustomCategories[currentLojaId] : false;
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas?.length === 0;
 
   // Effective categories for current view
   const allCategories: Categoria[] = currentLojaId ? getStoreCategories(currentLojaId) : networkCategories;
   
   const handleToggleFeatured = (id: string) => {
-    if (!featuredCategories.includes(id) && featuredCategories.length >= 6) {
-      toast.error("Limite de categorias atingido", {
-        description: "Você só pode destacar até 6 categorias no menu principal. Desmarque uma antes de adicionar outra."
-      });
-      return;
+    if (!isGlobalAdmin && currentLojaId) {
+      const currentFeatured = storeFeaturedCategories[currentLojaId] || [];
+      if (!currentFeatured.includes(id) && currentFeatured.length >= 6) {
+        toast.error("Limite de categorias atingido", {
+          description: "Você só pode destacar até 6 categorias no menu principal da sua loja. Desmarque uma antes de adicionar outra."
+        });
+        return;
+      }
+      toggleStoreFeaturedCategory(currentLojaId, id);
+    } else {
+      if (!featuredCategories.includes(id) && featuredCategories.length >= 6) {
+        toast.error("Limite de categorias atingido", {
+          description: "Você só pode destacar até 6 categorias no menu principal da rede. Desmarque uma antes de adicionar outra."
+        });
+        return;
+      }
+      toggleFeaturedCategory(id);
     }
-    toggleFeaturedCategory(id);
   };
   
   const handleDelete = (id: string, name: string) => {
@@ -145,7 +157,7 @@ function AdminCategorias() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           <StoreSelector className="mb-0" />
-          {currentLojaId && (
+          {currentLojaId && isGlobalAdmin && (
             <>
               <Button 
                 onClick={() => setConfirmImportOpen(true)}
@@ -170,22 +182,22 @@ function AdminCategorias() {
             </>
           )}
 
-
-
-          <Button 
-            onClick={() => {
-              setEditingCategory(null);
-              setIsModalOpen(true);
-            }}
-            className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-5 gap-2 shadow-sm"
-          >
-            <Plus className="w-4 h-4" /> Nova Categoria
-          </Button>
+          {isGlobalAdmin && (
+            <Button 
+              onClick={() => {
+                setEditingCategory(null);
+                setIsModalOpen(true);
+              }}
+              className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-5 gap-2 shadow-sm"
+            >
+              <Plus className="w-4 h-4" /> Nova Categoria
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Store Isolation Info Banner */}
-      {currentLojaId && (
+      {currentLojaId && isGlobalAdmin && (
         <div className={`p-4 rounded-xl border flex items-start gap-3.5 ${
           isStoreCustom 
             ? "bg-amber-50/60 border-amber-200 text-amber-900" 
@@ -274,32 +286,36 @@ function AdminCategorias() {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => handleToggleFeatured(cat.id)}
-                        className={`h-8 w-8 hover:bg-slate-200 ${featuredCategories.includes(cat.id) ? 'text-amber-400 hover:text-amber-500' : 'text-slate-400 hover:text-amber-400'}`}
+                        className={`h-8 w-8 hover:bg-slate-200 ${((!isGlobalAdmin && currentLojaId) ? (storeFeaturedCategories[currentLojaId] || []) : featuredCategories).includes(cat.id) ? 'text-amber-400 hover:text-amber-500' : 'text-slate-400 hover:text-amber-400'}`}
                         title="Destacar na página inicial"
                       >
-                        <Star className="h-4 w-4" fill={featuredCategories.includes(cat.id) ? "currentColor" : "none"} />
+                        <Star className="h-4 w-4" fill={((!isGlobalAdmin && currentLojaId) ? (storeFeaturedCategories[currentLojaId] || []) : featuredCategories).includes(cat.id) ? "currentColor" : "none"} />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => {
-                          setEditingCategory(cat);
-                          setIsModalOpen(true);
-                        }}
-                        className="h-8 w-8 text-slate-400 hover:text-slate-800 hover:bg-slate-200" 
-                        title="Editar"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleDelete(cat.id, cat.nome)}
-                        className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50" 
-                        title="Remover"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {isGlobalAdmin && (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => {
+                              setEditingCategory(cat);
+                              setIsModalOpen(true);
+                            }}
+                            className="h-8 w-8 text-slate-400 hover:text-slate-800 hover:bg-slate-200" 
+                            title="Editar"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleDelete(cat.id, cat.nome)}
+                            className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50" 
+                            title="Remover"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -326,27 +342,31 @@ function AdminCategorias() {
                             </span>
                           </div>
                           <div className="flex justify-center gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => {
-                                setEditingCategory(child);
-                                setIsModalOpen(true);
-                              }}
-                              className="h-7 w-7 text-slate-400 hover:text-slate-800 hover:bg-slate-200" 
-                              title="Editar"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDelete(child.id, child.nome)}
-                              className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                              title="Remover"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            {isGlobalAdmin && (
+                              <>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => {
+                                    setEditingCategory(child);
+                                    setIsModalOpen(true);
+                                  }}
+                                  className="h-7 w-7 text-slate-400 hover:text-slate-800 hover:bg-slate-200" 
+                                  title="Editar"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => handleDelete(child.id, child.nome)}
+                                  className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                  title="Remover"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
                       ))}

@@ -130,18 +130,23 @@ export function Header() {
   const params = useParams({ strict: false });
   const isStoreContext = !!(params && (params as any).storeSlug);
   const customProducts = useAdminProducts(s => s.customProducts);
-  const featuredCategories = useAdmin(s => s.featuredCategories);
+  const { featuredCategories, storeFeaturedCategories } = useAdmin();
   const contentPages = useAdmin(s => s.contentPages);
   const marcas = useMarcasStore(s => s.marcas);
   const allCategories = useAdminCategories(s => s.categories);
   
   const cats = useMemo(() => {
     // Use the admin store's featuredCategories list to determine which categories show in the menu
+    // If the store has its own custom featured categories, use that instead.
+    const effectiveFeatured = (selectedPharmacyId && storeFeaturedCategories[selectedPharmacyId]?.length > 0) 
+      ? storeFeaturedCategories[selectedPharmacyId] 
+      : featuredCategories;
+
     // Preserve the order from featuredCategories
-    return featuredCategories
+    return effectiveFeatured
       .map(id => allCategories.find((c: any) => c.id === id && !c.parentId))
       .filter(Boolean) as Categoria[];
-  }, [allCategories, featuredCategories]);
+  }, [allCategories, featuredCategories, storeFeaturedCategories, selectedPharmacyId]);
   
   const searchHistory = useSearchHistory(s => s.history);
   const topSearchTerms = useMemo(() => {

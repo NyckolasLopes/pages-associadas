@@ -276,6 +276,8 @@ interface AdminState {
   setCategoryIcon: (categoryId: string, iconUrl: string) => void;
   featuredCategories: string[];
   toggleFeaturedCategory: (categoryId: string) => void;
+  storeFeaturedCategories: Record<string, string[]>;
+  toggleStoreFeaturedCategory: (lojaId: string, categoryId: string) => void;
   
   storePanels: StorePanel[];
   generatePanel: (lojaId: string, email?: string, password?: string) => void;
@@ -1112,6 +1114,17 @@ export const useAdmin = create<AdminState>()(
           return { featuredCategories: current };
         }
         return { featuredCategories: [...current, id] };
+      }),
+      storeFeaturedCategories: {},
+      toggleStoreFeaturedCategory: (lojaId, id) => set((s) => {
+        const current = s.storeFeaturedCategories[lojaId] || [];
+        if (current.includes(id)) {
+          return { storeFeaturedCategories: { ...s.storeFeaturedCategories, [lojaId]: current.filter(x => x !== id) } };
+        }
+        if (current.length >= 6) {
+          return { storeFeaturedCategories: s.storeFeaturedCategories };
+        }
+        return { storeFeaturedCategories: { ...s.storeFeaturedCategories, [lojaId]: [...current, id] } };
       }),
 
       registrationTokens: [],

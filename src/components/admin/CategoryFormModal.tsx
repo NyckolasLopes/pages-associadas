@@ -51,7 +51,7 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
   const [destaque, setDestaque] = useState(false);
   const [icone, setIcone] = useState("");
   
-  const { featuredCategories, toggleFeaturedCategory } = useAdmin();
+  const { featuredCategories, toggleFeaturedCategory, categoryIcons, setCategoryIcon } = useAdmin();
 
   useEffect(() => {
     if (open) {
@@ -65,6 +65,7 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
         setParentId(category.parentId || null);
         setAtiva(category.ativa !== false); // default true
         setDestaque(!!category.destaque);
+        setIcone(categoryIcons[category.id] || "");
       } else {
         setNome("");
         setSlug("");
@@ -140,7 +141,11 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
        toggleFeaturedCategory(id);
     }
     
-    toast.success(category ? "Categoria atualizada com sucesso!" : "Categoria criada com sucesso!");
+    if (icone !== categoryIcons[id]) {
+      setCategoryIcon(id, icone);
+    }
+
+    toast.success("Categoria salva com sucesso!");
     onOpenChange(false);
   };
 
