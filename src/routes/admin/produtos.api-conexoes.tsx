@@ -176,22 +176,45 @@ function ApiConexoes() {
           {getStatusBadge(status || 'offline')}
         </div>
         
-        <div className="flex items-center gap-2 mt-2">
-          <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-[10px] text-slate-600 truncate relative group" title={fullApiUrl || ""}>
-            {fullApiUrl ? (
-              <div className="flex justify-between items-center">
-                <span className="truncate pr-4">{fullApiUrl}</span>
-                <button 
-                  onClick={() => copyToClipboard(fullApiUrl)}
-                  className="text-slate-400 hover:text-[#00B5AD] transition-colors shrink-0"
-                  title="Copiar URL"
-                >
-                  {copiedHash === fullApiUrl ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
-            ) : (
-              <span className="text-slate-400 italic">Nenhuma chave gerada</span>
-            )}
+        <div className="flex flex-col gap-2 mt-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase w-[52px] shrink-0">URL</span>
+            <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-[10px] text-slate-600 truncate relative group" title={fullApiUrl || ""}>
+              {fullApiUrl ? (
+                <div className="flex justify-between items-center">
+                  <span className="truncate pr-4">{fullApiUrl}</span>
+                  <button 
+                    onClick={() => copyToClipboard(fullApiUrl)}
+                    className="text-slate-400 hover:text-[#00B5AD] transition-colors shrink-0"
+                    title="Copiar Endpoint"
+                  >
+                    {copiedHash === fullApiUrl ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              ) : (
+                <span className="text-slate-400 italic">Nenhuma chave gerada</span>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase w-[52px] shrink-0">API Key</span>
+            <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-[10px] text-slate-600 truncate relative group" title={hash || ""}>
+              {hash ? (
+                <div className="flex justify-between items-center">
+                  <span className="truncate pr-4">{hash}</span>
+                  <button 
+                    onClick={() => copyToClipboard(hash)}
+                    className="text-slate-400 hover:text-[#00B5AD] transition-colors shrink-0"
+                    title="Copiar API Key"
+                  >
+                    {copiedHash === hash ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              ) : (
+                <span className="text-slate-400 italic">Nenhuma chave gerada</span>
+              )}
+            </div>
           </div>
         </div>
 
