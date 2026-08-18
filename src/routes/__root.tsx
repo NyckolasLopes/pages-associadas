@@ -107,22 +107,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const description = dadosLoja?.descricao || "Medicamentos, dermocosméticos, vitaminas e cuidado para toda a família, com entrega rápida e farmacêutico responsável. Aqui você tem amigos.";
     const bairro = dadosLoja?.bairro || "Matriz";
 
-    const manifestData = {
-      name: `Farm Associadas - ${bairro}`,
-      short_name: `FA - ${bairro}`,
-      description: description,
-      start_url: "/",
-      display: "standalone",
-      background_color: "#ffffff",
-      theme_color: "#00B5AD",
-      icons: [
-        { src: "/favicon.png", sizes: "192x192", type: "image/png" },
-        { src: "/favicon.png", sizes: "512x512", type: "image/png" }
-      ]
-    };
-    
-    const manifestUri = `data:application/manifest+json;charset=utf-8,${encodeURIComponent(JSON.stringify(manifestData))}`;
-
     return {
       meta: [
         { charSet: "utf-8" },
@@ -147,7 +131,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           href: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;500;700;900&display=swap",
         },
         { rel: "icon", type: "image/png", href: "/favicon.png" },
-        { rel: "manifest", href: manifestUri },
+        { rel: "manifest", href: "/manifest.json" },
       ],
     };
   },
@@ -229,36 +213,7 @@ function RootComponent() {
       navigator.serviceWorker.register('/sw.js').catch((err) => console.log('SW registration failed:', err));
     }
     
-    // Configurar manifest PWA dinâmico
-    const currentStore = useAdmin.getState().pharmacies.find((p) => p.id === useAdmin.getState().activeStoreId);
-    if (currentStore) {
-      // Extrair bairro do endereço ou tentar outras propriedades
-      // @ts-ignore
-      const storeSuffix = (currentStore as any).bairro || (currentStore as any).cidade || currentStore.nomeFantasia.replace('Farmácias Associadas - ', '');
-      const pwaName = `Farm Associadas - ${storeSuffix}`;
-      
-      fetch('/manifest.json')
-        .then(response => response.json())
-        .then(manifest => {
-          manifest.name = pwaName;
-          manifest.short_name = pwaName.length > 12 ? "Associadas" : pwaName;
-          
-          const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          
-          let link = document.querySelector('link[rel="manifest"]');
-          if (!link) {
-            link = document.createElement('link');
-            // @ts-ignore
-            link.rel = 'manifest';
-            document.head.appendChild(link);
-          } else {
-            (link as HTMLLinkElement).href = url;
-          }
-        })
-        .catch(console.error);
-    }
-
+    // Static manifest is loaded via <link rel="manifest"> in head
   }, []);
 
   useEffect(() => {
