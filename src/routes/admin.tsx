@@ -489,6 +489,7 @@ function AdminLayout() {
               {isGlobalAdmin && can('prod_marcas') && <Link to="/admin/marcas" className={subLinkClass}>Marcas</Link>}
               {isGlobalAdmin && can('prod_colecoes') && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
               {isGlobalAdmin && can('prod_filtros') && <Link to="/admin/filtros" className={subLinkClass}>Filtros</Link>}
+              {isGlobalAdmin && <Link to="/admin/produtos/api-conexoes" className={subLinkClass}>API e Conexões</Link>}
             </NavSection>
           )}
 

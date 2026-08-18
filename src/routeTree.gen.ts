@@ -60,6 +60,7 @@ import { Route as AdminSelosNovoRouteImport } from './routes/admin/selos.novo'
 import { Route as AdminProdutosPrecosRouteImport } from './routes/admin/produtos.precos'
 import { Route as AdminProdutosNovoRouteImport } from './routes/admin/produtos.novo'
 import { Route as AdminProdutosEstoqueRouteImport } from './routes/admin/produtos.estoque'
+import { Route as AdminProdutosApiConexoesRouteImport } from './routes/admin/produtos.api-conexoes'
 import { Route as AdminPedidosNovoRouteImport } from './routes/admin/pedidos/novo'
 import { Route as AdminMarketingOrderBumpsRouteImport } from './routes/admin/marketing.order-bumps'
 import { Route as AdminMarketingCompreJuntoRouteImport } from './routes/admin/marketing.compre-junto'
@@ -352,6 +353,12 @@ const AdminProdutosEstoqueRoute = AdminProdutosEstoqueRouteImport.update({
   path: '/estoque',
   getParentRoute: () => AdminProdutosRoute,
 } as any)
+const AdminProdutosApiConexoesRoute =
+  AdminProdutosApiConexoesRouteImport.update({
+    id: '/api-conexoes',
+    path: '/api-conexoes',
+    getParentRoute: () => AdminProdutosRoute,
+  } as any)
 const AdminPedidosNovoRoute = AdminPedidosNovoRouteImport.update({
   id: '/pedidos/novo',
   path: '/pedidos/novo',
@@ -604,6 +611,7 @@ export interface FileRoutesByFullPath {
   '/admin/marketing/compre-junto': typeof AdminMarketingCompreJuntoRoute
   '/admin/marketing/order-bumps': typeof AdminMarketingOrderBumpsRoute
   '/admin/pedidos/novo': typeof AdminPedidosNovoRoute
+  '/admin/produtos/api-conexoes': typeof AdminProdutosApiConexoesRoute
   '/admin/produtos/estoque': typeof AdminProdutosEstoqueRoute
   '/admin/produtos/novo': typeof AdminProdutosNovoRoute
   '/admin/produtos/precos': typeof AdminProdutosPrecosRoute
@@ -689,6 +697,7 @@ export interface FileRoutesByTo {
   '/admin/marketing/compre-junto': typeof AdminMarketingCompreJuntoRoute
   '/admin/marketing/order-bumps': typeof AdminMarketingOrderBumpsRoute
   '/admin/pedidos/novo': typeof AdminPedidosNovoRoute
+  '/admin/produtos/api-conexoes': typeof AdminProdutosApiConexoesRoute
   '/admin/produtos/estoque': typeof AdminProdutosEstoqueRoute
   '/admin/produtos/novo': typeof AdminProdutosNovoRoute
   '/admin/produtos/precos': typeof AdminProdutosPrecosRoute
@@ -777,6 +786,7 @@ export interface FileRoutesById {
   '/admin/marketing/compre-junto': typeof AdminMarketingCompreJuntoRoute
   '/admin/marketing/order-bumps': typeof AdminMarketingOrderBumpsRoute
   '/admin/pedidos/novo': typeof AdminPedidosNovoRoute
+  '/admin/produtos/api-conexoes': typeof AdminProdutosApiConexoesRoute
   '/admin/produtos/estoque': typeof AdminProdutosEstoqueRoute
   '/admin/produtos/novo': typeof AdminProdutosNovoRoute
   '/admin/produtos/precos': typeof AdminProdutosPrecosRoute
@@ -865,6 +875,7 @@ export interface FileRouteTypes {
     | '/admin/marketing/compre-junto'
     | '/admin/marketing/order-bumps'
     | '/admin/pedidos/novo'
+    | '/admin/produtos/api-conexoes'
     | '/admin/produtos/estoque'
     | '/admin/produtos/novo'
     | '/admin/produtos/precos'
@@ -950,6 +961,7 @@ export interface FileRouteTypes {
     | '/admin/marketing/compre-junto'
     | '/admin/marketing/order-bumps'
     | '/admin/pedidos/novo'
+    | '/admin/produtos/api-conexoes'
     | '/admin/produtos/estoque'
     | '/admin/produtos/novo'
     | '/admin/produtos/precos'
@@ -1037,6 +1049,7 @@ export interface FileRouteTypes {
     | '/admin/marketing/compre-junto'
     | '/admin/marketing/order-bumps'
     | '/admin/pedidos/novo'
+    | '/admin/produtos/api-conexoes'
     | '/admin/produtos/estoque'
     | '/admin/produtos/novo'
     | '/admin/produtos/precos'
@@ -1422,6 +1435,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProdutosEstoqueRouteImport
       parentRoute: typeof AdminProdutosRoute
     }
+    '/admin/produtos/api-conexoes': {
+      id: '/admin/produtos/api-conexoes'
+      path: '/api-conexoes'
+      fullPath: '/admin/produtos/api-conexoes'
+      preLoaderRoute: typeof AdminProdutosApiConexoesRouteImport
+      parentRoute: typeof AdminProdutosRoute
+    }
     '/admin/pedidos/novo': {
       id: '/admin/pedidos/novo'
       path: '/pedidos/novo'
@@ -1733,12 +1753,14 @@ const AdminMarcasRouteWithChildren = AdminMarcasRoute._addFileChildren(
 )
 
 interface AdminProdutosRouteChildren {
+  AdminProdutosApiConexoesRoute: typeof AdminProdutosApiConexoesRoute
   AdminProdutosEstoqueRoute: typeof AdminProdutosEstoqueRoute
   AdminProdutosNovoRoute: typeof AdminProdutosNovoRoute
   AdminProdutosPrecosRoute: typeof AdminProdutosPrecosRoute
 }
 
 const AdminProdutosRouteChildren: AdminProdutosRouteChildren = {
+  AdminProdutosApiConexoesRoute: AdminProdutosApiConexoesRoute,
   AdminProdutosEstoqueRoute: AdminProdutosEstoqueRoute,
   AdminProdutosNovoRoute: AdminProdutosNovoRoute,
   AdminProdutosPrecosRoute: AdminProdutosPrecosRoute,
