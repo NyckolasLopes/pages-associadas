@@ -196,14 +196,10 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">ID / SKU</Label>
-                <Input disabled value={formData.id || ""} className="bg-slate-50 text-slate-500" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Código Interno</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.codigoInterno || ""} onChange={e => setFormData({...formData, codigoInterno: e.target.value})} className="bg-white" />
+                <Label className="font-bold text-xs uppercase text-slate-500">ID / SKU / Código Interno</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.codigoInterno || formData.id || ""} onChange={e => setFormData({...formData, codigoInterno: e.target.value})} className="bg-white" />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">EAN / Código de Barras*</Label>
@@ -397,17 +393,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                             setFormData({...formData, principiosAtivos: newArr});
                           }} 
                         />
-                        <Input 
-                          placeholder="Dosagem" 
-                          className="w-24"
-                          value={p.dosagem || ""} 
-                          onChange={e => {
-                            const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
-                            if (typeof newArr[idx] === "string") newArr[idx] = { nome: newArr[idx], dosagem: e.target.value };
-                            else newArr[idx] = { ...newArr[idx], dosagem: e.target.value };
-                            setFormData({...formData, principiosAtivos: newArr});
-                          }} 
-                        />
+
                         <Button variant="ghost" size="icon" onClick={() => {
                           const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
                           newArr.splice(idx, 1);
@@ -419,7 +405,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     ))}
                     <Button variant="outline" size="sm" onClick={() => {
                       const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
-                      newArr.push({ nome: "", concentracao: "", unidadeMedida: "", dosagem: "" });
+                      newArr.push({ nome: "", concentracao: "", unidadeMedida: "" });
                       setFormData({...formData, principiosAtivos: newArr});
                     }}>
                       <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Princípio Ativo
@@ -710,6 +696,16 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     className="bg-white" 
                     placeholder="Descrição da imagem para leitores de tela e Google Imagens" 
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Tags de Busca Internas</Label>
+                  <Textarea disabled={!isGlobalAdmin} 
+                    value={(formData.internalTags || []).join(", ")} 
+                    onChange={e => setFormData({...formData, internalTags: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} 
+                    className="bg-white min-h-[80px]" 
+                    placeholder="Ex: gripe, resfriado, febre, dor no corpo (separados por vírgula)" 
+                  />
+                  <span className="text-xs text-slate-400">Palavras-chave internas que facilitam a busca dentro do site. Não aparecem no Google.</span>
                 </div>
               </div>
 
