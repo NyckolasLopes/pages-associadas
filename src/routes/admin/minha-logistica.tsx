@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -70,6 +71,24 @@ function MinhaLogistica() {
 
   if (!pharmacy) return null;
 
+  const DAYS_OF_WEEK = [
+    { id: 0, label: "Dom" },
+    { id: 1, label: "Seg" },
+    { id: 2, label: "Ter" },
+    { id: 3, label: "Qua" },
+    { id: 4, label: "Qui" },
+    { id: 5, label: "Sex" },
+    { id: 6, label: "Sáb" },
+  ];
+
+  const handleDayToggle = (dayId: number) => {
+    const currentDays = formData.diasFuncionamento || [1,2,3,4,5,6];
+    const newDays = currentDays.includes(dayId)
+      ? currentDays.filter((d) => d !== dayId)
+      : [...currentDays, dayId];
+    setFormData({ ...formData, diasFuncionamento: newDays.sort() });
+  };
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
@@ -87,7 +106,34 @@ function MinhaLogistica() {
         </Button>
       </div>
 
-      <Tabs defaultValue="entrega" className="mt-8 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <h3 className="font-bold text-lg text-slate-800 mb-4">Dias de Operação</h3>
+        <p className="text-sm text-slate-500 mb-4">
+          Selecione os dias da semana em que a loja está aberta. Essa configuração afeta a previsão de entrega e retirada para o cliente.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          {DAYS_OF_WEEK.map((day) => {
+            const isChecked = (formData.diasFuncionamento || [1,2,3,4,5,6]).includes(day.id);
+            return (
+              <label
+                key={day.id}
+                className={`flex items-center gap-2 border rounded-full px-4 py-2 cursor-pointer transition-colors ${
+                  isChecked ? 'bg-emerald-50 border-emerald-500 text-emerald-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={() => handleDayToggle(day.id)}
+                  className="hidden"
+                />
+                <span className="font-medium text-sm">{day.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      <Tabs defaultValue="entrega" className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <TabsList className="grid w-full grid-cols-2 max-w-md mb-8">
           <TabsTrigger value="entrega" className="flex items-center gap-2">
             <Truck className="w-4 h-4" />

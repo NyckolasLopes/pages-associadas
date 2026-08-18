@@ -27,6 +27,62 @@ import { sanitizeText, validatePhone, validateCPF, validateEmail, sanitizeCoupon
 import type { Produto } from "@/types";
 import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates } from "@/lib/utils";
 
+function getDynamicETA(inicio: string, fim: string, diasAbertos: number[], tempoMinutos: string, mode: "Entrega" | "Retirada") {
+  const fallback = mode === "Entrega" ? (tempoMinutos ? `Em até ${tempoMinutos}` : "Em breve") : (tempoMinutos ? `Retirada em até ${tempoMinutos}` : "Retirada a partir de 30 minutos");
+  if (!inicio || !fim || !diasAbertos || diasAbertos.length === 0) {
+    return fallback;
+  }
+
+  try {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentHour = now.getHours();
+    const currentMin = now.getMinutes();
+    const currentTime = currentHour * 60 + currentMin;
+
+    const [inicioH, inicioM] = inicio.split(":").map(Number);
+    const [fimH, fimM] = fim.split(":").map(Number);
+    const inicioTime = inicioH * 60 + (inicioM || 0);
+    const fimTime = fimH * 60 + (fimM || 0);
+
+    const isTodayOpen = diasAbertos.includes(currentDay);
+    
+    if (isTodayOpen && currentTime >= inicioTime && currentTime <= fimTime) {
+      const baseTempo = tempoMinutos ? `em até ${tempoMinutos}` : "em breve";
+      return mode === "Entrega" ? `Chegará hoje ${baseTempo}` : `Retire hoje ${baseTempo}`;
+    }
+
+    let nextDay = currentDay;
+    let daysToAdd = 0;
+    
+    if (isTodayOpen && currentTime < inicioTime) {
+      return mode === "Entrega" ? `Chegará hoje a partir das ${inicio}` : `Retire hoje a partir das ${inicio}`;
+    }
+
+    for (let i = 1; i <= 7; i++) {
+      const checkDay = (currentDay + i) % 7;
+      if (diasAbertos.includes(checkDay)) {
+        daysToAdd = i;
+        nextDay = checkDay;
+        break;
+      }
+    }
+
+    if (daysToAdd === 0) return fallback;
+
+    if (daysToAdd === 1) {
+      return mode === "Entrega" ? `Chegará amanhã a partir das ${inicio}` : `Retire amanhã a partir das ${inicio}`;
+    }
+
+    const futureDate = new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+    const formattedDate = `${futureDate.getDate().toString().padStart(2, '0')}/${(futureDate.getMonth()+1).toString().padStart(2, '0')}`;
+    
+    return mode === "Entrega" ? `Chegará dia ${formattedDate} a partir das ${inicio}` : `Retire dia ${formattedDate} a partir das ${inicio}`;
+  } catch (err) {
+    return fallback;
+  }
+}
+
 export const Route = createFileRoute("/_store/cart")({
   validateSearch: (search: Record<string, unknown>): { shared?: string } => {
     return {
@@ -265,7 +321,7 @@ function CartPage() {
     const opts: FreightOption[] = [];
     
     if (p.aceitaRetirada) {
-      opts.push({ id: "pickup", label: items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Presencial na farmácia" : "Retirar grátis na loja", price: 0, eta: p.tempoRetirada ? `Retirada em até ${p.tempoRetirada}` : "Retirada a partir de 30 minutos", icon: Store });
+      opts.push({ id: "pickup", label: items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Presencial na farmácia" : "Retirar grátis na loja", price: 0, eta: getDynamicETA(p.horarioInicioRetirada || "08:00", p.horarioFimRetirada || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoRetirada || "30 minutos", "Retirada"), icon: Store });
     }
 
     if (!forcePickup && p.aceitaEntrega) {
@@ -292,7 +348,7 @@ function CartPage() {
                id: m.id,
                label: m.nome,
                price: deliveryPrice,
-               eta: m.tempoEntrega ? `Em até ${m.tempoEntrega}` : "Em breve",
+               eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], m.tempoEntrega || "60 minutos", "Entrega"),
                icon: Truck
             });
           }
@@ -317,7 +373,7 @@ function CartPage() {
 
         if (deliveryPrice !== null) {
           opts.push(
-            { id: "standard", label: "Entrega Padrão", price: deliveryPrice, eta: p.tempoEntrega ? `Em até ${p.tempoEntrega}` : "Em até 3 horas", icon: Bike }
+            { id: "standard", label: "Entrega Padrão", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: Bike }
           );
         }
 
@@ -518,7 +574,7 @@ function CartPage() {
         },
         envio: {
           metodo: deliveryMethod === "entrega" ? "entrega" : "retirada",
-          prazo: deliveryMethod === "entrega" ? (selectedFreight?.eta || "Em até 3 horas") : "A partir de 30 minutos",
+          prazo: selectedFreight?.eta || (deliveryMethod === "entrega" ? "Em até 3 horas" : "A partir de 30 minutos"),
           endereco: deliveryMethod === "entrega" ? cleanAddress : selectedPharmacy.endereco,
           numero: deliveryMethod === "entrega" ? cleanNumber : "",
           bairro: deliveryMethod === "entrega" ? cleanBairro : selectedPharmacy.bairro,
@@ -1129,7 +1185,7 @@ function CartPage() {
                                 <Icon className="h-4 w-4 text-primary" />
                                 <div className="flex-1">
                                   <div className="text-sm font-bold">{f.label}</div>
-                                  <div className="text-xs text-muted-foreground">{f.eta}</div>
+                                  <div className="text-xs text-emerald-600 font-medium">{f.eta}</div>
                                 </div>
                                 <span className="text-sm font-bold">{f.price === 0 ? "Grátis" : brl(f.price)}</span>
                               </label>

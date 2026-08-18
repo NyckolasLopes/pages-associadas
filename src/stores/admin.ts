@@ -118,6 +118,7 @@ export interface Pharmacy {
   telefone: string;
   whatsapp?: string; // WhatsApp oficial da unidade para pedidos
   horarioFuncionamento: string;
+  diasFuncionamento?: number[]; // [0,1,2,3,4,5,6] onde 0 = Domingo
   respTecnico: string; // Nome do Farmacêutico
   inscricaoFarmaceutico: string; // CRF
   alvara: string;
@@ -334,6 +335,7 @@ const defaultPharmacies: Pharmacy[] = lojas.map((l, idx) => {
     email: "contato@farmaciasassociadas.com.br",
     telefone: "(51) 3333-3333",
     horarioFuncionamento: "08:00 às 22:00",
+    diasFuncionamento: [1,2,3,4,5,6], // Segunda a Sábado
     respTecnico: l.farmaceuticoResponsavel,
     inscricaoFarmaceutico: l.crf,
     alvara: l.alvaraSanitario,
@@ -904,6 +906,7 @@ export const useAdmin = create<AdminState>()(
             email: l.email,
             telefone: l.telefone,
             horarioFuncionamento: l.horario_funcionamento || l.tema_cores?.horario_funcionamento,
+            diasFuncionamento: l.tema_cores?.diasFuncionamento || [1,2,3,4,5,6],
             respTecnico: l.farmaceutico_responsavel || l.tema_cores?.farmaceutico_responsavel,
             inscricaoFarmaceutico: l.crf || l.tema_cores?.crf,
             alvara: l.alvara_sanitario || l.tema_cores?.alvara_sanitario,
@@ -968,6 +971,7 @@ export const useAdmin = create<AdminState>()(
           topBarTextColor: p.topBarTextColor,
           whatsapp: p.whatsapp,
           horario_funcionamento: p.horarioFuncionamento,
+          diasFuncionamento: p.diasFuncionamento,
           farmaceutico_responsavel: p.respTecnico,
           crf: p.inscricaoFarmaceutico,
           alvara_sanitario: p.alvara,
@@ -1093,6 +1097,7 @@ export const useAdmin = create<AdminState>()(
           topBarTextColor: p.topBarTextColor,
           whatsapp: p.whatsapp,
           horario_funcionamento: p.horarioFuncionamento,
+          diasFuncionamento: p.diasFuncionamento,
           farmaceutico_responsavel: p.respTecnico,
           crf: p.inscricaoFarmaceutico,
           alvara_sanitario: p.alvara,
