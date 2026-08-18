@@ -587,7 +587,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {!isGlobalAdmin && (
                 <div className="space-y-2">
-                  <Label className="font-bold text-xs uppercase text-slate-500">Preço Base da Rede (R$)</Label>
+                  <Label className="font-bold text-xs uppercase text-slate-500">Preço (R$)</Label>
                   <Input 
                     disabled 
                     value={customProducts.find(p => p.id === formData.id)?.precoPor?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "R$ 0,00"} 
@@ -598,7 +598,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               )}
               
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">{isGlobalAdmin ? "Preço Base da Rede (R$)" : "Meu Preço (R$)"}</Label>
+                <Label className="font-bold text-xs uppercase text-slate-500">{isGlobalAdmin ? "Preço (R$)" : "Meu Preço (R$)"}</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
                   <Input 
