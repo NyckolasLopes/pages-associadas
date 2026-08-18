@@ -268,7 +268,7 @@ function InscricaoLojaPublic() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <FieldLabel required>Categoria do Associado</FieldLabel>
-                  <Select value={form.categoriaAssociado || "Pleno"} onValueChange={(val) => update({ categoriaAssociado: val as any })}>
+                  <Select value={form.categoriaAssociado?.toLowerCase() === "parceiro" ? "Parceiro" : "Pleno"} onValueChange={(val) => update({ categoriaAssociado: val as any })}>
                     <SelectTrigger className="bg-white h-11">
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
