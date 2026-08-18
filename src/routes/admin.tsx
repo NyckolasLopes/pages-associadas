@@ -475,17 +475,20 @@ function AdminLayout() {
             </NavSection>
           )}
 
-          {/* ---- LOGISTICA ---- */}
-          {isGlobalAdmin && (
+            {/* ---- LOGISTICA ---- */}
             <NavSection 
               icon={<Truck className="h-4 w-4" />} 
               label="Logística" 
               open={openNavSection === "Logística"} 
               onToggle={() => setOpenNavSection(openNavSection === "Logística" ? "" : "Logística")}
             >
-              <Link to={"/admin/logistica" as any} className={subLinkClass} activeOptions={{ exact: true }}>Logística das lojas</Link>
+              {isGlobalAdmin && (
+                <Link to={"/admin/logistica" as any} className={subLinkClass} activeOptions={{ exact: true }}>Logística das lojas</Link>
+              )}
+              {!isGlobalAdmin && (
+                <Link to={"/admin/minha-logistica" as any} className={subLinkClass} activeOptions={{ exact: true }}>Minha Logística</Link>
+              )}
             </NavSection>
-          )}
 
           {/* ---- PRODUTOS ---- */}
           {(can('prod_todos') || can('prod_novo') || can('prod_categorias') || can('prod_colecoes') || can('prod_filtros') || can('prod_marcas') || !isGlobalAdmin) && (

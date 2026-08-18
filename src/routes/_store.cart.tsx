@@ -274,30 +274,52 @@ function CartPage() {
         ? calculateDistance(geoLat, geoLng, p.lat, p.lng)
         : (pharmDistances[p.id] ?? null);
 
-      let deliveryPrice = null;
-
-      if (distance !== null && distance >= 0 && distance <= 20) {
-        if (p.raiosEntrega && p.raiosEntrega.length > 0) {
-          // Find matching radius
-          const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
-          const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
-          if (matchingRaio) {
-            deliveryPrice = matchingRaio.preco;
+      if (p.meiosEntregaPersonalizados && p.meiosEntregaPersonalizados.length > 0) {
+        // Lógica de Entregas do Associado (Meios Customizados)
+        p.meiosEntregaPersonalizados.filter(m => m.ativo).forEach(m => {
+          let deliveryPrice = null;
+          if (distance !== null && distance >= 0) {
+             const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
+             const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
+             if (matchingRaio) deliveryPrice = matchingRaio.preco;
+          } else if (distance === null) {
+             // Fallback caso a distância ainda não esteja calculada
+             deliveryPrice = 10;
           }
+
+          if (deliveryPrice !== null) {
+            opts.push({
+               id: m.id,
+               label: m.nome,
+               price: deliveryPrice,
+               eta: m.tempoEntrega ? `Em até ${m.tempoEntrega}` : "Em breve",
+               icon: Truck
+            });
+          }
+        });
+      } else {
+        // Lógica Legada (Configuração Global Admin)
+        let deliveryPrice = null;
+
+        if (distance !== null && distance >= 0 && distance <= 20) {
+          if (p.raiosEntrega && p.raiosEntrega.length > 0) {
+            // Find matching radius
+            const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
+            const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
+            if (matchingRaio) {
+              deliveryPrice = matchingRaio.preco;
+            }
+          }
+        } else if (distance === null) {
+          // Fallback: If distance is unknown but we're here, assume basic delivery based on old logic
+          deliveryPrice = 10;
         }
-      } else if (distance === null) {
-        // Fallback: If distance is unknown but we're here, assume basic delivery based on old logic
-        deliveryPrice = 10;
-      }
 
-      if (deliveryPrice !== null) {
-        opts.push(
-          { id: "standard", label: "Entrega Padrão", price: deliveryPrice, eta: p.tempoEntrega ? `Em até ${p.tempoEntrega}` : "Em até 3 horas", icon: Bike }
-        );
-      }
-    }
-
-    if (!forcePickup && p) {
+        if (deliveryPrice !== null) {
+          opts.push(
+            { id: "standard", label: "Entrega Padrão", price: deliveryPrice, eta: p.tempoEntrega ? `Em até ${p.tempoEntrega}` : "Em até 3 horas", icon: Bike }
+          );
+        }
 
         if (p.aceitaUber && p.custoUber) {
           opts.push({ id: "uber", label: "Uber Flash", price: Number(p.custoUber), eta: "Em até 1 hora", icon: Truck });
@@ -305,6 +327,7 @@ function CartPage() {
         if (p.aceita99 && p.custo99) {
           opts.push({ id: "99", label: "99 Entregas", price: Number(p.custo99), eta: "Em até 1 hora", icon: Truck });
         }
+      }
     }
 
     if (opts.length > 0) {

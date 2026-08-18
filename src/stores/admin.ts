@@ -88,6 +88,14 @@ export interface ContentPage {
   content?: string;
 }
 
+export interface CustomDeliveryMethod {
+  id: string;
+  nome: string; // Ex: "Motoboy", "Uber Flash"
+  ativo: boolean;
+  tempoEntrega: string; // Ex: "30 minutos"
+  raios: { ateKm: number; preco: number }[];
+}
+
 export interface Pharmacy {
   id: string;
   ativo?: boolean;
@@ -182,6 +190,8 @@ export interface Pharmacy {
   googleTagManagerId?: string;
   facebookPixelId?: string;
   chatgptAdsId?: string;
+  // Meios de Entrega Customizados (Associado)
+  meiosEntregaPersonalizados?: CustomDeliveryMethod[];
   // Pagamento
   identificadorPagamento?: string;
   hashRecebimento?: string;
