@@ -492,7 +492,7 @@ export function Header() {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold truncate">{p.nome}</div>
-                        <div className="text-xs text-muted-foreground">{p.fabricante}</div>
+                        <div className="text-xs text-muted-foreground">{p.marca}</div>
                       </div>
                       <div className="text-sm font-bold text-foreground">{brl(p.precoPor)}</div>
                     </Link>
@@ -683,7 +683,7 @@ export function Header() {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-bold truncate">{p.nome}</div>
-                            <div className="text-xs text-muted-foreground">{p.fabricante}</div>
+                            <div className="text-xs text-muted-foreground">{p.marca}</div>
                           </div>
                           <div className="text-sm font-bold text-foreground">{brl(p.precoPor)}</div>
                         </Link>
@@ -1299,7 +1299,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] font-bold text-muted-foreground uppercase truncate mb-1">{p.fabricante}</div>
+                      <div className="text-[10px] font-bold text-muted-foreground uppercase truncate mb-1">{p.marca}</div>
                       <div className="text-xs font-bold line-clamp-2 leading-tight mb-3 group-hover:text-primary transition min-h-[32px]">{p.nome}</div>
                       <div className="text-sm font-bold text-foreground mt-auto">{brl(p.precoPor)}</div>
                     </Link>
@@ -1507,4 +1507,5 @@ function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
     </SheetContent>
   );
 }
+
 

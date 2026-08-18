@@ -196,7 +196,7 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
     const n = removeAccents(String(p.nome || "").toLowerCase());
     const tags = (p.internalTags || []).map((t: string) => removeAccents(String(t || "").toLowerCase()));
     const pa = removeAccents(String(p.principiosAtivos || "").toLowerCase());
-    const fab = removeAccents(String(p.fabricante || "").toLowerCase());
+    const fab = removeAccents(String(p.marca || "").toLowerCase());
     const terms = removeAccents(String(p.termosPesquisa || "").toLowerCase());
     const desc = removeAccents(String(p.descricao || "").toLowerCase());
     const brand = removeAccents(String(p.marca || "").toLowerCase());
@@ -226,7 +226,7 @@ const getFuse = () => {
       { name: "principiosAtivos", weight: 2.5 },
       { name: "ean", weight: 2.0 },
       { name: "marca", weight: 1.5 },
-      { name: "fabricante", weight: 1.0 },
+      { name: "marca", weight: 1.0 },
       { name: "descricao", weight: 0.5 },
       { name: "resumoDescricao", weight: 0.5 },
     ],
@@ -255,7 +255,7 @@ function applyFilters(produtos: Produto[], filters?: FilterOptions): Produto[] {
   return produtos.filter((p) => {
     // 1. Marca
     if (filters.marcas && filters.marcas.length > 0) {
-      const pMarca = String(p.fabricante || p.marca || "").toLowerCase().trim();
+      const pMarca = String(p.marca || p.marca || "").toLowerCase().trim();
       const matchBrand = filters.marcas.some(m => pMarca === String(m).toLowerCase().trim());
       if (!matchBrand) return false;
     }
@@ -465,7 +465,7 @@ export const catalog = {
     await ensureHydrated();
     return wait(
       getAllProdutos().filter(
-        (p) => p.fabricante && String(p.fabricante).toLowerCase() === brandName.toLowerCase(),
+        (p) => p.marca && String(p.marca).toLowerCase() === brandName.toLowerCase(),
       ),
     );
   },
@@ -633,3 +633,4 @@ export const catalog = {
     return wait(active[0] || (pharmacies[0] as unknown as Loja));
   },
 };
+

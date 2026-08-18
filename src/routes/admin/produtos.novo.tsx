@@ -58,7 +58,7 @@ function AdminNovoProduto() {
     foto: "",
     descricao: "",
     url: "",
-    fabricante: "",
+    marca: "",
     precoDe: 0,
     precoPor: 0,
     estoque: 0,
@@ -101,3 +101,4 @@ function AdminNovoProduto() {
     </div>
   );
 }
+

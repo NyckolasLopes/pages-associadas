@@ -344,20 +344,21 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             </div>
           </div>
 
-          {/* Card: Fabricante e Ativos */}
+          {/* Card: Marca e Ativos */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
-            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Fabricante e Componentes</h3>
+            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Marca e Componentes</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Fabricante (Marca)</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.marca || formData.fabricante || ""} onChange={e => setFormData({...formData, marca: e.target.value, fabricante: e.target.value})} className="bg-white" />
-              </div>
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="font-bold text-xs uppercase text-slate-500">DCB</Label>
-                  <Input disabled={!isGlobalAdmin} value={formData.dcb || ""} onChange={e => setFormData({...formData, dcb: e.target.value})} className="bg-white" placeholder="Ex: Paracetamol" />
+                  <Label className="font-bold text-xs uppercase text-slate-500">Marca</Label>
+                  <Input disabled={!isGlobalAdmin} value={formData.marca || ""} onChange={e => setFormData({...formData, marca: e.target.value})} className="bg-white" />
                 </div>
-                
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Classe Terapêutica</Label>
+                  <Input disabled={!isGlobalAdmin} value={formData.classeTerapeutica || ""} onChange={e => setFormData({...formData, classeTerapeutica: e.target.value})} className="bg-white" placeholder="Ex: Analgésico, Antitérmico" />
+                </div>
+              </div>
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">Princípios Ativos</Label>
                   <div className="space-y-2">
@@ -395,6 +396,17 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                             setFormData({...formData, principiosAtivos: newArr});
                           }} 
                         />
+                        <Input 
+                          placeholder="Dosagem" 
+                          className="w-24"
+                          value={p.dosagem || ""} 
+                          onChange={e => {
+                            const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
+                            if (typeof newArr[idx] === "string") newArr[idx] = { nome: newArr[idx], dosagem: e.target.value };
+                            else newArr[idx] = { ...newArr[idx], dosagem: e.target.value };
+                            setFormData({...formData, principiosAtivos: newArr});
+                          }} 
+                        />
                         <Button variant="ghost" size="icon" onClick={() => {
                           const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
                           newArr.splice(idx, 1);
@@ -406,7 +418,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     ))}
                     <Button variant="outline" size="sm" onClick={() => {
                       const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
-                      newArr.push({ nome: "", concentracao: "", unidadeMedida: "" });
+                      newArr.push({ nome: "", concentracao: "", unidadeMedida: "", dosagem: "" });
                       setFormData({...formData, principiosAtivos: newArr});
                     }}>
                       <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Princípio Ativo
@@ -434,49 +446,59 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Peso Bruto (KG)</Label>
-                <Input type="number" step="0.001" disabled={!isGlobalAdmin} value={formData.peso || ""} onChange={e => setFormData({...formData, peso: parseFloat(e.target.value) || 0})} className="bg-white" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Qtd Embalagem</Label>
-                <Input type="number" disabled={!isGlobalAdmin} value={formData.quantidadeEmbalagem || ""} onChange={e => setFormData({...formData, quantidadeEmbalagem: parseInt(e.target.value) || 0})} className="bg-white" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Qtd Conteúdo</Label>
-                <Input type="number" disabled={!isGlobalAdmin} value={formData.quantidadeConteudo || ""} onChange={e => setFormData({...formData, quantidadeConteudo: parseInt(e.target.value) || 0})} className="bg-white" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Apresentação</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.apresentacao || ""} onChange={e => setFormData({...formData, apresentacao: e.target.value})} className="bg-white" placeholder="Ex: EM_COMPRIMIDO" />
+                <div className="flex items-center justify-between">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Características Adicionais</Label>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const newArr = [...(Array.isArray(formData.caracteristicas) ? formData.caracteristicas : [])];
+                    newArr.push({ titulo: "", descricao: "" });
+                    setFormData({...formData, caracteristicas: newArr});
+                  }}>
+                    <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Característica
+                  </Button>
+                </div>
+                
+                <div className="space-y-3 mt-4">
+                  {Array.isArray(formData.caracteristicas) && formData.caracteristicas.map((c, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Input 
+                        placeholder="Título (ex: Cor)" 
+                        className="w-1/3 bg-white"
+                        value={c.titulo || ""} 
+                        onChange={e => {
+                          const newArr = [...(Array.isArray(formData.caracteristicas) ? formData.caracteristicas : [])];
+                          newArr[idx] = { ...newArr[idx], titulo: e.target.value };
+                          setFormData({...formData, caracteristicas: newArr});
+                        }} 
+                      />
+                      <Input 
+                        placeholder="Descrição (ex: Branco)" 
+                        className="flex-1 bg-white"
+                        value={c.descricao || ""} 
+                        onChange={e => {
+                          const newArr = [...(Array.isArray(formData.caracteristicas) ? formData.caracteristicas : [])];
+                          newArr[idx] = { ...newArr[idx], descricao: e.target.value };
+                          setFormData({...formData, caracteristicas: newArr});
+                        }} 
+                      />
+                      <Button variant="ghost" size="icon" onClick={() => {
+                        const newArr = [...(Array.isArray(formData.caracteristicas) ? formData.caracteristicas : [])];
+                        newArr.splice(idx, 1);
+                        setFormData({...formData, caracteristicas: newArr});
+                      }}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(!formData.caracteristicas || formData.caracteristicas.length === 0) && (
+                    <p className="text-sm text-slate-400 italic">Nenhuma característica adicionada.</p>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Tamanho</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.tamanho || ""} onChange={e => setFormData({...formData, tamanho: e.target.value})} className="bg-white" placeholder="Ex: Grande, 50ml, 10cm" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Área de Aplicação</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.areaAplicacao || ""} onChange={e => setFormData({...formData, areaAplicacao: e.target.value})} className="bg-white" placeholder="Ex: Rosto, Cabelo, Corpo" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Prescrição</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.prescricao || ""} onChange={e => setFormData({...formData, prescricao: e.target.value})} className="bg-white" placeholder="Ex: Sim, Não, Controle Especial" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Via de Administração</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.viaAdministracao || ""} onChange={e => setFormData({...formData, viaAdministracao: e.target.value})} className="bg-white" placeholder="Ex: VIA_ORAL" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Dosagem</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.dosagem || ""} onChange={e => setFormData({...formData, dosagem: e.target.value})} className="bg-white" placeholder="Ex: 750mg" />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Faixa Etária</Label>
                 <Select disabled={!isGlobalAdmin} value={formData.faixaEtaria || "ADULTO"} onValueChange={v => setFormData({...formData, faixaEtaria: v})}>
@@ -768,3 +790,4 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     </>
   );
 }
+

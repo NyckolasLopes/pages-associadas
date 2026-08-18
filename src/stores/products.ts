@@ -67,7 +67,7 @@ function mapRowToProduto(d: any): Produto {
     descricao: d.descricao,
     url: d.slug,
     slug: d.slug,
-    fabricante: d.fabricante,
+    marca: d.marca,
     marca: d.marca,
     precoDe: Number(d.preco_de) || 0,
     precoPor: Number(d.preco_por) || 0,
@@ -174,7 +174,7 @@ export const useAdminProducts = create<ProductsState>()(
           nome: formattedProduct.nome,
           descricao: formattedProduct.descricao || null,
           slug: formattedProduct.slug || formattedProduct.url || `${formattedProduct.nome?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${formattedProduct.id}`,
-          fabricante: formattedProduct.fabricante || null,
+          marca: formattedProduct.marca || null,
           marca: formattedProduct.marca || null,
           preco_de: formattedProduct.precoDe || 0,
           preco_por: formattedProduct.precoPor || 0,
@@ -300,7 +300,7 @@ export const useAdminProducts = create<ProductsState>()(
             nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
             descricao: p.descricao || null,
             slug: p.slug || p.url || `${(p.nome || 'produto').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${p.id}`,
-            fabricante: p.fabricante || null,
+            marca: p.marca || null,
             marca: p.marca || null,
             preco_de: p.precoDe || 0,
             preco_por: p.precoPor || 0,
@@ -830,3 +830,4 @@ export const useAdminProducts = create<ProductsState>()(
     }
   )
 );
+

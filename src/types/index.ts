@@ -1,5 +1,4 @@
 // Domain types for the headless pharmacy platform.
-
 export interface SeloSistema {
   id: string;
   nome: string;
@@ -7,15 +6,12 @@ export interface SeloSistema {
   corFundo: string;
   corTexto: string;
 }
-
-
 export type Tarja =
   | "Sem Tarja"
   | "Vermelha"
   | "Vermelha Retém Receita"
   | "Preta"
   | "Amarela";
-
 export interface Produto {
   id: string;
   lojaId?: string; // Se preenchido, produto exclusivo desta loja individual
@@ -29,7 +25,6 @@ export interface Produto {
   nome: string;
   descricao: string; // HTML rich text
   url: string; // slug
-  fabricante: string;
   precoDe: number;
   precoPor: number;
   estoque: number;
@@ -43,7 +38,6 @@ export interface Produto {
   categoriasIds?: string[]; // Categorias adicionais
   subcategoriasIds?: string[]; // Subcategorias adicionais
   categoriasAdicionais?: string[];
-  
   // Prateleira Infinita / Estoque Externo
   estoqueExterno?: {
     distribuidor: string;
@@ -53,7 +47,7 @@ export interface Produto {
   };
   internalTags: string[];
   ativo?: boolean;
-  principiosAtivos?: Array<{ nome: string; concentracao?: string; unidadeMedida?: string }> | string[];
+  principiosAtivos?: Array<{ nome: string; concentracao?: string; unidadeMedida?: string; dosagem?: string }> | string[];
   videoUrl?: string;
   youtubeVideoUrl?: string;
   imagens?: Array<{ caminhoImagem: string }> | string[];
@@ -64,7 +58,6 @@ export interface Produto {
   prioridade?: number;
   lancamento?: boolean;
   tipoReceita?: string;
-  dcb?: string;
   codigoInterno?: string;
   resumoDescricao?: string;
   tituloSeo?: string;
@@ -72,18 +65,11 @@ export interface Produto {
   alertaRegulatorio?: boolean;
   alertaTexto?: string;
   kit?: boolean;
-  peso?: number;
   quantidadeEmbalagem?: number;
   quantidadeConteudo?: number;
   unidadeEmbalagem?: string;
   unidadeConteudo?: string;
-  prescricao?: string;
-  apresentacao?: string;
-  viaAdministracao?: string;
-  dosagem?: string;
   sabor?: string;
-  tamanho?: string;
-  areaAplicacao?: string;
   fps?: number;
   faixaEtaria?: string;
   categoriasSecundarias?: string[]; // IDs
@@ -135,9 +121,7 @@ export interface Produto {
   image?: string;
   slug?: string;
   requiresReceita?: boolean;
-
   // --- Novos campos integrados da API Externa ---
-  
   // Produtos
   eansSecundarios?: string[];
   caracteristicas?: Array<{ titulo: string; descricao: string }>;
@@ -145,20 +129,16 @@ export interface Produto {
   prioridade?: number;
   lancamento?: boolean;
   principiosAtivosDetalhes?: Array<{ nome: string; concentracao: string; unidadeMedida: string }>;
-
   // Preço
   percentualDesconto?: number;
   quantidadeMinima?: number;
   quantidadeMultipla?: number;
   programaFidelidade?: boolean;
-
   // Estoque
   estoquePorLoja?: Array<{ lojaCnpj: string; quantidade: number }>;
-
   // Marketing Fixo
   compreJuntoProdutoId?: string;
 }
-
 export interface Marca {
   id: string;
   nome: string;
@@ -172,7 +152,6 @@ export interface Marca {
   loja_id?: string;
   globalPleno?: boolean;
 }
-
 export interface Categoria {
   id: string;
   nome: string;
@@ -188,21 +167,18 @@ export interface Categoria {
   loja_id?: string;
   globalPleno?: boolean;
 }
-
 export interface FaixaCep {
   cepInicio: string;
   cepFim: string;
   taxa: number;
   tempoMinutos: number;
 }
-
 export type MetodoPagamento =
   | "credito"
   | "debito"
   | "pix"
   | "dinheiro"
   | "vale_refeicao";
-
 export interface Loja {
   id: string;
   categoriaAssociado?: 'Pleno' | 'Parceiro';
@@ -244,14 +220,12 @@ export interface Loja {
   facebookPixelId?: string;
   chatgptAdsId?: string;
 }
-
 export interface PedidoItem {
   produtoId: string;
   nome: string;
   qty: number;
   precoUnit: number;
 }
-
 export interface Pedido {
   id: string;
   lojaId: string;
@@ -262,9 +236,7 @@ export interface Pedido {
   itens: PedidoItem[];
   criadoEm: string;
 }
-
 export type VitrineLocal = "espaco_1" | "espaco_2" | "espaco_3";
-
 export interface Vitrine {
   id: number;
   nome: string;
@@ -280,7 +252,6 @@ export interface Vitrine {
   produtoIds?: string[];
   modo?: "categoria" | "manual";
 }
-
 export interface Avaliacao {
   id: string;
   produtoId: string;

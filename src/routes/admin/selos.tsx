@@ -103,7 +103,7 @@ function AdminSelos() {
     return customProducts.filter(p => 
       p.nome.toLowerCase().includes(productSearch.toLowerCase()) || 
       p.ean?.includes(productSearch) || 
-      p.fabricante?.toLowerCase().includes(productSearch.toLowerCase())
+      p.marca?.toLowerCase().includes(productSearch.toLowerCase())
     );
   }, [customProducts, productSearch]);
 
@@ -295,7 +295,7 @@ function AdminSelos() {
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span className="text-sm font-bold text-slate-700 truncate">{p.nome}</span>
-                            <span className="text-xs text-slate-500 truncate">EAN: {p.ean || p.sku} • {p.fabricante || 'Sem marca'}</span>
+                            <span className="text-xs text-slate-500 truncate">EAN: {p.ean || p.sku} • {p.marca || 'Sem marca'}</span>
                           </div>
                         </div>
                       );
@@ -317,3 +317,4 @@ function AdminSelos() {
     </div>
   );
 }
+

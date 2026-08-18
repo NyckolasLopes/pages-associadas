@@ -5,7 +5,6 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[]
-
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -331,7 +330,6 @@ export type Database = {
           ean: string | null
           em_campanha: boolean
           estoque: number
-          fabricante: string | null
           generico: boolean
           id: string
           imagens: Json | null
@@ -361,15 +359,7 @@ export type Database = {
           subcategorias_adicionais: Json | null
           prioridade: number | null
           lancamento: boolean | null
-          peso: number | null
-          tamanho: string | null
-          tipo_receita: string | null
-          dcb: string | null
-          prescricao: string | null
-          apresentacao: string | null
-          via_administracao: string | null
-          dosagem: string | null
-          area_aplicacao: string | null
+          caracteristicas: Json | null
           faixa_etaria: string | null
           titulo_seo: string | null
           meta_description: string | null
@@ -387,7 +377,6 @@ export type Database = {
           ean?: string | null
           em_campanha?: boolean
           estoque?: number
-          fabricante?: string | null
           generico?: boolean
           id: string
           imagens?: Json | null
@@ -417,16 +406,8 @@ export type Database = {
           subcategorias_adicionais?: Json | null
           prioridade?: number | null
           lancamento?: boolean | null
-          peso?: number | null
-          tamanho?: string | null
           tipo_receita?: string | null
-          dcb?: string | null
-          prescricao?: string | null
-          apresentacao?: string | null
-          via_administracao?: string | null
-          dosagem?: string | null
-          area_aplicacao?: string | null
-          faixa_etaria?: string | null
+          caracteristicas?: Json | null`n            faixa_etaria?: string | null
           titulo_seo?: string | null
           meta_description?: string | null
         }
@@ -443,7 +424,6 @@ export type Database = {
           ean?: string | null
           em_campanha?: boolean
           estoque?: number
-          fabricante?: string | null
           generico?: boolean
           id?: string
           imagens?: Json | null
@@ -473,16 +453,8 @@ export type Database = {
           subcategorias_adicionais?: Json | null
           prioridade?: number | null
           lancamento?: boolean | null
-          peso?: number | null
-          tamanho?: string | null
           tipo_receita?: string | null
-          dcb?: string | null
-          prescricao?: string | null
-          apresentacao?: string | null
-          via_administracao?: string | null
-          dosagem?: string | null
-          area_aplicacao?: string | null
-          faixa_etaria?: string | null
+          caracteristicas?: Json | null`n            faixa_etaria?: string | null
           titulo_seo?: string | null
           meta_description?: string | null
         }
@@ -551,11 +523,8 @@ export type Database = {
     }
   }
 }
-
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
@@ -584,7 +553,6 @@ export type Tables<
       ? R
       : never
     : never
-
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -609,7 +577,6 @@ export type TablesInsert<
       ? I
       : never
     : never
-
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -634,7 +601,6 @@ export type TablesUpdate<
       ? U
       : never
     : never
-
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
@@ -651,7 +617,6 @@ export type Enums<
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
-
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
@@ -668,7 +633,6 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
 export const Constants = {
   public: {
     Enums: {},

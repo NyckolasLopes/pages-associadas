@@ -202,7 +202,7 @@ function NovaPromocaoPage() {
     return produtos[0] || {
       id: "sample-1",
       nome: "Dipirona Monoidratada 500mg 10 Comprimidos",
-      fabricante: "EMS",
+      marca: "EMS",
       marca: "EMS",
       precoDe: 18.90,
       precoPor: 12.90,
@@ -673,7 +673,7 @@ function NovaPromocaoPage() {
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-bold text-slate-900 truncate">{p.nome}</div>
                         <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                          <span className="font-semibold">{p.marca || p.fabricante || "Associadas"}</span>
+                          <span className="font-semibold">{p.marca || p.marca || "Associadas"}</span>
                           <span>•</span>
                           <span className="font-bold text-emerald-700">{brl(p.precoPor || 0)}</span>
                         </div>
@@ -943,7 +943,7 @@ function NovaPromocaoPage() {
 
                 {/* Brand and Title */}
                 <div className="text-[10px] uppercase font-bold text-slate-400 truncate">
-                  {sampleProduct.marca || sampleProduct.fabricante || "Marca"}
+                  {sampleProduct.marca || sampleProduct.marca || "Marca"}
                 </div>
                 <div className="text-xs font-bold text-slate-800 line-clamp-2 h-8 leading-tight mb-2">
                   {sampleProduct.nome}
@@ -1034,3 +1034,4 @@ function NovaPromocaoPage() {
     </div>
   );
 }
+

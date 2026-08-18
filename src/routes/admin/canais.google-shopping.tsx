@@ -67,7 +67,7 @@ function GoogleShoppingPage() {
         }
         return '';
       }).join('\n      ')}
-      <g:brand><![CDATA[${p.fabricante || 'Associadas'}]]></g:brand>
+      <g:brand><![CDATA[${p.marca || 'Associadas'}]]></g:brand>
       <g:gtin>${p.ean || ''}</g:gtin>
     </item>\n`;
     });
@@ -174,3 +174,4 @@ function GoogleShoppingPage() {
     </div>
   );
 }
+

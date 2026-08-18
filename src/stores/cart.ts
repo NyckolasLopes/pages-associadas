@@ -137,7 +137,7 @@ function pbmDiscountForItem(item: CartItem, provider: PBMProvider | null): numbe
     nome: item.nome,
     descricao: "",
     url: "",
-    fabricante: "",
+    marca: "",
     precoDe: item.preco,
     precoPor: item.preco,
     estoque: 1,
@@ -371,3 +371,4 @@ export const useGeoCep = create<{
     skipHydration: true,
   }),
 );
+

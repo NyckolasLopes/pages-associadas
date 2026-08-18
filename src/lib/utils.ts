@@ -99,7 +99,7 @@ export function searchProductsMatch(product: any, query: string) {
     product.id || '',
     product.sku || '',
     product.codigoInterno || '',
-    product.fabricante || '',
+    product.marca || '',
     product.marca || '',
     product.principioAtivo || '',
     product.classeTerapeutica || '',

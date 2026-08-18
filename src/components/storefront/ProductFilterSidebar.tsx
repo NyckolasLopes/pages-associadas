@@ -42,7 +42,7 @@ export function ProductFilterSidebar({
 
   // Derive available options from unfiltered products
   const availableBrands = Array.from(new Set(
-    unfilteredProducts.map(p => String(p.fabricante || p.marca || "").trim()).filter(Boolean)
+    unfilteredProducts.map(p => String(p.marca || p.marca || "").trim()).filter(Boolean)
   )).sort();
 
   const hasMedicines = unfilteredProducts.some(p => p.tarja || p.generico !== undefined || p.retemReceita !== undefined);
@@ -223,3 +223,4 @@ export function ProductFilterSidebar({
     </div>
   );
 }
+

@@ -355,7 +355,7 @@ function ProductCardComponent({
 
         {/* Marca em negrito */}
         <div className="text-[11px] uppercase font-bold text-muted-foreground truncate mb-1">
-          {p.fabricante}
+          {p.marca}
         </div>
         <Link
           to="/p/$slug"
@@ -532,4 +532,5 @@ function ProductCardComponent({
 }
 
 export const ProductCard = React.memo(ProductCardComponent);
+
 

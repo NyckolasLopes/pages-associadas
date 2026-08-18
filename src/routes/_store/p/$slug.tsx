@@ -793,7 +793,7 @@ function PDP() {
   const isAvailable = maxStock > 0 || isService;
 
   const marcasProprias = ["revitart", "santo habito", "santo hábito", "revigore", "revimel", "crescendo", "vita magna", "associadas"];
-  const isMarcaPropria = p.fabricante && marcasProprias.some(m => p.fabricante.toLowerCase().includes(m));
+  const isMarcaPropria = p.marca && marcasProprias.some(m => p.marca.toLowerCase().includes(m));
   
   let hash = 0;
   for (let i = 0; i < p.id.length; i++) {
@@ -816,7 +816,7 @@ function PDP() {
     "sku": p.id,
     "brand": {
       "@type": "Brand",
-      "name": p.fabricante || "Associadas"
+      "name": p.marca || "Associadas"
     },
     "offers": {
       "@type": "Offer",
@@ -1022,8 +1022,8 @@ function PDP() {
                           <td className="py-3 px-4 font-bold text-slate-900">{p.ean || p.ean2 || p.ean3 || 'Não informado'}</td>
                         </tr>
                         <tr className="border-b">
-                          <td className="py-3 px-4 text-slate-500">Fabricante</td>
-                          <td className="py-3 px-4 font-bold text-slate-900">{p.marca || p.fabricante || 'Não informada'}</td>
+                          <td className="py-3 px-4 text-slate-500">marca</td>
+                          <td className="py-3 px-4 font-bold text-slate-900">{p.marca || p.marca || 'Não informada'}</td>
                         </tr>
                         <tr className="bg-slate-50 border-b">
                           <td className="py-3 px-4 text-slate-500">Registro Anvisa</td>
@@ -1476,8 +1476,8 @@ function PDP() {
               <h3 className="font-bold text-base mb-4 border-b pb-2">Informações Técnicas</h3>
               <div className="space-y-3">
                 <div>
-                  <strong className="block text-xs text-muted-foreground">Fabricante</strong>
-                  <div className="font-medium">{p.fabricante}</div>
+                  <strong className="block text-xs text-muted-foreground">marca</strong>
+                  <div className="font-medium">{p.marca}</div>
                 </div>
                 <div>
                   <strong className="block text-xs text-muted-foreground">EAN (Código de barras)</strong>
@@ -1758,3 +1758,4 @@ Quantidade desejada: ${wlQty}`}
     </div>
   );
 }
+

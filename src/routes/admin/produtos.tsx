@@ -235,7 +235,7 @@ function AdminProdutos() {
         "ID CATEGORIA": p.categoriaId || "",
         "SUBCATEGORIA": sub ? sub.nome : "",
         "ID SUBCATEGORIA": p.subcategoriaId || "",
-        "FABRICANTE (MARCA)": p.marca || p.fabricante || "",
+        "marca (MARCA)": p.marca || p.marca || "",
         "DCB/ PRINCIPIO ATIVO": (p.principiosAtivosDetalhes || []).map((pa: any) => pa.nome).join(', ') || "",
         "MS/REGISTRO ANVISA": p.registroAnvisa || "",
         "RETÉM RECEITA": p.retemReceita ? "SIM" : "NÃO",
@@ -300,7 +300,7 @@ function AdminProdutos() {
         }
         return '';
       }).join('\n      ')}
-      <g:brand><![CDATA[${p.fabricante || 'Associadas'}]]></g:brand>
+      <g:brand><![CDATA[${p.marca || 'Associadas'}]]></g:brand>
       <g:gtin>${p.ean || p.sku || ''}</g:gtin>
       <g:google_product_category><![CDATA[${googleCategory}]]></g:google_product_category>
     </item>`;
@@ -477,7 +477,7 @@ function AdminProdutos() {
           estoque: estoqueTotal,
           estoquesPorLoja: estoquesMapeados,
           estoquePorLoja: estoquesProduto,
-          fabricante: "Sincronizado via API",
+          marca: "Sincronizado via API",
           possuiImagem: false,
           categoriaId: "142",
           internalTags: [],
@@ -727,7 +727,7 @@ function AdminProdutos() {
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nome, EAN, fabricante..."
+                  placeholder="Buscar por nome, EAN, marca..."
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(0); }}
                   className="pl-9 h-8 text-xs bg-white"
@@ -833,7 +833,7 @@ function AdminProdutos() {
                               </div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <code className="text-[10px] bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-500">EAN: {p.ean}</code>
-                                <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{p.fabricante || "Sem marca"}</span>
+                                <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{p.marca || "Sem marca"}</span>
                                 <span className="text-[10px] text-muted-foreground truncate max-w-[150px] bg-slate-100 px-1.5 py-0.5 rounded">
                                   {(() => {
                                     const cats = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
@@ -1232,4 +1232,5 @@ function AdminProdutos() {
     </div>
   );
 }
+
 

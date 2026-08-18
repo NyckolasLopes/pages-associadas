@@ -51,7 +51,7 @@ const FIELD_MAPPINGS: FieldMapping[] = [
   { key: "descricao", label: "DESCRIÇÃO LONGA", aliases: ["descrição longa", "descricao longa", "descrição", "descricao"], required: false, type: "string" },
   { key: "categoriaId", label: "ID CATEGORIA", aliases: ["id categoria", "categoriaid", "id_categoria", "cat_id"], required: false, type: "string" },
   { key: "subcategoriaId", label: "ID SUBCATEGORIA", aliases: ["id subcategoria", "subcategoriaid", "id_subcategoria", "subcat_id"], required: false, type: "string" },
-  { key: "fabricante", label: "FABRICANTE (MARCA)", aliases: ["fabricante (marca)", "fabricante", "marca", "laboratório", "laboratorio", "brand"], required: false, type: "string" },
+  { key: "marca", label: "marca (MARCA)", aliases: ["marca (marca)", "marca", "marca", "laboratório", "laboratorio", "brand"], required: false, type: "string" },
   { key: "registroAnvisa", label: "MS/REGISTRO ANVISA", aliases: ["ms/registro anvisa", "registro anvisa", "ms", "registro ms", "reg_anvisa", "registroanvisa", "registro"], required: false, type: "string" },
   { key: "tarja", label: "TARJA", aliases: ["tarja", "tipo tarja", "classificação"], required: false, type: "tarja" },
   { key: "retemReceita", label: "RETÉM RECEITA", aliases: ["retém receita", "retem receita", "retemreceita", "receita", "controle especial"], required: false, type: "boolean" },
@@ -249,7 +249,7 @@ function rowToProduct(
     nome,
     descricao: String(get("descricao") || nome),
     url: nome.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-|-$/g, '') + `-${id}`,
-    fabricante: String(get("fabricante") || ""),
+    marca: String(get("marca") || ""),
     precoDe,
     precoPor,
     estoque: parseNumber(get("estoque")),
@@ -270,7 +270,7 @@ function rowToProduct(
 export function generateTemplate() {
   const wb = XLSX.utils.book_new();
   const headers = [
-    "Código Interno", "EAN", "Nome", "Descrição", "Fabricante",
+    "Código Interno", "EAN", "Nome", "Descrição", "marca",
     "Preço De", "Preço Por", "Estoque", "Registro ANVISA",
     "Tarja", "Retém Receita", "Genérico", "Categoria", "Subcategoria",
   ];
@@ -295,7 +295,7 @@ export function generateTemplate() {
 export function exportProductsAsExcel(products: Produto[]) {
   const wb = XLSX.utils.book_new();
   const headers = [
-    "Código Interno", "EAN", "Nome", "Descrição", "Fabricante",
+    "Código Interno", "EAN", "Nome", "Descrição", "marca",
     "Preço De", "Preço Por", "Estoque", "Registro ANVISA",
     "Tarja", "Retém Receita", "Genérico", "Categoria", "Subcategoria",
   ];
@@ -307,7 +307,7 @@ export function exportProductsAsExcel(products: Produto[]) {
   };
 
   const rows = products.map((p) => [
-    p.codigoInterno || p.id, p.ean, p.nome, p.descricao, p.fabricante,
+    p.codigoInterno || p.id, p.ean, p.nome, p.descricao, p.marca,
     p.precoDe, p.precoPor, p.estoque, p.registroAnvisa,
     p.tarja, p.retemReceita ? "Sim" : "Não", p.generico ? "Sim" : "Não",
     getCatName(p.categoriaId), getCatName(p.subcategoriaId, true),
@@ -664,7 +664,7 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
                         <th className="text-left px-3 py-2 font-bold text-slate-600">#</th>
                         <th className="text-left px-3 py-2 font-bold text-slate-600">Nome</th>
                         <th className="text-left px-3 py-2 font-bold text-slate-600">EAN</th>
-                        <th className="text-left px-3 py-2 font-bold text-slate-600">Fabricante</th>
+                        <th className="text-left px-3 py-2 font-bold text-slate-600">marca</th>
                         <th className="text-right px-3 py-2 font-bold text-slate-600">Preço De</th>
                         <th className="text-right px-3 py-2 font-bold text-slate-600">Preço Por</th>
                         <th className="text-right px-3 py-2 font-bold text-slate-600">Estoque</th>
@@ -677,7 +677,7 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
                           <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                           <td className="px-3 py-2 font-medium text-slate-700 max-w-[200px] truncate">{p.nome}</td>
                           <td className="px-3 py-2 text-muted-foreground font-mono">{p.ean}</td>
-                          <td className="px-3 py-2 text-muted-foreground">{p.fabricante}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{p.marca}</td>
                           <td className="px-3 py-2 text-right text-muted-foreground">
                             {p.precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                           </td>
@@ -800,3 +800,4 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
     </Dialog>
   );
 }
+
