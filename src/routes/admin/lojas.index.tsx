@@ -304,9 +304,7 @@ function LojasAdmin() {
                 <th className="px-4 py-3 font-bold">Categoria</th>
                 <th className="px-4 py-3 font-bold">Cidade/UF</th>
                 <th className="px-4 py-3 font-bold">Telefone</th>
-                <th className="px-4 py-3 font-bold text-center">Entrega</th>
-
-                <th className="px-4 py-3 font-bold text-center">Retirada</th>
+                <th className="px-4 py-3 font-bold">Bairro</th>
                 <th className="px-4 py-3 font-bold text-center">Sistema</th>
                 <th className="px-4 py-3 font-bold text-center">Status</th>
                 <th className="px-4 py-3 text-right font-bold">Ações</th>
@@ -351,21 +349,7 @@ function LojasAdmin() {
                       {p.cidade && p.uf ? `${p.cidade}/${p.uf}` : enderecoCompleto(p)}
                     </td>
                     <td className="px-4 py-3 text-sm">{p.telefone || "—"}</td>
-                    <td className="px-4 py-3 text-center">
-                      {p.aceitaEntrega ? (
-                        <Badge className="bg-emerald-100 text-emerald-800 text-[10px]"><Check className="h-3 w-3 mr-1" />Sim</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-[10px]"><X className="h-3 w-3 mr-1" />Não</Badge>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-3 text-center">
-                      {p.aceitaRetirada ? (
-                        <Badge className="bg-emerald-100 text-emerald-800 text-[10px]"><Check className="h-3 w-3 mr-1" />Sim</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-[10px]"><X className="h-3 w-3 mr-1" />Não</Badge>
-                      )}
-                    </td>
+                    <td className="px-4 py-3 text-muted-foreground text-sm">{p.bairro || "—"}</td>
                     <td className="px-4 py-3 text-center">
                       <span className="text-[10px] font-black uppercase text-white whitespace-nowrap bg-orange-500 px-2 py-1 rounded-md shadow-sm">
                         {p.sistemaUtilizado || "SPA"}
