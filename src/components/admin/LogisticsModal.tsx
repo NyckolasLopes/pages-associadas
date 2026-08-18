@@ -122,45 +122,6 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2 col-span-2">
-                  <Label>Modelo de Frete</Label>
-                  <Select
-                    value={formData.modeloFrete || "raio"}
-                    onValueChange={(v: "cep" | "fixo" | "raio") => setFormData({ ...formData, modeloFrete: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="raio">Por Raio (Km)</SelectItem>
-                      <SelectItem value="cep">Por Faixa de CEP</SelectItem>
-                      <SelectItem value="fixo">Preço Fixo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.modeloFrete === "raio" && (
-                  <div className="space-y-2 col-span-2">
-                    <Label>Raio Máximo de Entrega (Km)</Label>
-                    <Input
-                      type="number"
-                      value={formData.raioEntregaKm || ""}
-                      onChange={(e) => setFormData({ ...formData, raioEntregaKm: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-                )}
-                
-                {formData.modeloFrete === "fixo" && (
-                  <div className="space-y-2 col-span-2">
-                    <Label>Custo Fixo de Entrega (R$)</Label>
-                    <Input
-                      type="number"
-                      value={formData.custoEntrega || ""}
-                      onChange={(e) => setFormData({ ...formData, custoEntrega: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-                )}
-
                 <div className="space-y-2">
                   <Label>Horário Início Entrega</Label>
                   <Input
@@ -187,31 +148,72 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                 </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t">
-               <h3 className="font-semibold text-slate-800">Opções Adicionais e Parceiros</h3>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={!!formData.aceitaMotoboy}
-                      onCheckedChange={(c) => setFormData({ ...formData, aceitaMotoboy: c })}
-                    />
-                    <Label>Motoboy Terceirizado</Label>
+            <div className="space-y-3 pt-2">
+              <Label>Faixas de Entrega por Raio (Km)</Label>
+              <div className="space-y-2">
+                {(formData.raiosEntrega || []).map((raio, idx) => (
+                  <div key={idx} className="flex flex-wrap items-center gap-3">
+                    <div className="flex-1 flex items-center gap-2">
+                      <span className="text-sm font-medium">Até</span>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={raio.ateKm || ""}
+                        onChange={(e) => {
+                          const newRaios = [...(formData.raiosEntrega || [])];
+                          newRaios[idx].ateKm = parseFloat(e.target.value) || 0;
+                          setFormData({ ...formData, raiosEntrega: newRaios });
+                        }}
+                        className="w-24"
+                        placeholder="Km"
+                      />
+                      <span className="text-sm font-medium">km</span>
+                    </div>
+                    <div className="flex-1 flex items-center gap-2">
+                      <span className="text-sm font-medium">R$</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={raio.preco || ""}
+                        onChange={(e) => {
+                          const newRaios = [...(formData.raiosEntrega || [])];
+                          newRaios[idx].preco = parseFloat(e.target.value) || 0;
+                          setFormData({ ...formData, raiosEntrega: newRaios });
+                        }}
+                        className="w-28"
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        const newRaios = [...(formData.raiosEntrega || [])];
+                        newRaios.splice(idx, 1);
+                        setFormData({ ...formData, raiosEntrega: newRaios });
+                      }}
+                    >
+                      X
+                    </Button>
                   </div>
-                   <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={!!formData.aceitaUber}
-                      onCheckedChange={(c) => setFormData({ ...formData, aceitaUber: c })}
-                    />
-                    <Label>Uber Flash</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={!!formData.aceita99}
-                      onCheckedChange={(c) => setFormData({ ...formData, aceita99: c })}
-                    />
-                    <Label>99 Entrega</Label>
-                  </div>
-               </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs font-bold mt-2"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      raiosEntrega: [...(formData.raiosEntrega || []), { ateKm: 0, preco: 0 }]
+                    });
+                  }}
+                >
+                  + Adicionar Faixa
+                </Button>
+              </div>
             </div>
 
           </TabsContent>
