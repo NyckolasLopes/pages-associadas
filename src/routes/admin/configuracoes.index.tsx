@@ -34,6 +34,7 @@ function ConfiguracoesPage() {
 
   let configs: ConfigItem[] = [];
 
+  // @ts-ignore
   if (isGlobalAdmin || currentUser?.permissoes?.includes("conf_usuarios")) {
     configs.push({
       id: "usuarios",

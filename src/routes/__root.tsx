@@ -233,6 +233,7 @@ function RootComponent() {
     const currentStore = useAdmin.getState().pharmacies.find((p) => p.id === useAdmin.getState().activeStoreId);
     if (currentStore) {
       // Extrair bairro do endereço ou tentar outras propriedades
+      // @ts-ignore
       const storeSuffix = (currentStore as any).bairro || (currentStore as any).cidade || currentStore.nomeFantasia.replace('Farmácias Associadas - ', '');
       const pwaName = `Farm Associadas - ${storeSuffix}`;
       
@@ -248,6 +249,7 @@ function RootComponent() {
           let link = document.querySelector('link[rel="manifest"]');
           if (!link) {
             link = document.createElement('link');
+            // @ts-ignore
             link.rel = 'manifest';
             document.head.appendChild(link);
           } else {

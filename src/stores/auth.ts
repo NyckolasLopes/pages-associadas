@@ -42,11 +42,13 @@ export const useAuth = create<AuthState>((set, get) => ({
 
     const u = data.user;
     // Fetch extended profile (nome, cpf, celular, has_logged_in_before)
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: rawProfile } = await supabase
+      .from("profiles" as any)
       .select("nome, cpf, telefone, has_logged_in_before")
       .eq("id", u.id)
       .single();
+
+    const profile = rawProfile as any;
 
     if (profile?.has_logged_in_before) {
       // 2FA Flow: already logged in before, require OTP.
@@ -56,7 +58,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       return "otp_required" as any; // Cast for now, will fix interface below
     } else {
       // First time login with email/password. Mark as logged in.
-      await supabase.from("profiles").update({ has_logged_in_before: true }).eq("id", u.id);
+      await supabase.from("profiles" as any).update({ has_logged_in_before: true }).eq("id", u.id);
     }
 
     set({

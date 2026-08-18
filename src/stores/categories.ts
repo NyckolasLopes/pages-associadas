@@ -28,7 +28,7 @@ export const useAdminCategories = create<CategoriesState>((set, get) => ({
       .order('destaque', { ascending: false });
       
     if (!error && data) {
-      const mapped = data.map(d => ({
+      const mapped = data.map((d: any) => ({
         id: d.id,
         nome: d.nome,
         slug: d.slug,
@@ -52,7 +52,7 @@ export const useAdminCategories = create<CategoriesState>((set, get) => ({
       return { categories: [...s.categories, c] };
     });
 
-    const { error } = await supabase.from('categorias').upsert({
+    const { error } = await supabase.from('categorias' as any).upsert({
         id: c.id,
         nome: c.nome,
         slug: c.slug,

@@ -151,9 +151,11 @@ export const useConfig = create<ConfigStore>((set, get) => ({
       const { data, error } = await query;
       if (error) throw error;
 
+      const typedData = (data as any[]) || [];
+
       // HÍBRIDO: Vamos separar os dados globais e locais
-      const globais = data.filter(d => d.loja_id === null);
-      const locais = lojaId ? data.filter(d => d.loja_id === lojaId) : [];
+      const globais = typedData.filter(d => d.loja_id === null);
+      const locais = lojaId ? typedData.filter(d => d.loja_id === lojaId) : [];
 
       const mergedMap = new Map<string, any>();
       

@@ -113,11 +113,13 @@ export const useOrders = create<OrdersState>((set, get) => ({
     }
     
     // Obter perfil para checar se é admin global ou tem lojas vinculadas
-    const { data: profile } = await supabase
-      .from('profiles')
+    const { data: rawProfile } = await supabase
+      .from('profiles' as any)
       .select('is_admin, lojas_vinculadas')
       .eq('id', user.id)
       .single();
+
+    const profile = rawProfile as any;
 
     let query = supabase
       .from('pedidos')

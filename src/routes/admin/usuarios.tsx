@@ -299,7 +299,7 @@ function AdminUsuarios() {
       } : u));
       
       // Sync to Supabase profiles
-      const { error: syncError } = await supabase.from('profiles').update({
+      const { error: syncError } = await supabase.from('profiles' as any).update({
         grupo_id: novoUsuarioGrupo,
         lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
         is_admin: isGlobal
@@ -372,7 +372,7 @@ function AdminUsuarios() {
             alreadyExisted = true;
             
             // Tenta inserir o perfil que estava faltando
-            const { error: insertError } = await supabase.from('profiles').upsert({
+            const { error: insertError } = await supabase.from('profiles' as any).upsert({
                id: targetUserId,
                email: novoUsuarioEmail,
                nome: novoUsuarioNome,
@@ -407,7 +407,7 @@ function AdminUsuarios() {
           targetUserId = existingProfile.id;
           alreadyExisted = true;
           
-          const { error: updateError } = await supabase.from('profiles').update({
+          const { error: updateError } = await supabase.from('profiles' as any).update({
              grupo_id: novoUsuarioGrupo,
              lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
              is_admin: isGlobal
@@ -424,7 +424,7 @@ function AdminUsuarios() {
         }
       } else if (authData?.user) {
          // Se criou no auth mas não inseriu o profile por trigger, inserimos manualmente
-         await supabase.from('profiles').upsert({
+         await supabase.from('profiles' as any).upsert({
            id: authData.user.id,
            email: novoUsuarioEmail,
            nome: novoUsuarioNome,

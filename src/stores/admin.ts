@@ -99,6 +99,7 @@ export interface Pharmacy {
   // Dados da Loja
   cnpj: string;
   api_key?: string;
+  apiKeyTemp?: string;
   logoUrl?: string;
   faviconUrl?: string;
   themeColors?: Record<string, string>;
@@ -186,6 +187,11 @@ export interface Pharmacy {
   hashRecebimento?: string;
   // Dias de entrega (0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab)
   diasEntrega?: number[];
+  // Top Bar
+  topBarText?: string;
+  topBarBgColor?: string;
+  topBarTextColor?: string;
+  trabalhaComEncarte?: boolean;
 }
 
 export interface OrderBumpSettings {
@@ -630,15 +636,16 @@ export const useAdmin = create<AdminState>()(
         const { data, error } = await supabase.from('profiles').select('*');
         if (error || !data) return;
         
+        const profiles = (data as any[]) || [];
         set((s) => {
           // Filtrar apenas usuários que são admin ou que pertencem a algum grupo administrativo
-          const adminUsers = data.filter(p => p.is_admin || p.grupo_id);
+          const adminUsers = profiles.filter((p: any) => p.is_admin || p.grupo_id);
           
           return { 
             users: adminUsers.map(p => ({
               id: p.id,
               name: p.nome || p.email?.split("@")[0] || "Usuário",
-              email: p.email,
+              email: p.email || "",
               grupoId: p.grupo_id || undefined,
               proprietario: p.is_admin || false,
               lojasVinculadas: p.lojas_vinculadas || []
@@ -913,8 +920,28 @@ export const useAdmin = create<AdminState>()(
             entregaExpressa: l.entrega_expressa || l.tema_cores?.entrega_expressa,
             virtualStoreStatus: l.status_loja_virtual || l.tema_cores?.status_loja_virtual,
             isVirtualStoreGenerated: !!l.status_loja_virtual,
-            virtualStoreStatus: l.status_loja_virtual,
             api_key: l.api_key,
+            aceitaEntrega: l.tema_cores?.aceitaEntrega ?? false,
+            modeloFrete: l.tema_cores?.modeloFrete ?? 'raio',
+            horarioInicioEntrega: l.tema_cores?.horarioInicioEntrega ?? '',
+            horarioFimEntrega: l.tema_cores?.horarioFimEntrega ?? '',
+            horarioFimEntregaRisco: l.tema_cores?.horarioFimEntregaRisco ?? '',
+            tempoEntrega: l.tema_cores?.tempoEntrega ?? '',
+            custoEntrega: l.tema_cores?.custoEntrega ?? 0,
+            raioEntregaKm: l.tema_cores?.raioEntregaKm,
+            faixasCep: l.tema_cores?.faixasCep ?? [],
+            aceitaRetirada: l.tema_cores?.aceitaRetirada ?? false,
+            horarioInicioRetirada: l.tema_cores?.horarioInicioRetirada ?? '',
+            horarioFimRetirada: l.tema_cores?.horarioFimRetirada ?? '',
+            tempoRetirada: l.tema_cores?.tempoRetirada ?? '',
+            aceitaUber: l.tema_cores?.aceitaUber ?? false,
+            custoUber: l.tema_cores?.custoUber ?? 0,
+            aceita99: l.tema_cores?.aceita99 ?? false,
+            custo99: l.tema_cores?.custo99 ?? 0,
+            aceitaMotoboy: l.tema_cores?.aceitaMotoboy ?? false,
+            custoMotoboy: l.tema_cores?.custoMotoboy ?? 0,
+            custoEntregaExpressa: l.tema_cores?.custoEntregaExpressa ?? 0,
+            raiosEntrega: l.tema_cores?.raiosEntrega ?? [],
           })) as unknown as Pharmacy[];
           set({ pharmacies: loadedPharmacies });
         }
@@ -939,6 +966,27 @@ export const useAdmin = create<AdminState>()(
           status_loja_virtual: p.virtualStoreStatus,
           categoria_associado: p.categoriaAssociado,
           trabalha_com_encarte: p.trabalhaComEncarte,
+          aceitaEntrega: p.aceitaEntrega,
+          modeloFrete: p.modeloFrete,
+          horarioInicioEntrega: p.horarioInicioEntrega,
+          horarioFimEntrega: p.horarioFimEntrega,
+          horarioFimEntregaRisco: p.horarioFimEntregaRisco,
+          tempoEntrega: p.tempoEntrega,
+          custoEntrega: p.custoEntrega,
+          raioEntregaKm: p.raioEntregaKm,
+          faixasCep: p.faixasCep,
+          aceitaRetirada: p.aceitaRetirada,
+          horarioInicioRetirada: p.horarioInicioRetirada,
+          horarioFimRetirada: p.horarioFimRetirada,
+          tempoRetirada: p.tempoRetirada,
+          aceitaUber: p.aceitaUber,
+          custoUber: p.custoUber,
+          aceita99: p.aceita99,
+          custo99: p.custo99,
+          aceitaMotoboy: p.aceitaMotoboy,
+          custoMotoboy: p.custoMotoboy,
+          custoEntregaExpressa: p.custoEntregaExpressa,
+          raiosEntrega: p.raiosEntrega,
         };
 
         const { error } = await supabase.from('lojas').insert({
@@ -946,6 +994,27 @@ export const useAdmin = create<AdminState>()(
           ativa: p.ativo ?? true,
           categoria_associado: p.categoriaAssociado,
           trabalha_com_encarte: p.trabalhaComEncarte,
+          aceitaEntrega: p.aceitaEntrega,
+          modeloFrete: p.modeloFrete,
+          horarioInicioEntrega: p.horarioInicioEntrega,
+          horarioFimEntrega: p.horarioFimEntrega,
+          horarioFimEntregaRisco: p.horarioFimEntregaRisco,
+          tempoEntrega: p.tempoEntrega,
+          custoEntrega: p.custoEntrega,
+          raioEntregaKm: p.raioEntregaKm,
+          faixasCep: p.faixasCep,
+          aceitaRetirada: p.aceitaRetirada,
+          horarioInicioRetirada: p.horarioInicioRetirada,
+          horarioFimRetirada: p.horarioFimRetirada,
+          tempoRetirada: p.tempoRetirada,
+          aceitaUber: p.aceitaUber,
+          custoUber: p.custoUber,
+          aceita99: p.aceita99,
+          custo99: p.custo99,
+          aceitaMotoboy: p.aceitaMotoboy,
+          custoMotoboy: p.custoMotoboy,
+          custoEntregaExpressa: p.custoEntregaExpressa,
+          raiosEntrega: p.raiosEntrega,
           cnpj: p.cnpj,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,
@@ -1022,12 +1091,54 @@ export const useAdmin = create<AdminState>()(
           status_loja_virtual: p.virtualStoreStatus,
           categoria_associado: p.categoriaAssociado,
           trabalha_com_encarte: p.trabalhaComEncarte,
+          aceitaEntrega: p.aceitaEntrega,
+          modeloFrete: p.modeloFrete,
+          horarioInicioEntrega: p.horarioInicioEntrega,
+          horarioFimEntrega: p.horarioFimEntrega,
+          horarioFimEntregaRisco: p.horarioFimEntregaRisco,
+          tempoEntrega: p.tempoEntrega,
+          custoEntrega: p.custoEntrega,
+          raioEntregaKm: p.raioEntregaKm,
+          faixasCep: p.faixasCep,
+          aceitaRetirada: p.aceitaRetirada,
+          horarioInicioRetirada: p.horarioInicioRetirada,
+          horarioFimRetirada: p.horarioFimRetirada,
+          tempoRetirada: p.tempoRetirada,
+          aceitaUber: p.aceitaUber,
+          custoUber: p.custoUber,
+          aceita99: p.aceita99,
+          custo99: p.custo99,
+          aceitaMotoboy: p.aceitaMotoboy,
+          custoMotoboy: p.custoMotoboy,
+          custoEntregaExpressa: p.custoEntregaExpressa,
+          raiosEntrega: p.raiosEntrega,
         };
 
         const { error } = await supabase.from('lojas').update({
           ativa: p.ativo ?? true,
           categoria_associado: p.categoriaAssociado,
           trabalha_com_encarte: p.trabalhaComEncarte,
+          aceitaEntrega: p.aceitaEntrega,
+          modeloFrete: p.modeloFrete,
+          horarioInicioEntrega: p.horarioInicioEntrega,
+          horarioFimEntrega: p.horarioFimEntrega,
+          horarioFimEntregaRisco: p.horarioFimEntregaRisco,
+          tempoEntrega: p.tempoEntrega,
+          custoEntrega: p.custoEntrega,
+          raioEntregaKm: p.raioEntregaKm,
+          faixasCep: p.faixasCep,
+          aceitaRetirada: p.aceitaRetirada,
+          horarioInicioRetirada: p.horarioInicioRetirada,
+          horarioFimRetirada: p.horarioFimRetirada,
+          tempoRetirada: p.tempoRetirada,
+          aceitaUber: p.aceitaUber,
+          custoUber: p.custoUber,
+          aceita99: p.aceita99,
+          custo99: p.custo99,
+          aceitaMotoboy: p.aceitaMotoboy,
+          custoMotoboy: p.custoMotoboy,
+          custoEntregaExpressa: p.custoEntregaExpressa,
+          raiosEntrega: p.raiosEntrega,
           cnpj: p.cnpj,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,

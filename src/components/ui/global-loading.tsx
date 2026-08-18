@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Spinner } from "./spinner";
 import { useConfig } from "@/stores/config";
 

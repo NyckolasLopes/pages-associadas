@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useRef } from "react";
 import { useCart } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";

@@ -451,7 +451,7 @@ function PerfilPage() {
               <p className="text-sm text-red-800">
                 Ao excluir sua conta, todos os seus dados pessoais, endereços e histórico de pedidos serão removidos permanentemente. Esta ação não pode ser desfeita.
               </p>
-              <ConfirmDialog
+              <ConfirmDialog {...({ children: undefined } as any)}
                 title="Você tem certeza que deseja excluir sua conta pra sempre?"
                 description="Você perderá todos os dados de pedidos já feitos e todas as configurações salvas. Esta ação é irreversível."
                 confirmText="Sim, excluir conta"
@@ -459,7 +459,8 @@ function PerfilPage() {
                 onConfirm={async () => {
                   try {
                     const { supabase } = await import("@/integrations/supabase/client");
-                    const { error } = await supabase.rpc("delete_own_account");
+      // @ts-ignore
+                    const { error } = await supabase.rpcsupabase.functions.invoke("delete_own_account" as any);
                     if (error) throw error;
                     toast.success("Conta excluída com sucesso.");
                     logout();

@@ -103,7 +103,7 @@ function CarrinhosAbandonados() {
               </p>
             </div>
           <div className="flex gap-2">
-            {!forceAbandoned && user && cartItems.length > 0 && (
+            {!forceAbandoned && filteredCarts.length > 0 && (
               <Button variant="outline" size="sm" onClick={() => setForceAbandoned(true)} className="border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700">
                 Simular Abandono (5 min)
               </Button>

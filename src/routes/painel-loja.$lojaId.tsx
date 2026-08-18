@@ -5,7 +5,7 @@ import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
 import { useMemo, useEffect, useRef, useState } from "react";
 import { isToday, isYesterday, isThisWeek, isThisMonth, isThisYear, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone, ShoppingBag, CheckCircle2, Clock, Eye, Check, FileSpreadsheet, MessageCircle } from "lucide-react";
+import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone, ShoppingBag, CheckCircle2, Clock, Eye, Check, FileSpreadsheet, MessageCircle, ShoppingCart } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

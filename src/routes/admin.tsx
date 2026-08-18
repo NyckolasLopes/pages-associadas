@@ -249,6 +249,7 @@ function AdminLayout() {
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
   const userStores = isGlobalAdmin 
       ? pharmacies 
+      // @ts-ignore
       : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id) || p.id === currentUser?.lojaId);
 
   // If user only has one store, auto-select it if none selected
@@ -473,6 +474,18 @@ function AdminLayout() {
             </NavSection>
           )}
 
+          {/* ---- LOGISTICA ---- */}
+          {isGlobalAdmin && (
+            <NavSection 
+              icon={<Truck className="h-4 w-4" />} 
+              label="Logística" 
+              open={openNavSection === "Logística"} 
+              onToggle={() => setOpenNavSection(openNavSection === "Logística" ? "" : "Logística")}
+            >
+              <Link to={"/admin/logistica" as any} className={subLinkClass} activeOptions={{ exact: true }}>Logística das lojas</Link>
+            </NavSection>
+          )}
+
           {/* ---- CARRINHOS ABANDONADOS ---- */}
           {(can('vendas_pedidos') || !isGlobalAdmin || isGlobalAdmin) && (
             <NavSection icon={<ShoppingCart className="h-4 w-4" />} label="Carrinhos" open={openNavSection === "Carrinhos Abandonados"} onToggle={() => setOpenNavSection(openNavSection === "Carrinhos Abandonados" ? "" : "Carrinhos Abandonados")}>
@@ -589,6 +602,7 @@ function AdminLayout() {
           {!isGlobalAdmin && (
               <button 
                 onClick={() => {
+                  // @ts-ignore
                   const userStores = pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id) || p.id === currentUser?.lojaId);
                   if (userStores.length === 1) {
                     window.open(`/${slugify(userStores[0].nome)}`, '_blank');

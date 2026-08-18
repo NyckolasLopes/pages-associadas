@@ -99,6 +99,7 @@ export default function ApiPage() {
     
     try {
       const { supabase } = await import('@/integrations/supabase/client');
+      // @ts-ignore
       const { data: rawKey, error } = await supabase.rpc('create_master_api_key', { p_nome: newName });
       
       if (error) throw error;

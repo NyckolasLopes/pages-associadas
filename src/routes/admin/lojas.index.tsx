@@ -906,6 +906,7 @@ function LojasAdmin() {
                   onClick={async (e) => {
                     e.preventDefault();
                     const { supabase } = await import('@/integrations/supabase/client');
+      // @ts-ignore
                     const { data, error } = await supabase.rpc('create_loja_api_key', { p_loja_id: editingId });
                     if (error) {
                       toast.error("Erro ao gerar chave: " + error.message);
@@ -937,6 +938,7 @@ function LojasAdmin() {
                     if (!testKey) return toast.error("Insira uma chave para testar.");
                     
                     const { supabase } = await import('@/integrations/supabase/client');
+      // @ts-ignore
                     const { data, error } = await supabase.rpc('validate_loja_api_key', { p_raw_key: testKey, p_loja_id: editingId });
                     
                     if (error || !data) {

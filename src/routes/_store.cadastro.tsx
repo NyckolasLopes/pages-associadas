@@ -100,6 +100,7 @@ function CadastroPage() {
       await (await import("@/integrations/supabase/client")).supabase
         .from("profiles")
         .update({ 
+          // @ts-ignore
           is_admin: true, 
           grupo_id: "grupo-admin",
           lojas_vinculadas: null

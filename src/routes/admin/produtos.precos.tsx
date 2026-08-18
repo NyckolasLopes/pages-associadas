@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
 import { 
   Store, Search, DollarSign, Package, Upload, 
-  FileSpreadsheet, AlertCircle, CheckCircle2, FileText, ArrowRight, Check, Calendar, Megaphone
+  FileSpreadsheet, AlertCircle, CheckCircle2, FileText, ArrowRight, Check, Calendar, Megaphone, Flame
 } from "lucide-react";
 import {
   Select,
@@ -240,7 +240,7 @@ function AdminProdutosPrecos() {
     setImportPmcFileName("");
   };
 
-  const handleConfirmImportMeusPrecos = () => {
+  const handleConfirmImportMeusPrecos = async () => {
     const targetStore = targetPharmacyId || (selectedPharmacyId !== "global" ? selectedPharmacyId : (userStores[0]?.id || pharmacies[0]?.id));
     if (!targetStore || targetStore === "global") {
       toast.error("Selecione uma loja específica de destino para aplicar os preços.");
@@ -303,7 +303,7 @@ function AdminProdutosPrecos() {
       return;
     }
 
-    const result = importStoreSpreadsheet(targetStore, itemsToImport);
+    const result = await importStoreSpreadsheet(targetStore, itemsToImport);
     const storeObj = pharmacies.find(p => p.id === targetStore);
     const storeName = storeObj?.nome || targetStore;
 
@@ -446,7 +446,7 @@ function AdminProdutosPrecos() {
     toast.success(checked ? "Produto destacado na sua vitrine." : "Destaque removido da sua vitrine.");
   };
 
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     if (!pendingImportData) return;
     if (!selectedPharmacyId || selectedPharmacyId === "global") {
       toast.error("Por favor, selecione uma loja primeiro.");

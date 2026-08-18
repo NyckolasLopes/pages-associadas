@@ -55,7 +55,7 @@ interface ProductsState {
   updateStoreProductDestaque: (lojaId: string, productId: string, destaque: boolean) => Promise<void>;
   updateStoreProductStock: (lojaId: string, productId: string, estoque: number) => Promise<void>;
   bulkUpdateStoreProductStatus: (lojaId: string, productIds: string[], ativo: boolean) => Promise<void>;
-  importStoreSpreadsheet: (lojaId: string, items: StorePriceItem[]) => { updated: number; notFound: number; total: number };
+  importStoreSpreadsheet: (lojaId: string, items: StorePriceItem[]) => Promise<{ updated: number; notFound: number; total: number }>;
 }
 
 // Helper: map Supabase row to Produto type
@@ -67,7 +67,6 @@ function mapRowToProduto(d: any): Produto {
     descricao: d.descricao,
     url: d.slug,
     slug: d.slug,
-    marca: d.marca,
     marca: d.marca,
     precoDe: Number(d.preco_de) || 0,
     precoPor: Number(d.preco_por) || 0,
@@ -110,7 +109,6 @@ export const useAdminProducts = create<ProductsState>()(
       storeCustomProducts: {},
       storeProductOverrides: {},
       storeRemovedProductIds: {},
-      vitrines: [],
       storeVitrines: {},
       getStoreVitrines: (lojaId) => {
         const state = get();
@@ -143,7 +141,7 @@ export const useAdminProducts = create<ProductsState>()(
               p.estoquesPorLoja = {};
               precosLoja.forEach(pr => {
                 if (pr.loja_id) {
-                  p.precosPorLoja![pr.loja_id] = { precoDe: pr.preco_de, precoPor: pr.preco_por, ativo: pr.ativo ?? true };
+                  p.precosPorLoja![pr.loja_id] = { precoDe: pr.preco_de || 0, precoPor: pr.preco_por || 0, ativo: pr.ativo ?? true };
                   p.estoquesPorLoja![pr.loja_id] = pr.estoque || 0;
                 }
               });
@@ -162,9 +160,9 @@ export const useAdminProducts = create<ProductsState>()(
         set((s) => {
           const exists = s.customProducts.find(x => x.id === p.id);
           if (exists) {
-            return { customProducts: s.customProducts.map(x => x.id === p.id ? { ...x, ...formattedProduct, lojaId } : x) };
+            return { customProducts: s.customProducts.map(x => x.id === p.id ? { ...x, ...formattedProduct, lojaId: lojaId ?? undefined } : x) };
           }
-          return { customProducts: [{ ...formattedProduct, lojaId }, ...s.customProducts] };
+          return { customProducts: [{ ...formattedProduct, lojaId: lojaId ?? undefined } as any, ...s.customProducts] };
         });
 
         // Supabase DB Update
@@ -174,7 +172,6 @@ export const useAdminProducts = create<ProductsState>()(
           nome: formattedProduct.nome,
           descricao: formattedProduct.descricao || null,
           slug: formattedProduct.slug || formattedProduct.url || `${formattedProduct.nome?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${formattedProduct.id}`,
-          marca: formattedProduct.marca || null,
           marca: formattedProduct.marca || null,
           preco_de: formattedProduct.precoDe || 0,
           preco_por: formattedProduct.precoPor || 0,
@@ -300,7 +297,6 @@ export const useAdminProducts = create<ProductsState>()(
             nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
             descricao: p.descricao || null,
             slug: p.slug || p.url || `${(p.nome || 'produto').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${p.id}`,
-            marca: p.marca || null,
             marca: p.marca || null,
             preco_de: p.precoDe || 0,
             preco_por: p.precoPor || 0,
@@ -552,8 +548,8 @@ export const useAdminProducts = create<ProductsState>()(
 
         // Supabase DB Update
         await supabase.from('produtos').update({
-          precos_por_loja: newPrecosPorLoja,
-          estoques_por_loja: newEstoquesPorLoja
+          // precos_por_loja: newPrecosPorLoja,
+          // estoques_por_loja: newEstoquesPorLoja
         }).eq('id', productId);
       },
       updateStoreProductStatus: async (lojaId, productId, ativo) => {
@@ -580,7 +576,7 @@ export const useAdminProducts = create<ProductsState>()(
 
         // Supabase DB Update
         await supabase.from('produtos').update({
-          precos_por_loja: newPrecosPorLoja
+          // precos_por_loja: newPrecosPorLoja
         }).eq('id', productId);
       },
       updateStoreProductDestaque: async (lojaId, productId, destaque) => {
@@ -607,7 +603,7 @@ export const useAdminProducts = create<ProductsState>()(
 
         // Supabase DB Update
         await supabase.from('produtos').update({
-          precos_por_loja: newPrecosPorLoja
+          // precos_por_loja: newPrecosPorLoja
         }).eq('id', productId);
       },
       updateStoreProductStock: async (lojaId, productId, estoque) => {
@@ -658,7 +654,7 @@ export const useAdminProducts = create<ProductsState>()(
             };
             return {
               id: product.id,
-              precos_por_loja: newPrecosPorLoja
+              // precos_por_loja: newPrecosPorLoja
             };
           });
 
@@ -685,7 +681,7 @@ export const useAdminProducts = create<ProductsState>()(
         // Supabase DB Update (Sequential due to JSONB constraints, but safe)
         for (const update of dbUpdates) {
           await supabase.from('produtos').update({
-            precos_por_loja: update.precos_por_loja
+            // precos_por_loja: update.precos_por_loja
           }).eq('id', update.id);
         }
       },
@@ -765,8 +761,8 @@ export const useAdminProducts = create<ProductsState>()(
           const productsToUpdate = updatedProducts.filter(p => updatesToApply.has(p.id));
           for (const p of productsToUpdate) {
             await supabase.from('produtos').update({
-              precos_por_loja: p.precosPorLoja,
-              estoques_por_loja: p.estoquesPorLoja
+              // precos_por_loja: p.precosPorLoja,
+              // estoques_por_loja: p.estoquesPorLoja
             }).eq('id', p.id);
           }
         }
@@ -822,11 +818,6 @@ export const useAdminProducts = create<ProductsState>()(
           }
         }
       }
-    },
-    {
-      name: "admin-products-storage",
-      version: 2,
-      storage: createJSONStorage(() => supabaseStorage),
     }
   )
 );

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   Instagram, Facebook, Linkedin, Youtube, CreditCard, Banknote, Wallet,

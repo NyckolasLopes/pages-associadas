@@ -33,7 +33,7 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
     set({ isLoading: true });
     try {
       const { data, error } = await supabase
-        .from('carrinhos_abandonados')
+        .from('carrinhos_abandonados' as any)
         .select(`
           *,
           lojas ( nome ),
@@ -71,7 +71,7 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
   updateNotes: async (id: string, notes: string) => {
     try {
       const { error } = await supabase
-        .from('carrinhos_abandonados')
+        .from('carrinhos_abandonados' as any)
         .update({ notes })
         .eq('id', id);
       
@@ -88,7 +88,7 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
     try {
       // Instead of deleting, mark it as 'convertido' or delete
       const { error } = await supabase
-        .from('carrinhos_abandonados')
+        .from('carrinhos_abandonados' as any)
         .delete()
         .eq('id', id);
         
