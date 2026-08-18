@@ -1,14 +1,68 @@
 import Fuse from "fuse.js";
-import productsJson from "../data/products.json";
 import { useAdminCategories } from "@/stores/categories";
 import { useMarcasStore } from "@/stores/marcas";
 
 import { useAdmin } from "@/stores/admin";
 import type { Produto, Categoria, Loja } from "@/types";
-import { removeAccents } from "@/lib/utils";
+import { removeAccents, isCampanhaAtiva } from "@/lib/utils";
 import { checkIsGenerico } from "@/lib/format";
+import { supabase } from "@/integrations/supabase/client";
 
-const getSafeProducts = () => Array.isArray(productsJson) ? productsJson : (productsJson as any)?.default || [];
+async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | null): Promise<Produto[]> {
+  const { data } = await queryBuilder;
+  if (!data || data.length === 0) return [];
+
+  const ids = data.map((p: any) => p.id);
+  const { data: precos } = await supabase.from('produto_precos_loja').select('*').in('produto_id', ids);
+
+  const state = useAdminProducts.getState();
+  const overrides = state.storeProductOverrides?.[lojaId || ""] || {};
+
+  const precosMap = new Map();
+  if (precos) {
+    precos.forEach(pr => {
+      if (!precosMap.has(pr.produto_id)) precosMap.set(pr.produto_id, []);
+      precosMap.get(pr.produto_id).push(pr);
+    });
+  }
+
+  const finalProducts = data.map((p: any) => {
+    const pPrecos = precosMap.get(p.id);
+    if (pPrecos && pPrecos.length > 0) {
+       p.precosPorLoja = {};
+       p.estoquesPorLoja = {};
+       pPrecos.forEach((pr: any) => {
+          if (pr.loja_id) {
+             p.precosPorLoja[pr.loja_id] = { precoDe: pr.preco_de || 0, precoPor: pr.preco_por || 0, ativo: pr.ativo ?? true };
+             p.estoquesPorLoja[pr.loja_id] = pr.estoque || 0;
+          }
+       });
+    }
+
+    const ov = lojaId ? overrides[p.id] || {} : {};
+    const storePrice = lojaId ? p.precosPorLoja?.[lojaId] : null;
+    const storeStock = lojaId ? p.estoquesPorLoja?.[lojaId] : null;
+
+    const storeP = { ...p, ...ov };
+    if (lojaId) {
+       storeP.precoPor = storePrice?.precoPor !== undefined ? storePrice.precoPor : (ov.precoPor !== undefined ? ov.precoPor : p.precoPor);
+       storeP.precoDe = storePrice?.precoDe !== undefined ? storePrice.precoDe : (ov.precoDe !== undefined ? ov.precoDe : p.precoDe);
+       storeP.estoque = storeStock !== undefined ? storeStock : (ov.estoque !== undefined ? ov.estoque : p.estoque);
+       storeP.ativo = storePrice?.ativo !== undefined ? storePrice.ativo : (ov.ativo !== undefined ? ov.ativo : (p.ativo ?? true));
+       storeP.destaque = storePrice?.destaque !== undefined ? storePrice.destaque : (ov.destaque !== undefined ? ov.destaque : (p.destaque ?? false));
+    }
+    
+    storeP._searchString = String(storeP.nome || "").toLowerCase();
+    
+    if (!storeP.imagemPrincipal && Array.isArray(storeP.imagens) && storeP.imagens.length > 0) {
+       storeP.imagemPrincipal = storeP.imagens[0];
+    }
+    
+    return storeP as Produto;
+  });
+
+  return finalProducts;
+}
 
 const getCategorias = () => {
   const baseCats = useAdminCategories.getState().categories;
@@ -31,7 +85,7 @@ const getCategorias = () => {
   return [...filteredBase, ...marcasCats];
 };
 
-const baseProdutos = getSafeProducts() as Produto[];
+// Products now come entirely from useAdminProducts store (backed by Supabase)
 
 // Helper to format product names (Sentence case)
 function formatProductName(name: any): string {
@@ -143,16 +197,30 @@ function enforceHealthServicesCategory(p: Produto): Produto {
 
 import { useAdminProducts } from "@/stores/products";
 
-// Await hydration helper
+
+
+// Await hydration helper — also ensures Supabase products are loaded in background
 async function ensureHydrated() {
-  if (useAdminProducts.persist.hasHydrated()) return;
+  if (!useAdminProducts.persist || useAdminProducts.persist.hasHydrated()) {
+    // Fire and forget background sync
+    if (!useAdminProducts.getState()._loaded) {
+      useAdminProducts.getState().loadProducts();
+    }
+    return;
+  }
   return new Promise<void>((resolve) => {
     const unsub = useAdminProducts.persist.onFinishHydration(() => {
+      if (!useAdminProducts.getState()._loaded) {
+        useAdminProducts.getState().loadProducts();
+      }
       resolve();
       unsub();
     });
     // Fallback in case it hangs
     setTimeout(() => {
+      if (!useAdminProducts.getState()._loaded) {
+        useAdminProducts.getState().loadProducts();
+      }
       resolve();
       unsub();
     }, 500);
@@ -192,7 +260,6 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
     }
   }
   
-  // Cache miss, generate products
   const storeEffective = storeState.getStoreEffectiveProducts(lojaId) || [];
   
   // Products now come directly from the store (Supabase-backed)
@@ -213,8 +280,11 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
     const n = removeAccents(String(p.nome || "").toLowerCase());
     const tags = (p.internalTags || []).map((t: string) => removeAccents(String(t || "").toLowerCase()));
     const pa = removeAccents(String(p.principiosAtivos || "").toLowerCase());
-    const fab = removeAccents(String(p.fabricante || "").toLowerCase());
-    p._searchString = [n, ...tags, pa, fab].join(" ");
+    const fab = removeAccents(String(p.marca || "").toLowerCase());
+    const terms = removeAccents(String(p.termosPesquisa || "").toLowerCase());
+    const desc = removeAccents(String(p.descricao || "").toLowerCase());
+    const brand = removeAccents(String(p.marca || "").toLowerCase());
+    p._searchString = [n, ...tags, pa, fab, terms, desc, brand].join(" ");
   });
   
   if (!lojaId) {
@@ -243,17 +313,21 @@ const getFuse = () => {
 
   cachedFuse = new Fuse(produtos, {
     keys: [
-      { name: "nome", weight: 2.0 },
-      { name: "ean", weight: 1.5 },
-      { name: "principiosAtivos", weight: 1.2 },
-      { name: "internalTags", weight: 1.0 },
+      { name: "nome", weight: 4.0 },
+      { name: "termosPesquisa", weight: 3.5 },
+      { name: "internalTags", weight: 3.0 },
+      { name: "principiosAtivos", weight: 2.5 },
+      { name: "ean", weight: 2.0 },
+      { name: "marca", weight: 1.5 },
+      { name: "marca", weight: 1.0 },
       { name: "descricao", weight: 0.5 },
-      { name: "fabricante", weight: 0.5 },
+      { name: "resumoDescricao", weight: 0.5 },
     ],
-    threshold: 0.35, // Tighter tolerance to avoid completely unrelated results
-    ignoreLocation: true,
-    ignoreFieldNorm: true, // Don't penalize long descriptions/names
+    threshold: 0.45, // Mais tolerante a erros de ortografia
+    ignoreLocation: true, // Ignora a posição da palavra
+    ignoreFieldNorm: true, // Não penaliza campos muito grandes como a descrição inteira
     minMatchCharLength: 2,
+    useExtendedSearch: true,
   });
   return cachedFuse;
 };
@@ -274,7 +348,7 @@ function applyFilters(produtos: Produto[], filters?: FilterOptions): Produto[] {
   return produtos.filter((p) => {
     // 1. Marca
     if (filters.marcas && filters.marcas.length > 0) {
-      const pMarca = String(p.fabricante || p.marca || "").toLowerCase().trim();
+      const pMarca = String(p.marca || p.marca || "").toLowerCase().trim();
       const matchBrand = filters.marcas.some(m => pMarca === String(m).toLowerCase().trim());
       if (!matchBrand) return false;
     }
@@ -360,9 +434,25 @@ export const catalog = {
     const categorias = getCategorias();
     return wait(categorias.find((c) => c && c.id === id) ?? null);
   },
-  getProductBySlug: async (slugOrId: string) => {
+  getProductBySlug: async (slugOrId: string, lojaId?: string | null) => {
     await ensureHydrated();
-    const produtos = getAllProdutos();
+    const allLoaded = useAdminProducts.getState()._loaded;
+
+    if (!allLoaded) {
+       // Search by URL first
+       let query = supabase.from('produtos').select('*').eq('url', slugOrId).limit(1);
+       let products = await fetchFromSupabaseWithPrices(query, lojaId);
+       
+       if (products.length === 0) {
+          // Try by ID
+          query = supabase.from('produtos').select('*').eq('id', slugOrId).limit(1);
+          products = await fetchFromSupabaseWithPrices(query, lojaId);
+       }
+       
+       if (products.length > 0) return { ...products[0] };
+    }
+
+    const produtos = getAllProdutos(lojaId);
     const p = produtos.find(
       (x) =>
         x.id === slugOrId ||
@@ -371,29 +461,75 @@ export const catalog = {
     );
     return p ? { ...p } : null;
   },
-  getProductById: async (id: string) => {
+  getProductById: async (id: string, lojaId?: string | null) => {
     await ensureHydrated();
-    const produtos = getAllProdutos();
+    const allLoaded = useAdminProducts.getState()._loaded;
+
+    if (!allLoaded) {
+       const query = supabase.from('produtos').select('*').eq('id', id).limit(1);
+       const products = await fetchFromSupabaseWithPrices(query, lojaId);
+       if (products.length > 0) return { ...products[0] };
+    }
+
+    const produtos = getAllProdutos(lojaId);
     const p = produtos.find((x) => x.id === id);
     return p ? { ...p } : null;
   },
-  getProduct: async (id: string) => {
+  getProduct: async (id: string, lojaId?: string | null) => {
     await ensureHydrated();
-    const produtos = getAllProdutos();
+    const allLoaded = useAdminProducts.getState()._loaded;
+
+    if (!allLoaded) {
+       const query = supabase.from('produtos').select('*').eq('id', id).limit(1);
+       const products = await fetchFromSupabaseWithPrices(query, lojaId);
+       if (products.length > 0) return { ...products[0] };
+    }
+
+    const produtos = getAllProdutos(lojaId);
     const p = produtos.find((x) => x.id === id);
     return p ? { ...p } : null;
   },
-  productsByCategory: async (categoryId: string, filters?: FilterOptions) => {
+  productsByCategory: async (categoryId: string, filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
     const categorias = getCategorias();
     const cat = categorias.find(c => c.id === categoryId);
     if (!cat) return wait([]);
 
-    const all = getAllProdutos();
+    const allLoaded = useAdminProducts.getState()._loaded;
+    const isOfertas = String(cat.nome || "").toLowerCase().includes("oferta") || String(cat.nome || "").toLowerCase().includes("promoç");
+
+    if (!allLoaded) {
+      let query = supabase.from('produtos').select('*');
+      
+      if (categoryId === "300") {
+         const subCategorias = categorias.filter(c => c.parentId === "300");
+         const namesToMatch = subCategorias.map(c => removeAccents(c.nome.toLowerCase()));
+         // Hard to query by subcategory names in Supabase without ilike. We'll fetch a lot and filter in JS
+         query = query.limit(500);
+      } else if (cat.parentId === "300") {
+         query = query.ilike('nome', `%${cat.nome}%`).limit(500);
+      } else {
+         const validCategoryIds = [categoryId, ...categorias.filter(c => c.parentId === categoryId).map(c => c.id)];
+         query = query.in('categoriaId', validCategoryIds).limit(1000);
+      }
+
+      const products = await fetchFromSupabaseWithPrices(query, lojaId);
+      
+      let results = products;
+      if (categoryId === "300") {
+         const subCategorias = categorias.filter(c => c.parentId === "300");
+         const namesToMatch = subCategorias.map(c => removeAccents(c.nome.toLowerCase()));
+         results = products.filter(p => {
+           const nome = removeAccents(String(p.nome).toLowerCase());
+           return namesToMatch.some(brand => nome.includes(brand));
+         });
+      }
+      return wait(applyFilters(results, filters));
+    }
+
+    const all = getAllProdutos(lojaId);
 
     let results: Produto[] = [];
-
-    const isOfertas = String(cat.nome || "").toLowerCase().includes("oferta") || String(cat.nome || "").toLowerCase().includes("promoç");
 
     // Custom logic for "Nossas Marcas" (id: "300") and its subcategories
     if (categoryId === "300") {
@@ -443,9 +579,30 @@ export const catalog = {
   },
   productsByVitrine: async (vitrineId: string, categoriaId: string, filters?: FilterOptions, produtoIds?: string[], lojaId?: string | null) => {
     await ensureHydrated();
+    const allLoaded = useAdminProducts.getState()._loaded;
+
+    if (!allLoaded) {
+      let query = supabase.from('produtos').select('*');
+      if (produtoIds && produtoIds.length > 0) {
+        query = query.in('id', produtoIds);
+      } else if (categoriaId === "destaques") {
+        query = query.eq('destaque', true).limit(50);
+      } else if (categoriaId === "novidades") {
+        query = query.eq('isNovo', true).limit(50);
+      } else if (categoriaId === "ofertas" || categoriaId === "campanha") {
+        query = query.eq('emCampanha', true).limit(50);
+      } else if (categoriaId === "all") {
+        query = query.order('nivelRelevancia', { ascending: false }).limit(50);
+      } else {
+        query = query.eq('categoriaId', categoriaId).limit(50);
+      }
+      
+      const products = await fetchFromSupabaseWithPrices(query, lojaId);
+      return wait(applyFilters(products, filters));
+    }
+
     const all = getAllProdutos(lojaId);
     
-    // If manual product IDs are provided, use those
     if (produtoIds && produtoIds.length > 0) {
       const idSet = new Set(produtoIds);
       const results = all.filter(p => idSet.has(p.id));
@@ -456,14 +613,14 @@ export const catalog = {
     
     if (categoriaId === "all") {
       results = all;
-    } else if (categoriaId === "ofertas") {
-      results = [...all].reverse();
+    } else if (categoriaId === "ofertas" || categoriaId === "campanha") {
+      results = all.filter(p => isCampanhaAtiva(p));
+    } else if (categoriaId === "destaques") {
+      results = all.filter(p => p.destaque);
     } else if (categoriaId === "novidades") {
       results = all.filter(p => p.isNovo);
-      if (results.length === 0) results = all.slice(0, 10);
     } else if (categoriaId === "protetores") {
       results = all.filter(p => String(p.nome).toLowerCase().includes("protetor") || String(p.nome).toLowerCase().includes("solar"));
-      if (results.length === 0) results = all.slice(0, 10);
     } else {
       const categorias = getCategorias();
       const validCategoryIds = [categoriaId, ...categorias.filter(c => c.parentId === categoriaId).map(c => c.id)];
@@ -484,7 +641,7 @@ export const catalog = {
     await ensureHydrated();
     return wait(
       getAllProdutos().filter(
-        (p) => p.fabricante && String(p.fabricante).toLowerCase() === brandName.toLowerCase(),
+        (p) => p.marca && String(p.marca).toLowerCase() === brandName.toLowerCase(),
       ),
     );
   },
@@ -498,18 +655,16 @@ export const catalog = {
     }
 
     const produtos = getAllProdutos();
-    let others = produtos.filter((p) => p && !cartIds.includes(p.id));
+    let others = produtos.filter((p) => p && !cartIds.includes(p.id) && p.categoriaId !== "142");
     
     if (settings) {
       others = others.filter(p => (p.precoPor || p.precoDe || 0) <= settings.maxPrice);
       
       if (settings.categoryId !== "all") {
         others = others.filter(p => p.categoriaId === settings.categoryId || String(p.subcategoriaId).startsWith(settings.categoryId));
-      } else if (referenceCategoryId) {
+      } else if (referenceCategoryId && referenceCategoryId !== "142") {
         others = others.filter(p => p.categoriaId === referenceCategoryId);
       }
-    } else {
-      others = others.filter(p => p.categoriaId !== "142");
     }
 
     const seedStr = cartIds.sort().join(",");
@@ -545,17 +700,34 @@ export const catalog = {
     
     return wait([]);
   },
-  search: async (q: string, filters?: FilterOptions) => {
+  searchWithSuggestions: async (q: string, filters?: FilterOptions, lojaId?: string | null): Promise<{ results: Produto[], didYouMean?: string }> => {
     await ensureHydrated();
+    const allLoaded = useAdminProducts.getState()._loaded;
+
+    if (!allLoaded) {
+       if (!q || q.length < 2) return wait({ results: [] });
+       let query = supabase.from('produtos').select('*').limit(20);
+       
+       if (/^\d+$/.test(q)) {
+          query = query.or(`ean.eq.${q},id.eq.${q}`);
+       } else {
+          query = query.ilike('nome', `%${q}%`);
+       }
+       
+       const products = await fetchFromSupabaseWithPrices(query, lojaId);
+       return wait({ results: applyFilters(products, filters) });
+    }
+
     if (!q || q.length < 2) {
       if (filters && Object.keys(filters).length > 0) {
-        return wait(applyFilters(getAllProdutos(), filters).slice(0, 40));
+        return wait({ results: applyFilters(getAllProdutos(lojaId), filters).slice(0, 40) });
       }
-      return wait([] as Produto[]);
+      return wait({ results: [] });
     }
-    const produtos = getAllProdutos();
+    const produtos = getAllProdutos(lojaId);
 
     let results: Produto[] = [];
+    let didYouMean: string | undefined = undefined;
 
     // Exact number search (EAN or ID)
     if (/^\d+$/.test(q)) {
@@ -575,7 +747,21 @@ export const catalog = {
 
       // Fuzzy search for fallbacks and typos
       const fuse = getFuse();
-      const hits = fuse.search(q, { limit: 20 }).map((r) => r.item);
+      const hitsWithScore = fuse.search(q, { limit: 20 });
+      const hits = hitsWithScore.map((r) => r.item);
+
+      // Check if we should suggest a "did you mean"
+      if (exactMatches.length === 0 && hitsWithScore.length > 0) {
+        const topHit = hitsWithScore[0];
+        // If it's a very good fuzzy match (score is low, but not perfect)
+        if (topHit.score && topHit.score < 0.4) {
+          const topNameLower = removeAccents(String(topHit.item.nome || "").toLowerCase());
+          // Only suggest if they didn't just type a substring of the word
+          if (!topNameLower.includes(cleanQ)) {
+             didYouMean = topHit.item.nome;
+          }
+        }
+      }
 
       // Merge and deduplicate (exact matches first)
       const resultMap = new Map<string, Produto>();
@@ -587,7 +773,11 @@ export const catalog = {
       results = Array.from(resultMap.values()).slice(0, 20);
     }
 
-    return wait(applyFilters(results, filters));
+    return wait({ results: applyFilters(results, filters), didYouMean });
+  },
+  search: async (q: string, filters?: FilterOptions) => {
+    const { results } = await catalog.searchWithSuggestions(q, filters);
+    return results;
   },
   featured: async () => {
     await ensureHydrated();
@@ -635,3 +825,4 @@ export const catalog = {
     return wait(active[0] || (pharmacies[0] as unknown as Loja));
   },
 };
+
