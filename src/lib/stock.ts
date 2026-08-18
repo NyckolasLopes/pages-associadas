@@ -1,19 +1,17 @@
-// Stock utility — deterministic pseudo-random stock based on product+pharmacy IDs
+// Stock utility — deterministic stock based on product+pharmacy IDs
 
-// Create a deterministic but pseudo-random stock number based on product ID and pharmacy ID
+// Resolve the effective stock for a product at a given pharmacy
 export function getDeterministicStock(produtoOrId: any, pharmacyId: string | undefined): number {
   if (!produtoOrId || !pharmacyId) return 0;
   
-  // if a product object is passed and it has estoquesPorLoja configured, use it!
   if (typeof produtoOrId === 'object' && produtoOrId !== null) {
+    // 1. Check store-specific stock (estoquesPorLoja)
     if (produtoOrId.estoquesPorLoja && produtoOrId.estoquesPorLoja[pharmacyId] !== undefined) {
       return Number(produtoOrId.estoquesPorLoja[pharmacyId]);
     }
-  }
 
-  // Always return the actual stock. Never return fake random stock.
-  if (typeof produtoOrId === 'object' && produtoOrId !== null) {
-    if (produtoOrId.estoque !== undefined && !produtoOrId.estoquesPorLoja) {
+    // 2. Fallback to the global estoque field set on the product
+    if (produtoOrId.estoque !== undefined) {
       return Number(produtoOrId.estoque);
     }
   }
