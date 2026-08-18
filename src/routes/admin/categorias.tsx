@@ -64,17 +64,17 @@ function AdminCategorias() {
   const handleToggleFeatured = (id: string) => {
     if (!isGlobalAdmin && currentLojaId) {
       const currentFeatured = effectiveFeaturedCategories;
-      if (!currentFeatured.includes(id) && currentFeatured.length >= 6) {
-        toast.error("Limite de categorias atingido", {
-          description: "Você só pode destacar até 6 categorias no menu principal da sua loja. Desmarque uma antes de adicionar outra."
+      if (!currentFeatured.includes(id) && currentFeatured.length >= 5) {
+        toast.error("Limite de destaques atingido", {
+          description: "Você só pode destacar até 5 categorias ou subcategorias no total. Desmarque uma antes de adicionar outra."
         });
         return;
       }
       toggleStoreFeaturedCategory(currentLojaId, id);
     } else {
-      if (!featuredCategories.includes(id) && featuredCategories.length >= 6) {
-        toast.error("Limite de categorias atingido", {
-          description: "Você só pode destacar até 6 categorias no menu principal da rede. Desmarque uma antes de adicionar outra."
+      if (!featuredCategories.includes(id) && featuredCategories.length >= 5) {
+        toast.error("Limite de destaques atingido", {
+          description: "Você só pode destacar até 5 categorias ou subcategorias no total. Desmarque uma antes de adicionar outra."
         });
         return;
       }
@@ -347,6 +347,15 @@ function AdminCategorias() {
                             </span>
                           </div>
                           <div className="flex justify-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleToggleFeatured(child.id)}
+                              className={`h-7 w-7 hover:bg-slate-200 ${effectiveFeaturedCategories.includes(child.id) ? 'text-amber-400 hover:text-amber-500' : 'text-slate-400 hover:text-amber-400'}`}
+                              title="Destacar na página inicial"
+                            >
+                              <Star className="h-3.5 w-3.5" fill={effectiveFeaturedCategories.includes(child.id) ? "currentColor" : "none"} />
+                            </Button>
                             {isGlobalAdmin && (
                               <>
                                 <Button 

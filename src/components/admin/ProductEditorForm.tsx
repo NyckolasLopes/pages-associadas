@@ -436,11 +436,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               <Info className="h-6 w-6 text-emerald-800" /> Detalhes Técnicos e Características
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Resumo / Descrição Curta</Label>
-                <Textarea disabled={!isGlobalAdmin} value={formData.resumoDescricao || ""} onChange={e => setFormData({...formData, resumoDescricao: e.target.value})} className="bg-white" />
-              </div>
+            <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Alerta Regulatório (Texto)</Label>
                 <Textarea disabled={!isGlobalAdmin} value={formData.alertaTexto || ""} onChange={e => setFormData({...formData, alertaTexto: e.target.value})} className="bg-white" placeholder="Ex: Ao persistirem os sintomas, o médico deverá ser consultado." />
@@ -499,20 +495,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Faixa Etária</Label>
-                <Select disabled={!isGlobalAdmin} value={formData.faixaEtaria || "ADULTO"} onValueChange={v => setFormData({...formData, faixaEtaria: v})}>
-                  <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ADULTO">Adulto</SelectItem>
-                    <SelectItem value="PEDIATRICO">Pediátrico</SelectItem>
-                    <SelectItem value="GERIATRICO">Geriátrico</SelectItem>
-                    <SelectItem value="USO_GERAL">Uso Geral</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+
             
             <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
               <Switch disabled={!isGlobalAdmin} 
@@ -657,17 +640,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <Label className="font-bold text-xs uppercase text-slate-500">NCM</Label>
                 <Input disabled={!isGlobalAdmin} value={formData.ncm || ""} onChange={e => setFormData({...formData, ncm: e.target.value})} className="bg-white" placeholder="Nomenclatura Comum do Mercosul" />
               </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Preço de Comparação (De) - Opcional</Label>
-                <Input disabled={!isGlobalAdmin} 
-                  type="number" 
-                  step="0.01" 
-                  value={formData.precoDe || ""} 
-                  onChange={e => setFormData({...formData, precoDe: parseFloat(e.target.value) || 0})} 
-                  className="bg-white" 
-                  placeholder="0.00" 
-                />
-              </div>
+
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Nível de Relevância (Prioridade)</Label>
                 <Input disabled={!isGlobalAdmin} 
