@@ -409,7 +409,8 @@ export type Database = {
           prioridade?: number | null
           lancamento?: boolean | null
           tipo_receita?: string | null
-          caracteristicas?: Json | null`n            faixa_etaria?: string | null
+          caracteristicas?: Json | null
+          faixa_etaria?: string | null
           titulo_seo?: string | null
           meta_description?: string | null
         }
@@ -457,7 +458,8 @@ export type Database = {
           prioridade?: number | null
           lancamento?: boolean | null
           tipo_receita?: string | null
-          caracteristicas?: Json | null`n            faixa_etaria?: string | null
+          caracteristicas?: Json | null
+          faixa_etaria?: string | null
           titulo_seo?: string | null
           meta_description?: string | null
         }

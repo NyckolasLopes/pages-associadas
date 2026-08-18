@@ -473,6 +473,13 @@ function AdminLayout() {
             </NavSection>
           )}
 
+          {/* ---- CARRINHOS ABANDONADOS ---- */}
+          {(can('vendas_pedidos') || !isGlobalAdmin || isGlobalAdmin) && (
+            <NavSection icon={<ShoppingCart className="h-4 w-4" />} label="Carrinhos" open={openNavSection === "Carrinhos Abandonados"} onToggle={() => setOpenNavSection(openNavSection === "Carrinhos Abandonados" ? "" : "Carrinhos Abandonados")}>
+              <Link to="/admin/carrinhos-abandonados" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? 'Carrinhos Globais' : 'Meus carrinhos'}</Link>
+            </NavSection>
+          )}
+
           {/* ---- PRODUTOS ---- */}
           {(can('prod_todos') || can('prod_novo') || can('prod_categorias') || can('prod_colecoes') || can('prod_filtros') || can('prod_marcas') || !isGlobalAdmin) && (
             <NavSection icon={<Package className="h-4 w-4" />} label="Produtos" open={openNavSection === "Produtos"} onToggle={() => setOpenNavSection(openNavSection === "Produtos" ? "" : "Produtos")}>
