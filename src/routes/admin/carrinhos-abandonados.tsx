@@ -71,8 +71,7 @@ function CarrinhosAbandonados() {
 
   const handleSaveNotes = () => {
     if (selectedCart) {
-        updateNotes(selectedCart.id, editNotes);
-      }
+      updateNotes(selectedCart.id, editNotes);
       toast.success("Informações atualizadas!");
       setIsEditMode(false);
       setSelectedCart(prev => prev ? { ...prev, notes: editNotes, recoveryStatus: "Em tratativa" } : null);
