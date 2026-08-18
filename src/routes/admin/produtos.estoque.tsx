@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { Spinner } from "@/components/ui/spinner";
 
 export const Route = createFileRoute("/admin/produtos/estoque")({
   component: AdminProdutosEstoque,
@@ -371,7 +372,10 @@ function AdminProdutosEstoque() {
 
         <div className="overflow-x-auto max-h-[600px]">
           {isLoading ? (
-            <div className="p-12 text-center text-slate-500">Carregando estoques...</div>
+            <div className="p-12 flex flex-col items-center justify-center gap-3 text-slate-500 font-medium">
+              <Spinner size={32} />
+              <span>Carregando estoques...</span>
+            </div>
           ) : (
             <table className="w-full text-left">
               <thead className="bg-slate-50 text-slate-600 font-bold border-b text-xs sticky top-0 z-10">
