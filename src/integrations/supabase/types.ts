@@ -345,6 +345,7 @@ export type Database = {
           principios_ativos: Json | null
           registro_anvisa: string | null
           retem_receita: boolean
+          tipo_de_receita: string | null
           slug: string
           subcategoria_id: string | null
           tarja: string | null
@@ -392,6 +393,7 @@ export type Database = {
           principios_ativos?: Json | null
           registro_anvisa?: string | null
           retem_receita?: boolean
+          tipo_de_receita?: string | null
           slug: string
           subcategoria_id?: string | null
           tarja?: string | null
@@ -439,6 +441,7 @@ export type Database = {
           principios_ativos?: Json | null
           registro_anvisa?: string | null
           retem_receita?: boolean
+          tipo_de_receita?: string | null
           slug?: string
           subcategoria_id?: string | null
           tarja?: string | null
