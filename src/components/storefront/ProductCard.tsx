@@ -179,7 +179,8 @@ function ProductCardComponent({
     }
   }
 
-  const isCampanha = isCampanhaAtiva(p);
+  const isAvailable = maxStock > 0 || (p.tipoProduto === "servico" || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20")));
+  const isCampanha = isAvailable && isCampanhaAtiva(p);
   let finalPrecoPor = p.precoPor;
   let finalPrecoDe = p.precoDe;
   let isLojaPromoActiva = false;
@@ -214,7 +215,6 @@ function ProductCardComponent({
   // 3. Store-specific & Global Promotions
   const isService = p.tipoProduto === "servico" || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
   const isMedicamento = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142"));
-  const isAvailable = maxStock > 0 || isService;
 
   const lojaPromocoes = activeStoreId ? lojaPromocoesMap?.[activeStoreId] || [] : [];
   const globalPromocoes = promocoes.filter(p => !p.lojaId);

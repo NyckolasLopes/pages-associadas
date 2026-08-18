@@ -91,7 +91,7 @@ export interface Produto {
   seoDescricao?: string;
   imagemAlt?: string;
   aVenda?: boolean;
-  tipoProduto?: string;
+
   selo?: string; // Ação PBM
   precoSobConsulta?: boolean;
   linkProduto?: string;
@@ -123,11 +123,11 @@ export interface Produto {
   requiresReceita?: boolean;
   // --- Novos campos integrados da API Externa ---
   // Produtos
-  eansSecundarios?: string[];
+
   caracteristicas?: Array<{ titulo: string; descricao: string }>;
   tipo?: number;
-  prioridade?: number;
-  lancamento?: boolean;
+
+
   principiosAtivosDetalhes?: Array<{ nome: string; concentracao: string; unidadeMedida: string }>;
   // Preço
   percentualDesconto?: number;
