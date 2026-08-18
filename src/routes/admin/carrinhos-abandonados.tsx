@@ -331,9 +331,8 @@ export function PedidosAdmin() {
   // Filtragem
   const filteredUnifiedOrders = useMemo(() => {
     return allUnifiedOrders.filter(item => {
-      // Filtro por view
-      if (mainView === "concluidos" && item.status !== "Concluído") return false;
-      if (mainView === "carrinhos" && item.status !== "Pendente") return false;
+      // Filtro por view - página específica de carrinhos abandonados, mostra somente pendentes
+      if (item.status !== "Pendente") return false;
 
       // Filtro por busca
       if (searchTerm) {
@@ -611,10 +610,10 @@ export function PedidosAdmin() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-3xl font-black text-slate-800 tracking-tight">
-              {isGlobalView ? 'Pedidos da Rede' : 'Meus Pedidos'}
+              Carrinhos Abandonados
             </h1>
             <span className="text-slate-500 font-medium text-sm">
-              Visão geral consolidada de todos os pedidos concluídos via WhatsApp e pendentes no carrinho.
+              Acompanhe os clientes que iniciaram uma compra mas não finalizaram o pedido.
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -625,59 +624,15 @@ export function PedidosAdmin() {
           </div>
         </div>
 
-        {/* 3 KPIs Principais: TOTAL DE PEDIDOS (Concluídos + Pendentes), CONCLUIDO, CARRINHOS A RECUPERAR */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           {/* TOTAL DE PEDIDOS - Puxa todos os pedidos (Pendentes e Concluídos) */}
-           <div 
-             onClick={() => setMainView("todos")}
-             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
-               mainView === "todos" ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20" : ""
-             }`}
-           >
-              <div>
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">TOTAL DE PEDIDOS</p>
-                <p className="text-3xl font-black text-slate-800">{kpis.total}</p>
-                <span className="text-[12px] text-slate-500 font-medium">
-                  {kpis.concluidos} concluídos + {kpis.carrinhosARecuperar} pendentes
-                </span>
-              </div>
-              <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center">
-                <Package className="h-6 w-6" />
-              </div>
+        {/* KPI Carrinhos Abandonados */}
+        <div className="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between ring-2 ring-amber-500 border-amber-500 bg-amber-50/20">
+           <div>
+             <p className="text-amber-600 text-xs font-bold uppercase tracking-wider mb-1">CARRINHOS ABANDONADOS</p>
+             <p className="text-3xl font-black text-amber-700">{kpis.carrinhosARecuperar}</p>
+             <span className="text-[12px] text-amber-600 font-semibold">Clientes com itens no carrinho sem finalizar</span>
            </div>
-
-           {/* CONCLUÍDO (WHATSAPP) */}
-           <div 
-             onClick={() => setMainView("concluidos")}
-             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
-               mainView === "concluidos" ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20" : ""
-             }`}
-           >
-              <div>
-                <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">CONCLUÍDO</p>
-                <p className="text-3xl font-black text-emerald-700">{kpis.concluidos}</p>
-                <span className="text-[12px] text-emerald-600 font-semibold">Finalizados no WhatsApp</span>
-              </div>
-              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-           </div>
-
-           {/* CARRINHOS A RECUPERAR / PENDENTES */}
-           <div 
-             onClick={() => setMainView("carrinhos")}
-             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
-               mainView === "carrinhos" ? "ring-2 ring-amber-500 border-amber-500 bg-amber-50/20" : ""
-             }`}
-           >
-              <div>
-                <p className="text-amber-600 text-xs font-bold uppercase tracking-wider mb-1">CARRINHOS A RECUPERAR</p>
-                <p className="text-3xl font-black text-amber-700">{kpis.carrinhosARecuperar}</p>
-                <span className="text-[12px] text-amber-600 font-semibold">Clientes com itens no carrinho</span>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
-                <ShoppingCart className="h-6 w-6" />
-              </div>
+           <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
+             <ShoppingCart className="h-6 w-6" />
            </div>
         </div>
 
