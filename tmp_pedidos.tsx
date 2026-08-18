@@ -38,7 +38,7 @@ import { useCart } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
 import { AbandonedCartsWidget } from "@/components/admin/AbandonedCartsWidget";
 
-export const Route = createFileRoute("/admin/carrinhos-abandonados")({
+export const Route = createFileRoute("/admin/pedidos/")({
   component: PedidosAdmin,
 });
 
@@ -143,7 +143,7 @@ export function PedidosAdmin() {
   const [dateEndFilter, setDateEndFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
-  const [mainView, setMainView] = useState<"carrinhos">("carrinhos");
+  const [mainView, setMainView] = useState<"todos" | "concluidos" | "carrinhos">("todos");
 
   const getLojaName = (id?: string, fallbackName?: string) => {
     const p = id ? pharmacies.find(ph => ph.id === id) : null;
@@ -697,6 +697,33 @@ export function PedidosAdmin() {
             </div>
 
             <div className="flex items-center gap-2">
+              <div className="inline-flex bg-slate-100 p-1 rounded-xl">
+                <button
+                  onClick={() => setMainView("todos")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    mainView === "todos" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Todos ({kpis.total})
+                </button>
+                <button
+                  onClick={() => setMainView("concluidos")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    mainView === "concluidos" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Concluídos ({kpis.concluidos})
+                </button>
+                <button
+                  onClick={() => setMainView("carrinhos")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    mainView === "carrinhos" ? "bg-white text-amber-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Pendentes / Carrinhos ({kpis.carrinhosARecuperar})
+                </button>
+              </div>
+
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="h-10 font-bold gap-2 bg-white text-slate-600 border-slate-200">
