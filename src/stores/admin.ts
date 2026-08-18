@@ -1117,7 +1117,11 @@ export const useAdmin = create<AdminState>()(
       }),
       storeFeaturedCategories: {},
       toggleStoreFeaturedCategory: (lojaId, id) => set((s) => {
-        const current = s.storeFeaturedCategories[lojaId] || [];
+        // If the store hasn't customized yet, use the network's featured categories as a baseline
+        const current = s.storeFeaturedCategories[lojaId]?.length > 0 
+          ? s.storeFeaturedCategories[lojaId] 
+          : s.featuredCategories;
+          
         if (current.includes(id)) {
           return { storeFeaturedCategories: { ...s.storeFeaturedCategories, [lojaId]: current.filter(x => x !== id) } };
         }

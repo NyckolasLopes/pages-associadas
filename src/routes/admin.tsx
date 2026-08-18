@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   LayoutDashboard,
+  Server,
   Paintbrush,
   Package,
   Webhook,
@@ -489,7 +490,6 @@ function AdminLayout() {
               {isGlobalAdmin && can('prod_marcas') && <Link to="/admin/marcas" className={subLinkClass}>Marcas</Link>}
               {isGlobalAdmin && can('prod_colecoes') && <Link to="/admin/colecoes" className={subLinkClass}>Vitrine de Produtos</Link>}
               {isGlobalAdmin && can('prod_filtros') && <Link to="/admin/filtros" className={subLinkClass}>Filtros</Link>}
-              {isGlobalAdmin && <Link to="/admin/produtos/api-conexoes" className={subLinkClass}>API e Conexões</Link>}
             </NavSection>
           )}
 
@@ -551,6 +551,12 @@ function AdminLayout() {
           {isGlobalAdmin && (
             <Link to="/admin/paginas-informativas" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
               <FileText className="h-4 w-4" /> Páginas Informativas
+            </Link>
+          )}
+
+          {isGlobalAdmin && (
+            <Link to="/admin/produtos/api-conexoes" className="flex items-center gap-3 px-3 py-2 mt-2 text-sm font-bold rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary">
+              <Server className="h-4 w-4" /> API e Conexões
             </Link>
           )}
 

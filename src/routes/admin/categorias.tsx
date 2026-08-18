@@ -56,9 +56,14 @@ function AdminCategorias() {
   // Effective categories for current view
   const allCategories: Categoria[] = currentLojaId ? getStoreCategories(currentLojaId) : networkCategories;
   
+  // Effective featured categories (fallback to network if store hasn't customized)
+  const effectiveFeaturedCategories = (!isGlobalAdmin && currentLojaId) 
+    ? (storeFeaturedCategories[currentLojaId]?.length > 0 ? storeFeaturedCategories[currentLojaId] : featuredCategories)
+    : featuredCategories;
+
   const handleToggleFeatured = (id: string) => {
     if (!isGlobalAdmin && currentLojaId) {
-      const currentFeatured = storeFeaturedCategories[currentLojaId] || [];
+      const currentFeatured = effectiveFeaturedCategories;
       if (!currentFeatured.includes(id) && currentFeatured.length >= 6) {
         toast.error("Limite de categorias atingido", {
           description: "Você só pode destacar até 6 categorias no menu principal da sua loja. Desmarque uma antes de adicionar outra."
@@ -286,10 +291,10 @@ function AdminCategorias() {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => handleToggleFeatured(cat.id)}
-                        className={`h-8 w-8 hover:bg-slate-200 ${((!isGlobalAdmin && currentLojaId) ? (storeFeaturedCategories[currentLojaId] || []) : featuredCategories).includes(cat.id) ? 'text-amber-400 hover:text-amber-500' : 'text-slate-400 hover:text-amber-400'}`}
+                        className={`h-8 w-8 hover:bg-slate-200 ${effectiveFeaturedCategories.includes(cat.id) ? 'text-amber-400 hover:text-amber-500' : 'text-slate-400 hover:text-amber-400'}`}
                         title="Destacar na página inicial"
                       >
-                        <Star className="h-4 w-4" fill={((!isGlobalAdmin && currentLojaId) ? (storeFeaturedCategories[currentLojaId] || []) : featuredCategories).includes(cat.id) ? "currentColor" : "none"} />
+                        <Star className="h-4 w-4" fill={effectiveFeaturedCategories.includes(cat.id) ? "currentColor" : "none"} />
                       </Button>
                       {isGlobalAdmin && (
                         <>

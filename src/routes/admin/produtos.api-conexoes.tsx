@@ -154,6 +154,11 @@ function ApiConexoes() {
     const hash = type === 'stock_price' ? conn?.stock_price_hash : conn?.catalog_hash;
     const status = type === 'stock_price' ? conn?.stock_price_status : conn?.catalog_status;
     const lastPing = type === 'stock_price' ? conn?.stock_price_last_ping : conn?.catalog_last_ping;
+    
+    // Construct the full URL for the API endpoint
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL || "https://uqwxpoxwwvyqnwgquxit.supabase.co";
+    const rpcEndpoint = type === 'stock_price' ? 'sync_estoque_preco_loja' : 'sync_produtos_loja';
+    const fullApiUrl = hash ? `${baseUrl}/rest/v1/rpc/${rpcEndpoint}?apikey=${hash}` : null;
 
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
@@ -169,16 +174,16 @@ function ApiConexoes() {
         </div>
         
         <div className="flex items-center gap-2 mt-2">
-          <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-xs text-slate-600 truncate relative group">
-            {hash ? (
+          <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-[10px] text-slate-600 truncate relative group" title={fullApiUrl || ""}>
+            {fullApiUrl ? (
               <div className="flex justify-between items-center">
-                <span className="truncate pr-4">{hash.substring(0, 15)}************************</span>
+                <span className="truncate pr-4">{fullApiUrl}</span>
                 <button 
-                  onClick={() => copyToClipboard(hash)}
-                  className="text-slate-400 hover:text-[#00B5AD] transition-colors"
-                  title="Copiar Chave"
+                  onClick={() => copyToClipboard(fullApiUrl)}
+                  className="text-slate-400 hover:text-[#00B5AD] transition-colors shrink-0"
+                  title="Copiar URL"
                 >
-                  {copiedHash === hash ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  {copiedHash === fullApiUrl ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
             ) : (
