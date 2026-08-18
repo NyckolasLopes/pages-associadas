@@ -114,7 +114,11 @@ function PainelLoja() {
     return { hoje: hj, ontem: ont, semana: sem, mes: m, ano: a };
   }, [lojaOrders]);
 
-  const { carts: allCarts } = useAbandonedCartsStore();
+  const { carts: allCarts, loadCarts } = useAbandonedCartsStore();
+
+  useEffect(() => {
+    loadCarts();
+  }, [loadCarts]);
 
   // Pedidos unificados da Loja (Pedidos regulares + Carrinhos da loja)
   const lojaUnifiedOrders = useMemo(() => {

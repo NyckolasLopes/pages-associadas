@@ -9,6 +9,7 @@ const FloatingElements = lazy(() => import("@/components/storefront/BackToTop").
 const CookieBanner = lazy(() => import("@/components/storefront/CookieBanner").then(m => ({ default: m.CookieBanner })));
 const GeoPopup = lazy(() => import("@/components/storefront/GeoPopup").then(m => ({ default: m.GeoPopup })));
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
+import { CartSync } from "@/components/storefront/CartSync";
 
 export const Route = createFileRoute("/_store")({
   component: StoreLayout,
@@ -90,6 +91,7 @@ function StoreLayout() {
           <meta name="description" content={activePharmacy.metaDescription || "Sua farmácia online de confiança."} />
         </>
       )}
+      <CartSync />
       <Header />
       <main className="flex-1">
         <Outlet />

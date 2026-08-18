@@ -8,6 +8,7 @@ import { useCart } from "@/stores/cart";
 import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
 import { useMarketing } from "@/stores/marketing";
 import { Input } from "@/components/ui/input";
+import { useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -69,9 +70,14 @@ function AdminDashboard() {
   }, [pharmacies, lojasAcessos]);
 
   const maxVisitasMes = useMemo(() => {
-    const max = Math.max(...visitasPorLoja.map(v => v.mes), 1);
-    return max > 0 ? max : 1;
+    if (visitasPorLoja.length === 0) return 1;
+    return Math.max(...visitasPorLoja.map(l => l.mes));
   }, [visitasPorLoja]);
+
+  const loadCarts = useAbandonedCartsStore(s => s.loadCarts);
+  useEffect(() => {
+    loadCarts();
+  }, [loadCarts]);
 
   const orders = useMemo(() => {
     if (!effectiveStoreId) return rawOrders;
@@ -193,9 +199,7 @@ function AdminDashboard() {
   
   const rawStoreCarts = useAbandonedCartsStore(s => s.carts);
   const storeCarts = effectiveStoreId ? rawStoreCarts.filter(c => c.lojaId === effectiveStoreId) : rawStoreCarts;
-  const carrinhosRecuperar = effectiveStoreId 
-    ? storeCarts.length 
-    : (rawStoreCarts.length + (cartItems.length > 0 ? 1 : 0));
+  const carrinhosRecuperar = storeCarts.length;
 
   const formatDataHora = (dataStr: string) => {
     if (!dataStr) return "";

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExternalLink, Filter, Search, ChevronDown, ShoppingCart, Trash2, Edit2, MapPin, Phone, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,44 +22,14 @@ import { useAbandonedCartsStore, AbandonedCart } from "@/stores/abandoned-carts"
 type TabType = 'todos' | 'sem_transacao' | 'pagamento_nao_aprovado';
 
 function CarrinhosAbandonados() {
-  const cartItems = useCart(s => s.items);
-  const cartTotal = useCart(s => s.total());
-  const clearCart = useCart(s => s.clear);
-  const user = useAuth(s => s.user);
-
-  const { carts: storeCarts, updateNotes, removeCart: removeStoreCart } = useAbandonedCartsStore();
-  const lastUpdatedAt = useCart(s => (s as any).lastUpdatedAt);
-  const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
+  const { carts, isLoading, loadCarts, updateNotes, removeCart } = useAbandonedCartsStore();
   const [forceAbandoned, setForceAbandoned] = useState(false);
   const { currentUser, pharmacies, activeStoreId } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   
-  const liveCarts: AbandonedCart[] = [];
-  
-  if (user && cartItems.length > 0) {
-    liveCarts.push({
-      id: "#807099", // ID fixo para o mock do carrinho atual
-      createdAt: new Date(lastUpdatedAt || Date.now()).toLocaleDateString('pt-BR') + " " + new Date(lastUpdatedAt || Date.now()).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
-      client: user.name || "Cliente",
-      email: user.email || "",
-      phone: (user as any).phone || "(51) 99999-9999",
-      address: "Não informado",
-      abandonedAt: "Há pouco tempo",
-      recoveryStatus: "Aguardando disparo autom.",
-      total: cartTotal,
-      type: 'sem_transacao',
-      notes: "",
-      lojaId: selectedPharmacyId || undefined,
-      items: cartItems.map(i => ({
-        nome: i.nome,
-        qtd: i.qty,
-        valorUnitario: i.preco,
-        foto: "https://placehold.co/100"
-      }))
-    });
-  }
-
-  const carts = [...liveCarts, ...storeCarts];
+  useEffect(() => {
+    loadCarts();
+  }, [loadCarts]);
 
   // Filtro por loja
   const authorizedCarts = carts.filter(cart => {
@@ -92,19 +62,15 @@ function CarrinhosAbandonados() {
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      if (itemToDelete === "#807099") {
-        clearCart();
-      } else {
-        removeStoreCart(itemToDelete);
-      }
-      toast.success("Carrinho removido com sucesso!");
-      setIsDetailsOpen(false);
+      removeCart(itemToDelete);
+      toast.success("Carrinho abandonado removido com sucesso");
     }
+    setConfirmOpen(false);
+    setItemToDelete(null);
   };
 
   const handleSaveNotes = () => {
     if (selectedCart) {
-      if (selectedCart.id !== "#807099") {
         updateNotes(selectedCart.id, editNotes);
       }
       toast.success("Informações atualizadas!");

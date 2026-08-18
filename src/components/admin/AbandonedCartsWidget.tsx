@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ShoppingCart, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,41 +10,13 @@ import { useAdmin } from "@/stores/admin";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function AbandonedCartsWidget({ lojaId }: { lojaId?: string }) {
-  const { carts: storeCarts, removeCart: removeStoreCart } = useAbandonedCartsStore();
-  const cartItems = useCart(s => s.items);
-  const cartTotal = useCart(s => s.total());
-  const clearCart = useCart(s => s.clear);
-  const user = useAuth(s => s.user);
-  const lastUpdatedAt = useCart(s => (s as any).lastUpdatedAt);
-  const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
+  const { carts, isLoading, loadCarts, removeCart } = useAbandonedCartsStore();
   const { currentUser, pharmacies, activeStoreId } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
 
-  const liveCarts: AbandonedCart[] = [];
-  if (user && cartItems.length > 0) {
-    liveCarts.push({
-      id: "#807099",
-      createdAt: new Date(lastUpdatedAt || Date.now()).toLocaleDateString('pt-BR') + " " + new Date(lastUpdatedAt || Date.now()).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
-      client: user.name || "Cliente",
-      email: user.email || "",
-      phone: (user as any).phone || "(51) 99999-9999",
-      address: "Não informado",
-      abandonedAt: "Há pouco tempo",
-      recoveryStatus: "Aguardando disparo autom.",
-      total: cartTotal,
-      type: 'sem_transacao',
-      notes: "",
-      lojaId: selectedPharmacyId || undefined,
-      items: cartItems.map(i => ({
-        nome: i.nome,
-        qtd: i.qty,
-        valorUnitario: i.preco,
-        foto: "https://placehold.co/100"
-      }))
-    });
-  }
-
-  const carts = [...liveCarts, ...storeCarts];
+  useEffect(() => {
+    loadCarts();
+  }, [loadCarts]);
 
   // Filter carts
   const authorizedCarts = carts.filter(cart => {
@@ -67,12 +39,8 @@ export function AbandonedCartsWidget({ lojaId }: { lojaId?: string }) {
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      if (itemToDelete === "#807099") {
-        clearCart();
-      } else {
-        removeStoreCart(itemToDelete);
-      }
-      toast.success("Carrinho removido com sucesso!");
+      removeCart(itemToDelete);
+      toast.success("Carrinho abandonado removido");
     }
     setConfirmOpen(false);
     setItemToDelete(null);
