@@ -119,19 +119,39 @@ export const useAdminProducts = create<ProductsState>()(
       loadProducts: async () => {
         if (get()._loaded) return;
         
-        const { data, error } = await supabase
-          .from('produtos')
-          .select('*')
-          .order('nome', { ascending: true })
-          .limit(500);
+        // Fetch ALL products bypassing 1000 limit
+        let allProdutos: any[] = [];
+        let page = 0;
+        const pageSize = 1000;
+        while (true) {
+          const { data, error } = await supabase
+            .from('produtos')
+            .select('*')
+            .order('nome', { ascending: true })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+            
+          if (error || !data || data.length === 0) break;
+          allProdutos = allProdutos.concat(data);
+          if (data.length < pageSize) break;
+          page++;
+        }
           
-        const allData = (error || !data) ? [] : data;
-        let mapped = allData.map(mapRowToProduto);
+        let mapped = allProdutos.map(mapRowToProduto);
 
-        // Fetch local store prices and stocks
-        const { data: precosData } = await supabase
-          .from('produto_precos_loja')
-          .select('produto_id, loja_id, preco_de, preco_por, estoque, ativo');
+        // Fetch ALL local store prices and stocks bypassing 1000 limit
+        let precosData: any[] = [];
+        let pPage = 0;
+        while (true) {
+          const { data } = await supabase
+            .from('produto_precos_loja')
+            .select('produto_id, loja_id, preco_de, preco_por, estoque, ativo')
+            .range(pPage * pageSize, (pPage + 1) * pageSize - 1);
+            
+          if (!data || data.length === 0) break;
+          precosData = precosData.concat(data);
+          if (data.length < pageSize) break;
+          pPage++;
+        }
 
         if (precosData && precosData.length > 0) {
           mapped = mapped.map(p => {
