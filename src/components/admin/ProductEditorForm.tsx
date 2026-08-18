@@ -168,28 +168,51 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 />
                 <Label htmlFor="buscavel" className="font-medium cursor-pointer">Buscável (Visível na busca)</Label>
               </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Tipo de Produto</Label>
-                <Select disabled={!isGlobalAdmin} value={formData.tipoProduto || "fisico"} onValueChange={v => setFormData({...formData, tipoProduto: v})}>
-                  <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fisico">Produto Físico</SelectItem>
-                    <SelectItem value="servico">Serviço</SelectItem>
-                    <SelectItem value="digital">Produto Digital</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <Switch disabled={!isGlobalAdmin} 
+                  id="lancamento" 
+                  checked={formData.lancamento || false} 
+                  onCheckedChange={checked => setFormData({...formData, lancamento: checked})}
+                />
+                <Label htmlFor="lancamento" className="font-medium cursor-pointer">Selo de Lançamento</Label>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">ID / Código Interno*</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.id || ""} onChange={e => setFormData({...formData, id: e.target.value})} className="bg-white" />
+                <Label className="font-bold text-xs uppercase text-slate-500">Natureza do Produto</Label>
+                <Select disabled={!isGlobalAdmin} value={formData.produtoNatureza || "fisico"} onValueChange={v => setFormData({...formData, produtoNatureza: v})}>
+                  <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fisico">Físico</SelectItem>
+                    <SelectItem value="digital">Digital</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Tipo de Produto</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.tipoProduto || ""} onChange={e => setFormData({...formData, tipoProduto: e.target.value})} className="bg-white" placeholder="Ex: Similar, Referência..." />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">ID / SKU</Label>
+                <Input disabled value={formData.id || ""} className="bg-slate-50 text-slate-500" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Código Interno</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.codigoInterno || ""} onChange={e => setFormData({...formData, codigoInterno: e.target.value})} className="bg-white" />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">EAN / Código de Barras*</Label>
                 <Input disabled={!isGlobalAdmin} value={formData.ean || ""} onChange={e => setFormData({...formData, ean: e.target.value})} className="bg-white" />
               </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="font-bold text-xs uppercase text-slate-500">EANs Secundários (separados por vírgula)</Label>
+              <Input disabled={!isGlobalAdmin} value={(formData.eansSecundarios || []).join(", ")} onChange={e => setFormData({...formData, eansSecundarios: e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean)})} className="bg-white" placeholder="Ex: 7891234567890, 7890987654321" />
             </div>
 
             <div className="space-y-2">
@@ -329,15 +352,67 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <Label className="font-bold text-xs uppercase text-slate-500">Fabricante (Marca)</Label>
                 <Input disabled={!isGlobalAdmin} value={formData.marca || formData.fabricante || ""} onChange={e => setFormData({...formData, marca: e.target.value, fabricante: e.target.value})} className="bg-white" />
               </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">DCB / Princípio Ativo</Label>
-                <Input disabled={!isGlobalAdmin} 
-                  value={(formData.principiosAtivosDetalhes || []).map((p:any) => p.nome).join(", ")} 
-                  onChange={e => {
-                     setFormData({...formData, principiosAtivosDetalhes: [{ nome: e.target.value, concentracao: "", unidadeMedida: "" }]})
-                  }} 
-                  className="bg-white" placeholder="Ex: Paracetamol" 
-                />
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">DCB</Label>
+                  <Input disabled={!isGlobalAdmin} value={formData.dcb || ""} onChange={e => setFormData({...formData, dcb: e.target.value})} className="bg-white" placeholder="Ex: Paracetamol" />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Princípios Ativos</Label>
+                  <div className="space-y-2">
+                    {(formData.principiosAtivos && Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : []).map((p: any, idx: number) => (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <Input 
+                          placeholder="Nome" 
+                          value={p.nome || (typeof p === "string" ? p : "")} 
+                          onChange={e => {
+                            const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
+                            if (typeof newArr[idx] === "string") newArr[idx] = { nome: e.target.value };
+                            else newArr[idx] = { ...newArr[idx], nome: e.target.value };
+                            setFormData({...formData, principiosAtivos: newArr});
+                          }} 
+                        />
+                        <Input 
+                          placeholder="Concentração" 
+                          className="w-32"
+                          value={p.concentracao || ""} 
+                          onChange={e => {
+                            const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
+                            if (typeof newArr[idx] === "string") newArr[idx] = { nome: newArr[idx], concentracao: e.target.value };
+                            else newArr[idx] = { ...newArr[idx], concentracao: e.target.value };
+                            setFormData({...formData, principiosAtivos: newArr});
+                          }} 
+                        />
+                        <Input 
+                          placeholder="Unid." 
+                          className="w-20"
+                          value={p.unidadeMedida || ""} 
+                          onChange={e => {
+                            const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
+                            if (typeof newArr[idx] === "string") newArr[idx] = { nome: newArr[idx], unidadeMedida: e.target.value };
+                            else newArr[idx] = { ...newArr[idx], unidadeMedida: e.target.value };
+                            setFormData({...formData, principiosAtivos: newArr});
+                          }} 
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
+                          newArr.splice(idx, 1);
+                          setFormData({...formData, principiosAtivos: newArr});
+                        }}>
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const newArr = [...(Array.isArray(formData.principiosAtivos) ? formData.principiosAtivos : [])];
+                      newArr.push({ nome: "", concentracao: "", unidadeMedida: "" });
+                      setFormData({...formData, principiosAtivos: newArr});
+                    }}>
+                      <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Princípio Ativo
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -375,6 +450,21 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Apresentação</Label>
                 <Input disabled={!isGlobalAdmin} value={formData.apresentacao || ""} onChange={e => setFormData({...formData, apresentacao: e.target.value})} className="bg-white" placeholder="Ex: EM_COMPRIMIDO" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Tamanho</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.tamanho || ""} onChange={e => setFormData({...formData, tamanho: e.target.value})} className="bg-white" placeholder="Ex: Grande, 50ml, 10cm" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Área de Aplicação</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.areaAplicacao || ""} onChange={e => setFormData({...formData, areaAplicacao: e.target.value})} className="bg-white" placeholder="Ex: Rosto, Cabelo, Corpo" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Prescrição</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.prescricao || ""} onChange={e => setFormData({...formData, prescricao: e.target.value})} className="bg-white" placeholder="Ex: Sim, Não, Controle Especial" />
               </div>
             </div>
 
@@ -454,6 +544,11 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                       <SelectItem value="Preta">Preta</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                  
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Tipo de Receita</Label>
+                  <Input disabled={!isGlobalAdmin} value={formData.tipoReceita || ""} onChange={e => setFormData({...formData, tipoReceita: e.target.value})} className="bg-white" placeholder="Ex: Branca, Azul, Amarela" />
                 </div>
               </div>
             </div>
@@ -603,10 +698,10 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-bold text-xs uppercase text-slate-500">Descrição da Página (SEO)</Label>
+                  <Label className="font-bold text-xs uppercase text-slate-500">Descrição da Página (SEO / Meta Description)</Label>
                   <Textarea disabled={!isGlobalAdmin} 
-                    value={formData.seoDescricao || ""} 
-                    onChange={e => setFormData({...formData, seoDescricao: e.target.value})} 
+                    value={formData.metaDescription || formData.seoDescricao || ""} 
+                    onChange={e => setFormData({...formData, metaDescription: e.target.value})} 
                     className="bg-white min-h-[100px]" 
                     placeholder="Resumo do produto que vai aparecer abaixo do título no Google" 
                   />
@@ -643,7 +738,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     {formData.seoTitulo || formData.nome || "Título da Página"}
                   </div>
                   <div className="text-[14px] text-[#4d5156] leading-snug line-clamp-2">
-                    {formData.seoDescricao || "Sua descrição SEO aparecerá aqui. Escreva um texto atraente para incentivar as pessoas a clicarem e conhecerem o seu produto."}
+                    {formData.metaDescription || formData.seoDescricao || "Sua descrição SEO aparecerá aqui. Escreva um texto atraente para incentivar as pessoas a clicarem e conhecerem o seu produto."}
                   </div>
                 </div>
               </div>

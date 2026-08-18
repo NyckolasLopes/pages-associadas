@@ -212,12 +212,16 @@ function ProductCardComponent({
   }
 
   // 3. Store-specific & Global Promotions
+  const isService = p.tipoProduto === "servico" || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
+  const isMedicamento = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142"));
+  const isAvailable = maxStock > 0 || isService;
+
   const lojaPromocoes = activeStoreId ? lojaPromocoesMap?.[activeStoreId] || [] : [];
   const globalPromocoes = promocoes.filter(p => !p.lojaId);
   const padraoPromo = getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes);
   const levePaguePromo = getLevePaguePromotion(p, globalPromocoes, lojaPromocoes);
 
-  if (padraoPromo) {
+  if (isAvailable && padraoPromo) {
     if (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0) {
       finalPrecoDe = finalPrecoPor;
       finalPrecoPor = padraoPromo.precoPromocional;
@@ -230,7 +234,7 @@ function ProductCardComponent({
     }
   }
 
-  const activePromo = padraoPromo || levePaguePromo;
+  const activePromo = isAvailable ? (padraoPromo || levePaguePromo) : null;
 
   const desconto =
     finalPrecoDe > finalPrecoPor ? Math.round((1 - finalPrecoPor / finalPrecoDe) * 100) : 0;
@@ -249,10 +253,6 @@ function ProductCardComponent({
   const wppText = encodeURIComponent(
     `Olá! Quero comprar: ${p.nome} (EAN ${p.ean}) — ${brl(p.precoPor)}`,
   );
-  
-  const isService = p.tipoProduto === "servico" || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
-  const isMedicamento = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142"));
-  const isAvailable = maxStock > 0 || isService;
   
   const allSelos = useSelos((s) => s.selos);
   const activeSelos = allSelos.filter(s => s.ativo && p.selosIds?.includes(s.id));

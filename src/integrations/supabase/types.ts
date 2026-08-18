@@ -353,6 +353,26 @@ export type Database = {
           tipo_medicamento: string | null
           updated_at: string
           video_url: string | null
+          eans_secundarios: Json | null
+          codigo_interno: string | null
+          tipo_produto: string | null
+          produto_natureza: string | null
+          ncm: string | null
+          subcategorias_adicionais: Json | null
+          prioridade: number | null
+          lancamento: boolean | null
+          peso: number | null
+          tamanho: string | null
+          tipo_receita: string | null
+          dcb: string | null
+          prescricao: string | null
+          apresentacao: string | null
+          via_administracao: string | null
+          dosagem: string | null
+          area_aplicacao: string | null
+          faixa_etaria: string | null
+          titulo_seo: string | null
+          meta_description: string | null
         }
         Insert: {
           ativo?: boolean
@@ -389,6 +409,26 @@ export type Database = {
           tipo_medicamento?: string | null
           updated_at?: string
           video_url?: string | null
+          eans_secundarios?: Json | null
+          codigo_interno?: string | null
+          tipo_produto?: string | null
+          produto_natureza?: string | null
+          ncm?: string | null
+          subcategorias_adicionais?: Json | null
+          prioridade?: number | null
+          lancamento?: boolean | null
+          peso?: number | null
+          tamanho?: string | null
+          tipo_receita?: string | null
+          dcb?: string | null
+          prescricao?: string | null
+          apresentacao?: string | null
+          via_administracao?: string | null
+          dosagem?: string | null
+          area_aplicacao?: string | null
+          faixa_etaria?: string | null
+          titulo_seo?: string | null
+          meta_description?: string | null
         }
         Update: {
           ativo?: boolean
@@ -425,6 +465,26 @@ export type Database = {
           tipo_medicamento?: string | null
           updated_at?: string
           video_url?: string | null
+          eans_secundarios?: Json | null
+          codigo_interno?: string | null
+          tipo_produto?: string | null
+          produto_natureza?: string | null
+          ncm?: string | null
+          subcategorias_adicionais?: Json | null
+          prioridade?: number | null
+          lancamento?: boolean | null
+          peso?: number | null
+          tamanho?: string | null
+          tipo_receita?: string | null
+          dcb?: string | null
+          prescricao?: string | null
+          apresentacao?: string | null
+          via_administracao?: string | null
+          dosagem?: string | null
+          area_aplicacao?: string | null
+          faixa_etaria?: string | null
+          titulo_seo?: string | null
+          meta_description?: string | null
         }
         Relationships: [
           {
