@@ -244,10 +244,10 @@ function AdminProdutos() {
       };
     });
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
     const dlAnchorElem = document.createElement("a");
     dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", "modelo_api_produto.json");
+    dlAnchorElem.setAttribute("download", "modelo_api_produto.txt");
     dlAnchorElem.click();
   };
 

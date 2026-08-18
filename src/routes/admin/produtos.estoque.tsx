@@ -181,6 +181,31 @@ function AdminProdutosEstoque() {
     setIsSaving(false);
   };
 
+  const handleExportJson = () => {
+    const exportData = customProducts.map(p => {
+      const pData: any = {
+        "ID/CÓDIGO INTERNO": p.id,
+        "EAN/CÓDIGO DE BARRAS": p.ean || "",
+        "NOME DO PRODUTO": p.nome,
+        "PRECO_DE": p.precoDe || 0,
+        "PRECO_POR": p.precoPor || 0,
+        "ESTOQUE_GLOBAL": p.estoque || 0
+      };
+
+      activePharmacies.forEach(loja => {
+        pData[`ESTOQUE_LOJA_${loja.id}`] = getStock(p.id, loja.id);
+      });
+
+      return pData;
+    });
+
+    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const dlAnchorElem = document.createElement("a");
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "modelo_api_estoque_precos.txt");
+    dlAnchorElem.click();
+  };
+
   // ─── Fornecedor Modal ───
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -325,6 +350,13 @@ function AdminProdutosEstoque() {
                 {isSaving ? "Salvando..." : `Salvar (${Object.values(pendingChanges).reduce((a, b) => a + Object.keys(b).length, 0)})`}
               </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={handleExportJson}
+              className="font-bold text-xs whitespace-nowrap"
+            >
+              Exportar JSON
+            </Button>
           </div>
         </div>
 
