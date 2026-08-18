@@ -154,12 +154,20 @@ export const useAdminProducts = create<ProductsState>()(
         }
 
         if (precosData && precosData.length > 0) {
+          const precosMap = new Map();
+          for (const pr of precosData) {
+            if (!precosMap.has(pr.produto_id)) {
+              precosMap.set(pr.produto_id, []);
+            }
+            precosMap.get(pr.produto_id).push(pr);
+          }
+
           mapped = mapped.map(p => {
-            const precosLoja = precosData.filter(pr => pr.produto_id === p.id);
-            if (precosLoja.length > 0) {
+            const precosLoja = precosMap.get(p.id);
+            if (precosLoja && precosLoja.length > 0) {
               p.precosPorLoja = {};
               p.estoquesPorLoja = {};
-              precosLoja.forEach(pr => {
+              precosLoja.forEach((pr: any) => {
                 if (pr.loja_id) {
                   p.precosPorLoja![pr.loja_id] = { precoDe: pr.preco_de || 0, precoPor: pr.preco_por || 0, ativo: pr.ativo ?? true };
                   p.estoquesPorLoja![pr.loja_id] = pr.estoque || 0;
