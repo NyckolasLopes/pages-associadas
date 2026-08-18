@@ -28,6 +28,13 @@ function AdminProdutosEstoque() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(200);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   // Load all stock data from produto_precos_loja
   useEffect(() => {
@@ -86,6 +93,11 @@ function AdminProdutosEstoque() {
   const globalTotalStock = useMemo(() => {
     return customProducts.reduce((acc, p) => acc + getTotalStock(p.id), 0);
   }, [customProducts, getTotalStock]);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredProducts.slice(startIndex, startIndex + pageSize);
+  }, [filteredProducts, currentPage, pageSize]);
 
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
@@ -337,18 +349,15 @@ function AdminProdutosEstoque() {
                   <th className="p-3 min-w-[70px] text-right bg-slate-100 font-black">TOTAL</th>
                   {activePharmacies.map(loja => (
                     <th key={loja.id} className="p-3 min-w-[140px] text-center">
-                      <div className="text-xs font-bold text-slate-700 truncate max-w-[140px]" title={loja.nome || loja.razaoSocial}>
+                      <div className="text-xs font-bold text-slate-700 whitespace-normal leading-tight" title={loja.nome || loja.razaoSocial}>
                         {loja.nome || loja.razaoSocial || "Loja"}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-normal truncate max-w-[140px]" title={`${loja.cidade} ${loja.bairro ? `- ${loja.bairro}` : ''}`}>
-                        {loja.cidade} {loja.bairro ? `- ${loja.bairro}` : ''}
                       </div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.slice(0, 200).map((p) => {
+                {paginatedProducts.map((p) => {
                   const total = getTotalStock(p.id);
                   return (
                     <tr key={p.id} className="border-b last:border-0 hover:bg-slate-50/50 transition-colors text-sm">
@@ -403,11 +412,50 @@ function AdminProdutosEstoque() {
           )}
         </div>
 
-        {filteredProducts.length > 200 && (
-          <div className="p-4 text-center text-sm text-slate-500 border-t">
-            Mostrando 200 de {filteredProducts.length} produtos. Use a busca para encontrar itens específicos.
+        <div className="p-4 border-t flex items-center justify-between bg-white">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-500">Mostrar</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="text-sm border border-slate-200 rounded px-2 py-1 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            >
+              {[100, 200, 400, 500, 1000].map(size => (
+                <option key={size} value={size}>{size}</option>
+              ))}
+            </select>
+            <span className="text-sm text-slate-500">
+              de {filteredProducts.length} produtos
+            </span>
           </div>
-        )}
+          
+          {filteredProducts.length > pageSize && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <div className="px-3 text-sm text-slate-600 font-medium">
+                Página {currentPage} de {Math.ceil(filteredProducts.length / pageSize)}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredProducts.length / pageSize), p + 1))}
+                disabled={currentPage >= Math.ceil(filteredProducts.length / pageSize)}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
+        </div>
 
         {hasPendingChanges && (
           <div className="p-4 border-t bg-slate-50 flex justify-end">
