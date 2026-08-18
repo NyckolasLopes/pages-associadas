@@ -18,6 +18,9 @@ interface StoreConnection {
   catalog_hash: string | null;
   catalog_status: 'online' | 'offline' | 'error';
   catalog_last_ping: string | null;
+  orders_hash: string | null;
+  orders_status: 'online' | 'offline' | 'error';
+  orders_last_ping: string | null;
 }
 
 function ApiConexoes() {
@@ -56,18 +59,18 @@ function ApiConexoes() {
     }
   };
 
-  const generateHash = async (lojaId: string, type: 'stock_price' | 'catalog') => {
+  const generateHash = async (lojaId: string, type: 'stock_price' | 'catalog' | 'orders') => {
     const newHash = "sk_" + type + "_" + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
     
     // Optimistic update
     setConnections(prev => {
-      const existing = prev[lojaId] || { loja_id: lojaId, stock_price_hash: null, stock_price_status: 'offline', stock_price_last_ping: null, catalog_hash: null, catalog_status: 'offline', catalog_last_ping: null };
+      const existing = prev[lojaId] || { loja_id: lojaId, stock_price_hash: null, stock_price_status: 'offline', stock_price_last_ping: null, catalog_hash: null, catalog_status: 'offline', catalog_last_ping: null, orders_hash: null, orders_status: 'offline', orders_last_ping: null };
       return {
         ...prev,
         [lojaId]: {
           ...existing,
-          [type === 'stock_price' ? 'stock_price_hash' : 'catalog_hash']: newHash,
-          [type === 'stock_price' ? 'stock_price_status' : 'catalog_status']: 'offline'
+          [type === 'stock_price' ? 'stock_price_hash' : type === 'catalog' ? 'catalog_hash' : 'orders_hash']: newHash,
+          [type === 'stock_price' ? 'stock_price_status' : type === 'catalog' ? 'catalog_status' : 'orders_status']: 'offline'
         }
       };
     });
@@ -77,14 +80,14 @@ function ApiConexoes() {
       
       if (existingData) {
         await supabase.from('store_api_connections').update({
-          [type === 'stock_price' ? 'stock_price_hash' : 'catalog_hash']: newHash,
-          [type === 'stock_price' ? 'stock_price_status' : 'catalog_status']: 'offline',
+          [type === 'stock_price' ? 'stock_price_hash' : type === 'catalog' ? 'catalog_hash' : 'orders_hash']: newHash,
+          [type === 'stock_price' ? 'stock_price_status' : type === 'catalog' ? 'catalog_status' : 'orders_status']: 'offline',
           updated_at: new Date().toISOString()
         }).eq('loja_id', lojaId);
       } else {
         await supabase.from('store_api_connections').insert({
           loja_id: lojaId,
-          [type === 'stock_price' ? 'stock_price_hash' : 'catalog_hash']: newHash,
+          [type === 'stock_price' ? 'stock_price_hash' : type === 'catalog' ? 'catalog_hash' : 'orders_hash']: newHash,
         });
       }
       toast.success("Nova chave gerada com sucesso!");
@@ -94,9 +97,9 @@ function ApiConexoes() {
     }
   };
 
-  const pingConnection = async (lojaId: string, type: 'stock_price' | 'catalog') => {
+  const pingConnection = async (lojaId: string, type: 'stock_price' | 'catalog' | 'orders') => {
     const conn = connections[lojaId];
-    const hash = type === 'stock_price' ? conn?.stock_price_hash : conn?.catalog_hash;
+    const hash = type === 'stock_price' ? conn?.stock_price_hash : type === 'catalog' ? conn?.catalog_hash : conn?.orders_hash;
     
     if (!hash) {
       toast.error("Gere uma chave primeiro.");
@@ -111,14 +114,14 @@ function ApiConexoes() {
         ...prev,
         [lojaId]: {
           ...prev[lojaId],
-          [type === 'stock_price' ? 'stock_price_status' : 'catalog_status']: 'online',
-          [type === 'stock_price' ? 'stock_price_last_ping' : 'catalog_last_ping']: new Date().toISOString()
+          [type === 'stock_price' ? 'stock_price_status' : type === 'catalog' ? 'catalog_status' : 'orders_status']: 'online',
+          [type === 'stock_price' ? 'stock_price_last_ping' : type === 'catalog' ? 'catalog_last_ping' : 'orders_last_ping']: new Date().toISOString()
         }
       }));
 
       await supabase.from('store_api_connections').update({
-        [type === 'stock_price' ? 'stock_price_status' : 'catalog_status']: 'online',
-        [type === 'stock_price' ? 'stock_price_last_ping' : 'catalog_last_ping']: new Date().toISOString(),
+        [type === 'stock_price' ? 'stock_price_status' : type === 'catalog' ? 'catalog_status' : 'orders_status']: 'online',
+        [type === 'stock_price' ? 'stock_price_last_ping' : type === 'catalog' ? 'catalog_last_ping' : 'orders_last_ping']: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }).eq('loja_id', lojaId);
 
@@ -149,15 +152,15 @@ function ApiConexoes() {
     return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wider"><div className="w-1.5 h-1.5 rounded-full bg-slate-400" />Offline</span>;
   };
 
-  const renderApiCard = (loja: any, type: 'stock_price' | 'catalog', title: string, desc: string) => {
+  const renderApiCard = (loja: any, type: 'stock_price' | 'catalog' | 'orders', title: string, desc: string) => {
     const conn = connections[loja.id];
-    const hash = type === 'stock_price' ? conn?.stock_price_hash : conn?.catalog_hash;
-    const status = type === 'stock_price' ? conn?.stock_price_status : conn?.catalog_status;
-    const lastPing = type === 'stock_price' ? conn?.stock_price_last_ping : conn?.catalog_last_ping;
+    const hash = type === 'stock_price' ? conn?.stock_price_hash : type === 'catalog' ? conn?.catalog_hash : conn?.orders_hash;
+    const status = type === 'stock_price' ? conn?.stock_price_status : type === 'catalog' ? conn?.catalog_status : conn?.orders_status;
+    const lastPing = type === 'stock_price' ? conn?.stock_price_last_ping : type === 'catalog' ? conn?.catalog_last_ping : conn?.orders_last_ping;
     
     // Construct the full URL for the API endpoint
     const baseUrl = import.meta.env.VITE_SUPABASE_URL || "https://uqwxpoxwwvyqnwgquxit.supabase.co";
-    const rpcEndpoint = type === 'stock_price' ? 'sync_estoque_preco_loja' : 'sync_produtos_loja';
+    const rpcEndpoint = type === 'stock_price' ? 'sync_estoque_preco_loja' : type === 'catalog' ? 'sync_produtos_loja' : 'sync_pedidos_loja';
     const fullApiUrl = hash ? `${baseUrl}/rest/v1/rpc/${rpcEndpoint}?apikey=${hash}` : null;
 
     return (
@@ -251,7 +254,7 @@ function ApiConexoes() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   {renderApiCard(
                     loja, 
                     'stock_price', 
@@ -263,6 +266,12 @@ function ApiConexoes() {
                     'catalog', 
                     'API de Cadastro de Produtos', 
                     'Criação e atualização de ficha técnica de produtos'
+                  )}
+                  {renderApiCard(
+                    loja, 
+                    'orders', 
+                    'API de Pedidos', 
+                    'Integração para capturar e sincronizar pedidos finalizados para o PDV local'
                   )}
                 </div>
               </div>
