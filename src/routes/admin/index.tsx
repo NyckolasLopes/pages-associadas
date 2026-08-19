@@ -75,9 +75,16 @@ function AdminDashboard() {
   const dynamicTotalAcessos = totalAcessos > 0 ? totalAcessos : visitasPorLoja.reduce((acc, l) => acc + l.mes, 0);
 
   const effectiveStoreStats = useMemo(() => {
-    if (!effectiveStoreId) return { total: 0, mes: 0, hoje: 0 };
+    if (!effectiveStoreId) {
+      const globalStat = lojasAcessos?.['global'] || { total: 0, mes: 0, hoje: 0 };
+      return {
+        total: visitasPorLoja.reduce((acc, l) => acc + l.total, 0) + globalStat.total,
+        mes: visitasPorLoja.reduce((acc, l) => acc + l.mes, 0) + globalStat.mes,
+        hoje: visitasPorLoja.reduce((acc, l) => acc + l.hoje, 0) + globalStat.hoje
+      };
+    }
     return visitasPorLoja.find(l => l.id === effectiveStoreId) || { total: 0, mes: 0, hoje: 0 };
-  }, [effectiveStoreId, visitasPorLoja]);
+  }, [effectiveStoreId, visitasPorLoja, lojasAcessos]);
 
   const maxVisitasMes = useMemo(() => {
     if (visitasPorLoja.length === 0) return 1;

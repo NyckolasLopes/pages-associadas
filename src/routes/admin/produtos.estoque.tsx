@@ -12,13 +12,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Spinner } from "@/components/ui/spinner";
+import { catalog } from "@/services/catalog";
+import type { Produto } from "@/types";
 
 export const Route = createFileRoute("/admin/produtos/estoque")({
   component: AdminProdutosEstoque,
 });
 
 function AdminProdutosEstoque() {
-  const { customProducts, fornecedores, setFornecedores, removeFornecedor } = useAdminProducts();
+  const { fornecedores, setFornecedores, removeFornecedor } = useAdminProducts();
+  const [serverProducts, setServerProducts] = useState<Produto[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
   const { pharmacies } = useAdmin();
   const activePharmacies = pharmacies.filter(p => p.ativo !== false);
 
@@ -35,12 +39,14 @@ function AdminProdutosEstoque() {
   // Reset page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, pageSize]);
 
-  // Load all stock data from produto_precos_loja
+  // Load all stock data from produto_precos_loja AND server products
   useEffect(() => {
-    async function loadAllStock() {
+    async function loadData() {
       setIsLoading(true);
+      
+      // Load global stocks
       const { data, error } = await supabase
         .from("produto_precos_loja")
         .select("produto_id, loja_id, estoque");
@@ -53,22 +59,30 @@ function AdminProdutosEstoque() {
         });
         setStockData(map);
       }
+      
+      // Load products
+      try {
+        const { results, count } = await catalog.adminSearchProducts({
+          search,
+          page: currentPage,
+          pageSize,
+          listFilter: "all"
+        });
+        setServerProducts(results);
+        setTotalProducts(count);
+      } catch (e) {
+        console.error(e);
+      }
+
       setIsLoading(false);
     }
-    loadAllStock();
-  }, []);
+    
+    const timeout = setTimeout(loadData, 300);
+    return () => clearTimeout(timeout);
+  }, [search, currentPage, pageSize]);
 
   // ─── Computed values ───
-  const filteredProducts = useMemo(() => {
-    if (!search) return customProducts;
-    const s = search.toLowerCase();
-    return customProducts.filter(p =>
-      (p.nome && p.nome.toLowerCase().includes(s)) ||
-      (p.ean && p.ean.toLowerCase().includes(s)) ||
-      (p.codigoInterno && p.codigoInterno.toLowerCase().includes(s)) ||
-      (p.id && p.id.toLowerCase().includes(s))
-    );
-  }, [customProducts, search]);
+
 
   const getStock = useCallback((produtoId: string, lojaId: string) => {
     // Pending changes take priority
@@ -80,25 +94,22 @@ function AdminProdutosEstoque() {
       return stockData[produtoId][lojaId];
     }
     // Fallback to product's estoquesPorLoja or global estoque
-    const product = customProducts.find(p => p.id === produtoId);
+    const product = serverProducts.find(p => p.id === produtoId);
     if (product) {
       return getDeterministicStock(product, lojaId);
     }
     return 0;
-  }, [pendingChanges, stockData, customProducts]);
+  }, [pendingChanges, stockData, serverProducts]);
 
   const getTotalStock = useCallback((produtoId: string) => {
     return activePharmacies.reduce((acc, loja) => acc + getStock(produtoId, loja.id), 0);
   }, [activePharmacies, getStock]);
 
   const globalTotalStock = useMemo(() => {
-    return customProducts.reduce((acc, p) => acc + getTotalStock(p.id), 0);
-  }, [customProducts, getTotalStock]);
+    return serverProducts.reduce((acc, p) => acc + getTotalStock(p.id), 0);
+  }, [serverProducts, getTotalStock]);
 
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return filteredProducts.slice(startIndex, startIndex + pageSize);
-  }, [filteredProducts, currentPage, pageSize]);
+  const paginatedProducts = serverProducts;
 
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
@@ -157,20 +168,18 @@ function AdminProdutosEstoque() {
         return updated;
       });
 
-      // Update the global zustand store directly so the UI reflects stock changes immediately without reload
-      useAdminProducts.setState(state => ({
-        customProducts: state.customProducts.map(p => {
-          if (pendingChanges[p.id]) {
-            return {
-              ...p,
-              estoquesPorLoja: {
-                ...(p.estoquesPorLoja || {}),
-                ...pendingChanges[p.id]
-              }
-            };
-          }
-          return p;
-        })
+      // Also update local serverProducts state
+      setServerProducts(prev => prev.map(p => {
+        if (pendingChanges[p.id]) {
+          return {
+            ...p,
+            estoquesPorLoja: {
+              ...(p.estoquesPorLoja || {}),
+              ...pendingChanges[p.id]
+            }
+          };
+        }
+        return p;
       }));
 
       setPendingChanges({});
@@ -183,7 +192,7 @@ function AdminProdutosEstoque() {
   };
 
   const handleExportJson = () => {
-    const exportData = customProducts.map(p => {
+    const exportData = serverProducts.map(p => {
       const pData: any = {
         "ID/CÓDIGO INTERNO": p.id,
         "EAN/CÓDIGO DE BARRAS": p.ean || "",
@@ -247,9 +256,9 @@ function AdminProdutosEstoque() {
       nome: pharmacy.nome || pharmacy.razaoSocial || "Loja",
       bairro: pharmacy.bairro || "N/A",
       cidade: pharmacy.cidade && pharmacy.uf ? `${pharmacy.cidade}/${pharmacy.uf}` : "N/A",
-      total: customProducts.reduce((acc, p) => acc + getStock(p.id, pharmacy.id), 0),
+      total: serverProducts.reduce((acc, p) => acc + getStock(p.id, pharmacy.id), 0),
     }));
-  }, [activePharmacies, customProducts, getStock]);
+  }, [activePharmacies, serverProducts, getStock]);
 
   return (
     <div className="space-y-8 max-w-full mx-auto pb-12">
@@ -464,11 +473,11 @@ function AdminProdutosEstoque() {
               ))}
             </select>
             <span className="text-sm text-slate-500">
-              de {filteredProducts.length} produtos
+              de {totalProducts} produtos
             </span>
           </div>
           
-          {filteredProducts.length > pageSize && (
+          {totalProducts > pageSize && (
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
@@ -479,13 +488,13 @@ function AdminProdutosEstoque() {
                 Anterior
               </Button>
               <div className="px-3 text-sm text-slate-600 font-medium">
-                Página {currentPage} de {Math.ceil(filteredProducts.length / pageSize)}
+                Página {currentPage} de {Math.ceil(totalProducts / pageSize)}
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredProducts.length / pageSize), p + 1))}
-                disabled={currentPage >= Math.ceil(filteredProducts.length / pageSize)}
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalProducts / pageSize), p + 1))}
+                disabled={currentPage >= Math.ceil(totalProducts / pageSize)}
               >
                 Próxima
               </Button>
