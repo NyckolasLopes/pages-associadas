@@ -214,8 +214,28 @@ export const useLive = create<LiveStore>((set, get) => ({
     }
   },
 
-  recordLojaAccess: (lojaId: string) => {
+  recordLojaAccess: async (lojaId: string) => {
     if (!lojaId) return;
+
+    // Persist to database only once per session
+    const trackedKey = `fa-tracked-store-${lojaId}`;
+    if (typeof window !== 'undefined' && !sessionStorage.getItem(trackedKey)) {
+      let sessionId = sessionStorage.getItem("fa-visitor-session") || Math.random().toString(36).substring(2);
+      if (!sessionStorage.getItem("fa-visitor-session")) {
+        sessionStorage.setItem("fa-visitor-session", sessionId);
+      }
+
+      try {
+        await supabase.from("site_acessos").insert({
+          session_id: sessionId,
+          loja_id: lojaId,
+        });
+        sessionStorage.setItem(trackedKey, "true");
+      } catch (e) {
+        console.error("Failed to track store access:", e);
+      }
+    }
+
     const now = Date.now();
     set((state) => {
       const current = state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: now };
