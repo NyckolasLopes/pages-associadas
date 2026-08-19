@@ -21,6 +21,7 @@ import mascot404 from "@/assets/404-mascot.png";
 import { useLive } from "@/stores/live";
 import { useAdminProducts } from "@/stores/products";
 import { useMarcasStore } from "@/stores/marcas";
+import { getDeterministicStock } from "@/lib/stock";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   Flame: Flame, Sparkles: Sparkles, TrendingUp: TrendingUp, Percent: Percent, Tag: Tag,
@@ -59,7 +60,17 @@ function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: V
             const prods = (v.modo === "manual" && v.produtoIds && v.produtoIds.length > 0)
               ? await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, v.produtoIds, lojaId)
               : await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, undefined, lojaId);
-            return { id: v.id, prods };
+            
+            // Priority: Products with stock > 0 appear first
+            const sortedProds = [...prods].sort((a, b) => {
+              // fallback to a fake ID if lojaId is missing so we use the best stock
+              const storeId = lojaId || undefined;
+              const stockA = getDeterministicStock(a, storeId) > 0 ? 1 : 0;
+              const stockB = getDeterministicStock(b, storeId) > 0 ? 1 : 0;
+              return stockB - stockA;
+            });
+            
+            return { id: v.id, prods: sortedProds };
           })
         );
         if (!isCancelled) {
