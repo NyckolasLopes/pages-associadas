@@ -609,6 +609,15 @@ function AdminProdutos() {
             {isGlobalAdmin && (
               <>
                 <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteAllModalOpen(true)}
+                  className="font-bold text-xs bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  Excluir Todos
+                </Button>
+                <Button
                   size="sm"
                   onClick={() => setDescImporterOpen(true)}
                   className="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
@@ -1194,15 +1203,6 @@ function AdminProdutos() {
         </DialogContent>
       </Dialog>
 
-      {/* Floating Delete All Button */}
-      <Button
-        variant="destructive"
-        className="fixed bottom-6 right-6 shadow-xl rounded-full px-6 h-14 gap-2 font-bold z-50 hover:bg-red-700"
-        onClick={() => setDeleteAllModalOpen(true)}
-      >
-        <Trash2 className="h-5 w-5" />
-        EXCLUIR TODOS OS PRODUTOS
-      </Button>
     </div>
   );
 }
