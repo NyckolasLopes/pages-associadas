@@ -1063,8 +1063,8 @@ export const useAdmin = create<AdminState>()(
           estado: p.uf,
           whatsapp: p.whatsapp,
           tema_cores: tema_cores_payload,
-          latitude: p.lat,
-          longitude: p.lng,
+          latitude: p.latitude,
+          longitude: p.longitude,
           entrega_expressa: p.entregaExpressa,
           status_loja_virtual: p.virtualStoreStatus,
         } as any);
@@ -1087,14 +1087,17 @@ export const useAdmin = create<AdminState>()(
             cidade: p.cidade,
             estado: p.uf,
             tema_cores: tema_cores_payload,
-            latitude: p.lat,
-            longitude: p.lng,
+            latitude: p.latitude,
+            longitude: p.longitude,
           } as any);
           if (!minError) {
-             set((s) => ({ pharmacies: [...s.pharmacies, { ...p, ativo: p.ativo ?? true }] }));
+             await get().loadPharmacies();
+          } else {
+             console.error("Erro também no fallback minimalista de insert:", minError);
+             throw new Error(minError.message || "Erro ao adicionar loja no banco de dados.");
           }
         } else {
-          set((s) => ({ pharmacies: [...s.pharmacies, { ...p, ativo: p.ativo ?? true }] }));
+          await get().loadPharmacies();
         }
       },
       updatePharmacy: async (id, p) => {
@@ -1195,8 +1198,8 @@ export const useAdmin = create<AdminState>()(
           estado: p.uf,
           whatsapp: p.whatsapp,
           tema_cores: tema_cores_payload,
-          latitude: p.lat,
-          longitude: p.lng,
+          latitude: p.latitude,
+          longitude: p.longitude,
           entrega_expressa: p.entregaExpressa,
           status_loja_virtual: p.virtualStoreStatus,
         } as any).eq('id', id);
@@ -1219,18 +1222,19 @@ export const useAdmin = create<AdminState>()(
             cidade: p.cidade,
             estado: p.uf,
             tema_cores: tema_cores_payload,
-            latitude: p.lat,
-            longitude: p.lng,
+            latitude: p.latitude,
+            longitude: p.longitude,
           } as any).eq('id', id);
 
           if (!minError) {
-            set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) }));
+            await get().loadPharmacies();
             console.log("Fallback minimalista bem-sucedido.");
           } else {
             console.error("Erro também no fallback minimalista:", minError);
+            throw new Error(minError.message || "Erro ao atualizar loja no banco de dados.");
           }
         } else {
-          set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? p : x) }));
+          await get().loadPharmacies();
         }
       },
       togglePharmacyStatus: async (id) => {

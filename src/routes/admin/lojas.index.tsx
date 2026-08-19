@@ -219,7 +219,7 @@ function LojasAdmin() {
     navigate({ to: "/admin/lojas/nova" });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome || !form.cnpj) {
       toast.error("Preencha ao menos o Nome Fantasia e o CNPJ.");
       return;
@@ -227,14 +227,19 @@ function LojasAdmin() {
 
     const payload = { ...form, categoriaAssociado: form.categoriaAssociado || "Pleno" };
 
-    if (editingId) {
-      updatePharmacy(editingId, payload);
-      toast.success("Loja atualizada com sucesso!");
-    } else {
-      addPharmacy(payload);
-      toast.success("Loja adicionada com sucesso!");
+    try {
+      if (editingId) {
+        await updatePharmacy(editingId, payload);
+        toast.success("Loja atualizada com sucesso!");
+      } else {
+        await addPharmacy(payload);
+        toast.success("Loja adicionada com sucesso!");
+      }
+      setModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao salvar loja.");
+      console.error(err);
     }
-    setModalOpen(false);
   };
 
   const handleDelete = (id: string) => {
