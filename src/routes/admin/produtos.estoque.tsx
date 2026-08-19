@@ -64,7 +64,7 @@ function AdminProdutosEstoque() {
       try {
         const { results, count } = await catalog.adminSearchProducts({
           search,
-          page: currentPage,
+          page: currentPage - 1,
           pageSize,
           listFilter: "all"
         });
