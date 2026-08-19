@@ -118,7 +118,11 @@ function ProductCardComponent({
   const params = useParams({ strict: false });
   const isStoreContext = !!((params as any)?.storeSlug);
 
-  if (cep && Object.keys(distances).length > 0) {
+  if (selectedStoreId) {
+    activeStoreId = selectedStoreId;
+    maxStock = getDeterministicStock(p, activeStoreId);
+    isLocalStock = maxStock > 0;
+  } else if (cep && Object.keys(distances).length > 0) {
     const rawCity = globalCity || getCityFromCep(cep, pharmacies);
     const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
     const citySearch = normalize(rawCity);

@@ -963,6 +963,8 @@ export const useAdmin = create<AdminState>()(
             raiosEntrega: l.theme_colors?.raiosEntrega ?? [],
             meiosEntregaPersonalizados: l.theme_colors?.meiosEntregaPersonalizados ?? [],
             themeColors: l.theme_colors || {},
+            sistemaUtilizado: l.theme_colors?.sistemaUtilizado || '',
+            offersServices: l.theme_colors?.offersServices ?? false,
           })) as unknown as Pharmacy[];
           set({ pharmacies: loadedPharmacies });
         }

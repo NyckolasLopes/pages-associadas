@@ -177,7 +177,7 @@ function NovaLojaAdmin() {
       return;
     }
 
-    const generatedId = form.id || form.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-");
+    const generatedId = form.id && form.id.startsWith("p1") ? crypto.randomUUID() : (form.id || crypto.randomUUID());
     
     try {
       await addPharmacy({ ...form, id: generatedId, categoriaAssociado: form.categoriaAssociado || "Pleno" });

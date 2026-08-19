@@ -450,6 +450,9 @@ export const catalog = {
     
     if (products.length > 0) return { ...products[0] };
 
+    const local = useAdminProducts.getState().customProducts.find(p => p.url === slugOrId || String(p.id) === slugOrId);
+    if (local) return enforceHealthServicesCategory(enhanceProduct(local));
+
     return null;
   },
   getProductById: async (id: string, lojaId?: string | null) => {
@@ -459,6 +462,9 @@ export const catalog = {
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
     if (products.length > 0) return { ...products[0] };
 
+    const local = useAdminProducts.getState().customProducts.find(p => String(p.id) === id);
+    if (local) return enforceHealthServicesCategory(enhanceProduct(local));
+
     return null;
   },
   getProduct: async (id: string, lojaId?: string | null) => {
@@ -467,6 +473,9 @@ export const catalog = {
     const query = supabase.from('produtos').select('*').eq('id', id).limit(1);
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
     if (products.length > 0) return { ...products[0] };
+
+    const local = useAdminProducts.getState().customProducts.find(p => String(p.id) === id);
+    if (local) return enforceHealthServicesCategory(enhanceProduct(local));
 
     return null;
   },
@@ -521,31 +530,36 @@ export const catalog = {
     const page = filters?.page || 0;
     const pageSize = filters?.pageSize || 24;
 
-    let query = supabase.from('produtos').select('*');
+    let baseProducts = [];
+    if (lojaId) {
+      baseProducts = useAdminProducts.getState().getStoreEffectiveProducts(lojaId) || [];
+    } else {
+      baseProducts = getAllProdutos();
+    }
+
+    // Filtra inativos globais ou inativos na loja
+    baseProducts = baseProducts.filter(p => p && p.ativo !== false);
+
     if (produtoIds && produtoIds.length > 0) {
-      query = query.in('id', produtoIds);
+      baseProducts = baseProducts.filter(p => produtoIds.includes(String(p.id)));
     } else if (categoriaId === "destaques") {
-      query = query.eq('destaque', true).order('nivel_relevancia', { ascending: false });
+      baseProducts = baseProducts.filter(p => p.destaque).sort((a, b) => (b.nivelRelevancia || 0) - (a.nivelRelevancia || 0));
     } else if (categoriaId === "novidades") {
-      // Usar a criação para "novidades" ou uma flag isNovo real (não tem no banco nativo, ordenando por criacao)
-      query = query.order('id', { ascending: false });
+      baseProducts = baseProducts.sort((a, b) => String(b.id).localeCompare(String(a.id)));
     } else if (categoriaId === "ofertas" || categoriaId === "campanha") {
-      // Filtrar ofertas (geralmente preço_por < preço_de, ou emCampanha)
-      query = query.order('nivel_relevancia', { ascending: false });
+      baseProducts = baseProducts.sort((a, b) => (b.nivelRelevancia || 0) - (a.nivelRelevancia || 0));
     } else if (categoriaId === "all") {
-      query = query.order('nivel_relevancia', { ascending: false });
+      baseProducts = baseProducts.sort((a, b) => (b.nivelRelevancia || 0) - (a.nivelRelevancia || 0));
     } else if (categoriaId === "protetores") {
-      query = query.or('nome.ilike.%protetor%,nome.ilike.%solar%');
+      baseProducts = baseProducts.filter(p => /protetor|solar/i.test(p.nome || ""));
     } else {
       const categorias = getCategorias();
-      const validCategoryIds = [categoriaId, ...categorias.filter(c => c.parentId === categoriaId).map(c => c.id)];
-      query = query.in('categoria_id', validCategoryIds);
+      const validCategoryIds = [categoriaId, ...categorias.filter(c => String(c.parentId) === String(categoriaId)).map(c => c.id)];
+      baseProducts = baseProducts.filter(p => validCategoryIds.includes(String(p.categoriaId)));
     }
-    
-    query = query.range(page * pageSize, (page + 1) * pageSize - 1);
-    
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    return applyFilters(products, filters);
+
+    const paginated = baseProducts.slice(page * pageSize, (page + 1) * pageSize);
+    return applyFilters(paginated, filters);
   },
   productsByBrand: async (brandName: string, filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();

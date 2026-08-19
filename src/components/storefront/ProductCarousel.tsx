@@ -8,7 +8,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-export function ProductCarousel({ products }: { products: Produto[] }) {
+export function ProductCarousel({ products, selectedStoreId }: { products: Produto[], selectedStoreId?: string }) {
   return (
     <div className="relative group w-full">
       <Carousel
@@ -26,7 +26,7 @@ export function ProductCarousel({ products }: { products: Produto[] }) {
               className="pl-3 basis-[45vw] sm:basis-[30vw] md:basis-[25%] lg:basis-[20%] flex"
             >
               <div className="w-full h-full pb-1">
-                <ProductCard p={p} />
+                <ProductCard p={p} selectedStoreId={selectedStoreId} />
               </div>
             </CarouselItem>
           ))}

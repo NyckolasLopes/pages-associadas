@@ -126,7 +126,7 @@ function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: V
               {v.descricaoSeo && (
                 <p className="sr-only">{v.descricaoSeo}</p>
               )}
-              <ProductCarousel products={prods} />
+              <ProductCarousel products={prods} selectedStoreId={lojaId} />
             </section>
             
             {linkedBanners.length > 0 && (
@@ -454,7 +454,7 @@ function CampaignHighlight({ lojaId }: { lojaId?: string }) {
           Preços exclusivos da campanha
         </span>
       </div>
-      <ProductCarousel products={campaignProducts} />
+      <ProductCarousel products={campaignProducts} selectedStoreId={lojaId} />
     </section>
   );
 }
