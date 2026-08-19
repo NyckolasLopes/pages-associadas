@@ -59,7 +59,7 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
     }
     
     return storeP as Produto;
-  }).filter(p => p && p.ativo !== false && (p.estoque || 0) > 0);
+  }).filter(p => p && p.ativo !== false);
 
   return finalProducts;
 }
@@ -266,7 +266,7 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
   const map = new Map<string, Produto>();
   
   // Apply store effective products (general from Supabase + store custom + store overrides)
-  storeEffective.filter(p => p && p.ativo !== false && (p.estoque || 0) > 0).forEach(p => {
+  storeEffective.filter(p => p && p.ativo !== false).forEach(p => {
     const enhanced = enhanceProduct(p);
     map.set(enhanced.id, enforceHealthServicesCategory(enhanced));
   });
