@@ -38,8 +38,8 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
        p.estoquesPorLoja = {};
        pPrecos.forEach((pr: any) => {
           if (pr.loja_id) {
-             p.precosPorLoja[pr.loja_id] = { precoDe: pr.preco_de || 0, precoPor: pr.preco_por || 0, ativo: pr.ativo ?? true };
-             p.estoquesPorLoja[pr.loja_id] = pr.estoque || 0;
+             p.precosPorLoja![pr.loja_id] = { precoDe: pr.preco_de || 0, precoPor: pr.preco_por || 0, ativo: pr.ativo ?? true };
+             p.estoquesPorLoja![pr.loja_id] = pr.estoque || 0;
           }
        });
     }
@@ -53,19 +53,19 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
     if (lojaId) {
        storeP.precoPor = storePrice?.precoPor !== undefined ? storePrice.precoPor : (ov.precoPor !== undefined ? ov.precoPor : p.precoPor);
        storeP.precoDe = storePrice?.precoDe !== undefined ? storePrice.precoDe : (ov.precoDe !== undefined ? ov.precoDe : p.precoDe);
-       storeP.estoque = storeStock !== undefined ? storeStock : (ov.estoque !== undefined ? ov.estoque : p.estoque);
+       storeP.estoque = storeStock !== undefined && storeStock !== null ? storeStock : (ov.estoque !== undefined ? ov.estoque : p.estoque) || 0;
        storeP.ativo = storePrice?.ativo !== undefined ? storePrice.ativo : (ov.ativo !== undefined ? ov.ativo : (p.ativo ?? true));
        storeP.destaque = storePrice?.destaque !== undefined ? storePrice.destaque : (ov.destaque !== undefined ? ov.destaque : (p.destaque ?? false));
     }
     
-    storeP._searchString = String(storeP.nome || "").toLowerCase();
+    (storeP as any)._searchString = String(storeP.nome || "").toLowerCase();
     
-    if (!storeP.imagemPrincipal && Array.isArray(storeP.imagens) && storeP.imagens.length > 0) {
-       storeP.imagemPrincipal = storeP.imagens[0];
+    if (!(storeP as any).imagemPrincipal && Array.isArray(storeP.imagens) && storeP.imagens.length > 0) {
+       (storeP as any).imagemPrincipal = storeP.imagens[0];
     }
     
     return enforceHealthServicesCategory(enhanceProduct(storeP as Produto));
-  }).filter(p => p && p.ativo !== false);
+  }).filter((p: any) => p && p.ativo !== false);
 
   return finalProducts;
 }
@@ -439,7 +439,7 @@ export const catalog = {
     await ensureHydrated();
 
     // Search by URL first
-    let query = supabase.from('produtos').select('*').eq('url', slugOrId).limit(1);
+    let query = supabase.from('produtos').select('*').eq('slug', slugOrId).limit(1);
     let products = await fetchFromSupabaseWithPrices(query, lojaId);
     
     if (products.length === 0) {
@@ -495,7 +495,7 @@ export const catalog = {
     
     // Filtros base Supabase (para otimizar)
     if (isOfertas) {
-      query = query.eq('emCampanha', true);
+      // query = query.eq('emCampanha', true);
     }
 
     // Aplica range
@@ -606,7 +606,7 @@ export const catalog = {
   getOrderBumps: async (): Promise<Produto[]> => {
     await ensureHydrated();
     
-    let query = supabase.from('produtos').select('*').eq('orderBump', true).limit(4);
+    let query = supabase.from('produtos').select('*').contains('internal_tags', ['orderBump']).limit(4);
     const tagged = await fetchFromSupabaseWithPrices(query);
     if (tagged.length > 0) return wait(tagged);
 
