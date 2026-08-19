@@ -14,10 +14,13 @@ export function VisitorTracker() {
         sessionStorage.setItem("visitor_session_id", sessionId);
         
         try {
-          await supabase.from("site_acessos").insert({
+          const { error } = await supabase.from("site_acessos").insert({
             session_id: sessionId,
             loja_id: null, // Pode ser preenchido se tiver um context da loja ativa no storefront
           });
+          if (error) {
+            console.error("Supabase insert error for site_acessos:", error);
+          }
         } catch (error) {
           console.error("Failed to track visitor:", error);
         }

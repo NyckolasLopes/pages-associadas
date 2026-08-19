@@ -226,11 +226,15 @@ export const useLive = create<LiveStore>((set, get) => ({
       }
 
       try {
-        await supabase.from("site_acessos").insert({
+        const { error } = await supabase.from("site_acessos").insert({
           session_id: sessionId,
           loja_id: lojaId,
         });
-        sessionStorage.setItem(trackedKey, "true");
+        if (error) {
+          console.error("Supabase insert error for site_acessos:", error);
+        } else {
+          sessionStorage.setItem(trackedKey, "true");
+        }
       } catch (e) {
         console.error("Failed to track store access:", e);
       }
