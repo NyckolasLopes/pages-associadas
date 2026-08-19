@@ -118,11 +118,34 @@ export const useAdminProducts = create<ProductsState>()(
       _loaded: false,
       loadProducts: async () => {
         if (get()._loaded) return;
-        
-        // Em vez de baixar os 18k produtos para a memória local (o que causa travamentos pesados), 
-        // agora os componentes puxam sob-demanda do catalog.ts. 
-        // O cache de estado customProducts fica reservado apenas para overrides/produtos novos locais temporários
         set({ _loaded: true });
+
+        // O Admin continua precisando de todos os produtos para busca, exportação e edição em massa.
+        // Como isso não rodará mais na vitrine, o impacto na performance será restrito ao painel.
+        try {
+          let page = 0;
+          const limit = 1000;
+          let allData: any[] = [];
+          
+          while (true) {
+            const { data, error } = await supabase
+              .from('produtos')
+              .select('*')
+              .range(page * limit, (page + 1) * limit - 1)
+              .order('id');
+              
+            if (error || !data || data.length === 0) break;
+            
+            allData = [...allData, ...data];
+            if (data.length < limit) break;
+            page++;
+          }
+          
+          const mapped = allData.map(d => mapRowToProduto(d));
+          set({ customProducts: mapped });
+        } catch (e) {
+          console.error("Failed to load products for admin", e);
+        }
       },
       addOrUpdateProduct: async (p, lojaId) => {
         const formattedProduct = { ...p, nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "" };
@@ -757,9 +780,6 @@ export const useAdminProducts = create<ProductsState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // Load products from Supabase after local rehydration
-          state.loadProducts();
-
           // Add default vitrines if missing (migration for existing localStorage)
           let currentVitrines = state.vitrines || [];
           let hasChanged = false;

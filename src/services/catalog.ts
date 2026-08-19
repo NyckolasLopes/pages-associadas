@@ -203,28 +203,18 @@ function enforceHealthServicesCategory(p: Produto): Produto {
 
 
 
-// Await hydration helper — also ensures Supabase products are loaded in background
+// Await hydration helper
 async function ensureHydrated() {
   if (!useAdminProducts.persist || useAdminProducts.persist.hasHydrated()) {
-    // Fire and forget background sync
-    if (!useAdminProducts.getState()._loaded) {
-      useAdminProducts.getState().loadProducts();
-    }
     return;
   }
   return new Promise<void>((resolve) => {
     const unsub = useAdminProducts.persist.onFinishHydration(() => {
-      if (!useAdminProducts.getState()._loaded) {
-        useAdminProducts.getState().loadProducts();
-      }
       resolve();
       unsub();
     });
     // Fallback in case it hangs
     setTimeout(() => {
-      if (!useAdminProducts.getState()._loaded) {
-        useAdminProducts.getState().loadProducts();
-      }
       resolve();
       unsub();
     }, 500);
@@ -575,7 +565,8 @@ export const catalog = {
     query = query.range(page * pageSize, (page + 1) * pageSize - 1);
     
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    return applyFilters(products, filters);
+    const inStockProducts = products.filter(p => p.estoque > 0);
+    return applyFilters(inStockProducts, filters);
   },
   productsByBrand: async (brandName: string, filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
@@ -584,7 +575,8 @@ export const catalog = {
     
     let query = supabase.from('produtos').select('*').ilike('marca', brandName).range(page * pageSize, (page + 1) * pageSize - 1);
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    return applyFilters(products, filters);
+    const inStockProducts = products.filter(p => p.estoque > 0);
+    return applyFilters(inStockProducts, filters);
   },
   // Uses deterministic seed so results are stable across re-renders
   crossSell: async (cartIds: string[], limit = 4, referenceCategoryId?: string) => {
@@ -651,7 +643,8 @@ export const catalog = {
       if (filters && Object.keys(filters).length > 0) {
         let query = supabase.from('produtos').select('*').range(page * pageSize, (page + 1) * pageSize - 1);
         const products = await fetchFromSupabaseWithPrices(query, lojaId);
-        return { results: applyFilters(products, filters) };
+        const inStockProducts = products.filter(p => p.estoque > 0);
+        return { results: applyFilters(inStockProducts, filters) };
       }
       return { results: [] };
     }
@@ -666,8 +659,9 @@ export const catalog = {
     query = query.range(page * pageSize, (page + 1) * pageSize - 1);
     
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
+    const inStockProducts = products.filter(p => p.estoque > 0);
     
-    return { results: applyFilters(products, filters), didYouMean: undefined };
+    return { results: applyFilters(inStockProducts, filters), didYouMean: undefined };
   },
   search: async (q: string, filters?: FilterOptions) => {
     const { results } = await catalog.searchWithSuggestions(q, filters);
@@ -676,12 +670,14 @@ export const catalog = {
   featured: async (lojaId?: string | null) => {
     await ensureHydrated();
     let query = supabase.from('produtos').select('*').eq('destaque', true).limit(12);
-    const comDestaque = await fetchFromSupabaseWithPrices(query, lojaId);
+    const comDestaqueAll = await fetchFromSupabaseWithPrices(query, lojaId);
+    const comDestaque = comDestaqueAll.filter(p => p.estoque > 0);
     
     if (comDestaque.length < 12) {
       const needed = 12 - comDestaque.length;
-      let queryFallback = supabase.from('produtos').select('*').eq('destaque', false).limit(needed);
-      const fallback = await fetchFromSupabaseWithPrices(queryFallback, lojaId);
+      let queryFallback = supabase.from('produtos').select('*').eq('destaque', false).limit(needed * 2); // fetch more to account for stock filtering
+      const fallbackAll = await fetchFromSupabaseWithPrices(queryFallback, lojaId);
+      const fallback = fallbackAll.filter(p => p.estoque > 0).slice(0, needed);
       return [...comDestaque, ...fallback];
     }
     
