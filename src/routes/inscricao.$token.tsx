@@ -188,18 +188,24 @@ function InscricaoLojaPublic() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome || !form.cnpj) {
       toast.error("Preencha ao menos o Nome Fantasia e o CNPJ.");
       return;
     }
 
-    // Mark used and save
-    markRegistrationTokenUsed(token);
     const generatedId = form.id || form.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-");
-    addPharmacy({ ...form, id: generatedId });
-    setIsSuccess(true);
-    toast.success("Inscrição realizada com sucesso!");
+    
+    try {
+      await addPharmacy({ ...form, id: generatedId });
+      // Mark used and save
+      markRegistrationTokenUsed(token);
+      setIsSuccess(true);
+      toast.success("Inscrição realizada com sucesso!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao adicionar loja.");
+      console.error(err);
+    }
   };
 
   if (isValidating) {

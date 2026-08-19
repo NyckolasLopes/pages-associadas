@@ -169,7 +169,7 @@ function NovaLojaAdmin() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome || !form.cnpj) {
       toast.error("Preencha ao menos o Nome Fantasia e o CNPJ.");
@@ -177,9 +177,15 @@ function NovaLojaAdmin() {
     }
 
     const generatedId = form.id || form.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-");
-    addPharmacy({ ...form, id: generatedId, categoriaAssociado: form.categoriaAssociado || "Pleno" });
-    toast.success("Loja adicionada com sucesso!");
-    navigate({ to: "/admin/lojas" });
+    
+    try {
+      await addPharmacy({ ...form, id: generatedId, categoriaAssociado: form.categoriaAssociado || "Pleno" });
+      toast.success("Loja adicionada com sucesso!");
+      navigate({ to: "/admin/lojas" });
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao adicionar loja.");
+      console.error(err);
+    }
   };
 
   return (
