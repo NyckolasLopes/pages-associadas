@@ -2,6 +2,9 @@ import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { catalog } from "@/services/catalog";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { useMarcasStore } from "@/stores/marcas";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_store/m/$slug")({
   loader: async ({ params }) => {
@@ -48,6 +51,33 @@ function BrandPage() {
   const brand = marca?.nome || fallbackBrandName;
   const desc = marca?.descricao || `Conheça e compre toda a linha de produtos da ${brand}.`;
   const logo = marca?.logo;
+  
+  const [productsList, setProductsList] = useState(produtos);
+  const [page, setPage] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(produtos.length >= 24);
+
+  useEffect(() => {
+    setProductsList(produtos);
+    setPage(0);
+    setHasMore(produtos.length >= 24);
+  }, [slug, produtos]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const moreProducts = await catalog.productsByBrand(brand, { page: nextPage, pageSize: 24 });
+      setProductsList(prev => [...prev, ...moreProducts]);
+      setPage(nextPage);
+      if (moreProducts.length < 24) setHasMore(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   return (
     <div className="container-fa py-8">
@@ -74,15 +104,30 @@ function BrandPage() {
 
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold">Produtos {brand}</h2>
-        <span className="text-sm text-muted-foreground">{produtos.length} {produtos.length === 1 ? 'produto encontrado' : 'produtos encontrados'}</span>
+        <span className="text-sm text-muted-foreground">{productsList.length} {productsList.length === 1 ? 'produto encontrado' : 'produtos encontrados'} {hasMore && "ou mais"}</span>
       </div>
 
-      {produtos.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-          {produtos.map((p: any) => (
-            <ProductCard key={p.id} p={p} />
-          ))}
-        </div>
+      {productsList.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+            {productsList.map((p: any) => (
+              <ProductCard key={p.id} p={p} />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="mt-8 flex justify-center pb-8">
+              <Button 
+                onClick={loadMore} 
+                disabled={loadingMore}
+                variant="outline" 
+                className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white"
+              >
+                {loadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {loadingMore ? "Carregando..." : "Carregar mais produtos"}
+              </Button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed">
           <p className="text-muted-foreground">Nenhum produto cadastrado para esta marca no momento.</p>

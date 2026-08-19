@@ -7,6 +7,7 @@ import { ProductCard } from "@/components/storefront/ProductCard";
 import type { Produto } from "@/types";
 import { ProductFilterSidebar } from "@/components/storefront/ProductFilterSidebar";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { useSearchHistory } from "@/stores/searchHistory";
 import { useCart } from "@/stores/cart";
 
@@ -29,21 +30,19 @@ function SearchPage() {
   const { q, ...filters } = searchParams;
   
   const [unfilteredResults, setUnfilteredResults] = useState<Produto[]>([]);
-  const [filteredResults, setFilteredResults] = useState<Produto[]>([]);
+  const [productsList, setProductsList] = useState<Produto[]>([]);
   const [didYouMean, setDidYouMean] = useState<string | undefined>(undefined);
-  const [visibleCount, setVisibleCount] = useState(24);
+  
+  const [page, setPage] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const logSearch = useSearchHistory((s) => s.logSearch);
 
-  // Reset pagination when search params change
   useEffect(() => {
-    setVisibleCount(24);
-  }, [searchParams]);
-
-  useEffect(() => {
-    // Fetch unfiltered for sidebar options
+    // Fetch unfiltered for sidebar options (limited subset just for filters logic)
     const fetchUnfiltered = async () => {
-      const res = q ? await catalog.search(q) : await catalog.listProducts();
+      const res = q ? await catalog.search(q, { pageSize: 100 }) : await catalog.listProducts({ pageSize: 100 });
       setUnfilteredResults(res);
     };
     fetchUnfiltered();
@@ -54,20 +53,45 @@ function SearchPage() {
   }, [q, selectedPharmacyId, logSearch]);
 
   useEffect(() => {
-    // Fetch filtered for display
+    // Fetch initial filtered for display
     const fetchFiltered = async () => {
+      setPage(0);
       if (q) {
-        const { results, didYouMean: dym } = await catalog.searchWithSuggestions(q, filters);
-        setFilteredResults(results);
+        const { results, didYouMean: dym } = await catalog.searchWithSuggestions(q, { ...filters, page: 0, pageSize: 24 });
+        setProductsList(results);
         setDidYouMean(dym);
+        setHasMore(results.length >= 24);
       } else {
-        const results = await catalog.listProducts(filters);
-        setFilteredResults(results);
+        const results = await catalog.listProducts({ ...filters, page: 0, pageSize: 24 });
+        setProductsList(results);
         setDidYouMean(undefined);
+        setHasMore(results.length >= 24);
       }
     };
     fetchFiltered();
   }, [q, filters]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      let moreProducts: Produto[] = [];
+      if (q) {
+        const { results } = await catalog.searchWithSuggestions(q, { ...filters, page: nextPage, pageSize: 24 });
+        moreProducts = results;
+      } else {
+        moreProducts = await catalog.listProducts({ ...filters, page: nextPage, pageSize: 24 });
+      }
+      setProductsList(prev => [...prev, ...moreProducts]);
+      setPage(nextPage);
+      if (moreProducts.length < 24) setHasMore(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleFilterChange = (newFilters: FilterOptions) => {
     navigate({
@@ -113,11 +137,11 @@ function SearchPage() {
           )}
 
           <div className="text-sm text-muted-foreground mb-4">
-            {filteredResults.length} produto{filteredResults.length === 1 ? "" : "s"} encontrado{filteredResults.length === 1 ? "" : "s"}
+            {productsList.length} produto{productsList.length === 1 ? "" : "s"} encontrado{productsList.length === 1 ? "" : "s"} {hasMore && "ou mais"}
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {displayedProducts.map((p) => (
+            {productsList.map((p) => (
               <ProductCard key={p.id} p={p} />
             ))}
           </div>
@@ -125,11 +149,13 @@ function SearchPage() {
           {hasMore && (
             <div className="mt-8 flex justify-center pb-8">
               <Button 
-                onClick={() => setVisibleCount(v => v + 24)} 
+                onClick={loadMore} 
+                disabled={loadingMore}
                 variant="outline" 
                 className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white"
               >
-                Carregar mais produtos
+                {loadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {loadingMore ? "Carregando..." : "Carregar mais produtos"}
               </Button>
             </div>
           )}

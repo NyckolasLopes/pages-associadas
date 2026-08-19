@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Search as SearchIcon } from "lucide-react";
 import { catalog } from "@/services/catalog";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import type { Produto, Categoria } from "@/types";
 import { ProductFilterSidebar } from "@/components/storefront/ProductFilterSidebar";
 import { HeroCarousel } from "@/components/storefront/HeroCarousel";
@@ -67,19 +68,40 @@ export const Route = createFileRoute("/_store/c/$slug")({
 });
 
 function CategoryPage() {
-  const { cat, unfilteredProducts, filteredProducts, subs } = Route.useLoaderData();
+  const { cat, unfilteredProducts, filteredProducts: initialProducts, subs } = Route.useLoaderData();
   const searchParams = Route.useSearch();
   const navigate = useNavigate();
   const [showSubs, setShowSubs] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(24);
+  
+  const [products, setProducts] = useState<Produto[]>(initialProducts);
+  const [page, setPage] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialProducts.length >= 24);
 
   // Reset pagination when category or filters change
   useEffect(() => {
-    setVisibleCount(24);
-  }, [cat.id, searchParams]);
+    setProducts(initialProducts);
+    setPage(0);
+    setHasMore(initialProducts.length >= 24);
+  }, [cat.id, searchParams, initialProducts]);
 
-  const displayedProducts = filteredProducts.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredProducts.length;
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const moreProducts = await catalog.productsByCategory(cat.id, { ...searchParams, page: nextPage, pageSize: 24 });
+      setProducts(prev => [...prev, ...moreProducts]);
+      setPage(nextPage);
+      if (moreProducts.length < 24) {
+        setHasMore(false);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleFilterChange = (newFilters: any) => {
     navigate({
@@ -179,11 +201,11 @@ function CategoryPage() {
             <h2 className="text-xl font-bold">Resultado de busca feita por categoria</h2>
           </div>
           <div className="text-sm text-muted-foreground mb-4">
-            {filteredProducts.length} produto{filteredProducts.length === 1 ? "" : "s"} encontrado{filteredProducts.length === 1 ? "" : "s"}
+            {products.length} produto{products.length === 1 ? "" : "s"} encontrado{products.length === 1 ? "" : "s"} {hasMore && "ou mais"}
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {displayedProducts.map((p: Produto) => (
+            {products.map((p: Produto) => (
               <ProductCard key={p.id} p={p} />
             ))}
           </div>
@@ -191,11 +213,13 @@ function CategoryPage() {
           {hasMore && (
             <div className="mt-8 flex justify-center pb-8">
               <Button 
-                onClick={() => setVisibleCount(v => v + 24)} 
+                onClick={loadMore} 
+                disabled={loadingMore}
                 variant="outline" 
                 className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white"
               >
-                Carregar mais produtos
+                {loadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {loadingMore ? "Carregando..." : "Carregar mais produtos"}
               </Button>
             </div>
           )}
