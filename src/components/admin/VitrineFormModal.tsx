@@ -24,7 +24,7 @@ interface VitrineFormModalProps {
 }
 
 export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFormModalProps) {
-  const { addVitrine, updateVitrine } = useAdminProducts();
+  const { addVitrine, updateVitrine, getStoreEffectiveProducts } = useAdminProducts();
   
   const [nome, setNome] = useState("");
   const [ativa, setAtiva] = useState(true);
@@ -69,7 +69,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
       
       async function loadOptions() {
         setLoading(true);
-        const allProducts = await catalog.listProducts();
+        const allProducts = getStoreEffectiveProducts(lojaId);
         const allCats = await catalog.listCategories(true);
         setCategoriasOpcoes(allCats);
         setProdutosOpcoes(allProducts);
@@ -111,7 +111,13 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
     onClose();
   };
 
-  const filteredProducts = produtosOpcoes.filter(p => (p.nome || "").toLowerCase().includes(searchProduto.toLowerCase())).slice(0, 50);
+  const searchLower = searchProduto.toLowerCase();
+  const selectedProductsList = produtosOpcoes.filter(p => produtoIds.includes(p.id));
+  const unselectedFilteredProducts = produtosOpcoes
+    .filter(p => !produtoIds.includes(p.id))
+    .filter(p => (p.nome || "").toLowerCase().includes(searchLower))
+    .slice(0, 50);
+  const filteredProducts = [...selectedProductsList, ...unselectedFilteredProducts];
 
   const toggleProduct = (id: string) => {
     if (produtoIds.includes(id)) {
