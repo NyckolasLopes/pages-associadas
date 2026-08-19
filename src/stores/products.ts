@@ -191,7 +191,7 @@ export const useAdminProducts = create<ProductsState>()(
               ...ov,
               precoPor: storePrice?.precoPor !== undefined ? storePrice.precoPor : (ov.precoPor !== undefined ? ov.precoPor : p.precoPor),
               precoDe: storePrice?.precoDe !== undefined ? storePrice.precoDe : (ov.precoDe !== undefined ? ov.precoDe : p.precoDe),
-              estoque: storeStock !== undefined ? storeStock : (ov.estoque !== undefined ? ov.estoque : p.estoque),
+              estoque: (storeStock !== undefined && storeStock > 0) ? storeStock : (ov.estoque !== undefined && ov.estoque > 0 ? ov.estoque : (p.estoque || 0)),
               ativo: storePrice?.ativo !== undefined ? storePrice.ativo : (ov.ativo !== undefined ? ov.ativo : (p.ativo ?? true)),
               destaque: storePrice?.destaque !== undefined ? storePrice.destaque : (ov.destaque !== undefined ? ov.destaque : (p.destaque ?? false)),
             };

@@ -53,7 +53,11 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
     if (lojaId) {
        storeP.precoPor = storePrice?.precoPor !== undefined ? storePrice.precoPor : (ov.precoPor !== undefined ? ov.precoPor : p.precoPor);
        storeP.precoDe = storePrice?.precoDe !== undefined ? storePrice.precoDe : (ov.precoDe !== undefined ? ov.precoDe : p.precoDe);
-       storeP.estoque = storeStock !== undefined && storeStock !== null ? storeStock : (ov.estoque !== undefined ? ov.estoque : p.estoque) || 0;
+       // Use store stock if > 0, otherwise fall back to global estoque
+       const resolvedStock = (storeStock !== undefined && storeStock !== null && storeStock > 0) 
+         ? storeStock 
+         : (ov.estoque !== undefined && ov.estoque > 0 ? ov.estoque : (p.estoque || 0));
+       storeP.estoque = resolvedStock;
        storeP.ativo = storePrice?.ativo !== undefined ? storePrice.ativo : (ov.ativo !== undefined ? ov.ativo : (p.ativo ?? true));
        storeP.destaque = storePrice?.destaque !== undefined ? storePrice.destaque : (ov.destaque !== undefined ? ov.destaque : (p.destaque ?? false));
     }
@@ -402,6 +406,16 @@ export const catalog = {
 
     let query = supabase.from('produtos').select('*').range(page * pageSize, (page + 1) * pageSize - 1);
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
+    
+    // Prioritizes products with stock > 0
+    products.sort((a, b) => {
+      const stockA = a.estoque || 0;
+      const stockB = b.estoque || 0;
+      if (stockA > 0 && stockB <= 0) return -1;
+      if (stockB > 0 && stockA <= 0) return 1;
+      return 0;
+    });
+
     return applyFilters(products, filters);
   },
   async listCategories(includeEmpty = true): Promise<Categoria[]> {
@@ -511,12 +525,22 @@ export const catalog = {
     query = query.range(page * pageSize, (page + 1) * pageSize - 1);
 
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
+    const activeProducts = products;
     
-    let results = products;
+    // Prioritizes products with stock > 0
+    activeProducts.sort((a, b) => {
+      const stockA = a.estoque || 0;
+      const stockB = b.estoque || 0;
+      if (stockA > 0 && stockB <= 0) return -1;
+      if (stockB > 0 && stockA <= 0) return 1;
+      return 0;
+    });
+
+    let results = activeProducts;
     if (categoryId === "300") {
         const subCategorias = categorias.filter(c => c.parentId === "300");
         const namesToMatch = subCategorias.map(c => removeAccents(c.nome.toLowerCase()));
-        results = products.filter(p => {
+        results = activeProducts.filter(p => {
           const nome = removeAccents(String(p.nome).toLowerCase());
           return namesToMatch.some(brand => nome.includes(brand));
         });
@@ -530,36 +554,42 @@ export const catalog = {
     const page = filters?.page || 0;
     const pageSize = filters?.pageSize || 24;
 
-    let baseProducts = [];
-    if (lojaId) {
-      baseProducts = useAdminProducts.getState().getStoreEffectiveProducts(lojaId) || [];
-    } else {
-      baseProducts = getAllProdutos();
-    }
-
-    // Filtra inativos globais ou inativos na loja
-    baseProducts = baseProducts.filter(p => p && p.ativo !== false);
+    let query = supabase.from('produtos').select('*');
 
     if (produtoIds && produtoIds.length > 0) {
-      baseProducts = baseProducts.filter(p => produtoIds.includes(String(p.id)));
+      query = query.in('id', produtoIds);
     } else if (categoriaId === "destaques") {
-      baseProducts = baseProducts.filter(p => p.destaque).sort((a, b) => (b.nivelRelevancia || 0) - (a.nivelRelevancia || 0));
+      query = query.eq('destaque', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
     } else if (categoriaId === "novidades") {
-      baseProducts = baseProducts.sort((a, b) => String(b.id).localeCompare(String(a.id)));
-    } else if (categoriaId === "ofertas" || categoriaId === "campanha") {
-      baseProducts = baseProducts.sort((a, b) => (b.nivelRelevancia || 0) - (a.nivelRelevancia || 0));
-    } else if (categoriaId === "all") {
-      baseProducts = baseProducts.sort((a, b) => (b.nivelRelevancia || 0) - (a.nivelRelevancia || 0));
+      query = query.order('id', { ascending: false });
+    } else if (categoriaId === "ofertas" || categoriaId === "campanha" || categoriaId === "all") {
+      query = query.order('nivel_relevancia', { ascending: false, nullsFirst: false });
     } else if (categoriaId === "protetores") {
-      baseProducts = baseProducts.filter(p => /protetor|solar/i.test(p.nome || ""));
+      query = query.ilike('nome', '%protetor%'); // or %solar%
     } else {
       const categorias = getCategorias();
       const validCategoryIds = [categoriaId, ...categorias.filter(c => String(c.parentId) === String(categoriaId)).map(c => c.id)];
-      baseProducts = baseProducts.filter(p => validCategoryIds.includes(String(p.categoriaId)));
+      query = query.in('categoria_id', validCategoryIds);
     }
 
-    const paginated = baseProducts.slice(page * pageSize, (page + 1) * pageSize);
-    return applyFilters(paginated, filters);
+    // Aplica paginação
+    query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+
+    const baseProducts = await fetchFromSupabaseWithPrices(query, lojaId);
+
+    // Filtra inativos
+    const activeProducts = baseProducts.filter(p => p && p.ativo !== false);
+
+    // Prioritizes products with stock > 0
+    activeProducts.sort((a, b) => {
+      const stockA = a.estoque || 0;
+      const stockB = b.estoque || 0;
+      if (stockA > 0 && stockB <= 0) return -1;
+      if (stockB > 0 && stockA <= 0) return 1;
+      return 0;
+    });
+
+    return applyFilters(activeProducts, filters);
   },
   productsByBrand: async (brandName: string, filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
