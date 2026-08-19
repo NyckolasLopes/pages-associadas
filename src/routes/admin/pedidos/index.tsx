@@ -391,7 +391,7 @@ export function PedidosAdmin() {
   };
 
   const exportToJson = () => {
-    const dataStr = JSON.stringify(displayedItems, null, 2);
+    const dataStr = JSON.stringify(filteredUnifiedOrders, null, 2);
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
     const exportFileDefaultName = "pedidos_associadas.json";
 

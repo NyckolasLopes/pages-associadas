@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { Search, ChevronDown, Star, Trash2, Edit2, X, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -370,6 +370,7 @@ function AdminMarcas() {
           </div>
         </div>
       )}
+      <Outlet />
     </div>
   );
 }

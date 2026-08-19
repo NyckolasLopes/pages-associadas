@@ -1089,7 +1089,7 @@ function AdminProdutos() {
       <BulkEditModal
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
-        filteredProducts={filtered}
+        filteredProducts={serverProducts}
         onBulkUpdate={(productIds, updates) => bulkUpdateProducts(productIds, updates, currentLojaId || undefined)}
       />
 

@@ -961,6 +961,8 @@ export const useAdmin = create<AdminState>()(
             custoMotoboy: l.tema_cores?.custoMotoboy ?? 0,
             custoEntregaExpressa: l.tema_cores?.custoEntregaExpressa ?? 0,
             raiosEntrega: l.tema_cores?.raiosEntrega ?? [],
+            meiosEntregaPersonalizados: l.tema_cores?.meiosEntregaPersonalizados ?? [],
+            themeColors: l.tema_cores || {},
           })) as unknown as Pharmacy[];
           set({ pharmacies: loadedPharmacies });
         }
@@ -1013,6 +1015,7 @@ export const useAdmin = create<AdminState>()(
           custoMotoboy: p.custoMotoboy,
           custoEntregaExpressa: p.custoEntregaExpressa,
           raiosEntrega: p.raiosEntrega,
+          meiosEntregaPersonalizados: p.meiosEntregaPersonalizados,
         };
 
         const { error } = await supabase.from('lojas').insert({
@@ -1145,6 +1148,7 @@ export const useAdmin = create<AdminState>()(
           custoMotoboy: p.custoMotoboy,
           custoEntregaExpressa: p.custoEntregaExpressa,
           raiosEntrega: p.raiosEntrega,
+          meiosEntregaPersonalizados: p.meiosEntregaPersonalizados,
         };
 
         const { error } = await supabase.from('lojas').update({
