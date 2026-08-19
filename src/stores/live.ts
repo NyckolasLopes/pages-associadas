@@ -53,6 +53,7 @@ interface LiveStore {
   channel: RealtimeChannel | null;
   initPresence: (sessionId: string, lojaId?: string) => void;
   recordLojaAccess: (lojaId: string) => void;
+  fetchRealAcessos: () => Promise<void>;
   cleanup: () => void;
 }
 
@@ -64,12 +65,41 @@ export const useLive = create<LiveStore>((set, get) => ({
   visitors: [],
   totalAcessos: 0,
   stats: {},
-  lojasAcessos: {
-    "1": { total: 1530, mes: 1530, hoje: 112, lastAccess: Date.now() },
-    "2": { total: 940, mes: 940, hoje: 65, lastAccess: Date.now() },
-    "3": { total: 420, mes: 420, hoje: 28, lastAccess: Date.now() },
-  },
+  lojasAcessos: {},
   channel: null,
+
+  fetchRealAcessos: async () => {
+    try {
+      // Puxar do banco real e calcular total, mes, hoje por loja e global.
+      const { data, error } = await supabase.from('site_acessos').select('*');
+      if (error) return;
+
+      const now = new Date();
+      const isHoje = (d: Date) => d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      const isMes = (d: Date) => d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+
+      const stats: Record<string, LojaAcessoStat> = {};
+      let globTotal = 0;
+
+      data.forEach(acesso => {
+        const date = new Date(acesso.created_at);
+        const lojaId = acesso.loja_id || 'global';
+        
+        if (!stats[lojaId]) stats[lojaId] = { total: 0, mes: 0, hoje: 0, lastAccess: 0 };
+        
+        stats[lojaId].total += 1;
+        if (isMes(date)) stats[lojaId].mes += 1;
+        if (isHoje(date)) stats[lojaId].hoje += 1;
+        
+        stats[lojaId].lastAccess = Math.max(stats[lojaId].lastAccess, date.getTime());
+        globTotal += 1;
+      });
+
+      set({ lojasAcessos: stats, totalAcessos: globTotal });
+    } catch (e) {
+      console.error(e);
+    }
+  },
 
   initPresence: (sessionId: string, lojaId?: string) => {
     let channel = get().channel;

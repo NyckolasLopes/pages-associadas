@@ -46,7 +46,7 @@ function AdminDashboard() {
   const effectiveStoreId = isGlobalAdmin ? (activeStoreId || null) : (activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null);
 
   
-  const { visitors: rawVisitors, totalAcessos, lojasAcessos } = useLive();
+  const { visitors: rawVisitors, totalAcessos, lojasAcessos, fetchRealAcessos } = useLive();
   const visitors = useMemo(() => {
     if (!effectiveStoreId) return rawVisitors;
     return rawVisitors.filter(v => v.lojaId === effectiveStoreId || ((v as any).url && (v as any).url.includes(effectiveStoreId)));
@@ -57,11 +57,8 @@ function AdminDashboard() {
   const visitasPorLoja = useMemo(() => {
     return (pharmacies || []).map(loja => {
       let stat = lojasAcessos?.[loja.id];
-      if (!stat || stat.total === 0) {
-        // Gera dados mock consistentes baseados no ID da loja
-        const hash = loja.id.split('').reduce((a,b) => {a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
-        const rand = Math.abs(hash) % 1000 || 50; // garante um minimo
-        stat = { total: rand * 12, mes: rand, hoje: Math.floor(rand / 30) || 1, lastAccess: Date.now() };
+      if (!stat) {
+        stat = { total: 0, mes: 0, hoje: 0, lastAccess: 0 };
       }
       return {
         id: loja.id,
@@ -90,7 +87,8 @@ function AdminDashboard() {
   const loadCarts = useAbandonedCartsStore(s => s.loadCarts);
   useEffect(() => {
     loadCarts();
-  }, [loadCarts]);
+    fetchRealAcessos();
+  }, [loadCarts, fetchRealAcessos]);
 
   const orders = useMemo(() => {
     if (!effectiveStoreId) return rawOrders;

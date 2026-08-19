@@ -513,6 +513,27 @@ export type Database = {
         }
         Relationships: []
       }
+      site_acessos: {
+        Row: {
+          created_at: string
+          id: string
+          loja_id: string | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          loja_id?: string | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          loja_id?: string | null
+          session_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
