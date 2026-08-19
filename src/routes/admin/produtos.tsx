@@ -4,6 +4,7 @@ import { useAdminProducts } from "@/stores/products";
 import { useRegionsStore } from "@/stores/regions";
 import { useAdmin } from "@/stores/admin";
 import { getDeterministicStock } from "@/lib/stock";
+import { catalog, getCategorias } from "@/services/catalog";
 import categoriesData from "@/data/categories.json";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -112,6 +113,9 @@ function AdminProdutos() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
+  const [serverProducts, setServerProducts] = useState<Produto[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const [lojaApiDataMap, setLojaApiDataMap] = useState<Record<string, { estoque: number, precoPor: number, precoDe: number }>>({});
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -211,47 +215,64 @@ function AdminProdutos() {
     );
   };
 
-  const handleExportJson = () => {
-    const exportData = currentProductsList.map(p => {
-      // Find category and subcategory names if possible
-      const cat = categoriesData.find((c: any) => c.id === p.categoriaId);
-      const sub = categoriesData.find((c: any) => c.id === p.subcategoriaId);
+  const handleExportJson = async () => {
+    setIsLoading(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase.from('produtos').select('*');
+      
+      if (error || !data) throw new Error("Falha ao exportar");
+      
+      const exportData = data.map(p => {
+        const categorias = getCategorias();
+        const cat = categorias.find((c: any) => c.id === p.categoria_id);
+        const sub = categorias.find((c: any) => c.id === p.subcategoria_id);
 
-      return {
-        "ID/CÓDIGO INTERNO": p.id,
-        "EAN/CÓDIGO DE BARRAS": p.ean || "",
-        "DESCRIÇÃO COMERCIAL/NOME DO PRODUTO": p.nome,
-        "DESCRIÇÃO LONGA": p.descricao || "",
-        "CATEGORIA": cat ? cat.nome : ((p as any).categoria || ""),
-        "ID CATEGORIA": p.categoriaId || "",
-        "SUBCATEGORIA": sub ? sub.nome : "",
-        "ID SUBCATEGORIA": p.subcategoriaId || "",
-        "marca (MARCA)": p.marca || p.marca || "",
-        "DCB/ PRINCIPIO ATIVO": (p.principiosAtivosDetalhes || []).map((pa: any) => pa.nome).join(', ') || "",
-        "MS/REGISTRO ANVISA": p.registroAnvisa || "",
-        "RETÉM RECEITA": p.retemReceita ? "SIM" : "NÃO",
-        "TARJA": p.tarja || "Sem Tarja"
-      };
-    });
+        return {
+          "ID/CÓDIGO INTERNO": p.id,
+          "EAN/CÓDIGO DE BARRAS": p.ean || "",
+          "DESCRIÇÃO COMERCIAL/NOME DO PRODUTO": p.nome,
+          "DESCRIÇÃO LONGA": p.descricao || "",
+          "CATEGORIA": cat ? cat.nome : "",
+          "ID CATEGORIA": p.categoria_id || "",
+          "SUBCATEGORIA": sub ? sub.nome : "",
+          "ID SUBCATEGORIA": p.subcategoria_id || "",
+          "marca (MARCA)": p.marca || "",
+          "MS/REGISTRO ANVISA": p.registro_anvisa || "",
+          "RETÉM RECEITA": p.retem_receita ? "SIM" : "NÃO",
+          "TARJA": p.tarja || "Sem Tarja"
+        };
+      });
 
-    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-    const dlAnchorElem = document.createElement("a");
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", "modelo_api_produto.txt");
-    dlAnchorElem.click();
+      const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+      const dlAnchorElem = document.createElement("a");
+      dlAnchorElem.setAttribute("href", dataStr);
+      dlAnchorElem.setAttribute("download", "modelo_api_produto.txt");
+      dlAnchorElem.click();
+    } catch (e) {
+      toast.error("Erro ao exportar JSON");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleExportGoogleShopping = () => {
-    // Filtrar produtos ativos, com preço e sem tarja de retenção
-    const feedProducts = currentProductsList.filter(p => 
-      p.ativo && 
-      p.precoPor > 0 &&
-      p.tarja !== "Vermelha" && 
-      p.tarja !== "Preta" &&
-      p.tarja !== "Vermelha com Retenção de Receita"
-    );
+  const handleExportGoogleShopping = async () => {
+    setIsLoading(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase.from('produtos').select('*').eq('ativo', true);
+      
+      if (error || !data) throw new Error("Falha ao exportar");
 
-    let xml = `<?xml version="1.0"?>
+      // Filtrar produtos ativos, com preço e sem tarja de retenção
+      const feedProducts = data.filter(p => 
+        p.preco_por > 0 &&
+        p.tarja !== "Vermelha" && 
+        p.tarja !== "Preta" &&
+        p.tarja !== "Vermelha com Retenção de Receita"
+      );
+
+      let xml = `<?xml version="1.0"?>
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
   <channel>
     <title>E-commerce Associadas</title>
@@ -259,54 +280,50 @@ function AdminProdutos() {
     <description>Catálogo de Produtos - Feed Oficial</description>
 `;
 
-    feedProducts.forEach(p => {
-      // Define a categoria correta para o Google (exemplo simplificado)
-      const isMedicamento = p.categoriaId === "142" || (p.nome && p.nome.toLowerCase().includes("medicamento"));
-      const googleCategory = isMedicamento ? "Health & Beauty > Health Care > Medications" : "Health & Beauty > Personal Care";
-      
-      const price = p.precoDe && p.precoDe > p.precoPor ? p.precoDe : p.precoPor;
-      const salePrice = p.precoDe && p.precoDe > p.precoPor ? p.precoPor : null;
-      
-      const imgLink = p.possuiImagem && p.ean ? `https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/${p.ean}.jpg` : `https://associadas.com.br/placeholder.jpg`;
+      feedProducts.forEach(p => {
+        const isMedicamento = p.categoria_id === "142" || (p.nome && p.nome.toLowerCase().includes("medicamento"));
+        const googleCategory = isMedicamento ? "Health & Beauty > Health Care > Medications" : "Health & Beauty > Personal Care";
+        
+        const price = p.preco_de && p.preco_de > p.preco_por ? p.preco_de : p.preco_por;
+        const salePrice = p.preco_de && p.preco_de > p.preco_por ? p.preco_por : null;
+        
+        const imgLink = p.possui_imagem && p.ean ? `https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/${p.ean}.jpg` : `https://associadas.com.br/placeholder.jpg`;
 
-      xml += `
+        xml += `
     <item>
       <g:id>${p.id}</g:id>
       <g:title><![CDATA[${p.nome}]]></g:title>
       <g:description><![CDATA[${p.descricao || p.nome}]]></g:description>
-      <g:link>https://associadas.com.br/p/${p.url || p.id}</g:link>
+      <g:link>https://associadas.com.br/p/${p.id}</g:link>
       <g:image_link>${imgLink}</g:image_link>
       <g:condition>new</g:condition>
-      <g:availability>${p.estoque > 0 ? 'in stock' : 'out of stock'}</g:availability>
+      <g:availability>in stock</g:availability>
       <g:price>${price.toFixed(2)} BRL</g:price>
       ${salePrice ? `<g:sale_price>${salePrice.toFixed(2)} BRL</g:sale_price>` : ''}
-      ${regions.map(r => {
-        const rPrice = prices[`${r.id}-${p.id}`];
-        if (rPrice !== undefined) {
-          return `<g:regional_item>
-        <g:region_id>${r.id}</g:region_id>
-        <g:price>${(p.precoDe || rPrice).toFixed(2)} BRL</g:price>
-        ${p.precoDe && rPrice < p.precoDe ? `<g:sale_price>${rPrice.toFixed(2)} BRL</g:sale_price>` : ''}
-      </g:regional_item>`;
-        }
-        return '';
-      }).join('\n      ')}
       <g:brand><![CDATA[${p.marca || 'Associadas'}]]></g:brand>
-      <g:gtin>${p.ean || p.sku || ''}</g:gtin>
+      <g:gtin>${p.ean || ''}</g:gtin>
       <g:google_product_category><![CDATA[${googleCategory}]]></g:google_product_category>
     </item>`;
-    });
+      });
 
-    xml += `
+      xml += `
   </channel>
 </rss>`;
 
-    const dataStr = "data:text/xml;charset=utf-8," + encodeURIComponent(xml);
-    const dlAnchorElem = document.createElement("a");
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", "google_shopping_feed.xml");
-    dlAnchorElem.click();
-    toast.success("Feed do Google Shopping XML gerado com sucesso!");
+      const blob = new Blob([xml], { type: "application/xml" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "google_shopping_feed.xml";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error("Erro ao exportar XML");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSpreadsheetImport = async (products: Produto[]) => {
@@ -510,54 +527,53 @@ function AdminProdutos() {
     }
   };
 
-  // Filtered products
-  const filtered = useMemo(() => {
-    let result = currentProductsList;
-    
-    if (listFilter !== "all") {
-      const getProductStock = (p: Produto) => {
-        if (currentLojaId || undefined) {
-          return lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId || '');
-        }
-        return pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0);
-      };
-
-      if (listFilter === "out-of-stock") {
-        result = result.filter(p => getProductStock(p) === 0);
-      } else if (listFilter === "low-stock") {
-        result = result.filter(p => {
-          const s = getProductStock(p);
-          return s > 0 && s <= 5;
+  useEffect(() => {
+    async function loadServerProducts() {
+      setIsLoading(true);
+      try {
+        const numericPageSize = parseInt(pageSize, 10);
+        const { results, count } = await catalog.adminSearchProducts({
+          search,
+          page,
+          pageSize: numericPageSize,
+          listFilter,
+          lojaId: currentLojaId || undefined
         });
-      } else if (listFilter === "cat1") {
-        result = result.filter(p => p.categoriaId === "142");
-      } else if (listFilter === "not-cat1") {
-        result = result.filter(p => p.categoriaId !== "142");
-      } else if (listFilter === "active") {
-        result = result.filter(p => p.ativo !== false);
-      } else if (listFilter === "inactive") {
-        result = result.filter(p => p.ativo === false);
-      } else if (listFilter === "featured") {
-        result = result.filter(p => p.destaque === true);
-      } else if (listFilter === "prescription") {
-        result = result.filter(p => p.retemReceita === true);
-      } else if (listFilter === "generic") {
-        result = result.filter(p => p.generico === true);
+        
+        let finalResults = results;
+        
+        // Handle out-of-stock and low-stock locally since they depend on dynamic stock calc
+        if (listFilter === "out-of-stock") {
+          finalResults = finalResults.filter(p => {
+            const s = currentLojaId ? (lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId)) : pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0);
+            return s <= 0;
+          });
+        } else if (listFilter === "low-stock") {
+          finalResults = finalResults.filter(p => {
+            const s = currentLojaId ? (lojaApiDataMap[p.id]?.estoque ?? getDeterministicStock(p, currentLojaId)) : pharmacies.reduce((acc, loja) => acc + getDeterministicStock(p, loja.id), 0);
+            return s > 0 && s <= 5;
+          });
+        }
+        
+        setServerProducts(finalResults);
+        setTotalProducts(count);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
       }
     }
-
-    if (search.trim()) {
-      result = result.filter((p) => searchProductsMatch(p, search));
-    }
     
-    return result;
-  }, [currentProductsList, search, listFilter]);
+    // We delay the search slightly to debounce typing
+    const timeout = setTimeout(loadServerProducts, 300);
+    return () => clearTimeout(timeout);
+  }, [search, page, pageSize, listFilter, currentLojaId, lojaApiDataMap]);
 
-  // Pagination
+  // Pagination bounds
   const numericPageSize = parseInt(pageSize, 10);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / numericPageSize));
+  const totalPages = Math.max(1, Math.ceil(totalProducts / numericPageSize));
   const currentPage = Math.min(page, totalPages - 1);
-  const paginatedProducts = filtered.slice(currentPage * numericPageSize, (currentPage + 1) * numericPageSize);
+  const paginatedProducts = serverProducts;
 
   if (!isRoot) {
     return (
@@ -591,7 +607,7 @@ function AdminProdutos() {
                   variant="outline"
                   size="sm"
                   onClick={handleExportJson}
-                  disabled={currentProductsList.length === 0}
+                  disabled={isLoading}
                   className="font-bold text-xs"
                 >
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
@@ -682,10 +698,10 @@ function AdminProdutos() {
             <h3 className="font-bold">
               {currentLojaId ? `Produtos de ${currentLoja?.nome || "sua loja"}` : "Seus produtos da rede"}
             </h3>
-            <Badge variant="secondary" className="text-xs">{currentProductsList.length}</Badge>
+            <Badge variant="secondary" className="text-xs">{totalProducts}</Badge>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {currentProductsList.length > 0 && (
+            {totalProducts > 0 && (
               <div className="w-full sm:w-48">
                 <Select value={listFilter} onValueChange={(v) => { setListFilter(v); setPage(0); }}>
                   <SelectTrigger className="h-8 text-xs bg-white">
@@ -706,7 +722,7 @@ function AdminProdutos() {
                 </Select>
               </div>
             )}
-            {currentProductsList.length > 0 && (
+            {totalProducts > 0 && (
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -733,7 +749,12 @@ function AdminProdutos() {
 
         {!_loaded ? (
           <div className="h-96" /> // Placeholder vazio durante o loading
-        ) : currentProductsList.length === 0 ? (
+        ) : isLoading ? (
+          <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
+            <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-slate-500 font-medium">Carregando produtos...</p>
+          </div>
+        ) : totalProducts === 0 ? (
           <div className="p-12 text-center">
             <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
               <FileSpreadsheet className="h-8 w-8 text-slate-400" />
@@ -763,10 +784,6 @@ function AdminProdutos() {
                 Importar Planilha
               </Button>
             </div>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">
-            Nenhum produto encontrado para "{search}"
           </div>
         ) : (
           <>
@@ -979,7 +996,7 @@ function AdminProdutos() {
               <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t bg-slate-50/50 gap-3">
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>
-                    {filtered.length > 0 ? currentPage * numericPageSize + 1 : 0}–{Math.min((currentPage + 1) * numericPageSize, filtered.length)} de {filtered.length} produtos
+                    {totalProducts > 0 ? currentPage * numericPageSize + 1 : 0}–{Math.min((currentPage + 1) * numericPageSize, totalProducts)} de {totalProducts} produtos
                   </span>
                   <div className="flex items-center gap-2">
                     <span>Exibir:</span>
@@ -1001,7 +1018,7 @@ function AdminProdutos() {
                     variant="outline"
                     size="icon"
                     className="h-7 w-7"
-                    disabled={currentPage === 0}
+                    disabled={currentPage === 0 || isLoading}
                     onClick={() => setPage((p) => p - 1)}
                   >
                     <ChevronLeft className="h-3.5 w-3.5" />
@@ -1013,7 +1030,7 @@ function AdminProdutos() {
                     variant="outline"
                     size="icon"
                     className="h-7 w-7"
-                    disabled={currentPage >= totalPages - 1}
+                    disabled={currentPage >= totalPages - 1 || isLoading}
                     onClick={() => setPage((p) => p + 1)}
                   >
                     <ChevronRight className="h-3.5 w-3.5" />

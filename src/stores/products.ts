@@ -120,32 +120,7 @@ export const useAdminProducts = create<ProductsState>()(
         if (get()._loaded) return;
         set({ _loaded: true });
 
-        // O Admin continua precisando de todos os produtos para busca, exportação e edição em massa.
-        // Como isso não rodará mais na vitrine, o impacto na performance será restrito ao painel.
-        try {
-          let page = 0;
-          const limit = 1000;
-          let allData: any[] = [];
-          
-          while (true) {
-            const { data, error } = await supabase
-              .from('produtos')
-              .select('*')
-              .range(page * limit, (page + 1) * limit - 1)
-              .order('id');
-              
-            if (error || !data || data.length === 0) break;
-            
-            allData = [...allData, ...data];
-            if (data.length < limit) break;
-            page++;
-          }
-          
-          const mapped = allData.map(d => mapRowToProduto(d));
-          set({ customProducts: mapped });
-        } catch (e) {
-          console.error("Failed to load products for admin", e);
-        }
+        // O Admin usará paginação local, então não há necessidade de preencher customProducts com todos os produtos.
       },
       addOrUpdateProduct: async (p, lojaId) => {
         const formattedProduct = { ...p, nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "" };
