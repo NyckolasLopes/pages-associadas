@@ -239,7 +239,8 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
             const Icon = getIcon(tarja.imageUrl);
             
             // Format text to support **bold** natively
-            const formatText = (text: string) => {
+            const formatText = (text?: string) => {
+              if (!text) return null;
               const parts = text.split(/(\*\*.*?\*\*)/g);
               return parts.map((part, i) => {
                 if (part.startsWith('**') && part.endsWith('**')) {

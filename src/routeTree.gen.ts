@@ -24,8 +24,10 @@ import { Route as AdminProdutosRouteImport } from './routes/admin/produtos'
 import { Route as AdminPerguntasRouteImport } from './routes/admin/perguntas'
 import { Route as AdminPbmsRouteImport } from './routes/admin/pbms'
 import { Route as AdminPaginasInformativasRouteImport } from './routes/admin/paginas-informativas'
+import { Route as AdminMinhaLogisticaRouteImport } from './routes/admin/minha-logistica'
 import { Route as AdminMetricasRouteImport } from './routes/admin/metricas'
 import { Route as AdminMarcasRouteImport } from './routes/admin/marcas'
+import { Route as AdminLogisticaRouteImport } from './routes/admin/logistica'
 import { Route as AdminListaEsperaRouteImport } from './routes/admin/lista-espera'
 import { Route as AdminLinksCarrinhoRouteImport } from './routes/admin/links-carrinho'
 import { Route as AdminIntegracoesRouteImport } from './routes/admin/integracoes'
@@ -171,6 +173,11 @@ const AdminPaginasInformativasRoute =
     path: '/paginas-informativas',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminMinhaLogisticaRoute = AdminMinhaLogisticaRouteImport.update({
+  id: '/minha-logistica',
+  path: '/minha-logistica',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMetricasRoute = AdminMetricasRouteImport.update({
   id: '/metricas',
   path: '/metricas',
@@ -179,6 +186,11 @@ const AdminMetricasRoute = AdminMetricasRouteImport.update({
 const AdminMarcasRoute = AdminMarcasRouteImport.update({
   id: '/marcas',
   path: '/marcas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLogisticaRoute = AdminLogisticaRouteImport.update({
+  id: '/logistica',
+  path: '/logistica',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminListaEsperaRoute = AdminListaEsperaRouteImport.update({
@@ -567,8 +579,10 @@ export interface FileRoutesByFullPath {
   '/admin/integracoes': typeof AdminIntegracoesRouteWithChildren
   '/admin/links-carrinho': typeof AdminLinksCarrinhoRoute
   '/admin/lista-espera': typeof AdminListaEsperaRoute
+  '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/marcas': typeof AdminMarcasRouteWithChildren
   '/admin/metricas': typeof AdminMetricasRoute
+  '/admin/minha-logistica': typeof AdminMinhaLogisticaRoute
   '/admin/paginas-informativas': typeof AdminPaginasInformativasRoute
   '/admin/pbms': typeof AdminPbmsRoute
   '/admin/perguntas': typeof AdminPerguntasRoute
@@ -653,8 +667,10 @@ export interface FileRoutesByTo {
   '/admin/integracoes': typeof AdminIntegracoesRouteWithChildren
   '/admin/links-carrinho': typeof AdminLinksCarrinhoRoute
   '/admin/lista-espera': typeof AdminListaEsperaRoute
+  '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/marcas': typeof AdminMarcasRouteWithChildren
   '/admin/metricas': typeof AdminMetricasRoute
+  '/admin/minha-logistica': typeof AdminMinhaLogisticaRoute
   '/admin/paginas-informativas': typeof AdminPaginasInformativasRoute
   '/admin/pbms': typeof AdminPbmsRoute
   '/admin/perguntas': typeof AdminPerguntasRoute
@@ -742,8 +758,10 @@ export interface FileRoutesById {
   '/admin/integracoes': typeof AdminIntegracoesRouteWithChildren
   '/admin/links-carrinho': typeof AdminLinksCarrinhoRoute
   '/admin/lista-espera': typeof AdminListaEsperaRoute
+  '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/marcas': typeof AdminMarcasRouteWithChildren
   '/admin/metricas': typeof AdminMetricasRoute
+  '/admin/minha-logistica': typeof AdminMinhaLogisticaRoute
   '/admin/paginas-informativas': typeof AdminPaginasInformativasRoute
   '/admin/pbms': typeof AdminPbmsRoute
   '/admin/perguntas': typeof AdminPerguntasRoute
@@ -831,8 +849,10 @@ export interface FileRouteTypes {
     | '/admin/integracoes'
     | '/admin/links-carrinho'
     | '/admin/lista-espera'
+    | '/admin/logistica'
     | '/admin/marcas'
     | '/admin/metricas'
+    | '/admin/minha-logistica'
     | '/admin/paginas-informativas'
     | '/admin/pbms'
     | '/admin/perguntas'
@@ -917,8 +937,10 @@ export interface FileRouteTypes {
     | '/admin/integracoes'
     | '/admin/links-carrinho'
     | '/admin/lista-espera'
+    | '/admin/logistica'
     | '/admin/marcas'
     | '/admin/metricas'
+    | '/admin/minha-logistica'
     | '/admin/paginas-informativas'
     | '/admin/pbms'
     | '/admin/perguntas'
@@ -1005,8 +1027,10 @@ export interface FileRouteTypes {
     | '/admin/integracoes'
     | '/admin/links-carrinho'
     | '/admin/lista-espera'
+    | '/admin/logistica'
     | '/admin/marcas'
     | '/admin/metricas'
+    | '/admin/minha-logistica'
     | '/admin/paginas-informativas'
     | '/admin/pbms'
     | '/admin/perguntas'
@@ -1183,6 +1207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPaginasInformativasRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/minha-logistica': {
+      id: '/admin/minha-logistica'
+      path: '/minha-logistica'
+      fullPath: '/admin/minha-logistica'
+      preLoaderRoute: typeof AdminMinhaLogisticaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/metricas': {
       id: '/admin/metricas'
       path: '/metricas'
@@ -1195,6 +1226,13 @@ declare module '@tanstack/react-router' {
       path: '/marcas'
       fullPath: '/admin/marcas'
       preLoaderRoute: typeof AdminMarcasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/logistica': {
+      id: '/admin/logistica'
+      path: '/logistica'
+      fullPath: '/admin/logistica'
+      preLoaderRoute: typeof AdminLogisticaRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/lista-espera': {
@@ -1807,8 +1845,10 @@ interface AdminRouteChildren {
   AdminIntegracoesRoute: typeof AdminIntegracoesRouteWithChildren
   AdminLinksCarrinhoRoute: typeof AdminLinksCarrinhoRoute
   AdminListaEsperaRoute: typeof AdminListaEsperaRoute
+  AdminLogisticaRoute: typeof AdminLogisticaRoute
   AdminMarcasRoute: typeof AdminMarcasRouteWithChildren
   AdminMetricasRoute: typeof AdminMetricasRoute
+  AdminMinhaLogisticaRoute: typeof AdminMinhaLogisticaRoute
   AdminPaginasInformativasRoute: typeof AdminPaginasInformativasRoute
   AdminPbmsRoute: typeof AdminPbmsRoute
   AdminPerguntasRoute: typeof AdminPerguntasRoute
@@ -1863,8 +1903,10 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminIntegracoesRoute: AdminIntegracoesRouteWithChildren,
   AdminLinksCarrinhoRoute: AdminLinksCarrinhoRoute,
   AdminListaEsperaRoute: AdminListaEsperaRoute,
+  AdminLogisticaRoute: AdminLogisticaRoute,
   AdminMarcasRoute: AdminMarcasRouteWithChildren,
   AdminMetricasRoute: AdminMetricasRoute,
+  AdminMinhaLogisticaRoute: AdminMinhaLogisticaRoute,
   AdminPaginasInformativasRoute: AdminPaginasInformativasRoute,
   AdminPbmsRoute: AdminPbmsRoute,
   AdminPerguntasRoute: AdminPerguntasRoute,

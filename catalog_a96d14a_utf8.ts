@@ -6,7 +6,6 @@ import { useAdmin } from "@/stores/admin";
 import type { Produto, Categoria, Loja } from "@/types";
 import { removeAccents, isCampanhaAtiva } from "@/lib/utils";
 import { checkIsGenerico } from "@/lib/format";
-import { useAdminProducts, mapRowToProduto } from "@/stores/products";
 import { supabase } from "@/integrations/supabase/client";
 
 async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | null): Promise<Produto[]> {
@@ -27,11 +26,7 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
     });
   }
 
-  const finalProducts = data.map((rawP: any) => {
-    // 1. Mapeia a linha crua do banco para o tipo Produto (isso conserta os preços zerados, pois p.preco_por -> p.precoPor)
-    const p = mapRowToProduto(rawP);
-
-    // 2. Vincula os preços das lojas
+  const finalProducts = data.map((p: any) => {
     const pPrecos = precosMap.get(p.id);
     if (pPrecos && pPrecos.length > 0) {
        p.precosPorLoja = {};
@@ -44,7 +39,6 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
        });
     }
 
-    // 3. Aplica regras e overrides locais
     const ov = lojaId ? overrides[p.id] || {} : {};
     const storePrice = lojaId ? p.precosPorLoja?.[lojaId] : null;
     const storeStock = lojaId ? p.estoquesPorLoja?.[lojaId] : null;
@@ -64,8 +58,8 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
        storeP.imagemPrincipal = storeP.imagens[0];
     }
     
-    return enforceHealthServicesCategory(enhanceProduct(storeP as Produto));
-  }).filter(p => p && p.ativo !== false);
+    return storeP as Produto;
+  });
 
   return finalProducts;
 }
@@ -201,6 +195,71 @@ function enforceHealthServicesCategory(p: Produto): Produto {
   return p;
 }
 
+import { useAdminProducts } from "@/stores/products";
+
+import { supabase } from "@/integrations/supabase/client";
+
+async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | null): Promise<Produto[]> {
+  const { data } = await queryBuilder;
+  if (!data || data.length === 0) return [];
+
+  const ids = data.map((p: any) => p.id);
+  const { data: precos } = await supabase.from('produto_precos_loja').select('*').in('produto_id', ids);
+
+  const state = useAdminProducts.getState();
+  const overrides = state.storeProductOverrides?.[lojaId || ""] || {};
+
+  const precosMap = new Map();
+  if (precos) {
+    precos.forEach(pr => {
+      if (!precosMap.has(pr.produto_id)) precosMap.set(pr.produto_id, []);
+      precosMap.get(pr.produto_id).push(pr);
+    });
+  }
+
+  const finalProducts = data.map((p: any) => {
+    const pPrecos = precosMap.get(p.id);
+    if (pPrecos && pPrecos.length > 0) {
+       p.precosPorLoja = {};
+       p.estoquesPorLoja = {};
+       pPrecos.forEach((pr: any) => {
+          if (pr.loja_id) {
+             p.precosPorLoja[pr.loja_id] = { precoDe: pr.preco_de || 0, precoPor: pr.preco_por || 0, ativo: pr.ativo ?? true };
+             p.estoquesPorLoja[pr.loja_id] = pr.estoque || 0;
+          }
+       });
+    }
+
+    // Apply overrides
+    const ov = lojaId ? overrides[p.id] || {} : {};
+    const storePrice = lojaId ? p.precosPorLoja?.[lojaId] : null;
+    const storeStock = lojaId ? p.estoquesPorLoja?.[lojaId] : null;
+
+    const storeP = {
+       ...p,
+       ...ov,
+    };
+    if (lojaId) {
+       storeP.precoPor = storePrice?.precoPor !== undefined ? storePrice.precoPor : (ov.precoPor !== undefined ? ov.precoPor : p.precoPor);
+       storeP.precoDe = storePrice?.precoDe !== undefined ? storePrice.precoDe : (ov.precoDe !== undefined ? ov.precoDe : p.precoDe);
+       storeP.estoque = storeStock !== undefined ? storeStock : (ov.estoque !== undefined ? ov.estoque : p.estoque);
+       storeP.ativo = storePrice?.ativo !== undefined ? storePrice.ativo : (ov.ativo !== undefined ? ov.ativo : (p.ativo ?? true));
+       storeP.destaque = storePrice?.destaque !== undefined ? storePrice.destaque : (ov.destaque !== undefined ? ov.destaque : (p.destaque ?? false));
+    }
+    
+    // Add default search string to avoid crashing other components
+    storeP._searchString = String(storeP.nome || "").toLowerCase();
+    
+    // Fallback image mapping
+    if (!storeP.imagemPrincipal && Array.isArray(storeP.imagens) && storeP.imagens.length > 0) {
+       storeP.imagemPrincipal = storeP.imagens[0];
+    }
+    
+    return storeP as Produto;
+  });
+
+  return finalProducts;
+}
 
 
 // Await hydration helper — also ensures Supabase products are loaded in background
@@ -235,42 +294,23 @@ let cachedProdutos: Produto[] | null = null;
 let cachedFuse: Fuse<Produto> | null = null;
 let lastCustomProductsRef: any = null;
 
-let storeCacheMap = new Map<string, {
-  customProductsRef: any;
-  removedRef: any;
-  overridesRef: any;
-  storeCustomRef: any;
-  produtos: Produto[];
-}>();
-
 // Helper to get all merged products dynamically
 export const getAllProdutos = (lojaId?: string | null): Produto[] => {
-  const storeState = useAdminProducts.getState();
+  const storeEffective = useAdminProducts.getState().getStoreEffectiveProducts(lojaId) || [];
   
-  if (!lojaId) {
-    if (cachedProdutos && lastCustomProductsRef === storeState.customProducts) {
-      return cachedProdutos;
-    }
-  } else {
-    const cached = storeCacheMap.get(lojaId);
-    if (
-      cached &&
-      cached.customProductsRef === storeState.customProducts &&
-      cached.removedRef === storeState.storeRemovedProductIds?.[lojaId] &&
-      cached.overridesRef === storeState.storeProductOverrides?.[lojaId] &&
-      cached.storeCustomRef === storeState.storeCustomProducts?.[lojaId]
-    ) {
-      return cached.produtos;
-    }
+  if (!lojaId && cachedProdutos && lastCustomProductsRef === storeEffective) {
+    return cachedProdutos;
   }
   
-  const storeEffective = storeState.getStoreEffectiveProducts(lojaId) || [];
+  if (!lojaId) {
+    lastCustomProductsRef = storeEffective;
+  }
   
   // Products now come directly from the store (Supabase-backed)
   const map = new Map<string, Produto>();
   
   // Apply store effective products (general from Supabase + store custom + store overrides)
-  storeEffective.filter(p => p && p.ativo !== false).forEach(p => {
+  storeEffective.filter(Boolean).forEach(p => {
     const enhanced = enhanceProduct(p);
     map.set(enhanced.id, enforceHealthServicesCategory(enhanced));
   });
@@ -294,15 +334,6 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
   if (!lojaId) {
     cachedProdutos = merged;
     cachedFuse = null; // Invalidate fuse when products change
-    lastCustomProductsRef = storeState.customProducts;
-  } else {
-    storeCacheMap.set(lojaId, {
-      customProductsRef: storeState.customProducts,
-      removedRef: storeState.storeRemovedProductIds?.[lojaId],
-      overridesRef: storeState.storeProductOverrides?.[lojaId],
-      storeCustomRef: storeState.storeCustomProducts?.[lojaId],
-      produtos: merged
-    });
   }
   
   return merged;
@@ -344,8 +375,6 @@ export interface FilterOptions {
   minPrice?: number;
   maxPrice?: number;
   dinamicos?: Record<string, string[]>; // { filtroId: [opcaoId1, opcaoId2] }
-  page?: number;
-  pageSize?: number;
 }
 
 function applyFilters(produtos: Produto[], filters?: FilterOptions): Produto[] {
@@ -405,14 +434,9 @@ function applyFilters(produtos: Produto[], filters?: FilterOptions): Produto[] {
 }
 
 export const catalog = {
-  listProducts: async (filters?: FilterOptions, lojaId?: string | null) => {
+  listProducts: async (filters?: FilterOptions) => {
     await ensureHydrated();
-    const page = filters?.page || 0;
-    const pageSize = filters?.pageSize || 24;
-
-    let query = supabase.from('produtos').select('*').range(page * pageSize, (page + 1) * pageSize - 1);
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    return applyFilters(products, filters);
+    return wait(applyFilters(getAllProdutos(), filters));
   },
   async listCategories(includeEmpty = true): Promise<Categoria[]> {
     await ensureHydrated();
@@ -504,87 +528,157 @@ export const catalog = {
     await ensureHydrated();
     const categorias = getCategorias();
     const cat = categorias.find(c => c.id === categoryId);
-    if (!cat) return [];
+    if (!cat) return wait([]);
 
-    let query = supabase.from('produtos').select('*');
-    
-    // Pagination params
-    const page = filters?.page || 0;
-    const pageSize = filters?.pageSize || 24;
+    const allLoaded = useAdminProducts.getState()._loaded;
     const isOfertas = String(cat.nome || "").toLowerCase().includes("oferta") || String(cat.nome || "").toLowerCase().includes("promoç");
 
+    if (!allLoaded) {
+      let query = supabase.from('produtos').select('*');
+      
+      if (categoryId === "300") {
+         const subCategorias = categorias.filter(c => c.parentId === "300");
+         const namesToMatch = subCategorias.map(c => removeAccents(c.nome.toLowerCase()));
+         // Hard to query by subcategory names in Supabase without ilike. We'll fetch a lot and filter in JS
+         query = query.limit(500);
+      } else if (cat.parentId === "300") {
+         query = query.ilike('nome', `%${cat.nome}%`).limit(500);
+      } else {
+         const validCategoryIds = [categoryId, ...categorias.filter(c => c.parentId === categoryId).map(c => c.id)];
+         query = query.in('categoriaId', validCategoryIds).limit(1000);
+      }
+
+      const products = await fetchFromSupabaseWithPrices(query, lojaId);
+      
+      let results = products;
+      if (categoryId === "300") {
+         const subCategorias = categorias.filter(c => c.parentId === "300");
+         const namesToMatch = subCategorias.map(c => removeAccents(c.nome.toLowerCase()));
+         results = products.filter(p => {
+           const nome = removeAccents(String(p.nome).toLowerCase());
+           return namesToMatch.some(brand => nome.includes(brand));
+         });
+      }
+      return wait(applyFilters(results, filters));
+    }
+
+    const all = getAllProdutos(lojaId);
+
+    let results: Produto[] = [];
+
+    // Custom logic for "Nossas Marcas" (id: "300") and its subcategories
     if (categoryId === "300") {
-        // Nossas marcas (Nativo) - Limitar pela marca no javascript por complexidade
-        query = query.limit(500); 
+      const subCategorias = categorias.filter(c => c.parentId === "300");
+      const namesToMatch = subCategorias.map(c => removeAccents(c.nome.toLowerCase()));
+      results = all.filter(p => {
+        const nome = removeAccents(String(p.nome).toLowerCase());
+        return namesToMatch.some(brand => nome.includes(brand));
+      });
     } else if (cat.parentId === "300") {
-        query = query.ilike('nome', `%${cat.nome}%`);
+      const brandName = removeAccents(cat.nome.toLowerCase());
+      results = all.filter(p => removeAccents(String(p.nome).toLowerCase()).includes(brandName));
     } else {
-        const validCategoryIds = [categoryId, ...categorias.filter(c => c.parentId === categoryId).map(c => c.id)];
-        query = query.in('categoria_id', validCategoryIds);
-    }
-    
-    // Filtros base Supabase (para otimizar)
-    if (isOfertas) {
-      query = query.eq('emCampanha', true);
+      // Default matching logic
+      // Gather categoryId and all its subcategories
+      const validCategoryIds = [categoryId, ...categorias.filter(c => c.parentId === categoryId).map(c => c.id)];
+      // Gather names in case of legacy data that saved names instead of IDs
+      const validCategoryNames = [cat.nome.toLowerCase(), ...categorias.filter(c => c.parentId === categoryId).map(c => c.nome.toLowerCase())];
+
+      results = all.filter(
+        (p) => {
+          const rawCat = String(p.categoriaId || "").toLowerCase();
+          const rawSubcat = String(p.subcategoriaId || "").toLowerCase();
+          let matchesCategory = validCategoryIds.includes(p.categoriaId) || 
+                 validCategoryNames.includes(rawCat) ||
+                 (p.subcategoriaId && validCategoryIds.includes(p.subcategoriaId)) || 
+                 (rawSubcat && validCategoryNames.includes(rawSubcat)) ||
+                 (Array.isArray(p.categoriasIds) && p.categoriasIds.some(id => validCategoryIds.includes(id))) ||
+                 (Array.isArray(p.subcategoriasIds) && p.subcategoriasIds.some(id => validCategoryIds.includes(id))) ||
+                 (Array.isArray(p.categoriasAdicionais) && p.categoriasAdicionais.some(id => validCategoryIds.includes(id)));
+                 
+          if (!matchesCategory && isOfertas) {
+            if (p.emCampanha) {
+              const now = new Date().toISOString().split('T')[0];
+              if (!p.campanhaFim || p.campanhaFim >= now) {
+                matchesCategory = true;
+              }
+            }
+          }
+          
+          return matchesCategory;
+        }
+      );
     }
 
-    // Aplica range
-    query = query.range(page * pageSize, (page + 1) * pageSize - 1);
-
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    
-    let results = products;
-    if (categoryId === "300") {
-        const subCategorias = categorias.filter(c => c.parentId === "300");
-        const namesToMatch = subCategorias.map(c => removeAccents(c.nome.toLowerCase()));
-        results = products.filter(p => {
-          const nome = removeAccents(String(p.nome).toLowerCase());
-          return namesToMatch.some(brand => nome.includes(brand));
-        });
-    }
-    
-    return applyFilters(results, filters);
+    return wait(applyFilters(results, filters));
   },
   productsByVitrine: async (vitrineId: string, categoriaId: string, filters?: FilterOptions, produtoIds?: string[], lojaId?: string | null) => {
     await ensureHydrated();
-    
-    const page = filters?.page || 0;
-    const pageSize = filters?.pageSize || 24;
+    const allLoaded = useAdminProducts.getState()._loaded;
 
-    let query = supabase.from('produtos').select('*');
+    if (!allLoaded) {
+      let query = supabase.from('produtos').select('*');
+      if (produtoIds && produtoIds.length > 0) {
+        query = query.in('id', produtoIds);
+      } else if (categoriaId === "destaques") {
+        query = query.eq('destaque', true).limit(50);
+      } else if (categoriaId === "novidades") {
+        query = query.eq('isNovo', true).limit(50);
+      } else if (categoriaId === "ofertas" || categoriaId === "campanha") {
+        query = query.eq('emCampanha', true).limit(50);
+      } else if (categoriaId === "all") {
+        query = query.order('nivelRelevancia', { ascending: false }).limit(50);
+      } else {
+        query = query.eq('categoriaId', categoriaId).limit(50);
+      }
+      
+      const products = await fetchFromSupabaseWithPrices(query, lojaId);
+      return wait(applyFilters(products, filters));
+    }
+
+    const all = getAllProdutos(lojaId);
+    
     if (produtoIds && produtoIds.length > 0) {
-      query = query.in('id', produtoIds);
-    } else if (categoriaId === "destaques") {
-      query = query.eq('destaque', true).order('nivel_relevancia', { ascending: false });
-    } else if (categoriaId === "novidades") {
-      // Usar a criação para "novidades" ou uma flag isNovo real (não tem no banco nativo, ordenando por criacao)
-      query = query.order('id', { ascending: false });
+      const idSet = new Set(produtoIds);
+      const results = all.filter(p => idSet.has(p.id));
+      return wait(applyFilters(results, filters));
+    }
+
+    let results = [];
+    
+    if (categoriaId === "all") {
+      results = all;
     } else if (categoriaId === "ofertas" || categoriaId === "campanha") {
-      // Filtrar ofertas (geralmente preço_por < preço_de, ou emCampanha)
-      query = query.order('nivel_relevancia', { ascending: false });
-    } else if (categoriaId === "all") {
-      query = query.order('nivel_relevancia', { ascending: false });
+      results = all.filter(p => isCampanhaAtiva(p));
+    } else if (categoriaId === "destaques") {
+      results = all.filter(p => p.destaque);
+    } else if (categoriaId === "novidades") {
+      results = all.filter(p => p.isNovo);
     } else if (categoriaId === "protetores") {
-      query = query.or('nome.ilike.%protetor%,nome.ilike.%solar%');
+      results = all.filter(p => String(p.nome).toLowerCase().includes("protetor") || String(p.nome).toLowerCase().includes("solar"));
     } else {
       const categorias = getCategorias();
       const validCategoryIds = [categoriaId, ...categorias.filter(c => c.parentId === categoriaId).map(c => c.id)];
-      query = query.in('categoria_id', validCategoryIds);
+      
+      results = all.filter(
+        (p) => validCategoryIds.includes(p.categoriaId) || 
+               (p.subcategoriaId && validCategoryIds.includes(p.subcategoriaId)) || 
+               (Array.isArray(p.categoriasIds) && p.categoriasIds.some(id => validCategoryIds.includes(id))) ||
+               (Array.isArray(p.subcategoriasIds) && p.subcategoriasIds.some(id => validCategoryIds.includes(id))) ||
+               (Array.isArray(p.categoriasAdicionais) && p.categoriasAdicionais.some(id => validCategoryIds.includes(id))) ||
+               (Array.isArray(p.vitrines) && p.vitrines.includes(vitrineId))
+      );
     }
-    
-    query = query.range(page * pageSize, (page + 1) * pageSize - 1);
-    
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    return applyFilters(products, filters);
+
+    return wait(applyFilters(results, filters));
   },
-  productsByBrand: async (brandName: string, filters?: FilterOptions, lojaId?: string | null) => {
+  productsByBrand: async (brandName: string) => {
     await ensureHydrated();
-    const page = filters?.page || 0;
-    const pageSize = filters?.pageSize || 24;
-    
-    let query = supabase.from('produtos').select('*').ilike('marca', brandName).range(page * pageSize, (page + 1) * pageSize - 1);
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    return applyFilters(products, filters);
+    return wait(
+      getAllProdutos().filter(
+        (p) => p.marca && String(p.marca).toLowerCase() === brandName.toLowerCase(),
+      ),
+    );
   },
   // Uses deterministic seed so results are stable across re-renders
   crossSell: async (cartIds: string[], limit = 4, referenceCategoryId?: string) => {
@@ -643,54 +737,115 @@ export const catalog = {
   },
   searchWithSuggestions: async (q: string, filters?: FilterOptions, lojaId?: string | null): Promise<{ results: Produto[], didYouMean?: string }> => {
     await ensureHydrated();
-    
-    const page = filters?.page || 0;
-    const pageSize = filters?.pageSize || 24;
+    const allLoaded = useAdminProducts.getState()._loaded;
+
+    if (!allLoaded) {
+       if (!q || q.length < 2) return wait({ results: [] });
+       let query = supabase.from('produtos').select('*').limit(20);
+       
+       if (/^\d+$/.test(q)) {
+          query = query.or(`ean.eq.${q},id.eq.${q}`);
+       } else {
+          query = query.ilike('nome', `%${q}%`);
+       }
+       
+       const products = await fetchFromSupabaseWithPrices(query, lojaId);
+       return wait({ results: applyFilters(products, filters) });
+    }
 
     if (!q || q.length < 2) {
       if (filters && Object.keys(filters).length > 0) {
-        let query = supabase.from('produtos').select('*').range(page * pageSize, (page + 1) * pageSize - 1);
-        const products = await fetchFromSupabaseWithPrices(query, lojaId);
-        return { results: applyFilters(products, filters) };
+        return wait({ results: applyFilters(getAllProdutos(lojaId), filters).slice(0, 40) });
       }
-      return { results: [] };
+      return wait({ results: [] });
+    }
+    const produtos = getAllProdutos(lojaId);
+
+    let results: Produto[] = [];
+    let didYouMean: string | undefined = undefined;
+
+    // Exact number search (EAN or ID)
+    if (/^\d+$/.test(q)) {
+      const exactMatch = produtos.filter(p => String(p.ean) === q || String(p.id) === q);
+      if (exactMatch.length > 0) results = exactMatch;
     }
 
-    let query = supabase.from('produtos').select('*');
-    if (/^\d+$/.test(q)) {
-      query = query.or(`ean.eq.${q},id.eq.${q}`);
-    } else {
-      query = query.ilike('nome', `%${q}%`);
+    if (results.length === 0) {
+      const cleanQ = removeAccents(q.toLowerCase()).trim();
+      const queryWords = cleanQ.split(/\s+/);
+      
+      // Exact word matching (high priority)
+      const exactMatches = produtos.filter((p: any) => {
+        const searchString = p._searchString || "";
+        return queryWords.every(word => searchString.includes(word));
+      });
+
+      // Fuzzy search for fallbacks and typos
+      const fuse = getFuse();
+      const hitsWithScore = fuse.search(q, { limit: 20 });
+      const hits = hitsWithScore.map((r) => r.item);
+
+      // Check if we should suggest a "did you mean"
+      if (exactMatches.length === 0 && hitsWithScore.length > 0) {
+        const topHit = hitsWithScore[0];
+        // If it's a very good fuzzy match (score is low, but not perfect)
+        if (topHit.score && topHit.score < 0.4) {
+          const topNameLower = removeAccents(String(topHit.item.nome || "").toLowerCase());
+          // Only suggest if they didn't just type a substring of the word
+          if (!topNameLower.includes(cleanQ)) {
+             didYouMean = topHit.item.nome;
+          }
+        }
+      }
+
+      // Merge and deduplicate (exact matches first)
+      const resultMap = new Map<string, Produto>();
+      exactMatches.forEach(p => resultMap.set(p.id, p));
+      hits.forEach(p => {
+        if (!resultMap.has(p.id)) resultMap.set(p.id, p);
+      });
+      
+      results = Array.from(resultMap.values()).slice(0, 20);
     }
-    
-    query = query.range(page * pageSize, (page + 1) * pageSize - 1);
-    
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    
-    return { results: applyFilters(products, filters), didYouMean: undefined };
+
+    return wait({ results: applyFilters(results, filters), didYouMean });
   },
   search: async (q: string, filters?: FilterOptions) => {
     const { results } = await catalog.searchWithSuggestions(q, filters);
     return results;
   },
-  featured: async (lojaId?: string | null) => {
+  featured: async () => {
     await ensureHydrated();
-    let query = supabase.from('produtos').select('*').eq('destaque', true).limit(12);
-    const comDestaque = await fetchFromSupabaseWithPrices(query, lojaId);
+    const todos = getAllProdutos();
+    const comDestaque = todos.filter(p => p.destaque).reverse();
     
+    // Fill up to 12 slots with fallback products if needed
     if (comDestaque.length < 12) {
+      const fallback = todos.filter((p) => !p.destaque && p.precoDe > p.precoPor);
       const needed = 12 - comDestaque.length;
-      let queryFallback = supabase.from('produtos').select('*').eq('destaque', false).limit(needed);
-      const fallback = await fetchFromSupabaseWithPrices(queryFallback, lojaId);
-      return [...comDestaque, ...fallback];
+      return wait([...comDestaque, ...fallback.slice(0, needed)]);
     }
     
-    return comDestaque;
+    return wait(comDestaque.slice(0, 12));
   },
   getUsedCategoriesIds: async (): Promise<string[]> => {
     await ensureHydrated();
-    const categorias = getCategorias();
-    return categorias.map(c => c.id);
+    const todos = getAllProdutos();
+    const ids = new Set<string>();
+    for (const p of todos) {
+      if (p.categoriaId) ids.add(p.categoriaId);
+      if (p.subcategoriaId) ids.add(p.subcategoriaId);
+      if (Array.isArray(p.categoriasIds)) {
+        p.categoriasIds.forEach(id => ids.add(id));
+      }
+      if (Array.isArray(p.subcategoriasIds)) {
+        p.subcategoriasIds.forEach(id => ids.add(id));
+      }
+      if (Array.isArray(p.categoriasAdicionais)) {
+        p.categoriasAdicionais.forEach(id => ids.add(id));
+      }
+    }
+    return Array.from(ids);
   },
   listStores: (): Promise<Loja[]> => {
     // Typecast from Pharmacy to Loja is mostly compatible for the mockup purposes,

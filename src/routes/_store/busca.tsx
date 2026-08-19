@@ -100,8 +100,7 @@ function SearchPage() {
     });
   };
 
-  const displayedProducts = filteredResults.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredResults.length;
+
 
   return (
     <div className="container-fa py-8">
