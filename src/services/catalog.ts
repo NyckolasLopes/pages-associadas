@@ -437,58 +437,38 @@ export const catalog = {
   },
   getProductBySlug: async (slugOrId: string, lojaId?: string | null) => {
     await ensureHydrated();
-    const allLoaded = useAdminProducts.getState()._loaded;
 
-    if (!allLoaded) {
-       // Search by URL first
-       let query = supabase.from('produtos').select('*').eq('url', slugOrId).limit(1);
-       let products = await fetchFromSupabaseWithPrices(query, lojaId);
-       
-       if (products.length === 0) {
-          // Try by ID
-          query = supabase.from('produtos').select('*').eq('id', slugOrId).limit(1);
-          products = await fetchFromSupabaseWithPrices(query, lojaId);
-       }
-       
-       if (products.length > 0) return { ...products[0] };
+    // Search by URL first
+    let query = supabase.from('produtos').select('*').eq('url', slugOrId).limit(1);
+    let products = await fetchFromSupabaseWithPrices(query, lojaId);
+    
+    if (products.length === 0) {
+      // Try by ID
+      query = supabase.from('produtos').select('*').eq('id', slugOrId).limit(1);
+      products = await fetchFromSupabaseWithPrices(query, lojaId);
     }
+    
+    if (products.length > 0) return { ...products[0] };
 
-    const produtos = getAllProdutos(lojaId);
-    const p = produtos.find(
-      (x) =>
-        x.id === slugOrId ||
-        x.url === slugOrId ||
-        String(x.nome || "").toLowerCase().replace(/\s+/g, "-") === slugOrId,
-    );
-    return p ? { ...p } : null;
+    return null;
   },
   getProductById: async (id: string, lojaId?: string | null) => {
     await ensureHydrated();
-    const allLoaded = useAdminProducts.getState()._loaded;
 
-    if (!allLoaded) {
-       const query = supabase.from('produtos').select('*').eq('id', id).limit(1);
-       const products = await fetchFromSupabaseWithPrices(query, lojaId);
-       if (products.length > 0) return { ...products[0] };
-    }
+    const query = supabase.from('produtos').select('*').eq('id', id).limit(1);
+    const products = await fetchFromSupabaseWithPrices(query, lojaId);
+    if (products.length > 0) return { ...products[0] };
 
-    const produtos = getAllProdutos(lojaId);
-    const p = produtos.find((x) => x.id === id);
-    return p ? { ...p } : null;
+    return null;
   },
   getProduct: async (id: string, lojaId?: string | null) => {
     await ensureHydrated();
-    const allLoaded = useAdminProducts.getState()._loaded;
 
-    if (!allLoaded) {
-       const query = supabase.from('produtos').select('*').eq('id', id).limit(1);
-       const products = await fetchFromSupabaseWithPrices(query, lojaId);
-       if (products.length > 0) return { ...products[0] };
-    }
+    const query = supabase.from('produtos').select('*').eq('id', id).limit(1);
+    const products = await fetchFromSupabaseWithPrices(query, lojaId);
+    if (products.length > 0) return { ...products[0] };
 
-    const produtos = getAllProdutos(lojaId);
-    const p = produtos.find((x) => x.id === id);
-    return p ? { ...p } : null;
+    return null;
   },
   productsByCategory: async (categoryId: string, filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
@@ -587,18 +567,26 @@ export const catalog = {
       return wait([]);
     }
 
-    const produtos = getAllProdutos();
-    let others = produtos.filter((p) => p && !cartIds.includes(p.id) && p.categoriaId !== "142");
-    
+    let query = supabase.from('produtos').select('*').neq('categoria_id', '142');
+    if (cartIds.length > 0) {
+      // Supabase not.in filter doesn't support empty arrays, so check first
+      query = query.not('id', 'in', `(${cartIds.join(',')})`);
+    }
+
     if (settings) {
-      others = others.filter(p => (p.precoPor || p.precoDe || 0) <= settings.maxPrice);
+      query = query.lte('preco_por', settings.maxPrice);
       
       if (settings.categoryId !== "all") {
-        others = others.filter(p => p.categoriaId === settings.categoryId || String(p.subcategoriaId).startsWith(settings.categoryId));
+        query = query.ilike('subcategoria_id', `${settings.categoryId}%`);
       } else if (referenceCategoryId && referenceCategoryId !== "142") {
-        others = others.filter(p => p.categoriaId === referenceCategoryId);
+        query = query.eq('categoria_id', referenceCategoryId);
       }
     }
+
+    // Limit to 50 and then shuffle locally for randomness
+    query = query.limit(50);
+    const products = await fetchFromSupabaseWithPrices(query);
+    let others = products;
 
     const seedStr = cartIds.sort().join(",");
     let seed = 0;
@@ -617,18 +605,22 @@ export const catalog = {
   },
   getOrderBumps: async (): Promise<Produto[]> => {
     await ensureHydrated();
-    const all = getAllProdutos();
-    const tagged = all.filter(p => p.orderBump === true);
-    if (tagged.length > 0) return wait(tagged.slice(0, 4));
+    
+    let query = supabase.from('produtos').select('*').eq('orderBump', true).limit(4);
+    const tagged = await fetchFromSupabaseWithPrices(query);
+    if (tagged.length > 0) return wait(tagged);
 
     const settings = useAdmin.getState().orderBumpSettings;
     if (settings && settings.active) {
-      const pList = all.filter((p) => {
-        const price = p.precoPor || p.precoDe || 0;
-        return (p.categoriaId === settings.categoryId || String(p.subcategoriaId).startsWith(settings.categoryId)) &&
-               price > 0 && price <= settings.maxPrice;
-      });
-      return wait(pList);
+      let q2 = supabase.from('produtos').select('*')
+        .lte('preco_por', settings.maxPrice)
+        .gt('preco_por', 0);
+      
+      if (settings.categoryId !== "all") {
+        q2 = q2.ilike('subcategoria_id', `${settings.categoryId}%`);
+      }
+      const pList = await fetchFromSupabaseWithPrices(q2);
+      return wait(pList.slice(0, 4));
     }
     
     return wait([]);
@@ -713,8 +705,8 @@ export const catalog = {
     
     return { results: products, count: count || 0 };
   },
-  search: async (q: string, filters?: FilterOptions) => {
-    const { results } = await catalog.searchWithSuggestions(q, filters);
+  search: async (q: string, filters?: FilterOptions, lojaId?: string | null) => {
+    const { results } = await catalog.searchWithSuggestions(q, filters, lojaId);
     return results;
   },
   featured: async (lojaId?: string | null) => {

@@ -42,7 +42,7 @@ function SearchPage() {
   useEffect(() => {
     // Fetch unfiltered for sidebar options (limited subset just for filters logic)
     const fetchUnfiltered = async () => {
-      const res = q ? await catalog.search(q, { pageSize: 100 }) : await catalog.listProducts({ pageSize: 100 });
+      const res = q ? await catalog.search(q, { pageSize: 100 }, selectedPharmacyId) : await catalog.listProducts({ pageSize: 100 }, selectedPharmacyId);
       setUnfilteredResults(res);
     };
     fetchUnfiltered();
@@ -57,12 +57,12 @@ function SearchPage() {
     const fetchFiltered = async () => {
       setPage(0);
       if (q) {
-        const { results, didYouMean: dym } = await catalog.searchWithSuggestions(q, { ...filters, page: 0, pageSize: 24 });
+        const { results, didYouMean: dym } = await catalog.searchWithSuggestions(q, { ...filters, page: 0, pageSize: 24 }, selectedPharmacyId);
         setProductsList(results);
         setDidYouMean(dym);
         setHasMore(results.length >= 24);
       } else {
-        const results = await catalog.listProducts({ ...filters, page: 0, pageSize: 24 });
+        const results = await catalog.listProducts({ ...filters, page: 0, pageSize: 24 }, selectedPharmacyId);
         setProductsList(results);
         setDidYouMean(undefined);
         setHasMore(results.length >= 24);
@@ -78,10 +78,10 @@ function SearchPage() {
     try {
       let moreProducts: Produto[] = [];
       if (q) {
-        const { results } = await catalog.searchWithSuggestions(q, { ...filters, page: nextPage, pageSize: 24 });
+        const { results } = await catalog.searchWithSuggestions(q, { ...filters, page: nextPage, pageSize: 24 }, selectedPharmacyId);
         moreProducts = results;
       } else {
-        moreProducts = await catalog.listProducts({ ...filters, page: nextPage, pageSize: 24 });
+        moreProducts = await catalog.listProducts({ ...filters, page: nextPage, pageSize: 24 }, selectedPharmacyId);
       }
       setProductsList(prev => [...prev, ...moreProducts]);
       setPage(nextPage);

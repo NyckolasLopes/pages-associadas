@@ -390,6 +390,19 @@ export function PedidosAdmin() {
     toast.success("Planilha exportada com sucesso!");
   };
 
+  const exportToJson = () => {
+    const dataStr = JSON.stringify(displayedItems, null, 2);
+    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+    const exportFileDefaultName = "pedidos_associadas.json";
+
+    const linkElement = document.createElement("a");
+    linkElement.setAttribute("href", dataUri);
+    linkElement.setAttribute("download", exportFileDefaultName);
+    linkElement.click();
+    
+    toast.success("JSON exportado com sucesso!");
+  };
+
   // --- DETAILS VIEW FOR ORDER ---
   if (selectedOrder) {
     const isPickup = (selectedOrder.envio?.metodo || "").includes("Retirada");
@@ -621,6 +634,9 @@ export function PedidosAdmin() {
             <StoreSelector />
             <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToExcel}>
               <Download className="h-4 w-4" /> Exportar Planilha
+            </Button>
+            <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToJson}>
+              <Download className="h-4 w-4" /> Exportar JSON
             </Button>
           </div>
         </div>
