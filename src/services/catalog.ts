@@ -545,8 +545,7 @@ export const catalog = {
     query = query.range(page * pageSize, (page + 1) * pageSize - 1);
     
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    const inStockProducts = products.filter(p => p.estoque > 0);
-    return applyFilters(inStockProducts, filters);
+    return applyFilters(products, filters);
   },
   productsByBrand: async (brandName: string, filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
@@ -555,8 +554,7 @@ export const catalog = {
     
     let query = supabase.from('produtos').select('*').ilike('marca', brandName).range(page * pageSize, (page + 1) * pageSize - 1);
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    const inStockProducts = products.filter(p => p.estoque > 0);
-    return applyFilters(inStockProducts, filters);
+    return applyFilters(products, filters);
   },
   // Uses deterministic seed so results are stable across re-renders
   crossSell: async (cartIds: string[], limit = 4, referenceCategoryId?: string) => {
@@ -635,8 +633,7 @@ export const catalog = {
       if (filters && Object.keys(filters).length > 0) {
         let query = supabase.from('produtos').select('*').range(page * pageSize, (page + 1) * pageSize - 1);
         const products = await fetchFromSupabaseWithPrices(query, lojaId);
-        const inStockProducts = products.filter(p => p.estoque > 0);
-        return { results: applyFilters(inStockProducts, filters) };
+        return { results: applyFilters(products, filters) };
       }
       return { results: [] };
     }
@@ -651,9 +648,7 @@ export const catalog = {
     query = query.range(page * pageSize, (page + 1) * pageSize - 1);
     
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    const inStockProducts = products.filter(p => p.estoque > 0);
-    
-    return { results: applyFilters(inStockProducts, filters), didYouMean: undefined };
+    return { results: applyFilters(products, filters), didYouMean: undefined };
   },
   adminSearchProducts: async (params: { search: string, page: number, pageSize: number, listFilter: string, lojaId?: string | null }) => {
     let query = supabase.from('produtos').select('*', { count: 'exact' });
@@ -713,13 +708,13 @@ export const catalog = {
     await ensureHydrated();
     let query = supabase.from('produtos').select('*').eq('destaque', true).limit(12);
     const comDestaqueAll = await fetchFromSupabaseWithPrices(query, lojaId);
-    const comDestaque = comDestaqueAll.filter(p => p.estoque > 0);
+    const comDestaque = comDestaqueAll;
     
     if (comDestaque.length < 12) {
       const needed = 12 - comDestaque.length;
       let queryFallback = supabase.from('produtos').select('*').eq('destaque', false).limit(needed * 2); // fetch more to account for stock filtering
       const fallbackAll = await fetchFromSupabaseWithPrices(queryFallback, lojaId);
-      const fallback = fallbackAll.filter(p => p.estoque > 0).slice(0, needed);
+      const fallback = fallbackAll.slice(0, needed);
       return [...comDestaque, ...fallback];
     }
     
