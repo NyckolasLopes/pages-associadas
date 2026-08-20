@@ -313,6 +313,39 @@ export function PedidosAdmin() {
       });
     });
 
+    // 2. Carrinhos Abandonados (Pendentes)
+    allAbandonedCarts.forEach(cart => {
+      seenIds.add(cart.id);
+
+      const totalItemsCount = cart.items?.reduce((acc, p) => acc + (p.qtd || 1), 0) || cart.items?.length || 1;
+      const itemsListText = (cart.items || []).map(p => `${p.qtd || 1}x ${p.nome}`).join(", ");
+
+      list.push({
+        id: cart.id,
+        data: cart.abandonedAt,
+        dataOriginal: cart.abandonedAt,
+        clienteNome: cart.nome || "Cliente",
+        clienteTelefone: cart.phone || "Não informado",
+        clienteEndereco: cart.address,
+        lojaId: cart.lojaId,
+        lojaNome: getLojaName(cart.lojaId),
+        status: "Pendente",
+        statusDesc: "Pendente (Carrinho)",
+        itensQtd: totalItemsCount,
+        itensDesc: itemsListText,
+        produtos: cart.items?.map((i: any) => ({
+          nome: i.nome,
+          qtd: i.qtd,
+          quantidade: i.qtd,
+          valorUnitario: i.valorUnitario,
+          preco: i.valorUnitario
+        })) || [],
+        total: cart.total || 0,
+        tipo: "carrinho",
+        rawCart: cart,
+      });
+    });
+
     // Ordenação do mais recente para o mais antigo
     return list.sort((a, b) => {
       const timeA = new Date(a.dataOriginal).getTime() || 0;
