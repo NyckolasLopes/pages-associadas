@@ -207,7 +207,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     if (orderError) {
       console.error("Error inserting order:", orderError);
-      return;
+      throw new Error(orderError.message);
     }
 
     if (!orderError && insertedOrder) {

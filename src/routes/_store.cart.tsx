@@ -662,7 +662,7 @@ function CartPage() {
       };
 
       // Adiciona pedido
-      useOrders.getState().addOrder(newOrder);
+      await useOrders.getState().addOrder(newOrder);
 
       // Monta mensagem amigável para o WhatsApp
       const itemsListText = items.map((i) => {
@@ -707,8 +707,8 @@ function CartPage() {
       setWhatsAppModalOpen(false);
       toast.success("Pedido gerado com sucesso! Redirecionando...");
 
-      // Redireciona para página de acompanhamento
-      navigate({ to: "/pedidos", search: { id: orderId, novo: "true" } });
+      // Redireciona para página de sucesso
+      navigate({ to: "/sucesso", search: { id: orderId } });
     } catch (err: any) {
       toast.error(err.message || "Erro ao processar pedido.");
     } finally {
@@ -1462,7 +1462,7 @@ function CartPage() {
 
               {deliveryMethod === "retirada" ? (
                 <div className="text-xs text-muted-foreground bg-white p-2.5 rounded border space-y-1.5">
-                  <div>📍 <strong>Endereço de retirada:</strong> {selectedPharmacy?.endereco}, {selectedPharmacy?.numero ? selectedPharmacy.numero + ' - ' : ''}{selectedPharmacy?.bairro} - {selectedPharmacy?.cidade}/{selectedPharmacy?.uf}</div>
+                  <div>📍 <strong>Endereço de retirada:</strong> {selectedPharmacy?.endereco}, {selectedPharmacy?.numero ? selectedPharmacy.numero + ', ' : ''}{selectedPharmacy?.bairro} - {selectedPharmacy?.cidade}/{selectedPharmacy?.uf}</div>
                   {selectedPharmacy?.horario_funcionamento && (
                     <div className="flex items-center gap-1.5 text-slate-600 mt-1">
                       <Clock className="w-3.5 h-3.5 shrink-0" />
