@@ -123,14 +123,17 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     let query = supabase
       .from('pedidos')
-      .select('*, pedido_itens(*, produtos(ean)), profiles(*)')
+      .select('*, pedido_itens(*)')
       .order('created_at', { ascending: false });
 
     // Restringir a query se não for admin global
     if (!profile?.is_admin) {
       if (profile?.lojas_vinculadas && profile.lojas_vinculadas.length > 0) {
         // Associado: vê as ordens das suas lojas
-        query = query.in('loja_id', profile.lojas_vinculadas);
+        const lojaIds = Array.isArray(profile.lojas_vinculadas)
+          ? profile.lojas_vinculadas
+          : Object.keys(profile.lojas_vinculadas);
+        query = query.in('loja_id', lojaIds);
       } else {
         // Cliente final: vê apenas as suas ordens
         query = query.eq('user_id', user.id);
@@ -144,15 +147,14 @@ export const useOrders = create<OrdersState>((set, get) => ({
         id: d.numero ? `FA-${d.numero}` : d.id,
         lojaId: d.loja_id,
         data: d.created_at,
-        origem: d.origem || "site",
         status: d.status,
         modalidade: d.metodo_entrega,
         cupomAplicado: d.cupom_codigo,
         cliente: {
-          nome: d.profiles?.nome || 'Cliente',
-          email: d.profiles?.email || '',
-          telefone: d.profiles?.telefone || '',
-          cpf: d.profiles?.cpf || '',
+          nome: d.nome_cliente || 'Cliente',
+          email: d.email_cliente || '',
+          telefone: d.telefone_cliente || '',
+          cpf: d.cpf_cliente || '',
           endereco: d.endereco_entrega,
         },
         pagamento: {
@@ -165,7 +167,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
         itens: d.pedido_itens?.map((i: any) => ({
           nome: i.nome,
           sku: i.produto_id,
-          ean: i.produtos?.ean,
+          ean: i.ean,
           qtd: i.qty,
           valorUnitario: i.preco_unit,
           preco: i.preco_unit * i.qty,
@@ -203,6 +205,11 @@ export const useOrders = create<OrdersState>((set, get) => ({
       metodo_entrega: order.modalidade || order.envio?.metodo,
       metodo_pagamento: order.pagamento?.metodo,
       observacoes: order.anotacoes || order.observacoes || '',
+      // Dados do cliente gravados diretamente no pedido (evita join problemático com profiles)
+      nome_cliente: order.cliente?.nome || '',
+      telefone_cliente: order.cliente?.telefone || '',
+      email_cliente: order.cliente?.email || '',
+      cpf_cliente: order.cliente?.cpf || '',
     }).select('id').single();
 
     if (orderError) {

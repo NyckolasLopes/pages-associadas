@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { getGreeting, brl } from "@/lib/format";
 import { useOrders, type Pedido } from "@/stores/orders";
+import { useEffect as useEffectOnce } from "react";
 import { useAdmin } from "@/stores/admin";
 import { useFavorites } from "@/stores/favorites";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -51,8 +52,14 @@ function PedidosPage() {
   const [mounted, setMounted] = useState(false);
 
   const orders = useOrders((s) => s.orders);
+  const loadOrders = useOrders((s) => s.loadOrders);
   const pharmacies = useAdmin((s) => s.pharmacies);
   const { ids: favoriteIds } = useFavorites();
+
+  // Carrega pedidos do banco ao entrar na página
+  useEffectOnce(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const [searchQuery, setSearchQuery] = useState(searchParams.id || "");
   const [selectedOrder, setSelectedOrder] = useState<Pedido | null>(null);
