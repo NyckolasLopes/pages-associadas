@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useNavigate, Outlet, useLocation } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
-import { useAdminProducts } from "@/stores/products";
+import { useAdminProducts, mapRowToProduto } from "@/stores/products";
 import { useRegionsStore } from "@/stores/regions";
 import { useAdmin } from "@/stores/admin";
 import { getDeterministicStock } from "@/lib/stock";
@@ -222,26 +222,9 @@ function AdminProdutos() {
       
       if (error || !data) throw new Error("Falha ao exportar");
       
-      const exportData = data.map(p => {
-        const categorias = getCategorias();
-        const cat = categorias.find((c: any) => c.id === p.categoria_id);
-        const sub = categorias.find((c: any) => c.id === p.subcategoria_id);
-
-        return {
-          "ID/CÓDIGO INTERNO": p.id,
-          "EAN/CÓDIGO DE BARRAS": p.ean || "",
-          "DESCRIÇÃO COMERCIAL/NOME DO PRODUTO": p.nome,
-          "DESCRIÇÃO LONGA": p.descricao || "",
-          "CATEGORIA": cat ? cat.nome : "",
-          "ID CATEGORIA": p.categoria_id || "",
-          "SUBCATEGORIA": sub ? sub.nome : "",
-          "ID SUBCATEGORIA": p.subcategoria_id || "",
-          "marca (MARCA)": p.marca || "",
-          "MS/REGISTRO ANVISA": p.registro_anvisa || "",
-          "RETÉM RECEITA": p.retem_receita ? "SIM" : "NÃO",
-          "TARJA": p.tarja || "Sem Tarja"
-        };
-      });
+      // Mapeia os dados do banco para ter exatamente a mesma estrutura
+      // usada para o cadastro de novo produto
+      const exportData = data.map(mapRowToProduto);
 
       const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
       const dlAnchorElem = document.createElement("a");
@@ -622,6 +605,15 @@ function AdminProdutos() {
                 >
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
                   Exportar JSON
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportProductsAsExcel(filteredProducts)}
+                  className="font-bold text-xs"
+                >
+                  <FileDown className="h-3.5 w-3.5 mr-1.5" />
+                  Exportar Planilha
                 </Button>
                 
                 

@@ -73,9 +73,15 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   }
 }
 
+import { handleCustomApiRoute } from "./api-routes";
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // 1. Intercept custom API Routes BEFORE anything else
+      const apiResponse = await handleCustomApiRoute(request);
+      if (apiResponse) return apiResponse;
+
       const ip = request.headers.get("x-forwarded-for") || request.headers.get("cf-connecting-ip") || "unknown";
       
       if (!checkRateLimit(ip)) {

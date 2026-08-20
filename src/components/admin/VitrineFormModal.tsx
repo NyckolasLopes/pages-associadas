@@ -112,21 +112,21 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
   };
 
   const searchLower = searchProduto.toLowerCase();
-  const selectedProductsList = produtosOpcoes.filter(p => produtoIds.includes(p.id));
+  const selectedProductsList = produtosOpcoes.filter(p => produtoIds.includes(String(p.id)));
   const unselectedFilteredProducts = produtosOpcoes
-    .filter(p => !produtoIds.includes(p.id))
+    .filter(p => !produtoIds.includes(String(p.id)))
     .filter(p => (p.nome || "").toLowerCase().includes(searchLower))
     .slice(0, 50);
   const filteredProducts = [...selectedProductsList, ...unselectedFilteredProducts];
 
-  const toggleProduct = (id: string) => {
+  const toggleProduct = (rawId: string | number) => {
+    const id = String(rawId);
     if (produtoIds.includes(id)) {
       setProdutoIds(produtoIds.filter(pid => pid !== id));
     } else {
       setProdutoIds([...produtoIds, id]);
     }
   };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -247,11 +247,16 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
                   <div key={p.id} className="p-2 flex items-center justify-between hover:bg-slate-50">
                     <span className="text-sm font-medium line-clamp-1">{p.nome || "Produto sem nome"}</span>
                     <Button 
-                      variant={produtoIds.includes(p.id) ? "destructive" : "secondary"} 
+                      type="button"
+                      variant={produtoIds.includes(String(p.id)) ? "destructive" : "secondary"} 
                       size="sm"
-                      onClick={() => toggleProduct(p.id)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleProduct(p.id);
+                      }}
                     >
-                      {produtoIds.includes(p.id) ? "Remover" : "Adicionar"}
+                      {produtoIds.includes(String(p.id)) ? "Remover" : "Adicionar"}
                     </Button>
                   </div>
                 ))}

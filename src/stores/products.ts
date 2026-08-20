@@ -99,6 +99,22 @@ export function mapRowToProduto(d: any): Produto {
     lojaId: d.loja_id,
     precosPorLoja: d.precos_por_loja || {},
     estoquesPorLoja: d.estoques_por_loja || {},
+    
+    produtoNatureza: d.metadata?.natureza_produto || d.produto_natureza || "",
+    sku: d.sku || d.ean || "",
+    ean2: d.ean2 || "",
+    ean3: d.ean3 || "",
+    youtubeVideoUrl: d.metadata?.youtube_video_url || d.youtube_video_url || "",
+    prioridade: d.prioridade || 0,
+    tipoReceita: d.metadata?.tipo_receita || d.tipo_receita || "",
+    resumoDescricao: d.metadata?.resumo_descricao || d.resumo_descricao || "",
+    quantidadeEmbalagem: d.metadata?.qtd_embalagem || 0,
+    unidadeEmbalagem: d.metadata?.unidade_embalagem || "",
+    quantidadeConteudo: d.metadata?.qtd_conteudo || 0,
+    unidadeConteudo: d.metadata?.unidade_conteudo || "",
+    sabor: d.metadata?.sabor || "",
+    fps: d.metadata?.fps || 0,
+    faixaEtaria: d.metadata?.faixa_etaria || "",
   } as Produto;
 }
 

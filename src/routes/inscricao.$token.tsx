@@ -37,6 +37,7 @@ const UF_OPTIONS = [
 
 const EMPTY_PHARMACY: Pharmacy = {
   id: "",
+  categoriaAssociado: "Pleno",
   cnpj: "",
   razaoSocial: "",
   nome: "",
@@ -159,35 +160,6 @@ function InscricaoLojaPublic() {
 
   const update = (patch: Partial<Pharmacy>) => setForm((prev) => ({ ...prev, ...patch }));
 
-  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/\D/g, "");
-    if (val.length > 8) val = val.substring(0, 8);
-    
-    let formatted = val;
-    if (val.length > 5) {
-      formatted = val.substring(0, 5) + "-" + val.substring(5);
-    }
-    
-    update({ cep: formatted });
-    
-    if (val.length === 8) {
-      try {
-        const res = await fetch(`https://viacep.com.br/ws/${val}/json/`);
-        const data = await res.json();
-        if (!data.erro) {
-          update({
-            cidade: data.localidade || "",
-            uf: data.uf || "",
-            bairro: data.bairro || "",
-            endereco: data.logradouro || "",
-          });
-          toast.success("Endereço preenchido automaticamente pelo CEP!");
-        }
-      } catch (err) {
-        // ignora erro silenciosamente
-      }
-    }
-  };
 
   const handleSave = async () => {
     if (!form.nome || !form.cnpj) {

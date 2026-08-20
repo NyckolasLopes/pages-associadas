@@ -969,7 +969,7 @@ export const useAdmin = create<AdminState>()(
               custoEntregaExpressa: parsedThemeColors?.custoEntregaExpressa ?? 0,
               raiosEntrega: parsedThemeColors?.raiosEntrega ?? [],
               meiosEntregaPersonalizados: parsedThemeColors?.meiosEntregaPersonalizados ?? [],
-              themeColors: parsedThemeColors || {},
+              themeColors: parsedThemeColors && Object.keys(parsedThemeColors).length > 0 ? parsedThemeColors : undefined,
               sistemaUtilizado: l.sistema_utilizado || parsedThemeColors?.sistemaUtilizado || '',
               offersServices: parsedThemeColors?.offersServices ?? false,
             };
@@ -1058,7 +1058,6 @@ export const useAdmin = create<AdminState>()(
           longitude: p.lng,
           entrega_expressa: p.entregaExpressa,
           status_loja_virtual: p.virtualStoreStatus,
-          sistema_utilizado: p.sistemaUtilizado,
         } as any);
 
         if (error) {

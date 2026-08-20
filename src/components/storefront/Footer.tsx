@@ -374,12 +374,16 @@ export function Footer() {
         <div className="container-fa py-8 grid lg:grid-cols-2 gap-8 items-start">
           <div>
             <Link to="/" className="inline-flex items-center">
-              <img
-                src={activePharmacy?.footerLogoUrl || activePharmacy?.logoUrl || dadosLoja.logoUrl || logoUrlDefault}
-                alt="Logo Rodapé"
-                className="h-12 bg-white rounded-md p-2 w-auto object-contain"
-                loading="lazy"
-              />
+              {activePharmacy?.categoriaAssociado === 'Parceiro' && !activePharmacy?.footerLogoUrl && !activePharmacy?.logoUrl ? (
+                <span className="font-bold text-xl text-white">{activePharmacy.nome}</span>
+              ) : (
+                <img
+                  src={activePharmacy?.footerLogoUrl || activePharmacy?.logoUrl || (activePharmacy?.categoriaAssociado === 'Parceiro' ? "" : (dadosLoja.logoUrl || logoUrlDefault))}
+                  alt="Logo Rodapé"
+                  className="h-12 bg-white rounded-md p-2 w-auto object-contain"
+                  loading="lazy"
+                />
+              )}
             </Link>
             <p className="mt-3 text-sm opacity-90">
               {descricaoLoja}
@@ -435,27 +439,29 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-slate-200 pb-6 md:pb-8">
-          <div className="container-fa py-8 flex flex-col gap-8">
-            <div className="flex flex-col md:flex-row items-center justify-center w-full gap-10">
-              <img
-                src={activePharmacy?.anvisaLogoUrl || logoAnvisa}
-                alt="A Farmácias Associadas segue as normas e regulamentações da ANVISA"
-                className="h-12 md:h-[68px] w-auto object-contain"
-                width={120}
-                height={68}
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-            
-            <div className="flex flex-col items-center justify-center gap-4 text-xs pt-6 border-t border-slate-100">
-              <span className="text-center text-slate-500">
-                © {new Date().getFullYear()} Farmácias Associadas. Todos os direitos reservados.
-              </span>
+        {activePharmacy?.categoriaAssociado !== 'Parceiro' && (
+          <div className="border-t border-slate-200 pb-6 md:pb-8">
+            <div className="container-fa py-8 flex flex-col gap-8">
+              <div className="flex flex-col md:flex-row items-center justify-center w-full gap-10">
+                <img
+                  src={activePharmacy?.anvisaLogoUrl || logoAnvisa}
+                  alt="A Farmácias Associadas segue as normas e regulamentações da ANVISA"
+                  className="h-12 md:h-[68px] w-auto object-contain"
+                  width={120}
+                  height={68}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              
+              <div className="flex flex-col items-center justify-center gap-4 text-xs pt-6 border-t border-slate-100">
+                <span className="text-center text-slate-500">
+                  © {new Date().getFullYear()} Farmácias Associadas. Todos os direitos reservados.
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </footer>
     </>

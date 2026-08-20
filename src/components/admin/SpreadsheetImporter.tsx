@@ -58,6 +58,30 @@ const FIELD_MAPPINGS: FieldMapping[] = [
   { key: "precoPor", label: "PREÇO POR", aliases: ["preço por", "preco por", "preço venda", "preco venda", "preco", "preço", "valor", "venda"], required: false, type: "number" },
   { key: "precoDe", label: "PREÇO DE", aliases: ["preço de", "preco de", "preço custo", "preco original"], required: false, type: "number" },
   { key: "estoque", label: "ESTOQUE", aliases: ["estoque", "quantidade", "qtd", "saldo"], required: false, type: "number" },
+  { key: "foto", label: "URL DA FOTO/IMAGEM", aliases: ["url da foto", "imagem", "foto", "url imagem", "image"], required: false, type: "string" },
+  { key: "url", label: "LINK DA PÁGINA (SLUG)", aliases: ["slug", "url", "link", "link da página"], required: false, type: "string" },
+  { key: "seoTitulo", label: "TÍTULO SEO", aliases: ["título seo", "seo titulo", "titulo seo", "seo title"], required: false, type: "string" },
+  { key: "metaDescription", label: "DESCRIÇÃO SEO", aliases: ["descrição seo", "meta description", "descricao seo"], required: false, type: "string" },
+  { key: "internalTags", label: "TAGS DE BUSCA", aliases: ["tags de busca", "tags", "palavras-chave", "keywords"], required: false, type: "string" },
+  { key: "tipoProduto", label: "TIPO DE PRODUTO", aliases: ["tipo de produto", "tipo produto", "tipo"], required: false, type: "string" },
+  { key: "produtoNatureza", label: "NATUREZA DO PRODUTO", aliases: ["natureza do produto", "natureza", "produto fisico ou servico"], required: false, type: "string" },
+  { key: "principiosAtivos", label: "PRINCÍPIOS ATIVOS", aliases: ["princípios ativos", "principios ativos", "principio ativo", "farmaco"], required: false, type: "string" },
+  { key: "generico", label: "GENÉRICO", aliases: ["genérico", "generico", "é genérico"], required: false, type: "boolean" },
+  { key: "sku", label: "SKU", aliases: ["sku", "código sku"], required: false, type: "string" },
+  { key: "ean2", label: "EAN 2", aliases: ["ean 2", "código de barras 2"], required: false, type: "string" },
+  { key: "ean3", label: "EAN 3", aliases: ["ean 3", "código de barras 3"], required: false, type: "string" },
+  { key: "videoUrl", label: "URL DO VÍDEO", aliases: ["url do vídeo", "video url", "video"], required: false, type: "string" },
+  { key: "youtubeVideoUrl", label: "URL YOUTUBE", aliases: ["url youtube", "youtube"], required: false, type: "string" },
+  { key: "prioridade", label: "PRIORIDADE", aliases: ["prioridade", "ordem"], required: false, type: "number" },
+  { key: "tipoReceita", label: "TIPO DE RECEITA", aliases: ["tipo de receita", "tipo receita"], required: false, type: "string" },
+  { key: "resumoDescricao", label: "RESUMO", aliases: ["resumo", "resumo curto"], required: false, type: "string" },
+  { key: "quantidadeEmbalagem", label: "QTD EMBALAGEM", aliases: ["qtd embalagem", "quantidade embalagem"], required: false, type: "number" },
+  { key: "unidadeEmbalagem", label: "UNIDADE EMBALAGEM", aliases: ["unidade embalagem", "und embalagem"], required: false, type: "string" },
+  { key: "quantidadeConteudo", label: "QTD CONTEÚDO", aliases: ["qtd conteúdo", "quantidade conteudo"], required: false, type: "number" },
+  { key: "unidadeConteudo", label: "UNIDADE CONTEÚDO", aliases: ["unidade conteúdo", "und conteudo"], required: false, type: "string" },
+  { key: "sabor", label: "SABOR", aliases: ["sabor", "flavor"], required: false, type: "string" },
+  { key: "fps", label: "FPS", aliases: ["fps", "fator de proteção"], required: false, type: "number" },
+  { key: "faixaEtaria", label: "FAIXA ETÁRIA", aliases: ["faixa etária", "faixa etaria", "idade"], required: false, type: "string" },
 ];
 
 const TARJA_VALUES: Tarja[] = ["Sem Tarja", "Vermelha", "Vermelha Retém Receita", "Preta", "Amarela"];
@@ -233,6 +257,33 @@ function rowToProduct(
   const precoDe = parseNumber(get("precoDe")) || precoPor;
 
   const guessed = guessCategory(nome);
+  
+  const foto = String(get("foto") || "");
+  const urlParam = String(get("url") || nome.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-|-$/g, '') + `-${id}`);
+  const seoTitulo = String(get("seoTitulo") || "");
+  const metaDescription = String(get("metaDescription") || "");
+  const internalTagsRaw = String(get("internalTags") || "");
+  const internalTags = internalTagsRaw ? internalTagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const tipoProduto = String(get("tipoProduto") || "");
+  const produtoNatureza = String(get("produtoNatureza") || "");
+  const principiosAtivosRaw = String(get("principiosAtivos") || "");
+  const principiosAtivos = principiosAtivosRaw ? principiosAtivosRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const sku = String(get("sku") || ean);
+  const ean2 = String(get("ean2") || "");
+  const ean3 = String(get("ean3") || "");
+  const videoUrl = String(get("videoUrl") || "");
+  const youtubeVideoUrl = String(get("youtubeVideoUrl") || "");
+  const prioridade = parseNumber(get("prioridade"));
+  const tipoReceita = String(get("tipoReceita") || "");
+  const resumoDescricao = String(get("resumoDescricao") || "");
+  const quantidadeEmbalagem = parseNumber(get("quantidadeEmbalagem"));
+  const unidadeEmbalagem = String(get("unidadeEmbalagem") || "");
+  const quantidadeConteudo = parseNumber(get("quantidadeConteudo"));
+  const unidadeConteudo = String(get("unidadeConteudo") || "");
+  const sabor = String(get("sabor") || "");
+  const fps = parseNumber(get("fps"));
+  const faixaEtaria = String(get("faixaEtaria") || "");
+
   const rawCat = String(get("categoriaId") || "");
   const rawSubcat = String(get("subcategoriaId") || "");
   const resolvedCat = resolveCategory(rawCat, rawSubcat);
@@ -248,8 +299,7 @@ function rowToProduct(
     foto: "",
     nome,
     descricao: String(get("descricao") || nome),
-    url: nome.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-|-$/g, '') + `-${id}`,
-    marca: String(get("marca") || ""),
+        marca: String(get("marca") || ""),
     precoDe,
     precoPor,
     estoque: parseNumber(get("estoque")),
@@ -260,8 +310,32 @@ function rowToProduct(
     possuiImagem: false,
     categoriaId,
     subcategoriaId,
-    internalTags: [],
-    ativo: true,
+
+    foto,
+    url: urlParam,
+    seoTitulo,
+    metaDescription,
+    internalTags,
+    tipoProduto,
+    produtoNatureza,
+    principiosAtivos,
+    sku,
+    ean2,
+    ean3,
+    videoUrl,
+    youtubeVideoUrl,
+    prioridade,
+    tipoReceita,
+    resumoDescricao,
+    quantidadeEmbalagem,
+    unidadeEmbalagem,
+    quantidadeConteudo,
+    unidadeConteudo,
+    sabor,
+    fps,
+    faixaEtaria,
+
+        ativo: true,
     codigoInterno: codigoRaw,
   };
 }
@@ -273,15 +347,21 @@ export function generateTemplate() {
     "Código Interno", "EAN", "Nome", "Descrição", "marca",
     "Preço De", "Preço Por", "Estoque", "Registro ANVISA",
     "Tarja", "Retém Receita", "Genérico", "Categoria", "Subcategoria",
-  ];
+    "URL DA FOTO/IMAGEM", "LINK DA PÁGINA (SLUG)", "TÍTULO SEO", "DESCRIÇÃO SEO", "TAGS DE BUSCA",
+    "TIPO DE PRODUTO", "NATUREZA DO PRODUTO", "PRINCÍPIOS ATIVOS", "SKU", "EAN 2", "EAN 3",
+    "URL DO VÍDEO", "URL YOUTUBE", "PRIORIDADE", "TIPO DE RECEITA", "RESUMO",
+    "QTD EMBALAGEM", "UNIDADE EMBALAGEM", "QTD CONTEÚDO", "UNIDADE CONTEÚDO", "SABOR", "FPS", "FAIXA ETÁRIA"
+];
   const sampleRows = [
     ["563003", "7896523207360", "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
       "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS", "CIMED",
-      8.33, 4.99, 1406, "1438100510076", "Sem Tarja", "Não", "Sim", "Medicamentos", "Dor e Febre"],
+      8.33, 4.99, 1406, "1438100510076", "Sem Tarja", "Não", "Sim", "Medicamentos", "Dor e Febre",
+      "", "", "", "", "", "", "", "", "563003", "", "", "", "", 0, "", "", 0, "", 0, "", "", 0, ""],
     ["558600", "7896523216812", "DIAD 1.5MG COM 1 COMPRIMIDO",
       "DIAD 1.5MG COM 1 COMPRIMIDO", "CIMED",
-      22.55, 19.99, 822, "1438100880027", "Sem Tarja", "Não", "Sim", "Medicamentos", "Dor e Febre"],
-  ];
+      22.55, 19.99, 822, "1438100880027", "Sem Tarja", "Não", "Sim", "Medicamentos", "Dor e Febre",
+      "", "", "", "", "", "", "", "", "558600", "", "", "", "", 0, "", "", 0, "", 0, "", "", 0, ""],
+];
   const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
 
   // Set column widths
@@ -298,7 +378,11 @@ export function exportProductsAsExcel(products: Produto[]) {
     "Código Interno", "EAN", "Nome", "Descrição", "marca",
     "Preço De", "Preço Por", "Estoque", "Registro ANVISA",
     "Tarja", "Retém Receita", "Genérico", "Categoria", "Subcategoria",
-  ];
+    "URL DA FOTO/IMAGEM", "LINK DA PÁGINA (SLUG)", "TÍTULO SEO", "DESCRIÇÃO SEO", "TAGS DE BUSCA",
+    "TIPO DE PRODUTO", "NATUREZA DO PRODUTO", "PRINCÍPIOS ATIVOS", "SKU", "EAN 2", "EAN 3",
+    "URL DO VÍDEO", "URL YOUTUBE", "PRIORIDADE", "TIPO DE RECEITA", "RESUMO",
+    "QTD EMBALAGEM", "UNIDADE EMBALAGEM", "QTD CONTEÚDO", "UNIDADE CONTEÚDO", "SABOR", "FPS", "FAIXA ETÁRIA"
+];
   
   const getCatName = (id: string, isSubcat = false) => {
     const cats = categoriesData as any[];
@@ -311,6 +395,10 @@ export function exportProductsAsExcel(products: Produto[]) {
     p.precoDe, p.precoPor, p.estoque, p.registroAnvisa,
     p.tarja, p.retemReceita ? "Sim" : "Não", p.generico ? "Sim" : "Não",
     getCatName(p.categoriaId), getCatName(p.subcategoriaId, true),
+    p.foto || "", p.url || "", p.seoTitulo || "", p.metaDescription || "", (p.internalTags || []).join(", "),
+    p.tipoProduto || "", p.produtoNatureza || "", Array.isArray(p.principiosAtivos) ? p.principiosAtivos.map(x => typeof x === 'string' ? x : x.nome).join(", ") : "", p.sku || "", p.ean2 || "", p.ean3 || "",
+    p.videoUrl || "", p.youtubeVideoUrl || "", p.prioridade || 0, p.tipoReceita || "", p.resumoDescricao || "",
+    p.quantidadeEmbalagem || 0, p.unidadeEmbalagem || "", p.quantidadeConteudo || 0, p.unidadeConteudo || "", p.sabor || "", p.fps || 0, p.faixaEtaria || ""
   ]);
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 4, 16) }));

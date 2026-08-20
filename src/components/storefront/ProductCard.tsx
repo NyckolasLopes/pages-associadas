@@ -155,7 +155,7 @@ function ProductCardComponent({
         return (distances[a.id] || 0) - (distances[b.id] || 0);
       });
       activeStoreId = availablePharmacies[0].id;
-      maxStock = availablePharmacies[0].stock;
+      maxStock = getDeterministicStock(p, activeStoreId);
     } else {
       maxStock = 0;
     }
@@ -187,7 +187,7 @@ function ProductCardComponent({
     const citySuppliers = citySearch ? fornecedores.filter(f => normalize(f.cidade).includes(citySearch)) : [];
     activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
     
-    const supplierStock = getDeterministicStock(p.id, String(activeFornecedor.id) + "supp");
+    const supplierStock = getDeterministicStock(p, String(activeFornecedor.id) + "supp");
     maxStock = supplierStock > 0 ? supplierStock : 0;
     if (maxStock > 0) {
       activeStoreId = null; // Clear local store constraint if using infinite shelf

@@ -17,17 +17,22 @@ export function Logo({ className = "h-10" }: { className?: string }) {
 
   // Use the specific store's logo if selected, otherwise fallback to global, then default
   const activePharmacy = pharmacies.find(p => p.id === selectedPharmacyId);
-  const displayLogo = activePharmacy?.logoUrl || globalLogoUrl || logoUrlDefault;
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  const displayLogo = activePharmacy?.logoUrl || (!isParceiro ? (globalLogoUrl || logoUrlDefault) : "");
 
   return (
-    <Link to={storeSlug ? "/$storeSlug" : "/"} params={storeSlug ? { storeSlug } : {}} className="inline-flex items-center" aria-label="Farmácias Associadas – Início">
-      <img
-        src={mounted ? displayLogo : logoUrlDefault}
-        alt="Farmácias Associadas"
-        className={`${className} w-auto object-contain`}
-        loading="eager"
-        decoding="async"
-      />
+    <Link to={storeSlug ? "/$storeSlug" : "/"} params={storeSlug ? { storeSlug } : {}} className="inline-flex items-center" aria-label={activePharmacy?.nome || "Incio"}>
+      {mounted && !displayLogo && isParceiro ? (
+        <span className="font-bold text-lg text-primary">{activePharmacy.nome}</span>
+      ) : (
+        <img
+          src={mounted && displayLogo ? displayLogo : logoUrlDefault}
+          alt={activePharmacy?.nome || "Logo"}
+          className={`${className} w-auto object-contain`}
+          loading="eager"
+          decoding="async"
+        />
+      )}
     </Link>
   );
-}
+}
