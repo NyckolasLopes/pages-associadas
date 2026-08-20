@@ -14,6 +14,7 @@ import {
   Rocket,
   MapPin,
   XCircle,
+  Trash2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/lojas/gerar")({
@@ -32,7 +33,7 @@ function slugify(text: string): string {
 }
 
 function GerarLojaPage() {
-  const { pharmacies, updatePharmacy } = useAdmin();
+  const { pharmacies, updatePharmacy, removePharmacy } = useAdmin();
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://pagesassociadas.vercel.app";
@@ -64,6 +65,16 @@ function GerarLojaPage() {
       virtualStoreStatus: newStatus
     });
     toast.success(`Status da loja alterado para ${newStatus}.`);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Tem certeza que deseja excluir esta loja? Essa ação não pode ser desfeita.")) {
+      try {
+        await removePharmacy(id);
+      } catch (error) {
+        console.error("Erro ao excluir loja:", error);
+      }
+    }
   };
 
   const handleCopyUrl = (pharmacy: any) => {
@@ -109,10 +120,10 @@ function GerarLojaPage() {
                   : "border-slate-200 hover:border-primary/30 hover:shadow-md"
               }`}
             >
-              {/* Status indicator */}
-              {isGenerated && (
-                <div className="absolute top-4 right-4">
-                  {isAtiva ? (
+              {/* Status and Actions */}
+              <div className="absolute top-4 right-4 flex items-center gap-2">
+                {isGenerated && (
+                  isAtiva ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -124,9 +135,16 @@ function GerarLojaPage() {
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 shadow-sm">
                       <XCircle className="w-3.5 h-3.5" /> Inativa
                     </span>
-                  )}
-                </div>
-              )}
+                  )
+                )}
+                <button
+                  onClick={() => handleDelete(pharmacy.id)}
+                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  title="Excluir loja"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
 
               <div className="p-6">
                 {/* Store header */}
