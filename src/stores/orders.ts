@@ -123,7 +123,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     let query = supabase
       .from('pedidos')
-      .select('*, pedido_itens(*), profiles(*)')
+      .select('*, pedido_itens(*, produtos(ean)), profiles(*)')
       .order('created_at', { ascending: false });
 
     // Restringir a query se não for admin global
@@ -164,13 +164,12 @@ export const useOrders = create<OrdersState>((set, get) => ({
         },
         itens: d.pedido_itens?.map((i: any) => ({
           nome: i.nome,
-          sku: i.sku,
-          ean: i.ean,
-          quantidade: i.quantidade,
-          qtd: i.quantidade,
-          valorUnitario: i.preco_unitario,
-          preco: i.preco_unitario * i.quantidade,
-          foto: i.imagem_url,
+          sku: i.produto_id,
+          ean: i.produtos?.ean,
+          qtd: i.qty,
+          valorUnitario: i.preco_unit,
+          preco: i.preco_unit * i.qty,
+          foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
         })),
         valores: {
           subtotal: d.subtotal,
@@ -213,7 +212,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
         const orderItemsRows = itens.map(i => ({
           pedido_id: insertedOrder.id,
           nome: i.nome,
-          produto_id: i.id || null,
+          produto_id: i.sku || i.id || null,
           qty: i.qtd || i.quantidade || 1,
           preco_unit: i.valorUnitario || i.preco || 0,
         }));

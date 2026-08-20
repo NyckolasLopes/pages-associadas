@@ -72,7 +72,11 @@ export const useLive = create<LiveStore>((set, get) => ({
     try {
       // Puxar do banco real e calcular total, mes, hoje por loja e global.
       const { data, error } = await supabase.from('site_acessos').select('*');
-      if (error) return;
+      if (error) {
+        console.error("ERRO AO BUSCAR ACESSOS (Possível bloqueio de RLS):", error);
+        return;
+      }
+      console.log("Acessos obtidos do DB:", data?.length);
 
       const now = new Date();
       const isHoje = (d: Date) => d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -97,7 +101,7 @@ export const useLive = create<LiveStore>((set, get) => ({
 
       set({ lojasAcessos: stats, totalAcessos: globTotal });
     } catch (e) {
-      console.error(e);
+      console.error("Exceção ao buscar acessos:", e);
     }
   },
 

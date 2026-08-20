@@ -25,7 +25,7 @@ function AdminNovoProduto() {
 
   // Basic query params read (without typing)
   const searchParams = new URLSearchParams(window.location.search);
-  const tipoParam = searchParams.get("tipo") || "fisico";
+  const tipoParam = searchParams.get("tipo") || "";
 
   const handleSave = (product: Produto) => {
     const finalProduct: Produto = {

@@ -560,7 +560,10 @@ export function PedidosAdmin() {
                       </div>
                       <div className="ml-4 flex-1">
                         <div className="font-bold text-slate-800 text-sm leading-tight hover:text-emerald-600 cursor-pointer">{p.nome}</div>
-                        {p.sku && <div className="text-xs text-slate-500 mt-1 font-medium">SKU: {p.sku}</div>}
+                        <div className="flex items-center gap-3">
+                          {p.sku && <div className="text-xs text-slate-500 mt-1 font-medium">SKU: {p.sku}</div>}
+                          {p.ean && <div className="text-xs text-slate-500 mt-1 font-medium">EAN: {p.ean}</div>}
+                        </div>
                       </div>
                       <div className="px-6 text-center">
                          <div className="text-[10px] font-bold text-slate-400 uppercase">Qtd</div>

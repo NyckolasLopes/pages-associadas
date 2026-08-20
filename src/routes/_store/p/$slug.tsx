@@ -791,11 +791,12 @@ function PDP() {
   const hideReviews = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142")) || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
   const isService = p.tipoProduto === "servico" || !!(p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20")));
   
-  // Produto precisa ter estoque (ou ser serviço) e estar ativo globalmente
+  // Produto precisa ter estoque (ou ser serviço suportado pela loja) e estar ativo globalmente
   // Além disso, se uma farmácia foi selecionada, deve estar ativo nessa farmácia.
   const isGlobalActive = p.ativo !== false && p.aVenda !== false;
   const isLocalActive = !activeStoreId || p.precosPorLoja?.[activeStoreId]?.ativo !== false;
-  const isAvailable = (maxStock > 0 || isService) && isGlobalActive && isLocalActive;
+  const storeOffersServices = !loja || loja.offersServices !== false;
+  const isAvailable = (maxStock > 0 || (isService && storeOffersServices)) && isGlobalActive && isLocalActive;
 
 
   const marcasProprias = ["revitart", "santo habito", "santo hábito", "revigore", "revimel", "crescendo", "vita magna", "associadas"];

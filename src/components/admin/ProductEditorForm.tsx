@@ -43,6 +43,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const [saveStep, setSaveStep] = useState<"idle" | "saving" | "syncing" | "done">("idle");
   const { pharmacies, currentUser, grupos } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total === true;
+  const currentLoja = lojaId ? pharmacies.find(l => l.id === lojaId) : null;
+  const canOfferServices = (isGlobalAdmin && !lojaId) ? true : currentLoja?.offersServices !== false;
   const { vitrines, customProducts } = useAdminProducts();
   const { filtros } = useAdminFiltros();
   const { marcas } = useMarcasStore();
@@ -82,7 +84,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         visivel: product.visivel ?? true,
         destaque: product.destaque ?? false,
         aVenda: product.aVenda ?? true,
-        tipoProduto: product.tipoProduto || "fisico",
+        tipoProduto: product.tipoProduto || "",
         selo: product.selo || "",
         tipoDePreco: product.tipoDePreco || "normal",
         tipoMedicamento: product.tipoMedicamento || "",
@@ -191,8 +193,18 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Tipo de Produto</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.tipoProduto || ""} onChange={e => setFormData({...formData, tipoProduto: e.target.value})} className="bg-white" placeholder="Ex: Similar, Referência..." />
+                <Label className="font-bold text-xs uppercase text-slate-500">Natureza do Produto</Label>
+                <Select disabled={!isGlobalAdmin} value={formData.tipoProduto || ""} onValueChange={val => setFormData({...formData, tipoProduto: val})}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fisico">Produto Físico</SelectItem>
+                    {canOfferServices && (
+                      <SelectItem value="servico">Serviço</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

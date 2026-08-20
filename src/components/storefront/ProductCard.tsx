@@ -184,6 +184,12 @@ function ProductCardComponent({
   }
 
   const isService = p.tipoProduto === "servico" || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
+  
+  const activePharm = pharmacies.find(f => f.id === activeStoreId);
+  if (isService && activePharm?.offersServices === false) {
+    return null;
+  }
+
   const isGlobalActive = p.ativo !== false && p.aVenda !== false;
   const isLocalActive = !activeStoreId || p.precosPorLoja?.[activeStoreId]?.ativo !== false;
   const isAvailable = (maxStock > 0 || isService) && isGlobalActive && isLocalActive;

@@ -89,8 +89,7 @@ function AdminProdutos() {
     resetStoreProductsToGeneral,
     updateStoreProductStatus,
     updateStoreProductDestaque,
-    bulkUpdateStoreProductStatus,
-    _loaded
+    bulkUpdateStoreProductStatus
   } = useAdminProducts();
   const { regions, prices } = useRegionsStore();
   const { pharmacies, activeStoreId, currentUser, grupos } = useAdmin();
@@ -737,19 +736,7 @@ function AdminProdutos() {
         </div>
 
         {/* Table content */}
-        <Dialog open={!_loaded} onOpenChange={() => {}}>
-          <DialogContent className="sm:max-w-md [&>button]:hidden flex flex-col items-center justify-center p-8 bg-white/95 backdrop-blur-sm">
-            <Spinner className="h-16 w-16 text-emerald-600 mb-6" />
-            <DialogTitle className="text-2xl font-bold text-slate-800 mb-2">Aguarde um momento...</DialogTitle>
-            <p className="text-slate-500 font-medium text-center">
-              Estamos carregando os produtos até concluir o aparecimento.
-            </p>
-          </DialogContent>
-        </Dialog>
-
-        {!_loaded ? (
-          <div className="h-96" /> // Placeholder vazio durante o loading
-        ) : isLoading ? (
+        {isLoading ? (
           <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
             <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-slate-500 font-medium">Carregando produtos...</p>
