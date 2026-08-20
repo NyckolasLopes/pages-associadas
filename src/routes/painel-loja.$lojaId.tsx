@@ -37,25 +37,25 @@ import { LojaConfiguracoesTab } from "@/components/admin/LojaConfiguracoesTab";
 import { AbandonedCartsWidget } from "@/components/admin/AbandonedCartsWidget";
 import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, Settings, Users } from "lucide-react";
 
-const STATUS_OPTIONS = [
-  "Abandonado no carrinho",
-  "Pago",
-  "Em separação",
-  "Enviado",
-  "Aguardando retirada",
-  "Entregue",
-  "Cancelado",
+// Status sincronizados com o que o cliente vê em Meus Pedidos
+export const PEDIDO_STATUS_OPTIONS = [
+  { value: "novo",          label: "Pedido Enviado",              color: "bg-sky-100 text-sky-700",      icon: "⏳" },
+  { value: "Em separação", label: "Em Separação",               color: "bg-blue-100 text-blue-700",    icon: "📦" },
+  { value: "Pronto",        label: "Pronto / Em Rota de Entrega", color: "bg-orange-100 text-orange-700", icon: "🚚" },
+  { value: "Entregue",      label: "Entregue",                    color: "bg-teal-100 text-teal-700",   icon: "✅" },
+  { value: "Cancelado",     label: "Cancelado",                   color: "bg-red-100 text-red-700",     icon: "❌" },
 ];
 
-const STATUS_COLORS: Record<string, string> = {
-  "Abandonado no carrinho": "bg-amber-100 text-amber-700",
-  "Pago": "bg-emerald-100 text-emerald-700",
-  "Em separação": "bg-blue-100 text-blue-700",
-  "Enviado": "bg-indigo-100 text-indigo-700",
-  "Aguardando retirada": "bg-orange-100 text-orange-700",
-  "Entregue": "bg-teal-100 text-teal-700",
-  "Cancelado": "bg-red-100 text-red-700",
-};
+// Manter compat retroativa
+const STATUS_OPTIONS = PEDIDO_STATUS_OPTIONS.map(s => s.value);
+
+const STATUS_COLORS: Record<string, string> = Object.fromEntries(
+  PEDIDO_STATUS_OPTIONS.map(s => [s.value, s.color])
+);
+
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(
+  PEDIDO_STATUS_OPTIONS.map(s => [s.value, s.label])
+);
 
 function PainelLoja() {
   const { lojaId } = Route.useParams();
@@ -751,13 +751,18 @@ function PainelLoja() {
                                     }
                                   }}
                                 >
-                                  <SelectTrigger className={`h-8 text-xs font-semibold ${STATUS_COLORS[pedido.status] || "bg-slate-100"}`}>
-                                    <SelectValue />
+                                  <SelectTrigger className={`h-8 text-xs font-semibold ${STATUS_COLORS[pedido.status] || STATUS_COLORS["novo"] || "bg-slate-100"}`}>
+                                    <SelectValue>
+                                      {STATUS_LABEL[pedido.status] || pedido.status || "Pedido Enviado"}
+                                    </SelectValue>
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {STATUS_OPTIONS.map((status) => (
-                                      <SelectItem key={status} value={status}>
-                                        {status}
+                                    {PEDIDO_STATUS_OPTIONS.map((s) => (
+                                      <SelectItem key={s.value} value={s.value}>
+                                        <span className="flex items-center gap-2">
+                                          <span>{s.icon}</span>
+                                          <span>{s.label}</span>
+                                        </span>
                                       </SelectItem>
                                     ))}
                                   </SelectContent>

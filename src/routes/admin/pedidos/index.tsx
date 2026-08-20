@@ -21,8 +21,8 @@ import {
   CheckCircle2,
   Clock,
   Eye,
-  Send
-} from "lucide-react";
+  Send,
+  Zap} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,8 @@ import { useAbandonedCartsStore, AbandonedCart } from "@/stores/abandoned-carts"
 import { useCart } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
 import { AbandonedCartsWidget } from "@/components/admin/AbandonedCartsWidget";
+import { OrderStatusApiDoc, PEDIDO_STATUS_OPTIONS, STATUS_COLORS_MAP, STATUS_LABEL_MAP } from "@/components/admin/OrderStatusApiDoc";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/admin/pedidos/")({
   component: PedidosAdmin,
@@ -123,6 +125,7 @@ export function PedidosAdmin() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
   const [mainView, setMainView] = useState<"todos" | "concluidos" | "carrinhos">("todos");
+  const [showApiDoc, setShowApiDoc] = useState(false);
 
   const getLojaName = (id?: string, fallbackName?: string) => {
     const p = id ? pharmacies.find(ph => ph.id === id) : null;
@@ -281,8 +284,8 @@ export function PedidosAdmin() {
         clienteEndereco: order.cliente?.endereco ? `${order.cliente.endereco.rua}, ${order.cliente.endereco.numero} - ${order.cliente.endereco.bairro}` : undefined,
         lojaId: order.lojaId,
         lojaNome: getLojaName(order.lojaId, order.lojaNome),
-        status: "Concluído",
-        statusDesc: "Concluído (WhatsApp)",
+        status: order.status || "novo",
+        statusDesc: STATUS_LABEL_MAP[order.status] || order.status || "Pedido Enviado",
         itensQtd: totalItemsCount,
         itensDesc: itemsListText,
         produtos: order.produtos || [],
@@ -435,10 +438,29 @@ export function PedidosAdmin() {
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-black text-slate-800 tracking-tight">Pedido #{selectedOrder.numero || selectedOrder.id}</h1>
-                <div className="px-3 py-1 rounded-full text-xs font-bold border bg-emerald-100 text-emerald-700 border-emerald-200 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  Concluído (WhatsApp)
-                </div>
+                <Select
+                  value={selectedOrder.status || "novo"}
+                  onValueChange={async (newStatus) => {
+                    await useOrders.getState().updateOrderStatus(selectedOrder.id, newStatus);
+                    toast.success("Status atualizado!");
+                  }}
+                >
+                  <SelectTrigger className={`h-8 w-52 text-xs font-bold border-0 ${STATUS_COLORS_MAP[selectedOrder.status] || STATUS_COLORS_MAP["novo"] || "bg-slate-100"}`}>
+                    <SelectValue>
+                      {STATUS_LABEL_MAP[selectedOrder.status] || selectedOrder.status || "Pedido Enviado"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PEDIDO_STATUS_OPTIONS.map(s => (
+                      <SelectItem key={s.value} value={s.value}>
+                        <span className="flex items-center gap-2">
+                          <span>{s.icon}</span>
+                          <span>{s.label}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <span className="text-slate-500 font-medium text-sm flex items-center gap-2">
                 Efetuado em {selectedOrder.data} 
@@ -653,7 +675,14 @@ export function PedidosAdmin() {
               <Download className="h-4 w-4" /> Exportar Planilha
             </Button>
             <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToJson}>
-              <Download className="h-4 w-4" /> Exportar JSON
+              <Code className="h-4 w-4" /> Exportar JSON
+            </Button>
+            <Button
+              variant="outline"
+              className="font-bold gap-2 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+              onClick={() => setShowApiDoc(true)}
+            >
+              <Zap className="h-4 w-4" /> API de Status (ERP)
             </Button>
           </div>
         </div>
@@ -1106,6 +1135,21 @@ export function PedidosAdmin() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog: Documentação da API de Status de Pedidos */}
+      <Dialog open={showApiDoc} onOpenChange={setShowApiDoc}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
+              <Zap className="w-5 h-5 text-indigo-600" />
+              API de Integração — Status de Pedidos
+            </DialogTitle>
+            <DialogDescription>
+              Use estes endpoints para atualizar o status dos pedidos via ERP ou sistema externo.
+            </DialogDescription>
+          </DialogHeader>
+          <OrderStatusApiDoc />
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

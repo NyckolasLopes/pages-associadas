@@ -3,6 +3,12 @@
 -- Remover policies antigas que bloqueiam acesso
 DROP POLICY IF EXISTS "Users can manage their own abandoned carts" ON public.carrinhos_abandonados;
 DROP POLICY IF EXISTS "Admins can view and update store abandoned carts" ON public.carrinhos_abandonados;
+DROP POLICY IF EXISTS "Carrinho: usuario gerencia o proprio" ON public.carrinhos_abandonados;
+DROP POLICY IF EXISTS "Carrinho: admin global ve tudo" ON public.carrinhos_abandonados;
+DROP POLICY IF EXISTS "Carrinho: admin global gerencia tudo" ON public.carrinhos_abandonados;
+DROP POLICY IF EXISTS "Carrinho: lojista ve carrinhos da sua loja" ON public.carrinhos_abandonados;
+DROP POLICY IF EXISTS "Carrinho: lojista atualiza carrinhos da sua loja" ON public.carrinhos_abandonados;
+DROP POLICY IF EXISTS "Carrinho: lojista deleta carrinhos da sua loja" ON public.carrinhos_abandonados;
 
 -- Policy 1: Usuário vê e gerencia seu próprio carrinho
 CREATE POLICY "Carrinho: usuario gerencia o proprio"
