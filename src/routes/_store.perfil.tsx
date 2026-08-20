@@ -482,15 +482,14 @@ function PerfilPage() {
                 <h1 className="text-2xl font-bold">Meus Favoritos</h1>
                 <Heart className="h-6 w-6 text-red-500 fill-red-500" />
              </div>
-             {favNotifications.length > 0 && favoriteProducts.length > 0 && (
+             {favNotifications && favNotifications.filter(n => favoriteProducts.some(p => p.id === n.id)).length > 0 && favoriteProducts.length > 0 && (
                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl mb-6 relative">
                  <button onClick={clearFavNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors">
                    <X className="h-4 w-4" />
                  </button>
                  <ul className="text-sm text-emerald-700 space-y-3">
-                   {favNotifications.map(n => {
-                     const p = favoriteProducts.find(prod => prod.id === n.id);
-                     if (!p) return null;
+                   {favNotifications.filter(n => favoriteProducts.some(p => p.id === n.id)).map(n => {
+                     const p = favoriteProducts.find(prod => prod.id === n.id)!;
                      return (
                         <li key={n.id} className="flex flex-col gap-1">
                           <div className="font-bold flex items-center gap-1.5 text-base">

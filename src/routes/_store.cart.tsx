@@ -736,15 +736,14 @@ function CartPage() {
 
       <div className="grid lg:grid-cols-[1fr_380px] gap-8">
         <div className="space-y-4">
-          {cartNotifications && cartNotifications.length > 0 && items.length > 0 && (
+          {cartNotifications && cartNotifications.filter(n => items.some(i => i.id === n.id)).length > 0 && items.length > 0 && (
             <div className="bg-emerald-50 text-emerald-800 text-sm p-4 rounded-xl border border-emerald-200 relative">
               <button onClick={clearCartNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors">
                 <X className="h-4 w-4" />
               </button>
               <ul className="space-y-3">
-                {cartNotifications.map(n => {
-                  const item = items.find(i => i.id === n.id);
-                  if (!item) return null;
+                {cartNotifications.filter(n => items.some(i => i.id === n.id)).map(n => {
+                  const item = items.find(i => i.id === n.id)!;
                   return (
                     <li key={n.id} className="flex flex-col gap-1">
                       <div className="font-bold flex items-center gap-1.5">

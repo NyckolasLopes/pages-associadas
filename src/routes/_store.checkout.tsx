@@ -1129,9 +1129,9 @@ function Checkout() {
               }
             }
 
-            const newOrder = {
-              id: String(Math.floor(Math.random() * 10000)),
-              lojaId: activeStore?.id || "loja-poa-centro",
+              const newOrder = {
+                id: `FA-${Date.now()}${Math.floor(Math.random() * 100)}`,
+                lojaId: activeStore?.id || "loja-poa-centro",
               data: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
               cliente: {
                 nome: nome,
@@ -1139,8 +1139,17 @@ function Checkout() {
                 telefone: telefone,
                 cpf: cpf,
                 ip: "127.0.0.1",
-                tipo: "Padrão"
+                tipo: "Padrão",
+                endereco: {
+                  rua: deliveryMethod === "home" ? rua : (activeStore?.endereco || ""),
+                  numero: deliveryMethod === "home" ? numero : "",
+                  complemento: deliveryMethod === "home" ? complemento : "",
+                  bairro: "",
+                  cidade: activeStore?.cidade || "",
+                  cep: deliveryMethod === "home" ? formCep : (geoCep || "")
+                }
               },
+              modalidade: deliveryMethod === "store" ? "Retirada na Loja" : (selectedFreightObj?.label || "Entrega Padrão"),
               pagamento: {
                 metodo: {
                   credit: "Cartão de Crédito",
@@ -1166,16 +1175,20 @@ function Checkout() {
               },
               status: "Pago",
               produtos: visibleItems.map(i => ({
+                produtoId: i.id,
                 nome: i.nome,
                 sku: String(i.id),
                 cores: "N/A",
                 disponibilidade: "Imediata",
                 qtd: i.qty,
+                quantidade: i.qty,
                 valorUnitario: getEffectivePrice(i, selectedPharmacyId).precoPor,
+                precoUnit: getEffectivePrice(i, selectedPharmacyId).precoPor,
                 foto: productImage(i)
               })),
               valores: {
                 produtos: visibleSubtotal,
+                subtotal: visibleSubtotal,
                 desconto: visibleStoreDisc + visiblePbmDisc + (couponApplied?.discount || 0),
                 frete: fretePrice,
                 total: finalTotal

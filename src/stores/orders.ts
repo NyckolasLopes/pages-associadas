@@ -195,27 +195,32 @@ export const useOrders = create<OrdersState>((set, get) => ({
       loja_id: order.lojaId,
       origem: order.origem || 'site',
       status: order.status || 'novo',
-      subtotal: order.valores.subtotal || 0,
-      desconto: order.valores.desconto || 0,
-      frete: order.valores.frete || 0,
-      total: order.valores.total || 0,
-      cep_entrega: order.cliente?.endereco?.cep || null,
-      endereco_entrega: order.cliente?.endereco || {},
-      metodo_entrega: order.modalidade,
+      subtotal: order.valores?.subtotal || order.valores?.produtos || 0,
+      desconto: order.valores?.desconto || 0,
+      frete: order.valores?.frete || 0,
+      total: order.valores?.total || 0,
+      cep_entrega: order.cliente?.endereco?.cep || order.envio?.cep || null,
+      endereco_entrega: order.cliente?.endereco || order.envio || {},
+      metodo_entrega: order.modalidade || order.envio?.metodo,
       metodo_pagamento: order.pagamento?.metodo,
-      observacoes: order.anotacoes || '',
+      observacoes: order.anotacoes || order.observacoes || '',
     }).select('id').single();
+
+    if (orderError) {
+      console.error("Error inserting order:", orderError);
+      return;
+    }
 
     if (!orderError && insertedOrder) {
       const itens = order.produtos || order.itens || [];
       if (itens.length > 0) {
         const orderItemsRows = itens.map(i => ({
-          pedido_id: insertedOrder.id,
-          produto_id: i.produtoId || null,
-          nome: i.nome,
-          qty: i.qty || 1,
-          preco_unit: i.precoUnit || 0
-        }));
+            pedido_id: insertedOrder.id,
+            produto_id: i.id || i.sku || null,
+            nome: i.nome,
+            qty: i.qtd || i.quantidade || 1,
+            preco_unit: i.valorUnitario || i.preco || 0
+          }));
         await supabase.from('pedido_itens').insert(orderItemsRows as any);
       }
     }
