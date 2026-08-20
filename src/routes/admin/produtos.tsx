@@ -554,6 +554,17 @@ function AdminProdutos() {
           });
         }
         
+        // Filter out services if the current store doesn't offer them
+        if (currentLojaId) {
+          const pharm = pharmacies.find(ph => ph.id === currentLojaId);
+          if (pharm && pharm.offersServices === false) {
+            finalResults = finalResults.filter(p => {
+              const isService = p.tipoProduto === "servico" || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
+              return !isService;
+            });
+          }
+        }
+        
         setServerProducts(finalResults);
         setTotalProducts(count);
       } catch (e) {

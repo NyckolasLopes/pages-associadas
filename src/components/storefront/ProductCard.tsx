@@ -120,7 +120,8 @@ function ProductCardComponent({
 
   if (selectedStoreId) {
     activeStoreId = selectedStoreId;
-    maxStock = getDeterministicStock(p, activeStoreId);
+    const isAtivoLocal = p.precosPorLoja?.[activeStoreId]?.ativo !== false;
+    maxStock = isAtivoLocal ? getDeterministicStock(p, activeStoreId) : 0;
     isLocalStock = maxStock > 0;
   } else if (cep && Object.keys(distances).length > 0) {
     const rawCity = globalCity || getCityFromCep(cep, pharmacies);
@@ -160,18 +161,12 @@ function ProductCardComponent({
     }
 
     isLocalStock = maxStock > 0;
-
-    // Prateleira Infinita Fallback
-    if (!isLocalStock && fornecedores && fornecedores.length > 0) {
-      const citySuppliers = fornecedores.filter(f => normalize(f.cidade).includes(citySearch));
-      activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
-      
-      const supplierStock = getDeterministicStock(p.id, String(activeFornecedor.id) + "supp");
-      maxStock = supplierStock > 0 ? supplierStock : 0;
-    }
   } else if (!cep) {
-    // Find the first pharmacy in the region that has stock
-    const storeWithStock = pharmacies.find(pharm => getDeterministicStock(p, pharm.id) > 0);
+    // Find the first pharmacy in the region that has stock AND is active
+    const storeWithStock = pharmacies.find(pharm => {
+      const isAtivoLocal = p.precosPorLoja?.[pharm.id]?.ativo !== false;
+      return isAtivoLocal && getDeterministicStock(p, pharm.id) > 0;
+    });
     
     if (storeWithStock) {
       maxStock = getDeterministicStock(p, storeWithStock.id);
@@ -180,6 +175,22 @@ function ProductCardComponent({
       // If no pharmacy has stock, just use the first one (stock will be 0)
       maxStock = 0;
       activeStoreId = pharmacies.length > 0 ? pharmacies[0].id : null;
+    }
+    isLocalStock = maxStock > 0;
+  }
+
+  // Prateleira Infinita Fallback (Applies even without CEP)
+  if (!isLocalStock && fornecedores && fornecedores.length > 0) {
+    const rawCity = globalCity || (cep ? getCityFromCep(cep, pharmacies) : "");
+    const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+    const citySearch = normalize(rawCity);
+    const citySuppliers = citySearch ? fornecedores.filter(f => normalize(f.cidade).includes(citySearch)) : [];
+    activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
+    
+    const supplierStock = getDeterministicStock(p.id, String(activeFornecedor.id) + "supp");
+    maxStock = supplierStock > 0 ? supplierStock : 0;
+    if (maxStock > 0) {
+      activeStoreId = null; // Clear local store constraint if using infinite shelf
     }
   }
 

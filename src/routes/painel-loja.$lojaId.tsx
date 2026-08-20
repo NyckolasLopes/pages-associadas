@@ -424,6 +424,7 @@ function PainelLoja() {
           <table>
             <thead>
               <tr>
+                <th>EAN</th>
                 <th>Produto</th>
                 <th>Qtd</th>
                 <th>Preço Unit.</th>
@@ -433,6 +434,7 @@ function PainelLoja() {
             <tbody>
               ${(pedido.produtos || []).map((item: any) => `
                 <tr>
+                  <td>${item.ean || '-'}</td>
                   <td>${item.nome}</td>
                   <td>${item.qtd || 1}</td>
                   <td>R$ ${(item.valorUnitario || 0).toFixed(2).replace('.', ',')}</td>

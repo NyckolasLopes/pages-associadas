@@ -30,7 +30,8 @@ export const productImage = (p: any) => {
   if (!p) return "/produtos/generico.webp";
   if (typeof p === "string") return p;
   if (p.imagens && p.imagens.length > 0) {
-    return p.imagens[0];
+    const img = p.imagens[0];
+    return img.caminhoImagem || img.url || img;
   }
 
   if (p.possuiImagem && p.ean) {

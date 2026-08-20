@@ -397,6 +397,7 @@ function PedidosPage() {
                     <div key={idx} className="flex items-center justify-between p-3 border rounded-xl bg-white text-xs">
                       <div>
                         <p className="font-bold text-slate-900">{item.nome}</p>
+                        <p className="text-[10px] text-slate-500">EAN: {item.ean || 'N/A'}</p>
                         <p className="text-muted-foreground">
                           {item.quantidade || item.qtd || 1}x {brl(item.preco || item.valorUnitario || 0)}
                         </p>

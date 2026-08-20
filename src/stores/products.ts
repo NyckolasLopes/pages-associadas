@@ -160,6 +160,7 @@ export const useAdminProducts = create<ProductsState>()(
           video_url: formattedProduct.videoUrl || null,
           destaque: formattedProduct.destaque || false,
           ativo: formattedProduct.ativo !== false,
+          visivel: formattedProduct.visivel !== false,
           buscavel: formattedProduct.buscavel !== false,
           lancamento: formattedProduct.lancamento || false,
           produto_natureza: formattedProduct.produtoNatureza || null,

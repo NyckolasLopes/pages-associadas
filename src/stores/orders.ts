@@ -211,10 +211,10 @@ export const useOrders = create<OrdersState>((set, get) => ({
       if (itens.length > 0) {
         const orderItemsRows = itens.map(i => ({
           pedido_id: insertedOrder.id,
+          produto_id: i.produtoId || null,
           nome: i.nome,
-          produto_id: i.sku || i.id || null,
-          qty: i.qtd || i.quantidade || 1,
-          preco_unit: i.valorUnitario || i.preco || 0,
+          qty: i.qty || 1,
+          preco_unit: i.precoUnit || 0
         }));
         await supabase.from('pedido_itens').insert(orderItemsRows as any);
       }

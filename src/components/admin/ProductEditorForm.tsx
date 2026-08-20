@@ -200,17 +200,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Natureza do Produto</Label>
-                <Select disabled={!isGlobalAdmin} value={formData.produtoNatureza || "fisico"} onValueChange={v => setFormData({...formData, produtoNatureza: v})}>
-                  <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fisico">Físico</SelectItem>
-                    <SelectItem value="digital">Digital</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Natureza do Produto</Label>
                 <Select disabled={!isGlobalAdmin} value={formData.tipoProduto || ""} onValueChange={val => setFormData({...formData, tipoProduto: val})}>
