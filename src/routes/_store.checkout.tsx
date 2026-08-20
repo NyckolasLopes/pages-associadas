@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import { toast } from "sonner";
 import { calculateDistance, getCepCoordinates } from "@/lib/utils";
+import { getStoreStatus } from "@/lib/storeHours";
 import { catalog } from "@/services/catalog";
 import type { Produto } from "@/types";
 import { z } from "zod";
@@ -86,6 +87,11 @@ function Checkout() {
   const allPharmacies = useAdmin((s) => s.pharmacies);
   const orderBumpSettings = useAdmin((s) => s.orderBumpSettings);
   const activeStore = allPharmacies.find(p => p.id === selectedPharmacyId) || allPharmacies[0];
+
+  const storeStatus = useMemo(() => {
+    if (!activeStore) return null;
+    return getStoreStatus(activeStore.horariosPorDia, activeStore.datasEspeciais);
+  }, [activeStore]);
 
   const selectedFreight = useCart((s) => s.selectedFreight);
   const setSelectedFreight = useCart((s) => s.setSelectedFreight);
@@ -614,6 +620,17 @@ function Checkout() {
           </h2>
           
           <div className="space-y-6">
+          {storeStatus && !storeStatus.isOpen && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-bold">A loja está fechada no momento.</p>
+                <p>{storeStatus.message}</p>
+                <p className="mt-1">Você pode finalizar o pedido, mas o processamento só iniciará quando a loja abrir.</p>
+              </div>
+            </div>
+          )}
+
             <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
               <button 
                 onClick={() => { setPaymentCategory("online"); setPaymentMethod("credit"); }}

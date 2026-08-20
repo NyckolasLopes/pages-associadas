@@ -11,6 +11,7 @@ import { isPbmEligible } from "@/lib/pbm";
 import { getDeterministicStock } from "@/lib/stock";
 import { getLevePaguePromotion } from "@/lib/utils";
 import { catalog } from "@/services/catalog";
+import { getStoreStatus } from "@/lib/storeHours";
 import { brl, productImage, tarjaColor } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -156,6 +157,11 @@ function CartPage() {
   
   const allPharmacies = useAdmin((s) => s.pharmacies);
   const selectedPharmacy = allPharmacies.find(p => p.id === selectedPharmacyId);
+
+  const storeStatus = useMemo(() => {
+    if (!selectedPharmacy) return null;
+    return getStoreStatus(selectedPharmacy.horariosPorDia, selectedPharmacy.datasEspeciais);
+  }, [selectedPharmacy]);
 
   const geoCep = useGeoCep((s) => s.cep);
   const geoLat = useGeoCep((s) => s.lat);
@@ -325,22 +331,34 @@ function CartPage() {
     }
 
     if (!forcePickup && p.aceitaEntrega) {
-      // Find distance
       const distance = (geoLat && geoLng && p.lat && p.lng)
         ? calculateDistance(geoLat, geoLng, p.lat, p.lng)
         : (pharmDistances[p.id] ?? null);
 
+      const totalPrice = items.reduce((acc, item) => {
+        const anyItem = item as any;
+        const isCampanha = isCampanhaAtiva(anyItem);
+        const itemPrice = isCampanha ? (anyItem.precoCampanha || anyItem.preco) : (anyItem.precosPorLoja?.[p.id]?.precoPor || anyItem.preco);
+        return acc + (itemPrice * item.qty);
+      }, 0);
+
       if (p.meiosEntregaPersonalizados && p.meiosEntregaPersonalizados.length > 0) {
-        // Lógica de Entregas do Associado (Meios Customizados)
         p.meiosEntregaPersonalizados.filter(m => m.ativo).forEach(m => {
           let deliveryPrice = null;
-          if (distance !== null && distance >= 0) {
-             const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
-             const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
-             if (matchingRaio) deliveryPrice = matchingRaio.preco;
-          } else if (distance === null) {
-             // Fallback caso a distância ainda não esteja calculada
-             deliveryPrice = 10;
+          
+          if (p.faixasValorPedido && p.faixasValorPedido.length > 0) {
+            const matchingFaixa = [...p.faixasValorPedido].sort((a,b) => b.valorMin - a.valorMin).find(f => totalPrice >= f.valorMin);
+            if (matchingFaixa) deliveryPrice = matchingFaixa.taxa;
+          }
+
+          if (deliveryPrice === null) {
+            if (distance !== null && distance >= 0) {
+               const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
+               const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
+               if (matchingRaio) deliveryPrice = matchingRaio.preco;
+            } else if (distance === null) {
+               deliveryPrice = 10;
+            }
           }
 
           if (deliveryPrice !== null) {
@@ -354,21 +372,25 @@ function CartPage() {
           }
         });
       } else {
-        // Lógica Legada (Configuração Global Admin)
         let deliveryPrice = null;
 
-        if (distance !== null && distance >= 0 && distance <= 20) {
-          if (p.raiosEntrega && p.raiosEntrega.length > 0) {
-            // Find matching radius
-            const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
-            const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
-            if (matchingRaio) {
-              deliveryPrice = matchingRaio.preco;
+        if (p.faixasValorPedido && p.faixasValorPedido.length > 0) {
+          const matchingFaixa = [...p.faixasValorPedido].sort((a,b) => b.valorMin - a.valorMin).find(f => totalPrice >= f.valorMin);
+          if (matchingFaixa) deliveryPrice = matchingFaixa.taxa;
+        }
+
+        if (deliveryPrice === null) {
+          if (distance !== null && distance >= 0 && distance <= 20) {
+            if (p.raiosEntrega && p.raiosEntrega.length > 0) {
+              const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
+              const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
+              if (matchingRaio) {
+                deliveryPrice = matchingRaio.preco;
+              }
             }
+          } else if (distance === null) {
+            deliveryPrice = 10;
           }
-        } else if (distance === null) {
-          // Fallback: If distance is unknown but we're here, assume basic delivery based on old logic
-          deliveryPrice = 10;
         }
 
         if (deliveryPrice !== null) {
@@ -712,6 +734,16 @@ function CartPage() {
 
       <div className="grid lg:grid-cols-[1fr_380px] gap-8">
         <div className="space-y-4">
+          {storeStatus && !storeStatus.isOpen && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-bold">A loja está fechada no momento.</p>
+                <p>{storeStatus.message}</p>
+                <p className="mt-1">Você ainda pode fazer o pedido, mas o processamento só iniciará quando a loja abrir.</p>
+              </div>
+            </div>
+          )}
           <div className="bg-card border rounded-xl p-4 flex flex-col gap-3">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="flex items-center gap-3 font-bold text-sm leading-tight flex-1">
@@ -933,17 +965,30 @@ function CartPage() {
                               {p.aceitaEntrega && (() => {
                                 let displayDeliveryPrice = null;
                                 let isDeliveryPriceExact = false;
-                                if (distance !== null && distance >= 0 && p.raiosEntrega && p.raiosEntrega.length > 0) {
-                                  const matchingRaio = [...p.raiosEntrega].sort((a,b) => a.ateKm - b.ateKm).find(r => distance <= r.ateKm);
-                                  if (matchingRaio) {
-                                    displayDeliveryPrice = matchingRaio.preco;
+                                if (p.faixasValorPedido && p.faixasValorPedido.length > 0) {
+                                  const matchingFaixa = [...p.faixasValorPedido]
+                                    .sort((a, b) => b.valorMin - a.valorMin)
+                                    .find(f => totalPrice >= f.valorMin);
+                                  
+                                  if (matchingFaixa) {
+                                    displayDeliveryPrice = matchingFaixa.taxa;
                                     isDeliveryPriceExact = true;
                                   }
-                                } else if (p.raiosEntrega && p.raiosEntrega.length > 0) {
-                                  displayDeliveryPrice = Math.min(...p.raiosEntrega.map(r => r.preco));
-                                } else if (p.custoEntrega !== undefined && p.custoEntrega !== null) {
-                                  displayDeliveryPrice = p.custoEntrega;
-                                  isDeliveryPriceExact = true;
+                                }
+
+                                if (displayDeliveryPrice === null) {
+                                  if (distance !== null && distance >= 0 && p.raiosEntrega && p.raiosEntrega.length > 0) {
+                                    const matchingRaio = [...p.raiosEntrega].sort((a,b) => a.ateKm - b.ateKm).find(r => distance <= r.ateKm);
+                                    if (matchingRaio) {
+                                      displayDeliveryPrice = matchingRaio.preco;
+                                      isDeliveryPriceExact = true;
+                                    }
+                                  } else if (p.raiosEntrega && p.raiosEntrega.length > 0) {
+                                    displayDeliveryPrice = Math.min(...p.raiosEntrega.map(r => r.preco));
+                                  } else if (p.custoEntrega !== undefined && p.custoEntrega !== null) {
+                                    displayDeliveryPrice = p.custoEntrega;
+                                    isDeliveryPriceExact = true;
+                                  }
                                 }
                                 
                                 if (displayDeliveryPrice === null) return null;

@@ -295,8 +295,6 @@ function rowToProduct(
   return {
     id,
     ean,
-    sku: ean,
-    foto: "",
     nome,
     descricao: String(get("descricao") || nome),
         marca: String(get("marca") || ""),

@@ -119,6 +119,8 @@ export interface Pharmacy {
   whatsapp?: string; // WhatsApp oficial da unidade para pedidos
   horarioFuncionamento: string;
   diasFuncionamento?: number[]; // [0,1,2,3,4,5,6] onde 0 = Domingo
+  horariosPorDia?: { dia: number; abre: string; fecha: string; fechado: boolean }[];
+  datasEspeciais?: { data: string; abre: string; fecha: string; fechado: boolean; descricao?: string }[];
   respTecnico: string; // Nome do Farmacêutico
   inscricaoFarmaceutico: string; // CRF
   alvara: string;
@@ -181,6 +183,7 @@ export interface Pharmacy {
   custoMotoboy: number | string;
   custoEntregaExpressa?: number | string;
   raiosEntrega?: { ateKm: number; preco: number }[];
+  faixasValorPedido?: { valorMin: number; valorMax?: number | null; taxa: number }[];
   // Integração
   sistemaUtilizado?: string;
   vendeIfood?: boolean;
@@ -336,6 +339,8 @@ const defaultPharmacies: Pharmacy[] = lojas.map((l, idx) => {
     telefone: "(51) 3333-3333",
     horarioFuncionamento: "08:00 às 22:00",
     diasFuncionamento: [1,2,3,4,5,6], // Segunda a Sábado
+      horariosPorDia: [],
+      datasEspeciais: [],
     respTecnico: l.farmaceuticoResponsavel,
     inscricaoFarmaceutico: l.crf,
     alvara: l.alvaraSanitario,
@@ -355,7 +360,7 @@ const defaultPharmacies: Pharmacy[] = lojas.map((l, idx) => {
     tempoEntrega: l.faixasCep?.[0]?.tempoMinutos ? `00:${l.faixasCep[0].tempoMinutos}` : "01:00",
     custoEntrega: l.faixasCep?.[0]?.taxa || 5.0,
     raiosEntrega: [],
-
+    faixasValorPedido: [],
     aceitaRetirada: true,
     horarioInicioRetirada: "08:00",
     horarioFimRetirada: "22:00",
@@ -898,7 +903,7 @@ export const useAdmin = create<AdminState>()(
         const { data, error } = await supabase.from('lojas').select('*');
         if (!error && data) {
           const loadedPharmacies: Pharmacy[] = data.map((l: any) => {
-            let parsedThemeColors = {};
+            let parsedThemeColors: any = {};
             try {
               parsedThemeColors = typeof l.theme_colors === 'string' ? JSON.parse(l.theme_colors) : (l.theme_colors || {});
             } catch (e) {
@@ -914,6 +919,8 @@ export const useAdmin = create<AdminState>()(
               telefone: l.telefone,
               horarioFuncionamento: l.horario_funcionamento || parsedThemeColors?.horario_funcionamento,
               diasFuncionamento: parsedThemeColors?.diasFuncionamento || [1,2,3,4,5,6],
+                horariosPorDia: parsedThemeColors?.horariosPorDia || [],
+                datasEspeciais: parsedThemeColors?.datasEspeciais || [],
               respTecnico: l.farmaceutico_responsavel || parsedThemeColors?.farmaceutico_responsavel,
               inscricaoFarmaceutico: l.crf || parsedThemeColors?.crf,
               alvara: l.alvara_sanitario || parsedThemeColors?.alvara_sanitario,
@@ -968,6 +975,7 @@ export const useAdmin = create<AdminState>()(
               custoMotoboy: parsedThemeColors?.custoMotoboy ?? 0,
               custoEntregaExpressa: parsedThemeColors?.custoEntregaExpressa ?? 0,
               raiosEntrega: parsedThemeColors?.raiosEntrega ?? [],
+              faixasValorPedido: parsedThemeColors?.faixasValorPedido ?? [],
               meiosEntregaPersonalizados: parsedThemeColors?.meiosEntregaPersonalizados ?? [],
               themeColors: parsedThemeColors && Object.keys(parsedThemeColors).length > 0 ? parsedThemeColors : undefined,
               sistemaUtilizado: l.sistema_utilizado || parsedThemeColors?.sistemaUtilizado || '',
@@ -999,6 +1007,8 @@ export const useAdmin = create<AdminState>()(
           whatsapp: p.whatsapp,
           horario_funcionamento: p.horarioFuncionamento,
           diasFuncionamento: p.diasFuncionamento,
+            horariosPorDia: p.horariosPorDia,
+            datasEspeciais: p.datasEspeciais,
           farmaceutico_responsavel: p.respTecnico,
           crf: p.inscricaoFarmaceutico,
           alvara_sanitario: p.alvara,
@@ -1028,6 +1038,7 @@ export const useAdmin = create<AdminState>()(
           custoMotoboy: p.custoMotoboy,
           custoEntregaExpressa: p.custoEntregaExpressa,
           raiosEntrega: p.raiosEntrega,
+          faixasValorPedido: p.faixasValorPedido,
           meiosEntregaPersonalizados: p.meiosEntregaPersonalizados,
         };
 
@@ -1091,6 +1102,8 @@ export const useAdmin = create<AdminState>()(
           whatsapp: p.whatsapp,
           horario_funcionamento: p.horarioFuncionamento,
           diasFuncionamento: p.diasFuncionamento,
+            horariosPorDia: p.horariosPorDia,
+            datasEspeciais: p.datasEspeciais,
           farmaceutico_responsavel: p.respTecnico,
           crf: p.inscricaoFarmaceutico,
           alvara_sanitario: p.alvara,
@@ -1120,6 +1133,7 @@ export const useAdmin = create<AdminState>()(
           custoMotoboy: p.custoMotoboy,
           custoEntregaExpressa: p.custoEntregaExpressa,
           raiosEntrega: p.raiosEntrega,
+          faixasValorPedido: p.faixasValorPedido,
           meiosEntregaPersonalizados: p.meiosEntregaPersonalizados,
         };
 
@@ -1391,3 +1405,5 @@ export const useAdmin = create<AdminState>()(
     }
   )
 );
+
+

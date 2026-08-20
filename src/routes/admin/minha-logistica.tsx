@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAdmin, Pharmacy, CustomDeliveryMethod } from "@/stores/admin";
 import { useState, useEffect } from "react";
-import { Truck, MapPin, Package, Plus, Trash2, Edit2, Save } from "lucide-react";
+import { Truck, MapPin, Package, Plus, Trash2, Edit2, Save, Clock, Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -134,7 +134,7 @@ function MinhaLogistica() {
       </div>
 
       <Tabs defaultValue="entrega" className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <TabsList className="grid w-full grid-cols-2 max-w-md mb-8">
+        <TabsList className="grid w-full grid-cols-3 max-w-2xl mb-8">
           <TabsTrigger value="entrega" className="flex items-center gap-2">
             <Truck className="w-4 h-4" />
             Meios de Entrega
@@ -142,6 +142,10 @@ function MinhaLogistica() {
           <TabsTrigger value="retirada" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
             Retirada na Loja
+          </TabsTrigger>
+          <TabsTrigger value="horarios" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Horários de Operação
           </TabsTrigger>
         </TabsList>
 
@@ -223,6 +227,80 @@ function MinhaLogistica() {
               )}
             </div>
           )}
+
+          <div className="space-y-4 pt-4 mt-6 border-t border-slate-200">
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h3 className="font-bold text-lg text-slate-800">Faixas de Entrega por Valor do Pedido</h3>
+                <p className="text-sm text-slate-500">Se configurado, o frete será calculado com base no valor total do carrinho (subtotal final), tendo prioridade sobre as regras de distância.</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+                {(formData.faixasValorPedido || []).map((faixa, idx) => (
+                  <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-3 rounded border">
+                    <div className="flex-1 flex flex-col gap-1">
+                      <span className="text-xs font-medium text-slate-500">Valor Mínimo (R$)</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={faixa.valorMin ?? ""}
+                        onChange={(e) => {
+                          const newFaixas = [...(formData.faixasValorPedido || [])];
+                          newFaixas[idx].valorMin = parseFloat(e.target.value) || 0;
+                          setFormData({ ...formData, faixasValorPedido: newFaixas });
+                        }}
+                        placeholder="0,00"
+                        className="bg-white"
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1">
+                      <span className="text-xs font-medium text-slate-500">Custo do Frete (R$)</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={faixa.taxa ?? ""}
+                        onChange={(e) => {
+                          const newFaixas = [...(formData.faixasValorPedido || [])];
+                          newFaixas[idx].taxa = parseFloat(e.target.value) || 0;
+                          setFormData({ ...formData, faixasValorPedido: newFaixas });
+                        }}
+                        placeholder="0,00"
+                        className="bg-white"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="mt-5 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        const newFaixas = [...(formData.faixasValorPedido || [])];
+                        newFaixas.splice(idx, 1);
+                        setFormData({ ...formData, faixasValorPedido: newFaixas });
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  className="w-full text-sm font-bold mt-2"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      faixasValorPedido: [...(formData.faixasValorPedido || []), { valorMin: 0, taxa: 0 }]
+                    });
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Faixa de Valor
+                </Button>
+              </div>
+          </div>
+
         </TabsContent>
 
         <TabsContent value="retirada" className="space-y-6">
@@ -269,6 +347,167 @@ function MinhaLogistica() {
               </div>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="horarios" className="space-y-6">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label className="text-lg font-bold text-slate-800">Horários por Dia</Label>
+                <p className="text-sm text-slate-500">Defina os horários de operação padrão para cada dia da semana.</p>
+              </div>
+              <div className="border rounded-md divide-y overflow-hidden max-w-2xl">
+                {['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'].map((nomeDia, idx) => {
+                  const currentConfig = formData.horariosPorDia?.find(h => h.dia === idx) || { dia: idx, abre: '08:00', fecha: '18:00', fechado: false };
+                  return (
+                    <div key={idx} className="flex flex-wrap items-center justify-between p-4 bg-slate-50 gap-2">
+                      <div className="w-32 font-medium text-sm text-slate-700">{nomeDia}</div>
+                      <div className="flex items-center gap-4 flex-1 justify-end">
+                        <Label className="text-sm flex items-center gap-2 cursor-pointer font-medium text-slate-600">
+                          <Checkbox 
+                            checked={currentConfig.fechado} 
+                            onCheckedChange={(c: boolean | 'indeterminate') => {
+                              const newH = [...(formData.horariosPorDia || [])];
+                              const i = newH.findIndex(h => h.dia === idx);
+                              if (i >= 0) newH[i].fechado = !!c;
+                              else newH.push({ ...currentConfig, fechado: !!c });
+                              setFormData({ ...formData, horariosPorDia: newH });
+                            }} 
+                          />
+                          Fechado
+                        </Label>
+                        {!currentConfig.fechado && (
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              type="time" 
+                              className="w-28 h-10 text-sm" 
+                              value={currentConfig.abre}
+                              onChange={(e) => {
+                                const newH = [...(formData.horariosPorDia || [])];
+                                const i = newH.findIndex(h => h.dia === idx);
+                                if (i >= 0) newH[i].abre = e.target.value;
+                                else newH.push({ ...currentConfig, abre: e.target.value });
+                                setFormData({ ...formData, horariosPorDia: newH });
+                              }}
+                            />
+                            <span className="text-sm text-slate-400">às</span>
+                            <Input 
+                              type="time" 
+                              className="w-28 h-10 text-sm" 
+                              value={currentConfig.fecha}
+                              onChange={(e) => {
+                                const newH = [...(formData.horariosPorDia || [])];
+                                const i = newH.findIndex(h => h.dia === idx);
+                                if (i >= 0) newH[i].fecha = e.target.value;
+                                else newH.push({ ...currentConfig, fecha: e.target.value });
+                                setFormData({ ...formData, horariosPorDia: newH });
+                              }}
+                            />
+                          </div>
+                        )}
+                        {currentConfig.fechado && (
+                           <div className="flex items-center w-[260px]"></div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-6 border-t">
+              <div className="space-y-1">
+                <Label className="text-lg font-bold text-slate-800">Datas Especiais / Feriados</Label>
+                <p className="text-sm text-slate-500">Adicione exceções ao horário padrão, como feriados e emendas.</p>
+              </div>
+              <div className="space-y-3 max-w-3xl">
+                {(formData.datasEspeciais || []).map((dataEsp, idx) => (
+                  <div key={idx} className="flex flex-wrap items-center gap-3 p-4 bg-white border rounded shadow-sm">
+                    <Input 
+                      type="date" 
+                      className="w-auto h-10 text-sm" 
+                      value={dataEsp.data}
+                      onChange={(e) => {
+                        const newDE = [...(formData.datasEspeciais || [])];
+                        newDE[idx].data = e.target.value;
+                        setFormData({ ...formData, datasEspeciais: newDE });
+                      }}
+                    />
+                    <Input 
+                      placeholder="Descrição (ex: Natal)" 
+                      className="w-48 h-10 text-sm" 
+                      value={dataEsp.descricao || ''}
+                      onChange={(e) => {
+                        const newDE = [...(formData.datasEspeciais || [])];
+                        newDE[idx].descricao = e.target.value;
+                        setFormData({ ...formData, datasEspeciais: newDE });
+                      }}
+                    />
+                    <Label className="text-sm flex items-center gap-2 cursor-pointer font-medium text-slate-600">
+                      <Checkbox 
+                        checked={dataEsp.fechado} 
+                        onCheckedChange={(c: boolean | 'indeterminate') => {
+                          const newDE = [...(formData.datasEspeciais || [])];
+                          newDE[idx].fechado = !!c;
+                          setFormData({ ...formData, datasEspeciais: newDE });
+                        }} 
+                      />
+                      Fechado
+                    </Label>
+                    {!dataEsp.fechado && (
+                      <div className="flex items-center gap-2 ml-auto">
+                        <Input 
+                          type="time" 
+                          className="w-24 h-10 text-sm" 
+                          value={dataEsp.abre}
+                          onChange={(e) => {
+                            const newDE = [...(formData.datasEspeciais || [])];
+                            newDE[idx].abre = e.target.value;
+                            setFormData({ ...formData, datasEspeciais: newDE });
+                          }}
+                        />
+                        <span className="text-sm text-slate-400">às</span>
+                        <Input 
+                          type="time" 
+                          className="w-24 h-10 text-sm" 
+                          value={dataEsp.fecha}
+                          onChange={(e) => {
+                            const newDE = [...(formData.datasEspeciais || [])];
+                            newDE[idx].fecha = e.target.value;
+                            setFormData({ ...formData, datasEspeciais: newDE });
+                          }}
+                        />
+                      </div>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-10 w-10 ml-auto text-red-500 hover:text-red-700 hover:bg-red-50" 
+                      onClick={() => {
+                        const newDE = [...(formData.datasEspeciais || [])];
+                        newDE.splice(idx, 1);
+                        setFormData({ ...formData, datasEspeciais: newDE });
+                      }}
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+                ))}
+                <Button 
+                  variant="outline" 
+                  className="w-full text-sm font-bold h-10 border-dashed"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      datasEspeciais: [...(formData.datasEspeciais || []), { data: '', descricao: '', fechado: true, abre: '08:00', fecha: '18:00' }]
+                    });
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Adicionar Data Especial
+                </Button>
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -385,3 +624,4 @@ function MinhaLogistica() {
     </div>
   );
 }
+
