@@ -13,7 +13,7 @@ export function CartSync() {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    // Only sync if user is logged in
+    // Só sincroniza se o usuário estiver logado
     if (!user?.id) return;
 
     const syncCart = async () => {
@@ -42,7 +42,11 @@ export function CartSync() {
             loja_id: lojaId,
             items: items,
             total: total,
-            status: "abandonado"
+            status: "abandonado",
+            // Dados do cliente salvos diretamente (evita join com profiles bloqueado por RLS)
+            nome_cliente: user.nome || user.name || user.email || '',
+            email_cliente: user.email || '',
+            telefone_cliente: user.celular || '',
           }, { onConflict: "user_id, loja_id" });
         } else {
           // Carrinho vazio: remove o carrinho abandonado dessa sessão

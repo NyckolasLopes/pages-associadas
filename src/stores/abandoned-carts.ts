@@ -32,12 +32,13 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
   loadCarts: async () => {
     set({ isLoading: true });
     try {
+      // Busca carrinhos sem join com profiles (evita bloqueio de RLS)
+      // Os dados do cliente são salvos diretamente nas colunas nome_cliente, email_cliente, telefone_cliente
       const { data, error } = await supabase
         .from('carrinhos_abandonados' as any)
         .select(`
           *,
-          lojas ( nome ),
-          profiles ( nome, email, celular )
+          lojas ( nome )
         `)
         .eq('status', 'abandonado')
         .not('user_id', 'is', null)
@@ -48,10 +49,10 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
       const mapped: AbandonedCart[] = (data || []).map((row: any) => ({
         id: row.id,
         createdAt: new Date(row.created_at).toLocaleDateString('pt-BR') + ' ' + new Date(row.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        client: row.profiles?.nome || "Cliente",
-        email: row.profiles?.email || "",
-        phone: row.profiles?.celular || "",
-        address: "Não informado", // Can be extended if address is saved
+        client: row.nome_cliente || "Cliente",
+        email: row.email_cliente || "",
+        phone: row.telefone_cliente || "",
+        address: "Não informado",
         abandonedAt: new Date(row.updated_at).toLocaleDateString('pt-BR') + ' ' + new Date(row.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         recoveryStatus: row.notes ? "Em tratativa" : "Aguardando disparo autom.",
         total: row.total || 0,
@@ -87,7 +88,6 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
   },
   removeCart: async (id: string) => {
     try {
-      // Instead of deleting, mark it as 'convertido' or delete
       const { error } = await supabase
         .from('carrinhos_abandonados' as any)
         .delete()
