@@ -921,7 +921,7 @@ export const useAdmin = create<AdminState>()(
               cep: l.cep || '',
               endereco: l.logradouro || '',
               numero: l.numero || '',
-              complemento: l.complemento || '',
+              complemento: l.complemento || parsedThemeColors?.complemento || '',
               bairro: l.bairro || '',
               cidade: l.cidade || '',
               uf: l.estado || '',
@@ -970,7 +970,7 @@ export const useAdmin = create<AdminState>()(
               raiosEntrega: parsedThemeColors?.raiosEntrega ?? [],
               meiosEntregaPersonalizados: parsedThemeColors?.meiosEntregaPersonalizados ?? [],
               themeColors: parsedThemeColors || {},
-              sistemaUtilizado: parsedThemeColors?.sistemaUtilizado || '',
+              sistemaUtilizado: l.sistema_utilizado || parsedThemeColors?.sistemaUtilizado || '',
               offersServices: parsedThemeColors?.offersServices ?? false,
             };
           }) as unknown as Pharmacy[];
@@ -1059,6 +1059,7 @@ export const useAdmin = create<AdminState>()(
           longitude: p.lng,
           entrega_expressa: p.entregaExpressa,
           status_loja_virtual: p.virtualStoreStatus,
+          sistema_utilizado: p.sistemaUtilizado,
         } as any);
 
         if (error) {
@@ -1151,6 +1152,7 @@ export const useAdmin = create<AdminState>()(
           longitude: p.lng,
           entrega_expressa: p.entregaExpressa,
           status_loja_virtual: p.virtualStoreStatus,
+          sistema_utilizado: p.sistemaUtilizado,
         } as any).eq('id', id);
 
         if (error) {
