@@ -1462,12 +1462,10 @@ function CartPage() {
 
               {deliveryMethod === "retirada" ? (
                 <div className="text-xs text-muted-foreground bg-white p-2.5 rounded border space-y-1.5">
-                  <div>📍 <strong>Endereço de retirada:</strong> {selectedPharmacy?.endereco}, {selectedPharmacy?.bairro} - {selectedPharmacy?.cidade}/{selectedPharmacy?.uf}</div>
-                  // @ts-ignore
+                  <div>📍 <strong>Endereço de retirada:</strong> {selectedPharmacy?.endereco}, {selectedPharmacy?.numero ? selectedPharmacy.numero + ' - ' : ''}{selectedPharmacy?.bairro} - {selectedPharmacy?.cidade}/{selectedPharmacy?.uf}</div>
                   {selectedPharmacy?.horario_funcionamento && (
                     <div className="flex items-center gap-1.5 text-slate-600 mt-1">
                       <Clock className="w-3.5 h-3.5 shrink-0" />
-                      // @ts-ignore
                       <span>{selectedPharmacy.horario_funcionamento}</span>
                     </div>
                   )}

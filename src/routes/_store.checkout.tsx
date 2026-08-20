@@ -371,7 +371,6 @@ function Checkout() {
     return (
       <div className="container-fa py-12 text-center max-w-lg mx-auto min-h-[60vh] flex flex-col justify-center">
         <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          // @ts-ignore
           <MessageCircle className="w-10 h-10 text-emerald-600" />
         </div>
         <h1 className="text-3xl font-bold text-slate-800 mb-2">Pedido Recebido! 🎉</h1>
@@ -391,13 +390,11 @@ function Checkout() {
               window.open(`https://wa.me/${waNumber}`, "_blank");
             }}
           >
-            // @ts-ignore
             <MessageCircle className="w-5 h-5 mr-2" />
             Ir para o WhatsApp Agora
           </Button>
         </div>
 
-        // @ts-ignore
         <Link to={`/${activeStore?.slug || ''}`}>
           <Button variant="outline" className="w-full h-12">Voltar para a página inicial</Button>
         </Link>

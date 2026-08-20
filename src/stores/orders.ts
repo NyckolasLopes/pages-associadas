@@ -193,7 +193,6 @@ export const useOrders = create<OrdersState>((set, get) => ({
       numero: order.id.replace('FA-', ''),
       user_id: userId as string,
       loja_id: order.lojaId,
-      origem: order.origem || 'site',
       status: order.status || 'novo',
       subtotal: order.valores?.subtotal || order.valores?.produtos || 0,
       desconto: order.valores?.desconto || 0,
