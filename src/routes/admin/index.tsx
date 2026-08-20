@@ -72,7 +72,7 @@ function AdminDashboard() {
     }).sort((a, b) => b.mes - a.mes);
   }, [pharmacies, lojasAcessos]);
 
-  const dynamicTotalAcessos = totalAcessos > 0 ? totalAcessos : visitasPorLoja.reduce((acc, l) => acc + l.mes, 0);
+  const dynamicTotalAcessos = visitasPorLoja.reduce((acc, l) => acc + l.mes, 0);
 
   const effectiveStoreStats = useMemo(() => {
     if (!effectiveStoreId) {
