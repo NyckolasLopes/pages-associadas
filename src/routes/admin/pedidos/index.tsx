@@ -66,6 +66,7 @@ interface UnifiedOrderItem {
     foto?: string;
     imagem?: string;
     sku?: string;
+    ean?: string;
   }>;
   total: number;
   tipo: "pedido" | "carrinho";
@@ -92,29 +93,7 @@ export function PedidosAdmin() {
   const lastUpdatedAt = useCart(s => (s as any).lastUpdatedAt);
   const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
 
-  const liveCarts: AbandonedCart[] = [];
-  if (user && cartItems.length > 0) {
-    liveCarts.push({
-      id: "#807099",
-      createdAt: new Date(lastUpdatedAt || Date.now()).toLocaleDateString('pt-BR') + " " + new Date(lastUpdatedAt || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      client: user.name || "Cliente",
-      email: user.email || "",
-      phone: (user as any).phone || "(51) 99999-9999",
-      address: "Não informado",
-      abandonedAt: "Há pouco tempo",
-      recoveryStatus: "Aguardando disparo autom.",
-      total: cartTotal,
-      type: 'sem_transacao',
-      lojaId: selectedPharmacyId || undefined,
-      items: cartItems.map(i => ({
-        nome: i.nome,
-        qtd: i.qty,
-        valorUnitario: i.preco,
-        foto: "https://placehold.co/100"
-      }))
-    });
-  }
-  const allAbandonedCartsRaw = [...liveCarts, ...storeCarts];
+  const allAbandonedCartsRaw = [...storeCarts];
     
   const isGlobalAdmin = () => {
     if (currentUser?.proprietario) return true;
@@ -324,7 +303,7 @@ export function PedidosAdmin() {
         id: cart.id,
         data: cart.abandonedAt,
         dataOriginal: cart.abandonedAt,
-        clienteNome: cart.nome || "Cliente",
+        clienteNome: cart.client || "Cliente",
         clienteTelefone: cart.phone || "Não informado",
         clienteEndereco: cart.address,
         lojaId: cart.lojaId,
@@ -338,7 +317,8 @@ export function PedidosAdmin() {
           qtd: i.qtd,
           quantidade: i.qtd,
           valorUnitario: i.valorUnitario,
-          preco: i.valorUnitario
+          preco: i.valorUnitario,
+          ean: i.ean
         })) || [],
         total: cart.total || 0,
         tipo: "carrinho",
@@ -424,7 +404,8 @@ export function PedidosAdmin() {
   };
 
   const exportToJson = () => {
-    const dataStr = JSON.stringify(filteredUnifiedOrders, null, 2);
+    const fullData = filteredUnifiedOrders.map(item => item.rawOrder || item.rawCart || item);
+    const dataStr = JSON.stringify(fullData, null, 2);
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
     const exportFileDefaultName = "pedidos_associadas.json";
 
@@ -1053,6 +1034,7 @@ export function PedidosAdmin() {
                     <div key={idx} className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-50">
                       <div>
                         <div className="font-bold text-slate-800">{it.nome}</div>
+                        {it.ean && <div className="text-slate-400 text-[10px] font-medium">EAN: {it.ean}</div>}
                         <div className="text-slate-400 text-[11px]">Qtd: {it.qtd || it.quantidade || 1}x</div>
                       </div>
                       <div className="font-black text-slate-900">

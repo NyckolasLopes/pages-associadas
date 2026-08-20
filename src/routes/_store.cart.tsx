@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
-  Flame, Store, Truck, X, MapPin, AlertTriangle, Bike, 
+  Flame, Store, Truck, X, MapPin, AlertTriangle, Bike, Bell,
   MessageCircle, Send, CheckCircle2, Tag, Sparkles, DollarSign, CreditCard, ShoppingBag,
   Building2, Clock, Edit2
 } from "lucide-react";
@@ -138,6 +138,8 @@ function CartPage() {
   const remove = useCart((s) => s.remove);
   const add = useCart((s) => s.add);
   const clear = useCart((s) => s.clear);
+  const cartNotifications = useCart(s => s.notifications);
+  const clearCartNotifications = useCart(s => s.clearNotifications);
   const subtotal = useCart((s) => s.subtotal());
   const storeDiscount = useCart((s) => s.storeDiscount());
   const pbmDisc = useCart((s) => s.pbmDiscount());
@@ -734,6 +736,31 @@ function CartPage() {
 
       <div className="grid lg:grid-cols-[1fr_380px] gap-8">
         <div className="space-y-4">
+          {cartNotifications && cartNotifications.length > 0 && items.length > 0 && (
+            <div className="bg-emerald-50 text-emerald-800 text-sm p-4 rounded-xl border border-emerald-200 relative">
+              <button onClick={clearCartNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+              <ul className="space-y-3">
+                {cartNotifications.map(n => {
+                  const item = items.find(i => i.id === n.id);
+                  if (!item) return null;
+                  return (
+                    <li key={n.id} className="flex flex-col gap-1">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <Bell className="h-4 w-4 shrink-0" />
+                        <span>O produto <strong>{item.nome}</strong> ficou mais barato!</span>
+                      </div>
+                      <div className="text-emerald-700 pl-5.5">
+                        De <span className="line-through">{brl(n.oldPrice)}</span> para <strong>{brl(n.newPrice)}</strong> na farmácia <strong>{n.storeName}</strong>.
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
           {storeStatus && !storeStatus.isOpen && (
             <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl flex gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />

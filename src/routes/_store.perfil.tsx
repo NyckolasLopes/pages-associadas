@@ -487,16 +487,19 @@ function PerfilPage() {
                  <button onClick={clearFavNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors">
                    <X className="h-4 w-4" />
                  </button>
-                 <h3 className="font-bold text-emerald-800 flex items-center gap-2 mb-2">
-                   <Bell className="h-4 w-4" /> Novidades nos seus favoritos!
-                 </h3>
-                 <ul className="text-sm text-emerald-700 space-y-1">
+                 <ul className="text-sm text-emerald-700 space-y-3">
                    {favNotifications.map(n => {
                      const p = favoriteProducts.find(prod => prod.id === n.id);
                      if (!p) return null;
                      return (
-                        <li key={n.id}>
-                          A farmácia <strong>{n.storeName}</strong> da sua região baixou o preço desse produto de <span className="line-through">{brl(n.oldPrice)}</span> para <strong>{brl(n.newPrice)}</strong>
+                        <li key={n.id} className="flex flex-col gap-1">
+                          <div className="font-bold flex items-center gap-1.5 text-base">
+                            <Bell className="h-4 w-4 shrink-0" />
+                            <span>O produto <strong>{p.nome}</strong> ficou mais barato!</span>
+                          </div>
+                          <div className="pl-5.5">
+                            De <span className="line-through">{brl(n.oldPrice)}</span> para <strong>{brl(n.newPrice)}</strong> na farmácia <strong>{n.storeName}</strong>.
+                          </div>
                         </li>
                      );
                    })}

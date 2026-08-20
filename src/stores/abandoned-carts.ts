@@ -15,7 +15,7 @@ export interface AbandonedCart {
   notes?: string;
   lojaId?: string;
   lojaNome?: string;
-  items: { nome: string; qtd: number; valorUnitario: number; foto: string }[];
+  items: { nome: string; qtd: number; valorUnitario: number; foto: string; ean?: string }[];
 }
 
 interface AbandonedCartsState {
@@ -40,6 +40,7 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
           profiles ( nome, email, celular )
         `)
         .eq('status', 'abandonado')
+        .not('user_id', 'is', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;

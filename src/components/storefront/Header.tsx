@@ -1357,14 +1357,19 @@ function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
           <button onClick={clearCartNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors">
             <X className="h-3 w-3" />
           </button>
-          <div className="font-bold flex items-center gap-1.5 mb-1"><Bell className="h-3.5 w-3.5" /> Boas notícias!</div>
-          <ul className="space-y-1">
+          <ul className="space-y-3">
             {cartNotifications.map(n => {
               const item = items.find(i => i.id === n.id);
               if (!item) return null;
               return (
-                <li key={n.id}>
-                  A farmácia <strong>{n.storeName}</strong> da sua região baixou o preço desse produto de <span className="line-through">{brl(n.oldPrice)}</span> para <strong>{brl(n.newPrice)}</strong>
+                <li key={n.id} className="flex flex-col gap-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <Bell className="h-3.5 w-3.5 shrink-0" />
+                    <span>O produto <strong>{item.nome}</strong> ficou mais barato!</span>
+                  </div>
+                  <div className="text-emerald-700 pl-5">
+                    De <span className="line-through">{brl(n.oldPrice)}</span> para <strong>{brl(n.newPrice)}</strong> na farmácia <strong>{n.storeName}</strong>.
+                  </div>
                 </li>
               );
             })}
