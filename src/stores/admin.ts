@@ -973,6 +973,8 @@ export const useAdmin = create<AdminState>()(
         const theme_colors_payload = {
           ...(p.themeColors || {}),
           complemento: p.complemento,
+          sistemaUtilizado: p.sistemaUtilizado,
+          offersServices: p.offersServices,
           footer_plataforma_texto: p.footerPlataformaTexto,
           footer_descricao: p.footerDescricao,
           footer_titulo_contato: p.footerTituloContato,
@@ -1063,6 +1065,8 @@ export const useAdmin = create<AdminState>()(
         const theme_colors_payload = {
           ...(currentPharmacy?.themeColors || {}),
           complemento: p.complemento,
+          sistemaUtilizado: p.sistemaUtilizado,
+          offersServices: p.offersServices,
           footer_plataforma_texto: p.footerPlataformaTexto,
           footer_descricao: p.footerDescricao,
           footer_titulo_contato: p.footerTituloContato,

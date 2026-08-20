@@ -1,0 +1,18 @@
+-- Adiciona as colunas ausentes na tabela produtos
+ALTER TABLE public.produtos
+ADD COLUMN IF NOT EXISTS buscavel BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS lancamento BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS produto_natureza TEXT,
+ADD COLUMN IF NOT EXISTS tipo_produto TEXT,
+ADD COLUMN IF NOT EXISTS codigo_interno TEXT,
+ADD COLUMN IF NOT EXISTS eans_secundarios JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS alerta_texto TEXT,
+ADD COLUMN IF NOT EXISTS alerta_regulatorio BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS caracteristicas JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS tipo_receita TEXT,
+ADD COLUMN IF NOT EXISTS ncm TEXT,
+ADD COLUMN IF NOT EXISTS nivel_relevancia INT DEFAULT 0,
+ADD COLUMN IF NOT EXISTS seo_titulo TEXT,
+ADD COLUMN IF NOT EXISTS meta_description TEXT,
+ADD COLUMN IF NOT EXISTS termos_pesquisa TEXT,
+ADD COLUMN IF NOT EXISTS imagem_alt TEXT;

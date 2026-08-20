@@ -56,6 +56,12 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const currentImagens = (formData?.imagens || []) as any[];
+    if (currentImagens.length >= 5) {
+      toast?.error("Limite máximo de 5 imagens atingido.");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
@@ -67,12 +73,25 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         if (ctx) {
           ctx.drawImage(img, 0, 0);
           const webpDataUrl = canvas.toDataURL("image/webp", 0.8);
-          setFormData(prev => prev ? { ...prev, foto: webpDataUrl } : prev);
+          setFormData(prev => {
+            if (!prev) return prev;
+            const newImagens = [...(prev.imagens || []), { caminhoImagem: webpDataUrl }];
+            return { ...prev, imagens: newImagens, foto: newImagens[0]?.caminhoImagem || prev.foto };
+          });
         }
       };
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      const newImagens = [...(prev.imagens || [])];
+      newImagens.splice(index, 1);
+      return { ...prev, imagens: newImagens, foto: newImagens[0]?.caminhoImagem || "" };
+    });
   };
 
   useEffect(() => {
@@ -566,11 +585,31 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             
             <div className="space-y-4">
               <div className="flex flex-wrap gap-4">
-                <div className="w-32 h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer transition-colors relative overflow-hidden group">
-                  <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" />
-                  <Upload className="h-6 w-6 mb-2" />
-                  <span className="text-xs font-medium text-center px-2">Upload Imagem</span>
-                </div>
+                {((formData.imagens || []) as any[]).map((img: any, idx: number) => (
+                  <div key={idx} className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group">
+                    <img src={img.caminhoImagem || img} alt={`Imagem ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => handleRemoveImage(idx)}
+                      className="absolute top-1 right-1 bg-white/80 hover:bg-red-50 text-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    {idx === 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/90 text-white text-[10px] text-center py-1 font-bold">
+                        Capa
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {((formData.imagens || []) as any[]).length < 5 && (
+                  <div className="w-32 h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer transition-colors relative overflow-hidden group">
+                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleImageUpload} />
+                    <Upload className="h-6 w-6 mb-2" />
+                    <span className="text-xs font-medium text-center px-2">Upload Imagem</span>
+                    <span className="text-[10px] text-slate-400 mt-1">{5 - ((formData.imagens || []) as any[]).length} restantes</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
