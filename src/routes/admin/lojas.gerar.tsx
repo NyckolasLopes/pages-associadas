@@ -16,6 +16,16 @@ import {
   XCircle,
   Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/admin/lojas/gerar")({
   component: GerarLojaPage,
@@ -35,6 +45,7 @@ function slugify(text: string): string {
 function GerarLojaPage() {
   const { pharmacies, updatePharmacy, removePharmacy } = useAdmin();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [storeToDelete, setStoreToDelete] = useState<string | null>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://pagesassociadas.vercel.app";
 
@@ -67,12 +78,15 @@ function GerarLojaPage() {
     toast.success(`Status da loja alterado para ${newStatus}.`);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir esta loja? Essa ação não pode ser desfeita.")) {
+  const handleDeleteConfirm = async () => {
+    if (storeToDelete) {
       try {
-        await removePharmacy(id);
+        await removePharmacy(storeToDelete);
+        toast.success("Loja excluída com sucesso.");
+        setStoreToDelete(null);
       } catch (error) {
         console.error("Erro ao excluir loja:", error);
+        toast.error("Erro ao excluir a loja.");
       }
     }
   };
@@ -138,7 +152,7 @@ function GerarLojaPage() {
                   )
                 )}
                 <button
-                  onClick={() => handleDelete(pharmacy.id)}
+                  onClick={() => setStoreToDelete(pharmacy.id)}
                   className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                   title="Excluir loja"
                 >
@@ -294,6 +308,23 @@ function GerarLojaPage() {
           </p>
         </div>
       )}
+
+      <AlertDialog open={!!storeToDelete} onOpenChange={(open) => !open && setStoreToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Loja</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta loja? Essa ação não pode ser desfeita e todos os dados vinculados a ela serão perdidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-600">
+              Excluir Loja
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
