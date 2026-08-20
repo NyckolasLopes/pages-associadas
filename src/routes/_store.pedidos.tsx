@@ -396,26 +396,47 @@ function PedidosPage() {
                 </div>
               </div>
 
-              {/* Lista de Itens */}
-              <div>
-                <h4 className="font-bold text-sm mb-3 text-slate-800">Itens Solicitados</h4>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {(selectedOrder.itens || selectedOrder.produtos || []).map((item: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between p-3 border rounded-xl bg-white text-xs">
-                      <div>
-                        <p className="font-bold text-slate-900">{item.nome}</p>
-                        <p className="text-[10px] text-slate-500">EAN: {item.ean || 'N/A'}</p>
-                        <p className="text-muted-foreground">
-                          {item.quantidade || item.qtd || 1}x {brl(item.preco || item.valorUnitario || 0)}
-                        </p>
-                      </div>
-                      <p className="font-bold text-slate-900">
-                        {brl((item.quantidade || item.qtd || 1) * (item.preco || item.valorUnitario || 0))}
-                      </p>
-                    </div>
-                  ))}
+                <div>
+                  <h4 className="font-bold text-sm mb-3 text-slate-800">Itens Solicitados</h4>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {(selectedOrder.itens || selectedOrder.produtos || []).map((item: any, idx: number) => {
+                      const qty = item.quantidade || item.qtd || 1;
+                      const unitPrice = item.valorUnitario || (item.preco / qty) || 0;
+                      const totalPrice = unitPrice * qty;
+
+                      return (
+                        <div key={idx} className="flex items-center p-3 border rounded-xl bg-white text-xs gap-3">
+                          {/* Image */}
+                          <div className="w-12 h-12 rounded-lg border bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                            <img 
+                              src={item.foto || item.imagem || `https://via.placeholder.com/150?text=Sem+Imagem`} 
+                              alt={item.nome} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Sem+Imagem'; }}
+                            />
+                          </div>
+                          
+                          {/* Info */}
+                          <div className="flex-1">
+                            <p className="font-bold text-slate-900 line-clamp-2">{item.nome}</p>
+                            {item.ean && <p className="text-[10px] text-slate-500 mt-0.5">EAN: {item.ean}</p>}
+                            <p className="text-muted-foreground mt-1">
+                              {qty}x {brl(unitPrice)}
+                            </p>
+                          </div>
+
+                          {/* Total */}
+                          <div className="text-right pl-2">
+                            <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Total</p>
+                            <p className="font-bold text-slate-900 text-sm">
+                              {brl(totalPrice)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
               {/* Totalizador */}
               <div className="border-t pt-4 space-y-1.5 text-xs">
