@@ -84,6 +84,8 @@ function AdminSelos() {
     } else {
       const newId = `s_${Math.random().toString(36).substr(2, 9)}`;
       addSelo({ id: newId, nome, ativo, corFundo, corTexto });
+      applyBadgeToProducts(newId, Array.from(selectedProductIds));
+      toast.success("Selo criado com sucesso!");
     }
     
     setIsModalOpen(false);

@@ -89,6 +89,8 @@ function AdminProdutosPrecos() {
   const [campanhaPrices, setCampanhaPrices] = useState<Record<string, number>>({});
   const [campanhaInicioModal, setCampanhaInicioModal] = useState("");
   const [campanhaFimModal, setCampanhaFimModal] = useState("");
+  
+  const currentMonthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
 
   const handleMeusPrecosFileUpload = (file: File) => {
     if (!file) return;
@@ -472,7 +474,6 @@ function AdminProdutosPrecos() {
 
     let updatedCount = 0;
     
-    const currentMonthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
     const badgeName = `Oferta de ${currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1)}`;
     let ofertaSelo = selos.find(s => s.nome === badgeName);
     

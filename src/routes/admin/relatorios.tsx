@@ -134,6 +134,14 @@ function Relatorios() {
           icon: <Store className="h-5 w-5 text-orange-600" />,
           bgColor: "bg-orange-100",
           permission: "rel_desempenho"
+        },
+        {
+          id: "sla-entrega",
+          titulo: "SLA de Separação (Tempo)",
+          descricao: "Monitore o tempo de separação dos pedidos das lojas (Em separação -> Pronto/Enviado).",
+          icon: <Clock className="h-5 w-5 text-teal-600" />,
+          bgColor: "bg-teal-100",
+          permission: "rel_desempenho"
         }
       ]
     });
@@ -241,7 +249,7 @@ function Relatorios() {
   const lojasMap: Record<string, { faturamento: number, repasse: number, qtdPedidos: number }> = {};
   let faturamentoGeral = 0;
   orders.forEach(o => {
-    const total = o.valores.total;
+    const total = o.valores?.total || 0;
     faturamentoGeral += total;
     
     let taxa = 0;
@@ -290,8 +298,8 @@ function Relatorios() {
   // 2. Pedidos ao longo do tempo (grouped by Date)
   const dateMap: Record<string, number> = {};
   orders.forEach(o => {
-    const datePart = o.data.split(" ")[0] || o.data;
-    dateMap[datePart] = (dateMap[datePart] || 0) + o.valores.total;
+    const datePart = o.data?.split(" ")[0] || o.data || "Desconhecida";
+    dateMap[datePart] = (dateMap[datePart] || 0) + (o.valores?.total || 0);
   });
   const areaChartData = Object.entries(dateMap).map(([date, total]) => ({
     name: date.slice(0, 5), // '18/02'
@@ -347,13 +355,13 @@ function Relatorios() {
   // 5. Pedidos por Produto (Ranking Top 100 & Competitividade)
   const produtosMap: Record<string, { nome: string, sku: string, qtd: number, faturamento: number }> = {};
   orders.forEach(o => {
-    (o.produtos || []).forEach(p => {
+    (o.produtos || o.itens || []).forEach((p: any) => {
       const sku = p.sku || p.nome || "SKU-UNKNOWN";
       if (!produtosMap[sku]) {
         produtosMap[sku] = { nome: p.nome || "Produto", sku, qtd: 0, faturamento: 0 };
       }
-      produtosMap[sku].qtd += (p.qtd || 1);
-      produtosMap[sku].faturamento += (p.qtd || 1) * (p.valorUnitario || 0);
+      produtosMap[sku].qtd += (p.qtd || p.quantidade || 1);
+      produtosMap[sku].faturamento += (p.qtd || p.quantidade || 1) * (p.valorUnitario || p.preco || 0);
     });
   });
 
@@ -378,7 +386,7 @@ function Relatorios() {
     }
     
     if (!canaisMap[canal]) canaisMap[canal] = { faturamento: 0, qtd: 0 };
-    canaisMap[canal].faturamento += o.valores.total;
+    canaisMap[canal].faturamento += o.valores?.total || 0;
     canaisMap[canal].qtd += 1;
   });
 

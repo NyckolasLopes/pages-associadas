@@ -73,8 +73,16 @@ function AdminBanners() {
   const updateBanner = useAdmin(s => s.updateBanner);
 
   const activeStoreId = useAdmin(s => s.activeStoreId);
+  const setActiveStoreId = useAdmin(s => s.setActiveStoreId);
   const currentUser = useAdmin(s => s.currentUser);
+  const grupos = useAdmin(s => s.grupos);
   const allBanners = useAdmin(s => s.banners);
+  
+  const isGlobalAdmin = () => {
+    if (currentUser?.proprietario) return true;
+    const userGroup = grupos?.find(g => g.id === currentUser?.grupoId);
+    return userGroup?.permissao_total || false;
+  };
   const banners = activeStoreId ? allBanners.filter(b => b.lojaId === activeStoreId) : allBanners.filter(b => !b.lojaId);
   const setBanners = useAdmin(s => s.setBanners);
   const removeBanner = useAdmin(s => s.removeBanner);
@@ -287,7 +295,7 @@ function AdminBanners() {
         </div>
         <div className="flex items-center gap-3">
           <StoreSelector className="mb-0" />
-          {activeTab === "banners" && (
+          {activeTab === "banners" && (activeStoreId || !isGlobalAdmin()) && (
             <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
               <Plus className="w-4 h-4 mr-2" /> Novo banner
             </Button>
@@ -297,6 +305,41 @@ function AdminBanners() {
 
       {/* Tab 1: Banners Content */}
       {activeTab === "banners" && (
+        !activeStoreId && isGlobalAdmin() ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pharmacies.map(loja => {
+              const bannerCount = allBanners.filter(b => b.lojaId === loja.id).length;
+              return (
+                <div key={loja.id} className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer group" onClick={() => setActiveStoreId(loja.id)}>
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                        <Store className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-800 text-lg group-hover:text-emerald-600 transition-colors">{(loja as any).nomeFantasia || loja.razaoSocial || loja.nome}</h3>
+                        <p className="text-xs text-slate-500">Filial #{loja.id}</p>
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-center justify-between mb-4">
+                      <span className="text-sm font-medium text-slate-600">Banners cadastrados</span>
+                      <span className="text-sm font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">{bannerCount}</span>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200" onClick={(e) => { e.stopPropagation(); setActiveStoreId(loja.id); }}>
+                    <Layers className="w-4 h-4 mr-2" /> Gerenciar Banners
+                  </Button>
+                </div>
+              );
+            })}
+            {pharmacies.length === 0 && (
+              <div className="col-span-full py-12 text-center text-slate-500 bg-white rounded-xl border border-dashed border-slate-300">
+                <Store className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p>Nenhuma loja cadastrada na rede.</p>
+              </div>
+            )}
+          </div>
+        ) : (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <div className="relative w-full max-w-sm">
@@ -1203,9 +1246,12 @@ function AdminBanners() {
 }
 
 function StoreLogoConfig() {
-  const { activeStoreId } = useAdmin();
+  const { activeStoreId, pharmacies } = useAdmin();
   const { logo, fetchConfigs, saveConfig } = useConfig();
   const [logoUrl, setLogoUrl] = useState(logo || "");
+
+  const activeStore = pharmacies.find(p => p.id === activeStoreId);
+  const isPleno = activeStore?.categoriaAssociado === 'Pleno';
 
   useEffect(() => {
     fetchConfigs(activeStoreId || undefined);
@@ -1254,10 +1300,14 @@ function StoreLogoConfig() {
             Personalize a logomarca que será exibida no cabeçalho da loja.
           </p>
         </div>
-        <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
-          <Save className="w-4 h-4 mr-2" /> Salvar Logo
-        </Button>
+        {!isPleno && (
+          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+            <Save className="w-4 h-4 mr-2" /> Salvar Logo
+          </Button>
+        )}
       </div>
+
+
       
       <div className="space-y-4">
         <div className="flex items-start gap-6">
@@ -1271,34 +1321,38 @@ function StoreLogoConfig() {
               </div>
             )}
             
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+            <div className={`absolute inset-0 bg-black/50 opacity-0 ${isPleno ? '' : 'group-hover:opacity-100'} transition-opacity flex flex-col items-center justify-center gap-2`}>
               <UploadCloud className="w-6 h-6 text-white" />
               <span className="text-white text-xs font-bold">Alterar imagem</span>
-              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageUpload} />
+              {!isPleno && <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageUpload} />}
             </div>
           </div>
 
           <div className="flex-1 space-y-4">
-            <div>
-              <Label className="font-bold text-slate-700">Fazer Upload do Computador</Label>
-              <div className="relative mt-1">
-                <Input type="file" accept="image/*" onChange={handleImageUpload} className="cursor-pointer file:bg-emerald-50 file:text-emerald-700 file:border-0 file:rounded file:px-2 file:py-1 file:font-bold file:mr-2" />
-              </div>
-            </div>
+            {!isPleno && (
+              <>
+                <div>
+                  <Label className="font-bold text-slate-700">Fazer Upload do Computador</Label>
+                  <div className="relative mt-1">
+                    <Input type="file" accept="image/*" onChange={handleImageUpload} className="cursor-pointer file:bg-emerald-50 file:text-emerald-700 file:border-0 file:rounded file:px-2 file:py-1 file:font-bold file:mr-2" />
+                  </div>
+                </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-slate-400 font-bold">OU</span>
-              </div>
-            </div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-slate-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-slate-400 font-bold">OU</span>
+                  </div>
+                </div>
 
-            <div>
-              <Label className="font-bold text-slate-700">URL da Imagem</Label>
-              <Input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." className="mt-1" />
-            </div>
+                <div>
+                  <Label className="font-bold text-slate-700">URL da Imagem</Label>
+                  <Input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." className="mt-1" />
+                </div>
+              </>
+            )}
 
             <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg flex items-start gap-3">
               <Info className="w-5 h-5 text-amber-500 shrink-0" />

@@ -25,6 +25,7 @@ function AdminDesignLogo() {
 
   const currentPharmacy = pharmacies.find((p) => p.id === storeId);
   const isParceiro = currentPharmacy?.categoriaAssociado === 'Parceiro';
+  const isPleno = currentPharmacy?.categoriaAssociado === 'Pleno';
 
   const defaultLogo = isParceiro ? "" : logoUrlDefault;
   const defaultFavicon = isParceiro ? "" : "/favicon.png";
@@ -83,6 +84,8 @@ function AdminDesignLogo() {
         <StoreSelector className="mb-0" />
       </div>
 
+      {/* Removed Alteração Bloqueada alert */}
+
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
 
       <div className="space-y-6 max-w-4xl">
@@ -93,12 +96,14 @@ function AdminDesignLogo() {
             <div className="flex items-center gap-1">
               <span className="font-bold text-sm">Logo</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
-              updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl: base64 });
-              toast.success("Logo da loja atualizado!");
-            })}>
-              <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
-            </Button>
+            {!isPleno && (
+              <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
+                updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl: base64 });
+                toast.success("Logo da loja atualizado!");
+              })}>
+                <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+              </Button>
+            )}
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
@@ -109,7 +114,7 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.logoUrl && (
+              {currentPharmacy.logoUrl && !isPleno && (
                 <button onClick={() => {
                   updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl: "" });
                   toast.success("Logo removido!");
@@ -140,12 +145,14 @@ function AdminDesignLogo() {
             <div className="flex items-center gap-1">
               <span className="font-bold text-sm">Ícone da página (Favicon)</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
-              updatePharmacy(currentPharmacy.id, { ...currentPharmacy, faviconUrl: base64 });
-              toast.success("Favicon da loja atualizado!");
-            })}>
-              <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
-            </Button>
+            {!isPleno && (
+              <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
+                updatePharmacy(currentPharmacy.id, { ...currentPharmacy, faviconUrl: base64 });
+                toast.success("Favicon da loja atualizado!");
+              })}>
+                <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+              </Button>
+            )}
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
@@ -156,7 +163,7 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.faviconUrl && (
+              {currentPharmacy.faviconUrl && !isPleno && (
                 <button onClick={() => {
                   updatePharmacy(currentPharmacy.id, { ...currentPharmacy, faviconUrl: "" });
                   toast.success("Favicon removido!");
@@ -187,12 +194,14 @@ function AdminDesignLogo() {
             <div className="flex items-center gap-1">
               <span className="font-bold text-sm">Logo do Rodapé</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
-              updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: base64 });
-              toast.success("Logo do rodapé atualizado!");
-            })}>
-              <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
-            </Button>
+            {!isPleno && (
+              <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
+                updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: base64 });
+                toast.success("Logo do rodapé atualizado!");
+              })}>
+                <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+              </Button>
+            )}
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
@@ -203,7 +212,7 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.footerLogoUrl && (
+              {currentPharmacy.footerLogoUrl && !isPleno && (
                 <button onClick={() => {
                   updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: "" });
                   toast.success("Logo do rodapé removido!");
@@ -228,12 +237,14 @@ function AdminDesignLogo() {
             <div className="flex items-center gap-1">
               <span className="font-bold text-sm">Selo da Anvisa</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
-              updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: base64 });
-              toast.success("Selo da Anvisa atualizado!");
-            })}>
-              <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
-            </Button>
+            {!isPleno && (
+              <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
+                updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: base64 });
+                toast.success("Selo da Anvisa atualizado!");
+              })}>
+                <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+              </Button>
+            )}
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
@@ -244,7 +255,7 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.anvisaLogoUrl && (
+              {currentPharmacy.anvisaLogoUrl && !isPleno && (
                 <button onClick={() => {
                   updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: "" });
                   toast.success("Selo da Anvisa removido!");
