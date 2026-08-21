@@ -461,9 +461,9 @@ function ClientesAdmin() {
           <table className="w-full text-left text-[13px]">
             <thead>
               <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-slate-50/80 tracking-wider">
-                <th className="px-4 py-3.5 w-10 text-center"><Checkbox /></th>
+                <th className="px-4 py-3.5 text-center"><Checkbox /></th>
                 <th className="px-4 py-3.5">Cliente</th>
-                {isGlobalView && <th className="px-4 py-3.5">Método</th>}
+                <th className="px-4 py-3.5">Método</th>
                 {isGlobalView && <th className="px-4 py-3.5">Loja</th>}
                 <th className="px-4 py-3.5">Telefone / WhatsApp</th>
                 <th className="px-4 py-3.5 text-center">Pedidos</th>
@@ -474,7 +474,7 @@ function ClientesAdmin() {
             <tbody className="divide-y divide-slate-100">
               {filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={isGlobalView ? 8 : 6} className="p-12 text-center text-slate-400">
+                  <td colSpan={isGlobalView ? 8 : 7} className="p-12 text-center text-slate-400">
                     <Users className="w-10 h-10 mx-auto text-slate-300 mb-2" />
                     <p className="font-semibold text-slate-600">Nenhum cliente encontrado com os filtros atuais.</p>
                     <p className="text-xs text-slate-400 mt-1">Os clientes serão listados automaticamente conforme novos pedidos forem realizados.</p>
@@ -504,18 +504,16 @@ function ClientesAdmin() {
                     </div>
                   </td>
                   
-                  {/* COLUNA MÉTODO (APENAS NO ADMIN GLOBAL) */}
-                  {isGlobalView && (
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1.5">
-                        {customer.metodoLogin === 'Google' && <GoogleIcon />}
-                        {customer.metodoLogin === 'Facebook' && <Facebook className="w-4 h-4 text-blue-600" />}
-                        {customer.metodoLogin === 'Apple' && <Apple className="w-4 h-4 text-slate-800" />}
-                        {customer.metodoLogin === 'Email' && <Mail className="w-4 h-4 text-slate-500" />}
-                        <span className="text-xs font-bold text-slate-600">{customer.metodoLogin}</span>
-                      </div>
-                    </td>
-                  )}
+                  {/* COLUNA MÉTODO */}
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-1.5">
+                      {customer.metodoLogin === 'Google' && <GoogleIcon />}
+                      {customer.metodoLogin === 'Facebook' && <Facebook className="w-4 h-4 text-blue-600" />}
+                      {customer.metodoLogin === 'Apple' && <Apple className="w-4 h-4 text-slate-800" />}
+                      {customer.metodoLogin === 'Email' && <Mail className="w-4 h-4 text-slate-500" />}
+                      <span className="text-xs font-bold text-slate-600">{customer.metodoLogin}</span>
+                    </div>
+                  </td>
 
                   {/* COLUNA LOJA (APENAS NO ADMIN GLOBAL) */}
                   {isGlobalView && (
