@@ -216,8 +216,6 @@ function AdminDashboard() {
   const crescTicket = calcCrescimento(ticketAtual, ticketAnterior);
   const rawStoreCarts = useAbandonedCartsStore(s => s.carts);
   const user = useAdmin(s => s.currentUser);
-  const { items: cartItems } = useCart();
-  
   // Incluir o "live cart" se houver, igual na tela de detalhes
   const activeLiveCart = (user && cartItems.length > 0) ? 1 : 0;
   
