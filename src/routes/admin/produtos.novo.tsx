@@ -27,7 +27,7 @@ function AdminNovoProduto() {
   const searchParams = new URLSearchParams(window.location.search);
   const tipoParam = searchParams.get("tipo") || "";
 
-  const handleSave = (product: Produto) => {
+  const handleSave = async (product: Produto) => {
     const finalProduct: Produto = {
       ...product,
       lojaId: currentLojaId || undefined,
@@ -35,7 +35,7 @@ function AdminNovoProduto() {
       origem: currentLojaId ? "Loja Individual" : "Manual",
     };
 
-    addOrUpdateProduct(finalProduct, currentLojaId);
+    await addOrUpdateProduct(finalProduct, currentLojaId);
 
     toast.success(
       currentLojaId

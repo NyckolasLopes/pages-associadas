@@ -333,7 +333,8 @@ function rowToProduct(
     fps,
     faixaEtaria,
 
-        ativo: true,
+    ativo: false,
+    visivel: false,
     codigoInterno: codigoRaw,
   };
 }

@@ -332,11 +332,11 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: 
                   to={cat.link || "/"}
                   className="flex flex-col items-center gap-2 text-center group shrink-0 w-[80px] md:w-[100px]"
                 >
-                  <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-slate-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-3 border-4 border-transparent group-hover:border-primary/20">
+                  <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-3 border-4 border-transparent group-hover:border-primary/20">
                     {Icon ? (
                       <Icon className="h-8 w-8 md:h-10 md:w-10 text-primary" />
                     ) : cat.imageUrl ? (
-                      <img src={cat.imageUrl} alt={cat.nome} className="w-full h-full object-cover rounded-full" />
+                      <img src={cat.imageUrl} alt={cat.nome} className="w-full h-full object-cover rounded-2xl" />
                     ) : null}
                   </div>
                   <span className="text-[10px] md:text-xs font-bold leading-tight line-clamp-2">
@@ -402,6 +402,7 @@ function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: stri
     b.active && 
     b.posicao === "Banner Extra" && 
     (!b.vitrineVinculada || b.vitrineVinculada === "none") && 
+    (!b.topicoVinculado || b.topicoVinculado === "none") &&
     (!b.bannerVinculado || b.bannerVinculado === "none") &&
     (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
@@ -411,6 +412,31 @@ function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: stri
 
   return (
     <div className="container-fa py-8 flex flex-col gap-6">
+      {extras.map(banner => (
+        <RecursiveBanner key={banner.id} banner={banner} allBanners={allBanners} />
+      ))}
+    </div>
+  );
+}
+
+function DynamicTopicBanners({ topicId, page = "Página inicial", lojaId }: { topicId: string; page?: string; lojaId?: string }) {
+  const allBanners = useAdmin((s) => s.banners);
+  const pharmacies = useAdmin((s) => s.pharmacies);
+  const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
+  
+  const extras = useMemo(() => (allBanners || []).filter(b => 
+    b.active && 
+    b.posicao === "Banner Extra" && 
+    b.topicoVinculado === topicId &&
+    (!b.bannerVinculado || b.bannerVinculado === "none") &&
+    (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
+    (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
+  ), [allBanners, page, lojaId, isParceiro, topicId]);
+  
+  if (extras.length === 0) return null;
+
+  return (
+    <div className="container-fa pb-8 flex flex-col gap-6 mt-[-16px]">
       {extras.map(banner => (
         <RecursiveBanner key={banner.id} banner={banner} allBanners={allBanners} />
       ))}
@@ -578,10 +604,11 @@ function StoreHome() {
       
       <main className="flex-1 pb-16 md:pb-0 overflow-x-hidden">
         <HeroCarousel lojaId={lojaId} />
-        <SquarePromoGrid lojaId={lojaId} />
 
         {/* Advantages Banner (Imagem 2) */}
         <DynamicTarja lojaId={lojaId} />
+
+        <SquarePromoGrid lojaId={lojaId} />
 
         {/* As vitrines agora são todas gerenciadas dinamicamente via Admin */}
 
@@ -596,7 +623,12 @@ function StoreHome() {
         
         <DynamicExtraBanners lojaId={lojaId} />
         
-        {loja?.offersServices !== false && <ServicesSection />}
+        {loja?.offersServices !== false && (
+          <>
+            <ServicesSection />
+            <DynamicTopicBanners topicId="servicos" lojaId={lojaId} />
+          </>
+        )}
         
         <DynamicVitrines local="espaco_2" lojaId={lojaId} />
 
@@ -605,52 +637,55 @@ function StoreHome() {
 
         {/* Diferenciais da Rede */}
         {loja?.categoriaAssociado !== 'Parceiro' && (
-          <section className="container-fa my-12">
-            <div className="bg-orange-500 text-white rounded-2xl p-6 md:p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold">Farmácias Associadas</h2>
-                <p className="text-orange-100 mt-2">Farmácias Associadas, muito mais que farmácia, aqui você tem amigos.</p>
+          <>
+            <section className="container-fa my-12">
+              <div className="bg-orange-500 text-white rounded-2xl p-6 md:p-8">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl md:text-3xl font-bold">Farmácias Associadas</h2>
+                  <p className="text-orange-100 mt-2">Farmácias Associadas, muito mais que farmácia, aqui você tem amigos.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                  {/* Força Associadas (Icone do Usuário) */}
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                      <img src="/icone-associadas.png" alt="A Força das Associadas" className="h-10 w-10 object-contain" />
+                    </div>
+                    <h3 className="font-bold text-sm">A Força de uma Rede Gigante</h3>
+                    <p className="text-xs text-orange-100">Somos a maior rede associativa de farmácias do Sul do Brasil.</p>
+                  </div>
+
+                  {/* Atendimento Humanizado */}
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
+                      <Heart className="h-8 w-8" />
+                    </div>
+                    <h3 className="font-bold text-sm">Atendimento Humanizado</h3>
+                    <p className="text-xs text-orange-100">Aqui você tem amigos. Um time preparado para cuidar de você.</p>
+                  </div>
+
+                  {/* Entrega Rápida */}
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
+                      <Truck className="h-8 w-8" />
+                    </div>
+                    <h3 className="font-bold text-sm">Entrega Rápida</h3>
+                    <p className="text-xs text-orange-100">Receba seus produtos no conforto do seu lar com segurança.</p>
+                  </div>
+
+                  {/* Qualidade */}
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
+                      <ShieldCheck className="h-8 w-8" />
+                    </div>
+                    <h3 className="font-bold text-sm">Qualidade Comprovada</h3>
+                    <p className="text-xs text-orange-100">Produtos originais e com a garantia que você e sua família merecem.</p>
+                  </div>
+                </div>
               </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                {/* Força Associadas (Icone do Usuário) */}
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                    <img src="/icone-associadas.png" alt="A Força das Associadas" className="h-10 w-10 object-contain" />
-                  </div>
-                  <h3 className="font-bold text-sm">A Força de uma Rede Gigante</h3>
-                  <p className="text-xs text-orange-100">Somos a maior rede associativa de farmácias do Sul do Brasil.</p>
-                </div>
-
-                {/* Atendimento Humanizado */}
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
-                    <Heart className="h-8 w-8" />
-                  </div>
-                  <h3 className="font-bold text-sm">Atendimento Humanizado</h3>
-                  <p className="text-xs text-orange-100">Aqui você tem amigos. Um time preparado para cuidar de você.</p>
-                </div>
-
-                {/* Entrega Rápida */}
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
-                    <Truck className="h-8 w-8" />
-                  </div>
-                  <h3 className="font-bold text-sm">Entrega Rápida</h3>
-                  <p className="text-xs text-orange-100">Receba seus produtos no conforto do seu lar com segurança.</p>
-                </div>
-
-                {/* Qualidade */}
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-sm text-orange-500">
-                    <ShieldCheck className="h-8 w-8" />
-                  </div>
-                  <h3 className="font-bold text-sm">Qualidade Comprovada</h3>
-                  <p className="text-xs text-orange-100">Produtos originais e com a garantia que você e sua família merecem.</p>
-                </div>
-              </div>
-            </div>
-          </section>
+            </section>
+            <DynamicTopicBanners topicId="diferenciais" lojaId={lojaId} />
+          </>
         )}
         
         <DynamicVitrines local="espaco_3" lojaId={lojaId} />

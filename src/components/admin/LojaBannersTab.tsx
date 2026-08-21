@@ -34,7 +34,8 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
   const [title, setTitle] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
-  const [posicao, setPosicao] = useState<"principal" | "secundario" | "rodape">("principal");
+  const [posicao, setPosicao] = useState<"principal" | "secundario" | "rodape" | "Banner Extra">("principal");
+  const [topicoVinculado, setTopicoVinculado] = useState<string>("none");
 
   const handleAddBanner = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +66,7 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
         ativo: true,
         posicao: posicao,
         paginaPublicacao: "loja",
+        topicoVinculado: posicao === "Banner Extra" && topicoVinculado !== "none" ? topicoVinculado : undefined,
         lojaId: lojaId,
         farmaciaId: lojaId,
       };
@@ -75,6 +77,8 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
       setTitle("");
       setImageUrl("");
       setLinkUrl("");
+      setPosicao("principal");
+      setTopicoVinculado("none");
     } catch (err: any) {
       toast.error(err.message || "Erro ao adicionar banner.");
     }
@@ -213,9 +217,25 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
                   >
                     <option value="principal">Carrossel Principal (Topo)</option>
                     <option value="secundario">Banner Secundário (Meio)</option>
+                    <option value="Banner Extra">Banner Extra (Abaixo de Tópico)</option>
                     <option value="rodape">Banner de Rodapé</option>
                   </select>
                 </div>
+
+                {posicao === "Banner Extra" && (
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold">Ou abaixo de qual tópico?</Label>
+                    <select
+                      value={topicoVinculado}
+                      onChange={(e) => setTopicoVinculado(e.target.value)}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                    >
+                      <option value="none">Selecione...</option>
+                      <option value="servicos">Serviços (Apenas se a loja tiver serviços)</option>
+                      <option value="diferenciais">Diferenciais Institucionais</option>
+                    </select>
+                  </div>
+                )}
 
                 {imageUrl && (
                   <div className="mt-3 border rounded-xl p-2 bg-slate-50">

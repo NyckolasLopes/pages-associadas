@@ -199,19 +199,26 @@ function AdminProdutos() {
     setEditingStockProduct(null);
   };
 
-  const handleSaveProduct = (updatedProduct: Produto) => {
+  const handleSaveProduct = async (updatedProduct: Produto) => {
     const finalProduct: Produto = {
       ...updatedProduct,
       lojaId: currentLojaId || undefined,
       isIndividualLoja: !!currentLojaId,
     };
-    addOrUpdateProduct(finalProduct, currentLojaId || undefined);
+    await addOrUpdateProduct(finalProduct, currentLojaId || undefined);
     setEditorOpen(false);
     toast.success(
       currentLojaId
         ? `Produto atualizado exclusivamente para a loja ${currentLoja?.nome || ""}!`
         : `Produto atualizado no Catálogo Geral da Rede!`
     );
+    // Reload server products after update
+    const numericPageSize = parseInt(pageSize, 10);
+    catalog.adminSearchProducts({ search, page, pageSize: numericPageSize, listFilter, lojaId: currentLojaId || undefined })
+      .then(({ results, count }) => {
+        setServerProducts(results);
+        setTotalProducts(count);
+      });
   };
 
   const handleExportJson = async () => {
@@ -617,7 +624,7 @@ function AdminProdutos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => exportProductsAsExcel(filteredProducts)}
+                  onClick={() => exportProductsAsExcel(serverProducts)}
                   className="font-bold text-xs"
                 >
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />

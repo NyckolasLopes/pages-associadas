@@ -47,6 +47,7 @@ export interface AdminBanner {
   // Extra fields for Banner Extra below Vitrines
   vitrineVinculada?: string;
   bannerVinculado?: string;
+  topicoVinculado?: string;
   formatoExtra?: "1_banner" | "2_banners";
   imageUrl2?: string;
   mobileImageUrl2?: string;

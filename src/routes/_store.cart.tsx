@@ -333,9 +333,33 @@ function CartPage() {
     }
 
     if (!forcePickup && p.aceitaEntrega) {
-      const distance = (geoLat && geoLng && p.lat && p.lng)
-        ? calculateDistance(geoLat, geoLng, p.lat, p.lng)
-        : (pharmDistances[p.id] ?? null);
+      let distance: number | null = null;
+      let cLat = geoLat;
+      let cLng = geoLng;
+
+      if (!cLat || !cLng) {
+        const cCoords = await getCepCoordinates(clean);
+        if (cCoords) {
+          cLat = cCoords.lat;
+          cLng = cCoords.lng;
+        }
+      }
+
+      let pLat = p.lat;
+      let pLng = p.lng;
+      if (!pLat || !pLng) {
+         if (p.cep) {
+            const pCoords = await getCepCoordinates(p.cep);
+            if (pCoords) {
+               pLat = pCoords.lat;
+               pLng = pCoords.lng;
+            }
+         }
+      }
+
+      if (cLat && cLng && pLat && pLng) {
+        distance = calculateDistance(cLat, cLng, pLat, pLng);
+      }
 
       const totalPrice = items.reduce((acc, item) => {
         const anyItem = item as any;
@@ -358,8 +382,6 @@ function CartPage() {
                const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
                const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
                if (matchingRaio) deliveryPrice = matchingRaio.preco;
-            } else if (distance === null) {
-               deliveryPrice = 10;
             }
           }
 
@@ -390,8 +412,6 @@ function CartPage() {
                 deliveryPrice = matchingRaio.preco;
               }
             }
-          } else if (distance === null) {
-            deliveryPrice = 10;
           }
         }
 
@@ -419,9 +439,11 @@ function CartPage() {
         else setSelected(hasStandard ? "standard" : opts[0].id);
       }
     } else if (opts.length === 0) {
-      // If no options available, ensure selected is clear
-      setSelected("pickup"); // default
+      if (forcePickup) {
+         setSelected("pickup");
+      }
     }
+    
     setFreight(opts);
     // Persist to store without non-serializable icons
     setFreightOptions(opts.map(o => ({ id: o.id, label: o.label, price: o.price, eta: o.eta })));

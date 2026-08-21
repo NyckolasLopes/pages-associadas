@@ -911,16 +911,20 @@ export function PedidosAdmin() {
             <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToExcel}>
               <Download className="h-4 w-4" /> Exportar Planilha
             </Button>
-            <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToJson}>
-              <Code className="h-4 w-4" /> Exportar JSON
-            </Button>
-            <Button
-              variant="outline"
-              className="font-bold gap-2 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
-              onClick={() => setShowApiDoc(true)}
-            >
-              <Zap className="h-4 w-4" /> API de Status (ERP)
-            </Button>
+            {isGlobalAdmin() && (
+              <>
+                <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToJson}>
+                  <Code className="h-4 w-4" /> Exportar JSON
+                </Button>
+                <Button
+                  variant="outline"
+                  className="font-bold gap-2 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                  onClick={() => setShowApiDoc(true)}
+                >
+                  <Zap className="h-4 w-4" /> API de Status (ERP)
+                </Button>
+              </>
+            )}
           </div>
         </div>
 

@@ -80,6 +80,7 @@ function AdminBanners() {
   const removeBanner = useAdmin(s => s.removeBanner);
   const fetchBanners = useAdmin(s => s.fetchBanners);
   const vitrines = useAdminProducts(s => s.vitrines);
+  const pharmacies = useAdmin(s => s.pharmacies);
 
   useEffect(() => {
     fetchBanners(activeStoreId || undefined);
@@ -406,6 +407,91 @@ function AdminBanners() {
             </div>
           ))}
         </div>
+
+          {/* Banners das Lojas */}
+          {!activeStoreId && (allBanners.filter(b => b.lojaId).length > 0) && (
+            <div className="mt-12 space-y-6">
+              <div className="border-b border-slate-200 pb-4">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <Store className="w-5 h-5 text-orange-500" /> Banners das Lojas (Personalizados)
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">Veja quais banners cada loja está usando na sua própria página. Você pode editá-los diretamente se desejar.</p>
+              </div>
+
+              {pharmacies.filter(p => allBanners.some(b => b.lojaId === p.id)).map(store => {
+                const sBanners = allBanners.filter(b => b.lojaId === store.id);
+                return (
+                  <div key={store.id} className="bg-white border border-slate-200 rounded-md overflow-hidden mb-6">
+                    <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                          <Store className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-[#3a4454] text-[16px]">{store.nome}</h3>
+                          <p className="text-xs text-slate-500">{sBanners.length} banner(s) personalizado(s)</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left whitespace-nowrap">
+                        <tbody className="divide-y divide-slate-100">
+                          {sBanners.map((banner) => (
+                            <tr key={banner.id} className="hover:bg-slate-50 group transition-colors">
+                              <td className="p-3 w-16">
+                                <div className="w-12 h-12 rounded border border-slate-200 overflow-hidden bg-white flex items-center justify-center shrink-0 cursor-pointer" onClick={() => openEditModal(banner)}>
+                                   {banner.imageUrl && banner.imageUrl.startsWith('icon:') ? (() => {
+                                     const Icon = getIcon(banner.imageUrl);
+                                     return (
+                                       <div className="w-full h-full bg-slate-100 flex items-center justify-center text-[#00B5AD]">
+                                         {Icon ? <Icon className="w-6 h-6" /> : <ImageIcon className="w-6 h-6" />}
+                                       </div>
+                                     );
+                                   })() : banner.imageUrl && !banner.imageUrl.includes('placehold') ? (
+                                     <img src={banner.imageUrl} alt={banner.nome} className="w-full h-full object-contain" />
+                                   ) : (
+                                     <div className="w-full h-full bg-[#f68f1e] flex flex-col items-center justify-center text-[6px] font-black text-white leading-tight">
+                                        <ImageIcon className="w-4 h-4 mb-0.5" />
+                                     </div>
+                                   )}
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex flex-col">
+                                  <span className="text-[14px] font-medium text-[#3a4454]">{banner.nome}</span>
+                                  <span className="text-[12px] text-slate-500">Posição: {banner.posicao}</span>
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`w-2 h-2 rounded-full ${banner.active ? 'bg-[#00B5AD]' : 'bg-slate-300'}`}></span>
+                                  <span className="text-[12px] text-slate-600">{banner.active ? 'Ativo' : 'Inativo'}</span>
+                                </div>
+                              </td>
+                              <td className="p-3 text-right">
+                                 <Button onClick={() => openEditModal(banner)} size="sm" variant="outline" className="h-8 text-xs text-slate-600 hover:text-[#00B5AD]">
+                                   <Edit2 className="w-3.5 h-3.5 mr-1" /> Editar
+                                 </Button>
+                                 <Button onClick={() => {
+                                   if (confirm("Deseja realmente excluir este banner?")) {
+                                     removeBanner(banner.id);
+                                     toast.success("Banner excluído.");
+                                   }
+                                 }} size="sm" variant="ghost" className="h-8 w-8 p-0 ml-2 text-slate-400 hover:text-red-500 hover:bg-red-50">
+                                   <Trash2 className="w-4 h-4" />
+                                 </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
       </div>
       )}
 
@@ -536,7 +622,7 @@ function AdminBanners() {
                       <Label className="font-bold text-slate-700">Abaixo de qual vitrine?</Label>
                       <Select 
                         value={editingBanner.vitrineVinculada || "none"} 
-                        onValueChange={v => setEditingBanner({...editingBanner, vitrineVinculada: v === "none" ? undefined : v, bannerVinculado: undefined})}
+                        onValueChange={v => setEditingBanner({...editingBanner, vitrineVinculada: v === "none" ? undefined : v, bannerVinculado: undefined, topicoVinculado: undefined})}
                       >
                         <SelectTrigger className="h-11 border-slate-200 bg-white">
                           <SelectValue placeholder="Selecione a vitrine (opcional)" />
@@ -553,7 +639,7 @@ function AdminBanners() {
                       <Label className="font-bold text-slate-700">Ou abaixo de outro banner?</Label>
                       <Select 
                         value={editingBanner.bannerVinculado || "none"} 
-                        onValueChange={v => setEditingBanner({...editingBanner, bannerVinculado: v === "none" ? undefined : v, vitrineVinculada: undefined})}
+                        onValueChange={v => setEditingBanner({...editingBanner, bannerVinculado: v === "none" ? undefined : v, vitrineVinculada: undefined, topicoVinculado: undefined})}
                       >
                         <SelectTrigger className="h-11 border-slate-200 bg-white">
                           <SelectValue placeholder="Selecione o banner (opcional)" />
@@ -563,6 +649,22 @@ function AdminBanners() {
                           {banners.filter(b => b.id !== editingBanner?.id).map(b => (
                             <SelectItem key={b.id} value={b.id}>{b.nome} ({b.posicao})</SelectItem>
                           ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-bold text-slate-700">Ou abaixo de algum tópico?</Label>
+                      <Select 
+                        value={editingBanner.topicoVinculado || "none"} 
+                        onValueChange={v => setEditingBanner({...editingBanner, topicoVinculado: v === "none" ? undefined : v, vitrineVinculada: undefined, bannerVinculado: undefined})}
+                      >
+                        <SelectTrigger className="h-11 border-slate-200 bg-white">
+                          <SelectValue placeholder="Selecione o tópico (opcional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhum (Exibição padrão)</SelectItem>
+                          <SelectItem value="servicos">Serviços (Apenas lojas com serviços)</SelectItem>
+                          <SelectItem value="diferenciais">Diferenciais Institucionais</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
