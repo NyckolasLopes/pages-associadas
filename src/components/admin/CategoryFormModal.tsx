@@ -51,7 +51,11 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
   const [destaque, setDestaque] = useState(false);
   const [icone, setIcone] = useState("");
   
-  const { featuredCategories, toggleFeaturedCategory, categoryIcons, setCategoryIcon } = useAdmin();
+  const { featuredCategories, toggleFeaturedCategory, storeFeaturedCategories, toggleStoreFeaturedCategory, categoryIcons, setCategoryIcon } = useAdmin();
+  
+  const effectiveFeaturedCategories = lojaId 
+    ? (storeFeaturedCategories[lojaId]?.length > 0 ? storeFeaturedCategories[lojaId] : featuredCategories)
+    : featuredCategories;
 
   useEffect(() => {
     if (open) {
@@ -64,7 +68,7 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
         setMetaDescription(category.metaDescription || "");
         setParentId(category.parentId || null);
         setAtiva(category.ativa !== false); // default true
-        setDestaque(!!category.destaque);
+        setDestaque(effectiveFeaturedCategories.includes(category.id));
         setIcone(categoryIcons[category.id] || "");
       } else {
         setNome("");
@@ -134,11 +138,13 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
       addOrUpdateCategory(categoryData);
     }
     
-    const isCurrentlyFeatured = featuredCategories.includes(id);
-    if (destaque && !isCurrentlyFeatured) {
-       toggleFeaturedCategory(id);
-    } else if (!destaque && isCurrentlyFeatured) {
-       toggleFeaturedCategory(id);
+    const isCurrentlyFeatured = effectiveFeaturedCategories.includes(id);
+    if (destaque !== isCurrentlyFeatured) {
+       if (lojaId) {
+         toggleStoreFeaturedCategory(lojaId, id);
+       } else {
+         toggleFeaturedCategory(id);
+       }
     }
     
     if (icone !== categoryIcons[id]) {

@@ -1062,7 +1062,10 @@ function Relatorios() {
                        </tr>
                      </thead>
                      <tbody className="divide-y divide-slate-100">
-                       {pharmacies.map((loja) => {
+                       {pharmacies
+                         .filter(loja => (slaStats.stats[loja.id]?.qtdPedidos || 0) > 0)
+                         .sort((a, b) => (slaStats.stats[b.id]?.qtdPedidos || 0) - (slaStats.stats[a.id]?.qtdPedidos || 0))
+                         .map((loja) => {
                          const s = slaStats.stats[loja.id];
                          const qtdPedidos = s?.qtdPedidos || 0;
                          const tempoMin = s?.tempoMin;
@@ -1073,12 +1076,17 @@ function Relatorios() {
                                 <div className="font-bold text-slate-800 text-base">{(loja as any).nomeFantasia || loja.nome}</div>
                                 <div className="text-[11px] text-slate-500">Filial #{loja.id}</div>
                              </td>
-                             <td className="p-4 text-center font-bold text-slate-600">{qtdPedidos > 0 ? qtdPedidos : '-'}</td>
+                             <td className="p-4 text-center font-bold text-slate-600">
+                               <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-md text-sm">{qtdPedidos}</span>
+                             </td>
                              <td className="p-4 text-center">
                                {tempoMin !== null ? (
-                                 <span className={`font-black text-base ${noPrazo ? 'text-sky-600' : 'text-rose-600'}`}>
-                                   {tempoMin} min
-                                 </span>
+                                 <div className="flex items-center justify-center gap-1.5">
+                                   <Clock className={`w-4 h-4 ${noPrazo ? 'text-sky-500' : 'text-rose-500'}`} />
+                                   <span className={`font-black text-base ${noPrazo ? 'text-sky-600' : 'text-rose-600'}`}>
+                                     {tempoMin} min
+                                   </span>
+                                 </div>
                                ) : (
                                  <span className="text-slate-400">-</span>
                                )}
@@ -1086,9 +1094,18 @@ function Relatorios() {
                              <td className="p-4 text-center">
                                {tempoMin !== null ? (
                                  noPrazo ? (
-                                   <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-black text-xs">No Prazo</span>
+                                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
+                                     <span className="relative flex h-2 w-2">
+                                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                     </span>
+                                     No Prazo
+                                   </span>
                                  ) : (
-                                   <span className="bg-rose-100 text-rose-700 px-2 py-1 rounded font-black text-xs">Atrasado</span>
+                                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 shadow-sm">
+                                     <AlertTriangle className="w-3.5 h-3.5" />
+                                     Atrasado
+                                   </span>
                                  )
                                ) : (
                                  <span className="text-slate-400 text-xs">-</span>
@@ -1097,6 +1114,13 @@ function Relatorios() {
                            </tr>
                          );
                        })}
+                       {pharmacies.filter(loja => (slaStats.stats[loja.id]?.qtdPedidos || 0) > 0).length === 0 && (
+                         <tr>
+                           <td colSpan={4} className="p-8 text-center text-slate-500 font-medium">
+                             Nenhum pedido avaliado no momento.
+                           </td>
+                         </tr>
+                       )}
                      </tbody>
                    </table>
                  </div>

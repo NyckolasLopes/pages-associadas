@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
-import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info, ArrowLeft } from "lucide-react";
+import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info, ArrowLeft, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/admin/banners")({
   component: AdminBanners,
 });
 
-const BANNER_POSITIONS = ["Full Banner", "Mini Banner", "Banner Tarja", "Banner Categoria", "Banner Extra", "Banner Diferenciais"];
+const BANNER_POSITIONS = ["Full Banner", "Mini Banner", "Banner Tarja", "Banner Compre por categoria", "Banner por Categoria", "Banner Extra", "Banner Diferenciais"];
 
 function getIcon(url: string) {
   if (!url || !url.startsWith("icon:")) return null;
@@ -61,7 +61,8 @@ function getDimensionsForPosition(pos: string) {
     case "Full Banner": return { desktop: "1800x600px", mobile: "800x800px" };
     case "Mini Banner": return { desktop: "600x600px", mobile: "600x600px" };
     case "Banner Tarja": return { desktop: "1920x200px", mobile: "800x200px" };
-    case "Banner Categoria": return { desktop: "200x200px", mobile: "200x200px" };
+    case "Banner Compre por categoria": return { desktop: "200x200px", mobile: "200x200px" };
+    case "Banner por Categoria": return { desktop: "1920x400px", mobile: "800x400px" };
     case "Banner Extra": return { desktop: "800x400px", mobile: "600x400px" };
     case "Banner Diferenciais": return { desktop: "400x400px", mobile: "400x400px" };
     default: return { desktop: "Auto", mobile: "Auto" };
@@ -175,6 +176,29 @@ function AdminBanners() {
       setActiveTab(searchParams.tab as TabType);
     }
   }, [searchParams?.tab]);
+
+  const [isCopying, setIsCopying] = useState(false);
+  
+  const handleCopyGlobalBanners = async () => {
+    if (!activeStoreId) return;
+    if (!confirm("Isso copiará todos os banners da rede global para a sua loja. Tem certeza?")) return;
+    setIsCopying(true);
+    try {
+      const globalBanners = allBanners.filter(b => !b.lojaId);
+      for (const banner of globalBanners) {
+        await addBanner({
+          ...banner,
+          id: "",
+          lojaId: activeStoreId
+        });
+      }
+      toast.success("Banners da rede copiados com sucesso!");
+    } catch (e) {
+      toast.error("Erro ao copiar banners da rede.");
+    } finally {
+      setIsCopying(false);
+    }
+  };
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -299,6 +323,17 @@ function AdminBanners() {
               <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
             </Button>
           )}
+          {activeStoreId && isGlobalAdmin() && activeTab === "banners" && (
+            <Button 
+              variant="outline" 
+              onClick={handleCopyGlobalBanners} 
+              disabled={isCopying}
+              className="font-bold text-emerald-600 border-emerald-200 hover:bg-emerald-50 shadow-sm"
+              title="Copia os banners cadastrados na rede global para esta loja."
+            >
+              <Copy className="w-4 h-4 mr-2" /> Puxar Banners da Rede
+            </Button>
+          )}
           <StoreSelector className="mb-0" />
           {activeTab === "banners" && (activeStoreId || !isGlobalAdmin()) && (
             <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
@@ -322,7 +357,7 @@ function AdminBanners() {
                         <Store className="w-6 h-6" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-800 text-lg group-hover:text-emerald-600 transition-colors">{(loja as any).nomeFantasia || loja.razaoSocial || loja.nome}</h3>
+                        <h3 className="font-bold text-slate-800 text-lg group-hover:text-emerald-600 transition-colors">{loja.nome || (loja as any).nomeFantasia || loja.razaoSocial}</h3>
                         <p className="text-xs text-slate-500">Filial #{loja.id}</p>
                       </div>
                     </div>
@@ -763,7 +798,7 @@ function AdminBanners() {
 
               {/* IMAGENS */}
               <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-8">
-                {editingBanner.posicao === "Banner Tarja" || editingBanner.posicao === "Banner Categoria" ? (
+                {editingBanner.posicao === "Banner Tarja" || editingBanner.posicao === "Banner Compre por categoria" ? (
                   <div className="bg-orange-50 border border-orange-200 rounded p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -771,7 +806,7 @@ function AdminBanners() {
                         <p className="text-sm text-orange-700">
                           {editingBanner.posicao === "Banner Tarja" 
                             ? 'Os Banners Tarja são os cartões de vantagens que aparecem na loja (ex: "Compre pelo site...").' 
-                            : 'Os Banners Categoria são os ícones redondos que aparecem na seção "Compre por categoria".'}
+                            : 'Os Banners Compre por categoria são os ícones redondos que aparecem na seção "Compre por categoria".'}
                         </p>
                       </div>
                       {dimensions && <span className="text-xs bg-orange-100 px-2 py-1 rounded text-orange-800 font-bold font-mono border border-orange-200 shadow-sm">{dimensions.desktop}</span>}

@@ -129,7 +129,8 @@ export const useAdminProducts = create<ProductsState>()(
       getStoreVitrines: (lojaId) => {
         const state = get();
         if (!lojaId) return state.vitrines;
-        return state.storeVitrines[lojaId] || [];
+        const storeVits = state.storeVitrines[lojaId];
+        return (storeVits && storeVits.length > 0) ? storeVits : state.vitrines;
       },
       _loaded: false,
       loadProducts: async () => {

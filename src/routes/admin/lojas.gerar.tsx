@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Store,
   ExternalLink,
@@ -43,9 +44,10 @@ function slugify(text: string): string {
 }
 
 function GerarLojaPage() {
-  const { pharmacies, updatePharmacy, removePharmacy } = useAdmin();
+  const { pharmacies, updatePharmacy, removePharmacy, banners, addBanner } = useAdmin();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [storeToDelete, setStoreToDelete] = useState<string | null>(null);
+  const [copyBannersState, setCopyBannersState] = useState<Record<string, boolean>>({});
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://pagesassociadas.vercel.app";
 
@@ -58,12 +60,25 @@ function GerarLojaPage() {
     return `${baseUrl}/${getLojaSlug(pharmacy)}`;
   };
 
-  const handleGerar = (pharmacy: any) => {
-    updatePharmacy(pharmacy.id, {
+  const handleGerar = async (pharmacy: any) => {
+    await updatePharmacy(pharmacy.id, {
       ...pharmacy,
       isVirtualStoreGenerated: true,
       virtualStoreStatus: "Ativa"
     });
+
+    const shouldCopy = pharmacy.categoriaAssociado === 'Pleno' ? true : (copyBannersState[pharmacy.id] !== false);
+    if (shouldCopy) {
+      const globalBanners = banners.filter(b => !b.lojaId);
+      for (const banner of globalBanners) {
+        await addBanner({
+          ...banner,
+          id: "", // Will let Supabase generate it
+          lojaId: pharmacy.id
+        });
+      }
+    }
+
     toast.success(`Loja "${pharmacy.nome}" gerada com sucesso!`, {
       description: `Acesse: ${getLojaUrl(pharmacy)}`,
     });
@@ -220,13 +235,30 @@ function GerarLojaPage() {
                 {/* Actions */}
                 <div className="flex flex-col gap-3">
                   {!isGenerated ? (
-                    <Button
-                      onClick={() => handleGerar(pharmacy)}
-                      className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-10 shadow-sm transition-all hover:scale-[1.02]"
-                    >
-                      <Rocket className="w-4 h-4 mr-2" />
-                      Gerar Loja Virtual
-                    </Button>
+                    <div className="flex flex-col gap-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Checkbox 
+                          checked={pharmacy.categoriaAssociado === 'Pleno' ? true : (copyBannersState[pharmacy.id] !== false)}
+                          onCheckedChange={(checked) => setCopyBannersState(prev => ({...prev, [pharmacy.id]: !!checked}))}
+                          disabled={pharmacy.categoriaAssociado === 'Pleno'}
+                          id={`copy-banners-${pharmacy.id}`}
+                          className="mt-1"
+                        />
+                        <label 
+                          htmlFor={`copy-banners-${pharmacy.id}`} 
+                          className="text-sm font-medium leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-700"
+                        >
+                          Gerar loja com os banners cadastrados pela rede?
+                        </label>
+                      </div>
+                      <Button
+                        onClick={() => handleGerar(pharmacy)}
+                        className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-10 shadow-sm transition-all hover:scale-[1.02]"
+                      >
+                        <Rocket className="w-4 h-4 mr-2" />
+                        Gerar Loja Virtual
+                      </Button>
+                    </div>
                   ) : (
                     <>
                       <div className="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border border-slate-100">

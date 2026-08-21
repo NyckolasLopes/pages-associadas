@@ -33,7 +33,7 @@ const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: VitrineLocal; page?: string; lojaId?: string }) {
-  const allVitrines = useAdminProducts((s) => s.vitrines);
+  const allVitrines = useAdminProducts((s) => s.getStoreVitrines(lojaId));
   const customProducts = useAdminProducts((s) => s.customProducts);
   
   const vitrines = useMemo(() => 
@@ -424,14 +424,19 @@ function DynamicTopicBanners({ topicId, page = "Página inicial", lojaId }: { to
   const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
-  const extras = useMemo(() => (allBanners || []).filter(b => 
-    b.active && 
-    b.posicao === "Banner Extra" && 
-    b.topicoVinculado === topicId &&
-    (!b.bannerVinculado || b.bannerVinculado === "none") &&
-    (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
-    (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  ), [allBanners, page, lojaId, isParceiro, topicId]);
+  const extras = useMemo(() => (allBanners || []).filter(b => {
+    if (!b.active) return false;
+    if (b.lojaId && b.lojaId !== lojaId) return false;
+    if (!b.lojaId && isParceiro) return false;
+    if (b.paginaPublicacao && b.paginaPublicacao !== "Todas as páginas" && b.paginaPublicacao !== page) return false;
+    if (b.bannerVinculado && b.bannerVinculado !== "none") return false;
+
+    if (topicId === "diferenciais" && b.posicao === "Banner Diferenciais") {
+      return true;
+    }
+
+    return b.posicao === "Banner Extra" && b.topicoVinculado === topicId;
+  }), [allBanners, page, lojaId, isParceiro, topicId]);
   
   if (extras.length === 0) return null;
 

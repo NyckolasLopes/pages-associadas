@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 
-export function HeroCarousel({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
+export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full Banner" }: { page?: string; lojaId?: string; posicao?: string }) {
   const { banners: adminBanners, pharmacies } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const effectiveLojaId = lojaId || selectedPharmacyId;
@@ -25,7 +25,13 @@ export function HeroCarousel({ page = "Página inicial", lojaId }: { page?: stri
   }, []);
 
   const activeBanners = adminBanners.filter(b => {
-    if (b.posicao !== "Full Banner") return false;
+    // Both Full Banner and Banner por Categoria share this carousel component
+    if (b.posicao !== "Full Banner" && b.posicao !== "Banner por Categoria") return false;
+    
+    // Se a página for "Página de Categoria", priorizar os "Banner por Categoria"
+    if (page === "Página de Categoria" && b.posicao !== "Banner por Categoria") return false;
+    if (page !== "Página de Categoria" && b.posicao === "Banner por Categoria") return false;
+
     if (!b.active) return false;
     
     // Filtro de Loja: Só mostra se for banner específico da loja, ou se for global e a loja não for parceira
@@ -86,7 +92,11 @@ export function HeroCarousel({ page = "Página inicial", lojaId }: { page?: stri
 
   // Allow rendering the first slide immediately from initial state to prevent LCP delays
   const bannersToRender = hydrated ? activeBanners : adminBanners.filter(b => {
-    if (b.posicao !== "Full Banner" || !b.active) return false;
+    if (b.posicao !== "Full Banner" && b.posicao !== "Banner por Categoria") return false;
+    if (page === "Página de Categoria" && b.posicao !== "Banner por Categoria") return false;
+    if (page !== "Página de Categoria" && b.posicao === "Banner por Categoria") return false;
+    
+    if (!b.active) return false;
     if (b.paginaPublicacao && b.paginaPublicacao !== "Todas as páginas" && b.paginaPublicacao !== page) return false;
     
     if (effectiveLojaId) {
@@ -102,18 +112,17 @@ export function HeroCarousel({ page = "Página inicial", lojaId }: { page?: stri
     return true;
   });
   const totalSlidesToRender = bannersToRender.length;
+  const aspectRatioDesktop = page === "Página de Categoria" ? '1920 / 400' : '1800 / 600';
 
   if (totalSlidesToRender === 0) {
-    return (
-      <section className="relative w-full overflow-hidden bg-[#f5f5f5]" style={{ aspectRatio: '1800 / 600' }} />
-    );
+    return null; // Return null if there are no category banners to avoid empty spaces
   }
 
   return (
     <section className="relative w-full overflow-hidden bg-[#f5f5f5]">
       <div 
         className="flex transition-transform duration-700 ease-out"
-        style={{ transform: `translateX(-${i * 100}%)`, aspectRatio: '1800 / 600' }}
+        style={{ transform: `translateX(-${i * 100}%)`, aspectRatio: aspectRatioDesktop }}
       >
         {bannersToRender.map((banner, idx) => (
           <div key={banner.id} className="w-full shrink-0 relative">

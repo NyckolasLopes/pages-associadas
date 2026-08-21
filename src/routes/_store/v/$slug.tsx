@@ -15,6 +15,8 @@ const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
   Flame, Sparkles, TrendingUp, Percent, Tag, Heart, ShoppingBag, Pill, Leaf, Baby, Flower2, Stethoscope, Sun, Dumbbell, Activity, ShieldCheck, Thermometer, Battery, Wind, Droplets, Eye, Smile, Coffee, HeartPulse, Scale, BriefcaseMedical
 };
 
+import { useCart } from "@/stores/cart";
+
 export const Route = createFileRoute("/_store/v/$slug")({
   validateSearch: zodValidator(
     z.object({
@@ -27,7 +29,8 @@ export const Route = createFileRoute("/_store/v/$slug")({
   loaderDeps: ({ search }) => search,
   loader: async ({ params, deps }) => {
     // In loader we can access the state directly
-    const vitrines = useAdminProducts.getState().vitrines;
+    const lojaId = useCart.getState().selectedPharmacyId;
+    const vitrines = useAdminProducts.getState().getStoreVitrines(lojaId);
     const vitrine = vitrines.find(v => {
       const slug = v.linkSeo || v.nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
       return slug === params.slug;

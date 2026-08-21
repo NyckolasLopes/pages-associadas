@@ -787,8 +787,6 @@ export const useAdmin = create<AdminState>()(
         let query = supabase.from('banners' as any).select('*');
         if (lojaId) {
           query = query.or(`loja_id.eq.${lojaId},loja_id.is.null`);
-        } else {
-          query = query.is('loja_id', null);
         }
         const { data, error } = await query;
         if (!error && data) {
@@ -815,6 +813,7 @@ export const useAdmin = create<AdminState>()(
             lojaId: b.loja_id,
             vitrineVinculada: b.vitrine_vinculada,
             bannerVinculado: b.banner_vinculado,
+            topicoVinculado: b.topico_vinculado,
             formatoExtra: b.formato_extra,
             imageUrl2: b.image_url2,
             mobileImageUrl2: b.mobile_image_url2,
@@ -841,6 +840,7 @@ export const useAdmin = create<AdminState>()(
           loja_id: banner.lojaId || null,
           vitrine_vinculada: banner.vitrineVinculada,
           banner_vinculado: banner.bannerVinculado,
+          topico_vinculado: banner.topicoVinculado,
           formato_extra: banner.formatoExtra,
           image_url2: banner.imageUrl2,
           mobile_image_url2: banner.mobileImageUrl2,
@@ -872,6 +872,7 @@ export const useAdmin = create<AdminState>()(
         if (banner.endDate !== undefined) payload.end_date = (banner.endDate && banner.endDate.trim() !== "") ? new Date(banner.endDate).toISOString() : null;
         if (banner.vitrineVinculada !== undefined) payload.vitrine_vinculada = banner.vitrineVinculada;
         if (banner.bannerVinculado !== undefined) payload.banner_vinculado = banner.bannerVinculado;
+        if (banner.topicoVinculado !== undefined) payload.topico_vinculado = banner.topicoVinculado;
         if (banner.formatoExtra !== undefined) payload.formato_extra = banner.formatoExtra;
         if (banner.imageUrl2 !== undefined) payload.image_url2 = banner.imageUrl2;
         if (banner.mobileImageUrl2 !== undefined) payload.mobile_image_url2 = banner.mobileImageUrl2;
