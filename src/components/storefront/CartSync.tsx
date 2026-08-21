@@ -61,9 +61,9 @@ export function CartSync() {
       }
     };
 
-    // Debounce: aguarda 3 segundos sem mudanças antes de salvar
+    // Debounce: aguarda 30 segundos sem mudanças antes de salvar
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(syncCart, 3000);
+    timeoutRef.current = setTimeout(syncCart, 30000);
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
