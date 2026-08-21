@@ -127,6 +127,15 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   }, [open]);
 
   const handleSaveClick = () => {
+    if (!formData?.nome?.trim()) {
+      toast.error("O campo Nome do Produto é obrigatório.");
+      return;
+    }
+    if (!formData?.ean?.trim()) {
+      toast.error("O campo EAN / Código de Barras é obrigatório.");
+      return;
+    }
+
     setSaveStep("saving");
     setTimeout(() => {
       setSaveStep("syncing");
@@ -220,7 +229,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">ID / SKU / Código Interno</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.codigoInterno || formData.id || ""} onChange={e => setFormData({...formData, codigoInterno: e.target.value})} className="bg-white" />
+                <Input disabled={!isGlobalAdmin} value={formData.codigoInterno || formData.sku || ""} onChange={e => setFormData({...formData, codigoInterno: e.target.value, sku: e.target.value})} className="bg-white" />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">EAN / Código de Barras*</Label>
