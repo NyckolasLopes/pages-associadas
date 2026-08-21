@@ -179,7 +179,7 @@ function AdminLayout() {
   const { orders } = useOrders();
   const prevOrdersRef = useRef(orders);
 
-  useInactivityTimeout(8 * 60 * 1000, () => {
+  useInactivityTimeout(24 * 60 * 60 * 1000, () => {
     toast.error("Sessão expirada por inatividade. Faça login novamente.", { duration: 5000 });
     logout();
     setTimeout(() => window.location.reload(), 1000);
