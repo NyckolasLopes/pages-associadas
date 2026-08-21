@@ -4,6 +4,8 @@ import { ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import mascot404 from "@/assets/404-mascot.png";
 
+import { sanitizeHtml } from "@/lib/security";
+
 export const Route = createFileRoute("/_store/pagina/$slug")({
   component: PaginaConteudo,
   loader: ({ params }) => {
@@ -47,7 +49,7 @@ function PaginaConteudo() {
           </h1>
           <div 
             className="w-full"
-            dangerouslySetInnerHTML={{ __html: page.content || "" }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(page.content) }}
           />
         </div>
       </div>

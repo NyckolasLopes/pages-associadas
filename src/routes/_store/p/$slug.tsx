@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { useCart, useGeoCep } from "@/stores/cart";
 import { useFavorites } from "@/stores/favorites";
 import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { sanitizeHtml } from "@/lib/security";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState, useRef } from "react";
@@ -1097,7 +1104,7 @@ function PDP() {
               <div className="bg-white border rounded-xl p-6 shadow-sm">
                 <div
                   className="prose prose-sm max-w-none text-muted-foreground"
-                  dangerouslySetInnerHTML={{ __html: p.descricao || "" }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.descricao) }}
                 />
               </div>
             </section>

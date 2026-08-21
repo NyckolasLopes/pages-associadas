@@ -9,6 +9,7 @@ import type { Produto, Categoria } from "@/types";
 import { ProductFilterSidebar } from "@/components/storefront/ProductFilterSidebar";
 import { HeroCarousel } from "@/components/storefront/HeroCarousel";
 import { SquarePromoGrid } from "@/components/storefront/SquarePromoGrid";
+import { sanitizeHtml } from "@/lib/security";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import mascot404 from "@/assets/404-mascot.png";
@@ -133,7 +134,7 @@ function CategoryPage() {
       {cat.descricaoHtml && (
         <div
           className="prose prose-sm max-w-none mt-3 text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: cat.descricaoHtml }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(cat.descricaoHtml) }}
         />
       )}
 

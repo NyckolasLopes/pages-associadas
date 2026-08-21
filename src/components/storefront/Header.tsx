@@ -37,7 +37,8 @@ import { catalog } from "@/services/catalog";
 import type { Produto, Categoria } from "@/types";
 import { brl, productImage, getGreeting, checkIsGenerico } from "@/lib/format";
 import { getDeterministicStock } from "@/lib/stock";
-import { getLevePaguePromotion, calculateDistance } from "@/lib/utils";
+import { cn, reverseGeocodeLatLon, calculateDistance } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/security";
 
 import categoriesData from "@/data/categories.json";
 import { useAdmin } from "@/stores/admin";
@@ -1242,7 +1243,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                 </Link>
                 <div 
                   className="text-xs text-muted-foreground mt-3 leading-relaxed line-clamp-3"
-                  dangerouslySetInnerHTML={{ __html: active.descricaoHtml }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(active.descricaoHtml) }}
                 />
                 <Link
                   to="/c/$slug"
