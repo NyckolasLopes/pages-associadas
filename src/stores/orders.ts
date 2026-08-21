@@ -234,6 +234,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
         const orderItemsRows = itens.map(i => ({
             pedido_id: insertedOrder.id,
             produto_id: i.id || i.sku || null,
+            ean: i.ean || null,
             nome: i.nome,
             qty: i.qtd || i.quantidade || 1,
             preco_unit: i.valorUnitario || i.preco || 0

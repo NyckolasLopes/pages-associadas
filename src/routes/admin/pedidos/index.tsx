@@ -463,7 +463,16 @@ export function PedidosAdmin() {
                 </Select>
               </div>
               <span className="text-slate-500 font-medium text-sm flex items-center gap-2">
-                Efetuado em {selectedOrder.data} 
+                Efetuado em {
+                  (() => {
+                    const dStr = selectedOrder.data || "";
+                    if (dStr.includes("T")) {
+                      const d = new Date(dStr);
+                      if (!isNaN(d.getTime())) return d.toLocaleDateString("pt-BR") + " às " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                    }
+                    return dStr;
+                  })()
+                }
                 <span className="w-1 h-1 rounded-full bg-slate-300" /> 
                 <Store className="h-3 w-3" /> {getLojaName(selectedOrder.lojaId, selectedOrder.lojaNome)}
               </span>
@@ -534,12 +543,13 @@ export function PedidosAdmin() {
                     <div className="text-sm text-slate-500 mt-1">{selectedOrder.envio.endereco || "Endereço não informado"}</div>
                     <div className="text-sm text-slate-500">{selectedOrder.envio.cidade || ""} {selectedOrder.envio.cep ? `- CEP: ${selectedOrder.envio.cep}` : ""}</div>
                     <div className="text-xs font-bold text-slate-500 mt-3 pt-2 border-t">Prazo estimado: {selectedOrder.envio.prazo || "Imediato"}</div>
+                    <div className="text-sm text-slate-500 mt-1 font-medium">O cliente escolheu a entrega da loja.</div>
                   </>
                 )}
                 {isPickup && (
                   <>
                     <div className="text-sm text-emerald-600 mt-1 font-bold">Retirada no balcão da loja.</div>
-                    <div className="text-sm text-slate-500 mt-1 font-medium">O cliente fará a retirada na unidade informada.</div>
+                    <div className="text-sm text-slate-500 mt-1 font-medium">O cliente irá retirar na loja.</div>
                   </>
                 )}
               </div>
@@ -577,7 +587,7 @@ export function PedidosAdmin() {
                 </div>
                 {selectedOrder.pagamento?.metodo && (
                   <div className="flex justify-between text-sm font-medium text-slate-600 border-t border-emerald-200/50 pt-1.5 mt-1.5">
-                    <span>Forma de Pagamento</span>
+                    <span>Forma de Pagamento selecionada</span>
                     <span className="font-bold text-slate-800">{selectedOrder.pagamento.metodo.toUpperCase()}</span>
                   </div>
                 )}
