@@ -535,7 +535,8 @@ function AdminBanners() {
               })}
             </div>
           )}
-      </div>
+        </div>
+      )
       )}
 
       {/* Tab 2: Estrutura da Minha Loja (Panorama Geral) */}
