@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -108,7 +108,7 @@ interface UnifiedOrderItem {
   rawCart?: AbandonedCart;
 }
 
-import { useEffect, useState, useMemo } from "react";
+// import consolidado no topo
 import { useOrdersQuery } from "@/hooks/useOrdersQuery";
 
 export function PedidosAdmin() {

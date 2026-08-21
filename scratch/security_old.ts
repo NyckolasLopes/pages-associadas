@@ -1,45 +1,7 @@
-import DOMPurify from 'isomorphic-dompurify';
-
 /**
  * Security & Input Validation Toolkit
  * Validação estrita de entradas, sanitização contra XSS, injeção de fórmulas e proteção de dados.
  */
-
-/**
- * Sanitiza HTML para evitar ataques XSS (Cross-Site Scripting).
- * Deve ser usado sempre que receber HTML do banco de dados (ex: descrições, páginas personalizadas).
- * @param dirtyHtml HTML bruto
- * @returns HTML limpo e seguro
- */
-export function sanitizeHtml(dirtyHtml: string | undefined | null): string {
-  if (!dirtyHtml) return "";
-  
-  return DOMPurify.sanitize(dirtyHtml, {
-    ALLOWED_TAGS: [
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p', 'a', 'ul', 'ol',
-      'nl', 'li', 'b', 'i', 'strong', 'em', 'strike', 'code', 'hr', 'br', 'div',
-      'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td', 'pre', 'span', 'img'
-    ],
-    ALLOWED_ATTR: ['href', 'name', 'target', 'src', 'alt', 'class', 'style'],
-    FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'object', 'embed'],
-    FORBID_ATTR: ['onerror', 'onload', 'onmouseover', 'onclick']
-  });
-}
-
-/**
- * Sanitiza inputs de texto para mitigar tentativas superficiais de SQL Injection e anomalias.
- * @param input String bruta do formulário/URL
- * @returns String segura
- */
-export function sanitizeInput(input: string | undefined | null): string {
-  if (!input) return "";
-  return input
-    .replace(/<[^>]*>?/gm, '')
-    .replace(/;/g, '')
-    .replace(/--/g, '')
-    .replace(/\/\*/g, '')
-    .trim();
-}
 
 /**
  * Sanitiza texto contra injeção de HTML e scripts maliciosos (XSS)
@@ -65,7 +27,7 @@ export function sanitizeSpreadsheetValue(value: unknown): string {
   if (value === null || value === undefined) return "";
   const str = String(value).trim();
   if (/^[=+\-@]/.test(str)) {
-    return `'${str}`;
+    return `'${str}`; // Prefix com apóstrofo para neutralizar execução de fórmulas no Excel
   }
   return str;
 }
@@ -78,6 +40,7 @@ export function validateCPF(cpf: string): boolean {
   const clean = cpf.replace(/\D/g, "");
 
   if (clean.length !== 11) return false;
+  // Rejeita sequências de dígitos iguais (ex: 111.111.111-11)
   if (/^(\d)\1{10}$/.test(clean)) return false;
 
   let sum = 0;
@@ -105,8 +68,10 @@ export function validateCPF(cpf: string): boolean {
 export function validatePhone(phone: string): boolean {
   if (!phone) return false;
   const clean = phone.replace(/\D/g, "");
+  // Aceita 10 dígitos (fixo/móvel antigo) ou 11 dígitos (móvel com 9)
   if (clean.length !== 10 && clean.length !== 11) return false;
   const ddd = parseInt(clean.substring(0, 2), 10);
+  // DDDs válidos no Brasil variam de 11 a 99
   if (ddd < 11 || ddd > 99) return false;
   return true;
 }
