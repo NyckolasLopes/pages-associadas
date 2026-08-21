@@ -32,7 +32,6 @@ function EstoqueLoja() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      // @ts-ignore
       <EstoqueLojaTab loja={store} />
     </div>
   );
