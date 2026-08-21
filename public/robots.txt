@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /carrinho/
+Disallow: /checkout/
+Disallow: /perfil/
+Allow: /
+
+Sitemap: https://farmaciasassociadas.com.br/sitemap.xml

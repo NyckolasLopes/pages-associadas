@@ -23,7 +23,7 @@ interface User {
 interface AuthState {
   user: User | null;
   loginOpen: boolean;
-  login: (email: string, password: string) => Promise<boolean | "otp_required">;
+  login: (email: string, password: string) => Promise<boolean | "otp_required" | "rate_limit">;
   sendOtp: (email: string) => Promise<boolean>;
   verifyOtp: (email: string, token: string) => Promise<boolean>;
   loginWithProvider: (provider: "google" | "apple" | "facebook", redirectPath?: string) => Promise<void>;
@@ -38,7 +38,11 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   login: async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) return false;
+    if (error) {
+      if (error.status === 429) return "rate_limit";
+      return false;
+    }
+    if (!data.user) return false;
 
     const u = data.user;
     // Fetch extended profile (nome, cpf, celular, has_logged_in_before)

@@ -1,14 +1,34 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, CheckCircle2, Package, Truck, Clock, ShoppingBag, MapPin, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 import { brl } from "@/lib/format";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type { Pedido } from "@/stores/orders";
 
 export const Route = createFileRoute("/_store/sucesso")({
   component: SucessoPage,
 });
+
+function TimelineStep({ icon: Icon, label, active, isLast = false }: { icon: any, label: string, active: boolean, isLast?: boolean }) {
+  return (
+    <div className={`relative flex flex-col items-center flex-1 ${active ? 'opacity-100' : 'opacity-40'}`}>
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 z-10 transition-all duration-500
+        ${active ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'bg-slate-100 text-slate-400'}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <span className={`text-xs font-bold text-center ${active ? 'text-primary' : 'text-slate-500'}`}>{label}</span>
+      {!isLast && (
+        <div className={`absolute top-5 left-[50%] w-full h-[2px] -z-0 transition-all duration-500
+          ${active ? 'bg-primary' : 'bg-slate-200'}`} />
+      )}
+    </div>
+  );
+}
 
 function SucessoPage() {
   const search = Route.useSearch() as any;
@@ -21,36 +41,184 @@ function SucessoPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  const { data: order, isLoading } = useQuery({
+    queryKey: ['order-success', search.id],
+    queryFn: async () => {
+      if (!search.id) return null;
+      const { data, error } = await supabase.from('pedidos').select('*').eq('id', search.id).single();
+      if (error) {
+        console.error("Erro ao buscar pedido:", error);
+        return null;
+      }
+      return data as Pedido;
+    },
+    enabled: !!search.id,
+    retry: false,
+  });
+
+  const goWhatsApp = () => {
+    const phone = (activeStore?.telefone || "51999999999").replace(/\D/g, "");
+    const waNumber = phone.startsWith("55") ? phone : `55${phone}`;
+    let text = `Olá! Fiz um pedido no site e gostaria de acompanhar.\nPedido: *#${search.id}*`;
+    if (order?.cliente?.nome) text += `\nNome: ${order.cliente.nome}`;
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
   return (
-    <div className="container-fa py-12 text-center max-w-lg mx-auto min-h-[60vh] flex flex-col justify-center">
-      <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-        <MessageCircle className="w-10 h-10 text-emerald-600" />
-      </div>
-      <h1 className="text-3xl font-bold text-slate-800 mb-2">Pedido Recebido! 🎉</h1>
-      <p className="text-slate-600 mb-8 text-lg">
-        O seu pedido {search.id ? `(#${search.id})` : ""} foi gerado com sucesso.
-      </p>
-
-      <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 mb-8">
-        <p className="text-emerald-800 mb-4">
-          Seu carrinho foi encaminhado para o nosso <strong>WhatsApp</strong>. Acompanhe o status por lá ou fale com a nossa equipe.
+    <div className="container-fa py-8 md:py-12 min-h-[70vh] flex flex-col justify-center max-w-4xl mx-auto">
+      
+      {/* Header Area */}
+      <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+          <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
+          <CheckCircle2 className="w-12 h-12 text-green-600" />
+        </div>
+        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">Pedido Recebido! 🎉</h1>
+        <p className="text-slate-600 text-lg">
+          Tudo certo! Seu pedido <strong className="text-slate-900">#{search.id}</strong> foi registrado com sucesso.
         </p>
-        <Button 
-          className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg"
-          onClick={() => {
-            const phone = (activeStore?.telefone || "51999999999").replace(/\D/g, "");
-            const waNumber = phone.startsWith("55") ? phone : `55${phone}`;
-            window.open(`https://wa.me/${waNumber}`, "_blank");
-          }}
-        >
-          <MessageCircle className="w-5 h-5 mr-2" />
-          Ir para o WhatsApp Agora
-        </Button>
       </div>
 
-      <Link to={`/${activeStore?.slug || ''}`}>
-        <Button variant="outline" className="w-full h-12">Voltar para a página inicial</Button>
-      </Link>
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+          <p className="text-slate-500 font-medium">Buscando os detalhes do seu recibo...</p>
+        </div>
+      ) : order ? (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 lg:gap-8 items-start animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150 fill-mode-both">
+          
+          {/* Coluna da Esquerda (Status e WhatsApp) */}
+          <div className="md:col-span-3 space-y-6">
+            
+            {/* Timeline */}
+            <div className="bg-white p-6 rounded-3xl border shadow-sm">
+              <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-primary" /> Status do Pedido
+              </h2>
+              <div className="flex justify-between items-start pt-2 px-2 overflow-hidden">
+                <TimelineStep icon={ShoppingBag} label="Recebido" active={true} />
+                <TimelineStep icon={Package} label="Em Separação" active={order.status === 'separando' || order.status === 'enviado' || order.status === 'concluido'} />
+                <TimelineStep icon={order.modalidade?.toLowerCase() === 'retirada' ? MapPin : Truck} label={order.modalidade?.toLowerCase() === 'retirada' ? 'Disponível' : 'Em Rota'} active={order.status === 'enviado' || order.status === 'concluido'} />
+                <TimelineStep icon={CheckCircle2} label="Concluído" active={order.status === 'concluido'} isLast={true} />
+              </div>
+              <p className="text-sm text-slate-500 text-center mt-6 bg-slate-50 p-3 rounded-xl">
+                Nossa equipe de loja já está analisando o seu pedido.
+              </p>
+            </div>
+
+            {/* WhatsApp Call to Action */}
+            <div className="bg-gradient-to-br from-emerald-500 to-green-600 p-8 rounded-3xl border border-emerald-400 shadow-xl shadow-emerald-500/20 text-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                <MessageCircle className="w-32 h-32" />
+              </div>
+              <h2 className="text-2xl font-bold mb-3 relative z-10">Acompanhe pelo WhatsApp</h2>
+              <p className="text-emerald-50 mb-6 relative z-10 text-lg leading-relaxed max-w-[85%]">
+                Receba atualizações em tempo real e fale diretamente com o farmacêutico responsável pela sua separação.
+              </p>
+              <Button 
+                onClick={goWhatsApp}
+                size="lg"
+                className="bg-white text-emerald-700 hover:bg-emerald-50 hover:scale-105 transition-all shadow-lg text-lg h-14 px-8 w-full sm:w-auto relative z-10 rounded-2xl"
+              >
+                <MessageCircle className="w-5 h-5 mr-2" />
+                Falar no WhatsApp
+                <ArrowRight className="w-5 h-5 ml-2 opacity-50" />
+              </Button>
+            </div>
+
+          </div>
+
+          {/* Coluna da Direita (Recibo) */}
+          <div className="md:col-span-2 space-y-6">
+            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200">
+              <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center justify-between">
+                Resumo da Compra
+                <Badge variant="outline" className="bg-white text-slate-500">{order.produtos?.length || order.itens?.length || 0} itens</Badge>
+              </h2>
+
+              {/* Items List */}
+              <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {(order.produtos || order.itens || []).map((item, i) => (
+                  <div key={i} className="flex gap-4 items-start bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+                    <div className="w-14 h-14 bg-slate-50 rounded-xl flex-shrink-0 flex items-center justify-center p-1">
+                      {item.imagem || item.foto ? (
+                        <img src={item.imagem || item.foto} alt={item.nome} className="w-full h-full object-contain mix-blend-multiply" />
+                      ) : (
+                        <Package className="w-6 h-6 text-slate-300" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 leading-tight line-clamp-2 mb-1">{item.nome}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-500">{item.qtd || item.quantidade}x un.</span>
+                        <span className="text-sm font-bold text-primary">{brl((item.preco || item.valorUnitario || 0) * (item.qtd || item.quantidade || 1))}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="h-px bg-slate-200 w-full mb-6" />
+
+              {/* Totals */}
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between text-sm text-slate-600">
+                  <span>Subtotal</span>
+                  <span className="font-medium">{brl(order.valores?.produtos || order.valores?.subtotal || 0)}</span>
+                </div>
+                {order.valores?.descontos > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Desconto</span>
+                    <span className="font-medium">-{brl(order.valores.descontos)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm text-slate-600">
+                  <span>Frete</span>
+                  <span className="font-medium">{order.valores?.frete === 0 ? <span className="text-green-600 font-bold">Grátis</span> : brl(order.valores?.frete || 0)}</span>
+                </div>
+                <div className="flex justify-between text-lg font-black text-slate-900 pt-3 border-t">
+                  <span>Total</span>
+                  <span className="text-primary">{brl(order.valores?.total || 0)}</span>
+                </div>
+              </div>
+
+              {/* Endereço / Retirada info */}
+              <div className="bg-primary/5 rounded-2xl p-4 text-sm">
+                <div className="flex items-start gap-2 mb-2">
+                  <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-slate-800 block mb-0.5">
+                      {order.modalidade?.toLowerCase() === 'retirada' ? 'Retirada na Loja' : 'Endereço de Entrega'}
+                    </span>
+                    <span className="text-slate-600 leading-relaxed">
+                      {order.modalidade?.toLowerCase() === 'retirada' 
+                        ? `${activeStore.nome} - ${activeStore.endereco?.rua || ''}`
+                        : `${order.cliente?.endereco?.rua || order.envio?.endereco || ''}, ${order.cliente?.endereco?.numero || order.envio?.numero || ''}`
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+          
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-slate-500 mb-6">Não conseguimos carregar os detalhes do pedido no momento, mas ele foi registrado!</p>
+          <Button onClick={goWhatsApp} size="lg" className="h-12 px-8">Falar com Suporte</Button>
+        </div>
+      )}
+
+      <div className="mt-12 text-center">
+        <Link to={`/${activeStore?.slug || ''}`}>
+          <Button variant="ghost" className="text-slate-500 font-medium hover:text-slate-900">
+            &larr; Voltar para a loja
+          </Button>
+        </Link>
+      </div>
+
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/stores/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,9 +35,51 @@ function LoginPage() {
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [isOtpMode, setIsOtpMode] = useState(false);
   const [token, setToken] = useState("");
+  
+  // Security States (Anti-Bot & Anti-Bruteforce)
+  const [honeypot, setHoneypot] = useState("");
+  const [lockedUntil, setLockedUntil] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  
+  useEffect(() => {
+    const lock = localStorage.getItem("fa_login_lock");
+    if (lock) {
+      const lockTime = parseInt(lock);
+      if (lockTime > Date.now()) {
+        setLockedUntil(lockTime);
+      } else {
+        localStorage.removeItem("fa_login_lock");
+        localStorage.setItem("fa_login_attempts", "0");
+      }
+    }
+    
+    const interval = setInterval(() => {
+      if (lockedUntil > Date.now()) {
+        setTimeLeft(Math.ceil((lockedUntil - Date.now()) / 1000));
+      } else if (lockedUntil > 0) {
+        setLockedUntil(0);
+        setTimeLeft(0);
+        localStorage.removeItem("fa_login_lock");
+        localStorage.setItem("fa_login_attempts", "0");
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (lockedUntil > Date.now()) {
+      toast.error(`Aguarde ${timeLeft} segundos antes de tentar novamente.`);
+      return;
+    }
+
+    // Bot detection (Honeypot)
+    if (honeypot) {
+      await new Promise(r => setTimeout(r, 1500)); // Fake delay
+      toast.success("Login efetuado com sucesso!"); // Fake success
+      return;
+    }
+
     try {
       loginSchema.parse({ email, pass });
     } catch (err) {
@@ -48,13 +90,34 @@ function LoginPage() {
     }
     
     const result = await login(email, pass);
+    
+    if (result === "rate_limit") {
+      toast.error("Muitas tentativas detectadas pelos nossos servidores. Por segurança, aguarde alguns minutos.");
+      const lockTime = Date.now() + 5 * 60 * 1000;
+      localStorage.setItem("fa_login_lock", lockTime.toString());
+      setLockedUntil(lockTime);
+      return;
+    }
+
     if (result === "otp_required") {
+      localStorage.setItem("fa_login_attempts", "0");
       setIsOtpMode(true);
       toast.success("Código de segurança enviado para o seu e-mail!");
     } else if (result === true) {
+      localStorage.setItem("fa_login_attempts", "0");
       navigate({ to: redirect as any });
     } else {
-      toast.error("E-mail ou senha incorretos.");
+      const attempts = parseInt(localStorage.getItem("fa_login_attempts") || "0") + 1;
+      localStorage.setItem("fa_login_attempts", attempts.toString());
+      
+      if (attempts >= 3) {
+        const lockTime = Date.now() + 10 * 60 * 1000; // 10 minutes local lock
+        localStorage.setItem("fa_login_lock", lockTime.toString());
+        setLockedUntil(lockTime);
+        toast.error("Muitas tentativas falhas. Conta bloqueada temporariamente.");
+      } else {
+        toast.error(`E-mail ou senha incorretos. Tentativa ${attempts}/3`);
+      }
     }
   };
 
@@ -203,8 +266,13 @@ function LoginPage() {
                 />
               </div>
               
-              <Button type="submit" className="w-full h-11 text-base font-bold">
-                Entrar
+              {/* Honeypot Invisível para Bots */}
+              <div aria-hidden="true" className="opacity-0 absolute -left-[9999px] top-0 -z-50 select-none pointer-events-none">
+                <input type="text" name="address2_bot_trap" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+              </div>
+
+              <Button type="submit" className="w-full h-11 text-base font-bold" disabled={lockedUntil > Date.now()}>
+                {lockedUntil > Date.now() ? `Bloqueado (${timeLeft}s)` : "Entrar"}
               </Button>
             </form>
             <div className="mt-8 text-center text-sm text-muted-foreground border-t pt-6">

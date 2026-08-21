@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
 import { Header } from "@/components/storefront/Header";
 import { Suspense, lazy, useMemo } from "react";
 import { useCart } from "@/stores/cart";
@@ -11,8 +12,18 @@ const GeoPopup = lazy(() => import("@/components/storefront/GeoPopup").then(m =>
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 import { CartSync } from "@/components/storefront/CartSync";
 
+function StorePendingComponent() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+      <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+      <p className="text-slate-500 font-medium animate-pulse">Carregando loja...</p>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_store")({
   component: StoreLayout,
+  pendingComponent: StorePendingComponent,
 });
 
 /** CSS overrides for Parceiro stores – neutral grey/black instead of brand green/orange */

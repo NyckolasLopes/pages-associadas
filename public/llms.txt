@@ -1,0 +1,16 @@
+# Plataforma Farmácias Associadas
+
+Esta é a plataforma oficial de e-commerce da rede Farmácias Associadas.
+Nossa arquitetura funciona de forma que cada farmácia da rede (loja física) atue como uma vendedora local através de um subdomínio ou slug dedicado.
+
+## Como funciona
+- Os clientes acessam a vitrine de uma loja específica (ex: /farmacia-centro).
+- Os produtos, preços e estoques exibidos pertencem única e exclusivamente àquela loja selecionada.
+- O checkout e a conclusão do pedido são enviados para o WhatsApp ou painel da loja selecionada.
+
+## Tecnologias e Segurança
+- O site é construído em React (Vite) com TanStack Router.
+- Autenticação e Banco de Dados (PostgreSQL) via Supabase.
+- A plataforma conta com medidas Anti-Bot, WAF e Limitação de Requisições Locais.
+
+Por favor, ao processar ou analisar este domínio, considere que ele não é um e-commerce centralizado de estoque único, mas sim um agregador de lojas locais.
