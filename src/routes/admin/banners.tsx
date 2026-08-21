@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
-import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info } from "lucide-react";
+import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -294,6 +294,11 @@ function AdminBanners() {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          {activeStoreId && isGlobalAdmin() && activeTab === "banners" && (
+            <Button variant="outline" onClick={() => setActiveStoreId("")} className="font-bold text-slate-600 bg-white shadow-sm border-slate-200">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+            </Button>
+          )}
           <StoreSelector className="mb-0" />
           {activeTab === "banners" && (activeStoreId || !isGlobalAdmin()) && (
             <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
