@@ -18,12 +18,34 @@ export const supabaseStorage: StateStorage = {
       
       if (error) {
         console.error(`Erro ao carregar estado '${name}' do Supabase:`, error);
+        
+        // Tenta recuperar do backup local em caso de falha na rede
+        try {
+          const backup = localStorage.getItem(`${name}-backup`);
+          if (backup) {
+            const globalValue = JSON.parse(backup);
+            const localData = localStorage.getItem(`${name}-local`);
+            if (localData && globalValue.state) {
+              const localParsed = JSON.parse(localData);
+              globalValue.state.currentUser = localParsed.currentUser ?? null;
+              globalValue.state.activeStoreId = localParsed.activeStoreId ?? null;
+            }
+            return JSON.stringify(globalValue);
+          }
+        } catch (e) {}
+        
         return null;
       }
       
       if (data) {
         // @ts-ignore
         const globalValue = data.value as any;
+        
+        // Salva um backup completo localmente para caso o Supabase fique offline
+        try {
+          localStorage.setItem(`${name}-backup`, JSON.stringify(globalValue));
+        } catch(e) {}
+        
         // Restaura a sessão local
         try {
           const localData = localStorage.getItem(`${name}-local`);
@@ -41,6 +63,20 @@ export const supabaseStorage: StateStorage = {
       return null;
     } catch (err) {
       console.error(`Exceção ao ler '${name}' do Supabase:`, err);
+      // Tenta recuperar do backup local em caso de falha na rede
+      try {
+        const backup = localStorage.getItem(`${name}-backup`);
+        if (backup) {
+          const globalValue = JSON.parse(backup);
+          const localData = localStorage.getItem(`${name}-local`);
+          if (localData && globalValue.state) {
+            const localParsed = JSON.parse(localData);
+            globalValue.state.currentUser = localParsed.currentUser ?? null;
+            globalValue.state.activeStoreId = localParsed.activeStoreId ?? null;
+          }
+          return JSON.stringify(globalValue);
+        }
+      } catch (e) {}
       return null;
     }
   },
@@ -56,6 +92,9 @@ export const supabaseStorage: StateStorage = {
           activeStoreId: parsedValue.state.activeStoreId
         };
         localStorage.setItem(`${name}-local`, JSON.stringify(localState));
+        
+        // Mantém um backup completo do estado caso a rede caia
+        localStorage.setItem(`${name}-backup`, value);
         
         // Remove do global para não logar todo mundo
         delete parsedValue.state.currentUser;

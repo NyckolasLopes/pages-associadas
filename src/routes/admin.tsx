@@ -153,8 +153,16 @@ function useInactivityTimeout(timeoutMs: number, onTimeout: () => void, isActive
 
     resetTimer();
 
-    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
-    const handleEvent = () => resetTimer();
+    let lastEventTime = 0;
+    const handleEvent = () => {
+      const now = Date.now();
+      if (now - lastEventTime > 1000) {
+        lastEventTime = now;
+        resetTimer();
+      }
+    };
+    
+    const events = ['mousedown', 'keydown', 'touchstart', 'click'];
     events.forEach(e => window.addEventListener(e, handleEvent));
 
     return () => {
