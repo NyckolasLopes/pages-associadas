@@ -212,10 +212,7 @@ function AdminLayout() {
     const { loadPharmacies } = useAdmin.getState();
     loadPharmacies();
 
-    // Carregar produtos
-    import("@/stores/products").then(({ useAdminProducts }) => {
-      useAdminProducts.getState().loadProducts();
-    });
+    // Carregar produtos removido para usar a paginação do React Query e do Catalog Service
 
     // Migration / Clean-up for old cached localStorage
     const currentUsers = useAdmin.getState().users;

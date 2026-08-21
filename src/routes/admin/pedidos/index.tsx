@@ -22,7 +22,8 @@ import {
   Clock,
   Eye,
   Send,
-  Zap} from "lucide-react";
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,18 +31,49 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useOrders, Pedido } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
 import { useAbandonedCartsStore, AbandonedCart } from "@/stores/abandoned-carts";
 import { useCart } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
 import { AbandonedCartsWidget } from "@/components/admin/AbandonedCartsWidget";
-import { OrderStatusApiDoc, PEDIDO_STATUS_OPTIONS, STATUS_COLORS_MAP, STATUS_LABEL_MAP } from "@/components/admin/OrderStatusApiDoc";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  OrderStatusApiDoc,
+  PEDIDO_STATUS_OPTIONS,
+  STATUS_COLORS_MAP,
+  STATUS_LABEL_MAP,
+} from "@/components/admin/OrderStatusApiDoc";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { Spinner } from "@/components/ui/spinner";
+
+function PedidosPendingComponent() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-slate-50">
+      <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+        <Spinner size={40} className="text-emerald-600" />
+        <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Carregando Pedidos...</span>
+      </div>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/admin/pedidos/")({
   component: PedidosAdmin,
+  pendingComponent: PedidosPendingComponent,
 });
 
 interface UnifiedOrderItem {
@@ -76,46 +108,34 @@ interface UnifiedOrderItem {
   rawCart?: AbandonedCart;
 }
 
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from "react";
+import { useOrdersQuery } from "@/hooks/useOrdersQuery";
 
 export function PedidosAdmin() {
-  const { orders: allOrders, deleteOrder, loadOrders } = useOrders();
+  const { deleteOrder } = useOrders();
   const { pharmacies, currentUser, grupos, activeStoreId } = useAdmin();
 
-  useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
-  
   // Carrinhos abandonados / itens de clientes logados
   const { carts: storeCarts, removeCart: removeStoreCart } = useAbandonedCartsStore();
-  const cartItems = useCart(s => s.items);
-  const cartTotal = useCart(s => s.total());
-  const clearCart = useCart(s => s.clear);
-  const user = useAuth(s => s.user);
-  const lastUpdatedAt = useCart(s => (s as any).lastUpdatedAt);
-  const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
+  const cartItems = useCart((s) => s.items);
+  const cartTotal = useCart((s) => s.total());
+  const clearCart = useCart((s) => s.clear);
+  const user = useAuth((s) => s.user);
+  const lastUpdatedAt = useCart((s) => (s as any).lastUpdatedAt);
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
 
   const allAbandonedCartsRaw = [...storeCarts];
-    
+
   const isGlobalAdmin = () => {
     if (currentUser?.proprietario) return true;
-    const userGroup = grupos.find(g => g.id === currentUser?.grupoId);
+    const userGroup = grupos.find((g) => g.id === currentUser?.grupoId);
     return userGroup?.permissao_total || false;
   };
 
   const isGlobalView = isGlobalAdmin() && !activeStoreId;
 
-  const orders = allOrders.filter(o => {
-    if (activeStoreId) return o.lojaId === activeStoreId;
-    if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId as string))) return false;
-    return true;
-  });
-
-  const allAbandonedCarts = allAbandonedCartsRaw.filter(c => {
-    if (activeStoreId) return c.lojaId === activeStoreId;
-    if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId as string))) return false;
-    return true;
-  });
+  const [page, setPage] = useState(1);
+  const limit = 20;
 
   const [selectedOrder, setSelectedOrder] = useState<Pedido | null>(null);
   const [selectedCartItem, setSelectedCartItem] = useState<UnifiedOrderItem | null>(null);
@@ -127,9 +147,33 @@ export function PedidosAdmin() {
   const [mainView, setMainView] = useState<"todos" | "concluidos" | "carrinhos">("todos");
   const [showApiDoc, setShowApiDoc] = useState(false);
 
+  // Fetch orders with React Query (Server-side)
+  const { data: ordersResponse, isLoading } = useOrdersQuery({
+    page,
+    limit,
+    lojaId: activeStoreId || undefined,
+    status: mainView === "carrinhos" ? undefined : (mainView === "concluidos" ? "Concluído" : undefined),
+    search: searchTerm,
+    dateStart: dateStartFilter,
+    dateEnd: dateEndFilter,
+  });
+
+  const orders = ordersResponse?.data || [];
+  const totalOrdersCount = ordersResponse?.count || 0;
+
+  const allAbandonedCarts = allAbandonedCartsRaw.filter((c) => {
+    if (activeStoreId) return c.lojaId === activeStoreId;
+    if (
+      !isGlobalAdmin() &&
+      (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId as string))
+    )
+      return false;
+    return true;
+  });
+
   const getLojaName = (id?: string, fallbackName?: string) => {
-    const p = id ? pharmacies.find(ph => ph.id === id) : null;
-    return p ? (p.nome) : (fallbackName || "Farmácias Associadas");
+    const p = id ? pharmacies.find((ph) => ph.id === id) : null;
+    return p ? p.nome : fallbackName || "Farmácias Associadas";
   };
 
   const handleDelete = (id: string, tipo: "pedido" | "carrinho") => {
@@ -152,7 +196,11 @@ export function PedidosAdmin() {
       }
       setConfirmOpen(false);
       setItemToDelete(null);
-      toast.success(itemToDelete.tipo === "pedido" ? "Pedido excluído com sucesso!" : "Carrinho excluído com sucesso!");
+      toast.success(
+        itemToDelete.tipo === "pedido"
+          ? "Pedido excluído com sucesso!"
+          : "Carrinho excluído com sucesso!",
+      );
     }
   };
 
@@ -172,15 +220,19 @@ export function PedidosAdmin() {
     status: "Concluído" | "Pendente";
     produtos: Array<{ nome: string; qtd?: number; quantidade?: number }>;
   }) => {
-    const loja = pharmacies.find(p => p.id === item.lojaId);
+    const loja = pharmacies.find((p) => p.id === item.lojaId);
     const rawPhone = loja?.whatsapp || loja?.telefone || "";
     const cleanPhone = rawPhone.replace(/\D/g, "");
     if (!cleanPhone) {
-      toast.error(`A loja "${item.lojaNome}" não possui número de WhatsApp ou telefone cadastrado.`);
+      toast.error(
+        `A loja "${item.lojaNome}" não possui número de WhatsApp ou telefone cadastrado.`,
+      );
       return;
     }
 
-    const itemsList = item.produtos.map(p => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`).join("\n");
+    const itemsList = item.produtos
+      .map((p) => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`)
+      .join("\n");
     const isPendente = item.status === "Pendente";
 
     const message = isPendente
@@ -203,7 +255,8 @@ export function PedidosAdmin() {
         `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `👉 *Ação necessária:* Verifiquem o pedido no painel da sua loja e façam o contato/separação dos itens.`;
 
-    const fullPhone = cleanPhone.startsWith("55") && cleanPhone.length > 11 ? cleanPhone : `55${cleanPhone}`;
+    const fullPhone =
+      cleanPhone.startsWith("55") && cleanPhone.length > 11 ? cleanPhone : `55${cleanPhone}`;
     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, "_blank");
     toast.success(`Abrindo WhatsApp da loja ${loja?.nome || item.lojaNome}...`);
   };
@@ -226,9 +279,11 @@ export function PedidosAdmin() {
       return;
     }
 
-    const loja = pharmacies.find(p => p.id === item.lojaId);
+    const loja = pharmacies.find((p) => p.id === item.lojaId);
     const lojaNome = loja?.nome || item.lojaNome || "Farmácias Associadas";
-    const itemsList = item.produtos.map(p => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`).join("\n");
+    const itemsList = item.produtos
+      .map((p) => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`)
+      .join("\n");
     const isPendente = item.status === "Pendente";
 
     const message = isPendente
@@ -245,7 +300,8 @@ export function PedidosAdmin() {
         `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `Já estamos preparando seu pedido com todo o cuidado. Qualquer dúvida, pode falar conosco por aqui!`;
 
-    const fullPhone = cleanPhone.startsWith("55") && cleanPhone.length > 11 ? cleanPhone : `55${cleanPhone}`;
+    const fullPhone =
+      cleanPhone.startsWith("55") && cleanPhone.length > 11 ? cleanPhone : `55${cleanPhone}`;
     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, "_blank");
     toast.success(`Abrindo WhatsApp do cliente ${item.clienteNome}...`);
   };
@@ -256,22 +312,30 @@ export function PedidosAdmin() {
     const seenIds = new Set<string>();
 
     // 1. Pedidos Concluídos (via WhatsApp / Finalizados)
-    orders.forEach(order => {
+    orders.forEach((order) => {
       seenIds.add(order.id);
       let dateFormatted = order.data;
       try {
         if (order.data.includes("T")) {
           const d = new Date(order.data);
           if (!isNaN(d.getTime())) {
-            dateFormatted = d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+            dateFormatted =
+              d.toLocaleDateString("pt-BR") +
+              " " +
+              d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
           }
         }
       } catch {
         dateFormatted = order.data;
       }
 
-      const totalItemsCount = order.produtos?.reduce((acc, p) => acc + (p.qtd || p.quantidade || 1), 0) || order.produtos?.length || 1;
-      const itemsListText = (order.produtos || []).map(p => `${p.qtd || p.quantidade || 1}x ${p.nome}`).join(", ");
+      const totalItemsCount =
+        order.produtos?.reduce((acc, p) => acc + (p.qtd || p.quantidade || 1), 0) ||
+        order.produtos?.length ||
+        1;
+      const itemsListText = (order.produtos || [])
+        .map((p) => `${p.qtd || p.quantidade || 1}x ${p.nome}`)
+        .join(", ");
 
       list.push({
         id: order.id,
@@ -281,7 +345,9 @@ export function PedidosAdmin() {
         clienteTelefone: order.cliente?.telefone || "Não informado",
         clienteEmail: order.cliente?.email,
         clienteCpf: order.cliente?.cpf,
-        clienteEndereco: order.cliente?.endereco ? `${order.cliente.endereco.rua}, ${order.cliente.endereco.numero} - ${order.cliente.endereco.bairro}` : undefined,
+        clienteEndereco: order.cliente?.endereco
+          ? `${order.cliente.endereco.rua}, ${order.cliente.endereco.numero} - ${order.cliente.endereco.bairro}`
+          : undefined,
         lojaId: order.lojaId,
         lojaNome: getLojaName(order.lojaId, order.lojaNome),
         status: order.status || "novo",
@@ -296,11 +362,12 @@ export function PedidosAdmin() {
     });
 
     // 2. Carrinhos Abandonados (Pendentes)
-    allAbandonedCarts.forEach(cart => {
+    allAbandonedCarts.forEach((cart) => {
       seenIds.add(cart.id);
 
-      const totalItemsCount = cart.items?.reduce((acc, p) => acc + (p.qtd || 1), 0) || cart.items?.length || 1;
-      const itemsListText = (cart.items || []).map(p => `${p.qtd || 1}x ${p.nome}`).join(", ");
+      const totalItemsCount =
+        cart.items?.reduce((acc, p) => acc + (p.qtd || 1), 0) || cart.items?.length || 1;
+      const itemsListText = (cart.items || []).map((p) => `${p.qtd || 1}x ${p.nome}`).join(", ");
 
       list.push({
         id: cart.id,
@@ -315,14 +382,15 @@ export function PedidosAdmin() {
         statusDesc: "Pendente (Carrinho)",
         itensQtd: totalItemsCount,
         itensDesc: itemsListText,
-        produtos: cart.items?.map((i: any) => ({
-          nome: i.nome,
-          qtd: i.qtd,
-          quantidade: i.qtd,
-          valorUnitario: i.valorUnitario,
-          preco: i.valorUnitario,
-          ean: i.ean
-        })) || [],
+        produtos:
+          cart.items?.map((i: any) => ({
+            nome: i.nome,
+            qtd: i.qtd,
+            quantidade: i.qtd,
+            valorUnitario: i.valorUnitario,
+            preco: i.valorUnitario,
+            ean: i.ean,
+          })) || [],
         total: cart.total || 0,
         tipo: "carrinho",
         rawCart: cart,
@@ -346,7 +414,7 @@ export function PedidosAdmin() {
 
   // Filtragem
   const filteredUnifiedOrders = useMemo(() => {
-    return allUnifiedOrders.filter(item => {
+    return allUnifiedOrders.filter((item) => {
       // Filtro por view
       if (mainView === "concluidos" && item.status !== "Concluído") return false;
       if (mainView === "carrinhos" && item.status !== "Pendente") return false;
@@ -368,8 +436,10 @@ export function PedidosAdmin() {
         try {
           const itemTime = new Date(item.dataOriginal).getTime();
           if (!isNaN(itemTime)) {
-            if (dateStartFilter && itemTime < new Date(dateStartFilter + "T00:00:00").getTime()) return false;
-            if (dateEndFilter && itemTime > new Date(dateEndFilter + "T23:59:59").getTime()) return false;
+            if (dateStartFilter && itemTime < new Date(dateStartFilter + "T00:00:00").getTime())
+              return false;
+            if (dateEndFilter && itemTime > new Date(dateEndFilter + "T23:59:59").getTime())
+              return false;
           }
         } catch {}
       }
@@ -379,8 +449,19 @@ export function PedidosAdmin() {
   }, [allUnifiedOrders, mainView, searchTerm, dateStartFilter, dateEndFilter]);
 
   const exportToExcel = () => {
-    const headers = ["ID", "Data", "Cliente", "Email", "CPF", "Telefone", "Loja Faturamento", "Status", "Itens", "Total"];
-    const rows = filteredUnifiedOrders.map(o => [
+    const headers = [
+      "ID",
+      "Data",
+      "Cliente",
+      "Email",
+      "CPF",
+      "Telefone",
+      "Loja Faturamento",
+      "Status",
+      "Itens",
+      "Total",
+    ];
+    const rows = filteredUnifiedOrders.map((o) => [
       o.id,
       o.data,
       o.clienteNome,
@@ -390,11 +471,12 @@ export function PedidosAdmin() {
       o.lojaNome,
       o.statusDesc,
       o.itensDesc,
-      o.total.toString().replace('.', ',')
+      o.total.toString().replace(".", ","),
     ]);
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
-    
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -402,54 +484,56 @@ export function PedidosAdmin() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast.success("Planilha exportada com sucesso!");
   };
 
   const exportToJson = () => {
     // Exporta apenas a estrutura (exemplo) do JSON
-    const sampleStructure = [{
-      "id": "FA-260821-1234",
-      "data": "2026-08-21T10:00:00.000Z",
-      "status": "novo",
-      "lojaId": "loja-exemplo",
-      "cliente": {
-        "nome": "João da Silva",
-        "email": "joao@exemplo.com",
-        "telefone": "11999999999",
-        "cpf": "11122233344",
-        "endereco": {
-          "rua": "Rua Exemplo",
-          "numero": "123",
-          "bairro": "Centro",
-          "cidade": "São Paulo",
-          "cep": "01000-000"
-        }
+    const sampleStructure = [
+      {
+        id: "FA-260821-1234",
+        data: "2026-08-21T10:00:00.000Z",
+        status: "novo",
+        lojaId: "loja-exemplo",
+        cliente: {
+          nome: "João da Silva",
+          email: "joao@exemplo.com",
+          telefone: "11999999999",
+          cpf: "11122233344",
+          endereco: {
+            rua: "Rua Exemplo",
+            numero: "123",
+            bairro: "Centro",
+            cidade: "São Paulo",
+            cep: "01000-000",
+          },
+        },
+        envio: {
+          metodo: "Entrega Expressa",
+          rastreio: "BR123456789",
+        },
+        pagamento: {
+          metodo: "Cartão de Crédito",
+        },
+        produtos: [
+          {
+            nome: "Produto Exemplo",
+            sku: "12345",
+            ean: "7890000000000",
+            qtd: 1,
+            valorUnitario: 50.0,
+          },
+        ],
+        valores: {
+          subtotal: 50.0,
+          frete: 10.0,
+          desconto: 0,
+          total: 60.0,
+        },
       },
-      "envio": {
-        "metodo": "Entrega Expressa",
-        "rastreio": "BR123456789"
-      },
-      "pagamento": {
-        "metodo": "Cartão de Crédito"
-      },
-      "produtos": [
-        {
-          "nome": "Produto Exemplo",
-          "sku": "12345",
-          "ean": "7890000000000",
-          "qtd": 1,
-          "valorUnitario": 50.00
-        }
-      ],
-      "valores": {
-        "subtotal": 50.00,
-        "frete": 10.00,
-        "desconto": 0,
-        "total": 60.00
-      }
-    }];
-    
+    ];
+
     const dataStr = JSON.stringify(sampleStructure, null, 2);
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
     const exportFileDefaultName = "estrutura_pedido_exemplo.json";
@@ -458,7 +542,7 @@ export function PedidosAdmin() {
     linkElement.setAttribute("href", dataUri);
     linkElement.setAttribute("download", exportFileDefaultName);
     linkElement.click();
-    
+
     toast.success("JSON exportado com sucesso!");
   };
 
@@ -469,7 +553,7 @@ export function PedidosAdmin() {
     return (
       <div className="min-h-screen bg-slate-50/50 p-6 font-sans">
         <div className="max-w-6xl mx-auto space-y-6">
-          <button 
+          <button
             onClick={() => setSelectedOrder(null)}
             className="flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-emerald-600 transition-colors print:hidden"
           >
@@ -479,7 +563,9 @@ export function PedidosAdmin() {
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-black text-slate-800 tracking-tight">Pedido #{selectedOrder.numero || selectedOrder.id}</h1>
+                <h1 className="text-3xl font-black text-slate-800 tracking-tight">
+                  Pedido #{selectedOrder.numero || selectedOrder.id}
+                </h1>
                 <Select
                   value={selectedOrder.status || "novo"}
                   onValueChange={async (newStatus) => {
@@ -487,13 +573,17 @@ export function PedidosAdmin() {
                     toast.success("Status atualizado!");
                   }}
                 >
-                  <SelectTrigger className={`h-8 w-52 text-xs font-bold border-0 ${STATUS_COLORS_MAP[selectedOrder.status] || STATUS_COLORS_MAP["novo"] || "bg-slate-100"}`}>
+                  <SelectTrigger
+                    className={`h-8 w-52 text-xs font-bold border-0 ${STATUS_COLORS_MAP[selectedOrder.status] || STATUS_COLORS_MAP["novo"] || "bg-slate-100"}`}
+                  >
                     <SelectValue>
-                      {STATUS_LABEL_MAP[selectedOrder.status] || selectedOrder.status || "Pedido Enviado"}
+                      {STATUS_LABEL_MAP[selectedOrder.status] ||
+                        selectedOrder.status ||
+                        "Pedido Enviado"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {PEDIDO_STATUS_OPTIONS.map(s => (
+                    {PEDIDO_STATUS_OPTIONS.map((s) => (
                       <SelectItem key={s.value} value={s.value}>
                         <span className="flex items-center gap-2">
                           <span>{s.icon}</span>
@@ -505,66 +595,79 @@ export function PedidosAdmin() {
                 </Select>
               </div>
               <span className="text-slate-500 font-medium text-sm flex items-center gap-2">
-                Efetuado em {
-                  (() => {
-                    const dStr = selectedOrder.data || "";
-                    if (dStr.includes("T")) {
-                      const d = new Date(dStr);
-                      if (!isNaN(d.getTime())) return d.toLocaleDateString("pt-BR") + " às " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-                    }
-                    return dStr;
-                  })()
-                }
-                <span className="w-1 h-1 rounded-full bg-slate-300" /> 
-                <Store className="h-3 w-3" /> {getLojaName(selectedOrder.lojaId, selectedOrder.lojaNome)}
+                Efetuado em{" "}
+                {(() => {
+                  const dStr = selectedOrder.data || "";
+                  if (dStr.includes("T")) {
+                    const d = new Date(dStr);
+                    if (!isNaN(d.getTime()))
+                      return (
+                        d.toLocaleDateString("pt-BR") +
+                        " às " +
+                        d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                      );
+                  }
+                  return dStr;
+                })()}
+                <span className="w-1 h-1 rounded-full bg-slate-300" />
+                <Store className="h-3 w-3" />{" "}
+                {getLojaName(selectedOrder.lojaId, selectedOrder.lojaNome)}
               </span>
             </div>
             <div className="flex items-center gap-3 print:hidden">
-                {/* No Admin Global: Avisar Loja. No Painel da Loja (Meus Pedidos): Ver no WhatsApp do Cliente */}
-                {isGlobalView ? (
-                  <Button 
-                    className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
-                    onClick={() => {
-                      handleAvisarLoja({
-                        id: selectedOrder.id,
-                        lojaId: selectedOrder.lojaId,
-                        lojaNome: getLojaName(selectedOrder.lojaId),
-                        clienteNome: selectedOrder.cliente.nome,
-                        clienteTelefone: selectedOrder.cliente.telefone,
-                        total: selectedOrder.valores.total,
-                        status: "Concluído",
-                        produtos: selectedOrder.produtos || [],
-                      });
-                    }}
-                  >
-                    <Send className="h-4 w-4" />
-                    Avisar Loja (WhatsApp)
-                  </Button>
-                ) : (
-                  <Button 
-                    className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
-                    onClick={() => {
-                      handleVerWhatsAppCliente({
-                        id: selectedOrder.id,
-                        lojaId: selectedOrder.lojaId,
-                        lojaNome: getLojaName(selectedOrder.lojaId),
-                        clienteNome: selectedOrder.cliente.nome,
-                        clienteTelefone: selectedOrder.cliente.telefone,
-                        total: selectedOrder.valores.total,
-                        status: "Concluído",
-                        produtos: selectedOrder.produtos || [],
-                      });
-                    }}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Ver no WhatsApp
-                  </Button>
-                )}
-                <Button variant="outline" className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2" onClick={() => handleDelete(selectedOrder.id, "pedido")}>
+              {/* No Admin Global: Avisar Loja. No Painel da Loja (Meus Pedidos): Ver no WhatsApp do Cliente */}
+              {isGlobalView ? (
+                <Button
+                  className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
+                  onClick={() => {
+                    handleAvisarLoja({
+                      id: selectedOrder.id,
+                      lojaId: selectedOrder.lojaId,
+                      lojaNome: getLojaName(selectedOrder.lojaId),
+                      clienteNome: selectedOrder.cliente.nome,
+                      clienteTelefone: selectedOrder.cliente.telefone,
+                      total: selectedOrder.valores.total,
+                      status: "Concluído",
+                      produtos: selectedOrder.produtos || [],
+                    });
+                  }}
+                >
+                  <Send className="h-4 w-4" />
+                  Avisar Loja (WhatsApp)
+                </Button>
+              ) : (
+                <Button
+                  className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
+                  onClick={() => {
+                    handleVerWhatsAppCliente({
+                      id: selectedOrder.id,
+                      lojaId: selectedOrder.lojaId,
+                      lojaNome: getLojaName(selectedOrder.lojaId),
+                      clienteNome: selectedOrder.cliente.nome,
+                      clienteTelefone: selectedOrder.cliente.telefone,
+                      total: selectedOrder.valores.total,
+                      status: "Concluído",
+                      produtos: selectedOrder.produtos || [],
+                    });
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Ver no WhatsApp
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2"
+                onClick={() => handleDelete(selectedOrder.id, "pedido")}
+              >
                 <Trash2 className="h-4 w-4" />
                 Excluir
               </Button>
-              <Button variant="outline" className="h-10 font-bold bg-white gap-2" onClick={() => window.print()}>
+              <Button
+                variant="outline"
+                className="h-10 font-bold bg-white gap-2"
+                onClick={() => window.print()}
+              >
                 <Printer className="h-4 w-4 text-slate-400" />
                 Imprimir
               </Button>
@@ -576,22 +679,39 @@ export function PedidosAdmin() {
             <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
                 <MapPin className="h-5 w-5" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Entrega / Logística</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Entrega / Logística
+                </h3>
               </div>
               <div>
-                <div className="font-bold text-slate-800">{selectedOrder.envio?.metodo || "Padrão"}</div>
+                <div className="font-bold text-slate-800">
+                  {selectedOrder.envio?.metodo || "Padrão"}
+                </div>
                 {!isPickup && selectedOrder.envio && (
                   <>
-                    <div className="text-sm text-slate-500 mt-1">{selectedOrder.envio.endereco || "Endereço não informado"}</div>
-                    <div className="text-sm text-slate-500">{selectedOrder.envio.cidade || ""} {selectedOrder.envio.cep ? `- CEP: ${selectedOrder.envio.cep}` : ""}</div>
-                    <div className="text-xs font-bold text-slate-500 mt-3 pt-2 border-t">Prazo estimado: {selectedOrder.envio.prazo || "Imediato"}</div>
-                    <div className="text-sm text-slate-500 mt-1 font-medium">O cliente escolheu a entrega da loja.</div>
+                    <div className="text-sm text-slate-500 mt-1">
+                      {selectedOrder.envio.endereco || "Endereço não informado"}
+                    </div>
+                    <div className="text-sm text-slate-500">
+                      {selectedOrder.envio.cidade || ""}{" "}
+                      {selectedOrder.envio.cep ? `- CEP: ${selectedOrder.envio.cep}` : ""}
+                    </div>
+                    <div className="text-xs font-bold text-slate-500 mt-3 pt-2 border-t">
+                      Prazo estimado: {selectedOrder.envio.prazo || "Imediato"}
+                    </div>
+                    <div className="text-sm text-slate-500 mt-1 font-medium">
+                      O cliente escolheu a entrega da loja.
+                    </div>
                   </>
                 )}
                 {isPickup && (
                   <>
-                    <div className="text-sm text-emerald-600 mt-1 font-bold">Retirada no balcão da loja.</div>
-                    <div className="text-sm text-slate-500 mt-1 font-medium">O cliente irá retirar na loja.</div>
+                    <div className="text-sm text-emerald-600 mt-1 font-bold">
+                      Retirada no balcão da loja.
+                    </div>
+                    <div className="text-sm text-slate-500 mt-1 font-medium">
+                      O cliente irá retirar na loja.
+                    </div>
                   </>
                 )}
               </div>
@@ -600,11 +720,17 @@ export function PedidosAdmin() {
             <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
                 <Store className="h-5 w-5" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Loja de Faturamento</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Loja de Faturamento
+                </h3>
               </div>
               <div>
-                <div className="font-bold text-slate-800">{getLojaName(selectedOrder.lojaId, selectedOrder.lojaNome)}</div>
-                <div className="text-sm text-slate-500 mt-1">Pedido direcionado para faturamento e entrega</div>
+                <div className="font-bold text-slate-800">
+                  {getLojaName(selectedOrder.lojaId, selectedOrder.lojaNome)}
+                </div>
+                <div className="text-sm text-slate-500 mt-1">
+                  Pedido direcionado para faturamento e entrega
+                </div>
                 <div className="text-xs text-emerald-700 bg-emerald-50 font-bold p-2 rounded-lg mt-3 border border-emerald-100 flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5" /> Concluído pelo carrinho da loja
                 </div>
@@ -613,24 +739,41 @@ export function PedidosAdmin() {
 
             <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100 shadow-sm space-y-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Valor Total</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+                  Valor Total
+                </h3>
               </div>
               <div className="text-3xl font-black text-slate-800">
-                {selectedOrder.valores.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                {selectedOrder.valores.total.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
               </div>
               <div className="space-y-1.5 pt-3 border-t border-emerald-200/50">
                 <div className="flex justify-between text-sm font-medium text-slate-600">
                   <span>Subtotal Produtos</span>
-                  <span className="font-bold">{(selectedOrder.valores?.produtos || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                  <span className="font-bold">
+                    {(selectedOrder.valores?.produtos || 0).toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm font-medium text-slate-600">
                   <span>Frete</span>
-                  <span className="font-bold">{(selectedOrder.valores?.frete || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                  <span className="font-bold">
+                    {(selectedOrder.valores?.frete || 0).toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </span>
                 </div>
                 {selectedOrder.pagamento?.metodo && (
                   <div className="flex justify-between text-sm font-medium text-slate-600 border-t border-emerald-200/50 pt-1.5 mt-1.5">
                     <span>Forma de Pagamento selecionada</span>
-                    <span className="font-bold text-slate-800">{selectedOrder.pagamento.metodo.toUpperCase()}</span>
+                    <span className="font-bold text-slate-800">
+                      {selectedOrder.pagamento.metodo.toUpperCase()}
+                    </span>
                   </div>
                 )}
               </div>
@@ -643,71 +786,102 @@ export function PedidosAdmin() {
               <div className="p-5 border-b flex items-center justify-between bg-slate-50/50">
                 <h3 className="font-bold text-slate-700 text-lg flex items-center gap-2">
                   <Package className="h-5 w-5 text-emerald-600" />
-                  Itens do Pedido <Badge variant="secondary" className="ml-1 bg-white">{selectedOrder.produtos?.length || 0}</Badge>
+                  Itens do Pedido{" "}
+                  <Badge variant="secondary" className="ml-1 bg-white">
+                    {selectedOrder.produtos?.length || 0}
+                  </Badge>
                 </h3>
               </div>
               <div className="p-2 space-y-2">
-                {(selectedOrder.produtos || []).map(p => (
-                   <div key={p.sku || p.nome} className="flex items-center p-3 hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100">
-                      <div className="w-16 h-16 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                        <img src={p.foto || "https://placehold.co/100"} alt={p.nome} className="w-full h-full object-cover" />
+                {(selectedOrder.produtos || []).map((p) => (
+                  <div
+                    key={p.sku || p.nome}
+                    className="flex items-center p-3 hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100"
+                  >
+                    <div className="w-16 h-16 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                      <img
+                        src={p.foto || "https://placehold.co/100"}
+                        alt={p.nome}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="ml-4 flex-1">
+                      <div className="font-bold text-slate-800 text-sm leading-tight hover:text-emerald-600 cursor-pointer">
+                        {p.nome}
                       </div>
-                      <div className="ml-4 flex-1">
-                        <div className="font-bold text-slate-800 text-sm leading-tight hover:text-emerald-600 cursor-pointer">{p.nome}</div>
-                        <div className="flex items-center gap-3">
-                          {p.sku && <div className="text-xs text-slate-500 mt-1 font-medium">SKU: {p.sku}</div>}
-                          {p.ean && <div className="text-xs text-slate-500 mt-1 font-medium">EAN: {p.ean}</div>}
-                        </div>
+                      <div className="flex items-center gap-3">
+                        {p.sku && (
+                          <div className="text-xs text-slate-500 mt-1 font-medium">
+                            SKU: {p.sku}
+                          </div>
+                        )}
+                        {p.ean && (
+                          <div className="text-xs text-slate-500 mt-1 font-medium">
+                            EAN: {p.ean}
+                          </div>
+                        )}
                       </div>
-                      <div className="px-6 text-center">
-                         <div className="text-[10px] font-bold text-slate-400 uppercase">Qtd</div>
-                         <div className="font-black text-slate-700 text-base">{p.qtd || p.quantidade || 1}</div>
+                    </div>
+                    <div className="px-6 text-center">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase">Qtd</div>
+                      <div className="font-black text-slate-700 text-base">
+                        {p.qtd || p.quantidade || 1}
                       </div>
-                      <div className="px-4 text-right">
-                         <div className="text-[10px] font-bold text-slate-400 uppercase">Total</div>
-                         <div className="font-bold text-emerald-700">{((p.valorUnitario || p.preco || 0) * (p.qtd || p.quantidade || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
+                    </div>
+                    <div className="px-4 text-right">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase">Total</div>
+                      <div className="font-bold text-emerald-700">
+                        {(
+                          (p.valorUnitario || p.preco || 0) * (p.qtd || p.quantidade || 1)
+                        ).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                       </div>
-                   </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
 
             {/* Client Profile */}
             <div className="bg-white border shadow-sm rounded-2xl p-6 h-fit space-y-6">
-               <div>
-                  <h3 className="font-bold text-slate-800 mb-4 text-lg">Dados do Cliente</h3>
-                  <div className="flex items-center gap-3">
-                     <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 font-black text-lg flex items-center justify-center">
-                        {selectedOrder.cliente.nome.charAt(0)}
-                     </div>
-                     <div>
-                        <div className="font-bold text-slate-800 leading-tight">{selectedOrder.cliente.nome}</div>
-                        <div className="text-xs font-bold text-slate-500 mt-1">Cliente WhatsApp</div>
-                     </div>
+              <div>
+                <h3 className="font-bold text-slate-800 mb-4 text-lg">Dados do Cliente</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 font-black text-lg flex items-center justify-center">
+                    {selectedOrder.cliente.nome.charAt(0)}
                   </div>
-               </div>
+                  <div>
+                    <div className="font-bold text-slate-800 leading-tight">
+                      {selectedOrder.cliente.nome}
+                    </div>
+                    <div className="text-xs font-bold text-slate-500 mt-1">Cliente WhatsApp</div>
+                  </div>
+                </div>
+              </div>
 
-               <div className="space-y-3 pt-4 border-t border-slate-100">
-                  {selectedOrder.cliente.email && (
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <Mail className="h-4 w-4 text-slate-400" />
-                      <span className="font-medium hover:text-emerald-600 cursor-pointer">{selectedOrder.cliente.email}</span>
-                    </div>
-                  )}
+              <div className="space-y-3 pt-4 border-t border-slate-100">
+                {selectedOrder.cliente.email && (
                   <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <MessageSquare className="h-4 w-4 text-green-500" />
-                    <span className="font-bold text-slate-800">{selectedOrder.cliente.telefone}</span>
+                    <Mail className="h-4 w-4 text-slate-400" />
+                    <span className="font-medium hover:text-emerald-600 cursor-pointer">
+                      {selectedOrder.cliente.email}
+                    </span>
                   </div>
-                  {selectedOrder.cliente.cpf && (
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <span className="text-xs font-bold text-slate-400 uppercase w-4 text-center">CPF</span>
-                      <span className="font-medium">{selectedOrder.cliente.cpf}</span>
-                    </div>
-                  )}
-               </div>
+                )}
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <MessageSquare className="h-4 w-4 text-green-500" />
+                  <span className="font-bold text-slate-800">{selectedOrder.cliente.telefone}</span>
+                </div>
+                {selectedOrder.cliente.cpf && (
+                  <div className="flex items-center gap-3 text-sm text-slate-600">
+                    <span className="text-xs font-bold text-slate-400 uppercase w-4 text-center">
+                      CPF
+                    </span>
+                    <span className="font-medium">{selectedOrder.cliente.cpf}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-
         </div>
       </div>
     );
@@ -717,14 +891,14 @@ export function PedidosAdmin() {
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 font-sans overflow-x-hidden">
       <div className="w-full max-w-[1600px] mx-auto space-y-6">
-        
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-3xl font-black text-slate-800 tracking-tight">
-              {isGlobalView ? 'Pedidos da Rede' : 'Meus Pedidos'}
+              {isGlobalView ? "Pedidos da Rede" : "Meus Pedidos"}
             </h1>
             <span className="text-slate-500 font-medium text-sm">
-              Visão geral consolidada de todos os pedidos concluídos via WhatsApp e pendentes no carrinho.
+              Visão geral consolidada de todos os pedidos concluídos via WhatsApp e pendentes no
+              carrinho.
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -747,58 +921,74 @@ export function PedidosAdmin() {
 
         {/* 3 KPIs Principais: TOTAL DE PEDIDOS (Concluídos + Pendentes), CONCLUIDO, CARRINHOS A RECUPERAR */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           {/* TOTAL DE PEDIDOS - Puxa todos os pedidos (Pendentes e Concluídos) */}
-           <div 
-             onClick={() => setMainView("todos")}
-             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
-               mainView === "todos" ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20" : ""
-             }`}
-           >
-              <div>
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">TOTAL DE PEDIDOS</p>
-                <p className="text-3xl font-black text-slate-800">{kpis.total}</p>
-                <span className="text-[12px] text-slate-500 font-medium">
-                  {kpis.concluidos} concluídos + {kpis.carrinhosARecuperar} pendentes
-                </span>
-              </div>
-              <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center">
-                <Package className="h-6 w-6" />
-              </div>
-           </div>
+          {/* TOTAL DE PEDIDOS - Puxa todos os pedidos (Pendentes e Concluídos) */}
+          <div
+            onClick={() => setMainView("todos")}
+            className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+              mainView === "todos"
+                ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20"
+                : ""
+            }`}
+          >
+            <div>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
+                TOTAL DE PEDIDOS
+              </p>
+              <p className="text-3xl font-black text-slate-800">{kpis.total}</p>
+              <span className="text-[12px] text-slate-500 font-medium">
+                {kpis.concluidos} concluídos + {kpis.carrinhosARecuperar} pendentes
+              </span>
+            </div>
+            <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center">
+              <Package className="h-6 w-6" />
+            </div>
+          </div>
 
-           {/* CONCLUÍDO (WHATSAPP) */}
-           <div 
-             onClick={() => setMainView("concluidos")}
-             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
-               mainView === "concluidos" ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20" : ""
-             }`}
-           >
-              <div>
-                <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">CONCLUÍDO</p>
-                <p className="text-3xl font-black text-emerald-700">{kpis.concluidos}</p>
-                <span className="text-[12px] text-emerald-600 font-semibold">Finalizados no WhatsApp</span>
-              </div>
-              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-           </div>
+          {/* CONCLUÍDO (WHATSAPP) */}
+          <div
+            onClick={() => setMainView("concluidos")}
+            className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+              mainView === "concluidos"
+                ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20"
+                : ""
+            }`}
+          >
+            <div>
+              <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">
+                CONCLUÍDO
+              </p>
+              <p className="text-3xl font-black text-emerald-700">{kpis.concluidos}</p>
+              <span className="text-[12px] text-emerald-600 font-semibold">
+                Finalizados no WhatsApp
+              </span>
+            </div>
+            <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+              <CheckCircle2 className="h-6 w-6" />
+            </div>
+          </div>
 
-           {/* CARRINHOS A RECUPERAR / PENDENTES */}
-           <div 
-             onClick={() => setMainView("carrinhos")}
-             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
-               mainView === "carrinhos" ? "ring-2 ring-amber-500 border-amber-500 bg-amber-50/20" : ""
-             }`}
-           >
-              <div>
-                <p className="text-amber-600 text-xs font-bold uppercase tracking-wider mb-1">CARRINHOS A RECUPERAR</p>
-                <p className="text-3xl font-black text-amber-700">{kpis.carrinhosARecuperar}</p>
-                <span className="text-[12px] text-amber-600 font-semibold">Clientes com itens no carrinho</span>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
-                <ShoppingCart className="h-6 w-6" />
-              </div>
-           </div>
+          {/* CARRINHOS A RECUPERAR / PENDENTES */}
+          <div
+            onClick={() => setMainView("carrinhos")}
+            className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+              mainView === "carrinhos"
+                ? "ring-2 ring-amber-500 border-amber-500 bg-amber-50/20"
+                : ""
+            }`}
+          >
+            <div>
+              <p className="text-amber-600 text-xs font-bold uppercase tracking-wider mb-1">
+                CARRINHOS A RECUPERAR
+              </p>
+              <p className="text-3xl font-black text-amber-700">{kpis.carrinhosARecuperar}</p>
+              <span className="text-[12px] text-amber-600 font-semibold">
+                Clientes com itens no carrinho
+              </span>
+            </div>
+            <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
+              <ShoppingCart className="h-6 w-6" />
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
@@ -807,8 +997,8 @@ export function PedidosAdmin() {
             <div className="flex flex-1 items-center gap-2 max-w-md">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input 
-                  placeholder="Buscar por ID, Cliente, Telefone ou Loja..." 
+                <Input
+                  placeholder="Buscar por ID, Cliente, Telefone ou Loja..."
                   className="pl-9 h-10 w-full bg-white border-slate-200 font-medium"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -821,7 +1011,9 @@ export function PedidosAdmin() {
                 <button
                   onClick={() => setMainView("todos")}
                   className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                    mainView === "todos" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    mainView === "todos"
+                      ? "bg-white text-slate-800 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
                   Todos ({kpis.total})
@@ -829,7 +1021,9 @@ export function PedidosAdmin() {
                 <button
                   onClick={() => setMainView("concluidos")}
                   className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                    mainView === "concluidos" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    mainView === "concluidos"
+                      ? "bg-white text-emerald-700 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
                   Concluídos ({kpis.concluidos})
@@ -837,7 +1031,9 @@ export function PedidosAdmin() {
                 <button
                   onClick={() => setMainView("carrinhos")}
                   className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                    mainView === "carrinhos" ? "bg-white text-amber-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    mainView === "carrinhos"
+                      ? "bg-white text-amber-700 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
                   Pendentes / Carrinhos ({kpis.carrinhosARecuperar})
@@ -846,26 +1042,48 @@ export function PedidosAdmin() {
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="h-10 font-bold gap-2 bg-white text-slate-600 border-slate-200">
+                  <Button
+                    variant="outline"
+                    className="h-10 font-bold gap-2 bg-white text-slate-600 border-slate-200"
+                  >
                     <Filter className="h-4 w-4" /> Período
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-4 rounded-xl border-slate-200 shadow-xl" align="end">
+                <PopoverContent
+                  className="w-80 p-4 rounded-xl border-slate-200 shadow-xl"
+                  align="end"
+                >
                   <div className="space-y-4">
                     <h4 className="font-bold text-slate-800">Filtrar por data</h4>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        Período
+                      </label>
                       <div className="flex items-center gap-2">
-                         <Input type="date" className="h-8 text-xs font-bold" value={dateStartFilter} onChange={e => setDateStartFilter(e.target.value)} />
-                         <span className="text-slate-400 font-medium">a</span>
-                         <Input type="date" className="h-8 text-xs font-bold" value={dateEndFilter} onChange={e => setDateEndFilter(e.target.value)} />
+                        <Input
+                          type="date"
+                          className="h-8 text-xs font-bold"
+                          value={dateStartFilter}
+                          onChange={(e) => setDateStartFilter(e.target.value)}
+                        />
+                        <span className="text-slate-400 font-medium">a</span>
+                        <Input
+                          type="date"
+                          className="h-8 text-xs font-bold"
+                          value={dateEndFilter}
+                          onChange={(e) => setDateEndFilter(e.target.value)}
+                        />
                       </div>
                     </div>
 
-                    <Button className="w-full font-bold h-9 bg-slate-100 hover:bg-slate-200 text-slate-700" onClick={() => {
+                    <Button
+                      className="w-full font-bold h-9 bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      onClick={() => {
                         setDateStartFilter("");
                         setDateEndFilter("");
-                    }} variant="ghost">
+                      }}
+                      variant="ghost"
+                    >
                       Limpar Filtro de Data
                     </Button>
                   </div>
@@ -879,10 +1097,14 @@ export function PedidosAdmin() {
             <table className="w-full text-left text-[13px] min-w-[800px]">
               <thead>
                 <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
-                  <th className="px-3 py-3 w-10 text-center"><Checkbox /></th>
+                  <th className="px-3 py-3 w-10 text-center">
+                    <Checkbox />
+                  </th>
                   <th className="px-3 py-3 whitespace-nowrap">Pedido</th>
                   <th className="px-3 py-3">Cliente</th>
-                  {isGlobalAdmin() && <th className="px-3 py-3 whitespace-nowrap">Loja Faturamento</th>}
+                  {isGlobalAdmin() && (
+                    <th className="px-3 py-3 whitespace-nowrap">Loja Faturamento</th>
+                  )}
                   <th className="px-3 py-3 text-center">Status</th>
                   <th className="px-3 py-3">Itens</th>
                   <th className="px-3 py-3 text-right whitespace-nowrap">Total / Ações</th>
@@ -891,25 +1113,32 @@ export function PedidosAdmin() {
               <tbody className="divide-y divide-slate-100">
                 {filteredUnifiedOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={isGlobalAdmin() ? 7 : 6} className="p-12 text-center text-slate-500 font-medium">
+                    <td
+                      colSpan={isGlobalAdmin() ? 7 : 6}
+                      className="p-12 text-center text-slate-500 font-medium"
+                    >
                       <div className="flex flex-col items-center justify-center gap-2">
                         <AlertCircle className="w-8 h-8 text-slate-300 mb-2" />
-                        <span className="text-lg font-bold text-slate-700">Nenhum pedido encontrado.</span>
-                        <span className="text-sm font-medium text-slate-500">Não encontramos nenhum registro com os filtros selecionados.</span>
+                        <span className="text-lg font-bold text-slate-700">
+                          Nenhum pedido encontrado.
+                        </span>
+                        <span className="text-sm font-medium text-slate-500">
+                          Não encontramos nenhum registro com os filtros selecionados.
+                        </span>
                       </div>
                     </td>
                   </tr>
                 ) : null}
 
-                {filteredUnifiedOrders.map(item => {
+                {filteredUnifiedOrders.map((item) => {
                   const isConcluido = item.status === "Concluído";
                   const isPendente = item.status === "Pendente";
 
                   return (
-                    <tr 
-                      key={item.id} 
+                    <tr
+                      key={item.id}
                       className={`transition-colors cursor-pointer group ${
-                        isPendente ? 'hover:bg-amber-50/30' : 'hover:bg-slate-50'
+                        isPendente ? "hover:bg-amber-50/30" : "hover:bg-slate-50"
                       }`}
                       onClick={() => {
                         if (item.tipo === "pedido" && item.rawOrder) {
@@ -919,7 +1148,7 @@ export function PedidosAdmin() {
                         }
                       }}
                     >
-                      <td className="px-3 py-3 text-center" onClick={e => e.stopPropagation()}>
+                      <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                         <Checkbox />
                       </td>
 
@@ -931,29 +1160,37 @@ export function PedidosAdmin() {
 
                       {/* Cliente */}
                       <td className="px-3 py-3">
-                         <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-110 transition-transform ${
-                              isConcluido ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
-                            }`}>
-                               {item.clienteNome.charAt(0)}
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-110 transition-transform ${
+                              isConcluido
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {item.clienteNome.charAt(0)}
+                          </div>
+                          <div className="max-w-[180px]">
+                            <div className="font-bold text-slate-700 truncate">
+                              {item.clienteNome}
                             </div>
-                            <div className="max-w-[180px]">
-                               <div className="font-bold text-slate-700 truncate">{item.clienteNome}</div>
-                               <div className="text-[11px] text-slate-500 truncate flex items-center gap-1">
-                                  <MessageSquare className="w-3 h-3 text-green-500 shrink-0" />
-                                  {item.clienteTelefone}
-                               </div>
+                            <div className="text-[11px] text-slate-500 truncate flex items-center gap-1">
+                              <MessageSquare className="w-3 h-3 text-green-500 shrink-0" />
+                              {item.clienteTelefone}
                             </div>
-                         </div>
+                          </div>
+                        </div>
                       </td>
 
                       {/* Loja Faturamento */}
                       {isGlobalAdmin() && (
                         <td className="px-3 py-3 whitespace-nowrap">
-                           <div className="flex items-center gap-2">
-                             <Store className="h-4 w-4 text-emerald-600 shrink-0" />
-                             <span className="font-bold text-slate-800 text-[13px] leading-tight">{item.lojaNome}</span>
-                           </div>
+                          <div className="flex items-center gap-2">
+                            <Store className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <span className="font-bold text-slate-800 text-[13px] leading-tight">
+                              {item.lojaNome}
+                            </span>
+                          </div>
                         </td>
                       )}
 
@@ -975,7 +1212,9 @@ export function PedidosAdmin() {
                       {/* Itens */}
                       <td className="px-3 py-3">
                         <div className="text-slate-700 text-xs">
-                          <span className="font-bold text-slate-800 mr-2">{item.itensQtd} item(s)</span>
+                          <span className="font-bold text-slate-800 mr-2">
+                            {item.itensQtd} item(s)
+                          </span>
                           <div className="text-slate-400 text-[11px] truncate max-w-[220px]">
                             {item.itensDesc}
                           </div>
@@ -987,14 +1226,17 @@ export function PedidosAdmin() {
                         <div className="flex items-center justify-end gap-2">
                           {/* Preço Total */}
                           <div className="font-black text-slate-800 text-[15px] mr-2">
-                            {item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            {item.total.toLocaleString("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            })}
                           </div>
 
                           {/* Ação WhatsApp: No Admin Global avisa a loja faturadora. No Painel da Loja (Meus Pedidos), fala direto com o cliente */}
                           {isGlobalView ? (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="h-8 px-2.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold gap-1.5 rounded-lg text-xs shadow-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1015,9 +1257,9 @@ export function PedidosAdmin() {
                               Avisar Loja
                             </Button>
                           ) : (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="h-8 px-2.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold gap-1.5 rounded-lg text-xs shadow-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1040,13 +1282,13 @@ export function PedidosAdmin() {
                           )}
 
                           {/* Botão Excluir */}
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg" 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              handleDelete(item.id, item.tipo); 
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(item.id, item.tipo);
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1059,8 +1301,34 @@ export function PedidosAdmin() {
               </tbody>
             </table>
           </div>
+          {/* Paginação Server-side */}
+          <div className="flex items-center justify-between border-t border-slate-100 p-4 bg-white/50 rounded-b-2xl mt-4">
+            <div className="text-xs text-slate-500 font-medium">
+              Exibindo página {page} de {Math.max(1, Math.ceil(totalOrdersCount / limit))} 
+              {isLoading && <span className="ml-2 text-emerald-600 animate-pulse">(Carregando...)</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1 || isLoading}
+                className="h-8 text-xs font-bold"
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= Math.ceil(totalOrdersCount / limit) || isLoading}
+                className="h-8 text-xs font-bold"
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
         </div>
-
       </div>
 
       <ConfirmDialog
@@ -1072,7 +1340,10 @@ export function PedidosAdmin() {
       />
 
       {/* Modal de Detalhes do Carrinho Pendente */}
-      <Dialog open={Boolean(selectedCartItem)} onOpenChange={open => !open && setSelectedCartItem(null)}>
+      <Dialog
+        open={Boolean(selectedCartItem)}
+        onOpenChange={(open) => !open && setSelectedCartItem(null)}
+      >
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <div className="flex items-center justify-between pr-6">
@@ -1093,22 +1364,34 @@ export function PedidosAdmin() {
             <div className="space-y-4 text-sm mt-2">
               {/* Cliente */}
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1.5">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Dados do Cliente</div>
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Dados do Cliente
+                </div>
                 <div className="font-bold text-slate-800">{selectedCartItem.clienteNome}</div>
                 <div className="text-xs text-slate-600 flex items-center gap-3">
                   <span>Tel: {selectedCartItem.clienteTelefone}</span>
-                  {selectedCartItem.clienteEmail && <span>• Email: {selectedCartItem.clienteEmail}</span>}
+                  {selectedCartItem.clienteEmail && (
+                    <span>• Email: {selectedCartItem.clienteEmail}</span>
+                  )}
                 </div>
                 {selectedCartItem.clienteEndereco && (
-                  <div className="text-xs text-slate-500">Endereço: {selectedCartItem.clienteEndereco}</div>
+                  <div className="text-xs text-slate-500">
+                    Endereço: {selectedCartItem.clienteEndereco}
+                  </div>
                 )}
               </div>
 
               {/* Loja de Faturamento */}
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Loja de Faturamento</div>
-                <div className="font-bold text-slate-800 text-sm mt-1">{selectedCartItem.lojaNome}</div>
-                <div className="text-xs text-slate-500 mt-0.5">Unidade responsável pelo atendimento deste carrinho</div>
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Loja de Faturamento
+                </div>
+                <div className="font-bold text-slate-800 text-sm mt-1">
+                  {selectedCartItem.lojaNome}
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  Unidade responsável pelo atendimento deste carrinho
+                </div>
               </div>
 
               {/* Produtos */}
@@ -1118,14 +1401,27 @@ export function PedidosAdmin() {
                 </div>
                 <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 border rounded-xl">
                   {selectedCartItem.produtos.map((it, idx) => (
-                    <div key={idx} className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-50">
+                    <div
+                      key={idx}
+                      className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-50"
+                    >
                       <div>
                         <div className="font-bold text-slate-800">{it.nome}</div>
-                        {it.ean && <div className="text-slate-400 text-[10px] font-medium">EAN: {it.ean}</div>}
-                        <div className="text-slate-400 text-[11px]">Qtd: {it.qtd || it.quantidade || 1}x</div>
+                        {it.ean && (
+                          <div className="text-slate-400 text-[10px] font-medium">
+                            EAN: {it.ean}
+                          </div>
+                        )}
+                        <div className="text-slate-400 text-[11px]">
+                          Qtd: {it.qtd || it.quantidade || 1}x
+                        </div>
                       </div>
                       <div className="font-black text-slate-900">
-                        {it.valorUnitario || it.preco ? ((it.valorUnitario || it.preco || 0) * (it.qtd || it.quantidade || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-"}
+                        {it.valorUnitario || it.preco
+                          ? (
+                              (it.valorUnitario || it.preco || 0) * (it.qtd || it.quantidade || 1)
+                            ).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                          : "-"}
                       </div>
                     </div>
                   ))}
@@ -1136,13 +1432,16 @@ export function PedidosAdmin() {
               <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center justify-between">
                 <span className="font-bold text-amber-900">Valor Total do Carrinho:</span>
                 <span className="text-xl font-black text-amber-800">
-                  {selectedCartItem.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  {selectedCartItem.total.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}
                 </span>
               </div>
 
               <div className="flex gap-3 pt-2">
                 {isGlobalView ? (
-                  <Button 
+                  <Button
                     className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2"
                     onClick={() => {
                       handleAvisarLoja({
@@ -1161,7 +1460,7 @@ export function PedidosAdmin() {
                     Avisar Loja via WhatsApp
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2"
                     onClick={() => {
                       handleVerWhatsAppCliente({
@@ -1180,8 +1479,8 @@ export function PedidosAdmin() {
                     Ver no WhatsApp
                   </Button>
                 )}
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="text-red-600 hover:bg-red-50 border-red-200 font-bold"
                   onClick={() => handleDelete(selectedCartItem.id, "carrinho")}
                 >
@@ -1208,7 +1507,6 @@ export function PedidosAdmin() {
           <OrderStatusApiDoc />
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

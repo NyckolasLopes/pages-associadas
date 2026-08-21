@@ -205,7 +205,6 @@ function RootComponent() {
     useAdminProducts.persist.rehydrate();
     useAdminCategories.getState().loadCategories();
     useMarcasStore.getState().loadMarcas();
-    useOrders.getState().loadOrders();
     useAdmin.getState().loadPharmacies();
     useMarketing.getState().loadMarketing();
     
