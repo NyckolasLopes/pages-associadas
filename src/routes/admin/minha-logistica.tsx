@@ -106,32 +106,7 @@ function MinhaLogistica() {
         </Button>
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <h3 className="font-bold text-lg text-slate-800 mb-4">Dias de Operação</h3>
-        <p className="text-sm text-slate-500 mb-4">
-          Selecione os dias da semana em que a loja está aberta. Essa configuração afeta a previsão de entrega e retirada para o cliente.
-        </p>
-        <div className="flex flex-wrap gap-4">
-          {DAYS_OF_WEEK.map((day) => {
-            const isChecked = (formData.diasFuncionamento || [1,2,3,4,5,6]).includes(day.id);
-            return (
-              <label
-                key={day.id}
-                className={`flex items-center gap-2 border rounded-full px-4 py-2 cursor-pointer transition-colors ${
-                  isChecked ? 'bg-emerald-50 border-emerald-500 text-emerald-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <Checkbox
-                  checked={isChecked}
-                  onCheckedChange={() => handleDayToggle(day.id)}
-                  className="hidden"
-                />
-                <span className="font-medium text-sm">{day.label}</span>
-              </label>
-            );
-          })}
-        </div>
-      </div>
+
 
       <Tabs defaultValue="entrega" className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <TabsList className="grid w-full grid-cols-3 max-w-2xl mb-8">
@@ -145,7 +120,7 @@ function MinhaLogistica() {
           </TabsTrigger>
           <TabsTrigger value="horarios" className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            Horários de Operação
+            Horários e dias de operação
           </TabsTrigger>
         </TabsList>
 
@@ -427,8 +402,8 @@ function MinhaLogistica() {
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-1">
-                <Label className="text-lg font-bold text-slate-800">Horários por Dia</Label>
-                <p className="text-sm text-slate-500">Defina os horários de operação padrão para cada dia da semana.</p>
+                <Label className="text-lg font-bold text-slate-800">Horários e dias de operação</Label>
+                <p className="text-sm text-slate-500">Defina os horários de operação padrão para cada dia da semana. Marque como "Fechado" os dias que a loja não abre.</p>
               </div>
               <div className="border rounded-md divide-y overflow-hidden max-w-2xl">
                 {['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'].map((nomeDia, idx) => {
