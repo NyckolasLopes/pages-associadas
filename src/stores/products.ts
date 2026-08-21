@@ -152,7 +152,7 @@ export const useAdminProducts = create<ProductsState>()(
         });
 
         // Supabase DB Update
-        await supabase.from('produtos').upsert({
+        const { error } = await supabase.from('produtos').upsert({
           id: formattedProduct.id,
           ean: formattedProduct.ean || null,
           nome: formattedProduct.nome,
@@ -193,7 +193,13 @@ export const useAdminProducts = create<ProductsState>()(
           meta_description: formattedProduct.metaDescription || null,
           termos_pesquisa: formattedProduct.termosPesquisa || null,
           imagem_alt: formattedProduct.imagemAlt || null,
+          loja_id: lojaId || null, // <- ADD loja_id!
         });
+        
+        if (error) {
+          console.error("Erro ao salvar o produto no Supabase:", error);
+          throw error;
+        }
       },
       removeProduct: async (id, lojaId) => {
         // Optimistic
