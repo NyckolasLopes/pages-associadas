@@ -21,7 +21,7 @@ function AoVivo() {
   
   // Se for admin global e não tiver loja selecionada, vê tudo. Se tiver selecionada, vê da loja.
   // Se for associado, usa a loja ativa (que sempre terá uma).
-  const effectiveStoreId = activeStoreId;
+  const effectiveStoreId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
 
   const visitors = (!isGlobalAdmin || effectiveStoreId) 
     ? rawVisitors.filter(v => v.lojaId === effectiveStoreId || v.lojaId === `admin-loja-${effectiveStoreId}`)
