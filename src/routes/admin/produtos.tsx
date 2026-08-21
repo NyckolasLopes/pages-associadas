@@ -884,14 +884,22 @@ function AdminProdutos() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {p.precoDe > p.precoPor && (
-                            <div className="text-xs text-muted-foreground line-through">
-                              {(currentLojaId && lojaApiDataMap[p.id]?.precoDe) ? lojaApiDataMap[p.id].precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : p.precoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                            </div>
-                          )}
-                          <div className="font-bold text-sm text-emerald-700">
-                            {(currentLojaId && lojaApiDataMap[p.id]?.precoPor) ? lojaApiDataMap[p.id].precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : p.precoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                          </div>
+                          {(() => {
+                            const effectiveDe = (currentLojaId && lojaApiDataMap[p.id]?.precoDe) ? lojaApiDataMap[p.id].precoDe : p.precoDe;
+                            const effectivePor = (currentLojaId && lojaApiDataMap[p.id]?.precoPor) ? lojaApiDataMap[p.id].precoPor : p.precoPor;
+                            return (
+                              <>
+                                {effectiveDe > effectivePor && (
+                                  <div className="text-xs text-muted-foreground line-through">
+                                    {effectiveDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                  </div>
+                                )}
+                                <div className="font-bold text-sm text-emerald-700">
+                                  {effectivePor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                </div>
+                              </>
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-3 text-right">
                           {!currentLojaId ? (

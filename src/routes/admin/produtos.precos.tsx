@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAdminProducts } from "@/stores/products";
 import { useAdmin } from "@/stores/admin";
+import { useSelos } from "@/stores/selos";
 import { useState, useMemo, useRef } from "react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/admin/produtos/precos")({
 function AdminProdutosPrecos() {
   const { customProducts, addOrUpdateProduct, importStoreSpreadsheet } = useAdminProducts();
   const { pharmacies, currentUser, grupos } = useAdmin();
+  const { selos, addSelo } = useSelos();
 
   const isGlobalAdmin = () => {
     if (currentUser?.proprietario) return true;
@@ -40,10 +42,9 @@ function AdminProdutosPrecos() {
     return userGroup?.permissao_total || false;
   };
 
-  const userStores = (isGlobalAdmin() 
+  const userStores = isGlobalAdmin() 
     ? pharmacies 
-    : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id)))
-    .filter(p => p.categoriaAssociado !== 'Parceiro' && p.trabalhaComEncarte !== false);
+    : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id));
 
   const defaultSelection = userStores[0]?.id || "";
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>(defaultSelection);
@@ -471,13 +472,28 @@ function AdminProdutosPrecos() {
 
     let updatedCount = 0;
     
+    const currentMonthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
+    const badgeName = `Oferta de ${currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1)}`;
+    let ofertaSelo = selos.find(s => s.nome === badgeName);
+    
+    if (!ofertaSelo) {
+      ofertaSelo = {
+        id: `oferta-${new Date().getMonth()}`,
+        nome: badgeName,
+        ativo: true,
+        corFundo: "#f97316", // bg-orange-500
+        corTexto: "#ffffff"
+      };
+      addSelo(ofertaSelo);
+    }
+    
     // A partir da linha 4 da planilha, que no índice (0-based) é 3
     for (let i = 3; i < pendingImportData.length; i++) {
       const row = pendingImportData[i] as any[];
       if (!row || row.length === 0) continue;
       
-      const ean = row[1]; // Coluna B
-      const precoCampanhaRaw = row[6]; // Coluna G
+      const ean = row[3]; // Coluna D (índice 3)
+      const precoCampanhaRaw = row[12]; // Coluna M (índice 12)
       
       if (!ean || precoCampanhaRaw === undefined) continue;
 
@@ -495,9 +511,13 @@ function AdminProdutosPrecos() {
 
       const storePrices = product.precosPorLoja || {};
       const currentStorePrice = storePrices[selectedPharmacyId] || {};
+      
+      const selosIdsList = product.selosIds || [];
+      const updatedSelosIds = [...new Set([...selosIdsList, ofertaSelo.id])];
 
       addOrUpdateProduct({
         ...product,
+        selosIds: updatedSelosIds,
         precosPorLoja: {
           ...storePrices,
           [selectedPharmacyId]: {
@@ -518,7 +538,7 @@ function AdminProdutosPrecos() {
     setPendingImportData(null);
   };
 
-  const currentMonthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
+
 
   // Handlers for Internal Campaign
   const handleCampanhaToggleProduct = (productId: string) => {

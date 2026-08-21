@@ -1032,7 +1032,7 @@ function Checkout() {
                             <div className="mt-auto pt-2">
                               <div className="flex items-baseline gap-1.5 flex-wrap">
                                 <span className="font-bold text-sm text-foreground">{brl(newPrice)}</span>
-                                <span className="text-[9px] text-muted-foreground line-through">{brl(originalPrice)}</span>
+                                {originalPrice > newPrice && <span className="text-[9px] text-muted-foreground line-through">{brl(originalPrice)}</span>}
                               </div>
                               <div className="text-[9px] text-emerald-600 font-bold mt-1 bg-emerald-50 px-1 py-0.5 rounded w-fit border border-emerald-100">
                                 Você economiza {brl(discountValue)}

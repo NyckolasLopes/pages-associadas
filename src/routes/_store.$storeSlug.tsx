@@ -455,7 +455,15 @@ function CampaignHighlight({ lojaId }: { lojaId?: string }) {
   const campaignProducts = useMemo(() => {
     // Check customProducts for emCampanha flag
     const campaignIds = new Set(
-      customProducts.filter(cp => isCampanhaAtiva(cp) && (cp.lojaId === lojaId || !cp.lojaId)).map(cp => cp.id)
+      customProducts.filter(cp => {
+        const globalCampaign = isCampanhaAtiva(cp) && (cp.lojaId === lojaId || !cp.lojaId);
+        const localCampaign = lojaId && cp.precosPorLoja?.[lojaId] && isCampanhaAtiva({
+           emCampanha: true,
+           campanhaInicio: cp.precosPorLoja[lojaId].campanhaInicio,
+           campanhaFim: cp.precosPorLoja[lojaId].campanhaFim
+        });
+        return globalCampaign || localCampaign;
+      }).map(cp => cp.id)
     );
     if (campaignIds.size === 0) return [];
     return allProducts.filter(p => campaignIds.has(p.id)).map(p => {

@@ -525,7 +525,7 @@ function PerfilPage() {
                            </div>
                            <h3 className="text-sm font-bold line-clamp-2 text-slate-800 leading-snug">{p.nome}</h3>
                            <div className="mt-auto pt-2">
-                              {p.precoDe && <p className="text-xs text-muted-foreground line-through">{brl(p.precoDe)}</p>}
+                              {p.precoDe && p.precoDe > p.precoPor && <p className="text-xs text-muted-foreground line-through">{brl(p.precoDe)}</p>}
                               <p className="font-extrabold text-emerald-600 text-lg">{brl(p.precoPor)}</p>
                            </div>
                         </Link>

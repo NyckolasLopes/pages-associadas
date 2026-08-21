@@ -533,6 +533,8 @@ function AdminLayout() {
               {(can('mkt_cupons') || !isGlobalAdmin) && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Cupons das lojas" : "Meus cupons"}</Link>}
               {!isGlobalAdmin && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
               {isGlobalAdmin && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Campanha Encarte</Link>}
+              {isGlobalAdmin && <Link to="/admin/selos" className={subLinkClass} activeOptions={{ exact: true }}>Selos e Vitrines</Link>}
+              <Link to="/admin/banners" search={{ tab: "banners" } as any} className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Banners das Lojas" : "Meus Banners"}</Link>
             </NavSection>
           )}
 
