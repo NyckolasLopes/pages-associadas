@@ -305,7 +305,10 @@ function Relatorios() {
   
   orders.forEach(o => {
     const met = o.envio?.metodo || "Desconhecido";
-    envioMap[met] = (envioMap[met] || 0) + 1;
+    const isRetirada = met.toLowerCase().includes("retirada");
+    const label = isRetirada ? "Retirada na Loja" : "Entrega em Domicílio";
+    
+    envioMap[label] = (envioMap[label] || 0) + 1;
 
     if (!effectiveStoreId) {
       const lojaId = o.lojaId || "desconhecida";
@@ -313,7 +316,6 @@ function Relatorios() {
         const store = pharmacies?.find(p => p.id === lojaId);
         envioPorLojaMap[lojaId] = { name: store ? store.nome : "Desconhecida", retirada: 0, entrega: 0, total: 0 };
       }
-      const isRetirada = met === "retirada" || met === "Retirada na Loja";
       if (isRetirada) {
         envioPorLojaMap[lojaId].retirada++;
       } else {
@@ -872,99 +874,72 @@ function Relatorios() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
+
                 {!effectiveStoreId ? (
-                  <>
-                    <div className="col-span-1 lg:col-span-2">
-                      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm p-4">
-                        <h3 className="text-sm font-bold text-slate-800 mb-4 px-2">Volume por Loja (Top 15)</h3>
-                        <div className="h-[350px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={envioPorLojaData} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} angle={-45} textAnchor="end" height={60} />
-                              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} />
-                              <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
-                              <Legend iconType="circle" verticalAlign="top" height={36} />
-                              <Bar dataKey="entrega" name="Entrega" stackId="a" fill="#0ea5e9" radius={[0, 0, 4, 4]} maxBarSize={40} />
-                              <Bar dataKey="retirada" name="Retirada" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-span-1 lg:col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm mt-4">
-                      <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead>
-                          <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
-                            <th className="p-4">Farmácia</th>
-                            <th className="p-4 text-center">Entrega em Domicílio</th>
-                            <th className="p-4 text-center">Retirada na Loja</th>
-                            <th className="p-4 text-center">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {envioPorLojaData.map((d, i) => (
-                            <tr key={i} className="hover:bg-slate-50 transition-colors">
-                              <td className="p-4 font-bold text-slate-700">{d.name}</td>
-                              <td className="p-4 text-center font-bold text-sky-600">{d.entrega}</td>
-                              <td className="p-4 text-center font-bold text-emerald-600">{d.retirada}</td>
-                              <td className="p-4 text-center font-black text-slate-800">{d.total}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
+                  <div className="h-[350px] w-full bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm p-4">
+                    <h3 className="text-sm font-bold text-slate-800 mb-4 px-2">Volume por Loja (Top 15)</h3>
+                    <ResponsiveContainer width="100%" height="90%">
+                      <BarChart data={envioPorLojaData} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} angle={-45} textAnchor="end" height={60} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} />
+                        <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
+                        <Legend iconType="circle" verticalAlign="top" height={36} />
+                        <Bar dataKey="entrega" name="Entrega" stackId="a" fill="#0ea5e9" radius={[0, 0, 4, 4]} maxBarSize={40} />
+                        <Bar dataKey="retirada" name="Retirada" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center w-full col-span-1 lg:col-span-2">
-                    <div className="h-[350px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={pieEnvioData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={90}
-                            outerRadius={120}
-                            fill="#8884d8"
-                            paddingAngle={5}
-                            dataKey="value"
-                            label={({percent}) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}
-                          >
-                            {pieEnvioData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.name.includes("Retirada") ? "#10b981" : "#0ea5e9"} />
-                            ))}
-                          </Pie>
-                          <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
-                          <Legend iconType="circle" verticalAlign="bottom" height={36} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                      <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead>
-                          <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
-                            <th className="p-4">Método de Envio</th>
-                            <th className="p-4 text-center">Quantidade</th>
-                            <th className="p-4 text-center">Representatividade</th>
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm h-full max-h-[350px] flex flex-col justify-center">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead>
+                        <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
+                          <th className="p-4">Método de Envio</th>
+                          <th className="p-4 text-center">Quantidade</th>
+                          <th className="p-4 text-center">Representatividade</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {pieEnvioData.map((d, i) => (
+                          <tr key={i} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-4 font-bold text-slate-700 flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full" style={{backgroundColor: d.name.includes("Retirada") ? "#10b981" : "#0ea5e9"}}></span>
+                              {d.name}
+                            </td>
+                            <td className="p-4 text-center font-bold text-slate-800">{d.value}</td>
+                            <td className="p-4 text-center text-slate-500 font-medium">
+                              {orders.length > 0 ? ((d.value / orders.length) * 100).toFixed(1) : 0}%
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {pieEnvioData.map((d, i) => (
-                            <tr key={i} className="hover:bg-slate-50 transition-colors">
-                              <td className="p-4 font-bold text-slate-700 flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full" style={{backgroundColor: d.name.includes("Retirada") ? "#10b981" : "#0ea5e9"}}></span>
-                                {d.name}
-                              </td>
-                              <td className="p-4 text-center font-bold text-slate-800">{d.value}</td>
-                              <td className="p-4 text-center text-slate-500 font-medium">
-                                {orders.length > 0 ? ((d.value / orders.length) * 100).toFixed(1) : 0}%
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {!effectiveStoreId && (
+                  <div className="col-span-1 lg:col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm mt-4">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead>
+                        <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
+                          <th className="p-4">Farmácia</th>
+                          <th className="p-4 text-center">Entrega em Domicílio</th>
+                          <th className="p-4 text-center">Retirada na Loja</th>
+                          <th className="p-4 text-center">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {envioPorLojaData.map((d, i) => (
+                          <tr key={i} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-4 font-bold text-slate-700">{d.name}</td>
+                            <td className="p-4 text-center font-bold text-sky-600">{d.entrega}</td>
+                            <td className="p-4 text-center font-bold text-emerald-600">{d.retirada}</td>
+                            <td className="p-4 text-center font-black text-slate-800">{d.total}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
