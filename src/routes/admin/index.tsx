@@ -214,10 +214,15 @@ function AdminDashboard() {
   const crescFaturamento = calcCrescimento(valorAtual, valorAnterior);
   const crescPedidos = calcCrescimento(qtdAtual, qtdAnterior);
   const crescTicket = calcCrescimento(ticketAtual, ticketAnterior);
-  
   const rawStoreCarts = useAbandonedCartsStore(s => s.carts);
+  const user = useAdmin(s => s.currentUser);
+  const { items: cartItems } = useCart();
+  
+  // Incluir o "live cart" se houver, igual na tela de detalhes
+  const activeLiveCart = (user && cartItems.length > 0) ? 1 : 0;
+  
   const storeCarts = effectiveStoreId ? rawStoreCarts.filter(c => c.lojaId === effectiveStoreId) : rawStoreCarts;
-  const carrinhosRecuperar = storeCarts.length;
+  const carrinhosRecuperar = storeCarts.length + activeLiveCart;
 
   const formatDataHora = (dataStr: string) => {
     if (!dataStr) return "";
