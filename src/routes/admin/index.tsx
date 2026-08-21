@@ -220,7 +220,7 @@ function AdminDashboard() {
   const activeLiveCart = (user && cartItems.length > 0) ? 1 : 0;
   
   const storeCarts = effectiveStoreId ? rawStoreCarts.filter(c => c.lojaId === effectiveStoreId) : rawStoreCarts;
-  const carrinhosRecuperar = storeCarts.length + activeLiveCart;
+  const carrinhosRecuperar = storeCarts.length;
 
   const formatDataHora = (dataStr: string) => {
     if (!dataStr) return "";

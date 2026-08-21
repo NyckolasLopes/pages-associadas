@@ -296,47 +296,36 @@ export function PedidosAdmin() {
       if (seenIds.has(cart.id)) return;
       seenIds.add(cart.id);
       
-      let dateFormatted = cart.dataCadastro || cart.dataAtualizacao || "";
-      try {
-        if (dateFormatted.includes("T")) {
-          const d = new Date(dateFormatted);
-          if (!isNaN(d.getTime())) {
-            dateFormatted = d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-          }
-        }
-      } catch {
-        // fallback
-      }
-
-      const cartItems = Object.values(cart.items || {});
-      const totalItemsCount = cartItems.reduce((acc: number, p: any) => acc + (p.quantidade || 1), 0) || cartItems.length || 0;
-      const itemsListText = cartItems.map((p: any) => `${p.quantidade || 1}x ${p.nome}`).join(", ");
+      const cartItems = Array.isArray(cart.items) ? cart.items : Object.values(cart.items || {});
+      const totalItemsCount = cartItems.reduce((acc: number, p: any) => acc + (p.qtd || p.quantidade || 1), 0) || cartItems.length || 0;
+      const itemsListText = cartItems.map((p: any) => `${p.qtd || p.quantidade || 1}x ${p.nome}`).join(", ");
 
       const totalValue = cartItems.reduce((acc: number, p: any) => {
-        const pr = p.preco || p.preco_promocional || p.preco_original || 0;
-        return acc + (pr * (p.quantidade || 1));
+        const pr = p.valorUnitario || p.preco || p.preco_promocional || p.preco_original || 0;
+        return acc + (pr * (p.qtd || p.quantidade || 1));
       }, 0);
 
       list.push({
         id: cart.id,
-        data: dateFormatted,
-        dataOriginal: cart.dataCadastro || cart.dataAtualizacao || "",
-        clienteNome: "Cliente Não Identificado",
-        clienteTelefone: "Não informado",
+        data: cart.createdAt,
+        dataOriginal: cart.createdAt,
+        clienteNome: cart.client && cart.client.trim() !== "" ? cart.client : "Cliente Não Identificado",
+        clienteTelefone: cart.phone && cart.phone.trim() !== "" ? cart.phone : "Não informado",
+        clienteEmail: cart.email,
         lojaId: cart.lojaId,
-        lojaNome: getLojaName(cart.lojaId),
+        lojaNome: getLojaName(cart.lojaId, cart.lojaNome),
         status: "Pendente",
         statusDesc: "Pendente (Carrinho)",
         itensQtd: totalItemsCount,
         itensDesc: itemsListText,
         produtos: cartItems.map((p: any) => ({
           ...p,
-          id: p.id || p.produto_id,
+          id: p.id || p.produto_id || "item",
           nome: p.nome,
-          preco: p.preco || p.preco_promocional || p.preco_original || 0,
-          qtd: p.quantidade || 1,
+          preco: p.valorUnitario || p.preco || p.preco_promocional || p.preco_original || 0,
+          qtd: p.qtd || p.quantidade || 1,
         })),
-        total: totalValue,
+        total: cart.total > 0 ? cart.total : totalValue,
         tipo: "carrinho",
         rawCart: cart,
       });
