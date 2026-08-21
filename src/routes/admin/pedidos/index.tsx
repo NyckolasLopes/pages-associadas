@@ -407,10 +407,52 @@ export function PedidosAdmin() {
   };
 
   const exportToJson = () => {
-    const fullData = filteredUnifiedOrders.map(item => item.rawOrder || item.rawCart || item);
-    const dataStr = JSON.stringify(fullData, null, 2);
+    // Exporta apenas a estrutura (exemplo) do JSON
+    const sampleStructure = [{
+      "id": "FA-260821-1234",
+      "data": "2026-08-21T10:00:00.000Z",
+      "status": "novo",
+      "lojaId": "loja-exemplo",
+      "cliente": {
+        "nome": "João da Silva",
+        "email": "joao@exemplo.com",
+        "telefone": "11999999999",
+        "cpf": "11122233344",
+        "endereco": {
+          "rua": "Rua Exemplo",
+          "numero": "123",
+          "bairro": "Centro",
+          "cidade": "São Paulo",
+          "cep": "01000-000"
+        }
+      },
+      "envio": {
+        "metodo": "Entrega Expressa",
+        "rastreio": "BR123456789"
+      },
+      "pagamento": {
+        "metodo": "Cartão de Crédito"
+      },
+      "produtos": [
+        {
+          "nome": "Produto Exemplo",
+          "sku": "12345",
+          "ean": "7890000000000",
+          "qtd": 1,
+          "valorUnitario": 50.00
+        }
+      ],
+      "valores": {
+        "subtotal": 50.00,
+        "frete": 10.00,
+        "desconto": 0,
+        "total": 60.00
+      }
+    }];
+    
+    const dataStr = JSON.stringify(sampleStructure, null, 2);
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-    const exportFileDefaultName = "pedidos_associadas.json";
+    const exportFileDefaultName = "estrutura_pedido_exemplo.json";
 
     const linkElement = document.createElement("a");
     linkElement.setAttribute("href", dataUri);

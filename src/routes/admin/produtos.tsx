@@ -217,20 +217,28 @@ function AdminProdutos() {
   const handleExportJson = async () => {
     setIsLoading(true);
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data, error } = await supabase.from('produtos').select('*');
-      
-      if (error || !data) throw new Error("Falha ao exportar");
-      
-      // Mapeia os dados do banco para ter exatamente a mesma estrutura
-      // usada para o cadastro de novo produto
-      const exportData = data.map(mapRowToProduto);
+      // Exporta apenas a estrutura (exemplo) do JSON
+      const sampleStructure = [{
+        "sku": "123456",
+        "ean": "7890000000000",
+        "nome": "Nome do Produto",
+        "descricao": "<p>Descrição comercial detalhada</p>",
+        "marca": "Nome da Marca",
+        "precoDe": 150.00,
+        "precoPor": 99.90,
+        "estoque": 100,
+        "foto": "https://link-da-imagem.com/foto.jpg",
+        "ativo": true,
+        "categoriaId": "id-da-categoria",
+        "subcategoriaId": "id-da-subcategoria"
+      }];
 
-      const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+      const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleStructure, null, 2));
       const dlAnchorElem = document.createElement("a");
       dlAnchorElem.setAttribute("href", dataStr);
-      dlAnchorElem.setAttribute("download", "modelo_api_produto.txt");
+      dlAnchorElem.setAttribute("download", "estrutura_produto_exemplo.json");
       dlAnchorElem.click();
+      toast.success("Estrutura exportada com sucesso!");
     } catch (e) {
       toast.error("Erro ao exportar JSON");
     } finally {

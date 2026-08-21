@@ -408,10 +408,33 @@ export function PedidosAdmin() {
   };
 
   const exportToJson = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredUnifiedOrders, null, 2));
+    const sampleStructure = [{
+      "id": "cart-12345",
+      "createdAt": "2026-08-21T10:00:00.000Z",
+      "updatedAt": "2026-08-21T10:30:00.000Z",
+      "client": "João da Silva",
+      "email": "joao@exemplo.com",
+      "phone": "11999999999",
+      "address": "Rua Exemplo, 123",
+      "total": 50.00,
+      "items": {
+        "item1": {
+          "id": "12345",
+          "nome": "Produto Exemplo",
+          "quantidade": 1,
+          "valorUnitario": 50.00,
+          "foto": "https://exemplo.com/foto.jpg"
+        }
+      },
+      "lojaId": "loja-exemplo"
+    }];
+    
+    const dataStr = JSON.stringify(sampleStructure, null, 2);
+    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+    const exportFileDefaultName = "estrutura_carrinho_abandonado.json";
     const link = document.createElement("a");
-    link.setAttribute("href", dataStr);
-    link.setAttribute("download", "pedidos_associadas.json");
+    link.setAttribute("href", dataUri);
+    link.setAttribute("download", exportFileDefaultName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
