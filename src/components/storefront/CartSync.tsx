@@ -37,7 +37,7 @@ export function CartSync() {
 
           if (!lojaId) return; // Ainda sem loja, não sincroniza
 
-          await supabase.from("carrinhos_abandonados").upsert({
+          const { error } = await supabase.from("carrinhos_abandonados").upsert({
             user_id: user.id,
             loja_id: lojaId,
             items: items,
@@ -48,6 +48,8 @@ export function CartSync() {
             email_cliente: user.email || '',
             telefone_cliente: user.celular || '',
           }, { onConflict: "user_id, loja_id" });
+          
+          if (error) throw error;
         } else {
           // Carrinho vazio: remove o carrinho abandonado dessa sessão
           const lojaId = selectedPharmacyId || useAdmin.getState().activeStoreId;
