@@ -92,29 +92,7 @@ export function PedidosAdmin() {
   const lastUpdatedAt = useCart(s => (s as any).lastUpdatedAt);
   const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
 
-  const liveCarts: AbandonedCart[] = [];
-  if (user && cartItems.length > 0) {
-    liveCarts.push({
-      id: "#807099",
-      createdAt: new Date(lastUpdatedAt || Date.now()).toLocaleDateString('pt-BR') + " " + new Date(lastUpdatedAt || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      client: user.name || "Cliente",
-      email: user.email || "",
-      phone: (user as any).phone || "(51) 99999-9999",
-      address: "Não informado",
-      abandonedAt: "Há pouco tempo",
-      recoveryStatus: "Aguardando disparo autom.",
-      total: cartTotal,
-      type: 'sem_transacao',
-      lojaId: selectedPharmacyId || undefined,
-      items: cartItems.map(i => ({
-        nome: i.nome,
-        qtd: i.qty,
-        valorUnitario: i.preco,
-        foto: "https://placehold.co/100"
-      }))
-    });
-  }
-  const allAbandonedCartsRaw = [...liveCarts, ...storeCarts];
+  const allAbandonedCartsRaw = [...storeCarts];
     
   const isGlobalAdmin = () => {
     if (currentUser?.proprietario) return true;
