@@ -93,13 +93,14 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
         .delete()
         .eq('id', id);
         
-      if (!error) {
-        set(state => ({
-          carts: state.carts.filter(c => c.id !== id)
-        }));
-      }
+      if (error) { throw error; }
+        
+      set(state => ({
+        carts: state.carts.filter(c => c.id !== id)
+      }));
     } catch (err) {
       console.error("Error removing cart:", err);
+      throw err;
     }
   }
 }));

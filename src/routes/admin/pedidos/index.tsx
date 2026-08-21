@@ -148,7 +148,7 @@ export function PedidosAdmin() {
   const [showApiDoc, setShowApiDoc] = useState(false);
 
   // Fetch orders with React Query (Server-side)
-  const { data: ordersResponse, isLoading } = useOrdersQuery({
+  const { data: ordersResponse, isLoading, refetch } = useOrdersQuery({
     page,
     limit,
     lojaId: activeStoreId || undefined,
@@ -181,26 +181,31 @@ export function PedidosAdmin() {
     setConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete) {
-      if (itemToDelete.tipo === "pedido") {
-        deleteOrder(itemToDelete.id);
-        if (selectedOrder?.id === itemToDelete.id) setSelectedOrder(null);
-      } else {
-        if (itemToDelete.id === "#807099") {
-          clearCart();
+      try {
+        if (itemToDelete.tipo === "pedido") {
+          await deleteOrder(itemToDelete.id);
+          if (selectedOrder?.id === itemToDelete.id) setSelectedOrder(null);
+          await refetch();
         } else {
-          removeStoreCart(itemToDelete.id);
+          if (itemToDelete.id === "#807099") {
+            clearCart();
+          } else {
+            await removeStoreCart(itemToDelete.id);
+          }
+          if (selectedCartItem?.id === itemToDelete.id) setSelectedCartItem(null);
         }
-        if (selectedCartItem?.id === itemToDelete.id) setSelectedCartItem(null);
+        setConfirmOpen(false);
+        setItemToDelete(null);
+        toast.success(
+          itemToDelete.tipo === "pedido"
+            ? "Pedido excluído com sucesso!"
+            : "Carrinho excluído com sucesso!",
+        );
+      } catch (error) {
+        toast.error("Erro ao excluir registro.");
       }
-      setConfirmOpen(false);
-      setItemToDelete(null);
-      toast.success(
-        itemToDelete.tipo === "pedido"
-          ? "Pedido excluído com sucesso!"
-          : "Carrinho excluído com sucesso!",
-      );
     }
   };
 

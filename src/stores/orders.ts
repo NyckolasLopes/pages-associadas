@@ -277,14 +277,25 @@ export const useOrders = create<OrdersState>((set, get) => ({
   },
 
   deleteOrder: async (id) => {
-    const query = id.startsWith('FA-') 
-      ? supabase.from('pedidos').delete().eq('numero', id.replace('FA-', ''))
-      : supabase.from('pedidos').delete().eq('id', id);
-    const { error } = await query;
-    if (!error) {
-      set((state) => ({
-        orders: state.orders.filter(o => o.id !== id),
-      }));
+    // 1. Resolve o ID real se for numero (FA-XXX)
+    let finalId = id;
+    if (id.startsWith('FA-')) {
+      const { data } = await supabase.from('pedidos').select('id').eq('numero', id.replace('FA-', '')).single();
+      if (data) finalId = data.id;
     }
+
+    // 2. Deleta itens do pedido
+    await supabase.from('pedido_itens').delete().eq('pedido_id', finalId);
+
+    // 3. Deleta o pedido
+    const { error } = await supabase.from('pedidos').delete().eq('id', finalId);
+    
+    if (error) {
+      console.error("Error deleting order:", error);
+      throw error;
+    }
+    set((state) => ({
+      orders: state.orders.filter(o => o.id !== id),
+    }));
   },
 }));
