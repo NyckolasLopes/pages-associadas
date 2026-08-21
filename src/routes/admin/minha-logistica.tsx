@@ -181,21 +181,7 @@ function MinhaLogistica() {
                           </Button>
                         </div>
                       </div>
-                      <div className="mt-4 space-y-1 pl-2">
-                        <div className="text-xs font-bold uppercase text-slate-400">Tabela de Raios e Preços</div>
-                        {method.raios.length === 0 ? (
-                          <div className="text-sm text-slate-500">Nenhum raio configurado.</div>
-                        ) : (
-                          method.raios.sort((a,b)=>a.ateKm - b.ateKm).map((r, i) => (
-                            <div key={i} className="flex justify-between text-sm bg-slate-50 p-2 rounded border">
-                              <span className="font-medium text-slate-700">Até {r.ateKm} Km</span>
-                              <span className="font-bold text-emerald-700">
-                                {r.preco === 0 ? 'Grátis' : r.preco.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                              </span>
-                            </div>
-                          ))
-                        )}
-                      </div>
+
                     </div>
                   ))}
                 </div>
