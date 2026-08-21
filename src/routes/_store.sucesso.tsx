@@ -81,8 +81,8 @@ function SucessoPage() {
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
-          <p className="text-slate-500 font-medium">Buscando os detalhes do seu recibo...</p>
+          <img src="/icone-associadas.png" alt="Processando..." className="w-12 h-12 animate-spin mb-4" />
+          <h2 className="text-xl font-bold text-slate-800">Processando seu pedido...</h2>
         </div>
       ) : order ? (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 lg:gap-8 items-start animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150 fill-mode-both">

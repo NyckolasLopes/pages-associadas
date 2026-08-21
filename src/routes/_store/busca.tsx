@@ -7,7 +7,7 @@ import { ProductCard } from "@/components/storefront/ProductCard";
 import type { Produto } from "@/types";
 import { ProductFilterSidebar } from "@/components/storefront/ProductFilterSidebar";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { useSearchHistory } from "@/stores/searchHistory";
 import { useCart } from "@/stores/cart";
 
@@ -153,7 +153,7 @@ function SearchPage() {
                 variant="outline" 
                 className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white"
               >
-                {loadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {loadingMore ? <Spinner size={16} className="mr-2" /> : null}
                 {loadingMore ? "Carregando..." : "Carregar mais produtos"}
               </Button>
             </div>

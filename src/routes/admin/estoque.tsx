@@ -9,7 +9,7 @@ function EstoquePendingComponent() {
   return (
     <div className="flex h-screen w-full items-center justify-center bg-slate-50">
       <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
-        <Spinner size={40} className="text-emerald-600" />
+        <img src="/icone-associadas.png" alt="Carregando..." className="w-12 h-12 animate-spin drop-shadow-sm" />
         <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Carregando Estoque...</span>
       </div>
     </div>
