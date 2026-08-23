@@ -216,7 +216,9 @@ export const useOrders = create<OrdersState>((set, get) => ({
         },
         historico: [],
         anotacoes: d.observacoes,
-      }));
+        rawId: d.id,
+        };
+      });
       set({ orders: mappedOrders });
     }
   },
