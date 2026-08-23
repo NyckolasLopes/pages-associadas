@@ -194,11 +194,39 @@ function Relatorios() {
     const stats: Record<string, { qtdPedidos: number, tempoMin: number | null }> = {};
     let totalSoma = 0;
     let totalCount = 0;
+    let globalAtrasados = 0;
 
     const filteredRawOrders = activeStoreId ? rawOrders.filter(o => o.lojaId === activeStoreId) : rawOrders;
+    
+    // Group orders by lojaId to avoid O(N*M) loop
+    const ordersByLoja: Record<string, typeof rawOrders> = {};
+    
+    filteredRawOrders.forEach(pedido => {
+      if (pedido.status.toLowerCase() === "cancelado") return;
+      
+      const lojaId = pedido.lojaId;
+      if (lojaId) {
+        if (!ordersByLoja[lojaId]) ordersByLoja[lojaId] = [];
+        ordersByLoja[lojaId].push(pedido);
+      }
+      
+      // Calculate SLA for this specific order
+      const separacao = pedido.historico?.find(h => h.situacao.toLowerCase() === "em separação");
+      const conclusao = pedido.historico?.find(h => 
+        h.situacao.toLowerCase() === "pronta para retirada" || 
+        h.situacao.toLowerCase() === "enviado" || 
+        h.situacao.toLowerCase() === "entregue"
+      );
+      
+      if (separacao && conclusao) {
+        const ms = new Date(conclusao.data).getTime() - new Date(separacao.data).getTime();
+        const min = Math.max(1, Math.round(ms / 60000));
+        if (min > 20) globalAtrasados++;
+      }
+    });
 
     pharmacies.forEach(loja => {
-      const lojaOrders = filteredRawOrders.filter(o => o.lojaId === loja.id && o.status.toLowerCase() !== "cancelado");
+      const lojaOrders = ordersByLoja[loja.id] || [];
       let somaMin = 0;
       let count = 0;
 
@@ -226,22 +254,6 @@ function Relatorios() {
       if (count > 0) {
         totalSoma += somaMin;
         totalCount += count;
-      }
-    });
-
-    let globalAtrasados = 0;
-    filteredRawOrders.forEach(pedido => {
-      if (pedido.status.toLowerCase() === "cancelado") return;
-      const separacao = pedido.historico?.find(h => h.situacao.toLowerCase() === "em separação");
-      const conclusao = pedido.historico?.find(h => 
-        h.situacao.toLowerCase() === "pronta para retirada" || 
-        h.situacao.toLowerCase() === "enviado" || 
-        h.situacao.toLowerCase() === "entregue"
-      );
-      if (separacao && conclusao) {
-        const ms = new Date(conclusao.data).getTime() - new Date(separacao.data).getTime();
-        const min = Math.max(1, Math.round(ms / 60000));
-        if (min > 20) globalAtrasados++;
       }
     });
 
