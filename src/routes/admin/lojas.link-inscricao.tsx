@@ -86,21 +86,22 @@ function LinkInscricaoAssociado() {
         </div>
       </div>
 
-      {sortedTokens.length > 0 && (
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b bg-slate-50 font-bold text-slate-800 flex justify-between items-center">
-            <span>Histórico de Links Gerados</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-              onClick={() => setIsClearHistoryModalOpen(true)}
-            >
-              <Trash2 className="w-4 h-4 mr-1.5" />
-              Limpar Histórico
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b bg-slate-50 font-bold text-slate-800 flex justify-between items-center">
+          <span>Histórico de Links Gerados</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+            onClick={() => setIsClearHistoryModalOpen(true)}
+            disabled={sortedTokens.length === 0}
+          >
+            <Trash2 className="w-4 h-4 mr-1.5" />
+            Limpar Histórico
+          </Button>
+        </div>
+        <div className="overflow-x-auto">
+          {sortedTokens.length > 0 ? (
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500 font-medium border-b">
                 <tr>
@@ -159,9 +160,13 @@ function LinkInscricaoAssociado() {
                 ))}
               </tbody>
             </table>
-          </div>
+          ) : (
+            <div className="p-8 text-center text-slate-500">
+              Nenhum link de inscrição foi gerado ainda.
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <ConfirmDialog
         isOpen={isClearHistoryModalOpen}
