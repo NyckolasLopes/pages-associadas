@@ -348,17 +348,17 @@ function GerarLojaPage() {
                         <Button
                           variant="outline"
                           onClick={() => handleCopyUrl(pharmacy)}
-                          className="flex-1 text-xs font-bold h-9 bg-white"
+                          className="flex-1 text-xs font-bold h-9 bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-800 transition-colors"
                         >
                           {copiedId === pharmacy.id ? (
                             <span className="flex items-center gap-1 text-emerald-600">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Copiado!
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Copiado!
                             </span>
                           ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
+                            <span className="flex items-center gap-1">
+                              <Copy className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                               Copiar Link
-                            </>
+                            </span>
                           )}
                         </Button>
                         <a
@@ -370,10 +370,12 @@ function GerarLojaPage() {
                           <Button
                             variant="outline"
                             disabled={!isAtiva}
-                            className="w-full text-xs font-bold h-9 text-primary border-primary/30 hover:bg-primary/5 bg-white disabled:opacity-50 disabled:bg-slate-50"
+                            className="w-full text-xs font-bold h-9 text-primary border-primary/30 hover:bg-primary/5 hover:text-primary bg-white disabled:opacity-50 disabled:bg-slate-50 transition-colors"
                           >
-                            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                            Acessar
+                            <span className="flex items-center gap-1">
+                              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                              Acessar
+                            </span>
                           </Button>
                         </a>
                       </div>
