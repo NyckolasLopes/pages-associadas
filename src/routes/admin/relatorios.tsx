@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useAdmin } from "@/stores/admin";
 import { useOrders } from "@/stores/orders";
+import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
 import { useMarketing } from "@/stores/marketing";
 import { useAdminProducts } from "@/stores/products";
 import { RelatorioTop100Produtos } from "@/components/admin/RelatorioTop100Produtos";
