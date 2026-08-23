@@ -208,6 +208,9 @@ function AdminLayout() {
     const { loadPharmacies } = useAdmin.getState();
     loadPharmacies();
 
+    // Carregar pedidos globais para popular dashboard, métricas e top 100
+    useOrders.getState().loadOrders();
+
     // Carregar produtos removido para usar a paginação do React Query e do Catalog Service
 
     // Migration / Clean-up for old cached localStorage
