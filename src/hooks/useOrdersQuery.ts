@@ -95,6 +95,18 @@ export function useOrdersQuery({
       if (error) throw error;
 
       const mappedOrders: Pedido[] = (data || []).map((d: any) => {
+        const extractJSON = (field: any) => {
+          if (Array.isArray(field)) return field;
+          if (typeof field === "string") {
+            try { return JSON.parse(field); } catch { return []; }
+          }
+          return [];
+        };
+        
+        const rawItens = extractJSON(d.itens).length > 0 ? extractJSON(d.itens) : 
+                        extractJSON(d.produtos).length > 0 ? extractJSON(d.produtos) : 
+                        extractJSON(d.items);
+
         const parsedItens = (d.pedido_itens && d.pedido_itens.length > 0) 
           ? d.pedido_itens.map((i: any) => ({
               nome: i.nome,
@@ -106,11 +118,7 @@ export function useOrdersQuery({
               preco: i.preco_unit * i.qty,
               foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
             }))
-          : Array.isArray(d.itens) && d.itens.length > 0 
-            ? d.itens 
-            : Array.isArray(d.produtos) && d.produtos.length > 0 
-              ? d.produtos 
-              : [];
+          : rawItens;
 
         return {
           id: d.numero ? `FA-${d.numero}` : d.id,
