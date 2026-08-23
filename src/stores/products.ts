@@ -557,10 +557,17 @@ export const useAdminProducts = create<ProductsState>()(
         }));
 
         // Supabase DB Update
-        await supabase.from('produtos').update({
-          // precos_por_loja: newPrecosPorLoja,
-          // estoques_por_loja: newEstoquesPorLoja
-        }).eq('id', productId);
+        try {
+          await supabase.from('produto_precos_loja').upsert({
+            loja_id: lojaId,
+            produto_id: productId,
+            preco_de: precoDe !== undefined ? precoDe : p.precoDe,
+            preco_por: precoPor,
+            ativo: ativo
+          }, { onConflict: "loja_id, produto_id" });
+        } catch(e) {
+          console.error("Failed to update store price", e);
+        }
       },
       updateStoreProductStatus: async (lojaId, productId, ativo) => {
         const state = get();
@@ -585,9 +592,15 @@ export const useAdminProducts = create<ProductsState>()(
         }));
 
         // Supabase DB Update
-        await supabase.from('produtos').update({
-          // precos_por_loja: newPrecosPorLoja
-        }).eq('id', productId);
+        try {
+          await supabase.from('produto_precos_loja').upsert({
+            loja_id: lojaId,
+            produto_id: productId,
+            ativo: ativo
+          }, { onConflict: "loja_id, produto_id" });
+        } catch(e) {
+          console.error("Failed to update store status", e);
+        }
       },
       updateStoreProductDestaque: async (lojaId, productId, destaque) => {
         const state = get();
@@ -612,9 +625,15 @@ export const useAdminProducts = create<ProductsState>()(
         }));
 
         // Supabase DB Update
-        await supabase.from('produtos').update({
-          // precos_por_loja: newPrecosPorLoja
-        }).eq('id', productId);
+        try {
+          await supabase.from('produto_precos_loja').upsert({
+            loja_id: lojaId,
+            produto_id: productId,
+            destaque: destaque
+          }, { onConflict: "loja_id, produto_id" });
+        } catch(e) {
+          console.error("Failed to update store destaque", e);
+        }
       },
       updateStoreProductStock: async (lojaId, productId, estoque) => {
         const state = get();
@@ -688,11 +707,21 @@ export const useAdminProducts = create<ProductsState>()(
           })
         }));
 
-        // Supabase DB Update (Sequential due to JSONB constraints, but safe)
-        for (const update of dbUpdates) {
-          await supabase.from('produtos').update({
-            // precos_por_loja: update.precos_por_loja
-          }).eq('id', update.id);
+        // Supabase DB Update
+        const upsertData = productIds.map(id => ({
+          loja_id: lojaId,
+          produto_id: id,
+          ativo: ativo
+        }));
+
+        try {
+          const chunkSize = 100;
+          for (let i = 0; i < upsertData.length; i += chunkSize) {
+            const chunk = upsertData.slice(i, i + chunkSize);
+            await supabase.from('produto_precos_loja').upsert(chunk, { onConflict: "loja_id, produto_id" });
+          }
+        } catch(e) {
+          console.error("Failed to bulk update store status", e);
         }
       },
       importStoreSpreadsheet: async (lojaId, items) => {

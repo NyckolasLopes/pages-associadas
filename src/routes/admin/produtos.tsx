@@ -929,7 +929,7 @@ function AdminProdutos() {
                           <Switch
                             checked={p.ativo !== false}
                             onCheckedChange={(checked) => {
-                              if (isGlobalAdmin) {
+                              if (isGlobalAdmin && !currentLojaId) {
                                 addOrUpdateProduct({ ...p, ativo: checked }, currentLojaId || undefined);
                               } else {
                                 updateStoreProductStatus(currentLojaId!, p.id, checked);
@@ -939,7 +939,7 @@ function AdminProdutos() {
                           />
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {isGlobalAdmin ? (
+                          {isGlobalAdmin && !currentLojaId ? (
                             <Button
                               variant="ghost"
                               size="icon"
