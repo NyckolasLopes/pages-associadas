@@ -16,6 +16,9 @@ import {
   MapPin,
   XCircle,
   Trash2,
+  Edit2,
+  Check,
+  X,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -27,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/admin/lojas/gerar")({
   component: GerarLojaPage,
@@ -48,10 +52,14 @@ function GerarLojaPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [storeToDelete, setStoreToDelete] = useState<string | null>(null);
   const [copyBannersState, setCopyBannersState] = useState<Record<string, boolean>>({});
+  
+  const [editingSlugId, setEditingSlugId] = useState<string | null>(null);
+  const [tempSlug, setTempSlug] = useState("");
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://pagesassociadas.vercel.app";
 
   const getLojaSlug = (pharmacy: any) => {
+    if (pharmacy.slug) return slugify(pharmacy.slug);
     const nome = pharmacy.nome || pharmacy.nomeFantasia || pharmacy.id;
     return slugify(nome);
   };
@@ -110,8 +118,22 @@ function GerarLojaPage() {
     const url = getLojaUrl(pharmacy);
     navigator.clipboard.writeText(url);
     setCopiedId(pharmacy.id);
-    toast.success("Link copiado!");
+    toast.success("URL copiada!");
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleSaveSlug = async (pharmacy: any) => {
+    if (!tempSlug.trim()) {
+      setEditingSlugId(null);
+      return;
+    }
+    const newSlug = slugify(tempSlug);
+    await updatePharmacy(pharmacy.id, {
+      ...pharmacy,
+      slug: newSlug
+    });
+    setEditingSlugId(null);
+    toast.success("URL da loja atualizada!");
   };
 
   const activePharmacies = pharmacies.filter((p) => p.ativo !== false);
@@ -220,15 +242,50 @@ function GerarLojaPage() {
                 {/* URL preview (Only if generated) */}
                 {isGenerated && (
                   <div className={`rounded-xl p-3 mb-5 border ${isAtiva ? 'bg-emerald-50/50 border-emerald-100' : 'bg-slate-50 border-slate-200'}`}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Globe className={`w-3.5 h-3.5 ${isAtiva ? 'text-emerald-500' : 'text-slate-400'}`} />
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isAtiva ? 'text-emerald-700' : 'text-slate-500'}`}>
-                        URL da Loja
-                      </span>
+                    <div className="flex items-center gap-2 mb-1.5 justify-between">
+                      <div className="flex items-center gap-2">
+                        <Globe className={`w-3.5 h-3.5 ${isAtiva ? 'text-emerald-500' : 'text-slate-400'}`} />
+                        <span className={`text-[10px] font-bold uppercase tracking-wider ${isAtiva ? 'text-emerald-700' : 'text-slate-500'}`}>
+                          URL da Loja
+                        </span>
+                      </div>
+                      {editingSlugId !== pharmacy.id && (
+                        <button
+                          onClick={() => {
+                            setEditingSlugId(pharmacy.id);
+                            setTempSlug(getLojaSlug(pharmacy));
+                          }}
+                          className={`text-[10px] font-bold uppercase flex items-center gap-1 hover:opacity-80 transition-opacity ${isAtiva ? 'text-emerald-700' : 'text-slate-500'}`}
+                        >
+                          <Edit2 className="w-3 h-3" /> Editar URL
+                        </button>
+                      )}
                     </div>
-                    <p className={`text-xs font-mono break-all leading-relaxed ${isAtiva ? 'text-emerald-900' : 'text-slate-500'}`}>
-                      {lojaUrl}
-                    </p>
+                    {editingSlugId === pharmacy.id ? (
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-slate-500">{baseUrl}/</span>
+                        <Input
+                          value={tempSlug}
+                          onChange={(e) => setTempSlug(e.target.value)}
+                          className="h-7 text-xs px-2 flex-1 font-mono"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveSlug(pharmacy);
+                            if (e.key === "Escape") setEditingSlugId(null);
+                          }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-emerald-100" onClick={() => handleSaveSlug(pharmacy)}>
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:bg-slate-200" onClick={() => setEditingSlugId(null)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className={`text-xs font-mono break-all leading-relaxed ${isAtiva ? 'text-emerald-900' : 'text-slate-500'}`}>
+                        {lojaUrl}
+                      </p>
+                    )}
                   </div>
                 )}
 

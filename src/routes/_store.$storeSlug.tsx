@@ -32,6 +32,17 @@ const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
   HeartPulse: HeartPulse, Scale: Scale, BriefcaseMedical: BriefcaseMedical, Handshake: Handshake,
 };
 
+function getDeduplicatedBanners(bannersToFilter: any[]) {
+  const uniqueMap = new Map();
+  for (const b of bannersToFilter) {
+    const key = (b.imageUrl || "") + b.posicao;
+    if (!uniqueMap.has(key) || b.lojaId) {
+      uniqueMap.set(key, b);
+    }
+  }
+  return Array.from(uniqueMap.values());
+}
+
 function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: VitrineLocal; page?: string; lojaId?: string }) {
   const allVitrines = useAdminProducts((s) => s.getStoreVitrines(lojaId));
   const customProducts = useAdminProducts((s) => s.customProducts);
@@ -223,12 +234,12 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
   const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
-  const tarjas = useMemo(() => (allBanners || []).filter(b => 
+  const tarjas = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
     b.posicao === "Banner Tarja" &&
     (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  ), [allBanners, page, lojaId, isParceiro]);
+  )), [allBanners, page, lojaId, isParceiro]);
   
   if (tarjas.length === 0) return null;
 
@@ -289,12 +300,12 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: 
   const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
-  const categorias = useMemo(() => (allBanners || []).filter(b => 
+  const categorias = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
     b.posicao === "Banner Categoria" &&
     (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  ), [allBanners, page, lojaId, isParceiro]);
+  )), [allBanners, page, lojaId, isParceiro]);
   
   if (categorias.length === 0) return null;
 
@@ -398,7 +409,7 @@ function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: stri
   const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
-  const extras = useMemo(() => (allBanners || []).filter(b => 
+  const extras = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
     b.posicao === "Banner Extra" && 
     (!b.vitrineVinculada || b.vitrineVinculada === "none") && 
@@ -406,7 +417,7 @@ function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: stri
     (!b.bannerVinculado || b.bannerVinculado === "none") &&
     (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  ), [allBanners, page, lojaId, isParceiro]);
+  )), [allBanners, page, lojaId, isParceiro]);
   
   if (extras.length === 0) return null;
 
@@ -424,7 +435,7 @@ function DynamicTopicBanners({ topicId, page = "Página inicial", lojaId }: { to
   const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
-  const extras = useMemo(() => (allBanners || []).filter(b => {
+  const extras = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => {
     if (!b.active) return false;
     if (b.lojaId && b.lojaId !== lojaId) return false;
     if (!b.lojaId && isParceiro) return false;
@@ -436,7 +447,7 @@ function DynamicTopicBanners({ topicId, page = "Página inicial", lojaId }: { to
     }
 
     return b.posicao === "Banner Extra" && b.topicoVinculado === topicId;
-  }), [allBanners, page, lojaId, isParceiro, topicId]);
+  })), [allBanners, page, lojaId, isParceiro, topicId]);
   
   if (extras.length === 0) return null;
 
@@ -502,7 +513,7 @@ function StoreHome() {
 
   const { storeSlug } = Route.useParams();
   const { pharmacies, fetchBanners } = useAdmin();
-  const loja = useMemo(() => pharmacies.find((p) => safeSlugify(p.nome || p.id) === storeSlug), [pharmacies, storeSlug]);
+  const loja = useMemo(() => pharmacies.find((p) => (p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id)) === storeSlug), [pharmacies, storeSlug]);
   const lojaId = loja?.id;
 
   useEffect(() => {
