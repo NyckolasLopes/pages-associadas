@@ -181,7 +181,7 @@ function AdminMarcaNova() {
                      </div>
                      <h4 className="font-bold text-slate-700 mb-1 text-sm">Arraste e solte o logo da marca aqui</h4>
                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                       Tamanho máximo 2MB. Fundo transparente (PNG) recomendado.
+                       Dimensão recomendada: 150x100px. Fundo transparente (PNG). Tamanho máximo 2MB.
                      </p>
                    </>
                  )}
