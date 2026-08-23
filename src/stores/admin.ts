@@ -17,6 +17,7 @@ export interface RegistrationToken {
   token: string;
   createdAt: number;
   used: boolean;
+  nome?: string;
 }
 
 export interface AdminGroup {
@@ -318,7 +319,7 @@ interface AdminState {
 
   // Link Inscrição
   registrationTokens: RegistrationToken[];
-  generateRegistrationToken: () => string;
+  generateRegistrationToken: (tokenSlug: string, nome?: string) => string | null;
   markRegistrationTokenUsed: (token: string) => void;
   deleteRegistrationToken: (token: string) => void;
   clearRegistrationTokens: () => void;
@@ -1225,21 +1226,29 @@ export const useAdmin = create<AdminState>()(
       }),
 
       registrationTokens: [],
-      generateRegistrationToken: () => {
-        const token = crypto.randomUUID();
-        set((state) => ({
-          registrationTokens: [...state.registrationTokens, { token, createdAt: Date.now(), used: false }]
-        }));
-        return token;
+      generateRegistrationToken: (tokenSlug, nome) => {
+        let isDuplicate = false;
+        set((state) => {
+          const currentTokens = state.registrationTokens || [];
+          if (currentTokens.some(t => t.token === tokenSlug)) {
+            isDuplicate = true;
+            return state;
+          }
+          return {
+            registrationTokens: [...currentTokens, { token: tokenSlug, createdAt: Date.now(), used: false, nome }]
+          };
+        });
+        if (isDuplicate) return null;
+        return tokenSlug;
       },
       markRegistrationTokenUsed: (token) => {
         set((state) => ({
-          registrationTokens: state.registrationTokens.map(t => t.token === token ? { ...t, used: true } : t)
+          registrationTokens: (state.registrationTokens || []).map(t => t.token === token ? { ...t, used: true } : t)
         }));
       },
       deleteRegistrationToken: (token) => {
         set((state) => ({
-          registrationTokens: state.registrationTokens.filter(t => t.token !== token)
+          registrationTokens: (state.registrationTokens || []).filter(t => t.token !== token)
         }));
       },
       clearRegistrationTokens: () => {
