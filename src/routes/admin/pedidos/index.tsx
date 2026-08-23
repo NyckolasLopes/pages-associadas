@@ -186,7 +186,7 @@ export function PedidosAdmin() {
       try {
         if (itemToDelete.tipo === "pedido") {
           await deleteOrder(itemToDelete.id);
-          if (selectedOrder?.id === itemToDelete.id) setSelectedOrder(null);
+          if (selectedOrder?.id === itemToDelete.id || selectedOrder?.rawId === itemToDelete.id) setSelectedOrder(null);
           await refetch();
         } else {
           if (itemToDelete.id === "#807099") {
@@ -665,7 +665,7 @@ export function PedidosAdmin() {
               <Button
                 variant="outline"
                 className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2"
-                onClick={() => handleDelete(selectedOrder.id, "pedido")}
+                onClick={() => handleDelete(selectedOrder.rawId || selectedOrder.id, "pedido")}
               >
                 <Trash2 className="h-4 w-4" />
                 Excluir
@@ -1293,7 +1293,7 @@ export function PedidosAdmin() {
                             className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(item.id, item.tipo);
+                              handleDelete(item.rawId || item.id, item.tipo);
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
