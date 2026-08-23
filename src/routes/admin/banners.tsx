@@ -1316,6 +1316,16 @@ function AdminBanners() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog 
+        isOpen={confirmCopyOpen}
+        onClose={() => setConfirmCopyOpen(false)}
+        onConfirm={executeCopyGlobalBanners}
+        title="pages-associadas.vercel.app diz"
+        description="Isso copiará todos os banners da rede global para a sua loja. Tem certeza?"
+        confirmText="OK"
+        cancelText="Cancelar"
+      />
     </div>
   );
 }
@@ -1711,18 +1721,7 @@ function StoreColorsConfig() {
             </div>
 
           </div>
-          </div>
         </div>      </div>
-
-      <ConfirmDialog 
-        isOpen={confirmCopyOpen}
-        onClose={() => setConfirmCopyOpen(false)}
-        onConfirm={executeCopyGlobalBanners}
-        title="pages-associadas.vercel.app diz"
-        description="Isso copiará todos os banners da rede global para a sua loja. Tem certeza?"
-        confirmText="OK"
-        cancelText="Cancelar"
-      />
     </div>
   );
 }
