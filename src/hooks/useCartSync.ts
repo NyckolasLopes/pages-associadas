@@ -9,10 +9,36 @@ export function useCartSync() {
   const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
   const { user } = useAuth();
   const syncTimeout = useRef<NodeJS.Timeout>();
+  const initialLoadDone = useRef(false);
 
   useEffect(() => {
-    // Apenas sincroniza se o usuário estiver logado
-    if (!user || !user.id) return;
+    // Quando o usuário logar, tentar buscar o carrinho existente
+    if (user?.id && !initialLoadDone.current) {
+      initialLoadDone.current = true;
+      supabase
+        .from('carrinhos_abandonados' as any)
+        .select('items')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data && data.items && Array.isArray(data.items) && data.items.length > 0) {
+            // Se o carrinho local estiver vazio, restaura o do banco
+            if (useCart.getState().items.length === 0) {
+              useCart.getState().restoreCart(data.items);
+            }
+          }
+        });
+    }
+
+    // Reseta quando fizer logout
+    if (!user?.id) {
+      initialLoadDone.current = false;
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    // Apenas sincroniza se o usuário estiver logado e se o initial load já rodou
+    if (!user || !user.id || !initialLoadDone.current) return;
 
     if (syncTimeout.current) {
       clearTimeout(syncTimeout.current);
@@ -21,7 +47,7 @@ export function useCartSync() {
     syncTimeout.current = setTimeout(async () => {
       try {
         if (items.length === 0) {
-          // Se o carrinho foi esvaziado, exclui o carrinho abandonado
+          // Se o carrinho foi esvaziado intencionalmente, exclui o carrinho abandonado
           await supabase
             .from('carrinhos_abandonados' as any)
             .delete()

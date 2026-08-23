@@ -111,6 +111,7 @@ interface CartState {
   updateItemPrice: (id: string, preco: number) => void;
   addNotification: (id: string, oldPrice: number, newPrice: number, storeName: string) => void;
   clearNotifications: () => void;
+  restoreCart: (items: CartItem[]) => void;
 }
 
 // ---- Standalone selector functions (stable references, no re-render cascades) ----
@@ -232,6 +233,7 @@ export const useCart = create<CartState>()(
         }),
       clearNotifications: () => set({ notifications: [] }),
       clear: () => set({ items: [], appliedCoupon: null, lastUpdatedAt: null }),
+      restoreCart: (items) => set({ items, lastUpdatedAt: Date.now() }),
       setDrawer: (open) => set({ drawerOpen: open }),
       connectPbm: (c) => set({ pbm: c }),
       disconnectPbm: () => set({ pbm: null }),
