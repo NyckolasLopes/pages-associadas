@@ -167,6 +167,14 @@ function Relatorios() {
   })).filter(grupo => grupo.itens.length > 0);
 
   const { orders: rawOrders } = useOrders();
+  const rawCarts = useAbandonedCartsStore(s => s.carts);
+
+  // Forçar recarregamento de pedidos ao abrir os relatórios
+  useEffect(() => {
+    useOrders.getState().loadOrders();
+    useAbandonedCartsStore.getState().loadCarts();
+  }, []);
+
   const { lojaPromocoes } = useMarketing();
   const { customProducts } = useAdminProducts();
   const orders = useMemo(() => {

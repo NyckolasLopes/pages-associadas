@@ -51,7 +51,7 @@ function AdminDashboard() {
     if (!effectiveStoreId) return rawVisitors;
     return rawVisitors.filter(v => v.lojaId === effectiveStoreId || ((v as any).url && (v as any).url.includes(effectiveStoreId)));
   }, [rawVisitors, effectiveStoreId]);
-  const { orders: rawOrders } = useOrders();
+  const rawOrders = useOrders(s => s.orders);
   const [showVisitasModal, setShowVisitasModal] = useState(false);
   
   const visitasPorLoja = useMemo(() => {
@@ -95,6 +95,7 @@ function AdminDashboard() {
   useEffect(() => {
     loadCarts();
     fetchRealAcessos();
+    useOrders.getState().loadOrders(); // Forçar refresh dos pedidos ao entrar no dashboard
   }, [loadCarts, fetchRealAcessos]);
 
   const orders = useMemo(() => {
