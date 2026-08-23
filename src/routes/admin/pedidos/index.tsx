@@ -739,7 +739,7 @@ export function PedidosAdmin() {
                   Pedido direcionado para faturamento e entrega
                 </div>
                 <div className="text-xs text-emerald-700 bg-emerald-50 font-bold p-2 rounded-lg mt-3 border border-emerald-100 flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5" /> Concluído pelo carrinho da loja
+                  <Check className="w-3.5 h-3.5" /> Concluido e encaminhado ao Whatsapp da loja
                 </div>
               </div>
             </div>
