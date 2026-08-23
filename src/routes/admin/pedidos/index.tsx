@@ -575,6 +575,8 @@ export function PedidosAdmin() {
                   value={selectedOrder.status || "novo"}
                   onValueChange={async (newStatus) => {
                     await useOrders.getState().updateOrderStatus(selectedOrder.id, newStatus);
+                    setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+                    refetch();
                     toast.success("Status atualizado!");
                   }}
                 >
@@ -1205,17 +1207,9 @@ export function PedidosAdmin() {
 
                       {/* Status */}
                       <td className="px-3 py-3 text-center whitespace-nowrap">
-                        {isConcluido ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold gap-1 px-2.5 py-0.5">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                            Concluído (WhatsApp)
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-amber-100 text-amber-800 border-none font-bold gap-1 px-2.5 py-0.5">
-                            <Clock className="w-3 h-3 text-amber-700" />
-                            Pendente (Carrinho)
-                          </Badge>
-                        )}
+                        <Badge className={`${STATUS_COLORS_MAP[item.status] || STATUS_COLORS_MAP["novo"] || "bg-slate-100 text-slate-800"} border-none font-bold gap-1 px-2.5 py-0.5`}>
+                          {STATUS_LABEL_MAP[item.status] || item.status || "Pendente (Carrinho)"}
+                        </Badge>
                       </td>
 
                       {/* Itens */}
