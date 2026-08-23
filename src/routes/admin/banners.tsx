@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info, ArrowLeft, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -179,11 +180,14 @@ function AdminBanners() {
 
   const [managingGlobal, setManagingGlobal] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
-
+  const [confirmCopyOpen, setConfirmCopyOpen] = useState(false);
   
   const handleCopyGlobalBanners = async () => {
     if (!activeStoreId) return;
-    if (!confirm("Isso copiará todos os banners da rede global para a sua loja. Tem certeza?")) return;
+    setConfirmCopyOpen(true);
+  };
+
+  const executeCopyGlobalBanners = async () => {
     setIsCopying(true);
     try {
       const globalBanners = allBanners.filter(b => !b.lojaId);
@@ -1707,7 +1711,18 @@ function StoreColorsConfig() {
             </div>
 
           </div>
+          </div>
         </div>      </div>
+
+      <ConfirmDialog 
+        isOpen={confirmCopyOpen}
+        onClose={() => setConfirmCopyOpen(false)}
+        onConfirm={executeCopyGlobalBanners}
+        title="pages-associadas.vercel.app diz"
+        description="Isso copiará todos os banners da rede global para a sua loja. Tem certeza?"
+        confirmText="OK"
+        cancelText="Cancelar"
+      />
     </div>
   );
 }
