@@ -770,6 +770,9 @@ function CartPage() {
 
       // Adiciona pedido
       await useOrders.getState().addOrder(newOrder);
+      
+      // Salva o pedido localmente para mostrar na página de sucesso imediatamente
+      useCart.getState().setLastOrder(newOrder);
 
       // Monta mensagem amigável para o WhatsApp
       const itemsListText = items.map((i) => {

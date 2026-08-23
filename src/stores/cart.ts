@@ -87,11 +87,13 @@ interface CartState {
   pbm: PBMCredential | null;
   lastUpdatedAt: number | null;
   appliedCoupon: string | null;
+  lastOrder: any | null;
   add: (p: Produto, qty?: number, silent?: boolean) => void;
   remove: (id: string) => void;
   setQty: (id: string, qty: number) => void;
   clear: () => void;
   setDrawer: (open: boolean) => void;
+  setLastOrder: (order: any | null) => void;
   connectPbm: (c: PBMCredential) => void;
   disconnectPbm: () => void;
   count: () => number;
@@ -163,9 +165,11 @@ export const useCart = create<CartState>()(
       pbm: null,
       lastUpdatedAt: null,
       appliedCoupon: null,
+      lastOrder: null,
       selectedPharmacyId: null,
       selectedFreight: "pickup",
       freightOptions: [],
+      setLastOrder: (order) => set({ lastOrder: order }),
       setSelectedPharmacyId: (id) => set({ selectedPharmacyId: id }),
       setSelectedFreight: (freightId) => set({ selectedFreight: freightId }),
       setFreightOptions: (opts) => set({ freightOptions: opts }),
