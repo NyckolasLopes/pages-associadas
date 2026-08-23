@@ -303,13 +303,18 @@ function CartPage() {
     // Update global geoCep so availablePharmacies updates
     await useGeoCep.getState().setCep(cep);
 
+    // ---- Buscar dados do CEP do cliente ----
     let customerUf = "";
+    let customerCity = "";
+    let clientLat: number | null = null;
+    let clientLng: number | null = null;
 
     try {
       const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
       const data = await res.json();
       if (!data.erro) {
-        customerUf = data.uf;
+        customerUf = data.uf || "";
+        customerCity = data.localidade || "";
         setAddressStr(`${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`);
         setDeliveryAddress(data.logradouro || "");
         setDeliveryBairro(data.bairro || "");
@@ -320,7 +325,23 @@ function CartPage() {
     } catch {
       setAddressStr(cep);
     }
-    
+
+    // ---- Buscar coordenadas do cliente ----
+    if (geoLat && geoLng) {
+      clientLat = geoLat;
+      clientLng = geoLng;
+    } else {
+      try {
+        const coords = await getCepCoordinates(clean);
+        if (coords) {
+          clientLat = coords.lat;
+          clientLng = coords.lng;
+        }
+      } catch {
+        // coords indisponíveis — usará fallback por cidade/UF
+      }
+    }
+
     setIsCalcLoading(false);
     if (!selectedPharmacy) return;
 
@@ -336,32 +357,38 @@ function CartPage() {
     }
 
     if (!forcePickup && p.aceitaEntrega) {
+      // ---- Calcular distância entre cliente e loja ----
       let distance: number | null = null;
-      let cLat = geoLat;
-      let cLng = geoLng;
-
-      if (!cLat || !cLng) {
-        const cCoords = await getCepCoordinates(clean);
-        if (cCoords) {
-          cLat = cCoords.lat;
-          cLng = cCoords.lng;
-        }
-      }
 
       let pLat = p.lat;
       let pLng = p.lng;
       if (!pLat || !pLng) {
-         if (p.cep) {
+        if (p.cep) {
+          try {
             const pCoords = await getCepCoordinates(p.cep);
             if (pCoords) {
-               pLat = pCoords.lat;
-               pLng = pCoords.lng;
+              pLat = pCoords.lat;
+              pLng = pCoords.lng;
             }
-         }
+          } catch { /* sem coordenadas */ }
+        }
       }
 
-      if (cLat && cLng && pLat && pLng) {
-        distance = calculateDistance(cLat, cLng, pLat, pLng);
+      if (clientLat && clientLng && pLat && pLng) {
+        distance = calculateDistance(clientLat, clientLng, pLat, pLng);
+      }
+
+      // ---- Regra: não envia para outro estado ----
+      if (customerUf && p.uf && customerUf.toUpperCase() !== p.uf.toUpperCase()) {
+        // Estados diferentes, não oferece entrega
+        setFreight(opts.length > 0 ? opts : []);
+        setFreightOptions(opts.map(o => ({ id: o.id, label: o.label, price: o.price, eta: o.eta })));
+        if (opts.length === 0 && !forcePickup) {
+          setIsCalcLoading(false);
+          return;
+        }
+        setIsCalcLoading(false);
+        return;
       }
 
       const totalPrice = items.reduce((acc, item) => {
@@ -383,14 +410,12 @@ function CartPage() {
           if (deliveryPrice === null) {
             if (distance !== null && distance >= 0) {
                const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
-               const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
+               const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
                if (matchingRaio) deliveryPrice = matchingRaio.preco;
-            } else {
-               // Fallback se API falhar: tenta cobrar o valor base do menor raio se estiver na mesma cidade
-               if (customerCity && p.cidade && customerCity.toLowerCase() === p.cidade.toLowerCase()) {
-                  const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
-                  if (sortedRaios.length > 0) deliveryPrice = sortedRaios[0].preco;
-               }
+            } else if (customerCity && p.cidade && customerCity.toLowerCase() === p.cidade.toLowerCase()) {
+               // Fallback: mesma cidade
+               const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
+               if (sortedRaios.length > 0) deliveryPrice = sortedRaios[0].preco;
             }
           }
 
@@ -420,17 +445,15 @@ function CartPage() {
         // 2. Se não pegou promoção por valor, calcular pelo modeloFrete
         if (!isEligible) {
           if (p.modeloFrete === "fixo") {
-             const maxKm = Number(p.raioEntregaKm) || 30; // 30km fallback if not set
+             const maxKm = Number(p.raioEntregaKm) || 30;
              if (distance !== null && distance >= 0) {
                 if (distance <= maxKm) {
                    deliveryPrice = Number(p.custoEntrega) || 0;
                    isEligible = true;
                 }
              } else {
-                // Fallback de segurança se a API AwesomeAPI cair (distance = null)
-                // Checa se pelo menos está na mesma cidade e no mesmo estado
-                if (customerUf && p.uf && customerUf.toLowerCase() === p.uf.toLowerCase()) {
-                   // A regra do cliente é "não envia para outro estado". Então se o estado bate e não conseguimos calcular o raio, aprovamos por fallback.
+                // Fallback: mesmo estado, não conseguiu calcular distância
+                if (customerUf && p.uf && customerUf.toUpperCase() === p.uf.toUpperCase()) {
                    deliveryPrice = Number(p.custoEntrega) || 0;
                    isEligible = true;
                 }
@@ -438,7 +461,8 @@ function CartPage() {
           } 
           else if (p.modeloFrete === "raio") {
              if (distance !== null && distance >= 0) {
-                if (distance <= (Number(p.raioEntregaKm) || 0)) {
+                const raioBase = Number(p.raioEntregaKm) || 0;
+                if (raioBase > 0 && distance <= raioBase) {
                    deliveryPrice = Number(p.custoEntrega) || 0;
                    isEligible = true;
                 } else if (p.raiosEntrega && p.raiosEntrega.length > 0) {
@@ -450,7 +474,7 @@ function CartPage() {
                    }
                 }
              } else {
-                // Fallback de segurança se AwesomeAPI falhar: checa se pelo menos a Cidade é exatamente a mesma
+                // Fallback: mesma cidade
                 if (customerCity && p.cidade && customerCity.toLowerCase() === p.cidade.toLowerCase()) {
                    deliveryPrice = Number(p.custoEntrega) || 0;
                    isEligible = true;
