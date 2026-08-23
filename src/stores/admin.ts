@@ -99,6 +99,7 @@ export interface CustomDeliveryMethod {
 
 export interface Pharmacy {
   id: string;
+  slug?: string;
   ativo?: boolean;
   categoriaAssociado?: 'Pleno' | 'Parceiro';
   isVirtualStoreGenerated?: boolean;
@@ -913,6 +914,7 @@ export const useAdmin = create<AdminState>()(
             }
             return {
               id: l.id,
+              slug: l.slug || parsedThemeColors?.slug,
               ativo: l.ativa ?? true,
               cnpj: l.cnpj,
               razaoSocial: l.razao_social,
@@ -1085,6 +1087,7 @@ export const useAdmin = create<AdminState>()(
         const currentPharmacy = s.pharmacies.find(x => x.id === id);
         const theme_colors_payload = {
           ...(currentPharmacy?.themeColors || {}),
+          slug: p.slug,
           complemento: p.complemento,
           sistemaUtilizado: p.sistemaUtilizado,
           offersServices: p.offersServices,
