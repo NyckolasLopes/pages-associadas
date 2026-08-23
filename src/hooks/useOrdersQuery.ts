@@ -94,47 +94,47 @@ export function useOrdersQuery({
 
       if (error) throw error;
 
-      const mappedOrders: Pedido[] = (data || []).map((d: any) => ({
-        id: d.numero ? `FA-${d.numero}` : d.id,
-        lojaId: d.loja_id,
-        data: d.created_at,
-        status: d.status,
-        modalidade: d.metodo_entrega,
-        cupomAplicado: d.cupom_codigo,
-        cliente: {
-          nome: d.nome_cliente || 'Cliente',
-          email: d.email_cliente || '',
-          telefone: d.telefone_cliente || '',
-          cpf: d.cpf_cliente || '',
-          endereco: d.endereco_entrega,
-        },
-        pagamento: {
-          metodo: d.metodo_pagamento,
-        },
-        envio: {
-          metodo: d.metodo_entrega,
-          rastreio: d.rastreio || undefined,
-        },
-        itens: d.pedido_itens?.map((i: any) => ({
-          nome: i.nome,
-          sku: i.produto_id,
-          ean: i.ean,
-          qtd: i.qty,
-          quantidade: i.qty,
-          valorUnitario: i.preco_unit,
-          preco: i.preco_unit * i.qty,
-          foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
-        })) || [],
-        produtos: d.pedido_itens?.map((i: any) => ({
-          nome: i.nome,
-          sku: i.produto_id,
-          ean: i.ean,
-          qtd: i.qty,
-          quantidade: i.qty,
-          valorUnitario: i.preco_unit,
-          preco: i.preco_unit * i.qty,
-          foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
-        })) || [],
+      const mappedOrders: Pedido[] = (data || []).map((d: any) => {
+        const parsedItens = (d.pedido_itens && d.pedido_itens.length > 0) 
+          ? d.pedido_itens.map((i: any) => ({
+              nome: i.nome,
+              sku: i.produto_id,
+              ean: i.ean,
+              qtd: i.qty,
+              quantidade: i.qty,
+              valorUnitario: i.preco_unit,
+              preco: i.preco_unit * i.qty,
+              foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
+            }))
+          : Array.isArray(d.itens) && d.itens.length > 0 
+            ? d.itens 
+            : Array.isArray(d.produtos) && d.produtos.length > 0 
+              ? d.produtos 
+              : [];
+
+        return {
+          id: d.numero ? `FA-${d.numero}` : d.id,
+          lojaId: d.loja_id,
+          data: d.created_at,
+          status: d.status,
+          modalidade: d.metodo_entrega,
+          cupomAplicado: d.cupom_codigo,
+          cliente: {
+            nome: d.nome_cliente || 'Cliente',
+            email: d.email_cliente || '',
+            telefone: d.telefone_cliente || '',
+            cpf: d.cpf_cliente || '',
+            endereco: d.endereco_entrega,
+          },
+          pagamento: {
+            metodo: d.metodo_pagamento,
+          },
+          envio: {
+            metodo: d.metodo_entrega,
+            rastreio: d.rastreio || undefined,
+          },
+          itens: parsedItens,
+          produtos: parsedItens,
         valores: {
           subtotal: d.subtotal,
           produtos: d.subtotal,
@@ -145,7 +145,8 @@ export function useOrdersQuery({
         historico: [],
         anotacoes: d.observacoes,
         rawId: d.id,
-      }));
+      };
+    });
 
       return { data: mappedOrders, count: count || 0 };
     },

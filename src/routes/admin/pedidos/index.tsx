@@ -766,15 +766,17 @@ export function PedidosAdmin() {
                     })}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm font-medium text-slate-600">
-                  <span>Frete</span>
-                  <span className="font-bold">
-                    {(selectedOrder.valores?.frete || 0).toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    })}
-                  </span>
-                </div>
+                {!(isPickup && (selectedOrder.valores?.frete || 0) === 0) && (
+                  <div className="flex justify-between text-sm font-medium text-slate-600">
+                    <span>Frete</span>
+                    <span className="font-bold">
+                      {(selectedOrder.valores?.frete || 0).toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                    </span>
+                  </div>
+                )}
                 {selectedOrder.pagamento?.metodo && (
                   <div className="flex justify-between text-sm font-medium text-slate-600 border-t border-emerald-200/50 pt-1.5 mt-1.5">
                     <span>Forma de Pagamento selecionada</span>
