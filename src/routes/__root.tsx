@@ -28,7 +28,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/storefront/InstallPrompt";
 import { FloatingElements } from "@/components/storefront/BackToTop";
 import { PriceDropTracker } from "@/components/storefront/PriceDropTracker";
-import { VisitorTracker } from "@/components/VisitorTracker";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import mascot404 from "@/assets/404-mascot.png";
 
 export function NotFoundComponent() {
@@ -388,8 +388,7 @@ function RootComponent() {
       {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}
       {customHtml && <div dangerouslySetInnerHTML={{ __html: customHtml }} />}
       <Outlet />
-
-      <VisitorTracker />
+      <ScrollToTop />
       <PriceDropTracker />
       {!isAdmin && <FloatingElements />}
       {!isAdmin && <InstallPrompt />}
