@@ -76,8 +76,7 @@ export function useOrdersQuery({
         if (!isNaN(Number(search))) {
            query = query.eq('numero', Number(search));
         } else {
-           // O Supabase suporta ->> para JSON em filtros ilike
-           query = query.ilike('dados_cliente->>nome', `%${search}%`);
+           query = query.ilike('nome_cliente', `%${search}%`);
         }
       }
 
