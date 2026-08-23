@@ -396,26 +396,55 @@ function CartPage() {
           }
         });
       } else {
-        let deliveryPrice = null;
+        let deliveryPrice: number | null = null;
+        let isEligible = false;
 
+        // 1. Faixas de valor (Desconto/Frete Grátis por valor do pedido)
         if (p.faixasValorPedido && p.faixasValorPedido.length > 0) {
           const matchingFaixa = [...p.faixasValorPedido].sort((a,b) => b.valorMin - a.valorMin).find(f => totalPrice >= f.valorMin);
-          if (matchingFaixa) deliveryPrice = matchingFaixa.taxa;
-        }
-
-        if (deliveryPrice === null) {
-          if (distance !== null && distance >= 0 && distance <= 20) {
-            if (p.raiosEntrega && p.raiosEntrega.length > 0) {
-              const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
-              const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
-              if (matchingRaio) {
-                deliveryPrice = matchingRaio.preco;
-              }
-            }
+          if (matchingFaixa) {
+            deliveryPrice = matchingFaixa.taxa;
+            isEligible = true;
           }
         }
 
-        if (deliveryPrice !== null) {
+        // 2. Se não pegou promoção por valor, calcular pelo modeloFrete
+        if (!isEligible) {
+          if (p.modeloFrete === "fixo") {
+             deliveryPrice = Number(p.custoEntrega) || 0;
+             isEligible = true;
+          } 
+          else if (p.modeloFrete === "raio") {
+             if (distance !== null && distance >= 0 && distance <= (Number(p.raioEntregaKm) || 0)) {
+                deliveryPrice = Number(p.custoEntrega) || 0;
+                isEligible = true;
+             } else if (p.raiosEntrega && p.raiosEntrega.length > 0 && distance !== null && distance >= 0) {
+                // Fallback para múltiplos raios legados se configurado
+                const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
+                const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
+                if (matchingRaio) {
+                  deliveryPrice = matchingRaio.preco;
+                  isEligible = true;
+                }
+             }
+          } 
+          else if (p.modeloFrete === "cep") {
+             if (p.faixasCep && p.faixasCep.length > 0) {
+                const cleanCepInt = parseInt(clean, 10);
+                const matchingFaixa = p.faixasCep.find(f => {
+                   const start = parseInt(f.cepInicio.replace(/\D/g, ""), 10);
+                   const end = parseInt(f.cepFim.replace(/\D/g, ""), 10);
+                   return cleanCepInt >= start && cleanCepInt <= end;
+                });
+                if (matchingFaixa) {
+                   deliveryPrice = Number(matchingFaixa.taxa) || 0;
+                   isEligible = true;
+                }
+             }
+          }
+        }
+
+        if (isEligible && deliveryPrice !== null) {
           opts.push(
             { id: "standard", label: "Entrega Padrão", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: Bike }
           );
@@ -426,6 +455,9 @@ function CartPage() {
         }
         if (p.aceita99 && p.custo99) {
           opts.push({ id: "99", label: "99 Entregas", price: Number(p.custo99), eta: "Em até 1 hora", icon: Truck });
+        }
+        if (p.aceitaMotoboy && p.custoMotoboy) {
+          opts.push({ id: "motoboy", label: "Motoboy Expresso", price: Number(p.custoMotoboy), eta: "Em até 2 horas", icon: Bike });
         }
       }
     }
