@@ -459,7 +459,7 @@ function CartPage() {
                 }
              }
           } 
-          else if (p.modeloFrete === "raio") {
+          else if (p.modeloFrete === "raio" || (!p.modeloFrete && p.raiosEntrega && p.raiosEntrega.length > 0)) {
              if (distance !== null && distance >= 0) {
                 const raioBase = Number(p.raioEntregaKm) || 0;
                 if (raioBase > 0 && distance <= raioBase) {
