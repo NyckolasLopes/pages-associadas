@@ -47,11 +47,13 @@ export function useCartSync() {
     syncTimeout.current = setTimeout(async () => {
       try {
         if (items.length === 0) {
-          // Se o carrinho foi esvaziado intencionalmente, exclui o carrinho abandonado
+          // Se o carrinho foi esvaziado (compra concluída ou esvaziado manualmente),
+          // marca como recuperado se existir um abandonado.
           await supabase
             .from('carrinhos_abandonados' as any)
-            .delete()
-            .eq('user_id', user.id);
+            .update({ status: 'recuperado', updated_at: new Date().toISOString() })
+            .eq('user_id', user.id)
+            .eq('status', 'abandonado');
           return;
         }
 
@@ -68,11 +70,17 @@ export function useCartSync() {
         };
 
         // Verifica se já existe um carrinho para este cliente
-        const { data: existingCart } = await supabase
+        const { data: existingCart, error: fetchErr } = await supabase
           .from('carrinhos_abandonados' as any)
           .select('id')
           .eq('user_id', user.id)
+          .eq('status', 'abandonado')
           .maybeSingle();
+
+        if (fetchErr) {
+          console.error("[CartSync] Erro ao buscar carrinho existente:", fetchErr.message);
+          return;
+        }
 
         if (existingCart) {
           // Atualiza carrinho existente
@@ -80,13 +88,21 @@ export function useCartSync() {
             .from('carrinhos_abandonados' as any)
             .update(cartData)
             .eq('id', existingCart.id);
-          if (updateErr) console.error("[CartSync] Erro ao atualizar:", updateErr.message, updateErr.details);
+          if (updateErr) {
+            console.error("[CartSync] Erro ao atualizar:", updateErr.message, updateErr.details);
+          } else {
+            console.log("[CartSync] Carrinho abandonado atualizado com sucesso!");
+          }
         } else {
           // Insere novo carrinho
           const { error: insertErr } = await supabase
             .from('carrinhos_abandonados' as any)
             .insert(cartData);
-          if (insertErr) console.error("[CartSync] Erro ao inserir:", insertErr.message, insertErr.details);
+          if (insertErr) {
+            console.error("[CartSync] Erro ao inserir:", insertErr.message, insertErr.details);
+          } else {
+            console.log("[CartSync] Novo carrinho abandonado inserido com sucesso!");
+          }
         }
       } catch (err) {
         console.error("Failed to sync cart:", err);

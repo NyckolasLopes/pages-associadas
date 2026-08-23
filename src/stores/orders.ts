@@ -265,14 +265,30 @@ export const useOrders = create<OrdersState>((set, get) => ({
     if (!orderError && insertedOrder) {
       const itens = order.produtos || order.itens || [];
       if (itens.length > 0) {
-        const orderItemsRows = itens.map(i => ({
-            pedido_id: insertedOrder.id,
-            produto_id: i.id || i.sku || null,
-            nome: i.nome,
-            qty: i.qtd || i.quantidade || 1,
-            preco_unit: i.valorUnitario || i.preco || 0
-          }));
-        await supabase.from('pedido_itens').insert(orderItemsRows as any);
+        // Verifica quais produtos existem no banco para evitar erro de Foreign Key
+        const productIds = itens.map(i => i.id || i.sku).filter(Boolean);
+        const { data: existingProducts } = await supabase
+          .from('produtos')
+          .select('id')
+          .in('id', productIds);
+          
+        const existingProductIds = new Set(existingProducts?.map(p => p.id) || []);
+
+        const orderItemsRows = itens.map(i => {
+            const potentialId = i.id || i.sku;
+            return {
+              pedido_id: insertedOrder.id,
+              produto_id: existingProductIds.has(potentialId) ? potentialId : null,
+              nome: i.nome,
+              qty: i.qtd || i.quantidade || 1,
+              preco_unit: i.valorUnitario || i.preco || 0
+            };
+        });
+
+        const { error: itemsError } = await supabase.from('pedido_itens').insert(orderItemsRows as any);
+        if (itemsError) {
+          console.error("Error inserting order items:", itemsError);
+        }
       }
     }
 
