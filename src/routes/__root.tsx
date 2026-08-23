@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { useCart, useGeoCep } from "../stores/cart";
 import { useAuth } from "@/stores/auth";
+import { useCartSync } from "@/hooks/useCartSync";
 import { useAdminProducts } from "@/stores/products";
 import { useAdmin } from "../stores/admin";
 import { useLive } from "../stores/live";
@@ -169,6 +170,9 @@ function RootComponent() {
   const isAdmin = location.pathname.startsWith("/admin");
   const redirects = useConfig((s) => s.redirects);
   const scripts = useConfig((s) => s.scripts);
+
+  // Sincroniza carrinhos abandonados
+  useCartSync();
 
   useEffect(() => {
     // Check for 301 redirects
