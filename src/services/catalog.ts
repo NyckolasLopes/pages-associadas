@@ -10,22 +10,41 @@ import { useAdminProducts, mapRowToProduto } from "@/stores/products";
 import { supabase } from "@/integrations/supabase/client";
 
 async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | null): Promise<Produto[]> {
-  const { data } = await queryBuilder;
-  if (!data || data.length === 0) return [];
+  const timeoutMs = 10000;
+  
+  try {
+    const response: any = await Promise.race([
+      queryBuilder,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Supabase Query Timeout")), timeoutMs))
+    ]);
+    
+    if (response?.error) {
+      console.warn("Supabase fetch error:", response.error);
+      return [];
+    }
+    
+    const data = response?.data;
+    if (!data || data.length === 0) return [];
 
-  const ids = data.map((p: any) => p.id);
-  const { data: precos } = await supabase.from('produto_precos_loja').select('*').in('produto_id', ids);
+    const ids = data.map((p: any) => p.id);
+    
+    const precosResponse: any = await Promise.race([
+      supabase.from('produto_precos_loja').select('*').in('produto_id', ids),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Supabase Precos Query Timeout")), timeoutMs))
+    ]);
 
-  const state = useAdminProducts.getState();
-  const overrides = state.storeProductOverrides?.[lojaId || ""] || {};
+    const precos = precosResponse?.data;
 
-  const precosMap = new Map();
-  if (precos) {
-    precos.forEach(pr => {
-      if (!precosMap.has(pr.produto_id)) precosMap.set(pr.produto_id, []);
-      precosMap.get(pr.produto_id).push(pr);
-    });
-  }
+    const state = useAdminProducts.getState();
+    const overrides = state.storeProductOverrides?.[lojaId || ""] || {};
+
+    const precosMap = new Map();
+    if (precos) {
+      precos.forEach((pr: any) => {
+        if (!precosMap.has(pr.produto_id)) precosMap.set(pr.produto_id, []);
+        precosMap.get(pr.produto_id).push(pr);
+      });
+    }
 
   const finalProducts = data.map((rawP: any) => {
     // 1. Mapeia a linha crua do banco para o tipo Produto (isso conserta os preços zerados, pois p.preco_por -> p.precoPor)
@@ -71,7 +90,11 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
     return enforceHealthServicesCategory(enhanceProduct(storeP as Produto));
   }).filter((p: any) => p && p.ativo !== false);
 
-  return finalProducts;
+    return finalProducts;
+  } catch (error) {
+    console.warn("Unhandled error in fetchFromSupabaseWithPrices:", error);
+    return [];
+  }
 }
 
 export const getCategorias = () => {

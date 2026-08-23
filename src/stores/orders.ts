@@ -142,6 +142,10 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     const { data, error } = await query;
 
+    if (error) {
+      console.error("Supabase Error fetching orders:", error);
+    }
+
     if (!error && data) {
       const mappedOrders: Pedido[] = data.map((d: any) => {
         const extractJSON = (field: any) => {
@@ -173,6 +177,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
         const parsedItens = (d.pedido_itens && d.pedido_itens.length > 0) 
           ? d.pedido_itens.map((i: any) => ({
+              id: i.produto_id || i.id,
               nome: i.nome,
               sku: i.produto_id,
               ean: i.ean,
