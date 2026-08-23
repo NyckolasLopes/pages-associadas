@@ -107,6 +107,21 @@ export function useOrdersQuery({
                         extractJSON(d.produtos).length > 0 ? extractJSON(d.produtos) : 
                         extractJSON(d.items);
 
+        const mappedRawItens = rawItens.map((i: any) => {
+          const sku = i.sku || i.produto_id || i.id;
+          return {
+            ...i,
+            nome: i.nome || i.name || i.title || 'Produto sem nome',
+            sku: sku,
+            ean: i.ean || i.barcode,
+            qtd: i.qtd || i.quantidade || i.qty || 1,
+            quantidade: i.qtd || i.quantidade || i.qty || 1,
+            valorUnitario: i.valorUnitario || i.preco_unit || i.price || i.preco || 0,
+            preco: i.preco || (i.valorUnitario || i.preco_unit || i.price || 0) * (i.qtd || i.quantidade || i.qty || 1),
+            foto: i.foto || i.image || i.imageUrl || (sku ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${sku.substring(0, 2)}/${sku.substring(2, 4)}/${sku}_m1_1.jpg` : undefined),
+          };
+        });
+
         const parsedItens = (d.pedido_itens && d.pedido_itens.length > 0) 
           ? d.pedido_itens.map((i: any) => ({
               nome: i.nome,
@@ -118,7 +133,7 @@ export function useOrdersQuery({
               preco: i.preco_unit * i.qty,
               foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
             }))
-          : rawItens;
+          : mappedRawItens;
 
         return {
           id: d.numero ? `FA-${d.numero}` : d.id,
