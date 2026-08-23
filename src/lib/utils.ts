@@ -189,9 +189,7 @@ export async function getCepCoordinates(cep: string): Promise<{ lat: number; lng
     }
   } catch (_) { /* ignore */ }
   
-    // Fallback to default Porto Alegre coordinates to ensure distance is always available
-    const defaultCoords = { lat: -30.0346, lng: -51.2177 };
-    return defaultCoords;
+    return null;
   })();
 
   _pendingPromises[clean] = promise;
