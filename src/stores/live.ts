@@ -51,6 +51,8 @@ interface LiveStore {
   stats: Record<string, number>;
   lojasAcessos: Record<string, LojaAcessoStat>;
   channel: RealtimeChannel | null;
+  myCidade: CIDADES_TYPE | null;
+  mySessionId: string | null;
   initPresence: (sessionId: string, lojaId?: string) => void;
   recordLojaAccess: (lojaId: string) => void;
   fetchRealAcessos: () => Promise<void>;
@@ -67,6 +69,8 @@ export const useLive = create<LiveStore>((set, get) => ({
   stats: {},
   lojasAcessos: {},
   channel: null,
+  myCidade: null,
+  mySessionId: null,
 
   fetchRealAcessos: async () => {
     try {
@@ -108,6 +112,20 @@ export const useLive = create<LiveStore>((set, get) => ({
   initPresence: (sessionId: string, lojaId?: string) => {
     let channel = get().channel;
     
+    if (channel) {
+      // Se já temos um canal e a cidade, apenas atualizamos o status de presence
+      const { myCidade } = get();
+      if (myCidade) {
+        channel.track({
+          sessionId,
+          lojaId,
+          cidade: myCidade,
+          onlineAt: new Date().toISOString()
+        }).catch(console.error);
+      }
+      return;
+    }
+
     if (!channel) {
       channel = supabase.channel('online-visitors');
       
@@ -204,6 +222,9 @@ export const useLive = create<LiveStore>((set, get) => ({
               console.error("GeoIP Fetch Error:", e);
             }
           }
+
+          // Salvar cidade para possibilitar atualizações futuras de track (quando a lojaId mudar)
+          set({ myCidade: realCity, mySessionId: sessionId });
 
           await channel!.track({
             sessionId,
