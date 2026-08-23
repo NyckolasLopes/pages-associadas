@@ -255,6 +255,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
       telefone_cliente: order.cliente?.telefone || '',
       email_cliente: order.cliente?.email || '',
       cpf_cliente: order.cliente?.cpf || '',
+      itens: order.produtos || order.itens || [],
     }).select('id').single();
 
     if (orderError) {

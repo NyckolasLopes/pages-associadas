@@ -137,9 +137,41 @@ function MinhaLogistica() {
           </div>
 
           {formData.aceitaEntrega && (
-            <div className="space-y-4 pt-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-bold text-lg text-slate-800">Meios de Entrega Cadastrados</h3>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                <div className="space-y-2">
+                  <Label className="font-bold">Horário de Início (Entrega Padrão)</Label>
+                  <Input
+                    type="time"
+                    className="bg-white"
+                    value={formData.horarioInicioEntrega || ""}
+                    onChange={(e) => setFormData({ ...formData, horarioInicioEntrega: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold">Horário de Fim (Entrega Padrão)</Label>
+                  <Input
+                    type="time"
+                    className="bg-white"
+                    value={formData.horarioFimEntrega || ""}
+                    onChange={(e) => setFormData({ ...formData, horarioFimEntrega: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="font-bold">Tempo Estimado de Entrega (Padrão)</Label>
+                  <Input
+                    className="bg-white"
+                    placeholder="Ex: Até 60 min, Mesma hora, Em até 2 horas..."
+                    value={formData.tempoEntrega || ""}
+                    onChange={(e) => setFormData({ ...formData, tempoEntrega: e.target.value })}
+                  />
+                  <p className="text-xs text-slate-500">Isso será informado ao cliente ao visualizar a entrega padrão na página do produto e checkout.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-6 mt-6 border-t border-slate-200">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-lg text-slate-800">Meios de Entrega Personalizados (Opcional)</h3>
                 <Button onClick={() => {
                   setEditingMethod({
                     id: Date.now().toString(),
@@ -187,6 +219,7 @@ function MinhaLogistica() {
                 </div>
               )}
             </div>
+            </>
           )}
 
             <div className="space-y-4 pt-4 mt-6 border-t border-slate-200">
