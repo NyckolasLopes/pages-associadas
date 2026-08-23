@@ -153,11 +153,12 @@ function PerfilPage() {
       const userId = user?.id;
       
       if (userId) {
-        const { error: profileError } = await supabase.from("profiles").update({ 
+        const { error: profileError } = await supabase.from("profiles").upsert({ 
+          id: userId,
           nome: editName, 
           telefone: editPhone, 
           cpf: editCpf 
-        }).eq("id", userId);
+        });
 
         if (profileError) throw profileError;
 
