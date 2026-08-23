@@ -928,11 +928,14 @@ function AdminProdutos() {
                         <td className="px-4 py-3 text-center">
                           <Switch
                             checked={p.ativo !== false}
-                            onCheckedChange={(checked) => {
+                            onCheckedChange={async (checked) => {
+                              // Optimistic UI Update
+                              setServerProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, ativo: checked } : prod));
+                              
                               if (isGlobalAdmin && !currentLojaId) {
-                                addOrUpdateProduct({ ...p, ativo: checked }, currentLojaId || undefined);
+                                await addOrUpdateProduct({ ...p, ativo: checked }, currentLojaId || undefined);
                               } else {
-                                updateStoreProductStatus(currentLojaId!, p.id, checked);
+                                await updateStoreProductStatus(currentLojaId!, p.id, checked);
                               }
                             }}
                             className="data-[state=checked]:bg-emerald-500 scale-75"
@@ -943,7 +946,10 @@ function AdminProdutos() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => addOrUpdateProduct({ ...p, destaque: !p.destaque }, currentLojaId || undefined)}
+                              onClick={async () => {
+                                setServerProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, destaque: !p.destaque } : prod));
+                                await addOrUpdateProduct({ ...p, destaque: !p.destaque }, currentLojaId || undefined);
+                              }}
                               className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
                               title="Destacar produto na rede"
                             >
@@ -953,7 +959,10 @@ function AdminProdutos() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => updateStoreProductDestaque(currentLojaId!, p.id, !p.destaque)}
+                              onClick={async () => {
+                                setServerProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, destaque: !p.destaque } : prod));
+                                await updateStoreProductDestaque(currentLojaId!, p.id, !p.destaque);
+                              }}
                               className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
                               title="Destacar produto na sua loja"
                             >
@@ -987,6 +996,7 @@ function AdminProdutos() {
                                   size="icon"
                                   className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
                                   onClick={() => {
+                                    setServerProducts(prev => prev.filter(prod => prod.id !== p.id));
                                     removeProduct(p.id, currentLojaId || undefined);
                                     toast.success(currentLojaId ? "Produto removido da sua loja!" : "Produto removido da rede!");
                                   }}
