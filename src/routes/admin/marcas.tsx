@@ -17,12 +17,17 @@ import { useMarcasStore } from "@/stores/marcas";
 import { useState, useMemo, useRef } from "react";
 import type { Marca } from "@/types";
 
+import { useAdmin } from "@/stores/admin";
+
 export const Route = createFileRoute("/admin/marcas")({
   component: AdminMarcas,
 });
 
 function AdminMarcas() {
-  const { marcas, removeMarca, updateMarca } = useMarcasStore();
+  const { removeMarca, updateMarca, getStoreEffectiveMarcas } = useMarcasStore();
+  const { activeStoreId } = useAdmin();
+  const marcas = getStoreEffectiveMarcas(activeStoreId || undefined);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [editingMarca, setEditingMarca] = useState<Marca | null>(null);
 
@@ -96,20 +101,29 @@ function AdminMarcas() {
     setEditingMarca(m);
   };
 
-  const handleSave = () => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
     if (!editingMarca || !nome.trim()) return;
-    updateMarca({
-      ...editingMarca,
-      nome,
-      descricao,
-      logo,
-      seoUrl: seoUrl || nome.toLowerCase().replace(/\s+/g, '-'),
-      slug: seoUrl || nome.toLowerCase().replace(/\s+/g, '-'),
-      ativo,
-      destaque,
-      marcaPropria
-    });
-    setEditingMarca(null);
+    setIsSaving(true);
+    try {
+      await updateMarca({
+        ...editingMarca,
+        nome,
+        descricao,
+        logo,
+        seoUrl: seoUrl || nome.toLowerCase().replace(/\s+/g, '-'),
+        slug: seoUrl || nome.toLowerCase().replace(/\s+/g, '-'),
+        ativo,
+        destaque,
+        marcaPropria
+      });
+      setEditingMarca(null);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
