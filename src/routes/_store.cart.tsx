@@ -411,8 +411,11 @@ function CartPage() {
         // 2. Se não pegou promoção por valor, calcular pelo modeloFrete
         if (!isEligible) {
           if (p.modeloFrete === "fixo") {
-             deliveryPrice = Number(p.custoEntrega) || 0;
-             isEligible = true;
+             const maxKm = Number(p.raioEntregaKm) || 30; // 30km fallback if not set
+             if (distance !== null && distance >= 0 && distance <= maxKm) {
+                deliveryPrice = Number(p.custoEntrega) || 0;
+                isEligible = true;
+             }
           } 
           else if (p.modeloFrete === "raio") {
              if (distance !== null && distance >= 0 && distance <= (Number(p.raioEntregaKm) || 0)) {
