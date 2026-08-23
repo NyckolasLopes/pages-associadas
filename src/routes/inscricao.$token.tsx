@@ -2,6 +2,7 @@ import { LojaFormFields } from "@/components/admin/LojaFormFields";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAdmin, Pharmacy } from "@/stores/admin";
 import { useRegionsStore } from "@/stores/regions";
+import { useRegistrationTokens } from "@/stores/registrationTokens";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,7 +139,8 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
 function InscricaoLojaPublic() {
   const { token } = Route.useParams();
   const navigate = useNavigate();
-  const { registrationTokens, addPharmacy, markRegistrationTokenUsed } = useAdmin();
+  const { addPharmacy } = useAdmin();
+  const { registrationTokens, markRegistrationTokenUsed } = useRegistrationTokens();
   const { regions } = useRegionsStore();
   
   // Aguardar reidratação do store (skipHydration: true no admin store)
@@ -152,7 +154,7 @@ function InscricaoLojaPublic() {
   // Esperar a reidratação do store antes de validar o token
   useEffect(() => {
     const checkHydration = () => {
-      const hasHydrated = (useAdmin as any).persist?.hasHydrated?.();
+      const hasHydrated = (useRegistrationTokens as any).persist?.hasHydrated?.();
       if (hasHydrated) {
         setStoreReady(true);
       } else {
@@ -164,10 +166,10 @@ function InscricaoLojaPublic() {
     
     // Se o store já estiver reidratado (improvável mas possível), marca imediatamente
     // Caso contrário, inscreve no evento de reidratação
-    if ((useAdmin as any).persist?.hasHydrated?.()) {
+    if ((useRegistrationTokens as any).persist?.hasHydrated?.()) {
       setStoreReady(true);
     } else {
-      const unsubFinishHydration = (useAdmin as any).persist?.onFinishHydration?.(() => {
+      const unsubFinishHydration = (useRegistrationTokens as any).persist?.onFinishHydration?.(() => {
         setStoreReady(true);
       });
       // fallback: timeout de 3s para não travar para sempre

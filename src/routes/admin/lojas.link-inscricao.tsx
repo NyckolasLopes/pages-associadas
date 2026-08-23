@@ -9,12 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { useRegistrationTokens } from "@/stores/registrationTokens";
+
 export const Route = createFileRoute("/admin/lojas/link-inscricao")({
   component: LinkInscricaoAssociado,
 });
 
 function LinkInscricaoAssociado() {
-  const { currentUser, registrationTokens, generateRegistrationToken, deleteRegistrationToken, clearRegistrationTokens } = useAdmin();
+  const { currentUser } = useAdmin();
+  const { registrationTokens, generateRegistrationToken, deleteRegistrationToken, clearRegistrationTokens } = useRegistrationTokens();
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
   const [deleteTokenItem, setDeleteTokenItem] = useState<string | null>(null);
