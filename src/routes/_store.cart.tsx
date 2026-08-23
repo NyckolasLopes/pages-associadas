@@ -303,10 +303,13 @@ function CartPage() {
     // Update global geoCep so availablePharmacies updates
     await useGeoCep.getState().setCep(cep);
 
+    let customerUf = "";
+
     try {
       const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
       const data = await res.json();
       if (!data.erro) {
+        customerUf = data.uf;
         setAddressStr(`${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`);
         setDeliveryAddress(data.logradouro || "");
         setDeliveryBairro(data.bairro || "");
@@ -382,6 +385,12 @@ function CartPage() {
                const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
                const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
                if (matchingRaio) deliveryPrice = matchingRaio.preco;
+            } else {
+               // Fallback se API falhar: tenta cobrar o valor base do menor raio se estiver na mesma cidade
+               if (customerCity && p.cidade && customerCity.toLowerCase() === p.cidade.toLowerCase()) {
+                  const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
+                  if (sortedRaios.length > 0) deliveryPrice = sortedRaios[0].preco;
+               }
             }
           }
 
@@ -412,22 +421,39 @@ function CartPage() {
         if (!isEligible) {
           if (p.modeloFrete === "fixo") {
              const maxKm = Number(p.raioEntregaKm) || 30; // 30km fallback if not set
-             if (distance !== null && distance >= 0 && distance <= maxKm) {
-                deliveryPrice = Number(p.custoEntrega) || 0;
-                isEligible = true;
+             if (distance !== null && distance >= 0) {
+                if (distance <= maxKm) {
+                   deliveryPrice = Number(p.custoEntrega) || 0;
+                   isEligible = true;
+                }
+             } else {
+                // Fallback de segurança se a API AwesomeAPI cair (distance = null)
+                // Checa se pelo menos está na mesma cidade e no mesmo estado
+                if (customerUf && p.uf && customerUf.toLowerCase() === p.uf.toLowerCase()) {
+                   // A regra do cliente é "não envia para outro estado". Então se o estado bate e não conseguimos calcular o raio, aprovamos por fallback.
+                   deliveryPrice = Number(p.custoEntrega) || 0;
+                   isEligible = true;
+                }
              }
           } 
           else if (p.modeloFrete === "raio") {
-             if (distance !== null && distance >= 0 && distance <= (Number(p.raioEntregaKm) || 0)) {
-                deliveryPrice = Number(p.custoEntrega) || 0;
-                isEligible = true;
-             } else if (p.raiosEntrega && p.raiosEntrega.length > 0 && distance !== null && distance >= 0) {
-                // Fallback para múltiplos raios legados se configurado
-                const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
-                const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
-                if (matchingRaio) {
-                  deliveryPrice = matchingRaio.preco;
-                  isEligible = true;
+             if (distance !== null && distance >= 0) {
+                if (distance <= (Number(p.raioEntregaKm) || 0)) {
+                   deliveryPrice = Number(p.custoEntrega) || 0;
+                   isEligible = true;
+                } else if (p.raiosEntrega && p.raiosEntrega.length > 0) {
+                   const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
+                   const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
+                   if (matchingRaio) {
+                     deliveryPrice = matchingRaio.preco;
+                     isEligible = true;
+                   }
+                }
+             } else {
+                // Fallback de segurança se AwesomeAPI falhar: checa se pelo menos a Cidade é exatamente a mesma
+                if (customerCity && p.cidade && customerCity.toLowerCase() === p.cidade.toLowerCase()) {
+                   deliveryPrice = Number(p.custoEntrega) || 0;
+                   isEligible = true;
                 }
              }
           } 
