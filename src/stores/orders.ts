@@ -123,7 +123,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     let query = supabase
       .from('pedidos')
-      .select('*, pedido_itens(*)')
+      .select('*, pedido_itens(*), pedido_historico_status(*)')
       .order('created_at', { ascending: false });
 
     // Restringir a query se não for admin global
@@ -214,7 +214,11 @@ export const useOrders = create<OrdersState>((set, get) => ({
           desconto: d.desconto,
           total: d.total,
         },
-        historico: [],
+        historico: Array.isArray(d.pedido_historico_status)
+          ? d.pedido_historico_status
+              .sort((a: any, b: any) => new Date(a.data).getTime() - new Date(b.data).getTime())
+              .map((h: any) => ({ data: h.data, situacao: h.situacao, autor: h.autor }))
+          : [],
         anotacoes: d.observacoes,
         rawId: d.id,
         };
@@ -273,13 +277,45 @@ export const useOrders = create<OrdersState>((set, get) => ({
   },
 
   updateOrderStatus: async (id, status) => {
-    const query = id.startsWith('FA-') 
-      ? supabase.from('pedidos').update({ status }).eq('numero', id.replace('FA-', ''))
-      : supabase.from('pedidos').update({ status }).eq('id', id);
-    const { error } = await query;
+    // Resolver UUID real do pedido
+    let rawId = id;
+    if (id.startsWith('FA-')) {
+      const { data } = await supabase.from('pedidos').select('id').eq('numero', id.replace('FA-', '')).single();
+      if (data) rawId = data.id;
+    } else {
+      // Pode ser o numero formatado FA-XXXX ou o UUID direto
+      const pedido = get().orders.find(o => o.id === id);
+      if ((pedido as any)?.rawId) rawId = (pedido as any).rawId;
+    }
+
+    const { error } = await supabase.from('pedidos').update({ status }).eq('id', rawId);
     if (!error) {
+      // Gravar histórico de status
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: profileData } = await supabase
+        .from('profiles' as any)
+        .select('nome')
+        .eq('id', userData?.user?.id || '')
+        .single();
+      const autorNome = (profileData as any)?.nome || userData?.user?.email || 'Administrador';
+
+      await supabase.from('pedido_historico_status' as any).insert({
+        pedido_id: rawId,
+        situacao: status,
+        autor: autorNome,
+        data: new Date().toISOString()
+      });
+
+      // Atualizar state local
       set((state) => ({
-        orders: state.orders.map(o => o.id === id ? { ...o, status } : o),
+        orders: state.orders.map(o => o.id === id ? {
+          ...o,
+          status,
+          historico: [
+            ...(o.historico || []),
+            { data: new Date().toISOString(), situacao: status, autor: autorNome }
+          ]
+        } : o),
       }));
     }
   },
