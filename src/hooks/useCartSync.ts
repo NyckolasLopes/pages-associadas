@@ -58,9 +58,9 @@ export function useCartSync() {
         const cartData = {
           user_id: user.id,
           loja_id: selectedPharmacyId || null,
-          nome_cliente: user.nome || user.name || 'Cliente',
+          nome_cliente: (user as any).nome || (user as any).name || user.email || 'Cliente',
           email_cliente: user.email || '',
-          telefone_cliente: user.celular || '',
+          telefone_cliente: (user as any).celular || (user as any).telefone || '',
           items: items,
           total: total,
           status: 'abandonado',
@@ -76,15 +76,17 @@ export function useCartSync() {
 
         if (existingCart) {
           // Atualiza carrinho existente
-          await supabase
+          const { error: updateErr } = await supabase
             .from('carrinhos_abandonados' as any)
             .update(cartData)
             .eq('id', existingCart.id);
+          if (updateErr) console.error("[CartSync] Erro ao atualizar:", updateErr.message, updateErr.details);
         } else {
           // Insere novo carrinho
-          await supabase
+          const { error: insertErr } = await supabase
             .from('carrinhos_abandonados' as any)
             .insert(cartData);
+          if (insertErr) console.error("[CartSync] Erro ao inserir:", insertErr.message, insertErr.details);
         }
       } catch (err) {
         console.error("Failed to sync cart:", err);
