@@ -36,7 +36,7 @@ import { RelatorioTop100Produtos } from "@/components/admin/RelatorioTop100Produ
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area
 } from "recharts";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
