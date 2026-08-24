@@ -1024,48 +1024,25 @@ function PDP() {
                   <div className="overflow-hidden rounded-lg">
                     <table className="w-full text-sm text-left">
                       <tbody>
-                        <tr className="bg-slate-50 border-b">
-                          <td className="py-3 px-4 text-slate-500 w-1/3">Ref.</td>
-                          <td className="py-3 px-4 font-bold text-slate-900">{p.codigoInterno || p.id}</td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="py-3 px-4 text-slate-500">SKU</td>
-                          <td className="py-3 px-4 font-bold text-slate-900">{p.sku || 'Não informado'}</td>
-                        </tr>
-                        <tr className="bg-slate-50 border-b">
-                          <td className="py-3 px-4 text-slate-500">Código de barras</td>
-                          <td className="py-3 px-4 font-bold text-slate-900">{p.ean || p.ean2 || p.ean3 || 'Não informado'}</td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="py-3 px-4 text-slate-500">marca</td>
-                          <td className="py-3 px-4 font-bold text-slate-900">{p.marca || p.marca || 'Não informada'}</td>
-                        </tr>
-                        <tr className="bg-slate-50 border-b">
-                          <td className="py-3 px-4 text-slate-500">Registro Anvisa</td>
-                          <td className="py-3 px-4 font-bold text-slate-900">{p.registroAnvisa || 'Isento/Não informado'}</td>
-                        </tr>
-                        {p.tarja && (
-                          <tr className="border-b">
-                            <td className="py-3 px-4 text-slate-500">Tarja</td>
-                            <td className="py-3 px-4 font-bold text-slate-900">{p.tarja}</td>
+                        {[
+                          { label: "Ref.", value: p.codigoInterno || p.id },
+                          { label: "SKU", value: p.sku || 'Não informado' },
+                          { label: "Código de barras", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
+                          { label: "marca", value: p.marca || 'Não informada' },
+                          { label: "Registro Anvisa", value: p.registroAnvisa || 'Isento/Não informado' },
+                          ...(p.tarja ? [{ label: "Tarja", value: p.tarja }] : []),
+                          ...(isMedication ? [
+                            { label: "Retém receita", value: p.retemReceita ? 'Sim' : 'Não' },
+                            { label: "Tipo de medicamento", value: p.tipoMedicamento ? p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) : 'Referência' }
+                          ] : []),
+                          { label: "É kit", value: String(p.tipoProduto || '').toLowerCase() === 'kit' ? 'Sim' : 'Não' },
+                          ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map(c => ({ label: c.titulo, value: c.descricao })) : [])
+                        ].map((row, idx) => (
+                          <tr key={idx} className={`${idx % 2 === 0 ? 'bg-slate-50 ' : ''}border-b last:border-b-0`}>
+                            <td className="py-3 px-4 text-slate-500 w-1/3">{row.label}</td>
+                            <td className="py-3 px-4 font-bold text-slate-900">{row.value}</td>
                           </tr>
-                        )}
-                        {isMedication && (
-                          <>
-                            <tr className={`${p.tarja ? 'bg-slate-50 ' : ''}border-b`}>
-                              <td className="py-3 px-4 text-slate-500">Retém receita</td>
-                              <td className="py-3 px-4 font-bold text-slate-900">{p.retemReceita ? 'Sim' : 'Não'}</td>
-                            </tr>
-                            <tr className={`${!p.tarja ? 'bg-slate-50 ' : ''}border-b`}>
-                              <td className="py-3 px-4 text-slate-500">Tipo de medicamento</td>
-                              <td className="py-3 px-4 font-bold text-slate-900">{p.tipoMedicamento ? p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) : 'Referência'}</td>
-                            </tr>
-                          </>
-                        )}
-                        <tr className={`${p.tarja ? 'bg-slate-50 ' : ''}`}>
-                          <td className="py-3 px-4 text-slate-500">É kit</td>
-                          <td className="py-3 px-4 font-bold text-slate-900">{String(p.tipoProduto || '').toLowerCase() === 'kit' ? 'Sim' : 'Não'}</td>
-                        </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
