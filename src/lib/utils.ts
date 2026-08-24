@@ -128,14 +128,32 @@ export function searchProductsMatch(product: any, query: string) {
 
 export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Radius of the earth in km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  
+  // Garantir que são números (substituindo vírgula por ponto, caso venham como string)
+  const nLat1 = typeof lat1 === 'string' ? parseFloat(String(lat1).replace(',', '.')) : lat1;
+  const nLon1 = typeof lon1 === 'string' ? parseFloat(String(lon1).replace(',', '.')) : lon1;
+  const nLat2 = typeof lat2 === 'string' ? parseFloat(String(lat2).replace(',', '.')) : lat2;
+  const nLon2 = typeof lon2 === 'string' ? parseFloat(String(lon2).replace(',', '.')) : lon2;
+
+  if (isNaN(nLat1) || isNaN(nLon1) || isNaN(nLat2) || isNaN(nLon2)) return NaN;
+
+  const dLat = (nLat2 - nLat1) * (Math.PI / 180);
+  const dLon = (nLon2 - nLon1) * (Math.PI / 180);
   const a = 
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.cos(nLat1 * (Math.PI / 180)) * Math.cos(nLat2 * (Math.PI / 180)) * 
     Math.sin(dLon / 2) * Math.sin(dLon / 2); 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
   return R * c; // Distance in km
+}
+
+export function normalizeString(str: string | undefined | null): string {
+  if (!str) return "";
+  return String(str)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
 // Cache de coordenadas por CEP para evitar requisições repetidas

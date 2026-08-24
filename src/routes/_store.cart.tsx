@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
 import { sanitizeText, validatePhone, validateCPF, validateEmail, sanitizeCouponCode } from "@/lib/security";
 import type { Produto } from "@/types";
-import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates } from "@/lib/utils";
+import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates, normalizeString } from "@/lib/utils";
 
 function getDynamicETA(inicio: string, fim: string, diasAbertos: number[], tempoMinutos: string, mode: "Entrega" | "Retirada") {
   const fallback = mode === "Entrega" ? (tempoMinutos ? `Em até ${tempoMinutos}` : "Em breve") : (tempoMinutos ? `Retirada em até ${tempoMinutos}` : "Retirada a partir de 30 minutos");
@@ -458,7 +458,7 @@ function CartPage() {
                const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
                const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
                if (matchingRaio) deliveryPrice = matchingRaio.preco;
-            } else if (customerCity && p.cidade && customerCity.toLowerCase() === p.cidade.toLowerCase()) {
+            } else if (customerCity && p.cidade && normalizeString(customerCity) === normalizeString(p.cidade)) {
                // Fallback: mesma cidade
                const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
                if (sortedRaios.length > 0) deliveryPrice = sortedRaios[0].preco;
@@ -521,7 +521,7 @@ function CartPage() {
                 }
              } else {
                 // Fallback: mesma cidade
-                if (customerCity && p.cidade && customerCity.toLowerCase() === p.cidade.toLowerCase()) {
+                if (customerCity && p.cidade && normalizeString(customerCity) === normalizeString(p.cidade)) {
                    deliveryPrice = Number(p.custoEntrega) || 0;
                    isEligible = true;
                 }
