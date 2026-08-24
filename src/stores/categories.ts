@@ -69,8 +69,17 @@ export const useAdminCategories = create<CategoriesState>((set, get) => ({
   },
 
   removeCategory: async (id) => {
-    set((s) => ({ categories: s.categories.filter(x => x.id !== id) }));
+    set((s) => {
+      const childrenIds = s.categories.filter(x => x.parentId === id).map(x => x.id);
+      return { 
+        categories: s.categories.filter(x => x.id !== id && !childrenIds.includes(x.id)) 
+      };
+    });
+    await supabase.from('categorias').delete().eq('parent_id', id);
     const { error } = await supabase.from('categorias').delete().eq('id', id);
+    if (error) {
+      console.error("Error removing category:", error);
+    }
   },
 
   importNetworkCategoriesToStore: (lojaId) => {
