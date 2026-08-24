@@ -59,7 +59,6 @@ function AdminSelos() {
     setCorTexto("#FFFFFF");
     setSelectedProductIds(new Set());
     setSelectedProductsData([]);
-    setSearchResults([]);
     setProductSearch("");
     setIsModalOpen(true);
   };
@@ -86,7 +85,6 @@ function AdminSelos() {
     }
     
     setProductSearch("");
-    setSearchResults([]);
   };
 
   const handleSave = () => {
