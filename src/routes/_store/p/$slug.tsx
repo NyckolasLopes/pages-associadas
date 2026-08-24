@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart, useGeoCep } from "@/stores/cart";
 import { useFavorites } from "@/stores/favorites";
-import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket } from "lucide-react";
+import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info } from "lucide-react";
+import categoriesData from "@/data/categories.json";
 import {
   Tooltip,
   TooltipContent,
@@ -1015,66 +1016,90 @@ function PDP() {
                 maxStock={maxStock}
             />
 
-            {isMedication && (
-              <section>
-                <h2 className="text-xl font-bold mb-4">
-                  Características
-                </h2>
-                <div className="bg-white border rounded-xl p-6 shadow-sm space-y-8">
-                  <div className="overflow-hidden rounded-lg">
-                    <table className="w-full text-sm text-left">
-                      <tbody>
-                        {[
-                          { label: "Ref.", value: p.codigoInterno || p.id },
-                          { label: "SKU", value: p.sku || 'Não informado' },
-                          { label: "Código de barras", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
-                          { label: "marca", value: p.marca || 'Não informada' },
-                          { label: "Registro Anvisa", value: p.registroAnvisa || 'Isento/Não informado' },
-                          ...(p.tarja ? [{ label: "Tarja", value: p.tarja }] : []),
-                          ...(isMedication ? [
-                            { label: "Retém receita", value: p.retemReceita ? 'Sim' : 'Não' },
-                            { label: "Tipo de medicamento", value: p.tipoMedicamento ? p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) : 'Referência' }
-                          ] : []),
-                          { label: "É kit", value: String(p.tipoProduto || '').toLowerCase() === 'kit' ? 'Sim' : 'Não' },
-                          ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map(c => ({ label: c.titulo, value: c.descricao })) : [])
-                        ].map((row, idx) => (
-                          <tr key={idx} className={`${idx % 2 === 0 ? 'bg-slate-50 ' : ''}border-b last:border-b-0`}>
-                            <td className="py-3 px-4 text-slate-500 w-1/3">{row.label}</td>
-                            <td className="py-3 px-4 font-bold text-slate-900">{row.value}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+            {p.alertaRegulatorio && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Info className="h-6 w-6 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[13px] font-bold text-slate-700 uppercase tracking-tight mb-1">O MINISTÉRIO DA SAÚDE INFORMA:</p>
+                    <p className="text-[13px] text-slate-600 leading-relaxed font-medium">O ALEITAMENTO MATERNO EVITA INFECÇÕES E ALERGIAS E É RECOMENDADO ATÉ OS 2 (DOIS) ANOS DE IDADE OU MAIS.</p>
                   </div>
-
-                  {p.principiosAtivosDetalhes && p.principiosAtivosDetalhes.length > 0 && (
-                    <div className="pt-4 border-t">
-                      <h3 className="text-lg font-bold text-slate-900 mb-4">Princípios ativos</h3>
-                      <div className="overflow-hidden rounded-lg">
-                        <table className="w-full text-sm text-left">
-                          <thead>
-                            <tr className="text-slate-500 border-b">
-                              <th className="py-3 px-4 font-medium w-1/3">Nome</th>
-                              <th className="py-3 px-4 font-medium w-1/3">Concentração</th>
-                              <th className="py-3 px-4 font-medium w-1/3">Unidade</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {p.principiosAtivosDetalhes.map((pa: any, i: number) => (
-                              <tr key={i} className={i % 2 === 0 ? "bg-slate-50" : ""}>
-                                <td className="py-3 px-4 font-bold text-slate-900">{pa.nome}</td>
-                                <td className="py-3 px-4 text-slate-700">{pa.concentracao}</td>
-                                <td className="py-3 px-4 text-slate-700">{pa.unidadeMedida}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </section>
+              </div>
             )}
+
+            <section>
+              <h2 className="text-xl font-bold mb-4">
+                Características
+              </h2>
+              <div className="bg-white border rounded-xl p-6 shadow-sm space-y-8">
+                <div className="overflow-hidden rounded-lg">
+                  <table className="w-full text-sm text-left">
+                    <tbody>
+                      {[
+                        { label: "Ref.", value: p.codigoInterno || p.id },
+                        { label: "SKU", value: p.sku || 'Não informado' },
+                        { label: "Código de barras", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
+                        { label: "Marca", value: p.marca || 'Não informada' },
+                        ...(p.ncm ? [{ label: "NCM", value: p.ncm }] : []),
+                        ...(p.registroAnvisa ? [{ label: "Registro Anvisa", value: p.registroAnvisa }] : []),
+                        ...(p.tarja && p.tarja !== "Sem Tarja" ? [{ label: "Tarja", value: p.tarja }] : []),
+                        ...(isMedication ? [
+                          { label: "Retém receita", value: p.retemReceita ? 'Sim' : 'Não' },
+                          { label: "Tipo de medicamento", value: p.tipoMedicamento && p.tipoMedicamento !== 'none' ? p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) : 'Referência' }
+                        ] : []),
+                        ...(p.categoriasIds && p.categoriasIds.length > 0 ? [
+                          { 
+                            label: "Categorias Adicionais", 
+                            value: p.categoriasIds.map((catId: string, i: number) => {
+                              const cats = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
+                              const cat = cats.find((c: any) => String(c.id) === String(catId));
+                              const subId = p.subcategoriasIds?.[i];
+                              const sub = subId ? cats.find((c: any) => String(c.id) === String(subId)) : null;
+                              if (!cat) return null;
+                              return sub ? `${cat.nome} > ${sub.nome}` : cat.nome;
+                            }).filter(Boolean).join(" / ")
+                          }
+                        ] : []),
+                        { label: "É kit", value: String(p.tipoProduto || '').toLowerCase() === 'kit' ? 'Sim' : 'Não' },
+                        ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo, value: c.descricao })) : [])
+                      ].filter(row => row.value !== null && row.value !== '').map((row, idx) => (
+                        <tr key={idx} className={`${idx % 2 === 0 ? 'bg-slate-50 ' : ''}border-b last:border-b-0`}>
+                          <td className="py-3 px-4 text-slate-500 w-1/3">{row.label}</td>
+                          <td className="py-3 px-4 font-bold text-slate-900">{row.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {p.principiosAtivosDetalhes && p.principiosAtivosDetalhes.length > 0 && (
+                  <div className="pt-4 border-t">
+                    <h3 className="text-lg font-bold text-slate-900 mb-4">Princípios ativos</h3>
+                    <div className="overflow-hidden rounded-lg">
+                      <table className="w-full text-sm text-left">
+                        <thead>
+                          <tr className="text-slate-500 border-b">
+                            <th className="py-3 px-4 font-medium w-1/3">Nome</th>
+                            <th className="py-3 px-4 font-medium w-1/3">Concentração</th>
+                            <th className="py-3 px-4 font-medium w-1/3">Unidade</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {p.principiosAtivosDetalhes.map((pa: any, i: number) => (
+                            <tr key={i} className={i % 2 === 0 ? "bg-slate-50" : ""}>
+                              <td className="py-3 px-4 font-bold text-slate-900">{pa.nome}</td>
+                              <td className="py-3 px-4 text-slate-700">{pa.concentracao}</td>
+                              <td className="py-3 px-4 text-slate-700">{pa.unidadeMedida}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
 
             <section>
               <h2 className="text-xl font-bold mb-4">Descrição do Produto</h2>
