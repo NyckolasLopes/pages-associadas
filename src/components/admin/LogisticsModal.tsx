@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -446,14 +447,12 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                     <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded border">
                       <div className="flex-1 flex items-center gap-2">
                         <span className="text-xs font-medium">Até</span>
-                        <Input
-                          type="number"
-                          step="0.1"
+                        <NumericInput
                           min="0"
-                          value={raio.ateKm || ""}
-                          onChange={(e) => {
+                          value={raio.ateKm}
+                          onChange={(val) => {
                             const newRaios = [...(editingMethod.raios || [])];
-                            newRaios[idx].ateKm = parseFloat(e.target.value) || 0;
+                            newRaios[idx].ateKm = val || 0;
                             setEditingMethod({ ...editingMethod, raios: newRaios });
                           }}
                           className="w-20 h-8"
@@ -462,14 +461,12 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                       </div>
                       <div className="flex-1 flex items-center gap-2">
                         <span className="text-xs font-medium">R$</span>
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <NumericInput
                           min="0"
-                          value={raio.preco || ""}
-                          onChange={(e) => {
+                          value={raio.preco}
+                          onChange={(val) => {
                             const newRaios = [...(editingMethod.raios || [])];
-                            newRaios[idx].preco = parseFloat(e.target.value) || 0;
+                            newRaios[idx].preco = val || 0;
                             setEditingMethod({ ...editingMethod, raios: newRaios });
                           }}
                           className="w-24 h-8"
@@ -518,14 +515,12 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                     <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded border">
                       <div className="flex-1 flex flex-col gap-1">
                         <span className="text-xs font-medium text-slate-500">Valor Mínimo (R$)</span>
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <NumericInput
                           min="0"
-                          value={faixa.valorMin ?? ""}
-                          onChange={(e) => {
+                          value={faixa.valorMin}
+                          onChange={(val) => {
                             const newFaixas = [...(editingMethod.faixasValorPedido || [])];
-                            newFaixas[idx].valorMin = parseFloat(e.target.value) || 0;
+                            newFaixas[idx].valorMin = val || 0;
                             setEditingMethod({ ...editingMethod, faixasValorPedido: newFaixas });
                           }}
                           placeholder="0,00"
@@ -534,14 +529,12 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                       </div>
                       <div className="flex-1 flex flex-col gap-1">
                         <span className="text-xs font-medium text-slate-500">Frete (R$)</span>
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <NumericInput
                           min="0"
-                          value={faixa.taxa ?? ""}
-                          onChange={(e) => {
+                          value={faixa.taxa}
+                          onChange={(val) => {
                             const newFaixas = [...(editingMethod.faixasValorPedido || [])];
-                            newFaixas[idx].taxa = parseFloat(e.target.value) || 0;
+                            newFaixas[idx].taxa = val || 0;
                             setEditingMethod({ ...editingMethod, faixasValorPedido: newFaixas });
                           }}
                           placeholder="0,00"
