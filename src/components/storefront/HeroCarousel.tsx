@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 
-export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full Banner" }: { page?: string; lojaId?: string; posicao?: string }) {
+export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full Banner", categoriaId }: { page?: string; lojaId?: string; posicao?: string; categoriaId?: string }) {
   const { banners: adminBanners, pharmacies } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const effectiveLojaId = lojaId || selectedPharmacyId;
@@ -31,13 +31,25 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
     // Se a página for "Página de Categoria", priorizar os "Banner por Categoria"
     if (page === "Página de Categoria" && b.posicao !== "Banner por Categoria") return false;
     if (page !== "Página de Categoria" && b.posicao === "Banner por Categoria") return false;
+    if (page === "Página de Categoria" && b.posicao === "Banner por Categoria" && categoriaId) {
+      if (b.topicoVinculado !== categoriaId) return false;
+    }
 
     if (!b.active) return false;
     
-    // Filtro de Loja: Só mostra se for banner específico da loja, ou se for global e a loja não for parceira
+    // Check if there are ANY local banners for this position in this store
+    const hasLocalBannerForPosition = adminBanners.some(
+      local => local.lojaId === effectiveLojaId && local.posicao === b.posicao
+    );
+
+    // Filtro de Loja: Só mostra se for banner específico da loja, ou se for global (e a loja não tiver sobreposto essa posição)
     if (effectiveLojaId) {
-      if (b.lojaId && b.lojaId !== effectiveLojaId) return false;
-      if (!b.lojaId && isParceiro) return false;
+      if (b.lojaId) {
+        if (b.lojaId !== effectiveLojaId) return false;
+      } else {
+        if (isParceiro) return false;
+        if (hasLocalBannerForPosition) return false; // Hide global if local override exists
+      }
     } else {
       // Se não tem loja selecionada (ex: página inicial global), não mostra banners de lojas específicas
       if (b.lojaId) return false;
@@ -107,13 +119,24 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
     if (b.posicao !== "Full Banner" && b.posicao !== "Banner por Categoria") return false;
     if (page === "Página de Categoria" && b.posicao !== "Banner por Categoria") return false;
     if (page !== "Página de Categoria" && b.posicao === "Banner por Categoria") return false;
+    if (page === "Página de Categoria" && b.posicao === "Banner por Categoria" && categoriaId) {
+      if (b.topicoVinculado !== categoriaId) return false;
+    }
     
     if (!b.active) return false;
     if (b.paginaPublicacao && b.paginaPublicacao !== "Todas as páginas" && b.paginaPublicacao !== page) return false;
     
+    const hasLocalBannerForPosition = adminBanners.some(
+      local => local.lojaId === effectiveLojaId && local.posicao === b.posicao
+    );
+
     if (effectiveLojaId) {
-      if (b.lojaId && b.lojaId !== effectiveLojaId) return false;
-      if (!b.lojaId && isParceiro) return false;
+      if (b.lojaId) {
+        if (b.lojaId !== effectiveLojaId) return false;
+      } else {
+        if (isParceiro) return false;
+        if (hasLocalBannerForPosition) return false;
+      }
     } else {
       if (b.lojaId) return false;
     }

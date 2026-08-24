@@ -22,6 +22,7 @@ import {
 import { useAdmin, AdminBanner } from "@/stores/admin";
 import { useConfig } from "@/stores/config";
 import { useAdminProducts } from "@/stores/products";
+import { useCategories } from "@/stores/categories";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -91,10 +92,12 @@ function AdminBanners() {
   const fetchBanners = useAdmin(s => s.fetchBanners);
   const vitrines = useAdminProducts(s => s.vitrines);
   const pharmacies = useAdmin(s => s.pharmacies);
+  const { categories, loadCategories } = useCategories();
 
   useEffect(() => {
     fetchBanners(activeStoreId || undefined);
-  }, [activeStoreId, fetchBanners]);
+    loadCategories();
+  }, [activeStoreId, fetchBanners, loadCategories]);
 
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
@@ -688,7 +691,13 @@ function AdminBanners() {
                     <Label className="font-bold text-slate-700">Posição do banner <span className="text-red-500">*</span></Label>
                     <Select 
                       value={editingBanner.posicao} 
-                      onValueChange={v => setEditingBanner({...editingBanner, posicao: v})}
+                      onValueChange={v => {
+                        const updates: any = { posicao: v };
+                        if (v === "Banner por Categoria") {
+                          updates.paginaPublicacao = "Página de Categoria";
+                        }
+                        setEditingBanner({...editingBanner, ...updates});
+                      }}
                     >
                       <SelectTrigger className="h-11 border-slate-200 bg-white">
                         <SelectValue placeholder="Selecione a posição" />
@@ -704,6 +713,7 @@ function AdminBanners() {
                   <div className="space-y-2">
                     <Label className="font-bold text-slate-700">Página de publicação <span className="text-red-500">*</span></Label>
                     <Select 
+                      disabled={editingBanner.posicao === "Banner por Categoria"}
                       value={editingBanner.paginaPublicacao || "Página inicial"} 
                       onValueChange={v => setEditingBanner({...editingBanner, paginaPublicacao: v})}
                     >
@@ -719,6 +729,25 @@ function AdminBanners() {
                     </Select>
                   </div>
                 </div>
+
+                {editingBanner.posicao === "Banner por Categoria" && (
+                  <div className="space-y-2">
+                    <Label className="font-bold text-slate-700">Categoria Vinculada <span className="text-red-500">*</span></Label>
+                    <Select 
+                      value={editingBanner.topicoVinculado || ""} 
+                      onValueChange={v => setEditingBanner({...editingBanner, topicoVinculado: v})}
+                    >
+                      <SelectTrigger className="h-11 border-slate-200 bg-white">
+                        <SelectValue placeholder="Selecione a categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label className="font-bold text-slate-700">Link do banner</Label>

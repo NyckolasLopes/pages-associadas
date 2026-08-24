@@ -28,7 +28,7 @@ export const Route = createFileRoute("/admin/marketing/cupons/")({
 
 function CuponsIndexPage() {
   const { cupons, addCoupon, removeCoupon, loadMarketing } = useMarketing();
-  const { currentUser, activeStoreId, grupos } = useAdmin();
+  const { currentUser, activeStoreId, grupos, lojas } = useAdmin();
 
   useEffect(() => {
     loadMarketing();
@@ -45,6 +45,7 @@ function CuponsIndexPage() {
     tipoDesconto: "percentual" as "percentual" | "fixo",
     valorMinimo: 0,
     totalDisponiveis: 100,
+    lojaId: "",
   });
 
   const filteredCupons = cupons.filter((c) => {
@@ -62,23 +63,36 @@ function CuponsIndexPage() {
           <span className="text-sm text-slate-500">{cupons.length} cupom(s)</span>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className="text-slate-600 font-medium">
+          <Button variant="ghost" className="text-slate-600 font-medium" onClick={() => toast.info("O relatório detalhado de performance de cupons estará disponível em breve.")}>
             Ver performance dos cupons
           </Button>
           
-          {!isGlobalAdmin && (
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-              <DialogTrigger asChild>
-                <Button className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white">
-                  + Novo cupom
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Criar Novo Cupom</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Plus className="h-4 w-4 mr-2" /> Novo Cupom
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Criar Novo Cupom</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                {isGlobalAdmin && (
                   <div className="grid gap-2">
+                    <label className="text-sm font-medium">Loja Vinculada (Opcional)</label>
+                    <Select value={novoCupom.lojaId} onValueChange={(v: any) => setNovoCupom({...novoCupom, lojaId: v})}>
+                      <SelectTrigger><SelectValue placeholder="Todas as Lojas (Global)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todas as Lojas (Global)</SelectItem>
+                        {lojas.map(loja => (
+                          <SelectItem key={loja.id} value={loja.id}>{loja.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="grid gap-2">
                     <label className="text-sm font-medium">Código do Cupom</label>
                     <Input 
                       placeholder="EX: 10OFF" 
@@ -143,20 +157,19 @@ function CuponsIndexPage() {
                       permiteAcumular: false,
                       usoUnico: false,
                       cupomPrimeiraCompra: false,
-                      lojaId: !isGlobalAdmin && effectiveStoreId ? effectiveStoreId : undefined,
+                      lojaId: isGlobalAdmin ? (novoCupom.lojaId || undefined) : effectiveStoreId,
                     });
                     toast.success("Cupom criado com sucesso!");
                     setIsModalOpen(false);
                     setNovoCupom({
-                      codigo: "", descricao: "", valorDesconto: 0, tipoDesconto: "percentual", valorMinimo: 0, totalDisponiveis: 100
+                      codigo: "", descricao: "", valorDesconto: 0, tipoDesconto: "percentual", valorMinimo: 0, totalDisponiveis: 100, lojaId: ""
                     });
                   }}>
                     Salvar Cupom
                   </Button>
                 </div>
-              </DialogContent>
-            </Dialog>
-          )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -214,20 +227,18 @@ function CuponsIndexPage() {
                     <td className="px-4 py-4 text-right">
                       <div className="flex items-center justify-end gap-3">
                         <div className={`h-2 w-2 rounded-full ${cupom.ativo ? "bg-emerald-500" : "bg-slate-300"}`} />
-                        {!isGlobalAdmin && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem className="text-red-600 cursor-pointer font-medium" onClick={() => removeCoupon(cupom.id)}>
-                                <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="text-red-600 cursor-pointer font-medium" onClick={() => removeCoupon(cupom.id)}>
+                              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>

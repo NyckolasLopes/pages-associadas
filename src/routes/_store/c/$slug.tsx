@@ -140,7 +140,7 @@ function CategoryPage() {
 
       {/* Banners for Category Page */}
       <div className="mt-6 mb-6">
-        <HeroCarousel page="Página de Categoria" />
+        <HeroCarousel page="Página de Categoria" categoriaId={cat.id} />
         <SquarePromoGrid page="Página de Categoria" />
       </div>
 

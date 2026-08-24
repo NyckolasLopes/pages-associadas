@@ -1,0 +1,1 @@
+import { supabase } from "./src/integrations/supabase/client"; async function test() { const {data} = await supabase.from("produtos").select("id, internal_tags").limit(1); console.log(data); } test();

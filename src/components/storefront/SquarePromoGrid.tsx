@@ -11,9 +11,17 @@ export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: s
   const miniBanners = banners.filter(b => {
     if (b.posicao !== "Mini Banner" || !b.active) return false;
     
+    const hasLocalBannerForPosition = banners.some(
+      local => local.lojaId === effectiveLojaId && local.posicao === b.posicao
+    );
+
     if (effectiveLojaId) {
-      if (b.lojaId && b.lojaId !== effectiveLojaId) return false;
-      if (!b.lojaId && isParceiro) return false;
+      if (b.lojaId) {
+        if (b.lojaId !== effectiveLojaId) return false;
+      } else {
+        if (isParceiro) return false;
+        if (hasLocalBannerForPosition) return false;
+      }
     } else {
       if (b.lojaId) return false;
     }

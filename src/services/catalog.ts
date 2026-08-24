@@ -718,7 +718,7 @@ export const catalog = {
     return { results: applyFilters(products, filters), didYouMean: undefined };
   },
   adminSearchProducts: async (params: { search: string, page: number, pageSize: number, listFilter: string, lojaId?: string | null }) => {
-    let query = supabase.from('produtos').select('*', { count: 'estimated' });
+    let query = supabase.from('produtos').select('*', { count: 'exact' });
     
     if (params.search) {
       if (/^\d+$/.test(params.search)) {

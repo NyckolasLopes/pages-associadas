@@ -49,22 +49,40 @@ export function Footer() {
   const { dadosLoja } = useConfig();
   const location = useLocation();
   const isHome = location.pathname === "/";
-  const banners = useAdmin((s) => s.banners);
+  const { banners, pharmacies } = useAdmin();
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const activePharmacy = useMemo(() => {
+    return pharmacies.find(p => p.id === selectedPharmacyId) || pharmacies[0] || null;
+  }, [pharmacies, selectedPharmacyId]);
+
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+
   const diferenciaisBanners = banners.filter((b) => {
     if (b.posicao !== "Banner Diferenciais" || !b.active) return false;
+    
+    const hasLocalBannerForPosition = banners.some(
+      local => local.lojaId === selectedPharmacyId && local.posicao === b.posicao
+    );
+
+    if (selectedPharmacyId) {
+      if (b.lojaId) {
+        if (b.lojaId !== selectedPharmacyId) return false;
+      } else {
+        if (isParceiro) return false;
+        if (hasLocalBannerForPosition) return false;
+      }
+    } else {
+      if (b.lojaId) return false;
+    }
+
     const now = new Date();
     if (b.startDate && new Date(b.startDate) > now) return false;
     if (b.endDate && new Date(b.endDate) < now) return false;
     return true;
   });
+  
   const addLead = useLeads((s) => s.addLead);
   const getTopTerms = useSearchHistory((s) => s.getTopTerms);
-
-  const { pharmacies } = useAdmin();
-  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
-  const activePharmacy = useMemo(() => {
-    return pharmacies.find(p => p.id === selectedPharmacyId) || pharmacies[0] || null;
-  }, [pharmacies, selectedPharmacyId]);
 
   // Fallback to global config if no pharmacy has a description, though typically we use the active pharmacy
   const descricaoLoja = activePharmacy?.footerDescricao || activePharmacy?.pageTitle || dadosLoja.descricao || "Somos a maior rede associativa do Brasil.";

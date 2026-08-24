@@ -630,10 +630,12 @@ function AdminLayout() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <h1 className="font-bold text-slate-800 hidden md:block">
-                Painel de Controle {activeStoreId ? (() => {
+                Painel de Controle {activeStoreId && (() => {
                   const rawCat = pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || "Pleno";
-                  return rawCat.toLowerCase() === 'padrão' || rawCat.toLowerCase() === 'padrao' ? "Pleno" : rawCat;
-                })() : ""}
+                  const cat = rawCat.toLowerCase() === 'padrão' || rawCat.toLowerCase() === 'padrao' ? "Pleno" : rawCat;
+                  const colorClass = cat === "Parceiro" ? "text-orange-500 font-black" : "text-emerald-600 font-black";
+                  return <span className={colorClass}> {cat}</span>;
+                })()}
               </h1>
               {!activeStoreId && isGlobalAdmin && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 hidden md:block">

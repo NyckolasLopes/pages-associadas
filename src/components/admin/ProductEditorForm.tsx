@@ -51,6 +51,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const { marcas } = useMarcasStore();
   const { variacoes } = useVariacoesStore();
   const [comboOpen, setComboOpen] = useState(false);
+  const [draggedImgIdx, setDraggedImgIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,6 +94,31 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       newImagens.splice(index, 1);
       return { ...prev, imagens: newImagens, foto: newImagens[0]?.caminhoImagem || "" };
     });
+  };
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    setDraggedImgIdx(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedImgIdx === null || draggedImgIdx === dropIndex) return;
+
+    setFormData(prev => {
+      if (!prev) return prev;
+      const newImagens = [...(prev.imagens || [])];
+      const draggedItem = newImagens[draggedImgIdx];
+      newImagens.splice(draggedImgIdx, 1);
+      newImagens.splice(dropIndex, 0, draggedItem);
+      return { ...prev, imagens: newImagens, foto: newImagens[0]?.caminhoImagem || "" };
+    });
+    setDraggedImgIdx(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
   };
 
   useEffect(() => {
@@ -613,16 +639,24 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="space-y-4">
               <div className="flex flex-wrap gap-4">
                 {((formData.imagens || []) as any[]).map((img: any, idx: number) => (
-                  <div key={idx} className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group">
+                  <div 
+                    key={idx} 
+                    className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group cursor-grab active:cursor-grabbing"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, idx)}
+                  >
                     <img src={img.caminhoImagem || img} alt={`Imagem ${idx + 1}`} className="w-full h-full object-cover" />
                     <button 
                       onClick={() => handleRemoveImage(idx)}
-                      className="absolute top-1 right-1 bg-white/80 hover:bg-red-50 text-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1 right-1 bg-white hover:bg-red-50 text-red-500 rounded-md p-1.5 shadow-sm transition-colors z-10"
+                      title="Remover imagem"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                     {idx === 0 && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/90 text-white text-[10px] text-center py-1 font-bold">
+                      <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/90 text-white text-[10px] text-center py-1 font-bold z-10 pointer-events-none">
                         Capa
                       </div>
                     )}
