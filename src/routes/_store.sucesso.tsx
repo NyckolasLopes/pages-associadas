@@ -198,7 +198,7 @@ function SucessoPage() {
                     </span>
                     <span className="text-slate-600 leading-relaxed">
                       {order.modalidade?.toLowerCase() === 'retirada' 
-                        ? `${activeStore.nome} - ${activeStore.endereco?.rua || ''}`
+                        ? `${activeStore?.nome || 'Loja'} - ${activeStore?.endereco?.rua || ''}`
                         : `${order.cliente?.endereco?.rua || order.envio?.endereco || ''}, ${order.cliente?.endereco?.numero || order.envio?.numero || ''}`
                       }
                     </span>
