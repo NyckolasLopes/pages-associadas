@@ -229,6 +229,52 @@ function CartPage() {
     }
   }, [user]);
 
+  const lastCalcCep = useRef("");
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocalização não é suportada neste navegador.");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        useGeoCep.getState().setCoordinates(lat, lng);
+        
+        try {
+          // Busca o CEP via reverse geocoding do Nominatim
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+          const data = await res.json();
+          const foundCep = data?.address?.postcode;
+          if (foundCep) {
+            const cleanCep = foundCep.replace(/\D/g, "");
+            await useGeoCep.getState().setCep(cleanCep);
+            setCep(cleanCep);
+            toast.success("Localização obtida com sucesso!");
+          } else {
+            toast.error("Não foi possível determinar o CEP a partir da sua localização.");
+          }
+        } catch (e) {
+          toast.error("Erro ao buscar endereço da localização.");
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error("Acesso à localização negado. Digite o CEP manualmente.");
+        } else {
+          toast.error("Erro ao obter localização.");
+        }
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
   // Force open pharmacy dialog if shared link and no pharmacy selected
   useEffect(() => {
     if (mounted && isShared && !selectedPharmacyId && items.length > 0) {
@@ -1348,12 +1394,21 @@ function CartPage() {
                   {selected !== "pickup" && (
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2 animate-in fade-in slide-in-from-top-2">
                       <p className="text-[11px] text-muted-foreground mb-2">Preencha seu CEP para estimar o valor e o prazo de entrega.</p>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 mb-2">
                         <Input placeholder="00000-000" maxLength={9} value={cep} disabled={isCalcLoading} onChange={(e) => setCep(e.target.value)} />
                         <Button variant="outline" disabled={isCalcLoading} onClick={calcFreight}>
                           {isCalcLoading ? "Calculando..." : "Calcular"}
                         </Button>
                       </div>
+                      
+                      <button 
+                        onClick={handleUseLocation} 
+                        disabled={isLocating}
+                        className="text-xs text-primary font-bold hover:underline flex items-center gap-1 mt-1 mb-3"
+                      >
+                        <MapPin className="h-3 w-3" />
+                        {isLocating ? "Obtendo localização..." : "Usar minha localização atual"}
+                      </button>
                       
                       {freight && freight.filter(f => f.id !== "pickup").length > 0 ? (
                         <div className="space-y-2 mt-4">
