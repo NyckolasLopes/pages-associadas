@@ -231,11 +231,11 @@ function Relatorios() {
       let count = 0;
 
       lojaOrders.forEach(pedido => {
-        const separacao = pedido.historico?.find(h => h.situacao.toLowerCase() === "em separação");
+        const separacao = pedido.historico?.find(h => h.situacao?.toLowerCase() === "em separação");
         const conclusao = pedido.historico?.find(h => 
-          h.situacao.toLowerCase() === "pronta para retirada" || 
-          h.situacao.toLowerCase() === "enviado" || 
-          h.situacao.toLowerCase() === "entregue"
+          h.situacao?.toLowerCase() === "pronta para retirada" || 
+          h.situacao?.toLowerCase() === "enviado" || 
+          h.situacao?.toLowerCase() === "entregue"
         );
         
         if (separacao && conclusao) {
