@@ -24,7 +24,7 @@ function AdminNovoProduto() {
   const currentLoja = pharmacies.find(p => p.id === currentLojaId);
 
   // Basic query params read (without typing)
-  const searchParams = new URLSearchParams(window.location.search);
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const tipoParam = searchParams.get("tipo") || "";
 
   const handleSave = async (product: Produto) => {

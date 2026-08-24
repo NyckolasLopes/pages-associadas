@@ -131,7 +131,9 @@ function ProductCardComponent({
     const eligiblePharmacies = pharmacies.filter(f => {
       const dist = distances[f.id];
       if (dist === undefined) return false;
-      const canDeliver = f.aceitaEntrega && (f.raiosEntrega || []).some(r => dist <= r.ateKm);
+      const hasRaios = (f.raiosEntrega || []).some(r => dist <= r.ateKm);
+      const hasMeiosCustomizados = (f.meiosEntregaPersonalizados || []).filter(m => m.ativo).some(m => (m.raios || []).some(r => dist <= r.ateKm));
+      const canDeliver = f.aceitaEntrega && (hasRaios || hasMeiosCustomizados);
       const canPickup = f.aceitaRetirada;
       // Active for this product
       const productActive = p.precosPorLoja?.[f.id]?.ativo !== false;

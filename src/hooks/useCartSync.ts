@@ -49,7 +49,15 @@ export function useCartSync() {
 
     syncTimeout.current = setTimeout(async () => {
       try {
-        if (items.length === 0) {
+        let safeItems = [];
+        if (Array.isArray(items)) {
+          safeItems = items;
+        } else if (typeof items === 'string') {
+          try { safeItems = JSON.parse(items); } catch(e) {}
+          if (!Array.isArray(safeItems)) safeItems = [];
+        }
+
+        if (safeItems.length === 0) {
           // Se o carrinho foi esvaziado (compra concluída ou esvaziado manualmente),
           // marca como recuperado se existir um abandonado.
           await supabase
@@ -66,7 +74,7 @@ export function useCartSync() {
           nome_cliente: (user as any).nome || (user as any).name || user.email || 'Cliente',
           email_cliente: user.email || '',
           telefone_cliente: (user as any).celular || (user as any).telefone || '',
-          items: JSON.parse(JSON.stringify(items)),
+          items: safeItems,
           total: total,
           status: 'abandonado',
           updated_at: new Date().toISOString()

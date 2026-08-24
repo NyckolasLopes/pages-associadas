@@ -580,6 +580,18 @@ function PDP() {
           canDeliver = true;
           deliveryPrice = matchingRaio.preco;
         }
+      } else if (f.meiosEntregaPersonalizados && f.meiosEntregaPersonalizados.length > 0) {
+        let lowestCustom = null;
+        f.meiosEntregaPersonalizados.filter(m => m.ativo).forEach(m => {
+          if (m.raios && m.raios.length > 0) {
+             const matchingRaio = [...m.raios].sort((a, b) => a.ateKm - b.ateKm).find(r => distance <= r.ateKm);
+             if (matchingRaio && (lowestCustom === null || matchingRaio.preco < lowestCustom)) lowestCustom = matchingRaio.preco;
+          }
+        });
+        if (lowestCustom !== null) {
+          canDeliver = true;
+          deliveryPrice = lowestCustom;
+        }
       } else {
         canDeliver = true;
         deliveryPrice = f.custoEntrega ?? null;
@@ -589,6 +601,12 @@ function PDP() {
       canDeliver = isSameCity;
       if (f.raiosEntrega && f.raiosEntrega.length > 0) {
         deliveryPrice = Math.min(...f.raiosEntrega.map(r => r.preco));
+      } else if (f.meiosEntregaPersonalizados && f.meiosEntregaPersonalizados.length > 0) {
+        const allPrecos: number[] = [];
+        f.meiosEntregaPersonalizados.filter(m => m.ativo).forEach(m => {
+          if (m.raios) allPrecos.push(...m.raios.map(r => r.preco));
+        });
+        if (allPrecos.length > 0) deliveryPrice = Math.min(...allPrecos);
       } else if (f.custoEntrega !== undefined && f.custoEntrega !== null) {
         deliveryPrice = f.custoEntrega;
       }
@@ -1242,7 +1260,7 @@ function PDP() {
                     </span>
                   </div>
                 )}
-                {desconto > 0 && (
+                {finalPrecoDe > finalPrecoPor && (
                   <div className="text-sm text-muted-foreground line-through font-medium">{brl(finalPrecoDe)}</div>
                 )}
                 <div className="flex items-center gap-3 mt-1">

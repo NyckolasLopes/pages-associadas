@@ -37,10 +37,18 @@ export function CartSync() {
 
           if (!lojaId) return; // Ainda sem loja, não sincroniza
 
+          let safeItems = [];
+          if (Array.isArray(items)) {
+            safeItems = items;
+          } else if (typeof items === 'string') {
+            try { safeItems = JSON.parse(items); } catch(e) {}
+            if (!Array.isArray(safeItems)) safeItems = [];
+          }
+
           const { error } = await supabase.from("carrinhos_abandonados").upsert({
             user_id: user.id,
             loja_id: lojaId,
-            items: items,
+            items: safeItems,
             total: total,
             status: "abandonado",
             // Dados do cliente salvos diretamente (evita join com profiles bloqueado por RLS)

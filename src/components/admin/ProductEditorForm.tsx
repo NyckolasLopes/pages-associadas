@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -709,12 +710,10 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <Label className="font-bold text-xs uppercase text-slate-500">{isGlobalAdmin ? "Preço (de) (R$)" : "Meu Preço (de) (R$)"}</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
-                  <Input 
+                  <NumericInput 
                     disabled={!isGlobalAdmin && isMedicamento}
-                    type="number" 
-                    step="0.01" 
-                    value={formData.precoDe || ""} 
-                    onChange={e => setFormData({...formData, precoDe: parseFloat(e.target.value) || 0})} 
+                    value={formData.precoDe} 
+                    onChange={val => setFormData({...formData, precoDe: val || 0})} 
                     className="bg-white pl-9 font-bold text-slate-700" 
                     placeholder="0.00" 
                   />
@@ -725,12 +724,10 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <Label className="font-bold text-xs uppercase text-slate-500">{isGlobalAdmin ? "Preço (por) (R$)" : "Meu Preço (por) (R$)"}</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
-                  <Input 
+                  <NumericInput 
                     disabled={!isGlobalAdmin && isMedicamento}
-                    type="number" 
-                    step="0.01" 
-                    value={formData.precoPor || ""} 
-                    onChange={e => setFormData({...formData, precoPor: parseFloat(e.target.value) || 0})} 
+                    value={formData.precoPor} 
+                    onChange={val => setFormData({...formData, precoPor: val || 0})} 
                     className="bg-white pl-9 font-bold text-emerald-700" 
                     placeholder="0.00" 
                   />
@@ -767,10 +764,10 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Nível de Relevância (Prioridade)</Label>
-                <Input disabled={!isGlobalAdmin} 
-                  type="number" 
-                  value={formData.nivelRelevancia || 0} 
-                  onChange={e => setFormData({...formData, nivelRelevancia: parseInt(e.target.value) || 0})} 
+                <NumericInput disabled={!isGlobalAdmin} 
+                  allowDecimals={false}
+                  value={formData.nivelRelevancia} 
+                  onChange={val => setFormData({...formData, nivelRelevancia: val || 0})} 
                   className="bg-white" 
                 />
               </div>

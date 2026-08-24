@@ -58,7 +58,9 @@ export function PriceDropTracker() {
           const eligible = pharmacies.filter((f: any) => {
             const dist = distances[f.id];
             if (dist === undefined) return false;
-            const canDeliver = f.aceitaEntrega && (f.raiosEntrega || []).some((r: any) => dist <= r.ateKm);
+            const hasRaios = (f.raiosEntrega || []).some((r: any) => dist <= r.ateKm);
+            const hasMeiosCustomizados = (f.meiosEntregaPersonalizados || []).filter((m: any) => m.ativo).some((m: any) => (m.raios || []).some((r: any) => dist <= r.ateKm));
+            const canDeliver = f.aceitaEntrega && (hasRaios || hasMeiosCustomizados);
             const canPickup = f.aceitaRetirada;
             const productActive = p.precosPorLoja?.[f.id]?.ativo !== false;
             return (canDeliver || canPickup) && productActive;

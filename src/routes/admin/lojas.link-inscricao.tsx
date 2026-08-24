@@ -120,7 +120,7 @@ function LinkInscricaoAssociado() {
                     <td className="px-4 py-3">
                       {t.nome && <div className="font-semibold text-slate-800 text-sm mb-1">{t.nome}</div>}
                       <div className="font-medium text-slate-700 font-mono text-xs break-all">
-                        {window.location.origin}/inscricao/{t.token}
+                        {typeof window !== "undefined" ? window.location.origin : "https://pagesassociadas.vercel.app"}/inscricao/{t.token}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
@@ -215,7 +215,7 @@ function LinkInscricaoAssociado() {
                 autoFocus
               />
               <p className="text-xs text-slate-500">
-                A URL será: {window.location.origin}/inscricao/
+                A URL será: {typeof window !== "undefined" ? window.location.origin : "https://pagesassociadas.vercel.app"}/inscricao/
                 <span className="font-semibold text-slate-700">
                   {customName ? customName.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/(^-|-$)+/g, '') : "nome-da-loja"}
                 </span>
