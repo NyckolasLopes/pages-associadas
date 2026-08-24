@@ -22,7 +22,7 @@ import {
 import { useAdmin, AdminBanner } from "@/stores/admin";
 import { useConfig } from "@/stores/config";
 import { useAdminProducts } from "@/stores/products";
-import { useCategories } from "@/stores/categories";
+import { useAdminCategories } from "@/stores/categories";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -92,7 +92,7 @@ function AdminBanners() {
   const fetchBanners = useAdmin(s => s.fetchBanners);
   const vitrines = useAdminProducts(s => s.vitrines);
   const pharmacies = useAdmin(s => s.pharmacies);
-  const { categories, loadCategories } = useCategories();
+  const { categories, loadCategories } = useAdminCategories();
 
   useEffect(() => {
     fetchBanners(activeStoreId || undefined);

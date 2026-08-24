@@ -123,7 +123,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     let query = supabase
       .from('pedidos')
-      .select('*, pedido_itens(*), pedido_historico_status(*)')
+      .select('*, pedido_itens(*, produtos(imagens, foto)), pedido_historico_status(*)')
       .order('created_at', { ascending: false });
 
     // Restringir a query se não for admin global
@@ -176,17 +176,32 @@ export const useOrders = create<OrdersState>((set, get) => ({
         });
 
         const parsedItens = (d.pedido_itens && d.pedido_itens.length > 0) 
-          ? d.pedido_itens.map((i: any) => ({
-              id: i.produto_id || i.id,
-              nome: i.nome,
-              sku: i.produto_id,
-              ean: i.ean,
-              qtd: i.qty,
-              quantidade: i.qty,
-              valorUnitario: i.preco_unit,
-              preco: i.preco_unit * i.qty,
-              foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
-            }))
+          ? d.pedido_itens.map((i: any) => {
+              let foto = undefined;
+              if (i.produtos) {
+                if (Array.isArray(i.produtos.imagens) && i.produtos.imagens.length > 0) {
+                  foto = i.produtos.imagens[0]?.caminhoImagem || i.produtos.imagens[0];
+                }
+                if (!foto && i.produtos.foto) {
+                  foto = i.produtos.foto;
+                }
+              }
+              if (!foto && i.produto_id) {
+                foto = `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg`;
+              }
+
+              return {
+                id: i.produto_id || i.id,
+                nome: i.nome,
+                sku: i.produto_id,
+                ean: i.ean,
+                qtd: i.qty,
+                quantidade: i.qty,
+                valorUnitario: i.preco_unit,
+                preco: i.preco_unit * i.qty,
+                foto: foto,
+              };
+            })
           : mappedRawItens;
 
         return {
