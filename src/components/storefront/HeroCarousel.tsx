@@ -49,12 +49,24 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
     if (b.endDate && new Date(b.endDate) < now) return false;
     return true;
   });
-  
-  const totalSlides = activeBanners.length;
+
+  const getDeduplicatedBanners = (bannersToFilter: any[]) => {
+    const uniqueMap = new Map();
+    for (const b of bannersToFilter) {
+      const key = (b.imageUrl || "") + b.posicao;
+      if (!uniqueMap.has(key) || b.lojaId) {
+        uniqueMap.set(key, b);
+      }
+    }
+    return Array.from(uniqueMap.values());
+  };
+
+  const deduplicatedActiveBanners = getDeduplicatedBanners(activeBanners);
+  const totalSlides = deduplicatedActiveBanners.length;
 
   // Preload ALL banner images on mount for instant transitions
   useEffect(() => {
-    activeBanners.forEach((banner) => {
+    deduplicatedActiveBanners.forEach((banner) => {
       const getOptimized = (url: string, isMobile: boolean) => {
         if (!url) return url;
         if (!url.includes("unsplash.com")) return url;
@@ -72,7 +84,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
         img.src = getOptimized(banner.mobileImageUrl, true);
       }
     });
-  }, [activeBanners]);
+  }, [deduplicatedActiveBanners]);
 
   useEffect(() => {
     if (totalSlides <= 1) return;
@@ -91,7 +103,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
   const next = () => setI((prev) => (prev + 1) % totalSlides);
 
   // Allow rendering the first slide immediately from initial state to prevent LCP delays
-  const bannersToRender = hydrated ? activeBanners : adminBanners.filter(b => {
+  const bannersToRender = hydrated ? deduplicatedActiveBanners : getDeduplicatedBanners(adminBanners.filter(b => {
     if (b.posicao !== "Full Banner" && b.posicao !== "Banner por Categoria") return false;
     if (page === "Página de Categoria" && b.posicao !== "Banner por Categoria") return false;
     if (page !== "Página de Categoria" && b.posicao === "Banner por Categoria") return false;
@@ -110,7 +122,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
     if (b.startDate && new Date(b.startDate) > now) return false;
     if (b.endDate && new Date(b.endDate) < now) return false;
     return true;
-  });
+  }));
   const totalSlidesToRender = bannersToRender.length;
   const aspectRatioDesktop = page === "Página de Categoria" ? '1920 / 400' : '1800 / 600';
 

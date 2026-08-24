@@ -186,7 +186,7 @@ export function PedidosAdmin() {
       try {
         if (itemToDelete.tipo === "pedido") {
           await deleteOrder(itemToDelete.id);
-          if (selectedOrder?.id === itemToDelete.id) setSelectedOrder(null);
+          if (selectedOrder?.id === itemToDelete.id || selectedOrder?.rawId === itemToDelete.id) setSelectedOrder(null);
           await refetch();
         } else {
           if (itemToDelete.id === "#807099") {
@@ -575,6 +575,8 @@ export function PedidosAdmin() {
                   value={selectedOrder.status || "novo"}
                   onValueChange={async (newStatus) => {
                     await useOrders.getState().updateOrderStatus(selectedOrder.id, newStatus);
+                    setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+                    refetch();
                     toast.success("Status atualizado!");
                   }}
                 >
@@ -663,7 +665,7 @@ export function PedidosAdmin() {
               <Button
                 variant="outline"
                 className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2"
-                onClick={() => handleDelete(selectedOrder.id, "pedido")}
+                onClick={() => handleDelete(selectedOrder.rawId || selectedOrder.id, "pedido")}
               >
                 <Trash2 className="h-4 w-4" />
                 Excluir
@@ -737,7 +739,7 @@ export function PedidosAdmin() {
                   Pedido direcionado para faturamento e entrega
                 </div>
                 <div className="text-xs text-emerald-700 bg-emerald-50 font-bold p-2 rounded-lg mt-3 border border-emerald-100 flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5" /> Concluído pelo carrinho da loja
+                  <Check className="w-3.5 h-3.5" /> Concluido e encaminhado ao Whatsapp da loja
                 </div>
               </div>
             </div>
@@ -764,15 +766,17 @@ export function PedidosAdmin() {
                     })}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm font-medium text-slate-600">
-                  <span>Frete</span>
-                  <span className="font-bold">
-                    {(selectedOrder.valores?.frete || 0).toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    })}
-                  </span>
-                </div>
+                {!(isPickup && (selectedOrder.valores?.frete || 0) === 0) && (
+                  <div className="flex justify-between text-sm font-medium text-slate-600">
+                    <span>Frete</span>
+                    <span className="font-bold">
+                      {(selectedOrder.valores?.frete || 0).toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                    </span>
+                  </div>
+                )}
                 {selectedOrder.pagamento?.metodo && (
                   <div className="flex justify-between text-sm font-medium text-slate-600 border-t border-emerald-200/50 pt-1.5 mt-1.5">
                     <span>Forma de Pagamento selecionada</span>
@@ -1205,17 +1209,9 @@ export function PedidosAdmin() {
 
                       {/* Status */}
                       <td className="px-3 py-3 text-center whitespace-nowrap">
-                        {isConcluido ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold gap-1 px-2.5 py-0.5">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                            Concluído (WhatsApp)
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-amber-100 text-amber-800 border-none font-bold gap-1 px-2.5 py-0.5">
-                            <Clock className="w-3 h-3 text-amber-700" />
-                            Pendente (Carrinho)
-                          </Badge>
-                        )}
+                        <Badge className={`${STATUS_COLORS_MAP[item.status] || STATUS_COLORS_MAP["novo"] || "bg-slate-100 text-slate-800"} border-none font-bold gap-1 px-2.5 py-0.5`}>
+                          {STATUS_LABEL_MAP[item.status] || item.status || "Pendente (Carrinho)"}
+                        </Badge>
                       </td>
 
                       {/* Itens */}
@@ -1297,7 +1293,7 @@ export function PedidosAdmin() {
                             className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(item.id, item.tipo);
+                              handleDelete(item.rawId || item.id, item.tipo);
                             }}
                           >
                             <Trash2 className="h-4 w-4" />

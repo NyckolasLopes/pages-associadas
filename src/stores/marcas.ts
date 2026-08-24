@@ -73,7 +73,7 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
           destaque: m.destaque,
           seo_url: m.seoUrl,
           marca_propria: m.marcaPropria,
-          globalPleno: m.globalPleno
+          global_pleno: m.globalPleno
         }).then(({ error: upsertError }) => {
           if (upsertError) console.warn("Aviso ao tentar salvar marca padrao:", upsertError.message);
         });
@@ -95,11 +95,13 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
       seo_url: m.seoUrl || null,
       marca_propria: m.marcaPropria || false,
       loja_id: m.loja_id || null,
-      globalPleno: m.globalPleno || false,
+      global_pleno: m.globalPleno || false,
     });
-    if (!error) {
-      get().loadMarcas();
+    if (error) {
+      console.error("Erro addMarca:", error);
+      throw error;
     }
+    get().loadMarcas();
   },
 
   updateMarca: async (m) => {
@@ -113,11 +115,13 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
       seo_url: m.seoUrl || null,
       marca_propria: m.marcaPropria || false,
       loja_id: m.loja_id || null,
-      globalPleno: m.globalPleno || false,
+      global_pleno: m.globalPleno || false,
     }).eq('id', m.id);
-    if (!error) {
-      get().loadMarcas();
+    if (error) {
+      console.error("Erro updateMarca:", error);
+      throw error;
     }
+    get().loadMarcas();
   },
 
   removeMarca: async (id) => {

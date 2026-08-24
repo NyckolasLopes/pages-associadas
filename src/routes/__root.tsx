@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { useCart, useGeoCep } from "../stores/cart";
 import { useAuth } from "@/stores/auth";
+import { useCartSync } from "@/hooks/useCartSync";
 import { useAdminProducts } from "@/stores/products";
 import { useAdmin } from "../stores/admin";
 import { useLive } from "../stores/live";
@@ -27,7 +28,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/storefront/InstallPrompt";
 import { FloatingElements } from "@/components/storefront/BackToTop";
 import { PriceDropTracker } from "@/components/storefront/PriceDropTracker";
-import { VisitorTracker } from "@/components/VisitorTracker";
+
 import mascot404 from "@/assets/404-mascot.png";
 
 export function NotFoundComponent() {
@@ -170,6 +171,9 @@ function RootComponent() {
   const redirects = useConfig((s) => s.redirects);
   const scripts = useConfig((s) => s.scripts);
 
+  // Sincroniza carrinhos abandonados
+  useCartSync();
+
   useEffect(() => {
     // Check for 301 redirects
     const path = location.pathname;
@@ -188,21 +192,9 @@ function RootComponent() {
     useCart.persist.rehydrate();
     useGeoCep.persist.rehydrate();
     
-    // Security check: Force logout on new tab/browser window
+    // Security check logic removed per user request (NUNCA DERRUBAR)
     if (!sessionStorage.getItem('fa_admin_session')) {
       sessionStorage.setItem('fa_admin_session', 'true');
-      try {
-        const raw = localStorage.getItem("fa-admin-store-v4");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed.state) {
-            parsed.state.currentUser = null;
-            localStorage.setItem("fa-admin-store-v4", JSON.stringify(parsed));
-          }
-        }
-      } catch (e) {
-        console.error("Failed to clean legacy session", e);
-      }
     }
     
     useAdmin.persist.rehydrate();
@@ -396,9 +388,8 @@ function RootComponent() {
       {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}
       {customHtml && <div dangerouslySetInnerHTML={{ __html: customHtml }} />}
       <Outlet />
-
-      <VisitorTracker />
       <PriceDropTracker />
+
       {!isAdmin && <FloatingElements />}
       {!isAdmin && <InstallPrompt />}
       <Toaster 

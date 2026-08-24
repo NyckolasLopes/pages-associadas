@@ -5,16 +5,24 @@ import { Link2, Copy, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import { useRegistrationTokens } from "@/stores/registrationTokens";
 
 export const Route = createFileRoute("/admin/lojas/link-inscricao")({
   component: LinkInscricaoAssociado,
 });
 
 function LinkInscricaoAssociado() {
-  const { currentUser, registrationTokens, generateRegistrationToken, deleteRegistrationToken, clearRegistrationTokens } = useAdmin();
+  const { currentUser } = useAdmin();
+  const { registrationTokens, generateRegistrationToken, deleteRegistrationToken, clearRegistrationTokens } = useRegistrationTokens();
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
   const [deleteTokenItem, setDeleteTokenItem] = useState<string | null>(null);
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [customName, setCustomName] = useState("");
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
 
   if (!isGlobalAdmin) {
@@ -26,9 +34,28 @@ function LinkInscricaoAssociado() {
     );
   }
 
-  const handleGenerate = () => {
-    generateRegistrationToken();
+  const handleGenerateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customName.trim()) {
+      toast.error("O nome da URL não pode estar vazio");
+      return;
+    }
+    const slug = customName.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/(^-|-$)+/g, '');
+    
+    if (slug === "") {
+      toast.error("Nome inválido");
+      return;
+    }
+
+    const token = generateRegistrationToken(slug, customName.trim());
+    if (!token) {
+      toast.error("Essa URL já está em uso, escolha outro nome.");
+      return;
+    }
+    
     toast.success("Novo link gerado com sucesso!");
+    setIsGenerateModalOpen(false);
+    setCustomName("");
   };
 
   const handleCopy = (token: string) => {
@@ -56,27 +83,28 @@ function LinkInscricaoAssociado() {
         <div className="max-w-md">
           <h2 className="text-xl font-bold text-slate-800 mb-2">Novo Link de Inscrição</h2>
           <p className="text-slate-600 mb-6">Ao gerar um novo link, o associado poderá acessar o formulário de cadastro. O link só pode ser utilizado para um único cadastro.</p>
-          <Button onClick={handleGenerate} className="bg-emerald-700 hover:bg-emerald-800 text-white w-full h-12 text-lg">
+          <Button onClick={() => setIsGenerateModalOpen(true)} className="bg-emerald-700 hover:bg-emerald-800 text-white w-full h-12 text-lg">
             Gerar novo link de cadastro
           </Button>
         </div>
       </div>
 
-      {sortedTokens.length > 0 && (
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b bg-slate-50 font-bold text-slate-800 flex justify-between items-center">
-            <span>Histórico de Links Gerados</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-              onClick={() => setIsClearHistoryModalOpen(true)}
-            >
-              <Trash2 className="w-4 h-4 mr-1.5" />
-              Limpar Histórico
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b bg-slate-50 font-bold text-slate-800 flex justify-between items-center">
+          <span>Histórico de Links Gerados</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+            onClick={() => setIsClearHistoryModalOpen(true)}
+            disabled={sortedTokens.length === 0}
+          >
+            <Trash2 className="w-4 h-4 mr-1.5" />
+            Limpar Histórico
+          </Button>
+        </div>
+        <div className="overflow-x-auto">
+          {sortedTokens.length > 0 ? (
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500 font-medium border-b">
                 <tr>
@@ -89,8 +117,11 @@ function LinkInscricaoAssociado() {
               <tbody className="divide-y divide-slate-100">
                 {sortedTokens.map((t) => (
                   <tr key={t.token} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-slate-700 font-mono text-xs">
-                      {window.location.origin}/inscricao/{t.token}
+                    <td className="px-4 py-3">
+                      {t.nome && <div className="font-semibold text-slate-800 text-sm mb-1">{t.nome}</div>}
+                      <div className="font-medium text-slate-700 font-mono text-xs break-all">
+                        {window.location.origin}/inscricao/{t.token}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {new Date(t.createdAt).toLocaleString("pt-BR")}
@@ -132,9 +163,13 @@ function LinkInscricaoAssociado() {
                 ))}
               </tbody>
             </table>
-          </div>
+          ) : (
+            <div className="p-8 text-center text-slate-500">
+              Nenhum link de inscrição foi gerado ainda.
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <ConfirmDialog
         isOpen={isClearHistoryModalOpen}
@@ -161,6 +196,42 @@ function LinkInscricaoAssociado() {
         description="Tem certeza que deseja excluir este link de inscrição? Associados não poderão mais se cadastrar usando-o."
         confirmText="Excluir"
       />
+      <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerar Novo Link de Inscrição</DialogTitle>
+            <DialogDescription>
+              Insira um nome personalizado para o link da nova loja associada.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleGenerateSubmit} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="custom-name">Nome da Loja / URL</Label>
+              <Input
+                id="custom-name"
+                placeholder="Ex: Farmácia Centro"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                autoFocus
+              />
+              <p className="text-xs text-slate-500">
+                A URL será: {window.location.origin}/inscricao/
+                <span className="font-semibold text-slate-700">
+                  {customName ? customName.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/(^-|-$)+/g, '') : "nome-da-loja"}
+                </span>
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsGenerateModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-emerald-700 hover:bg-emerald-800 text-white">
+                Gerar Link
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

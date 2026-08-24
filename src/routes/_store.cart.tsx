@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useCart, useGeoCep, getEffectivePrice } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
 import { useAdmin } from "@/stores/admin";
@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
 import { sanitizeText, validatePhone, validateCPF, validateEmail, sanitizeCouponCode } from "@/lib/security";
 import type { Produto } from "@/types";
-import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates } from "@/lib/utils";
+import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates, normalizeString } from "@/lib/utils";
 
 function getDynamicETA(inicio: string, fim: string, diasAbertos: number[], tempoMinutos: string, mode: "Entrega" | "Retirada") {
   const fallback = mode === "Entrega" ? (tempoMinutos ? `Em até ${tempoMinutos}` : "Em breve") : (tempoMinutos ? `Retirada em até ${tempoMinutos}` : "Retirada a partir de 30 minutos");
@@ -229,6 +229,52 @@ function CartPage() {
     }
   }, [user]);
 
+  const lastCalcCep = useRef("");
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocalização não é suportada neste navegador.");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        useGeoCep.getState().setCoordinates(lat, lng);
+        
+        try {
+          // Busca o CEP via reverse geocoding do Nominatim
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+          const data = await res.json();
+          const foundCep = data?.address?.postcode;
+          if (foundCep) {
+            const cleanCep = foundCep.replace(/\D/g, "");
+            await useGeoCep.getState().setCep(cleanCep);
+            setCep(cleanCep);
+            toast.success("Localização obtida com sucesso!");
+          } else {
+            toast.error("Não foi possível determinar o CEP a partir da sua localização.");
+          }
+        } catch (e) {
+          toast.error("Erro ao buscar endereço da localização.");
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error("Acesso à localização negado. Digite o CEP manualmente.");
+        } else {
+          toast.error("Erro ao obter localização.");
+        }
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
   // Force open pharmacy dialog if shared link and no pharmacy selected
   useEffect(() => {
     if (mounted && isShared && !selectedPharmacyId && items.length > 0) {
@@ -303,10 +349,18 @@ function CartPage() {
     // Update global geoCep so availablePharmacies updates
     await useGeoCep.getState().setCep(cep);
 
+    // ---- Buscar dados do CEP do cliente ----
+    let customerUf = "";
+    let customerCity = "";
+    let clientLat: number | null = null;
+    let clientLng: number | null = null;
+
     try {
       const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
       const data = await res.json();
       if (!data.erro) {
+        customerUf = data.uf || "";
+        customerCity = data.localidade || "";
         setAddressStr(`${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`);
         setDeliveryAddress(data.logradouro || "");
         setDeliveryBairro(data.bairro || "");
@@ -317,7 +371,23 @@ function CartPage() {
     } catch {
       setAddressStr(cep);
     }
-    
+
+    // ---- Buscar coordenadas do cliente ----
+    if (geoLat && geoLng) {
+      clientLat = geoLat;
+      clientLng = geoLng;
+    } else {
+      try {
+        const coords = await getCepCoordinates(clean);
+        if (coords) {
+          clientLat = coords.lat;
+          clientLng = coords.lng;
+        }
+      } catch {
+        // coords indisponíveis — usará fallback por cidade/UF
+      }
+    }
+
     setIsCalcLoading(false);
     if (!selectedPharmacy) return;
 
@@ -333,32 +403,38 @@ function CartPage() {
     }
 
     if (!forcePickup && p.aceitaEntrega) {
+      // ---- Calcular distância entre cliente e loja ----
       let distance: number | null = null;
-      let cLat = geoLat;
-      let cLng = geoLng;
-
-      if (!cLat || !cLng) {
-        const cCoords = await getCepCoordinates(clean);
-        if (cCoords) {
-          cLat = cCoords.lat;
-          cLng = cCoords.lng;
-        }
-      }
 
       let pLat = p.lat;
       let pLng = p.lng;
       if (!pLat || !pLng) {
-         if (p.cep) {
+        if (p.cep) {
+          try {
             const pCoords = await getCepCoordinates(p.cep);
             if (pCoords) {
-               pLat = pCoords.lat;
-               pLng = pCoords.lng;
+              pLat = pCoords.lat;
+              pLng = pCoords.lng;
             }
-         }
+          } catch { /* sem coordenadas */ }
+        }
       }
 
-      if (cLat && cLng && pLat && pLng) {
-        distance = calculateDistance(cLat, cLng, pLat, pLng);
+      if (clientLat && clientLng && pLat && pLng) {
+        distance = calculateDistance(clientLat, clientLng, pLat, pLng);
+      }
+
+      // ---- Regra: não envia para outro estado ----
+      if (customerUf && p.uf && customerUf.toUpperCase() !== p.uf.toUpperCase()) {
+        // Estados diferentes, não oferece entrega
+        setFreight(opts.length > 0 ? opts : []);
+        setFreightOptions(opts.map(o => ({ id: o.id, label: o.label, price: o.price, eta: o.eta })));
+        if (opts.length === 0 && !forcePickup) {
+          setIsCalcLoading(false);
+          return;
+        }
+        setIsCalcLoading(false);
+        return;
       }
 
       const totalPrice = items.reduce((acc, item) => {
@@ -380,8 +456,12 @@ function CartPage() {
           if (deliveryPrice === null) {
             if (distance !== null && distance >= 0) {
                const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
-               const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
+               const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
                if (matchingRaio) deliveryPrice = matchingRaio.preco;
+            } else if (customerCity && p.cidade && normalizeString(customerCity) === normalizeString(p.cidade)) {
+               // Fallback: mesma cidade
+               const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
+               if (sortedRaios.length > 0) deliveryPrice = sortedRaios[0].preco;
             }
           }
 
@@ -396,26 +476,74 @@ function CartPage() {
           }
         });
       } else {
-        let deliveryPrice = null;
+        let deliveryPrice: number | null = null;
+        let isEligible = false;
 
+        // 1. Faixas de valor (Desconto/Frete Grátis por valor do pedido)
         if (p.faixasValorPedido && p.faixasValorPedido.length > 0) {
           const matchingFaixa = [...p.faixasValorPedido].sort((a,b) => b.valorMin - a.valorMin).find(f => totalPrice >= f.valorMin);
-          if (matchingFaixa) deliveryPrice = matchingFaixa.taxa;
-        }
-
-        if (deliveryPrice === null) {
-          if (distance !== null && distance >= 0 && distance <= 20) {
-            if (p.raiosEntrega && p.raiosEntrega.length > 0) {
-              const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
-              const matchingRaio = sortedRaios.find(r => distance <= r.ateKm);
-              if (matchingRaio) {
-                deliveryPrice = matchingRaio.preco;
-              }
-            }
+          if (matchingFaixa) {
+            deliveryPrice = matchingFaixa.taxa;
+            isEligible = true;
           }
         }
 
-        if (deliveryPrice !== null) {
+        // 2. Se não pegou promoção por valor, calcular pelo modeloFrete
+        if (!isEligible) {
+          if (p.modeloFrete === "fixo") {
+             const maxKm = Number(p.raioEntregaKm) || 30;
+             if (distance !== null && distance >= 0) {
+                if (distance <= maxKm) {
+                   deliveryPrice = Number(p.custoEntrega) || 0;
+                   isEligible = true;
+                }
+             } else {
+                // Fallback: mesmo estado, não conseguiu calcular distância
+                if (customerUf && p.uf && customerUf.toUpperCase() === p.uf.toUpperCase()) {
+                   deliveryPrice = Number(p.custoEntrega) || 0;
+                   isEligible = true;
+                }
+             }
+          } 
+          else if (p.modeloFrete === "raio" || (!p.modeloFrete && p.raiosEntrega && p.raiosEntrega.length > 0)) {
+             if (distance !== null && distance >= 0) {
+                const raioBase = Number(p.raioEntregaKm) || 0;
+                if (raioBase > 0 && distance <= raioBase) {
+                   deliveryPrice = Number(p.custoEntrega) || 0;
+                   isEligible = true;
+                } else if (p.raiosEntrega && p.raiosEntrega.length > 0) {
+                   const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
+                   const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
+                   if (matchingRaio) {
+                     deliveryPrice = matchingRaio.preco;
+                     isEligible = true;
+                   }
+                }
+             } else {
+                // Fallback: mesma cidade
+                if (customerCity && p.cidade && normalizeString(customerCity) === normalizeString(p.cidade)) {
+                   deliveryPrice = Number(p.custoEntrega) || 0;
+                   isEligible = true;
+                }
+             }
+          } 
+          else if (p.modeloFrete === "cep") {
+             if (p.faixasCep && p.faixasCep.length > 0) {
+                const cleanCepInt = parseInt(clean, 10);
+                const matchingFaixa = p.faixasCep.find(f => {
+                   const start = parseInt(f.cepInicio.replace(/\D/g, ""), 10);
+                   const end = parseInt(f.cepFim.replace(/\D/g, ""), 10);
+                   return cleanCepInt >= start && cleanCepInt <= end;
+                });
+                if (matchingFaixa) {
+                   deliveryPrice = Number(matchingFaixa.taxa) || 0;
+                   isEligible = true;
+                }
+             }
+          }
+        }
+
+        if (isEligible && deliveryPrice !== null) {
           opts.push(
             { id: "standard", label: "Entrega Padrão", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: Bike }
           );
@@ -426,6 +554,9 @@ function CartPage() {
         }
         if (p.aceita99 && p.custo99) {
           opts.push({ id: "99", label: "99 Entregas", price: Number(p.custo99), eta: "Em até 1 hora", icon: Truck });
+        }
+        if (p.aceitaMotoboy && p.custoMotoboy) {
+          opts.push({ id: "motoboy", label: "Motoboy Expresso", price: Number(p.custoMotoboy), eta: "Em até 2 horas", icon: Bike });
         }
       }
     }
@@ -685,6 +816,9 @@ function CartPage() {
 
       // Adiciona pedido
       await useOrders.getState().addOrder(newOrder);
+      
+      // Salva o pedido localmente para mostrar na página de sucesso imediatamente
+      useCart.getState().setLastOrder(newOrder);
 
       // Monta mensagem amigável para o WhatsApp
       const itemsListText = items.map((i) => {
@@ -1260,12 +1394,21 @@ function CartPage() {
                   {selected !== "pickup" && (
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2 animate-in fade-in slide-in-from-top-2">
                       <p className="text-[11px] text-muted-foreground mb-2">Preencha seu CEP para estimar o valor e o prazo de entrega.</p>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 mb-2">
                         <Input placeholder="00000-000" maxLength={9} value={cep} disabled={isCalcLoading} onChange={(e) => setCep(e.target.value)} />
                         <Button variant="outline" disabled={isCalcLoading} onClick={calcFreight}>
                           {isCalcLoading ? "Calculando..." : "Calcular"}
                         </Button>
                       </div>
+                      
+                      <button 
+                        onClick={handleUseLocation} 
+                        disabled={isLocating}
+                        className="text-xs text-primary font-bold hover:underline flex items-center gap-1 mt-1 mb-3"
+                      >
+                        <MapPin className="h-3 w-3" />
+                        {isLocating ? "Obtendo localização..." : "Usar minha localização atual"}
+                      </button>
                       
                       {freight && freight.filter(f => f.id !== "pickup").length > 0 ? (
                         <div className="space-y-2 mt-4">

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info, ArrowLeft, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,11 +178,16 @@ function AdminBanners() {
     }
   }, [searchParams?.tab]);
 
+  const [managingGlobal, setManagingGlobal] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+  const [confirmCopyOpen, setConfirmCopyOpen] = useState(false);
   
   const handleCopyGlobalBanners = async () => {
     if (!activeStoreId) return;
-    if (!confirm("Isso copiará todos os banners da rede global para a sua loja. Tem certeza?")) return;
+    setConfirmCopyOpen(true);
+  };
+
+  const executeCopyGlobalBanners = async () => {
     setIsCopying(true);
     try {
       const globalBanners = allBanners.filter(b => !b.lojaId);
@@ -285,9 +291,10 @@ function AdminBanners() {
         await addBanner({
           ...editingBanner,
           id: `banner_${Date.now()}`,
-          lojaId: activeStoreId || (!currentUser?.proprietario ? currentUser?.lojasVinculadas?.[0] : undefined) || undefined,
+          lojaId: managingGlobal ? undefined : (activeStoreId || (!currentUser?.proprietario ? currentUser?.lojasVinculadas?.[0] : undefined) || undefined),
         } as AdminBanner);
         toast.success("Banner criado com sucesso!");
+
       }
       setModalOpen(false);
     } catch (e: any) {
@@ -323,7 +330,12 @@ function AdminBanners() {
               <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
             </Button>
           )}
-          {activeStoreId && isGlobalAdmin() && activeTab === "banners" && (
+          {managingGlobal && isGlobalAdmin() && activeTab === "banners" && (
+            <Button variant="outline" onClick={() => setManagingGlobal(false)} className="font-bold text-slate-600 bg-white shadow-sm border-slate-200">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+            </Button>
+          )}
+          {activeStoreId && isGlobalAdmin() && activeTab === "banners" && pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado !== 'Parceiro' && (
             <Button 
               variant="outline" 
               onClick={handleCopyGlobalBanners} 
@@ -335,18 +347,30 @@ function AdminBanners() {
             </Button>
           )}
           <StoreSelector className="mb-0" />
-          {activeTab === "banners" && (activeStoreId || !isGlobalAdmin()) && (
+          {activeTab === "banners" && (activeStoreId || managingGlobal || !isGlobalAdmin()) && (
             <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
               <Plus className="w-4 h-4 mr-2" /> Novo banner
             </Button>
           )}
+
         </div>
       </div>
 
       {/* Tab 1: Banners Content */}
       {activeTab === "banners" && (
-        !activeStoreId && isGlobalAdmin() ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        !activeStoreId && isGlobalAdmin() && !managingGlobal ? (
+          <div className="space-y-6">
+            <div className="p-6 bg-emerald-50 rounded-xl border border-emerald-100 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-emerald-800">Banners da Rede (Globais)</h3>
+                <p className="text-sm text-emerald-600">Gerencie os banners padrão que as lojas poderão puxar para suas próprias vitrines.</p>
+              </div>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold" onClick={() => setManagingGlobal(true)}>
+                <Layers className="w-4 h-4 mr-2" /> Gerenciar Banners da Rede
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {pharmacies.map(loja => {
               const bannerCount = allBanners.filter(b => b.lojaId === loja.id).length;
               return (
@@ -358,7 +382,16 @@ function AdminBanners() {
                       </div>
                       <div>
                         <h3 className="font-bold text-slate-800 text-lg group-hover:text-emerald-600 transition-colors">{loja.nome || (loja as any).nomeFantasia || loja.razaoSocial}</h3>
-                        <p className="text-xs text-slate-500">Filial #{loja.id}</p>
+                        <p className="text-xs text-slate-500 flex items-center gap-2 mt-1">
+                          Filial #{loja.id}
+                          <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] uppercase tracking-wider ${
+                            loja.categoriaAssociado === 'Parceiro'
+                              ? 'bg-slate-200 text-slate-700'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {loja.categoriaAssociado === 'Parceiro' ? 'Parceiro' : 'Pleno'}
+                          </span>
+                        </p>
                       </div>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-center justify-between mb-4">
@@ -378,6 +411,7 @@ function AdminBanners() {
                 <p>Nenhuma loja cadastrada na rede.</p>
               </div>
             )}
+            </div>
           </div>
         ) : (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1282,6 +1316,16 @@ function AdminBanners() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog 
+        isOpen={confirmCopyOpen}
+        onClose={() => setConfirmCopyOpen(false)}
+        onConfirm={executeCopyGlobalBanners}
+        title="pages-associadas.vercel.app diz"
+        description="Isso copiará todos os banners da rede global para a sua loja. Tem certeza?"
+        confirmText="OK"
+        cancelText="Cancelar"
+      />
     </div>
   );
 }

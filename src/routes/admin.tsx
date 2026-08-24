@@ -187,11 +187,7 @@ function AdminLayout() {
   const { orders } = useOrders();
   const prevOrdersRef = useRef(orders);
 
-  useInactivityTimeout(8 * 60 * 1000, () => {
-    toast.error("Sessão expirada por inatividade. Faça login novamente.", { duration: 5000 });
-    logout();
-    setTimeout(() => window.location.reload(), 1000);
-  }, !!currentUser);
+  // Auto-logout por inatividade removido a pedido do usuário ("NUNCA DERRUBAR")
 
 
   useEffect(() => {
@@ -211,6 +207,9 @@ function AdminLayout() {
     // Carregar lojas do banco de dados (Supabase)
     const { loadPharmacies } = useAdmin.getState();
     loadPharmacies();
+
+    // Carregar pedidos globais para popular dashboard, métricas e top 100
+    useOrders.getState().loadOrders();
 
     // Carregar produtos removido para usar a paginação do React Query e do Catalog Service
 

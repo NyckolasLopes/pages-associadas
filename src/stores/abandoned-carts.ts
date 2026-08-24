@@ -46,7 +46,11 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
 
       if (error) throw error;
 
-      const mapped: AbandonedCart[] = (data || []).map((row: any) => ({
+      const thirtySecondsAgo = new Date(Date.now() - 30000);
+
+      const mapped: AbandonedCart[] = (data || [])
+        .filter((row: any) => new Date(row.updated_at) < thirtySecondsAgo)
+        .map((row: any) => ({
         id: row.id,
         createdAt: new Date(row.created_at).toLocaleDateString('pt-BR') + ' ' + new Date(row.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         client: row.nome_cliente || "Cliente",

@@ -7,6 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useState, useRef } from "react";
 import { useMarcasStore } from "@/stores/marcas";
+import { useAdmin } from "@/stores/admin";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/marcas/nova")({
   component: AdminMarcaNova,
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/admin/marcas/nova")({
 function AdminMarcaNova() {
   const navigate = useNavigate();
   const addMarca = useMarcasStore((s) => s.addMarca);
+  const { activeStoreId } = useAdmin();
 
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -68,22 +71,32 @@ function AdminMarcaNova() {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
     if (!nome.trim()) return;
 
-    addMarca({
-      id: `m${Date.now()}`,
-      nome,
-      descricao,
-      logo,
-      seoUrl: seoUrl || nome.toLowerCase().replace(/\s+/g, '-'),
-      slug: seoUrl || nome.toLowerCase().replace(/\s+/g, '-'),
-      ativo,
-      destaque,
-      marcaPropria
-    });
-
-    navigate({ to: "/admin/marcas" });
+    setIsSaving(true);
+    try {
+      await addMarca({
+        id: `m${Date.now()}`,
+        nome,
+        descricao,
+        logo,
+        seoUrl: seoUrl || nome.toLowerCase().replace(/\s+/g, '-'),
+        slug: seoUrl || nome.toLowerCase().replace(/\s+/g, '-'),
+        ativo,
+        destaque,
+        marcaPropria,
+        loja_id: activeStoreId || undefined
+      });
+      toast.success("Marca criada com sucesso!");
+      navigate({ to: "/admin/marcas" });
+    } catch (e) {
+      toast.error("Erro ao criar marca. Verifique as permissões.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -181,7 +194,7 @@ function AdminMarcaNova() {
                      </div>
                      <h4 className="font-bold text-slate-700 mb-1 text-sm">Arraste e solte o logo da marca aqui</h4>
                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                       Tamanho máximo 2MB. Fundo transparente (PNG) recomendado.
+                       Dimensão recomendada: 150x100px. Fundo transparente (PNG). Tamanho máximo 2MB.
                      </p>
                    </>
                  )}

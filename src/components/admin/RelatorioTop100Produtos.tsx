@@ -202,6 +202,20 @@ export function RelatorioTop100Produtos({
     let totalQtd = 0;
     let totalFat = 0;
 
+    // Create lookup maps to avoid O(N*M) lookups
+    const catalogByName: Record<string, any> = {};
+    const catalogById: Record<string, any> = {};
+    const catalogBySku: Record<string, any> = {};
+    
+    if (catalogProducts) {
+      for (const cp of catalogProducts) {
+        if (cp.id) catalogById[cp.id] = cp;
+        if (cp.sku) catalogBySku[cp.sku] = cp;
+        if (cp.ean) catalogBySku[cp.ean] = cp;
+        if (cp.nome) catalogByName[cp.nome.toLowerCase()] = cp;
+      }
+    }
+
     filteredOrders.forEach(order => {
       const items = order.itens || order.produtos || [];
       const orderLojaId = order.lojaId || "1";
@@ -217,10 +231,8 @@ export function RelatorioTop100Produtos({
         totalFat += itemFat;
 
         if (!map[key]) {
-          // Find matching catalog product if available for photo/category/sku
-          const catalogItem = catalogProducts?.find(
-            cp => cp.nome?.toLowerCase() === rawNome.toLowerCase() || cp.id === item.id || cp.sku === item.sku
-          );
+          // Use O(1) lookups instead of O(N) array find
+          const catalogItem = catalogByName[key] || catalogById[item.id] || catalogBySku[item.sku] || catalogBySku[item.ean];
 
           map[key] = {
             id: item.id || catalogItem?.id || key,

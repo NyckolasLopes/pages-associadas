@@ -76,8 +76,7 @@ export function useOrdersQuery({
         if (!isNaN(Number(search))) {
            query = query.eq('numero', Number(search));
         } else {
-           // O Supabase suporta ->> para JSON em filtros ilike
-           query = query.ilike('dados_cliente->>nome', `%${search}%`);
+           query = query.ilike('nome_cliente', `%${search}%`);
         }
       }
 
@@ -95,27 +94,82 @@ export function useOrdersQuery({
 
       if (error) throw error;
 
-      const mappedOrders: Pedido[] = (data || []).map((d: any) => ({
-        id: d.numero ? `FA-${d.numero}` : d.id,
-        lojaId: d.loja_id,
-        data: d.created_at,
-        status: d.status,
-        cliente: d.dados_cliente || { nome: "Cliente", email: "", telefone: "" },
-        valores: d.valores || { subtotal: 0, frete: 0, total: 0 },
-        envio: d.dados_envio || { metodo: "retirada", endereco: null },
-        pagamento: d.dados_pagamento || { metodo: "pix" },
-        produtos: (d.pedido_itens || []).map((i: any) => ({
-          id: i.produto_id,
-          nome: i.nome_produto,
-          quantidade: i.quantidade,
-          preco: i.preco_unitario,
-          imagem: i.imagem_url,
-        })),
-        timeline: d.timeline || [
-          { status: 'Pendente', data: d.created_at, finalizado: true }
-        ],
+      const mappedOrders: Pedido[] = (data || []).map((d: any) => {
+        const extractJSON = (field: any) => {
+          if (Array.isArray(field)) return field;
+          if (typeof field === "string") {
+            try { return JSON.parse(field); } catch { return []; }
+          }
+          return [];
+        };
+        
+        const rawItens = extractJSON(d.itens).length > 0 ? extractJSON(d.itens) : 
+                        extractJSON(d.produtos).length > 0 ? extractJSON(d.produtos) : 
+                        extractJSON(d.items);
+
+        const mappedRawItens = rawItens.map((i: any) => {
+          const sku = i.sku || i.produto_id || i.id;
+          return {
+            ...i,
+            nome: i.nome || i.name || i.title || 'Produto sem nome',
+            sku: sku,
+            ean: i.ean || i.barcode,
+            qtd: i.qtd || i.quantidade || i.qty || 1,
+            quantidade: i.qtd || i.quantidade || i.qty || 1,
+            valorUnitario: i.valorUnitario || i.preco_unit || i.price || i.preco || 0,
+            preco: i.preco || (i.valorUnitario || i.preco_unit || i.price || 0) * (i.qtd || i.quantidade || i.qty || 1),
+            foto: i.foto || i.image || i.imageUrl || (sku ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${sku.substring(0, 2)}/${sku.substring(2, 4)}/${sku}_m1_1.jpg` : undefined),
+          };
+        });
+
+        const parsedItens = (d.pedido_itens && d.pedido_itens.length > 0) 
+          ? d.pedido_itens.map((i: any) => ({
+              nome: i.nome,
+              sku: i.produto_id,
+              ean: i.ean,
+              qtd: i.qty,
+              quantidade: i.qty,
+              valorUnitario: i.preco_unit,
+              preco: i.preco_unit * i.qty,
+              foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
+            }))
+          : mappedRawItens;
+
+        return {
+          id: d.numero ? `FA-${d.numero}` : d.id,
+          lojaId: d.loja_id,
+          data: d.created_at,
+          status: d.status,
+          modalidade: d.metodo_entrega,
+          cupomAplicado: d.cupom_codigo,
+          cliente: {
+            nome: d.nome_cliente || 'Cliente',
+            email: d.email_cliente || '',
+            telefone: d.telefone_cliente || '',
+            cpf: d.cpf_cliente || '',
+            endereco: d.endereco_entrega,
+          },
+          pagamento: {
+            metodo: d.metodo_pagamento,
+          },
+          envio: {
+            metodo: d.metodo_entrega,
+            rastreio: d.rastreio || undefined,
+          },
+          itens: parsedItens,
+          produtos: parsedItens,
+        valores: {
+          subtotal: d.subtotal,
+          produtos: d.subtotal,
+          frete: d.frete,
+          desconto: d.desconto,
+          total: d.total,
+        },
+        historico: [],
+        anotacoes: d.observacoes,
         rawId: d.id,
-      }));
+      };
+    });
 
       return { data: mappedOrders, count: count || 0 };
     },

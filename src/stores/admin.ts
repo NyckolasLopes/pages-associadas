@@ -17,6 +17,7 @@ export interface RegistrationToken {
   token: string;
   createdAt: number;
   used: boolean;
+  nome?: string;
 }
 
 export interface AdminGroup {
@@ -99,6 +100,7 @@ export interface CustomDeliveryMethod {
 
 export interface Pharmacy {
   id: string;
+  slug?: string;
   ativo?: boolean;
   categoriaAssociado?: 'Pleno' | 'Parceiro';
   isVirtualStoreGenerated?: boolean;
@@ -317,7 +319,7 @@ interface AdminState {
 
   // Link Inscrição
   registrationTokens: RegistrationToken[];
-  generateRegistrationToken: () => string;
+  generateRegistrationToken: (tokenSlug: string, nome?: string) => string | null;
   markRegistrationTokenUsed: (token: string) => void;
   deleteRegistrationToken: (token: string) => void;
   clearRegistrationTokens: () => void;
@@ -913,6 +915,7 @@ export const useAdmin = create<AdminState>()(
             }
             return {
               id: l.id,
+              slug: l.slug || parsedThemeColors?.slug,
               ativo: l.ativa ?? true,
               cnpj: l.cnpj,
               razaoSocial: l.razao_social,
@@ -1085,6 +1088,7 @@ export const useAdmin = create<AdminState>()(
         const currentPharmacy = s.pharmacies.find(x => x.id === id);
         const theme_colors_payload = {
           ...(currentPharmacy?.themeColors || {}),
+          slug: p.slug,
           complemento: p.complemento,
           sistemaUtilizado: p.sistemaUtilizado,
           offersServices: p.offersServices,
@@ -1222,21 +1226,29 @@ export const useAdmin = create<AdminState>()(
       }),
 
       registrationTokens: [],
-      generateRegistrationToken: () => {
-        const token = crypto.randomUUID();
-        set((state) => ({
-          registrationTokens: [...state.registrationTokens, { token, createdAt: Date.now(), used: false }]
-        }));
-        return token;
+      generateRegistrationToken: (tokenSlug, nome) => {
+        let isDuplicate = false;
+        set((state) => {
+          const currentTokens = state.registrationTokens || [];
+          if (currentTokens.some(t => t.token === tokenSlug)) {
+            isDuplicate = true;
+            return state;
+          }
+          return {
+            registrationTokens: [...currentTokens, { token: tokenSlug, createdAt: Date.now(), used: false, nome }]
+          };
+        });
+        if (isDuplicate) return null;
+        return tokenSlug;
       },
       markRegistrationTokenUsed: (token) => {
         set((state) => ({
-          registrationTokens: state.registrationTokens.map(t => t.token === token ? { ...t, used: true } : t)
+          registrationTokens: (state.registrationTokens || []).map(t => t.token === token ? { ...t, used: true } : t)
         }));
       },
       deleteRegistrationToken: (token) => {
         set((state) => ({
-          registrationTokens: state.registrationTokens.filter(t => t.token !== token)
+          registrationTokens: (state.registrationTokens || []).filter(t => t.token !== token)
         }));
       },
       clearRegistrationTokens: () => {

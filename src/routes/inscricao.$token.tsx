@@ -2,6 +2,7 @@ import { LojaFormFields } from "@/components/admin/LojaFormFields";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAdmin, Pharmacy } from "@/stores/admin";
 import { useRegionsStore } from "@/stores/regions";
+import { useRegistrationTokens } from "@/stores/registrationTokens";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,16 +139,50 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
 function InscricaoLojaPublic() {
   const { token } = Route.useParams();
   const navigate = useNavigate();
-  const { registrationTokens, addPharmacy, markRegistrationTokenUsed } = useAdmin();
+  const { addPharmacy } = useAdmin();
+  const { registrationTokens, markRegistrationTokenUsed } = useRegistrationTokens();
   const { regions } = useRegionsStore();
   
+  // Aguardar reidratação do store (skipHydration: true no admin store)
+  const [storeReady, setStoreReady] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
   const [isValidToken, setIsValidToken] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
   const [form, setForm] = useState<Pharmacy>({ ...EMPTY_PHARMACY, id: `p${Date.now()}` });
 
+  // Esperar a reidratação do store antes de validar o token
   useEffect(() => {
+    const checkHydration = () => {
+      const hasHydrated = (useRegistrationTokens as any).persist?.hasHydrated?.();
+      if (hasHydrated) {
+        setStoreReady(true);
+      } else {
+        // Tentar novamente em breve
+        const timer = setTimeout(checkHydration, 100);
+        return () => clearTimeout(timer);
+      }
+    };
+    
+    // Se o store já estiver reidratado (improvável mas possível), marca imediatamente
+    // Caso contrário, inscreve no evento de reidratação
+    if ((useRegistrationTokens as any).persist?.hasHydrated?.()) {
+      setStoreReady(true);
+    } else {
+      const unsubFinishHydration = (useRegistrationTokens as any).persist?.onFinishHydration?.(() => {
+        setStoreReady(true);
+      });
+      // fallback: timeout de 3s para não travar para sempre
+      const fallbackTimer = setTimeout(() => setStoreReady(true), 3000);
+      return () => {
+        unsubFinishHydration?.();
+        clearTimeout(fallbackTimer);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!storeReady) return;
     // Validate token
     const foundToken = registrationTokens?.find(t => t.token === token);
     if (foundToken && !foundToken.used) {
@@ -156,7 +191,7 @@ function InscricaoLojaPublic() {
       setIsValidToken(false);
     }
     setIsValidating(false);
-  }, [token, registrationTokens]);
+  }, [token, registrationTokens, storeReady]);
 
   const update = (patch: Partial<Pharmacy>) => setForm((prev) => ({ ...prev, ...patch }));
 
@@ -182,7 +217,12 @@ function InscricaoLojaPublic() {
   };
 
   if (isValidating) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">Validando link...</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4 animate-in fade-in duration-300">
+        <img src="/icone-associadas.png" alt="Carregando..." className="w-12 h-12 animate-spin drop-shadow-sm" />
+        <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Validando link...</span>
+      </div>
+    );
   }
 
   if (!isValidToken && !isSuccess) {

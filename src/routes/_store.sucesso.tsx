@@ -45,6 +45,12 @@ function SucessoPage() {
     queryKey: ['order-success', search.id],
     queryFn: async () => {
       if (!search.id) return null;
+      
+      const lastOrder = useCart.getState().lastOrder;
+      if (lastOrder && (lastOrder.id === search.id || lastOrder.numero === search.id.replace('FA-', ''))) {
+        return lastOrder as Pedido;
+      }
+
       const { data, error } = await supabase.from('pedidos').select('*').eq('id', search.id).single();
       if (error) {
         console.error("Erro ao buscar pedido:", error);

@@ -123,7 +123,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     let query = supabase
       .from('pedidos')
-      .select('*, pedido_itens(*)')
+      .select('*, pedido_itens(*), pedido_historico_status(*)')
       .order('created_at', { ascending: false });
 
     // Restringir a query se não for admin global
@@ -142,58 +142,92 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     const { data, error } = await query;
 
+    if (error) {
+      console.error("Supabase Error fetching orders:", error);
+    }
+
     if (!error && data) {
-      const mappedOrders: Pedido[] = data.map((d: any) => ({
-        id: d.numero ? `FA-${d.numero}` : d.id,
-        lojaId: d.loja_id,
-        data: d.created_at,
-        status: d.status,
-        modalidade: d.metodo_entrega,
-        cupomAplicado: d.cupom_codigo,
-        cliente: {
-          nome: d.nome_cliente || 'Cliente',
-          email: d.email_cliente || '',
-          telefone: d.telefone_cliente || '',
-          cpf: d.cpf_cliente || '',
-          endereco: d.endereco_entrega,
-        },
-        pagamento: {
-          metodo: d.metodo_pagamento,
-        },
-        envio: {
-          metodo: d.metodo_entrega,
-          rastreio: d.rastreio || undefined,
-        },
-        itens: d.pedido_itens?.map((i: any) => ({
-          nome: i.nome,
-          sku: i.produto_id,
-          ean: i.ean,
-          qtd: i.qty,
-          quantidade: i.qty,
-          valorUnitario: i.preco_unit,
-          preco: i.preco_unit * i.qty,
-          foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
-        })),
-        produtos: d.pedido_itens?.map((i: any) => ({
-          nome: i.nome,
-          sku: i.produto_id,
-          ean: i.ean,
-          qtd: i.qty,
-          quantidade: i.qty,
-          valorUnitario: i.preco_unit,
-          preco: i.preco_unit * i.qty,
-          foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
-        })),
-        valores: {
+      const mappedOrders: Pedido[] = data.map((d: any) => {
+        const extractJSON = (field: any) => {
+          if (Array.isArray(field)) return field;
+          if (typeof field === "string") {
+            try { return JSON.parse(field); } catch { return []; }
+          }
+          return [];
+        };
+        
+        const rawItens = extractJSON(d.itens).length > 0 ? extractJSON(d.itens) : 
+                        extractJSON(d.produtos).length > 0 ? extractJSON(d.produtos) : 
+                        extractJSON(d.items);
+
+        const mappedRawItens = rawItens.map((i: any) => {
+          const sku = i.sku || i.produto_id || i.id;
+          return {
+            ...i,
+            nome: i.nome || i.name || i.title || 'Produto sem nome',
+            sku: sku,
+            ean: i.ean || i.barcode,
+            qtd: i.qtd || i.quantidade || i.qty || 1,
+            quantidade: i.qtd || i.quantidade || i.qty || 1,
+            valorUnitario: i.valorUnitario || i.preco_unit || i.price || i.preco || 0,
+            preco: i.preco || (i.valorUnitario || i.preco_unit || i.price || 0) * (i.qtd || i.quantidade || i.qty || 1),
+            foto: i.foto || i.image || i.imageUrl || (sku ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${sku.substring(0, 2)}/${sku.substring(2, 4)}/${sku}_m1_1.jpg` : undefined),
+          };
+        });
+
+        const parsedItens = (d.pedido_itens && d.pedido_itens.length > 0) 
+          ? d.pedido_itens.map((i: any) => ({
+              id: i.produto_id || i.id,
+              nome: i.nome,
+              sku: i.produto_id,
+              ean: i.ean,
+              qtd: i.qty,
+              quantidade: i.qty,
+              valorUnitario: i.preco_unit,
+              preco: i.preco_unit * i.qty,
+              foto: i.produto_id ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg` : undefined,
+            }))
+          : mappedRawItens;
+
+        return {
+          id: d.numero ? `FA-${d.numero}` : d.id,
+          lojaId: d.loja_id,
+          data: d.created_at,
+          status: d.status,
+          modalidade: d.metodo_entrega,
+          cupomAplicado: d.cupom_codigo,
+          cliente: {
+            nome: d.nome_cliente || 'Cliente',
+            email: d.email_cliente || '',
+            telefone: d.telefone_cliente || '',
+            cpf: d.cpf_cliente || '',
+            endereco: d.endereco_entrega,
+          },
+          pagamento: {
+            metodo: d.metodo_pagamento,
+          },
+          envio: {
+            metodo: d.metodo_entrega,
+            rastreio: d.rastreio || undefined,
+          },
+          itens: parsedItens,
+          produtos: parsedItens,
+          valores: {
           subtotal: d.subtotal,
           produtos: d.subtotal,
           frete: d.frete,
           desconto: d.desconto,
           total: d.total,
         },
-        historico: [],
+        historico: Array.isArray(d.pedido_historico_status)
+          ? d.pedido_historico_status
+              .sort((a: any, b: any) => new Date(a.data).getTime() - new Date(b.data).getTime())
+              .map((h: any) => ({ data: h.data, situacao: h.situacao, autor: h.autor }))
+          : [],
         anotacoes: d.observacoes,
-      }));
+        rawId: d.id,
+        };
+      });
       set({ orders: mappedOrders });
     }
   },
@@ -220,7 +254,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
       nome_cliente: order.cliente?.nome || '',
       telefone_cliente: order.cliente?.telefone || '',
       email_cliente: order.cliente?.email || '',
-      cpf_cliente: order.cliente?.cpf || '',
+      cpf_cliente: order.cliente?.cpf || ''
     }).select('id').single();
 
     if (orderError) {
@@ -231,15 +265,30 @@ export const useOrders = create<OrdersState>((set, get) => ({
     if (!orderError && insertedOrder) {
       const itens = order.produtos || order.itens || [];
       if (itens.length > 0) {
-        const orderItemsRows = itens.map(i => ({
-            pedido_id: insertedOrder.id,
-            produto_id: i.id || i.sku || null,
-            ean: i.ean || null,
-            nome: i.nome,
-            qty: i.qtd || i.quantidade || 1,
-            preco_unit: i.valorUnitario || i.preco || 0
-          }));
-        await supabase.from('pedido_itens').insert(orderItemsRows as any);
+        // Verifica quais produtos existem no banco para evitar erro de Foreign Key
+        const productIds = itens.map(i => i.id || i.sku).filter(Boolean);
+        const { data: existingProducts } = await supabase
+          .from('produtos')
+          .select('id')
+          .in('id', productIds);
+          
+        const existingProductIds = new Set(existingProducts?.map(p => p.id) || []);
+
+        const orderItemsRows = itens.map(i => {
+            const potentialId = i.id || i.sku;
+            return {
+              pedido_id: insertedOrder.id,
+              produto_id: existingProductIds.has(potentialId) ? potentialId : null,
+              nome: i.nome,
+              qty: i.qtd || i.quantidade || 1,
+              preco_unit: i.valorUnitario || i.preco || 0
+            };
+        });
+
+        const { error: itemsError } = await supabase.from('pedido_itens').insert(orderItemsRows as any);
+        if (itemsError) {
+          console.error("Error inserting order items:", itemsError);
+        }
       }
     }
 
@@ -248,13 +297,45 @@ export const useOrders = create<OrdersState>((set, get) => ({
   },
 
   updateOrderStatus: async (id, status) => {
-    const query = id.startsWith('FA-') 
-      ? supabase.from('pedidos').update({ status }).eq('numero', id.replace('FA-', ''))
-      : supabase.from('pedidos').update({ status }).eq('id', id);
-    const { error } = await query;
+    // Resolver UUID real do pedido
+    let rawId = id;
+    if (id.startsWith('FA-')) {
+      const { data } = await supabase.from('pedidos').select('id').eq('numero', id.replace('FA-', '')).single();
+      if (data) rawId = data.id;
+    } else {
+      // Pode ser o numero formatado FA-XXXX ou o UUID direto
+      const pedido = get().orders.find(o => o.id === id);
+      if ((pedido as any)?.rawId) rawId = (pedido as any).rawId;
+    }
+
+    const { error } = await supabase.from('pedidos').update({ status }).eq('id', rawId);
     if (!error) {
+      // Gravar histórico de status
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: profileData } = await supabase
+        .from('profiles' as any)
+        .select('nome')
+        .eq('id', userData?.user?.id || '')
+        .single();
+      const autorNome = (profileData as any)?.nome || userData?.user?.email || 'Administrador';
+
+      await supabase.from('pedido_historico_status' as any).insert({
+        pedido_id: rawId,
+        situacao: status,
+        autor: autorNome,
+        data: new Date().toISOString()
+      });
+
+      // Atualizar state local
       set((state) => ({
-        orders: state.orders.map(o => o.id === id ? { ...o, status } : o),
+        orders: state.orders.map(o => o.id === id ? {
+          ...o,
+          status,
+          historico: [
+            ...(o.historico || []),
+            { data: new Date().toISOString(), situacao: status, autor: autorNome }
+          ]
+        } : o),
       }));
     }
   },

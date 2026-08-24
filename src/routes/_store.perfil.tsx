@@ -148,16 +148,44 @@ function PerfilPage() {
       return;
     }
     
-    // Update profile in Supabase
-    const { supabase } = await import("@/integrations/supabase/client");
-    const userId = user?.id;
-    if (userId) {
-      await supabase.from("profiles").update({ nome: editName, telefone: editPhone, cpf: editCpf }).eq("id", userId);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const userId = user?.id;
+      
+      if (userId) {
+        const { error: profileError } = await supabase.from("profiles").upsert({ 
+          id: userId,
+          nome: editName, 
+          telefone: editPhone, 
+          cpf: editCpf 
+        });
+
+        if (profileError) throw profileError;
+
+        if (editEmail !== user.email) {
+          const { error: authError } = await supabase.auth.updateUser({ email: editEmail });
+          if (authError) throw authError;
+        }
+
+        useAuth.setState((state) => ({
+          user: state.user ? {
+            ...state.user,
+            name: editName,
+            nome: editName,
+            email: editEmail,
+            cpf: editCpf,
+            celular: editPhone,
+          } : null
+        }));
+
+        toast.success("Informações pessoais atualizadas com sucesso!");
+      }
+    } catch (e: any) {
+      toast.error("Erro ao atualizar dados: " + (e.message || "Erro desconhecido"));
     }
-    toast.success("Informações pessoais atualizadas com sucesso!");
   };
 
-  const handleUpdatePassword = () => {
+  const handleUpdatePassword = async () => {
     setPasswordError("");
     setPasswordSuccess("");
     
@@ -172,11 +200,22 @@ function PerfilPage() {
       return;
     }
 
-    // Mock success
-    setPasswordSuccess("Senha atualizada com sucesso!");
-    setCurrentPassword(newPassword);
-    setNewPassword("");
-    setConfirmPassword("");
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      
+      if (error) {
+        setPasswordError("Erro ao atualizar senha: " + error.message);
+        return;
+      }
+
+      setPasswordSuccess("Senha atualizada com sucesso!");
+      setCurrentPassword(newPassword);
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (e: any) {
+      setPasswordError("Erro ao atualizar senha: " + (e.message || "Erro desconhecido"));
+    }
   };
 
   const handleAddAddress = (e: React.FormEvent) => {

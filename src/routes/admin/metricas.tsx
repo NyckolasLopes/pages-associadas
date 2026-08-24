@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { 
   BarChart3, 
@@ -101,6 +101,11 @@ function Metricas() {
 
   const { orders: rawOrders } = useOrders();
   const { carts: rawCarts } = useAbandonedCartsStore();
+
+  // Forçar o carregamento/atualização dos pedidos quando entrar em Métricas
+  useEffect(() => {
+    useOrders.getState().loadOrders();
+  }, []);
 
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<"todos" | "Concluído" | "Pendente" | "Cancelado">("todos");
   const [selectedLojaFilter, setSelectedLojaFilter] = useState<string>("all");

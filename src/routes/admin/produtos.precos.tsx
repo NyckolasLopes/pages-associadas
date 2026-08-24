@@ -32,7 +32,7 @@ export const Route = createFileRoute("/admin/produtos/precos")({
 });
 
 function AdminProdutosPrecos() {
-  const { customProducts, addOrUpdateProduct, importStoreSpreadsheet } = useAdminProducts();
+  const { customProducts, addOrUpdateProduct, importStoreSpreadsheet, updateStoreProductStatus, updateStoreProductDestaque } = useAdminProducts();
   const { pharmacies, currentUser, grupos } = useAdmin();
   const { selos, addSelo } = useSelos();
 
@@ -399,53 +399,23 @@ function AdminProdutosPrecos() {
     toast.success(selectedPharmacyId === "global" ? "Campanha global ativada com sucesso!" : `Preço do produto atualizado para a loja.`);
   };
 
-  const handleToggleAtivo = (produto: Produto, checked: boolean) => {
-    if (!selectedPharmacyId) {
-      toast.error("Selecione uma loja primeiro.");
+  const handleToggleAtivo = async (produto: Produto, checked: boolean) => {
+    if (!selectedPharmacyId || selectedPharmacyId === "global") {
+      toast.error("Selecione uma loja específica primeiro.");
       return;
     }
 
-    const updatedProduct = { ...produto };
-    if (!updatedProduct.precosPorLoja) {
-      updatedProduct.precosPorLoja = {};
-    }
-
-    const currentPreco = updatedProduct.precosPorLoja[selectedPharmacyId] || {
-      precoDe: produto.precoDe,
-      precoPor: produto.precoPor
-    };
-
-    updatedProduct.precosPorLoja[selectedPharmacyId] = {
-      ...currentPreco,
-      ativo: checked
-    };
-
-    addOrUpdateProduct(updatedProduct);
+    await updateStoreProductStatus(selectedPharmacyId, produto.id, checked);
     toast.success(checked ? "Produto ativado para esta filial." : "Produto indisponível nesta filial.");
   };
 
-  const handleToggleDestaque = (produto: Produto, checked: boolean) => {
-    if (!selectedPharmacyId) {
-      toast.error("Selecione uma loja primeiro.");
+  const handleToggleDestaque = async (produto: Produto, checked: boolean) => {
+    if (!selectedPharmacyId || selectedPharmacyId === "global") {
+      toast.error("Selecione uma loja específica primeiro.");
       return;
     }
 
-    const updatedProduct = { ...produto };
-    if (!updatedProduct.precosPorLoja) {
-      updatedProduct.precosPorLoja = {};
-    }
-
-    const currentPreco = updatedProduct.precosPorLoja[selectedPharmacyId] || {
-      precoDe: produto.precoDe,
-      precoPor: produto.precoPor
-    };
-
-    updatedProduct.precosPorLoja[selectedPharmacyId] = {
-      ...currentPreco,
-      destaque: checked
-    };
-
-    addOrUpdateProduct(updatedProduct);
+    await updateStoreProductDestaque(selectedPharmacyId, produto.id, checked);
     toast.success(checked ? "Produto destacado na sua vitrine." : "Destaque removido da sua vitrine.");
   };
 
