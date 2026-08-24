@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useCart, useGeoCep, getEffectivePrice } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
 import { useAdmin } from "@/stores/admin";
