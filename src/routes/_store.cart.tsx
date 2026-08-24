@@ -448,8 +448,9 @@ function CartPage() {
         p.meiosEntregaPersonalizados.filter(m => m.ativo).forEach(m => {
           let deliveryPrice = null;
           
-          if (p.faixasValorPedido && p.faixasValorPedido.length > 0) {
-            const matchingFaixa = [...p.faixasValorPedido].sort((a,b) => b.valorMin - a.valorMin).find(f => totalPrice >= f.valorMin);
+          const currentFaixasValorPedido = m.faixasValorPedido && m.faixasValorPedido.length > 0 ? m.faixasValorPedido : p.faixasValorPedido;
+          if (currentFaixasValorPedido && currentFaixasValorPedido.length > 0) {
+            const matchingFaixa = [...currentFaixasValorPedido].sort((a,b) => b.valorMin - a.valorMin).find(f => totalPrice >= f.valorMin);
             if (matchingFaixa) deliveryPrice = matchingFaixa.taxa;
           }
 
@@ -1301,7 +1302,9 @@ function CartPage() {
                         return (
                           <>
                             <div className="text-lg font-bold text-foreground leading-tight">{brl(totalWithPromo)}</div>
-                            <div className="text-xs text-muted-foreground line-through">{brl(ep.precoPor * i.qty)}</div>
+                            {ep.precoDe && ep.precoDe > ep.precoPor && (
+                              <div className="text-xs text-muted-foreground line-through">{brl(ep.precoDe * i.qty)}</div>
+                            )}
                             <div className="text-[10px] font-bold text-orange-600">Promoção aplicada!</div>
                           </>
                         );
@@ -1309,8 +1312,14 @@ function CartPage() {
                       
                       return (
                       <>
-                      <div className="text-lg font-bold text-foreground leading-tight">{brl(ep.precoPor * i.qty)}</div>
-                      <div className="text-xs text-muted-foreground">{brl(ep.precoPor)} un.</div>
+                        {ep.precoDe && ep.precoDe > ep.precoPor && (
+                          <div className="text-xs text-muted-foreground line-through">{brl(ep.precoDe * i.qty)}</div>
+                        )}
+                        <div className="text-lg font-bold text-foreground leading-tight">{brl(ep.precoPor * i.qty)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {ep.precoDe && ep.precoDe > ep.precoPor && <span className="line-through mr-1">{brl(ep.precoDe)}</span>}
+                          {brl(ep.precoPor)} un.
+                        </div>
                       </>
                       ); 
                     })()}
@@ -1478,7 +1487,7 @@ function CartPage() {
 
             {couponDisc > 0 && (
               <div className="flex justify-between text-sm text-emerald-600 font-bold py-1">
-                <span className="flex items-center gap-1"><Tag className="h-3.5 w-3.5"/> Cupom ({appliedCoupon})</span>
+                <span className="flex items-center gap-1"><Tag className="h-3.5 w-3.5"/> Desconto do Cupom ({appliedCoupon})</span>
                 <span>−{brl(couponDisc)}</span>
               </div>
             )}

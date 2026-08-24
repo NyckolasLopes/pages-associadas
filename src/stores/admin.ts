@@ -96,6 +96,7 @@ export interface CustomDeliveryMethod {
   ativo: boolean;
   tempoEntrega: string; // Ex: "30 minutos"
   raios: { ateKm: number; preco: number }[];
+  faixasValorPedido?: { valorMin: number; taxa: number }[];
 }
 
 export interface Pharmacy {

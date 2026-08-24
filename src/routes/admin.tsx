@@ -533,7 +533,7 @@ function AdminLayout() {
               {!isGlobalAdmin && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
               {isGlobalAdmin && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Campanha Encarte</Link>}
               {isGlobalAdmin && <Link to="/admin/selos" className={subLinkClass} activeOptions={{ exact: true }}>Selos</Link>}
-              <Link to="/admin/banners" search={{ tab: "banners" } as any} className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Banners das Lojas" : "Meus Banners"}</Link>
+              {isGlobalAdmin && <Link to="/admin/banners" search={{ tab: "banners" } as any} className={subLinkClass} activeOptions={{ exact: true }}>Banners das Lojas</Link>}
             </NavSection>
           )}
 
@@ -552,8 +552,8 @@ function AdminLayout() {
                 </Link>
               )}
               {(isParceiro || isPleno || can('pers_banners')) && (
-                <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass}>
-                  Banners
+                <Link to="/admin/banners" search={{ tab: "banners" }} className={subLinkClass} activeOptions={{ exact: true }}>
+                  Meus Banners
                 </Link>
               )}
               {(isParceiro || can('pers_paginas')) && (

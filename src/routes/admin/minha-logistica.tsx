@@ -222,152 +222,6 @@ function MinhaLogistica() {
             </>
           )}
 
-            <div className="space-y-4 pt-4 mt-6 border-t border-slate-200">
-              <div className="flex justify-between items-center">
-                <div className="space-y-1">
-                  <h3 className="font-bold text-lg text-slate-800">Faixas de Entrega por Raio (Km)</h3>
-                  <p className="text-sm text-slate-500">Configure os valores de frete cobrados baseados na distância em linha reta da loja até o cliente.</p>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                {(formData.raiosEntrega || []).map((raio, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-3 rounded border">
-                    <div className="flex-1 flex items-center gap-2">
-                      <span className="text-sm font-medium">Até</span>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={raio.ateKm || ""}
-                        onChange={(e) => {
-                          const newRaios = [...(formData.raiosEntrega || [])];
-                          newRaios[idx].ateKm = parseFloat(e.target.value) || 0;
-                          setFormData({ ...formData, raiosEntrega: newRaios });
-                        }}
-                        className="w-24"
-                        placeholder="Km"
-                      />
-                      <span className="text-sm font-medium">km</span>
-                    </div>
-                    <div className="flex-1 flex items-center gap-2">
-                      <span className="text-sm font-medium">R$</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={raio.preco || ""}
-                        onChange={(e) => {
-                          const newRaios = [...(formData.raiosEntrega || [])];
-                          newRaios[idx].preco = parseFloat(e.target.value) || 0;
-                          setFormData({ ...formData, raiosEntrega: newRaios });
-                        }}
-                        className="w-28"
-                        placeholder="0,00"
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        const newRaios = [...(formData.raiosEntrega || [])];
-                        newRaios.splice(idx, 1);
-                        setFormData({ ...formData, raiosEntrega: newRaios });
-                      }}
-                    >
-                      X
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs font-bold mt-2"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      raiosEntrega: [...(formData.raiosEntrega || []), { ateKm: 0, preco: 0 }]
-                    });
-                  }}
-                >
-                  + Adicionar Faixa de Raio
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-4 mt-6 border-t border-slate-200">
-              <div className="flex justify-between items-center">
-                <div className="space-y-1">
-                  <h3 className="font-bold text-lg text-slate-800">Faixas de Entrega por Valor do Pedido</h3>
-                  <p className="text-sm text-slate-500">Se configurado, o frete será calculado com base no valor total do carrinho (subtotal final), tendo prioridade sobre as regras de distância.</p>
-                </div>
-              </div>
-            
-            <div className="space-y-2">
-                {(formData.faixasValorPedido || []).map((faixa, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-3 rounded border">
-                    <div className="flex-1 flex flex-col gap-1">
-                      <span className="text-xs font-medium text-slate-500">Valor Mínimo (R$)</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={faixa.valorMin ?? ""}
-                        onChange={(e) => {
-                          const newFaixas = [...(formData.faixasValorPedido || [])];
-                          newFaixas[idx].valorMin = parseFloat(e.target.value) || 0;
-                          setFormData({ ...formData, faixasValorPedido: newFaixas });
-                        }}
-                        placeholder="0,00"
-                        className="bg-white"
-                      />
-                    </div>
-                    <div className="flex-1 flex flex-col gap-1">
-                      <span className="text-xs font-medium text-slate-500">Custo do Frete (R$)</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={faixa.taxa ?? ""}
-                        onChange={(e) => {
-                          const newFaixas = [...(formData.faixasValorPedido || [])];
-                          newFaixas[idx].taxa = parseFloat(e.target.value) || 0;
-                          setFormData({ ...formData, faixasValorPedido: newFaixas });
-                        }}
-                        placeholder="0,00"
-                        className="bg-white"
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="mt-5 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        const newFaixas = [...(formData.faixasValorPedido || [])];
-                        newFaixas.splice(idx, 1);
-                        setFormData({ ...formData, faixasValorPedido: newFaixas });
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  className="w-full text-sm font-bold mt-2"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      faixasValorPedido: [...(formData.faixasValorPedido || []), { valorMin: 0, taxa: 0 }]
-                    });
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Faixa de Valor
-                </Button>
-              </div>
-          </div>
 
         </TabsContent>
 
@@ -613,7 +467,155 @@ function MinhaLogistica() {
                   />
                 </div>
               </div>
-            </div>
+                
+                <div className="space-y-4 pt-4 mt-6 border-t border-slate-200">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-lg text-slate-800">Faixas de Entrega por Raio (Km)</h3>
+                      <p className="text-sm text-slate-500">Configure os valores de frete cobrados baseados na distância em linha reta da loja até o cliente.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2">
+                    {(editingMethod.raios || []).map((raio, idx) => (
+                      <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-3 rounded border">
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-sm font-medium">Até</span>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            value={raio.ateKm || ""}
+                            onChange={(e) => {
+                              const newRaios = [...(editingMethod.raios || [])];
+                              newRaios[idx].ateKm = parseFloat(e.target.value) || 0;
+                              setEditingMethod({ ...editingMethod, raios: newRaios });
+                            }}
+                            className="w-24"
+                            placeholder="Km"
+                          />
+                          <span className="text-sm font-medium">km</span>
+                        </div>
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-sm font-medium">R$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={raio.preco || ""}
+                            onChange={(e) => {
+                              const newRaios = [...(editingMethod.raios || [])];
+                              newRaios[idx].preco = parseFloat(e.target.value) || 0;
+                              setEditingMethod({ ...editingMethod, raios: newRaios });
+                            }}
+                            className="w-28"
+                            placeholder="0,00"
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            const newRaios = [...(editingMethod.raios || [])];
+                            newRaios.splice(idx, 1);
+                            setEditingMethod({ ...editingMethod, raios: newRaios });
+                          }}
+                        >
+                          X
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs font-bold mt-2"
+                      onClick={() => {
+                        setEditingMethod({
+                          ...editingMethod,
+                          raios: [...(editingMethod.raios || []), { ateKm: 0, preco: 0 }]
+                        });
+                      }}
+                    >
+                      + Adicionar Faixa de Raio
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 mt-6 border-t border-slate-200">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-lg text-slate-800">Faixas de Entrega por Valor do Pedido</h3>
+                      <p className="text-sm text-slate-500">Se configurado, terá prioridade sobre as regras de distância para este método.</p>
+                    </div>
+                  </div>
+                
+                <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2">
+                    {(editingMethod.faixasValorPedido || []).map((faixa, idx) => (
+                      <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-3 rounded border">
+                        <div className="flex-1 flex flex-col gap-1">
+                          <span className="text-xs font-medium text-slate-500">Valor Mínimo (R$)</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={faixa.valorMin ?? ""}
+                            onChange={(e) => {
+                              const newFaixas = [...(editingMethod.faixasValorPedido || [])];
+                              newFaixas[idx].valorMin = parseFloat(e.target.value) || 0;
+                              setEditingMethod({ ...editingMethod, faixasValorPedido: newFaixas });
+                            }}
+                            placeholder="0,00"
+                            className="bg-white"
+                          />
+                        </div>
+                        <div className="flex-1 flex flex-col gap-1">
+                          <span className="text-xs font-medium text-slate-500">Custo do Frete (R$)</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={faixa.taxa ?? ""}
+                            onChange={(e) => {
+                              const newFaixas = [...(editingMethod.faixasValorPedido || [])];
+                              newFaixas[idx].taxa = parseFloat(e.target.value) || 0;
+                              setEditingMethod({ ...editingMethod, faixasValorPedido: newFaixas });
+                            }}
+                            placeholder="0,00"
+                            className="bg-white"
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="mt-5 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            const newFaixas = [...(editingMethod.faixasValorPedido || [])];
+                            newFaixas.splice(idx, 1);
+                            setEditingMethod({ ...editingMethod, faixasValorPedido: newFaixas });
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      className="w-full text-sm font-bold mt-2"
+                      onClick={() => {
+                        setEditingMethod({
+                          ...editingMethod,
+                          faixasValorPedido: [...(editingMethod.faixasValorPedido || []), { valorMin: 0, taxa: 0 }]
+                        });
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Faixa de Valor
+                    </Button>
+                  </div>
+                </div>
+
+              </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setMethodModalOpen(false)}>Cancelar</Button>
               <Button onClick={() => handleSaveMethod(editingMethod)} className="bg-emerald-600 hover:bg-emerald-700">Salvar Método</Button>

@@ -7,9 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pharmacy, useAdmin } from "@/stores/admin";
+import { Pharmacy, useAdmin, CustomDeliveryMethod } from "@/stores/admin";
 import { toast } from "sonner";
-import { Package, Truck, MapPin, Clock, Calendar, X } from "lucide-react";
+import { Package, Truck, MapPin, Clock, Calendar, X, Plus, Edit2, Trash2 } from "lucide-react";
+import { CustomDeliveryMethod } from "@/stores/admin";
 
 interface LogisticsModalProps {
   pharmacy: Pharmacy | null;
@@ -21,6 +22,26 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
   const { updatePharmacy } = useAdmin();
   const [formData, setFormData] = useState<Partial<Pharmacy>>({});
   const [isSaving, setIsSaving] = useState(false);
+
+  const [methodModalOpen, setMethodModalOpen] = useState(false);
+  const [editingMethod, setEditingMethod] = useState<CustomDeliveryMethod | null>(null);
+
+  const handleSaveMethod = (method: CustomDeliveryMethod) => {
+    const currentMethods = formData.meiosEntregaPersonalizados || [];
+    let newMethods;
+    if (currentMethods.find(m => m.id === method.id)) {
+      newMethods = currentMethods.map(m => m.id === method.id ? method : m);
+    } else {
+      newMethods = [...currentMethods, method];
+    }
+    setFormData({ ...formData, meiosEntregaPersonalizados: newMethods });
+    setMethodModalOpen(false);
+  };
+
+  const handleDeleteMethod = (id: string) => {
+    const currentMethods = formData.meiosEntregaPersonalizados || [];
+    setFormData({ ...formData, meiosEntregaPersonalizados: currentMethods.filter(m => m.id !== id) });
+  };
 
   useEffect(() => {
     if (pharmacy && open) {
@@ -153,139 +174,56 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                 </div>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <Label>Faixas de Entrega por Raio (Km)</Label>
-              <div className="space-y-2">
-                {(formData.raiosEntrega || []).map((raio, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center gap-3">
-                    <div className="flex-1 flex items-center gap-2">
-                      <span className="text-sm font-medium">Até</span>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={raio.ateKm || ""}
-                        onChange={(e) => {
-                          const newRaios = [...(formData.raiosEntrega || [])];
-                          newRaios[idx].ateKm = parseFloat(e.target.value) || 0;
-                          setFormData({ ...formData, raiosEntrega: newRaios });
-                        }}
-                        className="w-24"
-                        placeholder="Km"
-                      />
-                      <span className="text-sm font-medium">km</span>
-                    </div>
-                    <div className="flex-1 flex items-center gap-2">
-                      <span className="text-sm font-medium">R$</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={raio.preco || ""}
-                        onChange={(e) => {
-                          const newRaios = [...(formData.raiosEntrega || [])];
-                          newRaios[idx].preco = parseFloat(e.target.value) || 0;
-                          setFormData({ ...formData, raiosEntrega: newRaios });
-                        }}
-                        className="w-28"
-                        placeholder="0,00"
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        const newRaios = [...(formData.raiosEntrega || [])];
-                        newRaios.splice(idx, 1);
-                        setFormData({ ...formData, raiosEntrega: newRaios });
-                      }}
-                    >
-                      X
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs font-bold mt-2"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      raiosEntrega: [...(formData.raiosEntrega || []), { ateKm: 0, preco: 0 }]
-                    });
-                  }}
-                >
-                  + Adicionar Faixa
+            
+            <div className="space-y-4 pt-6 mt-6 border-t border-slate-200">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg text-slate-800">Meios de Entrega Personalizados</h3>
+                <Button onClick={() => {
+                  setEditingMethod({
+                    id: Date.now().toString(),
+                    nome: "",
+                    ativo: true,
+                    tempoEntrega: "",
+                    raios: [],
+                    faixasValorPedido: []
+                  });
+                  setMethodModalOpen(true);
+                }} variant="outline" size="sm" className="font-bold text-emerald-700 border-emerald-200 hover:bg-emerald-50">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Meio
                 </Button>
               </div>
-            </div>
-            <div className="space-y-3 pt-4 border-t">
-              <Label>Faixas de Entrega por Valor do Pedido (R$)</Label>
-              <div className="text-xs text-slate-500 mb-2">Configure o custo de entrega com base no valor total do carrinho (subtotal final). Se o valor do carrinho for maior ou igual ao Valor Mínimo, essa taxa será aplicada prioritariamente.</div>
-              <div className="space-y-2">
-                {(formData.faixasValorPedido || []).map((faixa, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-3 rounded border">
-                    <div className="flex-1 flex flex-col gap-1">
-                      <span className="text-xs font-medium text-slate-500">Valor Mín (R$)</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={faixa.valorMin ?? ""}
-                        onChange={(e) => {
-                          const newFaixas = [...(formData.faixasValorPedido || [])];
-                          newFaixas[idx].valorMin = parseFloat(e.target.value) || 0;
-                          setFormData({ ...formData, faixasValorPedido: newFaixas });
-                        }}
-                        placeholder="0,00"
-                        className="bg-white"
-                      />
+
+              {(!formData.meiosEntregaPersonalizados || formData.meiosEntregaPersonalizados.length === 0) ? (
+                <div className="text-center py-8 border-2 border-dashed rounded-lg text-slate-500 bg-slate-50 text-sm">
+                  Nenhum meio de entrega cadastrado.<br/>Clique em "Novo Meio" para adicionar.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {formData.meiosEntregaPersonalizados.map(method => (
+                    <div key={method.id} className="border rounded-lg p-3 bg-white shadow-sm hover:shadow relative overflow-hidden">
+                      <div className={`absolute top-0 left-0 w-1 h-full ${method.ativo ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                      <div className="flex justify-between items-center pl-3">
+                        <div>
+                          <h4 className="font-bold text-slate-800 text-sm">{method.nome}</h4>
+                          <p className="text-xs text-slate-500">{method.tempoEntrega}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                            setEditingMethod(method);
+                            setMethodModalOpen(true);
+                          }}>
+                            <Edit2 className="w-4 h-4 text-slate-500" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteMethod(method.id)}>
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 flex flex-col gap-1">
-                      <span className="text-xs font-medium text-slate-500">Custo Entrega (R$)</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={faixa.taxa ?? ""}
-                        onChange={(e) => {
-                          const newFaixas = [...(formData.faixasValorPedido || [])];
-                          newFaixas[idx].taxa = parseFloat(e.target.value) || 0;
-                          setFormData({ ...formData, faixasValorPedido: newFaixas });
-                        }}
-                        placeholder="0,00"
-                        className="bg-white"
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="mt-5 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        const newFaixas = [...(formData.faixasValorPedido || [])];
-                        newFaixas.splice(idx, 1);
-                        setFormData({ ...formData, faixasValorPedido: newFaixas });
-                      }}
-                    >
-                      <span className="sr-only">Remover</span>X
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs font-bold mt-2"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      faixasValorPedido: [...(formData.faixasValorPedido || []), { valorMin: 0, taxa: 0 }]
-                    });
-                  }}
-                >
-                  + Adicionar Faixa de Valor
-                </Button>
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </TabsContent>
@@ -460,6 +398,194 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Modal for Editing a Delivery Method */}
+      {editingMethod && (
+        <Dialog open={methodModalOpen} onOpenChange={setMethodModalOpen}>
+          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto z-[999]">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Configurar Meio de Entrega</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-slate-50">
+                <Label className="font-bold">Método Ativo</Label>
+                <Switch
+                  checked={editingMethod.ativo}
+                  onCheckedChange={(c) => setEditingMethod({ ...editingMethod, ativo: c })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="font-bold">Nome do Método</Label>
+                  <Input 
+                    placeholder="Ex: Motoboy, Uber, Correios..." 
+                    value={editingMethod.nome} 
+                    onChange={e => setEditingMethod({...editingMethod, nome: e.target.value})} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold">Tempo de Entrega Prometido</Label>
+                  <Input 
+                    placeholder="Ex: Até 60 min, Mesma hora..." 
+                    value={editingMethod.tempoEntrega} 
+                    onChange={e => setEditingMethod({...editingMethod, tempoEntrega: e.target.value})} 
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-4 pt-4 mt-6 border-t border-slate-200">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-lg text-slate-800">Faixas de Entrega por Raio (Km)</h3>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  {(editingMethod.raios || []).map((raio, idx) => (
+                    <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded border">
+                      <div className="flex-1 flex items-center gap-2">
+                        <span className="text-xs font-medium">Até</span>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={raio.ateKm || ""}
+                          onChange={(e) => {
+                            const newRaios = [...(editingMethod.raios || [])];
+                            newRaios[idx].ateKm = parseFloat(e.target.value) || 0;
+                            setEditingMethod({ ...editingMethod, raios: newRaios });
+                          }}
+                          className="w-20 h-8"
+                          placeholder="Km"
+                        />
+                      </div>
+                      <div className="flex-1 flex items-center gap-2">
+                        <span className="text-xs font-medium">R$</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={raio.preco || ""}
+                          onChange={(e) => {
+                            const newRaios = [...(editingMethod.raios || [])];
+                            newRaios[idx].preco = parseFloat(e.target.value) || 0;
+                            setEditingMethod({ ...editingMethod, raios: newRaios });
+                          }}
+                          className="w-24 h-8"
+                          placeholder="0,00"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 h-8"
+                        onClick={() => {
+                          const newRaios = [...(editingMethod.raios || [])];
+                          newRaios.splice(idx, 1);
+                          setEditingMethod({ ...editingMethod, raios: newRaios });
+                        }}
+                      >
+                        X
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs font-bold mt-2"
+                    onClick={() => {
+                      setEditingMethod({
+                        ...editingMethod,
+                        raios: [...(editingMethod.raios || []), { ateKm: 0, preco: 0 }]
+                      });
+                    }}
+                  >
+                    + Adicionar Faixa de Raio
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 mt-6 border-t border-slate-200">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-lg text-slate-800">Faixas de Entrega por Valor</h3>
+                  </div>
+                </div>
+              
+              <div className="space-y-2">
+                  {(editingMethod.faixasValorPedido || []).map((faixa, idx) => (
+                    <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded border">
+                      <div className="flex-1 flex flex-col gap-1">
+                        <span className="text-xs font-medium text-slate-500">Valor Mínimo (R$)</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={faixa.valorMin ?? ""}
+                          onChange={(e) => {
+                            const newFaixas = [...(editingMethod.faixasValorPedido || [])];
+                            newFaixas[idx].valorMin = parseFloat(e.target.value) || 0;
+                            setEditingMethod({ ...editingMethod, faixasValorPedido: newFaixas });
+                          }}
+                          placeholder="0,00"
+                          className="bg-white h-8"
+                        />
+                      </div>
+                      <div className="flex-1 flex flex-col gap-1">
+                        <span className="text-xs font-medium text-slate-500">Frete (R$)</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={faixa.taxa ?? ""}
+                          onChange={(e) => {
+                            const newFaixas = [...(editingMethod.faixasValorPedido || [])];
+                            newFaixas[idx].taxa = parseFloat(e.target.value) || 0;
+                            setEditingMethod({ ...editingMethod, faixasValorPedido: newFaixas });
+                          }}
+                          placeholder="0,00"
+                          className="bg-white h-8"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="mt-5 text-red-600 hover:text-red-700 h-8 w-8"
+                        onClick={() => {
+                          const newFaixas = [...(editingMethod.faixasValorPedido || [])];
+                          newFaixas.splice(idx, 1);
+                          setEditingMethod({ ...editingMethod, faixasValorPedido: newFaixas });
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs font-bold mt-2"
+                    onClick={() => {
+                      setEditingMethod({
+                        ...editingMethod,
+                        faixasValorPedido: [...(editingMethod.faixasValorPedido || []), { valorMin: 0, taxa: 0 }]
+                      });
+                    }}
+                  >
+                    + Adicionar Faixa de Valor
+                  </Button>
+                </div>
+              </div>
+
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setMethodModalOpen(false)}>Cancelar</Button>
+              <Button onClick={() => handleSaveMethod(editingMethod)} className="bg-emerald-600 hover:bg-emerald-700">Salvar Método</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }

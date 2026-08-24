@@ -63,9 +63,11 @@ function CuponsIndexPage() {
           <span className="text-sm text-slate-500">{cupons.length} cupom(s)</span>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className="text-slate-600 font-medium" onClick={() => toast.info("O relatório detalhado de performance de cupons estará disponível em breve.")}>
-            Ver performance dos cupons
-          </Button>
+          {isGlobalAdmin && (
+            <Button variant="ghost" className="text-slate-600 font-medium" onClick={() => toast.info("O relatório detalhado de performance de cupons estará disponível em breve.")}>
+              Ver performance dos cupons
+            </Button>
+          )}
           
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogTrigger asChild>
