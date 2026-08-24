@@ -199,7 +199,7 @@ function AdminBanners() {
         await addBanner({
           ...banner,
           id: "",
-          lojaId: activeStoreId
+          lojaId: activeStoreId || undefined
         });
       }
       toast.success("Banners da rede copiados com sucesso!");
@@ -229,6 +229,83 @@ function AdminBanners() {
       }).filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
     };
   });
+
+  // --- Drag-and-drop ordering state (per position group) ---
+  const [localOrder, setLocalOrder] = useState<Record<string, string[]>>({}); // position -> [id,...]
+  const [dirtyGroups, setDirtyGroups] = useState<Set<string>>(new Set());
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const dragItem = useRef<{ position: string; index: number } | null>(null);
+  const dragOverItem = useRef<{ position: string; index: number } | null>(null);
+
+  // Sync localOrder when banners change (on mount / after fetch)
+  useEffect(() => {
+    const next: Record<string, string[]> = {};
+    BANNER_POSITIONS.forEach(pos => {
+      const items = banners
+        .filter(b => {
+          const bPos = (b.posicao || "").toLowerCase().trim();
+          const pPos = pos.toLowerCase();
+          return bPos === pPos || bPos === pPos.replace(" ", "") ||
+            (pPos === "mini banner" && bPos.includes("mini banner"));
+        })
+        .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+      next[pos] = items.map(b => b.id);
+    });
+    setLocalOrder(next);
+    setDirtyGroups(new Set());
+  }, [allBanners, activeStoreId]);
+
+  const getOrderedItems = (position: string, items: AdminBanner[]) => {
+    const order = localOrder[position];
+    if (!order || order.length === 0) return [...items].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+    const indexed = new Map(items.map(i => [i.id, i]));
+    const result: AdminBanner[] = [];
+    order.forEach(id => { const b = indexed.get(id); if (b) result.push(b); });
+    items.forEach(i => { if (!order.includes(i.id)) result.push(i); });
+    return result;
+  };
+
+  const handleDragStart = (position: string, index: number) => {
+    dragItem.current = { position, index };
+  };
+
+  const handleDragEnter = (position: string, index: number) => {
+    dragOverItem.current = { position, index };
+  };
+
+  const handleDragEnd = (position: string) => {
+    if (!dragItem.current || !dragOverItem.current) return;
+    if (dragItem.current.position !== position || dragOverItem.current.position !== position) return;
+    if (dragItem.current.index === dragOverItem.current.index) return;
+
+    setLocalOrder(prev => {
+      const newOrder = [...(prev[position] || [])];
+      const [moved] = newOrder.splice(dragItem.current!.index, 1);
+      newOrder.splice(dragOverItem.current!.index, 0, moved);
+      return { ...prev, [position]: newOrder };
+    });
+    setDirtyGroups(prev => new Set([...prev, position]));
+    dragItem.current = null;
+    dragOverItem.current = null;
+  };
+
+  const saveOrder = async () => {
+    setIsSavingOrder(true);
+    try {
+      for (const position of Array.from(dirtyGroups)) {
+        const ids = localOrder[position] || [];
+        await Promise.all(
+          ids.map((id, idx) => updateBanner(id, { ordem: idx }))
+        );
+      }
+      setDirtyGroups(new Set());
+      toast.success('Ordem dos banners salva com sucesso!');
+    } catch {
+      toast.error('Erro ao salvar a ordem dos banners.');
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
 
   const openNewModal = (posicao?: string) => {
     setEditingBanner({
@@ -429,6 +506,16 @@ function AdminBanners() {
                 className="pl-9 h-10 bg-white border-slate-200"
               />
             </div>
+            {dirtyGroups.size > 0 && (
+              <Button
+                onClick={saveOrder}
+                disabled={isSavingOrder}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-6 rounded-lg shadow-sm animate-in fade-in slide-in-from-right-4 gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {isSavingOrder ? "Salvando..." : "Salvar Alteração"}
+              </Button>
+            )}
           </div>
         
         <div className="p-6 space-y-10">
@@ -461,11 +548,20 @@ function AdminBanners() {
                          <td colSpan={6} className="p-10 text-center text-[#3a4454] font-medium text-[13px]">Ainda não existe nenhum {group.position.toLowerCase()} cadastrado.</td>
                        </tr>
                     )}
-                    {group.items.map((banner) => (
-                      <tr key={banner.id} className="hover:bg-slate-50 group transition-colors">
+                    {getOrderedItems(group.position, group.items).map((banner, rowIdx) => (
+                      <tr
+                        key={banner.id}
+                        className="hover:bg-slate-50 group transition-colors"
+                        draggable
+                        onDragStart={() => handleDragStart(group.position, rowIdx)}
+                        onDragEnter={() => handleDragEnter(group.position, rowIdx)}
+                        onDragEnd={() => handleDragEnd(group.position)}
+                        onDragOver={e => e.preventDefault()}
+                        style={{ cursor: 'grab' }}
+                      >
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-3">
-                            <GripVertical className="w-4 h-4 text-slate-300 cursor-grab hover:text-slate-500" />
+                            <GripVertical className="w-4 h-4 text-slate-400 cursor-grab hover:text-slate-700" />
                             <input type="checkbox" className="rounded border-slate-300 w-3.5 h-3.5" />
                           </div>
                         </td>

@@ -56,6 +56,7 @@ export interface AdminBanner {
   imageUrl3?: string;
   mobileImageUrl3?: string;
   link3?: string;
+  ordem?: number; // Posição de exibição dentro da mesma posição/grupo
 }
 
 export interface AdminIntegrations {
@@ -824,6 +825,7 @@ export const useAdmin = create<AdminState>()(
             imageUrl3: b.image_url3,
             mobileImageUrl3: b.mobile_image_url3,
             link3: b.link3,
+            ordem: b.ordem ?? 0,
           })) as AdminBanner[];
           set({ banners: parsedBanners });
         }
@@ -851,6 +853,7 @@ export const useAdmin = create<AdminState>()(
           image_url3: banner.imageUrl3,
           mobile_image_url3: banner.mobileImageUrl3,
           link3: banner.link3,
+          ordem: banner.ordem ?? 0,
         };
         const { data, error } = await supabase.from('banners' as any).insert(payload).select().single();
         if (error) {
@@ -883,6 +886,7 @@ export const useAdmin = create<AdminState>()(
         if (banner.imageUrl3 !== undefined) payload.image_url3 = banner.imageUrl3;
         if (banner.mobileImageUrl3 !== undefined) payload.mobile_image_url3 = banner.mobileImageUrl3;
         if (banner.link3 !== undefined) payload.link3 = banner.link3;
+        if (banner.ordem !== undefined) payload.ordem = banner.ordem;
         
         const { error } = await supabase.from('banners' as any).update(payload).eq('id', id);
         if (error) {
