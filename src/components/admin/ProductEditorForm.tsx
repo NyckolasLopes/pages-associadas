@@ -553,8 +553,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
           {/* Card: Classificação Farmacêutica */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
-            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b flex items-center gap-2">
-              <PlusCircle className="h-6 w-6 text-emerald-800" /> Registro Anvisa, Retenção, Tarja e Tipo de Receita
+            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">
+              Registro Anvisa, Retenção, Tarja e Tipo de Receita
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -754,8 +754,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
           {/* Card: Google / SEO */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
-            <div className="flex items-center gap-2 pb-4 border-b">
-              <Search className="h-6 w-6 text-blue-600" />
+            <div className="pb-4 border-b">
               <h3 className="font-bold text-2xl text-slate-800">Google / SEO / AEO / GEO</h3>
             </div>
             
