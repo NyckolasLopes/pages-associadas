@@ -160,6 +160,7 @@ function AdminBanners() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Partial<AdminBanner> | null>(null);
+  const [bannerToDelete, setBannerToDelete] = useState<string | null>(null);
 
   type TabType = "banners" | "estrutura" | "vitrines" | "logo" | "cores";
 
@@ -506,12 +507,7 @@ function AdminBanners() {
                              <Button onClick={() => openEditModal(banner)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[#00B5AD] hover:bg-slate-100 transition-colors">
                                <Edit2 className="w-4 h-4" />
                              </Button>
-                             <Button onClick={() => {
-                               if (confirm("Deseja realmente excluir este banner?")) {
-                                 removeBanner(banner.id);
-                                 toast.success("Banner excluído.");
-                               }
-                             }} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                             <Button onClick={() => setBannerToDelete(banner.id)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
                                <Trash2 className="w-4 h-4" />
                              </Button>
                            </div>
@@ -590,12 +586,7 @@ function AdminBanners() {
                                  <Button onClick={() => openEditModal(banner)} size="sm" variant="outline" className="h-8 text-xs text-slate-600 hover:text-[#00B5AD]">
                                    <Edit2 className="w-3.5 h-3.5 mr-1" /> Editar
                                  </Button>
-                                 <Button onClick={() => {
-                                   if (confirm("Deseja realmente excluir este banner?")) {
-                                     removeBanner(banner.id);
-                                     toast.success("Banner excluído.");
-                                   }
-                                 }} size="sm" variant="ghost" className="h-8 w-8 p-0 ml-2 text-slate-400 hover:text-red-500 hover:bg-red-50">
+                                 <Button onClick={() => setBannerToDelete(banner.id)} size="sm" variant="ghost" className="h-8 w-8 p-0 ml-2 text-slate-400 hover:text-red-500 hover:bg-red-50">
                                    <Trash2 className="w-4 h-4" />
                                  </Button>
                               </td>
@@ -635,6 +626,21 @@ function AdminBanners() {
       {activeTab === "cores" && (
         <StoreColorsConfig />
       )}
+
+      <ConfirmDialog
+        isOpen={!!bannerToDelete}
+        onClose={() => setBannerToDelete(null)}
+        onConfirm={() => {
+          if (bannerToDelete) {
+            removeBanner(bannerToDelete);
+            toast.success("Banner excluído.");
+            setBannerToDelete(null);
+          }
+        }}
+        title="Excluir banner"
+        description="Deseja realmente excluir este banner?"
+        confirmText="Excluir"
+      />
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-[700px] p-0 overflow-hidden flex flex-col max-h-[90vh] bg-slate-50">
