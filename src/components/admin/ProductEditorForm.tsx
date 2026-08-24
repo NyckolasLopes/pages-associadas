@@ -26,6 +26,7 @@ import { useMarcasStore } from "@/stores/marcas";
 import { useVariacoesStore } from "@/stores/variacoes";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
 import { Spinner } from "@/components/ui/spinner";
+import { productImage } from "@/lib/format";
 
 interface ProductEditorFormProps {
   open: boolean;
@@ -455,7 +456,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Alerta Regulatório (Texto)</Label>
-                <Textarea disabled={!isGlobalAdmin} value={formData.alertaTexto || ""} onChange={e => setFormData({...formData, alertaTexto: e.target.value})} className="bg-white" placeholder="Ex: Ao persistirem os sintomas, o médico deverá ser consultado." />
+                <Textarea disabled={!isGlobalAdmin} value={formData.alertaTexto || (isMedicamento ? '"AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."' : "")} onChange={e => setFormData({...formData, alertaTexto: e.target.value})} className="bg-white" placeholder="Ex: Ao persistirem os sintomas, o médico deverá ser consultado." />
               </div>
             </div>
 
@@ -600,8 +601,17 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     )}
                   </div>
                 ))}
+                
+                {((formData.imagens || []).length === 0) && (
+                  <div className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group" title="Imagem padrão (gerada automaticamente)">
+                    <img src={productImage(formData)} alt="Imagem Padrão" className="w-full h-full object-cover opacity-70" />
+                    <div className="absolute bottom-0 left-0 right-0 bg-slate-800/80 text-white text-[9px] leading-tight text-center py-1 font-bold">
+                      Imagem Padrão
+                    </div>
+                  </div>
+                )}
 
-                {((formData.imagens || []) as any[]).length < 5 && (
+                {isGlobalAdmin && ((formData.imagens || []) as any[]).length < 5 && (
                   <div className="w-32 h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer transition-colors relative overflow-hidden group">
                     <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleImageUpload} />
                     <Upload className="h-6 w-6 mb-2" />
