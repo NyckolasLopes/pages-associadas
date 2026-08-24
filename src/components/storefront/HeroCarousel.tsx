@@ -157,32 +157,54 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
     <section className="relative w-full overflow-hidden bg-[#f5f5f5]">
       <div 
         className="flex transition-transform duration-700 ease-out"
-        style={{ transform: `translateX(-${i * 100}%)`, aspectRatio: aspectRatioDesktop }}
+        style={{ transform: `translateX(-${i * 100}%)` }}
       >
         {bannersToRender.map((banner, idx) => (
-          <div key={banner.id} className="w-full shrink-0 relative">
+          <div key={banner.id} className="w-full shrink-0 relative" style={{ aspectRatio: banner.mobileImageUrl ? undefined : aspectRatioDesktop }}>
             <a 
               href={banner.link || "#"} 
               target={banner.link && (banner.link.startsWith("http") || banner.link.startsWith("//")) ? "_blank" : undefined}
               rel={banner.link && (banner.link.startsWith("http") || banner.link.startsWith("//")) ? "noopener noreferrer" : undefined}
-              className="absolute inset-0 w-full h-full block"
+              className="block w-full h-full"
             >
-              <img 
-                srcSet={`${(banner.mobileImageUrl || banner.imageUrl)?.includes("unsplash.com") ? (banner.mobileImageUrl || banner.imageUrl).replace(/w=\d+/, 'w=800').replace(/q=\d+/, 'q=60') : (banner.mobileImageUrl || banner.imageUrl)} 800w, ${banner.imageUrl?.includes("unsplash.com") ? banner.imageUrl.replace(/w=\d+/, 'w=1200').replace(/q=\d+/, 'q=60') : banner.imageUrl} 1200w`}
-                sizes="(max-width: 767px) 320px, 1200px"
-                src={banner.imageUrl?.includes("unsplash.com") ? banner.imageUrl.replace(/w=\d+/, 'w=1200').replace(/q=\d+/, 'q=60') : banner.imageUrl} 
-                alt={banner.nome} 
-                className="w-full h-full object-cover md:object-contain object-center" 
-                fetchPriority={idx === 0 ? "high" : "auto"}
-                loading={idx === 0 ? "eager" : "lazy"}
-                decoding="async"
-                width={1800}
-                height={600}
-              />
+              <picture className="block w-full">
+                {/* Imagem mobile — exibida somente em telas ≤ 767px */}
+                {banner.mobileImageUrl && (
+                  <source
+                    media="(max-width: 767px)"
+                    srcSet={banner.mobileImageUrl}
+                  />
+                )}
+                {/* Imagem desktop — padrão */}
+                <img
+                  src={banner.imageUrl?.includes("unsplash.com") ? banner.imageUrl.replace(/w=\d+/, 'w=1200').replace(/q=\d+/, 'q=60') : banner.imageUrl}
+                  alt={banner.nome}
+                  className={`w-full object-cover object-center ${banner.mobileImageUrl ? 'hidden sm:block' : ''}`}
+                  fetchPriority={idx === 0 ? "high" : "auto"}
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  width={1800}
+                  height={600}
+                  style={{ aspectRatio: aspectRatioDesktop }}
+                />
+                {/* Imagem mobile renderizada separada para controle de aspecto */}
+                {banner.mobileImageUrl && (
+                  <img
+                    src={banner.mobileImageUrl}
+                    alt={banner.nome}
+                    className="w-full object-cover object-center sm:hidden"
+                    fetchPriority={idx === 0 ? "high" : "auto"}
+                    loading={idx === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    style={{ aspectRatio: '9/4' }}
+                  />
+                )}
+              </picture>
             </a>
           </div>
         ))}
       </div>
+
 
       {totalSlides > 1 && (
         <>
