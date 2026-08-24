@@ -373,7 +373,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
           {/* Card: Marca e Ativos */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
-            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Marca e Componentes</h3>
+            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Marca e Dcb</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <div className="space-y-2">
@@ -448,8 +448,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
           {/* Novos Campos (Características, Pesos e Embalagem) */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
-            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b flex items-center gap-2">
-              <Info className="h-6 w-6 text-emerald-800" /> Detalhes Técnicos e Características
+            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">
+              Alertas e Características
             </h3>
             
             <div className="grid grid-cols-1 gap-6">
@@ -526,7 +526,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           {/* Card: Classificação Farmacêutica */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b flex items-center gap-2">
-              <PlusCircle className="h-6 w-6 text-emerald-800" /> Registro e Restrições
+              <PlusCircle className="h-6 w-6 text-emerald-800" /> Registro Anvisa, Retenção, Tarja e Tipo de Receita
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -617,13 +617,21 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           {/* Precificação da Loja (Associado/Global) */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">
-              {isGlobalAdmin ? "Precificação Padrão da Rede" : "Minha Precificação"}
+              {isGlobalAdmin ? "Precificação" : "Minha Precificação"}
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {!isGlobalAdmin && (
+            {!isGlobalAdmin && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="font-bold text-xs uppercase text-slate-500">Preço (R$)</Label>
+                  <Label className="font-bold text-xs uppercase text-slate-500">Preço (de) sugerido</Label>
+                  <Input 
+                    disabled 
+                    value={customProducts.find(p => p.id === formData.id)?.precoDe?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "R$ 0,00"} 
+                    className="bg-slate-50 text-slate-500 font-medium" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Preço (por) sugerido</Label>
                   <Input 
                     disabled 
                     value={customProducts.find(p => p.id === formData.id)?.precoPor?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "R$ 0,00"} 
@@ -631,10 +639,28 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   />
                   <div className="text-xs text-slate-400 font-medium">Preço sugerido pela sede</div>
                 </div>
-              )}
-              
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">{isGlobalAdmin ? "Preço (R$)" : "Meu Preço (R$)"}</Label>
+                <Label className="font-bold text-xs uppercase text-slate-500">{isGlobalAdmin ? "Preço (de) (R$)" : "Meu Preço (de) (R$)"}</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
+                  <Input 
+                    disabled={!isGlobalAdmin && isMedicamento}
+                    type="number" 
+                    step="0.01" 
+                    value={formData.precoDe || ""} 
+                    onChange={e => setFormData({...formData, precoDe: parseFloat(e.target.value) || 0})} 
+                    className="bg-white pl-9 font-bold text-slate-700" 
+                    placeholder="0.00" 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">{isGlobalAdmin ? "Preço (por) (R$)" : "Meu Preço (por) (R$)"}</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
                   <Input 
@@ -670,7 +696,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
           {/* Card: Detalhes e Precificação */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
-            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Detalhes e Precificação</h3>
+            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Tributário e Relevância</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">NCM</Label>
