@@ -17,11 +17,14 @@ export function useCartSync() {
       initialLoadDone.current = true;
       supabase
         .from('carrinhos_abandonados' as any)
-        .select('items')
+        .select('items, id')
         .eq('user_id', user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data && data.items && Array.isArray(data.items) && data.items.length > 0) {
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .then(({ data, error }) => {
+          if (error) console.error("Error restoring cart:", error);
+          const cart = data?.[0];
+          if (cart && cart.items && Array.isArray(cart.items) && cart.items.length > 0) {
             // Se o carrinho local estiver vazio, restaura o do banco
             if (useCart.getState().items.length === 0) {
               useCart.getState().restoreCart(data.items);
@@ -70,12 +73,15 @@ export function useCartSync() {
         };
 
         // Verifica se já existe um carrinho para este cliente
-        const { data: existingCart, error: fetchErr } = await supabase
+        const { data: existingCarts, error: fetchErr } = await supabase
           .from('carrinhos_abandonados' as any)
           .select('id')
           .eq('user_id', user.id)
           .eq('status', 'abandonado')
-          .maybeSingle();
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        const existingCart = existingCarts?.[0];
 
         if (fetchErr) {
           console.error("[CartSync] Erro ao buscar carrinho existente:", fetchErr.message);
