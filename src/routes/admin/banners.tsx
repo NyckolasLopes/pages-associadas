@@ -341,7 +341,7 @@ function AdminBanners() {
               variant="outline" 
               onClick={handleCopyGlobalBanners} 
               disabled={isCopying}
-              className="font-bold text-emerald-600 border-emerald-200 hover:bg-emerald-50 shadow-sm"
+              className="font-bold text-emerald-600 hover:text-emerald-700 border-emerald-200 hover:bg-emerald-50 shadow-sm"
               title="Copia os banners cadastrados na rede global para esta loja."
             >
               <Copy className="w-4 h-4 mr-2" /> Puxar Banners da Rede
