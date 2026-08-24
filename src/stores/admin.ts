@@ -842,7 +842,7 @@ export const useAdmin = create<AdminState>()(
           loja_id: banner.lojaId || null,
           vitrine_vinculada: banner.vitrineVinculada,
           banner_vinculado: banner.bannerVinculado,
-          topico_vinculado: banner.topicoVinculado,
+          // topico_vinculado: banner.topicoVinculado, // requer criação da coluna no Supabase
           formato_extra: banner.formatoExtra,
           image_url2: banner.imageUrl2,
           mobile_image_url2: banner.mobileImageUrl2,
@@ -874,7 +874,7 @@ export const useAdmin = create<AdminState>()(
         if (banner.endDate !== undefined) payload.end_date = (banner.endDate && banner.endDate.trim() !== "") ? new Date(banner.endDate).toISOString() : null;
         if (banner.vitrineVinculada !== undefined) payload.vitrine_vinculada = banner.vitrineVinculada;
         if (banner.bannerVinculado !== undefined) payload.banner_vinculado = banner.bannerVinculado;
-        if (banner.topicoVinculado !== undefined) payload.topico_vinculado = banner.topicoVinculado;
+        // if (banner.topicoVinculado !== undefined) payload.topico_vinculado = banner.topicoVinculado; // requer criação da coluna no Supabase
         if (banner.formatoExtra !== undefined) payload.formato_extra = banner.formatoExtra;
         if (banner.imageUrl2 !== undefined) payload.image_url2 = banner.imageUrl2;
         if (banner.mobileImageUrl2 !== undefined) payload.mobile_image_url2 = banner.mobileImageUrl2;
