@@ -119,23 +119,31 @@ function CuponsIndexPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                      <div className="grid gap-2">
+                        <label className="text-sm font-medium">Valor {novoCupom.tipoDesconto === "percentual" ? "(%)" : "(R$)"}</label>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          value={novoCupom.valorDesconto || ""} 
+                          onChange={e => setNovoCupom({...novoCupom, valorDesconto: Number(e.target.value)})}
+                        />
+                      </div>
+                  </div>
                     <div className="grid gap-2">
-                      <label className="text-sm font-medium">Valor</label>
+                      <label className="text-sm font-medium">Valor Mínimo da Compra (R$)</label>
                       <Input 
                         type="number" 
-                        value={novoCupom.valorDesconto} 
-                        onChange={e => setNovoCupom({...novoCupom, valorDesconto: Number(e.target.value)})}
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={novoCupom.valorMinimo || ""} 
+                        onChange={e => setNovoCupom({...novoCupom, valorMinimo: Number(e.target.value)})}
                       />
                     </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">Valor Mínimo da Compra (R$)</label>
-                    <Input 
-                      type="number" 
-                      value={novoCupom.valorMinimo} 
-                      onChange={e => setNovoCupom({...novoCupom, valorMinimo: Number(e.target.value)})}
-                    />
-                  </div>
                 </div>
                 <div className="flex justify-end gap-3 mt-4">
                   <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>

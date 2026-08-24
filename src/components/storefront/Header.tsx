@@ -413,7 +413,7 @@ export function Header() {
             )}
             {(activePharmacy?.whatsapp || !activePharmacy) && (
               <a href={`https://wa.me/55${(activePharmacy?.whatsapp || "51989444818").replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="hidden lg:inline-flex items-center gap-1 hover:underline">
-                SAC Whatsapp: {activePharmacy?.whatsapp || "(51) 98944-4818"}
+                Whatsapp: {activePharmacy?.whatsapp || "(51) 98944-4818"}
               </a>
             )}
           </div>

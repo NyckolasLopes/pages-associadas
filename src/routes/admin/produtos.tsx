@@ -227,18 +227,66 @@ function AdminProdutos() {
     try {
       // Exporta apenas a estrutura (exemplo) do JSON
       const sampleStructure = [{
-        "sku": "123456",
-        "ean": "7890000000000",
-        "nome": "Nome do Produto",
-        "descricao": "<p>Descrição comercial detalhada</p>",
-        "marca": "Nome da Marca",
-        "precoDe": 150.00,
-        "precoPor": 99.90,
-        "estoque": 100,
-        "foto": "https://link-da-imagem.com/foto.jpg",
-        "ativo": true,
-        "categoriaId": "id-da-categoria",
-        "subcategoriaId": "id-da-subcategoria"
+        "produto": {
+          "cabecalho": {
+            "titulo": "",
+            "codigo_sistema": null
+          },
+          "informacoes_basicas": {
+            "produto_ativo": false,
+            "buscavel_visivel_na_busca": false,
+            "selo_de_lancamento": false,
+            "natureza_do_produto": "",
+            "sku_codigo_interno": "",
+            "ean_codigo_barras": "",
+            "eans_secundarios": "",
+            "descricao_comercial_nome": "",
+            "descricao_longa": "",
+            "categoria": {
+              "id": null,
+              "nome": ""
+            },
+            "subcategoria": {
+              "id": null,
+              "nome": ""
+            },
+            "categorias_adicionais": [],
+            "subcategorias_adicionais": []
+          },
+          "marca_e_dcb": {
+            "marca": "",
+            "principios_ativos": [],
+            "classe_terapeutica": ""
+          },
+          "alertas_e_caracteristicas": {
+            "alerta_regulatorio_texto": "",
+            "caracteristicas_adicionais": [],
+            "requer_exibicao_alerta_regulatorio": false
+          },
+          "registro_anvisa_retencao_tarja_tipo_receita": {
+            "ms_registro_anvisa": "",
+            "retem_receita": "",
+            "tarja": "",
+            "tipo_de_receita": ""
+          },
+          "imagens_do_produto": [],
+          "precificacao": {
+            "preco_de": null,
+            "preco_por": null
+          },
+          "tributario_e_relevancia": {
+            "ncm": "",
+            "nivel_de_relevancia_prioridade": null
+          },
+          "google_seo_aeo_geo": {
+            "titulo_da_pagina_seo": "",
+            "link_da_pagina_slug": "",
+            "palavras_chave_foco": "",
+            "descricao_da_pagina_meta_description": "",
+            "texto_alternativo_da_imagem_alt_seo": "",
+            "tags_de_busca_internas": ""
+          }
+        }
       }];
 
       const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleStructure, null, 2));

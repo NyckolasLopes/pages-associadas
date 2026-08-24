@@ -490,7 +490,10 @@ function CartPage() {
 
         // 2. Se não pegou promoção por valor, calcular pelo modeloFrete
         if (!isEligible) {
-          if (p.modeloFrete === "fixo") {
+          const fallbackModelo = (p.raiosEntrega && p.raiosEntrega.length > 0) ? "raio" : "fixo";
+          const currentModelo = p.modeloFrete || fallbackModelo;
+
+          if (currentModelo === "fixo") {
              const maxKm = Number(p.raioEntregaKm) || 30;
              if (distance !== null && distance >= 0) {
                 if (distance <= maxKm) {
@@ -505,7 +508,7 @@ function CartPage() {
                 }
              }
           } 
-          else if (p.modeloFrete === "raio" || (!p.modeloFrete && p.raiosEntrega && p.raiosEntrega.length > 0)) {
+          else if (currentModelo === "raio") {
              if (distance !== null && distance >= 0) {
                 const raioBase = Number(p.raioEntregaKm) || 0;
                 if (raioBase > 0 && distance <= raioBase) {
@@ -527,7 +530,7 @@ function CartPage() {
                 }
              }
           } 
-          else if (p.modeloFrete === "cep") {
+          else if (currentModelo === "cep") {
              if (p.faixasCep && p.faixasCep.length > 0) {
                 const cleanCepInt = parseInt(clean, 10);
                 const matchingFaixa = p.faixasCep.find(f => {
@@ -827,27 +830,27 @@ function CartPage() {
       }).join("\n");
 
       const deliveryInfoText = deliveryMethod === "entrega"
-        ? `🛵 *ENTREGA EM DOMICÍLIO:*\n${cleanAddress}, Nº ${cleanNumber} ${cleanComplement ? `(${cleanComplement})` : ""}\nBairro: ${cleanBairro} - ${deliveryCity || selectedPharmacy.cidade}/${selectedPharmacy.uf}\nCEP: ${deliveryCep || cep}`
-        : `🏬 *RETIRADA NO BALCÃO:*\nFarmácia: ${selectedPharmacy.nome}\nEndereço: ${selectedPharmacy.endereco}, ${selectedPharmacy.bairro} - ${selectedPharmacy.cidade}`;
+        ? `\u{1F539} *ENTREGA EM DOMICÍLIO:*\n${cleanAddress}, Nº ${cleanNumber} ${cleanComplement ? `(${cleanComplement})` : ""}\nBairro: ${cleanBairro} - ${deliveryCity || selectedPharmacy.cidade}/${selectedPharmacy.uf}\nCEP: ${deliveryCep || cep}`
+        : `\u{1F539} *RETIRADA NO BALCÃO:*\nFarmácia: ${selectedPharmacy.nome}\nEndereço: ${selectedPharmacy.endereco}, ${selectedPharmacy.bairro} - ${selectedPharmacy.cidade}`;
 
-      const whatsappText = `💊 *NOVO PEDIDO - FARMÁCIAS ASSOCIADAS*\n` +
-        `🏬 *Unidade:* ${selectedPharmacy.nome} (${selectedPharmacy.cidade}/${selectedPharmacy.uf})\n` +
-        `🔢 *Pedido:* #${orderId}\n` +
-        `📅 *Data:* ${dateFormatted}\n\n` +
-        `👤 *CLIENTE:*\n• *Nome:* ${cleanName}\n• *Telefone:* ${cleanPhone}\n` +
+      const whatsappText = `\u{1F539} *NOVO PEDIDO - FARMÁCIAS ASSOCIADAS*\n` +
+        `\u{1F539} *Unidade:* ${selectedPharmacy.nome} (${selectedPharmacy.cidade}/${selectedPharmacy.uf})\n` +
+        `\u{1F539} *Pedido:* #${orderId}\n` +
+        `\u{1F539} *Data:* ${dateFormatted}\n\n` +
+        `\u{1F539} *CLIENTE:*\n• *Nome:* ${cleanName}\n• *Telefone:* ${cleanPhone}\n` +
         (clientCpf ? `• *CPF:* ${clientCpf}\n` : "") +
         `\n${deliveryInfoText}\n\n` +
-        `💳 *FORMA DE PAGAMENTO:*\n• ${paymentLabel}` +
+        `\u{1F539} *FORMA DE PAGAMENTO:*\n• ${paymentLabel}` +
         (paymentMethod === "dinheiro" && trocoPara ? ` (Troco para ${trocoPara})` : "") +
-        `\n\n🛒 *ITENS DO PEDIDO:*\n${itemsListText}\n\n` +
-        `───────────────\n` +
-        `💵 *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
-        (storeDiscount > 0 ? `🏷️ *Desconto Produtos:* -R$ ${storeDiscount.toFixed(2)}\n` : "") +
-        (couponDisc > 0 ? `🎟️ *Cupom (${appliedCoupon}):* -R$ ${couponDisc.toFixed(2)}\n` : "") +
-        (deliveryMethod === "entrega" ? `🚚 *Taxa de Entrega:* ${freightPrice === 0 ? "Grátis" : `R$ ${freightPrice.toFixed(2)}`}\n` : "") +
-        `💰 *TOTAL: R$ ${grandTotal.toFixed(2)}*\n` +
-        (cleanNotes ? `\n📝 *Observações:* ${cleanNotes}\n` : "") +
-        `\n🔍 *Acompanhe em tempo real pelo link:*\nhttps://farmaciasassociadas.com.br/pedidos?id=${orderId}`;
+        `\n\n\u{1F539} *ITENS DO PEDIDO:*\n${itemsListText}\n\n` +
+        `---\n` +
+        `\u{1F539} *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
+        (storeDiscount > 0 ? `\u{1F539} *Desconto Produtos:* -R$ ${storeDiscount.toFixed(2)}\n` : "") +
+        (couponDisc > 0 ? `\u{1F539} *Cupom (${appliedCoupon}):* -R$ ${couponDisc.toFixed(2)}\n` : "") +
+        (deliveryMethod === "entrega" ? `\u{1F539} *Taxa de Entrega:* ${freightPrice === 0 ? "Grátis" : `R$ ${freightPrice.toFixed(2)}`}\n` : "") +
+        `\u{1F539} *TOTAL: R$ ${grandTotal.toFixed(2)}*\n` +
+        (cleanNotes ? `\n\u{1F539} *Observações:* ${cleanNotes}\n` : "") +
+        `\n\u{1F539} *Acompanhe em tempo real pelo link:*\n${window.location.origin}/pedidos?id=${orderId}`;
 
       // Determina telefone de destino da farmácia
       const rawStorePhone = selectedPharmacy.whatsapp || selectedPharmacy.telefone || "51999999999";
@@ -1395,7 +1398,17 @@ function CartPage() {
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2 animate-in fade-in slide-in-from-top-2">
                       <p className="text-[11px] text-muted-foreground mb-2">Preencha seu CEP para estimar o valor e o prazo de entrega.</p>
                       <div className="flex gap-2 mb-2">
-                        <Input placeholder="00000-000" maxLength={9} value={cep} disabled={isCalcLoading} onChange={(e) => setCep(e.target.value)} />
+                        <Input 
+                          placeholder="00000-000" 
+                          maxLength={9} 
+                          value={cep} 
+                          disabled={isCalcLoading} 
+                          onChange={(e) => {
+                            let v = e.target.value.replace(/\D/g, "");
+                            if (v.length > 5) v = v.replace(/^(\d{5})(\d)/, "$1-$2");
+                            setCep(v);
+                          }} 
+                        />
                         <Button variant="outline" disabled={isCalcLoading} onClick={calcFreight}>
                           {isCalcLoading ? "Calculando..." : "Calcular"}
                         </Button>

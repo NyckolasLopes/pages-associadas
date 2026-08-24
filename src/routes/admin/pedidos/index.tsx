@@ -241,23 +241,23 @@ export function PedidosAdmin() {
     const isPendente = item.status === "Pendente";
 
     const message = isPendente
-      ? `💊 *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
-        `🏬 *Unidade:* ${loja?.nome || item.lojaNome}\n` +
+      ? `\u{1F539} *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
+        `\u{1F539} *Unidade:* ${loja?.nome || item.lojaNome}\n` +
         `⚠️ *AVISO DE PEDIDO PENDENTE / CARRINHO ABANDONADO*\n\n` +
         `Olá equipe! Há um pedido pendente/carrinho em aberto no sistema.\n\n` +
-        `👤 *Cliente:* ${item.clienteNome}\n` +
+        `\u{1F539} *Cliente:* ${item.clienteNome}\n` +
         `📱 *WhatsApp do Cliente:* ${item.clienteTelefone}\n\n` +
-        `🛒 *Itens do Pedido:*\n${itemsList}\n\n` +
-        `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
+        `\u{1F539} *Itens do Pedido:*\n${itemsList}\n\n` +
+        `\u{1F539} *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `👉 *Ação necessária:* Por favor, entrem em contato com o cliente para dar seguimento ao atendimento e finalizar a compra!`
-      : `💊 *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
-        `🏬 *Unidade:* ${loja?.nome || item.lojaNome}\n` +
+      : `\u{1F539} *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
+        `\u{1F539} *Unidade:* ${loja?.nome || item.lojaNome}\n` +
         `🔔 *AVISO DE PEDIDO CONCLUÍDO (#${item.id})*\n\n` +
         `Olá equipe! Temos um pedido registrado para a sua loja.\n\n` +
-        `👤 *Cliente:* ${item.clienteNome}\n` +
+        `\u{1F539} *Cliente:* ${item.clienteNome}\n` +
         `📱 *Telefone:* ${item.clienteTelefone}\n\n` +
-        `🛒 *Itens do Pedido:*\n${itemsList}\n\n` +
-        `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
+        `\u{1F539} *Itens do Pedido:*\n${itemsList}\n\n` +
+        `\u{1F539} *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `👉 *Ação necessária:* Verifiquem o pedido no painel da sua loja e façam o contato/separação dos itens.`;
 
     const fullPhone =
@@ -295,14 +295,14 @@ export function PedidosAdmin() {
       ? `Olá ${item.clienteNome}, tudo bem? 😊\n\n` +
         `Aqui é da *${lojaNome}* (Farmácias Associadas).\n` +
         `Notamos que você selecionou alguns produtos em nosso site e gostaríamos de ajudar a finalizar seu pedido:\n\n` +
-        `🛒 *Itens:*\n${itemsList}\n\n` +
-        `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
+        `\u{1F539} *Itens:*\n${itemsList}\n\n` +
+        `\u{1F539} *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `Como prefere realizar o pagamento ou entrega? Estamos à disposição para atendê-lo(a)!`
       : `Olá ${item.clienteNome}, tudo bem? 😊\n\n` +
         `Aqui é da *${lojaNome}* (Farmácias Associadas).\n` +
         `Recebemos o seu pedido *#${item.id}* com sucesso!\n\n` +
-        `🛒 *Itens:*\n${itemsList}\n\n` +
-        `💰 *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
+        `\u{1F539} *Itens:*\n${itemsList}\n\n` +
+        `\u{1F539} *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `Já estamos preparando seu pedido com todo o cuidado. Qualquer dúvida, pode falar conosco por aqui!`;
 
     const fullPhone =
