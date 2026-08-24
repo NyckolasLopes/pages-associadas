@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useMarketing } from "@/stores/marketing";
 import { useAdmin } from "@/stores/admin";
-import { Search, Filter, ChevronDown, MoreHorizontal, Trash2 } from "lucide-react";
+import { Search, Filter, ChevronDown, MoreHorizontal, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
