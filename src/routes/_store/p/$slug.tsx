@@ -31,7 +31,8 @@ import { useWaitlist } from "@/stores/waitlist";
 import { useAuth } from "@/stores/auth";
 import { useSelos } from "@/stores/selos";
 import { LoginModal } from "@/components/storefront/LoginModal";
-import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion, getPadraoPromotionWithTimer } from "@/lib/utils";
+import { getCityFromCep, isCampanhaAtiva, getCepCoordinates, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion, getPadraoPromotionWithTimer } from "@/lib/utils";
+import { getRoadDistanceKm } from "@/lib/distanceApis";
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
 import { PromoProductPageBanner, PromoLevePagueOfferBox } from "@/components/storefront/PromoCountdown";
@@ -490,31 +491,25 @@ function PDP() {
 
   const isCampanha = isCampanhaAtiva(p);
 
-  // Busca coordenadas reais para farmácias que não têm lat/lng cadastrados
+  // Busca coordenadas reais e calcula distância por estrada para todas as farmácias
   useEffect(() => {
-    if (!cep) return;
-    const userCep = cep.replace(/\D/g, "");
-    if (userCep.length !== 8) return;
+    if (!cep && !(geoLat && geoLng)) return;
+    const userCep = cep ? cep.replace(/\D/g, "") : "";
+    if (userCep && userCep.length !== 8 && !(geoLat && geoLng)) return;
 
-    const pharmaciesWithoutCoords = allPharmacies.filter(f => 
-      !(geoLat && geoLng && f.lat && f.lng) && pharmDistances[f.id] === undefined
-    );
-    if (pharmaciesWithoutCoords.length === 0) return;
+    const pharmaciesToCalc = allPharmacies.filter(f => pharmDistances[f.id] === undefined);
+    if (pharmaciesToCalc.length === 0) return;
 
     (async () => {
       setIsCalcLoading(true);
-      // Busca coordenadas do CEP do usuário (se não tiver do GPS)
+      // Busca coordenadas do usuário (GPS ou via CEP)
       const userCoords = (geoLat && geoLng)
         ? { lat: geoLat, lng: geoLng }
         : await getCepCoordinates(userCep);
 
       if (!userCoords) {
-        setIsCalcLoading(false);
-        return;
-      }
-      if (!userCoords) {
         const updates: Record<string, number> = {};
-        pharmaciesWithoutCoords.forEach(f => updates[f.id] = -1);
+        pharmaciesToCalc.forEach(f => updates[f.id] = -1);
         setPharmDistances(prev => ({ ...prev, ...updates }));
         setIsCalcLoading(false);
         return;
@@ -522,12 +517,12 @@ function PDP() {
 
       const updates: Record<string, number> = {};
       await Promise.all(
-        pharmaciesWithoutCoords.map(async (f) => {
+        pharmaciesToCalc.map(async (f) => {
           const pharmCoords = (f.lat && f.lng)
             ? { lat: f.lat, lng: f.lng }
             : await getCepCoordinates(f.cep);
           if (pharmCoords) {
-            updates[f.id] = calculateDistance(userCoords.lat, userCoords.lng, pharmCoords.lat, pharmCoords.lng);
+            updates[f.id] = await getRoadDistanceKm(userCoords.lat, userCoords.lng, pharmCoords.lat, pharmCoords.lng);
           } else {
             updates[f.id] = -1;
           }
@@ -538,7 +533,7 @@ function PDP() {
       }
       setIsCalcLoading(false);
     })();
-  }, [cep, geoLat, geoLng, cityPharmacies, pharmDistances]);
+  }, [cep, geoLat, geoLng, cityPharmacies, pharmDistances, allPharmacies]);
 
   // Calculate stock and resolve prices
   let availablePharmacies = allPharmacies.map((f, i) => {
@@ -561,10 +556,8 @@ function PDP() {
         preco = p.precosPorLoja[f.id].precoPor;
       }
     }
-    // Prioridade: GPS do usuário + coords da farmácia > coords buscadas via API > placeholder
-    const distance = (geoLat && geoLng && f.lat && f.lng)
-      ? calculateDistance(geoLat, geoLng, f.lat, f.lng)
-      : (pharmDistances[f.id] ?? null);
+    // Distância já foi calculada de forma assíncrona (com fallback ORS/Haversine)
+    const distance = pharmDistances[f.id] ?? null;
       
     const isSameCity = normalize(f.cidade).includes(currentCity) || normalize(f.endereco).includes(currentCity);
     

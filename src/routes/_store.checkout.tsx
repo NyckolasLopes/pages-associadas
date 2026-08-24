@@ -15,7 +15,7 @@ import { Lock, Store, Home, User, Truck, CreditCard, Users, QrCode, Clock, Check
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import { toast } from "sonner";
-import { calculateDistance, getCepCoordinates } from "@/lib/utils";
+import { getCepCoordinates } from "@/lib/utils";
 import { getStoreStatus } from "@/lib/storeHours";
 import { catalog } from "@/services/catalog";
 import type { Produto } from "@/types";

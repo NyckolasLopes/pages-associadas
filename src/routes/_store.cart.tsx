@@ -26,7 +26,8 @@ import { toast } from "sonner";
 import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
 import { sanitizeText, validatePhone, validateCPF, validateEmail, sanitizeCouponCode } from "@/lib/security";
 import type { Produto } from "@/types";
-import { getCityFromCep, isCampanhaAtiva, calculateDistance, getCepCoordinates, normalizeString } from "@/lib/utils";
+import { getCityFromCep, isCampanhaAtiva, getCepCoordinates, normalizeString } from "@/lib/utils";
+import { getRoadDistanceKm } from "@/lib/distanceApis";
 
 function getDynamicETA(inicio: string, fim: string, diasAbertos: number[], tempoMinutos: string, mode: "Entrega" | "Retirada") {
   const fallback = mode === "Entrega" ? (tempoMinutos ? `Em até ${tempoMinutos}` : "Em breve") : (tempoMinutos ? `Retirada em até ${tempoMinutos}` : "Retirada a partir de 30 minutos");
@@ -321,7 +322,7 @@ function CartPage() {
               ? { lat: p.lat, lng: p.lng }
               : await getCepCoordinates(p.cep);
             if (pharmCoords) {
-              updates[p.id] = calculateDistance(userCoords.lat, userCoords.lng, pharmCoords.lat, pharmCoords.lng);
+              updates[p.id] = await getRoadDistanceKm(userCoords.lat, userCoords.lng, pharmCoords.lat, pharmCoords.lng);
             } else {
               updates[p.id] = -1;
             }
@@ -421,7 +422,7 @@ function CartPage() {
       }
 
       if (clientLat && clientLng && pLat && pLng) {
-        distance = calculateDistance(clientLat, clientLng, pLat, pLng);
+        distance = await getRoadDistanceKm(clientLat, clientLng, pLat, pLng);
       }
 
       // ---- Regra: não envia para outro estado ----
@@ -610,9 +611,7 @@ function CartPage() {
     let minDistance = Infinity;
 
     for (const p of availablePharmacies) {
-      const distance = (geoLat && geoLng && p.lat && p.lng)
-        ? calculateDistance(geoLat, geoLng, p.lat, p.lng)
-        : (pharmDistances[p.id] ?? null);
+      const distance = pharmDistances[p.id] ?? null;
       if (distance !== null && distance < minDistance) {
         minDistance = distance;
         closestId = p.id;
@@ -1023,9 +1022,7 @@ function CartPage() {
                             return acc + (itemPrice * item.qty);
                           }, 0);
 
-                          let distance: number | null = (geoLat && geoLng && p.lat && p.lng)
-                            ? calculateDistance(geoLat, geoLng, p.lat, p.lng)
-                            : (pharmDistances[p.id] ?? null);
+                          let distance: number | null = pharmDistances[p.id] ?? null;
                             
                           const _isSameCity = geoCep ? (p.cidade && normalize(p.cidade).includes(currentCity)) || (p.endereco && normalize(p.endereco).includes(currentCity)) : true;
                           

@@ -37,7 +37,8 @@ import { catalog } from "@/services/catalog";
 import type { Produto, Categoria } from "@/types";
 import { brl, productImage, getGreeting, checkIsGenerico } from "@/lib/format";
 import { getDeterministicStock } from "@/lib/stock";
-import { cn, calculateDistance, getLevePaguePromotion } from "@/lib/utils";
+import { cn, getLevePaguePromotion } from "@/lib/utils";
+import { getRoadDistanceKm } from "@/lib/distanceApis";
 import { sanitizeHtml } from "@/lib/security";
 
 import categoriesData from "@/data/categories.json";
@@ -225,16 +226,15 @@ export function Header() {
               toast.success("CEP localizado com sucesso!", { id: toastId });
 
               const pharmacies = useAdmin.getState().pharmacies;
-              let closest: any = null;
-              let minD = Infinity;
-              pharmacies.forEach(p => {
-                if (p.lat && p.lng) {
-                  const d = calculateDistance(lat, lng, p.lat, p.lng);
-                  if (d < minD) { minD = d; closest = p; }
+              const withCoords = pharmacies.filter(p => p.lat && p.lng);
+              if (withCoords.length > 0) {
+                const dists = await Promise.all(withCoords.map(p => getRoadDistanceKm(lat, lng, p.lat!, p.lng!)));
+                let closest: any = null;
+                let minD = Infinity;
+                dists.forEach((d, i) => { if (d < minD) { minD = d; closest = withCoords[i]; } });
+                if (closest) {
+                  setTimeout(() => toast.success(`Encontramos a loja mais próxima! ${closest.nome} a ${minD.toFixed(1)} km`), 1500);
                 }
-              });
-              if (closest) {
-                setTimeout(() => toast.success(`Encontramos a loja mais próxima! ${closest.nome} a ${minD.toFixed(1)} km`), 1500);
               }
             } else {
               setIsGeoLoading(false);
@@ -272,16 +272,15 @@ export function Header() {
 
       if (lat && lng) {
         const pharmacies = useAdmin.getState().pharmacies;
-        let closest: any = null;
-        let minD = Infinity;
-        pharmacies.forEach(p => {
-            if (p.lat && p.lng) {
-                const d = calculateDistance(lat, lng, p.lat, p.lng);
-                if (d < minD) { minD = d; closest = p; }
-            }
-        });
-        if (closest) {
+        const withCoords = pharmacies.filter(p => p.lat && p.lng);
+        if (withCoords.length > 0) {
+          const dists = await Promise.all(withCoords.map(p => getRoadDistanceKm(lat, lng, p.lat!, p.lng!)));
+          let closest: any = null;
+          let minD = Infinity;
+          dists.forEach((d, i) => { if (d < minD) { minD = d; closest = withCoords[i]; } });
+          if (closest) {
             setTimeout(() => toast.success(`Encontramos a loja mais próxima! ${closest.nome} a ${minD.toFixed(1)} km`), 1000);
+          }
         }
       }
     } else {

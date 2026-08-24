@@ -156,80 +156,44 @@ export function normalizeString(str: string | undefined | null): string {
     .trim();
 }
 
+import { getCepCoordsWithFallback, getRoadDistanceKm } from "./distanceApis";
+
 // Cache de coordenadas por CEP para evitar requisições repetidas
-const _cepCoordsCache: Record<string, { lat: number; lng: number } | null> = {};
 const _pendingPromises: Record<string, Promise<{ lat: number; lng: number } | null>> = {};
 
 /**
- * Busca coordenadas reais de um CEP via awesomeapi.com.br com cache em memória.
+ * Busca coordenadas reais de um CEP usando cadeia de fallback (awesomeapi -> viacep+nominatim).
  * Retorna null se não encontrar.
  */
 export async function getCepCoordinates(cep: string): Promise<{ lat: number; lng: number } | null> {
   const clean = cep.replace(/\D/g, "");
   if (clean.length !== 8) return null;
-  if (clean in _cepCoordsCache) return _cepCoordsCache[clean];
+  
   if (clean in _pendingPromises) return _pendingPromises[clean];
 
-  const promise = (async () => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3000ms timeout
-    const res = await fetch(`https://cep.awesomeapi.com.br/json/${clean}`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.lat && data.lng) {
-        const coords = { lat: parseFloat(data.lat), lng: parseFloat(data.lng) };
-        _cepCoordsCache[clean] = coords;
-        return coords;
-      }
-    }
-  } catch (_) { /* ignore */ }
-  
-  // Fallback to nominatim
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${clean}&country=Brazil&format=json&limit=1`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.length > 0 && data[0].lat && data[0].lon) {
-        const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-        _cepCoordsCache[clean] = coords;
-        return coords;
-      }
-    }
-  } catch (_) { /* ignore */ }
-  
-    return null;
-  })();
-
+  const promise = getCepCoordsWithFallback(clean);
   _pendingPromises[clean] = promise;
+  
   const result = await promise;
-  _cepCoordsCache[clean] = result;
   delete _pendingPromises[clean];
   
   return result;
 }
 
 /**
- * Calcula a distância real em km entre dois CEPs buscando as coordenadas via API.
- * Use esta função em contextos assíncronos (useEffect, handlers).
+ * Calcula a distância real em km entre dois CEPs buscando as coordenadas via API e 
+ * roteando por estrada (ORS) com fallback para Haversine.
  */
 export async function calculateCepDistanceAsync(cep1: string, cep2: string): Promise<number> {
   const [coords1, coords2] = await Promise.all([
     getCepCoordinates(cep1),
     getCepCoordinates(cep2),
   ]);
+  
   if (coords1 && coords2) {
-    return calculateDistance(coords1.lat, coords1.lng, coords2.lat, coords2.lng);
+    return getRoadDistanceKm(coords1.lat, coords1.lng, coords2.lat, coords2.lng);
   }
+  
   // Fallback: se não conseguir as coordenadas, retorna valor genérico
   return 1.5;
 }
