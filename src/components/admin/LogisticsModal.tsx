@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Pharmacy, useAdmin, CustomDeliveryMethod } from "@/stores/admin";
 import { toast } from "sonner";
 import { Package, Truck, MapPin, Clock, Calendar, X, Plus, Edit2, Trash2 } from "lucide-react";
-import { CustomDeliveryMethod } from "@/stores/admin";
 
 interface LogisticsModalProps {
   pharmacy: Pharmacy | null;
@@ -26,22 +25,25 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
 
   const [methodModalOpen, setMethodModalOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<CustomDeliveryMethod | null>(null);
+  const formDataRef = useRef(formData);
+  const editingMethodRef = useRef(editingMethod);
+  useEffect(() => { formDataRef.current = formData; }, [formData]);
+  useEffect(() => { editingMethodRef.current = editingMethod; }, [editingMethod]);
 
   const handleSaveMethod = (method: CustomDeliveryMethod) => {
-    const currentMethods = formData.meiosEntregaPersonalizados || [];
+    const currentMethods = formDataRef.current.meiosEntregaPersonalizados || [];
     let newMethods;
     if (currentMethods.find(m => m.id === method.id)) {
       newMethods = currentMethods.map(m => m.id === method.id ? method : m);
     } else {
       newMethods = [...currentMethods, method];
     }
-    setFormData({ ...formData, meiosEntregaPersonalizados: newMethods });
+    setFormData(prev => ({ ...prev, meiosEntregaPersonalizados: newMethods }));
     setMethodModalOpen(false);
   };
 
   const handleDeleteMethod = (id: string) => {
-    const currentMethods = formData.meiosEntregaPersonalizados || [];
-    setFormData({ ...formData, meiosEntregaPersonalizados: currentMethods.filter(m => m.id !== id) });
+    setFormData(prev => ({ ...prev, meiosEntregaPersonalizados: (prev.meiosEntregaPersonalizados || []).filter(m => m.id !== id) }));
   };
 
   useEffect(() => {
@@ -574,7 +576,7 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setMethodModalOpen(false)}>Cancelar</Button>
-              <Button onClick={() => handleSaveMethod(editingMethod)} className="bg-emerald-600 hover:bg-emerald-700">Salvar Método</Button>
+              <Button onClick={() => { (document.activeElement as HTMLElement)?.blur(); setTimeout(() => { if (editingMethodRef.current) handleSaveMethod(editingMethodRef.current); }, 50); }} className="bg-emerald-600 hover:bg-emerald-700">Salvar Método</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
