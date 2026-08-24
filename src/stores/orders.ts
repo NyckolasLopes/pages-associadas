@@ -123,7 +123,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     let query = supabase
       .from('pedidos')
-      .select('*, pedido_itens(*, produtos(imagens, foto)), pedido_historico_status(*)')
+      .select('*, pedido_itens(*, produtos(imagens)), pedido_historico_status(*)')
       .order('created_at', { ascending: false });
 
     // Restringir a query se não for admin global

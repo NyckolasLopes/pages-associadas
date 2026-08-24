@@ -16,7 +16,7 @@ export const supabaseStorage: StateStorage = {
         .eq('key', name)
         .maybeSingle();
       
-      if (error) {
+      if (error && error.code !== '42501') {
         console.error(`Erro ao carregar estado '${name}' do Supabase:`, error);
       }
       
@@ -114,7 +114,9 @@ export const supabaseStorage: StateStorage = {
         });
         
       if (error) {
-        console.error(`Erro ao salvar estado '${name}' no Supabase:`, error);
+        if (error.code !== '42501') {
+          console.error(`Erro ao salvar estado '${name}' no Supabase:`, error);
+        }
       }
     } catch (err) {
       console.error(`Exceção ao gravar '${name}' no Supabase:`, err);
@@ -130,7 +132,7 @@ export const supabaseStorage: StateStorage = {
         // @ts-ignore
         .eq('key', name);
         
-      if (error) {
+      if (error && error.code !== '42501') {
         console.error(`Erro ao remover estado '${name}' no Supabase:`, error);
       }
     } catch (err) {

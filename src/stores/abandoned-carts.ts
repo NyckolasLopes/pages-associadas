@@ -38,7 +38,7 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
         .from('carrinhos_abandonados' as any)
         .select(`
           *,
-          lojas ( nome )
+          lojas ( nome_fantasia )
         `)
         .eq('status', 'abandonado')
         .not('user_id', 'is', null)

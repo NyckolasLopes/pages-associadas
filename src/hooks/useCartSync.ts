@@ -66,7 +66,7 @@ export function useCartSync() {
           nome_cliente: (user as any).nome || (user as any).name || user.email || 'Cliente',
           email_cliente: user.email || '',
           telefone_cliente: (user as any).celular || (user as any).telefone || '',
-          items: items,
+          items: JSON.parse(JSON.stringify(items)),
           total: total,
           status: 'abandonado',
           updated_at: new Date().toISOString()
