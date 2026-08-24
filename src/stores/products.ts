@@ -79,7 +79,8 @@ export function mapRowToProduto(d: any): Produto {
     categoriaId: d.categoria_id,
     subcategoriaId: d.subcategoria_id,
     categoriasAdicionais: d.categorias_adicionais || [],
-    internalTags: d.internal_tags || [],
+    internalTags: Array.isArray(d.internal_tags) ? d.internal_tags.filter((t: string) => !t.startsWith("selo:")) : [],
+    selosIds: Array.isArray(d.internal_tags) ? d.internal_tags.filter((t: string) => t.startsWith("selo:")).map((t: string) => t.replace("selo:", "")) : [],
     principiosAtivos: d.principios_ativos || [],
     imagens: d.imagens || [],
     videoUrl: d.video_url,
@@ -171,7 +172,7 @@ export const useAdminProducts = create<ProductsState>()(
           categoria_id: formattedProduct.categoriaId || null,
           subcategoria_id: formattedProduct.subcategoriaId || null,
           categorias_adicionais: formattedProduct.categoriasAdicionais || [],
-          internal_tags: formattedProduct.internalTags || [],
+          internal_tags: [...(formattedProduct.internalTags || []), ...(formattedProduct.selosIds || []).map(id => `selo:${id}`)],
           principios_ativos: formattedProduct.principiosAtivos || [],
           imagens: formattedProduct.imagens || [],
           video_url: formattedProduct.videoUrl || null,
@@ -330,21 +331,57 @@ export const useAdminProducts = create<ProductsState>()(
           }
         }
       },
-      applyBadgeToProducts: (badgeId, productIds) => set((s) => {
+      applyBadgeToProducts: async (badgeId, productIds) => {
         const idSet = new Set(productIds);
-        const updated = s.customProducts.map(p => {
-          const hasIt = p.selosIds?.includes(badgeId) || false;
-          const shouldHaveIt = idSet.has(p.id);
-          
-          if (hasIt && !shouldHaveIt) {
-            return { ...p, selosIds: p.selosIds?.filter(id => id !== badgeId) };
-          } else if (!hasIt && shouldHaveIt) {
-            return { ...p, selosIds: [...(p.selosIds || []), badgeId] };
-          }
-          return p;
+        set((s) => {
+          const updated = s.customProducts.map(p => {
+            const hasIt = p.selosIds?.includes(badgeId) || false;
+            const shouldHaveIt = idSet.has(p.id);
+            
+            if (hasIt && !shouldHaveIt) {
+              return { ...p, selosIds: p.selosIds?.filter(id => id !== badgeId) };
+            } else if (!hasIt && shouldHaveIt) {
+              return { ...p, selosIds: [...(p.selosIds || []), badgeId] };
+            }
+            return p;
+          });
+          return { customProducts: updated };
         });
-        return { customProducts: updated };
-      }),
+
+        try {
+          const { data: currentWithBadge } = await supabase
+            .from('produtos')
+            .select('id, internal_tags')
+            .contains('internal_tags', [`selo:${badgeId}`]);
+            
+          const currentIds = currentWithBadge?.map(p => p.id) || [];
+          const toRemove = currentWithBadge?.filter(p => !idSet.has(p.id)) || [];
+          const toAddIds = productIds.filter(id => !currentIds.includes(id));
+          
+          for (const p of toRemove) {
+            const tags = (Array.isArray(p.internal_tags) ? p.internal_tags : []).filter((t: string) => t !== `selo:${badgeId}`);
+            await supabase.from('produtos').update({ internal_tags: tags }).eq('id', p.id);
+          }
+          
+          if (toAddIds.length > 0) {
+            const { data: currentToAdd } = await supabase
+              .from('produtos')
+              .select('id, internal_tags')
+              .in('id', toAddIds);
+              
+            if (currentToAdd) {
+              for (const p of currentToAdd) {
+                const tags = Array.isArray(p.internal_tags) ? p.internal_tags : [];
+                if (!tags.includes(`selo:${badgeId}`)) {
+                  await supabase.from('produtos').update({ internal_tags: [...tags, `selo:${badgeId}`] }).eq('id', p.id);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Erro ao salvar selos no supabase", e);
+        }
+      },
       clearProducts: (lojaId) => set((s) => {
         if (lojaId) {
           const newStoreCustom = { ...s.storeCustomProducts };

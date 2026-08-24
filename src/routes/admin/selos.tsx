@@ -5,12 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSelos } from "@/stores/selos";
 import { useAdminProducts } from "@/stores/products";
 import { SeloSistema, Produto } from "@/types";
 import { toast } from "sonner";
 import { checkIsGenerico } from "@/lib/format";
+import { supabase } from "@/integrations/supabase/client";
+import { catalog } from "@/services/catalog";
+import { mapRowToProduto } from "@/stores/products";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +42,10 @@ function AdminSelos() {
   const [corFundo, setCorFundo] = useState("#00AFA9");
   const [corTexto, setCorTexto] = useState("#FFFFFF");
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const [selectedProductsData, setSelectedProductsData] = useState<Produto[]>([]);
+  const [searchResults, setSearchResults] = useState<Produto[]>([]);
   const [productSearch, setProductSearch] = useState("");
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   const filteredSelos = useMemo(() => {
     return selos.filter(s => s.nome.toLowerCase().includes(search.toLowerCase()));
@@ -52,23 +58,35 @@ function AdminSelos() {
     setCorFundo("#00AFA9");
     setCorTexto("#FFFFFF");
     setSelectedProductIds(new Set());
+    setSelectedProductsData([]);
+    setSearchResults([]);
     setProductSearch("");
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (selo: SeloSistema) => {
+  const handleOpenEdit = async (selo: SeloSistema) => {
     setEditingId(selo.id);
     setNome(selo.nome);
     setAtivo(selo.ativo);
     setCorFundo(selo.corFundo);
     setCorTexto(selo.corTexto);
     
-    // Find products that have this badge
-    const matchedProducts = customProducts.filter(p => p.selosIds?.includes(selo.id) || (selo.id === 'gen' && checkIsGenerico(p)) || (selo.id === 'servico' && checkIsService(p)));
-    setSelectedProductIds(new Set(matchedProducts.map(p => p.id)));
+    setIsModalOpen(true);
+    setIsLoadingProducts(true);
+    
+    try {
+      const { data } = await supabase.from('produtos').select('*').contains('internal_tags', [`selo:${selo.id}`]);
+      const matchedProducts = data ? data.map(mapRowToProduto) : [];
+      setSelectedProductIds(new Set(matchedProducts.map(p => p.id)));
+      setSelectedProductsData(matchedProducts);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingProducts(false);
+    }
     
     setProductSearch("");
-    setIsModalOpen(true);
+    setSearchResults([]);
   };
 
   const handleSave = () => {
@@ -91,23 +109,51 @@ function AdminSelos() {
     setIsModalOpen(false);
   };
 
-  const toggleProductSelection = (productId: string) => {
+  const toggleProductSelection = (p: Produto) => {
     const newSet = new Set(selectedProductIds);
-    if (newSet.has(productId)) {
-      newSet.delete(productId);
+    if (newSet.has(p.id)) {
+      newSet.delete(p.id);
+      setSelectedProductsData(prev => prev.filter(x => x.id !== p.id));
     } else {
-      newSet.add(productId);
+      newSet.add(p.id);
+      setSelectedProductsData(prev => [...prev, p]);
     }
     setSelectedProductIds(newSet);
   };
 
-  const filteredProducts = useMemo(() => {
-    return customProducts.filter(p => 
-      p.nome.toLowerCase().includes(productSearch.toLowerCase()) || 
-      p.ean?.includes(productSearch) || 
-      p.marca?.toLowerCase().includes(productSearch.toLowerCase())
-    );
-  }, [customProducts, productSearch]);
+  useEffect(() => {
+    let active = true;
+    if (!productSearch) {
+      setSearchResults([]);
+      return;
+    }
+    
+    const timeout = setTimeout(async () => {
+      setIsLoadingProducts(true);
+      try {
+        const { results } = await catalog.adminSearchProducts({ search: productSearch, page: 0, pageSize: 50, listFilter: "all" });
+        if (active) {
+          setSearchResults(results);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (active) setIsLoadingProducts(false);
+      }
+    }, 400);
+    
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
+  }, [productSearch]);
+
+  const displayProducts = useMemo(() => {
+    const map = new Map<string, Produto>();
+    selectedProductsData.forEach(p => map.set(p.id, p));
+    searchResults.forEach(p => map.set(p.id, p));
+    return Array.from(map.values());
+  }, [selectedProductsData, searchResults]);
 
   const handleDelete = (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -154,7 +200,9 @@ function AdminSelos() {
             <div className="p-8 text-center text-slate-500">Nenhum selo encontrado.</div>
           ) : (
             filteredSelos.map((selo) => {
-              const count = customProducts.filter(p => p.selosIds?.includes(selo.id) || (selo.id === 'gen' && checkIsGenerico(p)) || (selo.id === 'servico' && checkIsService(p))).length;
+              // Now we don't have accurate counts from customProducts since it's empty in pagination mode.
+              // We just show a placeholder or we can omit it.
+              const countText = selo.id === 'gen' || selo.id === 'servico' ? 'Automático' : 'Personalizado';
               
               return (
                 <div 
@@ -175,7 +223,7 @@ function AdminSelos() {
                   </div>
                   <div className="text-center">
                     <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-full">
-                      {count} {count === 1 ? 'produto' : 'produtos'}
+                      {countText}
                     </span>
                   </div>
                   <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -278,16 +326,20 @@ function AdminSelos() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-2">
-                {filteredProducts.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-slate-500">Nenhum produto encontrado.</div>
+                {isLoadingProducts ? (
+                   <div className="p-8 text-center text-sm text-slate-500">Carregando...</div>
+                ) : displayProducts.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-slate-500">
+                    {productSearch ? 'Nenhum produto encontrado na busca.' : 'Busque produtos para vinculá-los a este selo.'}
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-1">
-                    {filteredProducts.map(p => {
+                    {displayProducts.map(p => {
                       const isSelected = selectedProductIds.has(p.id);
                       return (
                         <div 
                           key={p.id}
-                          onClick={() => toggleProductSelection(p.id)}
+                          onClick={() => toggleProductSelection(p)}
                           className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
                             isSelected ? 'bg-emerald-50 border border-emerald-100' : 'hover:bg-slate-100 border border-transparent'
                           }`}
