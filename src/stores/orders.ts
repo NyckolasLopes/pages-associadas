@@ -162,6 +162,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
         const mappedRawItens = rawItens.map((i: any) => {
           const sku = i.sku || i.produto_id || i.id;
+          const skuStr = sku ? String(sku) : undefined;
           return {
             ...i,
             nome: i.nome || i.name || i.title || 'Produto sem nome',
@@ -171,7 +172,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
             quantidade: i.qtd || i.quantidade || i.qty || 1,
             valorUnitario: i.valorUnitario || i.preco_unit || i.price || i.preco || 0,
             preco: i.preco || (i.valorUnitario || i.preco_unit || i.price || 0) * (i.qtd || i.quantidade || i.qty || 1),
-            foto: i.foto || i.image || i.imageUrl || (sku ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${sku.substring(0, 2)}/${sku.substring(2, 4)}/${sku}_m1_1.jpg` : undefined),
+            foto: i.foto || i.image || i.imageUrl || (skuStr && skuStr.length >= 4 ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${skuStr.substring(0, 2)}/${skuStr.substring(2, 4)}/${skuStr}_m1_1.jpg` : undefined),
           };
         });
 
@@ -186,9 +187,12 @@ export const useOrders = create<OrdersState>((set, get) => ({
                   foto = i.produtos.foto;
                 }
               }
-              if (!foto && i.produto_id) {
-                foto = `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${i.produto_id.substring(0, 2)}/${i.produto_id.substring(2, 4)}/${i.produto_id}_m1_1.jpg`;
-              }
+                if (!foto && i.produto_id) {
+                  const pidStr = String(i.produto_id);
+                  if (pidStr.length >= 4) {
+                    foto = `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${pidStr.substring(0, 2)}/${pidStr.substring(2, 4)}/${pidStr}_m1_1.jpg`;
+                  }
+                }
 
               return {
                 id: i.produto_id || i.id,
