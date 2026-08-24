@@ -2,7 +2,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   Instagram, Facebook, Linkedin, Youtube, CreditCard, Banknote, Wallet,
-  Mail, Phone, MapPin, Send, Flame, Users, ShieldCheck, Smartphone, Link as LinkIcon, Music, Twitter, Twitch, Github
+  Mail, Phone, MapPin, Send, Flame, Users, ShieldCheck, Smartphone, Link as LinkIcon, Music, Twitter, Twitch, Github, FileText
 } from "lucide-react";
 
 const SOCIAL_ICON_MAP: Record<string, React.FC<any>> = {
@@ -68,7 +68,7 @@ export function Footer() {
 
   // Fallback to global config if no pharmacy has a description, though typically we use the active pharmacy
   const descricaoLoja = activePharmacy?.footerDescricao || activePharmacy?.pageTitle || dadosLoja.descricao || "Somos a maior rede associativa do Brasil.";
-  const tituloCentralRelacionamento = activePharmacy?.footerTituloContato || "CENTRAL DE RELACIONAMENTO";
+  const tituloCentralRelacionamento = activePharmacy?.footerTituloContato || "ENDEREÇO E INFORMAÇÕES";
 
   const storeSocials = useMemo(() => {
     if (!activePharmacy?.socialLinks) return [];
@@ -406,6 +406,7 @@ export function Footer() {
 
           <div className="text-sm space-y-2 opacity-95">
             <h3 className="font-bold uppercase text-xs tracking-wider opacity-80">{tituloCentralRelacionamento}</h3>
+            <div className="flex items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> CNPJ: {activePharmacy?.cnpj || dadosLoja.cnpj}</div>
             <div className="flex items-start gap-2"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{activePharmacy?.endereco || dadosLoja.endereco}, {activePharmacy?.numero || dadosLoja.numero}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} — {activePharmacy?.bairro || dadosLoja.bairro}, {activePharmacy?.cidade || dadosLoja.cidade}/{activePharmacy?.uf || dadosLoja.estado} — CEP {activePharmacy?.cep || dadosLoja.cep}</div>
             <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {activePharmacy?.telefone || dadosLoja.telefone}</div>
             <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> WhatsApp: {activePharmacy?.whatsapp || dadosLoja.whatsapp}</div>

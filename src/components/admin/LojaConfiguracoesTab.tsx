@@ -228,14 +228,22 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
           </div>
           
           <div className="space-y-2 mt-2 border-t pt-4">
-            <h4 className="font-bold text-sm">Central de Relacionamento</h4>
+            <h4 className="font-bold text-sm">Endereço e Informações</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
               <div className="space-y-2 md:col-span-2">
                 <Label>Título da Seção</Label>
                 <Input 
                   value={formData.footerTituloContato || ""} 
                   onChange={(e) => handleChange("footerTituloContato", e.target.value)} 
-                  placeholder="Ex: CENTRAL DE RELACIONAMENTO"
+                  placeholder="Ex: ENDEREÇO E INFORMAÇÕES"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>CNPJ</Label>
+                <Input 
+                  value={formData.cnpj || ""} 
+                  onChange={(e) => handleChange("cnpj", e.target.value)} 
+                  placeholder="00.000.000/0000-00"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
