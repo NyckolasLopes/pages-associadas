@@ -387,7 +387,7 @@ function AdminBanners() {
                           Filial #{loja.id}
                           <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] uppercase tracking-wider ${
                             loja.categoriaAssociado === 'Parceiro'
-                              ? 'bg-slate-200 text-slate-700'
+                              ? 'bg-orange-500 text-white'
                               : 'bg-emerald-100 text-emerald-800'
                           }`}>
                             {loja.categoriaAssociado === 'Parceiro' ? 'Parceiro' : 'Pleno'}

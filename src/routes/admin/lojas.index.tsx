@@ -345,7 +345,7 @@ function LojasAdmin() {
                     <td className="px-4 py-3">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                         p.categoriaAssociado === 'Parceiro'
-                          ? 'bg-slate-200 text-slate-700'
+                          ? 'bg-orange-500 text-white'
                           : 'bg-emerald-100 text-emerald-800'
                       }`}>
                         {p.categoriaAssociado === 'Parceiro' ? 'Parceiro' : 'Pleno'}

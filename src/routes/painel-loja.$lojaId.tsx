@@ -471,7 +471,7 @@ function PainelLoja() {
               {loja.nome}
               <span className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${
                 loja.categoriaAssociado === 'Parceiro'
-                  ? 'bg-slate-200 text-slate-700'
+                  ? 'bg-orange-500 text-white'
                   : 'bg-emerald-100 text-emerald-800'
               }`}>
                 {loja.categoriaAssociado === 'Parceiro' ? 'Parceiro' : 'Pleno'}
