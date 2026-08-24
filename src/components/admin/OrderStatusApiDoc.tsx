@@ -6,12 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 export const PEDIDO_STATUS_OPTIONS = [
-  { value: "novo",           label: "Pedido Recebido",             color: "bg-sky-100 text-sky-700",      icon: "⏳" },
-  { value: "Em separação",   label: "Em Separação",                color: "bg-blue-100 text-blue-700",    icon: "📦" },
-  { value: "Pronto",         label: "Pronto para retirada",        color: "bg-orange-100 text-orange-700", icon: "🏪" },
-  { value: "Em rota",        label: "Em rota de entrega",          color: "bg-purple-100 text-purple-700", icon: "🛵" },
-  { value: "Entregue",       label: "Entregue",                    color: "bg-teal-100 text-teal-700",    icon: "✅" },
-  { value: "Cancelado",      label: "Cancelado",                   color: "bg-red-100 text-red-700",      icon: "❌" },
+  { value: "novo",           label: "Pedido Recebido",             color: "bg-sky-100 text-sky-700" },
+  { value: "Em separação",   label: "Em Separação",                color: "bg-blue-100 text-blue-700" },
+  { value: "Pronto",         label: "Pronto para retirada",        color: "bg-orange-100 text-orange-700" },
+  { value: "Em rota",        label: "Em rota de entrega",          color: "bg-purple-100 text-purple-700" },
+  { value: "Entregue",       label: "Entregue",                    color: "bg-teal-100 text-teal-700" },
+  { value: "Cancelado",      label: "Cancelado",                   color: "bg-red-100 text-red-700" },
 ];
 
 export const STATUS_COLORS_MAP: Record<string, string> = Object.fromEntries(

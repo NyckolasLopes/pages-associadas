@@ -39,12 +39,12 @@ import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, S
 
 // Status sincronizados com o que o cliente vê em Meus Pedidos
 export const PEDIDO_STATUS_OPTIONS = [
-  { value: "novo",           label: "Pedido Recebido",             color: "bg-sky-100 text-sky-700",      icon: "⏳" },
-  { value: "Em separação",   label: "Em Separação",                color: "bg-blue-100 text-blue-700",    icon: "📦" },
-  { value: "Pronto",         label: "Pronto para retirada",        color: "bg-orange-100 text-orange-700", icon: "🏪" },
-  { value: "Em rota",        label: "Em rota de entrega",          color: "bg-purple-100 text-purple-700", icon: "🛵" },
-  { value: "Entregue",       label: "Entregue",                    color: "bg-teal-100 text-teal-700",    icon: "✅" },
-  { value: "Cancelado",      label: "Cancelado",                   color: "bg-red-100 text-red-700",      icon: "❌" },
+  { value: "novo",           label: "Pedido Recebido",             color: "bg-sky-100 text-sky-700" },
+  { value: "Em separação",   label: "Em Separação",                color: "bg-blue-100 text-blue-700" },
+  { value: "Pronto",         label: "Pronto para retirada",        color: "bg-orange-100 text-orange-700" },
+  { value: "Em rota",        label: "Em rota de entrega",          color: "bg-purple-100 text-purple-700" },
+  { value: "Entregue",       label: "Entregue",                    color: "bg-teal-100 text-teal-700" },
+  { value: "Cancelado",      label: "Cancelado",                   color: "bg-red-100 text-red-700" },
 ];
 
 // Manter compat retroativa
@@ -761,7 +761,6 @@ function PainelLoja() {
                                     {PEDIDO_STATUS_OPTIONS.map((s) => (
                                       <SelectItem key={s.value} value={s.value}>
                                         <span className="flex items-center gap-2">
-                                          <span>{s.icon}</span>
                                           <span>{s.label}</span>
                                         </span>
                                       </SelectItem>
