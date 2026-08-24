@@ -56,6 +56,7 @@ import {
 import { DescriptionImporter } from "@/components/admin/DescriptionImporter";
 import { BulkEditModal } from "@/components/admin/BulkEditModal";
 import { ProductEditorForm } from "@/components/admin/ProductEditorForm";
+import { productImage } from "@/lib/format";
 
 import {
   Dialog,
@@ -817,8 +818,8 @@ function AdminProdutos() {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-slate-100 border flex items-center justify-center shrink-0">
-                              <Package className="h-4 w-4 text-slate-400" />
+                            <div className="h-10 w-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                              <img src={productImage(p)} alt={p.nome} className="w-full h-full object-contain p-1" loading="lazy" />
                             </div>
                             <div className="min-w-0 flex flex-col gap-0.5">
                               <div className="flex items-center gap-2 flex-wrap">
