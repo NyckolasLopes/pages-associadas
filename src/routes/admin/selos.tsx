@@ -123,15 +123,11 @@ function AdminSelos() {
 
   useEffect(() => {
     let active = true;
-    if (!productSearch) {
-      setSearchResults([]);
-      return;
-    }
     
     const timeout = setTimeout(async () => {
       setIsLoadingProducts(true);
       try {
-        const { results } = await catalog.adminSearchProducts({ search: productSearch, page: 0, pageSize: 50, listFilter: "all" });
+        const { results } = await catalog.adminSearchProducts({ search: productSearch, page: 0, pageSize: 300, listFilter: "all" });
         if (active) {
           setSearchResults(results);
         }
@@ -330,7 +326,7 @@ function AdminSelos() {
                    <div className="p-8 text-center text-sm text-slate-500">Carregando...</div>
                 ) : displayProducts.length === 0 ? (
                   <div className="p-8 text-center text-sm text-slate-500">
-                    {productSearch ? 'Nenhum produto encontrado na busca.' : 'Busque produtos para vinculá-los a este selo.'}
+                    Nenhum produto encontrado.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-1">
