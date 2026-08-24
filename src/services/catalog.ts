@@ -707,7 +707,7 @@ export const catalog = {
 
     let query = supabase.from('produtos').select('*');
     if (/^\d+$/.test(q)) {
-      query = query.or(`ean.eq.${q},id.eq.${q}`);
+      query = query.or(`ean.eq.${q},sku.eq.${q}`);
     } else {
       query = query.ilike('nome', `%${q}%`);
     }
@@ -722,7 +722,7 @@ export const catalog = {
     
     if (params.search) {
       if (/^\d+$/.test(params.search)) {
-        query = query.or(`ean.eq.${params.search},id.eq.${params.search}`);
+        query = query.or(`ean.eq.${params.search},sku.eq.${params.search}`);
       } else {
         query = query.ilike('nome', `%${params.search}%`);
       }
