@@ -459,8 +459,8 @@ function CartPage() {
                const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
                const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
                if (matchingRaio) deliveryPrice = matchingRaio.preco;
-            } else if (customerCity && p.cidade && normalizeString(customerCity) === normalizeString(p.cidade)) {
-               // Fallback: mesma cidade
+            } else if (customerUf && p.uf && customerUf.toUpperCase() === p.uf.toUpperCase()) {
+               // Fallback: mesmo estado (caso a API de CEP falhe)
                const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
                if (sortedRaios.length > 0) deliveryPrice = sortedRaios[0].preco;
             }
@@ -524,8 +524,8 @@ function CartPage() {
                    }
                 }
              } else {
-                // Fallback: mesma cidade
-                if (customerCity && p.cidade && normalizeString(customerCity) === normalizeString(p.cidade)) {
+                // Fallback: mesmo estado (caso a API de CEP falhe)
+                if (customerUf && p.uf && customerUf.toUpperCase() === p.uf.toUpperCase()) {
                    deliveryPrice = Number(p.custoEntrega) || 0;
                    isEligible = true;
                 }

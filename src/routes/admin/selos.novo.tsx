@@ -77,7 +77,7 @@ function AdminSeloNovo() {
 
       <div className="fixed bottom-0 left-64 right-0 bg-white border-t border-slate-200 p-4 flex items-center justify-end gap-4 z-10 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] pr-12">
         <Link to="/admin/selos">
-          <Button variant="outline" className="h-10 px-8 font-bold text-slate-600 border-slate-200 hover:bg-slate-50">
+          <Button variant="outline" className="h-10 px-8 font-bold text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-800">
             Cancelar
           </Button>
         </Link>
@@ -88,3 +88,4 @@ function AdminSeloNovo() {
     </div>
   );
 }
+

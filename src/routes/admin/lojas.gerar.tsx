@@ -274,10 +274,10 @@ function GerarLojaPage() {
                             if (e.key === "Escape") setEditingSlugId(null);
                           }}
                         />
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-emerald-100" onClick={() => handleSaveSlug(pharmacy)}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => handleSaveSlug(pharmacy)}>
                           <Check className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:bg-slate-200" onClick={() => setEditingSlugId(null)}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:bg-slate-200 hover:text-slate-700" onClick={() => setEditingSlugId(null)}>
                           <X className="w-4 h-4" />
                         </Button>
                       </div>

@@ -249,7 +249,7 @@ function AdminMarcaNova() {
 
         <div className="border-t border-slate-200 px-6 py-4 flex items-center justify-end gap-4 bg-white rounded-b-xl mt-auto">
           <Link to="/admin/marcas">
-            <Button variant="outline" className="h-10 px-8 font-bold text-slate-600 border-slate-200 hover:bg-slate-50">
+            <Button variant="outline" className="h-10 px-8 font-bold text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-800">
               Cancelar
             </Button>
           </Link>
@@ -261,3 +261,4 @@ function AdminMarcaNova() {
     </div>
   );
 }
+

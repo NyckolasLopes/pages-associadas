@@ -374,7 +374,7 @@ function AdminMarcas() {
             </div>
 
             <div className="border-t border-slate-200 px-6 py-4 flex items-center justify-end gap-4 bg-white rounded-b-xl mt-auto">
-              <Button onClick={() => setEditingMarca(null)} variant="outline" className="h-10 px-8 font-bold text-slate-600 border-slate-200 hover:bg-slate-50">
+              <Button onClick={() => setEditingMarca(null)} variant="outline" className="h-10 px-8 font-bold text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-800">
                 Cancelar
               </Button>
               <Button onClick={handleSave} className="h-10 px-8 bg-[#00AFA9] hover:bg-[#008f8a] text-white font-bold">
@@ -388,3 +388,4 @@ function AdminMarcas() {
     </div>
   );
 }
+

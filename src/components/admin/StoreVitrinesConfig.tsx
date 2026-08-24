@@ -71,13 +71,13 @@ export function StoreVitrinesConfig() {
             </Button>
           </Link>
           <Link to="/admin/produtos">
-            <Button variant="outline" className="border-slate-300 text-slate-700 font-bold hover:bg-slate-50 h-10 px-4">
+            <Button variant="outline" className="border-slate-300 text-slate-700 font-bold hover:bg-slate-50 hover:text-slate-800 h-10 px-4">
               <Package className="w-4 h-4 mr-1.5 text-slate-500" />
               Ver Produtos
             </Button>
           </Link>
           <Link to="/admin/categorias">
-            <Button variant="outline" className="border-slate-300 text-slate-700 font-bold hover:bg-slate-50 h-10 px-4">
+            <Button variant="outline" className="border-slate-300 text-slate-700 font-bold hover:bg-slate-50 hover:text-slate-800 h-10 px-4">
               <Layers className="w-4 h-4 mr-1.5 text-slate-500" />
               Categorias
             </Button>
@@ -376,3 +376,4 @@ export function StoreVitrinesConfig() {
     </div>
   );
 }
+

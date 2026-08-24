@@ -507,7 +507,7 @@ function AdminBanners() {
                         </td>
                         <td className="p-3">
                            <div className="flex gap-2">
-                             <Button onClick={() => openEditModal(banner)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[#00B5AD] hover:bg-slate-100 transition-colors">
+                             <Button onClick={() => openEditModal(banner)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[#00B5AD] hover:bg-slate-100 hover:text-slate-800 transition-colors">
                                <Edit2 className="w-4 h-4" />
                              </Button>
                              <Button onClick={() => setBannerToDelete(banner.id)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
@@ -1760,3 +1760,4 @@ function StoreColorsConfig() {
     </div>
   );
 }
+

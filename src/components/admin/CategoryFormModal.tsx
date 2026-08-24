@@ -356,7 +356,7 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
         </ScrollArea>
         
         <div className="px-6 py-4 bg-white border-t border-slate-200 flex items-center justify-end gap-4 mt-auto">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-8 font-bold text-slate-600 border-slate-200 hover:bg-slate-50">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-8 font-bold text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-800">
             Cancelar
           </Button>
           <Button onClick={handleSave} className="h-10 px-8 bg-primary hover:bg-primary-dark text-white font-bold">
@@ -367,3 +367,4 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
     </Dialog>
   );
 }
+

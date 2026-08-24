@@ -189,9 +189,9 @@ export function Footer() {
         </div>
       )}
 
-      <footer className="bg-primary text-primary-foreground">
+      <footer className="bg-primary text-primary-foreground pb-24 md:pb-0">
         {/* Pre-Footer Cards */}
-      <div className="bg-secondary text-white border-b border-white/15">
+        <div className="bg-secondary text-white border-b border-white/15">
         <div className="container-fa py-6 grid md:grid-cols-2 gap-4">
           <a 
             href="#" 

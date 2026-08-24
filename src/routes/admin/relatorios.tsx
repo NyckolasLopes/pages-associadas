@@ -463,7 +463,7 @@ function Relatorios() {
       <div className="space-y-6 max-w-6xl pb-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border shadow-sm print:hidden">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => setActiveReport(null)} className="h-10 px-4 rounded-lg hover:bg-slate-100 flex items-center gap-2 font-bold text-slate-600">
+            <Button variant="outline" onClick={() => setActiveReport(null)} className="h-10 px-4 rounded-lg flex items-center gap-2 font-bold text-slate-600">
               <ArrowLeft className="h-5 w-5" />
               Voltar para Relatórios
             </Button>
@@ -481,7 +481,7 @@ function Relatorios() {
             <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">Período</span>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="h-10 px-4 flex items-center gap-2 bg-slate-50 text-sm font-semibold border-slate-200 text-slate-700 hover:bg-slate-100">
+                <Button variant="outline" className="h-10 px-4 flex items-center gap-2 bg-slate-50 text-sm font-semibold border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-800">
                   <CalendarIcon className="h-4 w-4 text-slate-500" />
                   01/06/2026 até 25/06/2026
                 </Button>
@@ -796,7 +796,7 @@ function Relatorios() {
                   <h3 className="text-lg font-bold text-slate-800">Campanhas Internas por Loja</h3>
                   <p className="text-sm text-slate-500">Relatório de produtos vendidos em campanhas específicas de cada loja.</p>
                 </div>
-                <Button variant="outline" className="gap-2 bg-white">
+                <Button variant="default" className="gap-2">
                   <Printer className="h-4 w-4" />
                   Imprimir Relatório
                 </Button>
@@ -1304,3 +1304,4 @@ function Relatorios() {
     </div>
   );
 }
+

@@ -378,10 +378,10 @@ function Metricas() {
             </div>
           )}
           <Button 
-            variant="outline" 
+            variant="default" 
             size="sm" 
             onClick={handlePrint}
-            className="text-xs font-bold gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50"
+            className="text-xs font-bold gap-1.5"
           >
             <Printer className="w-3.5 h-3.5" />
             Imprimir Relatório

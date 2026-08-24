@@ -57,7 +57,7 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
 
         <div className="flex items-center gap-2">
           <Link to="/" target="_blank">
-            <Button variant="outline" className="text-slate-700 font-bold border-slate-300 hover:bg-slate-50">
+            <Button variant="outline" className="text-slate-700 font-bold border-slate-300 hover:bg-slate-50 hover:text-slate-800">
               <Eye className="w-4 h-4 mr-2 text-slate-500" />
               Ver loja ao vivo
             </Button>
@@ -104,7 +104,7 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
                   Fixo no Topo
                 </span>
                 <Link to={"/admin/lojas" as any} className="hidden sm:inline-flex">
-                  <Button size="sm" variant="ghost" className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50">
+                  <Button size="sm" variant="ghost" className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-800">
                     <Palette className="w-3.5 h-3.5 mr-1 text-[#00B5AD]" /> Personalizar
                   </Button>
                 </Link>
@@ -161,7 +161,7 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
                 </div>
               </div>
 
-              <Button size="sm" variant="ghost" className="bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 shrink-0">
+              <Button size="sm" variant="ghost" className="bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 hover:text-slate-800 shrink-0">
                 Configurar Tarja ({tarjaBannersCount})
               </Button>
             </div>
@@ -186,7 +186,7 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
               </div>
 
               <Link to="/admin/categorias">
-                <Button size="sm" variant="ghost" className="bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 shrink-0">
+                <Button size="sm" variant="ghost" className="bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 hover:text-slate-800 shrink-0">
                   Editar Categorias
                 </Button>
               </Link>
@@ -322,7 +322,7 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
               </div>
 
               <Link to="/admin/marcas">
-                <Button size="sm" variant="ghost" className="bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 shrink-0">
+                <Button size="sm" variant="ghost" className="bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 hover:text-slate-800 shrink-0">
                   Gerenciar Marcas
                 </Button>
               </Link>
@@ -355,3 +355,4 @@ export function StoreStructureViewer({ onNavigateTab, onOpenNewBannerModal }: St
     </div>
   );
 }
+

@@ -27,7 +27,7 @@ export function useCartSync() {
           if (cart && cart.items && Array.isArray(cart.items) && cart.items.length > 0) {
             // Se o carrinho local estiver vazio, restaura o do banco
             if (useCart.getState().items.length === 0) {
-              useCart.getState().restoreCart(data.items);
+              useCart.getState().restoreCart(cart.items);
             }
           }
         });
