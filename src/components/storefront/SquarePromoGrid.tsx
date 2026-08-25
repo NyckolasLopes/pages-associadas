@@ -12,7 +12,10 @@ export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: s
     if (b.posicao !== "Mini Banner" || !b.active) return false;
     
     const hasLocalBannerForPosition = banners.some(
-      local => local.lojaId === effectiveLojaId && local.posicao === b.posicao
+      local => {
+        if (local.lojaId !== effectiveLojaId || local.posicao !== b.posicao) return false;
+        return local.topicoVinculado === b.topicoVinculado;
+      }
     );
 
     if (effectiveLojaId) {

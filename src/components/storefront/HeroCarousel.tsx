@@ -39,7 +39,13 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
     
     // Check if there are ANY local banners for this position in this store
     const hasLocalBannerForPosition = adminBanners.some(
-      local => local.lojaId === effectiveLojaId && local.posicao === b.posicao
+      local => {
+        if (local.lojaId !== effectiveLojaId || local.posicao !== b.posicao) return false;
+        if (b.posicao === "Banner por Categoria") {
+          return local.topicoVinculado === b.topicoVinculado;
+        }
+        return true;
+      }
     );
 
     // Filtro de Loja: Só mostra se for banner específico da loja, ou se for global (e a loja não tiver sobreposto essa posição)
