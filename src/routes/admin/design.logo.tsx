@@ -2,19 +2,40 @@ import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { useAdmin } from "@/stores/admin";
 import { Button } from "@/components/ui/button";
-import { Upload, Trash2, Image as ImageIcon } from "lucide-react";
-import { useRef } from "react";
+import { Upload, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import logoUrlDefault from "@/assets/logo.png";
 import logoAnvisaDefault from "@/assets/logo-anvisa.png";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/design/logo")({
   component: AdminDesignLogo,
 });
 
+const LOGO_BUCKET = "logos";
+
+async function uploadLogoToStorage(file: File, path: string): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+  const filePath = `${path}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(LOGO_BUCKET)
+    .upload(filePath, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  const { data } = supabase.storage.from(LOGO_BUCKET).getPublicUrl(filePath);
+  // Adiciona cache-buster para forçar reload imediato
+  return `${data.publicUrl}?t=${Date.now()}`;
+}
+
 function AdminDesignLogo() {
   const { activeStoreId, currentUser, pharmacies, updatePharmacy } = useAdmin();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
 
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   let storeId = activeStoreId;
@@ -37,31 +58,46 @@ function AdminDesignLogo() {
   const currentFooterLogo = currentPharmacy?.footerLogoUrl || defaultFooterLogo;
   const currentAnvisaLogo = currentPharmacy?.anvisaLogoUrl || defaultAnvisaLogo;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    fieldName: string,
+    storagePath: string,
+    maxSizeMB: number = 2
+  ) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !currentPharmacy) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("O arquivo deve ter no máximo 2MB.");
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      toast.error(`O arquivo deve ter no máximo ${maxSizeMB}MB.`);
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (typeof event.target?.result === 'string') {
-        callback(event.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    setUploadingField(fieldName);
+    try {
+      const url = await uploadLogoToStorage(file, `${currentPharmacy.id}/${storagePath}`);
+      await updatePharmacy(currentPharmacy.id, { ...currentPharmacy, [fieldName]: url });
+      toast.success("Imagem atualizada com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao enviar logo:", err);
+      // Fallback para base64 se o bucket não estiver configurado
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        if (typeof ev.target?.result === "string") {
+          await updatePharmacy(currentPharmacy.id, { ...currentPharmacy, [fieldName]: ev.target.result });
+          toast.success("Imagem salva localmente.");
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingField(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const triggerUpload = (callback: (base64: string) => void) => {
+  const triggerUpload = (fieldName: string, storagePath: string, maxSizeMB?: number) => {
     if (fileInputRef.current) {
-      fileInputRef.current.onchange = (e) => handleFileUpload(e as any, callback);
+      fileInputRef.current.onchange = (e) =>
+        handleFileUpload(e as any, fieldName, storagePath, maxSizeMB);
       fileInputRef.current.click();
     }
   };
@@ -97,11 +133,8 @@ function AdminDesignLogo() {
               <span className="font-bold text-sm">Logo</span>
             </div>
             {!isPleno && (
-              <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
-                updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl: base64 });
-                toast.success("Logo da loja atualizado!");
-              })}>
-                <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+              <Button variant="outline" size="sm" disabled={uploadingField === 'logoUrl'} onClick={() => triggerUpload('logoUrl', 'logo')}>
+                {uploadingField === 'logoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
               </Button>
             )}
           </div>
@@ -146,11 +179,8 @@ function AdminDesignLogo() {
               <span className="font-bold text-sm">Ícone da página (Favicon)</span>
             </div>
             {!isPleno && (
-              <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
-                updatePharmacy(currentPharmacy.id, { ...currentPharmacy, faviconUrl: base64 });
-                toast.success("Favicon da loja atualizado!");
-              })}>
-                <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+              <Button variant="outline" size="sm" disabled={uploadingField === 'faviconUrl'} onClick={() => triggerUpload('faviconUrl', 'favicon', 0.5)}>
+                {uploadingField === 'faviconUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
               </Button>
             )}
           </div>
@@ -195,11 +225,8 @@ function AdminDesignLogo() {
               <span className="font-bold text-sm">Logo do Rodapé</span>
             </div>
             {!isPleno && (
-              <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
-                updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: base64 });
-                toast.success("Logo do rodapé atualizado!");
-              })}>
-                <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+              <Button variant="outline" size="sm" disabled={uploadingField === 'footerLogoUrl'} onClick={() => triggerUpload('footerLogoUrl', 'footer-logo')}>
+                {uploadingField === 'footerLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
               </Button>
             )}
           </div>
@@ -238,11 +265,8 @@ function AdminDesignLogo() {
               <span className="font-bold text-sm">Selo da Anvisa</span>
             </div>
             {!isPleno && (
-              <Button variant="outline" size="sm" onClick={() => triggerUpload(base64 => {
-                updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: base64 });
-                toast.success("Selo da Anvisa atualizado!");
-              })}>
-                <Upload className="w-3.5 h-3.5 mr-2" /> Escolher imagem
+              <Button variant="outline" size="sm" disabled={uploadingField === 'anvisaLogoUrl'} onClick={() => triggerUpload('anvisaLogoUrl', 'anvisa-logo')}>
+                {uploadingField === 'anvisaLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
               </Button>
             )}
           </div>

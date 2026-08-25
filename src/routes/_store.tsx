@@ -38,42 +38,68 @@ const PARCEIRO_THEME: Record<string, string> = {
   "--ring": "#a1a1aa",
 };
 
+function safeSlugify(text: string): string {
+  if (!text) return "";
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 function StoreLayout() {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const pharmacies = useAdmin((s) => s.pharmacies);
 
-  const storeTheme = useMemo(() => {
-    if (!selectedPharmacyId) return undefined;
-    const pharmacy = pharmacies.find((p) => p.id === selectedPharmacyId);
-    if (!pharmacy) return undefined;
+  // Extract potential store slug from URL (e.g. /minha-loja)
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  const potentialSlug = pathParts[0];
+
+  const activePharmacy = useMemo(() => {
+    if (selectedPharmacyId) {
+      return pharmacies.find((p) => p.id === selectedPharmacyId) || pharmacies[0] || null;
+    }
     
-    if (pharmacy.themeColors) {
+    if (potentialSlug) {
+      const bySlug = pharmacies.find((p) => {
+        const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
+        return slug === potentialSlug;
+      });
+      if (bySlug) return bySlug;
+    }
+    
+    return pharmacies[0] || null;
+  }, [selectedPharmacyId, pharmacies, potentialSlug]);
+
+  const storeTheme = useMemo(() => {
+    if (!activePharmacy) return undefined;
+    
+    if (activePharmacy.themeColors) {
       return {
-        "--primary": pharmacy.themeColors.primary,
+        "--primary": activePharmacy.themeColors.primary,
         "--primary-foreground": "#ffffff",
-        "--primary-dark": pharmacy.themeColors.primary,
-        "--secondary": pharmacy.themeColors.secondary,
+        "--primary-dark": activePharmacy.themeColors.primary,
+        "--secondary": activePharmacy.themeColors.secondary,
         "--secondary-foreground": "#ffffff",
-        "--accent": pharmacy.themeColors.accent,
+        "--accent": activePharmacy.themeColors.accent,
         "--accent-foreground": "#ffffff",
-        "--header-bg": pharmacy.themeColors.headerBg || pharmacy.themeColors.primary,
-        "--header-icons": pharmacy.themeColors.headerIcons || "#ffffff",
-        "--search-bg": pharmacy.themeColors.searchBg || "#ffffff",
-        "--institutional-bg": pharmacy.themeColors.institutionalBg || "#f97316",
+        "--header-bg": activePharmacy.themeColors.headerBg || activePharmacy.themeColors.primary,
+        "--header-icons": activePharmacy.themeColors.headerIcons || "#ffffff",
+        "--search-bg": activePharmacy.themeColors.searchBg || "#ffffff",
+        "--institutional-bg": activePharmacy.themeColors.institutionalBg || "#f97316",
       } as React.CSSProperties;
     }
     
-    if (pharmacy.categoriaAssociado === "Parceiro") {
+    if (activePharmacy.categoriaAssociado === "Parceiro") {
       return PARCEIRO_THEME as React.CSSProperties;
     }
     return undefined;
-  }, [selectedPharmacyId, pharmacies]);
-
-  const activePharmacy = useMemo(() => {
-    return pharmacies.find((p) => p.id === selectedPharmacyId) || pharmacies[0] || null;
-  }, [selectedPharmacyId, pharmacies]);
+  }, [activePharmacy]);
 
   if (activePharmacy?.virtualStoreStatus === "Inativa") {
     return (

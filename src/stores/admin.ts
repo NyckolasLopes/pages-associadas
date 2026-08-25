@@ -979,6 +979,10 @@ export const useAdmin = create<AdminState>()(
               topBarTextColor: parsedThemeColors?.topBarTextColor || '',
               latitude: l.latitude,
               longitude: l.longitude,
+              logoUrl: parsedThemeColors?.logoUrl || '',
+              faviconUrl: parsedThemeColors?.faviconUrl || '',
+              footerLogoUrl: parsedThemeColors?.footerLogoUrl || '',
+              anvisaLogoUrl: parsedThemeColors?.anvisaLogoUrl || '',
               categoriaAssociado: l.categoria_associado || parsedThemeColors?.categoria_associado,
               trabalhaComEncarte: l.trabalha_com_encarte || parsedThemeColors?.trabalha_com_encarte,
               entregaExpressa: l.entrega_expressa || parsedThemeColors?.entrega_expressa,
@@ -1036,6 +1040,10 @@ export const useAdmin = create<AdminState>()(
           googleAnalyticsId: p.googleAnalyticsId,
           googleTagManagerId: p.googleTagManagerId,
           whatsapp: p.whatsapp,
+          logoUrl: p.logoUrl,
+          faviconUrl: p.faviconUrl,
+          footerLogoUrl: p.footerLogoUrl,
+          anvisaLogoUrl: p.anvisaLogoUrl,
           horario_funcionamento: p.horarioFuncionamento,
           diasFuncionamento: p.diasFuncionamento,
             horariosPorDia: p.horariosPorDia,
@@ -1132,6 +1140,10 @@ export const useAdmin = create<AdminState>()(
           googleAnalyticsId: p.googleAnalyticsId,
           googleTagManagerId: p.googleTagManagerId,
           whatsapp: p.whatsapp,
+          logoUrl: p.logoUrl,
+          faviconUrl: p.faviconUrl,
+          footerLogoUrl: p.footerLogoUrl,
+          anvisaLogoUrl: p.anvisaLogoUrl,
           horario_funcionamento: p.horarioFuncionamento,
           diasFuncionamento: p.diasFuncionamento,
             horariosPorDia: p.horariosPorDia,
@@ -1327,6 +1339,14 @@ export const useAdmin = create<AdminState>()(
     {
       name: "fa-admin-store-v4",
       skipHydration: true,
+      // Excluir dados dinâmicos do persist: pharmacies e banners são sempre
+      // carregados frescos do Supabase via loadPharmacies() / fetchBanners().
+      // Persisti-los causaria: (a) flicker ao carregar dados de sessão anterior,
+      // (b) payload gigante ao salvar logos base64 no app_state.
+      partialize: (state) => {
+        const { pharmacies: _ph, banners: _bn, ...rest } = state as any;
+        return rest;
+      },
       migrate: (persistedState: any, version: number) => {
         if (version < 4) {
           if (!persistedState.banners || persistedState.banners.length === 0) {
