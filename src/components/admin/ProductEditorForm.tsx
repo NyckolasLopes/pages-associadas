@@ -689,6 +689,15 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   </div>
                 ))}
                 
+                {((formData.imagens || []) as any[]).length === 0 && (
+                  <div className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group opacity-80" title="Imagem gerada automaticamente. Faça upload de uma imagem para substituir.">
+                    <img src={productImage(formData)} alt="Imagem Padrão" className="w-full h-full object-cover" />
+                    <div className="absolute bottom-0 left-0 right-0 bg-slate-800/80 text-white text-[10px] text-center py-1 font-medium pointer-events-none">
+                      Padrão
+                    </div>
+                  </div>
+                )}
+                
                 {isGlobalAdmin && ((formData.imagens || []) as any[]).length < 5 && (
                   <div className="w-32 h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer transition-colors relative overflow-hidden group">
                     <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleImageUpload} />
