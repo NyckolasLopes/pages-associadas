@@ -1075,7 +1075,7 @@ function PDP() {
                   </table>
                 </div>
 
-                {p.principiosAtivosDetalhes && p.principiosAtivosDetalhes.length > 0 && (
+                {p.principiosAtivos && p.principiosAtivos.some((pa: any) => typeof pa === 'object' && pa !== null) && (
                   <div className="pt-4 border-t">
                     <h3 className="text-lg font-bold text-slate-900 mb-4">Princípios ativos</h3>
                     <div className="overflow-hidden rounded-lg">
@@ -1088,11 +1088,11 @@ function PDP() {
                           </tr>
                         </thead>
                         <tbody>
-                          {p.principiosAtivosDetalhes.map((pa: any, i: number) => (
+                          {p.principiosAtivos.filter((pa: any) => typeof pa === 'object' && pa !== null).map((pa: any, i: number) => (
                             <tr key={i} className={i % 2 === 0 ? "bg-slate-50" : ""}>
                               <td className="py-3 px-4 font-bold text-slate-900">{pa.nome}</td>
-                              <td className="py-3 px-4 text-slate-700">{pa.concentracao}</td>
-                              <td className="py-3 px-4 text-slate-700">{pa.unidadeMedida}</td>
+                              <td className="py-3 px-4 text-slate-700">{pa.concentracao || '-'}</td>
+                              <td className="py-3 px-4 text-slate-700">{pa.unidadeMedida || '-'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1418,14 +1418,17 @@ function PDP() {
                       <strong className="block text-xs text-muted-foreground">Princípios Ativos</strong>
                       <div className="font-medium">
                         {p.principiosAtivos && p.principiosAtivos.length > 0 
-                          ? p.principiosAtivos.join(', ')
+                          ? p.principiosAtivos.map((pa: any) => typeof pa === 'string' ? pa : pa.nome).filter(Boolean).join(', ')
                           : (p.nome || '').split(/[0-9]/)[0].replace(/COM|GOTAS|XAROPE|GENÉRICO|-/gi, '').trim() || 'Não informado'}
                       </div>
                     </div>
                     <div>
                       <strong className="block text-xs text-muted-foreground">Dosagem</strong>
                       <div className="font-medium">
-                        {(p.nome || '').match(/\d+(?:,\d+)?\s*(?:MG\/ML|MG\/G|MG|G|ML|MCG|UI\/G|UI|UI\/ML|U)\b/gi)?.join(', ') || 'Não informada'}
+                        {(p.principiosAtivos && p.principiosAtivos.length > 0 && p.principiosAtivos.some((pa: any) => typeof pa === 'object' && pa?.concentracao))
+                          ? p.principiosAtivos.filter((pa: any) => typeof pa === 'object' && pa?.concentracao).map((pa: any) => `${pa.concentracao}${pa.unidadeMedida ? ` ${pa.unidadeMedida}` : ''}`).join(', ')
+                          : ((p.nome || '').match(/\d+(?:,\d+)?\s*(?:MG\/ML|MG\/G|MG|G|ML|MCG|UI\/G|UI|UI\/ML|U)\b/gi)?.join(', ') || 'Não informada')
+                        }
                       </div>
                     </div>
                   </>
