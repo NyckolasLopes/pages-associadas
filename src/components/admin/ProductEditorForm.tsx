@@ -169,7 +169,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       const catIds: string[] = [];
       const subIds: string[] = [];
       (product.categoriasAdicionais || []).forEach(id => {
-         const cat = categorias.find(c => c.id === id);
+         const cat = categorias.find(c => String(c.id) === String(id));
          if (cat) {
             if (cat.parentId) subIds.push(id);
             else catIds.push(id);
@@ -258,8 +258,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
   if (!product || !formData) return null;
 
-  const isMedicamento = categorias.find(c => c.id === formData.categoriaId)?.slug === 'medicamentos' || 
-                        categorias.find(c => c.id === formData.categoriaId)?.nome?.toLowerCase() === 'medicamentos';
+  const isMedicamento = categorias.find(c => String(c.id) === String(formData.categoriaId))?.slug === 'medicamentos' || 
+                        categorias.find(c => String(c.id) === String(formData.categoriaId))?.nome?.toLowerCase() === 'medicamentos';
 
   const content = (
     <>
@@ -404,7 +404,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 
                 <div className="flex flex-wrap gap-2">
                   {(formData.categoriasIds || []).map(catId => {
-                    const cat = categorias.find((c: any) => c.id === catId);
+                    const cat = categorias.find((c: any) => String(c.id) === String(catId));
                     if (!cat) return null;
                     return (
                       <Badge key={`cat-${catId}`} variant="secondary" className="flex items-center gap-1 py-1">
@@ -437,8 +437,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     >
                       <SelectTrigger className="bg-white"><SelectValue placeholder="Selecionar categoria..." /></SelectTrigger>
                       <SelectContent>
-                        {categorias.filter((c: any) => !c.parentId && c.id !== formData.categoriaId && !(formData.categoriasIds || []).includes(c.id)).map((c: any) => (
-                          <SelectItem key={`add-${c.id}`} value={c.id}>{c.nome}</SelectItem>
+                        {categorias.filter((c: any) => !c.parentId && String(c.id) !== String(formData.categoriaId) && !(formData.categoriasIds || []).includes(String(c.id))).map((c: any) => (
+                          <SelectItem key={`add-${c.id}`} value={String(c.id)}>{c.nome}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -455,9 +455,9 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 
                 <div className="flex flex-wrap gap-2">
                   {(formData.subcategoriasIds || []).map(subId => {
-                    const sub = categorias.find((c: any) => c.id === subId);
+                    const sub = categorias.find((c: any) => String(c.id) === String(subId));
                     if (!sub) return null;
-                    const parent = categorias.find((c: any) => c.id === sub.parentId);
+                    const parent = categorias.find((c: any) => String(c.id) === String(sub.parentId));
                     return (
                       <Badge key={`sub-${subId}`} variant="secondary" className="flex items-center gap-1 py-1">
                         {parent ? `${parent.nome} > ` : ""}{sub.nome}
@@ -489,10 +489,10 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     >
                       <SelectTrigger className="bg-white"><SelectValue placeholder="Selecionar subcategoria..." /></SelectTrigger>
                       <SelectContent>
-                        {categorias.filter((c: any) => c.parentId && c.id !== formData.subcategoriaId && !(formData.subcategoriasIds || []).includes(c.id)).map((c: any) => {
-                          const parent = categorias.find((p: any) => p.id === c.parentId);
+                        {categorias.filter((c: any) => c.parentId && String(c.id) !== String(formData.subcategoriaId) && !(formData.subcategoriasIds || []).includes(String(c.id))).map((c: any) => {
+                          const parent = categorias.find((p: any) => String(p.id) === String(c.parentId));
                           return (
-                            <SelectItem key={`add-sub-${c.id}`} value={c.id}>
+                            <SelectItem key={`add-sub-${c.id}`} value={String(c.id)}>
                               {parent ? `${parent.nome} > ` : ""}{c.nome}
                             </SelectItem>
                           );
