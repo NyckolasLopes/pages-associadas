@@ -685,7 +685,7 @@ function AdminProdutosPrecos() {
                     setImportManualDates(false);
                     setImportStartDate("");
                     setImportEndDate("");
-                    setIsImportModalOpen(true);
+                    setIsImportEncarteOpen(true);
                   } catch (err) {
                     console.error(err);
                     toast.error("Erro ao processar a planilha.");
@@ -997,7 +997,7 @@ function AdminProdutosPrecos() {
           )}
         </div>
       </div>
-      <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+      <Dialog open={isImportEncarteOpen} onOpenChange={setIsImportEncarteOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Importar Encarte</DialogTitle>
@@ -1043,8 +1043,8 @@ function AdminProdutosPrecos() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsImportModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleConfirmImport}>Confirmar Importação</Button>
+            <Button variant="outline" onClick={() => setIsImportEncarteOpen(false)}>Cancelar</Button>
+            <Button onClick={handleConfirmImportEncarte}>Confirmar Importação</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
