@@ -201,6 +201,8 @@ function RootComponent() {
     useAdminProducts.persist.rehydrate();
     useAdminCategories.getState().loadCategories();
     useMarcasStore.getState().loadMarcas();
+    // loadPharmacies() é chamado aqui para visitantes da vitrine.
+    // admin.tsx também chama — o throttle de 5s em admin.ts garante apenas 1 fetch no boot.
     useAdmin.getState().loadPharmacies();
     useMarketing.getState().loadMarketing();
     
@@ -211,6 +213,7 @@ function RootComponent() {
     
     // Static manifest is loaded via <link rel="manifest"> in head
   }, []);
+
 
   useEffect(() => {
     // Gerar ID de sessão único para esta aba

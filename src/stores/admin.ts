@@ -3,6 +3,10 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorage } from "@/lib/supabaseStorage";
 
+// Throttle para evitar chamadas duplicadas de loadPharmacies ao inicializar
+// (__root.tsx e admin.tsx chamam ao mesmo tempo no boot)
+const loadPharmaciesThrottle = { _lastCall: 0 };
+
 export interface AdminUser {
   id: string;
   name: string;
@@ -930,6 +934,12 @@ export const useAdmin = create<AdminState>()(
 
       pharmacies: [],
       loadPharmacies: async () => {
+        // Throttle: ignora chamadas duplicadas dentro de 5s (evita duplo fetch no boot)
+        const now = Date.now();
+        const last = (loadPharmaciesThrottle as any)._lastCall || 0;
+        if (now - last < 5000) return;
+        (loadPharmaciesThrottle as any)._lastCall = now;
+
         const { data, error } = await supabase.from('lojas').select('*');
         if (!error && data) {
           const loadedPharmacies: Pharmacy[] = data.map((l: any) => {
@@ -1020,6 +1030,7 @@ export const useAdmin = create<AdminState>()(
           set({ pharmacies: loadedPharmacies });
         }
       },
+
       addPharmacy: async (p) => {
         const theme_colors_payload = {
           ...(p.themeColors || {}),
