@@ -93,7 +93,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       if (!prev) return prev;
       const newImagens = [...(prev.imagens || [])];
       newImagens.splice(index, 1);
-      return { ...prev, imagens: newImagens, foto: newImagens[0]?.caminhoImagem || "" };
+      const nextFirst = newImagens[0];
+      return { ...prev, imagens: newImagens, foto: nextFirst ? (nextFirst.caminhoImagem || nextFirst) : "" };
     });
   };
 
@@ -112,7 +113,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       const draggedItem = newImagens[draggedImgIdx];
       newImagens.splice(draggedImgIdx, 1);
       newImagens.splice(dropIndex, 0, draggedItem);
-      return { ...prev, imagens: newImagens, foto: newImagens[0]?.caminhoImagem || "" };
+      const nextFirst = newImagens[0];
+      return { ...prev, imagens: newImagens, foto: nextFirst ? (nextFirst.caminhoImagem || nextFirst) : "" };
     });
     setDraggedImgIdx(null);
   };
@@ -124,8 +126,14 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
   useEffect(() => {
     if (product) {
+      let initialImagens = Array.isArray(product.imagens) ? [...product.imagens] : [];
+      if (initialImagens.length === 0 && product.foto) {
+        initialImagens = [{ caminhoImagem: product.foto }];
+      }
+
       setFormData({ 
         ...product, 
+        imagens: initialImagens,
         categoriasAdicionais: product.categoriasAdicionais || [],
         ativo: product.ativo ?? true,
         visivel: product.visivel ?? true,
