@@ -589,7 +589,7 @@ function Checkout() {
                           <div className="text-xs text-muted-foreground">{opt.eta}</div>
                         </div>
                         <span className={`font-bold text-sm ${opt.price === 0 ? "text-green-600" : ""}`}>
-                          {opt.price === 0 ? "Grátis" : brl(opt.price)}
+                          {opt.price === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(opt.price)}
                         </span>
                       </label>
                     );
@@ -976,7 +976,7 @@ function Checkout() {
           <div className="flex justify-between">
             <span className="text-muted-foreground">{deliveryMethod === "store" ? "Retirada" : "Frete"}</span>
             <span className={`font-medium ${fretePrice === 0 ? "text-green-600 font-bold" : ""}`}>
-              {fretePrice === 0 ? "Grátis" : brl(fretePrice)}
+              {fretePrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(fretePrice)}
             </span>
           </div>
           {couponApplied && (

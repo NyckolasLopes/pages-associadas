@@ -1441,7 +1441,7 @@ function CartPage() {
                                   <div className="text-sm font-bold">{f.label}</div>
                                   <div className="text-xs text-emerald-600 font-medium">{f.eta}</div>
                                 </div>
-                                <span className="text-sm font-bold">{f.price === 0 ? "Grátis" : brl(f.price)}</span>
+                                <span className="text-sm font-bold">{f.price === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(f.price)}</span>
                               </label>
                             )
                           })}
@@ -1488,8 +1488,16 @@ function CartPage() {
               </div>
             )}
             <div className="flex justify-between text-sm py-1">
-              <span className="text-muted-foreground">Entrega / Retirada</span>
-              <span>{selectedFreight ? (freightPrice === 0 ? "Grátis" : brl(freightPrice)) : "A calcular"}</span>
+              <span className="text-muted-foreground">{deliveryMethod === "entrega" ? "Entrega" : "Retirada"}</span>
+              <span>
+                {deliveryMethod === "retirada" ? (
+                  <span className="text-emerald-600 font-bold">Grátis</span>
+                ) : selectedFreight ? (
+                  freightPrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(freightPrice)
+                ) : (
+                  "A calcular"
+                )}
+              </span>
             </div>
 
             {/* Cupom de Desconto */}
@@ -1794,7 +1802,7 @@ function CartPage() {
                 {deliveryMethod === "entrega" && (
                   <div className="flex justify-between text-sm text-emerald-800">
                     <span>Frete</span>
-                    <span>{freightPrice === 0 ? "Grátis" : brl(freightPrice)}</span>
+                    <span>{freightPrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(freightPrice)}</span>
                   </div>
                 )}
               </div>
