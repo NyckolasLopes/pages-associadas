@@ -421,7 +421,7 @@ export function Header() {
 
       {/* === DESKTOP MAIN BAR === */}
       <div className="container-fa hidden md:flex items-center gap-2 lg:gap-4 py-3">
-        <Logo className="h-10 lg:h-12" />
+        <Logo className="max-h-16 h-auto max-w-[240px]" />
 
 
         {/* Search */}
@@ -575,7 +575,7 @@ export function Header() {
       <div className="md:hidden">
         {/* Linha 1: Logo | Cesta + Menu */}
         <div className="container-fa flex items-center justify-between py-2.5">
-          <Logo className="h-9" />
+          <Logo className="max-h-12 h-auto max-w-[180px]" />
           <div className="flex items-center gap-2">
             <button
               aria-label="Pesquisar"

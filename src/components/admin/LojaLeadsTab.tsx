@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function LojaLeadsTab({ lojaId }: { lojaId: string }) {
+export function LojaLeadsTab({ lojaId }: { lojaId?: string }) {
   const { leads, toggleStatus, removeLead } = useLeads();
   const { currentUser } = useAdmin();
   const [search, setSearch] = useState("");
@@ -50,7 +50,7 @@ export function LojaLeadsTab({ lojaId }: { lojaId: string }) {
     }
   };
 
-  const baseLeads = leads.filter(l => l.lojaId === lojaId);
+  const baseLeads = lojaId ? leads.filter(l => l.lojaId === lojaId) : leads;
 
   const filteredLeads = baseLeads.filter(
     (l) => {
@@ -179,6 +179,7 @@ export function LojaLeadsTab({ lojaId }: { lojaId: string }) {
               <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
                 <th className="px-4 py-3 w-10 text-center"><Checkbox /></th>
                 <th className="px-4 py-3">Lead / E-mail</th>
+                {!lojaId && <th className="px-4 py-3">Loja</th>}
                 <th className="px-4 py-3">Origem</th>
                 <th className="px-4 py-3">Data de Inscrição</th>
                 <th className="px-4 py-3 text-center">Status</th>
@@ -209,6 +210,11 @@ export function LojaLeadsTab({ lojaId }: { lojaId: string }) {
                       </div>
                     </div>
                   </td>
+                  {!lojaId && (
+                    <td className="px-4 py-4">
+                      <div className="font-bold text-slate-700">{lead.lojaNome || "-"}</div>
+                    </td>
+                  )}
                   <td className="px-4 py-4">
                     <Badge variant="secondary" className="font-bold bg-slate-100 text-slate-600">
                       {lead.origem}
