@@ -114,6 +114,11 @@ export function mapRowToProduto(d: any): Produto {
     caracteristicas: Array.isArray(d.caracteristicas) ? d.caracteristicas : [],
     eansSecundarios: Array.isArray(d.eans_secundarios) ? d.eans_secundarios : [],
     resumoDescricao: d.metadata?.resumo_descricao || d.resumo_descricao || "",
+    classeTerapeutica: d.metadata?.classe_terapeutica || "",
+    indicacaoTerapeutica: d.metadata?.indicacao_terapeutica || "",
+    tipoDePreco: d.metadata?.tipo_de_preco || "",
+    classificacaoRegistro: d.metadata?.classificacao_registro || "",
+    tipoMedicamento: d.metadata?.tipo_medicamento || "",
     quantidadeEmbalagem: d.metadata?.qtd_embalagem || 0,
     unidadeEmbalagem: d.metadata?.unidade_embalagem || "",
     quantidadeConteudo: d.metadata?.qtd_conteudo || 0,
@@ -201,6 +206,24 @@ export const useAdminProducts = create<ProductsState>()(
           termos_pesquisa: formattedProduct.termosPesquisa || null,
           imagem_alt: formattedProduct.imagemAlt || null,
           loja_id: lojaId || null, // <- ADD loja_id!
+          metadata: {
+            natureza_produto: formattedProduct.produtoNatureza || null,
+            youtube_video_url: formattedProduct.youtubeVideoUrl || null,
+            tipo_receita: formattedProduct.tipoReceita || null,
+            resumo_descricao: formattedProduct.resumoDescricao || null,
+            qtd_embalagem: formattedProduct.quantidadeEmbalagem || 0,
+            unidade_embalagem: formattedProduct.unidadeEmbalagem || null,
+            qtd_conteudo: formattedProduct.quantidadeConteudo || 0,
+            unidade_conteudo: formattedProduct.unidadeConteudo || null,
+            sabor: formattedProduct.sabor || null,
+            fps: formattedProduct.fps || 0,
+            faixa_etaria: formattedProduct.faixaEtaria || null,
+            classe_terapeutica: formattedProduct.classeTerapeutica || null,
+            indicacao_terapeutica: formattedProduct.indicacaoTerapeutica || null,
+            tipo_de_preco: formattedProduct.tipoDePreco || null,
+            classificacao_registro: formattedProduct.classificacaoRegistro || null,
+            tipo_medicamento: formattedProduct.tipoMedicamento || null,
+          }
         });
         
         if (error) {
