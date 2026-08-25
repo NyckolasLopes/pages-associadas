@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAdmin } from "@/stores/admin";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Paintbrush, RotateCcw } from "lucide-react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 
@@ -42,21 +42,50 @@ const COLOR_GROUPS = [
 
 function AdminDesignCores() {
   const admin = useAdmin();
-  const [colors, setColors] = useState<Record<string, string>>(admin.themeColors || {});
+  
+  // Encontra a farmácia selecionada no momento
+  const activePharmacy = admin.pharmacies.find(p => p.id === admin.activeStoreId);
+  
+  const [colors, setColors] = useState<Record<string, string>>(activePharmacy?.themeColors || {});
+
+  // Atualiza o estado local quando a farmácia selecionada mudar
+  useEffect(() => {
+    setColors(activePharmacy?.themeColors || {});
+  }, [activePharmacy]);
 
   const handleColorChange = (id: string, value: string) => {
     setColors(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleSave = () => {
-    admin.setThemeColors(colors);
-    toast.success("Cores atualizadas com sucesso!");
+  const handleSave = async () => {
+    if (!admin.activeStoreId) {
+      toast.error("Selecione uma loja primeiro.");
+      return;
+    }
+    
+    // Atualiza a loja no banco
+    try {
+      await admin.updatePharmacy(admin.activeStoreId, {
+        themeColors: { ...activePharmacy?.themeColors, ...colors }
+      } as any);
+      toast.success("Cores atualizadas com sucesso!");
+    } catch (e) {
+      toast.error("Erro ao salvar cores.");
+    }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setColors({});
-    admin.setThemeColors({});
-    toast.success("Cores restauradas para o padrão.");
+    if (admin.activeStoreId) {
+      try {
+        await admin.updatePharmacy(admin.activeStoreId, {
+          themeColors: {}
+        } as any);
+        toast.success("Cores restauradas para o padrão.");
+      } catch (e) {
+        toast.error("Erro ao resetar cores.");
+      }
+    }
   };
 
   return (

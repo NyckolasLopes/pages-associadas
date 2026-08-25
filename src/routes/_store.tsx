@@ -80,7 +80,7 @@ function StoreLayout() {
     if (!activePharmacy) return undefined;
     
     if (activePharmacy.themeColors) {
-      return {
+      const legacyTheme: Record<string, string | undefined> = {
         "--primary": activePharmacy.themeColors.primary,
         "--primary-foreground": "#ffffff",
         "--primary-dark": activePharmacy.themeColors.primary,
@@ -92,6 +92,21 @@ function StoreLayout() {
         "--header-icons": activePharmacy.themeColors.headerIcons || "#ffffff",
         "--search-bg": activePharmacy.themeColors.searchBg || "#ffffff",
         "--institutional-bg": activePharmacy.themeColors.institutionalBg || "#f97316",
+      };
+
+      // Filtra chaves legadas nulas para não sobrescrever
+      const cleanLegacyTheme = Object.fromEntries(
+        Object.entries(legacyTheme).filter(([_, v]) => v !== undefined)
+      );
+
+      // Pega apenas as chaves que começam com '--' (novas vars de customização)
+      const customVars = Object.fromEntries(
+        Object.entries(activePharmacy.themeColors).filter(([k, v]) => k.startsWith('--') && v)
+      );
+
+      return {
+        ...cleanLegacyTheme,
+        ...customVars
       } as React.CSSProperties;
     }
     
