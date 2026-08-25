@@ -638,10 +638,11 @@ function AdminBanners() {
           {!activeStoreId && (allBanners.filter(b => b.lojaId).length > 0) && (
             <div className="mt-12 space-y-6">
               <div className="border-b border-slate-200 pb-4">
-                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                  <Store className="w-5 h-5 text-orange-500" /> Banners das Lojas (Personalizados)
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2.5">
+                  <Store className="w-[22px] h-[22px] text-orange-500 shrink-0" /> 
+                  <span className="leading-none pt-0.5">Banners das Lojas (Personalizados)</span>
                 </h2>
-                <p className="text-sm text-slate-500 mt-1">Veja quais banners cada loja está usando na sua própria página. Você pode editá-los diretamente se desejar.</p>
+                <p className="text-sm text-slate-500 mt-2">Veja quais banners cada loja está usando na sua própria página. Você pode editá-los diretamente se desejar.</p>
               </div>
 
               {pharmacies.filter(p => allBanners.some(b => b.lojaId === p.id)).map(store => {
