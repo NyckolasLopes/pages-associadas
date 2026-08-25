@@ -43,7 +43,7 @@ export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: s
             key={b.id} 
             href={b.link || "#"} 
             target={b.target || "_self"}
-            className="shrink-0 snap-start w-[160px] md:w-[200px] aspect-[3/4] rounded-2xl overflow-hidden shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition block relative"
+            className="shrink-0 snap-start w-[160px] md:w-[200px] aspect-square rounded-2xl overflow-hidden shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition block relative"
           >
             <img src={b.imageUrl} alt={b.titulo || b.nome} className="w-full h-full object-cover" />
           </a>

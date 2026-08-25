@@ -148,6 +148,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
   }));
   const totalSlidesToRender = bannersToRender.length;
   const aspectRatioDesktop = page === "Página de Categoria" ? '1920 / 400' : '1800 / 600';
+  const aspectRatioMobile = page === "Página de Categoria" ? '800 / 400' : '800 / 800';
 
   if (totalSlidesToRender === 0) {
     return null; // Return null if there are no category banners to avoid empty spaces
@@ -196,7 +197,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
                     fetchPriority={idx === 0 ? "high" : "auto"}
                     loading={idx === 0 ? "eager" : "lazy"}
                     decoding="async"
-                    style={{ aspectRatio: '9/4' }}
+                    style={{ aspectRatio: aspectRatioMobile }}
                   />
                 )}
               </picture>

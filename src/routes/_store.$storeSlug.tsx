@@ -376,14 +376,14 @@ function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[
             <Link to={banner.link || "/"} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
               <picture>
                 {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
-                <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" width={600} height={300} />
+                <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
               </picture>
             </Link>
             {banner.imageUrl2 && (
               <Link to={banner.link2 || "/"} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <picture>
                   {banner.mobileImageUrl2 && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl2} />}
-                  <img src={banner.imageUrl2} alt={banner.nome || "Banner promocional 2"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" width={600} height={300} />
+                  <img src={banner.imageUrl2} alt={banner.nome || "Banner promocional 2"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
                 </picture>
               </Link>
             )}
@@ -392,7 +392,7 @@ function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[
           <Link to={banner.link || "/"} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <picture>
               {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
-              <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center max-h-[300px]" width={1200} height={300} />
+              <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
             </picture>
           </Link>
         )}

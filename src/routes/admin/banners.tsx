@@ -108,8 +108,7 @@ function AdminBanners() {
   const desktopInputRef3 = useRef<HTMLInputElement>(null);
   const mobileInputRef3 = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isMobile: boolean, imageIndex: number = 1) => {
-    const file = e.target.files?.[0];
+  const processFile = (file: File | undefined, isMobile: boolean, imageIndex: number = 1) => {
     if (!file) return;
     
     const reader = new FileReader();
@@ -158,6 +157,21 @@ function AdminBanners() {
       img.src = result;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isMobile: boolean, imageIndex: number = 1) => {
+    processFile(e.target.files?.[0], isMobile, imageIndex);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, isMobile: boolean, imageIndex: number = 1) => {
+    e.preventDefault();
+    e.stopPropagation();
+    processFile(e.dataTransfer.files?.[0], isMobile, imageIndex);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
   
   const [search, setSearch] = useState("");
@@ -1040,6 +1054,9 @@ function AdminBanners() {
                       <div 
                         className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
                         onClick={() => desktopInputRef.current?.click()}
+                        onDrop={(e) => handleDrop(e, false, 1)}
+                        onDragOver={handleDragOver}
+                        onDragEnter={handleDragOver}
                       >
                          <input 
                            type="file" 
@@ -1088,6 +1105,9 @@ function AdminBanners() {
                       <div 
                         className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
                         onClick={() => mobileInputRef.current?.click()}
+                        onDrop={(e) => handleDrop(e, true, 1)}
+                        onDragOver={handleDragOver}
+                        onDragEnter={handleDragOver}
                       >
                          <input 
                            type="file" 
@@ -1146,6 +1166,9 @@ function AdminBanners() {
                           <div 
                             className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
                             onClick={() => desktopInputRef2.current?.click()}
+                            onDrop={(e) => handleDrop(e, false, 2)}
+                            onDragOver={handleDragOver}
+                            onDragEnter={handleDragOver}
                           >
                             <input 
                               type="file" 
@@ -1246,6 +1269,9 @@ function AdminBanners() {
                           <div 
                             className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
                             onClick={() => desktopInputRef2.current?.click()}
+                            onDrop={(e) => handleDrop(e, false, 2)}
+                            onDragOver={handleDragOver}
+                            onDragEnter={handleDragOver}
                           >
                             <input 
                               type="file" 
@@ -1343,6 +1369,9 @@ function AdminBanners() {
                           <div 
                             className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
                             onClick={() => desktopInputRef3.current?.click()}
+                            onDrop={(e) => handleDrop(e, false, 3)}
+                            onDragOver={handleDragOver}
+                            onDragEnter={handleDragOver}
                           >
                             <input 
                               type="file" 
@@ -1384,6 +1413,9 @@ function AdminBanners() {
                           <div 
                             className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
                             onClick={() => mobileInputRef3.current?.click()}
+                            onDrop={(e) => handleDrop(e, true, 3)}
+                            onDragOver={handleDragOver}
+                            onDragEnter={handleDragOver}
                           >
                             <input 
                               type="file" 
