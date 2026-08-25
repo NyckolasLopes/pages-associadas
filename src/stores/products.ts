@@ -333,11 +333,13 @@ export const useAdminProducts = create<ProductsState>()(
         }
       },
       applyBadgeToProducts: async (badgeId, productIds) => {
-        const idSet = new Set(productIds);
+        const strProductIds = productIds.map(id => String(id));
+        const idSet = new Set(strProductIds);
+        
         set((s) => {
           const updated = s.customProducts.map(p => {
             const hasIt = p.selosIds?.includes(badgeId) || false;
-            const shouldHaveIt = idSet.has(p.id);
+            const shouldHaveIt = idSet.has(String(p.id));
             
             if (hasIt && !shouldHaveIt) {
               return { ...p, selosIds: p.selosIds?.filter(id => id !== badgeId) };
@@ -350,14 +352,20 @@ export const useAdminProducts = create<ProductsState>()(
         });
 
         try {
-          const { data: currentWithBadge } = await supabase
+          const { data: currentWithBadge, error: queryError } = await supabase
             .from('produtos')
             .select('id, internal_tags')
             .contains('internal_tags', [`selo:${badgeId}`]);
             
-          const currentIds = currentWithBadge?.map(p => p.id) || [];
-          const toRemove = currentWithBadge?.filter(p => !idSet.has(p.id)) || [];
-          const toAddIds = productIds.filter(id => !currentIds.includes(id));
+          if (queryError) {
+            console.error("Error querying products with badge:", queryError);
+          }
+            
+          const currentIds = currentWithBadge?.map(p => String(p.id)) || [];
+          const toRemove = currentWithBadge?.filter(p => !idSet.has(String(p.id))) || [];
+          const toAddIds = strProductIds.filter(id => !currentIds.includes(id));
+          
+          console.log(`[Badges] Updating ${badgeId}: removing from ${toRemove.length}, adding to ${toAddIds.length}`);
           
           for (const p of toRemove) {
             const rawTags = p.internal_tags;
@@ -368,10 +376,14 @@ export const useAdminProducts = create<ProductsState>()(
           }
           
           if (toAddIds.length > 0) {
-            const { data: currentToAdd } = await supabase
+            const { data: currentToAdd, error: fetchError } = await supabase
               .from('produtos')
               .select('id, internal_tags')
               .in('id', toAddIds);
+              
+            if (fetchError) {
+              console.error("Error fetching products to add badge:", fetchError);
+            }
               
             if (currentToAdd) {
               for (const p of currentToAdd) {
@@ -379,7 +391,8 @@ export const useAdminProducts = create<ProductsState>()(
                 const parsedTags = typeof rawTags === 'string' ? JSON.parse(rawTags) : rawTags;
                 const tags = Array.isArray(parsedTags) ? parsedTags : [];
                 if (!tags.includes(`selo:${badgeId}`)) {
-                  const { error } = await supabase.from('produtos').update({ internal_tags: [...tags, `selo:${badgeId}`] }).eq('id', p.id);
+                  const newTags = [...tags, `selo:${badgeId}`];
+                  const { error } = await supabase.from('produtos').update({ internal_tags: newTags }).eq('id', p.id);
                   if (error) console.error("Error adding badge to product", p.id, error);
                 }
               }

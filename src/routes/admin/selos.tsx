@@ -76,7 +76,7 @@ function AdminSelos() {
     try {
       const { data } = await supabase.from('produtos').select('*').contains('internal_tags', [`selo:${selo.id}`]);
       const matchedProducts = data ? data.map(mapRowToProduto) : [];
-      setSelectedProductIds(new Set(matchedProducts.map(p => p.id)));
+      setSelectedProductIds(new Set(matchedProducts.map(p => String(p.id))));
       setSelectedProductsData(matchedProducts);
     } catch (e) {
       console.error(e);
@@ -108,12 +108,13 @@ function AdminSelos() {
   };
 
   const toggleProductSelection = (p: Produto) => {
+    const pId = String(p.id);
     const newSet = new Set(selectedProductIds);
-    if (newSet.has(p.id)) {
-      newSet.delete(p.id);
-      setSelectedProductsData(prev => prev.filter(x => x.id !== p.id));
+    if (newSet.has(pId)) {
+      newSet.delete(pId);
+      setSelectedProductsData(prev => prev.filter(x => String(x.id) !== pId));
     } else {
-      newSet.add(p.id);
+      newSet.add(pId);
       setSelectedProductsData(prev => [...prev, p]);
     }
     setSelectedProductIds(newSet);
@@ -329,10 +330,11 @@ function AdminSelos() {
                 ) : (
                   <div className="grid grid-cols-1 gap-1">
                     {displayProducts.map(p => {
-                      const isSelected = selectedProductIds.has(p.id);
+                      const pId = String(p.id);
+                      const isSelected = selectedProductIds.has(pId);
                       return (
                         <div 
-                          key={p.id}
+                          key={pId}
                           onClick={() => toggleProductSelection(p)}
                           className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
                             isSelected ? 'bg-emerald-50 border border-emerald-100' : 'hover:bg-slate-100 border border-transparent'
