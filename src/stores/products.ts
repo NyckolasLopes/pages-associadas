@@ -352,7 +352,7 @@ export const useAdminProducts = create<ProductsState>()(
           const { data: currentWithBadge } = await supabase
             .from('produtos')
             .select('id, internal_tags')
-            .ilike('internal_tags', `%selo:${badgeId}%`);
+            .contains('internal_tags', [`selo:${badgeId}`]);
             
           const currentIds = currentWithBadge?.map(p => p.id) || [];
           const toRemove = currentWithBadge?.filter(p => !idSet.has(p.id)) || [];
