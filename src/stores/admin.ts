@@ -853,7 +853,7 @@ export const useAdmin = create<AdminState>()(
           image_url3: banner.imageUrl3,
           mobile_image_url3: banner.mobileImageUrl3,
           link3: banner.link3,
-          ordem: banner.ordem ?? 0,
+          // ordem: banner.ordem ?? 0,
         };
         const { data, error } = await supabase.from('banners' as any).insert(payload).select().single();
         if (error) {
@@ -886,7 +886,7 @@ export const useAdmin = create<AdminState>()(
         if (banner.imageUrl3 !== undefined) payload.image_url3 = banner.imageUrl3;
         if (banner.mobileImageUrl3 !== undefined) payload.mobile_image_url3 = banner.mobileImageUrl3;
         if (banner.link3 !== undefined) payload.link3 = banner.link3;
-        if (banner.ordem !== undefined) payload.ordem = banner.ordem;
+        // if (banner.ordem !== undefined) payload.ordem = banner.ordem;
         
         const { error } = await supabase.from('banners' as any).update(payload).eq('id', id);
         if (error) {
