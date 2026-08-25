@@ -113,7 +113,7 @@ export function mapRowToProduto(d: any): Produto {
     alertaTexto: d.alerta_texto || "",
     alertaRegulatorio: d.alerta_regulatorio || false,
     caracteristicas: Array.isArray(d.caracteristicas) ? d.caracteristicas : [],
-    eansSecundarios: Array.isArray(d.eans_secundarios) ? d.eans_secundarios : [],
+    eansSecundarios: Array.isArray(d.metadata?.eans_secundarios) ? d.metadata.eans_secundarios : [],
     resumoDescricao: d.metadata?.resumo_descricao || d.resumo_descricao || "",
     classeTerapeutica: d.metadata?.classe_terapeutica || "",
     indicacaoTerapeutica: d.metadata?.indicacao_terapeutica || "",
@@ -195,7 +195,6 @@ export const useAdminProducts = create<ProductsState>()(
           produto_natureza: formattedProduct.produtoNatureza || null,
           tipo_produto: formattedProduct.tipoProduto || null,
           codigo_interno: formattedProduct.codigoInterno || null,
-          eans_secundarios: formattedProduct.eansSecundarios || [],
           alerta_texto: formattedProduct.alertaTexto || null,
           alerta_regulatorio: formattedProduct.alertaRegulatorio || false,
           caracteristicas: formattedProduct.caracteristicas || [],
@@ -224,6 +223,7 @@ export const useAdminProducts = create<ProductsState>()(
             tipo_de_preco: formattedProduct.tipoDePreco || null,
             classificacao_registro: formattedProduct.classificacaoRegistro || null,
             tipo_medicamento: formattedProduct.tipoMedicamento || null,
+            eans_secundarios: formattedProduct.eansSecundarios || [],
           }
         });
         
