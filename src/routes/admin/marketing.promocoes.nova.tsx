@@ -112,6 +112,20 @@ function NovaPromocaoPage() {
     );
   }, [categorias, searchQuery]);
 
+  const { loadProducts } = useAdminProducts();
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  const forceProdutosOnly = formData.tipoCampanha === "timer" || formData.tipoCampanha === "leve_pague";
+
+  // Force tipoAlvo to "produtos" if forced
+  useEffect(() => {
+    if (forceProdutosOnly && formData.tipoAlvo !== "produtos") {
+      setFormData(prev => ({ ...prev, tipoAlvo: "produtos", alvosId: [] }));
+    }
+  }, [forceProdutosOnly, formData.tipoAlvo]);
+
   useEffect(() => {
     if (existing) {
       const initialConfigs = existing.produtosConfig || {};
@@ -637,17 +651,21 @@ function NovaPromocaoPage() {
                       className="w-4 h-4 text-orange-600 focus:ring-orange-600 border-slate-300"
                     /> Produtos Específicos
                   </label>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 font-medium">
+                  <label className={`flex items-center gap-2 text-sm cursor-pointer font-medium ${forceProdutosOnly ? 'text-slate-400 opacity-50 cursor-not-allowed' : 'text-slate-700'}`} title={forceProdutosOnly ? "Não disponível para este tipo de campanha" : ""}>
                     <input 
                       type="radio" 
                       name="tipoAlvo" 
                       value="categorias" 
                       checked={formData.tipoAlvo === "categorias"} 
                       onChange={() => setFormData({ ...formData, tipoAlvo: "categorias", alvosId: [] })}
+                      disabled={forceProdutosOnly}
                       className="w-4 h-4 text-orange-600 focus:ring-orange-600 border-slate-300"
                     /> Categorias Inteiras
                   </label>
                 </div>
+                {forceProdutosOnly && (
+                  <p className="text-[11px] text-orange-600 mt-1.5 font-medium">Esta campanha só pode ser aplicada a produtos específicos.</p>
+                )}
               </div>
               <span className="text-xs font-black bg-orange-100 text-orange-800 px-3 py-1 rounded-full whitespace-nowrap self-start sm:self-auto mt-1">
                 {formData.alvosId.length} {formData.tipoAlvo === "produtos" 
