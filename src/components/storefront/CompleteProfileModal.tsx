@@ -10,12 +10,12 @@ import { toast } from "sonner";
 export function CompleteProfileModal() {
   const user = useAuth((s) => s.user);
   
-  // O modal deve aparecer se o usuário estiver logado E (não tiver CPF OU não tiver Celular).
-  // E o provedor for o google (opcional, mas vamos forçar pra todos caso esteja faltando dados vitais).
-  const isMissingData = user && (!user.cpf || !user.celular) && user.provider === 'google';
+  // O modal deve aparecer se o usuário estiver logado E (não tiver CPF OU não tiver Celular OU não tiver Email).
+  const isMissingData = user && (!user.cpf || !user.celular || !user.email);
   const [open, setOpen] = useState(false);
 
   const [nome, setNome] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
   const [cpf, setCpf] = useState("");
   const [celular, setCelular] = useState("");
   const [loading, setLoading] = useState(false);
@@ -68,14 +68,14 @@ export function CompleteProfileModal() {
     const unmaskedCpf = cpf.replace(/\D/g, '');
     const unmaskedPhone = celular.replace(/\D/g, '');
     
-    if (unmaskedCpf.length < 11 || unmaskedPhone.length < 10) {
-      return toast.error("Preencha CPF/CNPJ e Celular corretamente.");
+    if (unmaskedCpf.length < 11 || unmaskedPhone.length < 10 || !email.includes("@")) {
+      return toast.error("Preencha todos os campos corretamente.");
     }
     
     setLoading(true);
     const { error } = await supabase.from("profiles").upsert({
       id: user.id,
-      email: user.email,
+      email: email,
       cpf: unmaskedCpf,
       telefone: unmaskedPhone,
       nome: nome
@@ -90,7 +90,7 @@ export function CompleteProfileModal() {
       toast.success("Perfil atualizado com sucesso!");
       // Atualiza estado local da Auth pra sumir o modal
       useAuth.setState((state) => ({
-        user: state.user ? { ...state.user, cpf: unmaskedCpf, celular: unmaskedPhone } : null
+        user: state.user ? { ...state.user, cpf: unmaskedCpf, celular: unmaskedPhone, email } : null
       }));
       setOpen(false);
     }
@@ -102,7 +102,7 @@ export function CompleteProfileModal() {
         <DialogHeader>
           <DialogTitle>Complete seu cadastro</DialogTitle>
           <DialogDescription>
-            Como você entrou usando uma rede social, precisamos que você informe seu CPF ou CNPJ e Celular para podermos processar seus pedidos com segurança e emitir as notas fiscais.
+            Precisamos que você complete suas informações (E-mail, CPF ou CNPJ e Celular) para podermos processar seus pedidos com segurança e emitir as notas fiscais.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
@@ -116,9 +116,19 @@ export function CompleteProfileModal() {
             />
           </div>
           <div className="space-y-2">
+            <Label>E-mail</Label>
+            <Input 
+              type="email"
+              placeholder="Digite seu e-mail" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
             <Label>CPF / CNPJ</Label>
             <Input 
-              placeholder="000.000.000-00" 
+              placeholder="Digite seu CPF ou CNPJ" 
               value={cpf}
               onChange={(e) => setCpf(formatCpfCnpj(e.target.value))}
               required
@@ -127,7 +137,7 @@ export function CompleteProfileModal() {
           <div className="space-y-2">
             <Label>Celular (WhatsApp)</Label>
             <Input 
-              placeholder="(11) 90000-0000" 
+              placeholder="Digite seu celular" 
               value={celular}
               onChange={(e) => setCelular(formatPhone(e.target.value))}
               required

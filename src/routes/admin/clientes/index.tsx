@@ -120,7 +120,7 @@ function ClientesAdmin() {
       const cleanPhone = (c.telefone || "").replace(/\D/g, "");
       const cleanEmail = (c.email || "").toLowerCase().trim();
       const targetLojaId = (c as any).lojaId || "1";
-      const key = `${cleanPhone || cleanEmail || c.id}_${targetLojaId}`;
+      const key = `${cleanPhone || cleanEmail || c.id}`;
 
       const loja = pharmacies.find((p) => p.id === targetLojaId);
       const lojaNome = loja?.nome || (c as any).lojaNome || `Farmácias Associadas #${targetLojaId}`;
@@ -155,7 +155,7 @@ function ClientesAdmin() {
       const cleanPhone = (order.cliente.telefone || "").replace(/\D/g, "");
       const cleanEmail = (order.cliente.email || "").toLowerCase().trim();
       const orderLojaId = order.lojaId || "1";
-      const key = `${cleanPhone || cleanEmail || order.cliente.nome}_${orderLojaId}`;
+      const key = `${cleanPhone || cleanEmail || order.cliente.nome}`;
 
       const loja = pharmacies.find((p) => p.id === orderLojaId);
       const lojaNome = loja?.nome || order.lojaNome || `Farmácias Associadas #${orderLojaId}`;
@@ -187,8 +187,10 @@ function ClientesAdmin() {
           existing.cidade = order.cliente.endereco.cidade || existing.cidade;
           existing.cep = order.cliente.endereco.cep || existing.cep;
         }
-        if (!existing.lojaId) existing.lojaId = orderLojaId;
-        if (!existing.lojaNome) existing.lojaNome = lojaNome;
+        if (!existing.lojaId || existing.lojaId === "1") {
+          existing.lojaId = orderLojaId;
+          existing.lojaNome = lojaNome;
+        }
         
         if (!existing.pedidos.some(p => p.id === order.id)) {
           existing.pedidos.push(orderSummary);

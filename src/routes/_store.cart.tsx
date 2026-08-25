@@ -1585,7 +1585,7 @@ function CartPage() {
           <form onSubmit={handleConfirmWhatsAppOrder} className="space-y-4 pt-2">
             {/* Seção 1: Dados do Cliente */}
             <div className="bg-slate-50 border rounded-lg p-3.5 space-y-3">
-              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">1. Seus Dados</div>
+              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">Seus Dados</div>
               <div>
                 <Label className="text-xs">Seu Nome Completo *</Label>
                 <Input
@@ -1611,7 +1611,7 @@ function CartPage() {
                   <Label className="text-xs">CPF / CNPJ (Obrigatório p/ nota) *</Label>
                   <Input
                     required
-                    placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                    placeholder="Digite seu CPF ou CNPJ"
                     value={clientCpf}
                     onChange={(e) => setClientCpf(formatCpfCnpj(e.target.value))}
                     className="mt-1 bg-white h-9"
@@ -1622,7 +1622,7 @@ function CartPage() {
 
             {/* Seção 2: Modalidade de Entrega */}
             <div className="bg-slate-50 border rounded-lg p-3.5 space-y-3">
-              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">2. Entrega ou Retirada</div>
+              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">Entrega ou Retirada</div>
               
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -1738,7 +1738,7 @@ function CartPage() {
 
             {/* Seção 3: Forma de Pagamento */}
             <div className="bg-slate-50 border rounded-lg p-3.5 space-y-2.5">
-              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">3. Como prefere pagar?</div>
+              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">Como prefere pagar?</div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
                   { id: "pix", label: "PIX", icon: Sparkles },

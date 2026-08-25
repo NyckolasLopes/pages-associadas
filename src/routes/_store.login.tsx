@@ -16,7 +16,7 @@ const loginSchema = z.object({
 
 export const Route = createFileRoute("/_store/login")({
   validateSearch: zodValidator(
-    z.object({ redirect: z.string().optional().default("/pedidos") }),
+    z.object({ redirect: z.string().optional().default("/carrinho") }),
   ),
   head: () => ({ meta: [{ title: "Entrar — Farmácias Associadas" }] }),
   component: LoginPage,

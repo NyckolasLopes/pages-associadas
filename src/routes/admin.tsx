@@ -601,10 +601,18 @@ function AdminLayout() {
           {!isGlobalAdmin && (
               <button 
                 onClick={() => {
+                  if (activeStoreId) {
+                    const activePharm = pharmacies.find(p => p.id === activeStoreId);
+                    if (activePharm) {
+                      window.open(`/${activePharm.slug || slugify(activePharm.nome)}`, '_blank');
+                      return;
+                    }
+                  }
+                  
                   // @ts-ignore
                   const userStores = pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id) || p.id === currentUser?.lojaId);
                   if (userStores.length === 1) {
-                    window.open(`/${slugify(userStores[0].nome)}`, '_blank');
+                    window.open(`/${userStores[0].slug || slugify(userStores[0].nome)}`, '_blank');
                   } else if (userStores.length > 1) {
                     setStoreSelectorOpen(true);
                   } else {
