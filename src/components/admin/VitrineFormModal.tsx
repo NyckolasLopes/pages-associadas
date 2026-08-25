@@ -24,7 +24,7 @@ interface VitrineFormModalProps {
 }
 
 export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFormModalProps) {
-  const { addVitrine, updateVitrine, getStoreEffectiveProducts } = useAdminProducts();
+  const { addVitrine, updateVitrine, getStoreEffectiveProducts, loadProducts } = useAdminProducts();
   
   const [nome, setNome] = useState("");
   const [ativa, setAtiva] = useState(true);
@@ -69,6 +69,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
       
       async function loadOptions() {
         setLoading(true);
+        await loadProducts();
         const allProducts = getStoreEffectiveProducts(lojaId);
         const allCats = await catalog.listCategories(true);
         setCategoriasOpcoes(allCats);
@@ -212,16 +213,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel className="font-bold text-primary">Vitrines Dinâmicas</SelectLabel>
-                    <SelectItem value="all">Todos os Produtos</SelectItem>
-                    <SelectItem value="campanha">Produtos em Campanha (Ofertas do Mês)</SelectItem>
-                    <SelectItem value="ofertas">Ofertas da Semana</SelectItem>
-                    <SelectItem value="destaques">Destaques da Loja</SelectItem>
-                    <SelectItem value="novidades">Novidades / Lançamentos</SelectItem>
-                    <SelectItem value="protetores">Protetores Solares</SelectItem>
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel className="font-bold text-primary border-t pt-2 mt-2">Categorias de Produtos</SelectLabel>
+                    <SelectLabel className="font-bold text-primary">Categorias de Produtos</SelectLabel>
                     {categoriasOpcoes.map(c => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.nome}
