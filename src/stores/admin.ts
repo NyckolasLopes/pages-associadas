@@ -606,14 +606,25 @@ export const useAdmin = create<AdminState>()(
           if (profile) {
             const p = profile as any;
             const isFallbackAdmin = email === "nyckolas.lopes@farmaciasassociadas.com.br" || email === "thiago.rocha@farmaciasassociadas.com.br";
+            
+            const isProprietario = p.is_admin || localUser?.proprietario || isFallbackAdmin;
+            const grupoId = p.grupo_id || localUser?.grupoId;
+            const lojasVinculadas = p.lojas_vinculadas || localUser?.lojasVinculadas || [];
+
+            // SECURITY CHECK: Se não tem nenhuma permissão administrativa, não permite login no admin
+            if (!isProprietario && !grupoId && lojasVinculadas.length === 0) {
+              await supabase.auth.signOut();
+              return { success: false, message: "Acesso negado. Sua conta não possui permissões administrativas." };
+            }
+
             set({
               currentUser: {
                 id: p.id,
                 name: p.nome || localUser?.name || email.split("@")[0],
                 email: p.email || email,
-                grupoId: p.grupo_id || localUser?.grupoId,
-                proprietario: p.is_admin || localUser?.proprietario || isFallbackAdmin,
-                lojasVinculadas: p.lojas_vinculadas || localUser?.lojasVinculadas || [],
+                grupoId: grupoId,
+                proprietario: isProprietario,
+                lojasVinculadas: lojasVinculadas,
               },
             });
             return { success: true };
@@ -621,14 +632,24 @@ export const useAdmin = create<AdminState>()(
 
           // Se não encontrou o profile ainda, loga com o que tem
           const isFallbackAdminFallback = email === "nyckolas.lopes@farmaciasassociadas.com.br" || email === "thiago.rocha@farmaciasassociadas.com.br";
+          const isProprietarioFallback = localUser?.proprietario || isFallbackAdminFallback;
+          const grupoIdFallback = localUser?.grupoId;
+          const lojasVinculadasFallback = localUser?.lojasVinculadas || [];
+
+          // SECURITY CHECK for fallback
+          if (!isProprietarioFallback && !grupoIdFallback && lojasVinculadasFallback.length === 0) {
+            await supabase.auth.signOut();
+            return { success: false, message: "Acesso negado. Sua conta não possui permissões administrativas." };
+          }
+
           set({
             currentUser: {
               id: data.user.id,
               name: localUser?.name || email.split("@")[0],
               email: email,
-              grupoId: localUser?.grupoId,
-              lojasVinculadas: localUser?.lojasVinculadas || [],
-              proprietario: localUser?.proprietario || isFallbackAdminFallback,
+              grupoId: grupoIdFallback,
+              lojasVinculadas: lojasVinculadasFallback,
+              proprietario: isProprietarioFallback,
             },
           });
           return { success: true };
