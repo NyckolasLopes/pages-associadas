@@ -230,6 +230,19 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       finalFormData.selosIds = updatedSelosIds;
     }
 
+    const servicoSelo = allSelos.find(s => s.id === "servico");
+    if (servicoSelo) {
+      let updatedSelosIds = [...(finalFormData.selosIds || [])];
+      if (finalFormData.tipoProduto === "servico") {
+        if (!updatedSelosIds.includes(servicoSelo.id)) {
+          updatedSelosIds.push(servicoSelo.id);
+        }
+      } else {
+        updatedSelosIds = updatedSelosIds.filter(id => id !== servicoSelo.id);
+      }
+      finalFormData.selosIds = updatedSelosIds;
+    }
+
     setSaveStep("saving");
     setTimeout(() => {
       setSaveStep("syncing");
