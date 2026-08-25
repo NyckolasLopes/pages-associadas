@@ -63,7 +63,7 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
         type: 'sem_transacao',
         notes: row.notes || "",
         lojaId: row.loja_id,
-        lojaNome: row.lojas?.nome || "",
+        lojaNome: row.lojas?.nome_fantasia || row.nome_cliente || "",
         items: row.items || []
       }));
 

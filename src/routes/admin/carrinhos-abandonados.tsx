@@ -84,7 +84,12 @@ export function PedidosAdmin() {
   }, [loadOrders]);
   
   // Carrinhos abandonados / itens de clientes logados
-  const { carts: storeCarts, removeCart: removeStoreCart } = useAbandonedCartsStore();
+  const { carts: storeCarts, removeCart: removeStoreCart, loadCarts } = useAbandonedCartsStore();
+
+  useEffect(() => {
+    loadCarts();
+  }, [loadCarts]);
+
   const cartItems = useCart(s => s.items);
   const cartTotal = useCart(s => s.total());
   const clearCart = useCart(s => s.clear);
