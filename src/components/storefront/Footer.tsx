@@ -121,12 +121,12 @@ export function Footer() {
       {/* Promo Banners */}
       {isHome && diferenciaisBanners.length > 0 && (
         <div className="container-fa py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:flex lg:justify-between lg:gap-4 gap-4 overflow-x-auto scrollbar-none snap-x">
+          <div className="flex md:grid md:grid-cols-3 lg:flex lg:justify-between lg:gap-4 gap-4 overflow-x-auto scrollbar-none snap-x pb-2">
             {/* Primeiro Card */}
             <a
               href={diferenciaisBanners[0].link || "#"}
               target={diferenciaisBanners[0].target || "_self"}
-              className="shrink-0 snap-start w-[280px] md:w-auto lg:flex-1 block rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
+              className="shrink-0 snap-start w-[75vw] sm:w-[280px] md:w-auto lg:flex-1 block rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
             >
               <picture>
                 {diferenciaisBanners[0].mobileImageUrl && <source media="(max-width: 768px)" srcSet={diferenciaisBanners[0].mobileImageUrl} />}
@@ -139,7 +139,7 @@ export function Footer() {
               <a
                 href={diferenciaisBanners[0].link2 || "#"}
                 target="_self"
-                className="shrink-0 snap-start w-[280px] md:w-auto lg:flex-1 block rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
+                className="shrink-0 snap-start w-[75vw] sm:w-[280px] md:w-auto lg:flex-1 block rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
               >
                 <picture>
                   {diferenciaisBanners[0].mobileImageUrl2 && <source media="(max-width: 768px)" srcSet={diferenciaisBanners[0].mobileImageUrl2} />}
@@ -153,7 +153,7 @@ export function Footer() {
               <a
                 href={diferenciaisBanners[0].link3 || "#"}
                 target="_self"
-                className="shrink-0 snap-start w-[280px] md:w-auto lg:flex-1 block rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
+                className="shrink-0 snap-start w-[75vw] sm:w-[280px] md:w-auto lg:flex-1 block rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
               >
                 <picture>
                   {diferenciaisBanners[0].mobileImageUrl3 && <source media="(max-width: 768px)" srcSet={diferenciaisBanners[0].mobileImageUrl3} />}
