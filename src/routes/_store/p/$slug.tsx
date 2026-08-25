@@ -907,25 +907,7 @@ function PDP() {
               </div>
             )}
             
-            {!hideReviews && (() => {
-              const avaliacoes = getAvaliacoesPorProduto(p.id);
-              const hasReviews = avaliacoes.length > 0;
-              let rating = 0;
-              if (hasReviews) {
-                rating = avaliacoes.reduce((acc, curr) => acc + curr.nota, 0) / avaliacoes.length;
-              }
-              return (
-                <div className="flex items-center gap-1.5 lg:hidden mt-2 mb-4">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map(i => (
-                      <Star key={i} className={`h-4 w-4 ${i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} />
-                    ))}
-                  </div>
-                  <span className="text-sm font-bold text-slate-700">{rating.toFixed(1)}</span>
-                  <span className="text-sm text-slate-500">({hasReviews ? avaliacoes.length : 0})</span>
-                </div>
-              );
-            })()}
+
 
             <div 
               className="bg-white border rounded-2xl p-4 md:p-8 flex items-center justify-center aspect-square w-full max-w-[500px] mx-auto relative shadow-sm overflow-hidden cursor-zoom-in group"
@@ -1185,25 +1167,7 @@ function PDP() {
                 CÓD: {(p.id || '').substring(0, 6)}
               </div>
               
-              {!isMedication && (() => {
-                const avaliacoes = getAvaliacoesPorProduto(p.id);
-                const hasReviews = avaliacoes.length > 0;
-                let rating = 0;
-                if (hasReviews) {
-                  rating = avaliacoes.reduce((acc, curr) => acc + curr.nota, 0) / avaliacoes.length;
-                }
-                return (
-                  <a href="#avaliacoes" className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
-                    <div className="flex items-center">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <Star key={i} className={`h-4 w-4 ${i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} />
-                      ))}
-                    </div>
-                    <span className="text-sm font-bold text-slate-700">{rating.toFixed(1)}</span>
-                    <span className="text-sm text-slate-500 underline">({hasReviews ? avaliacoes.length : 0} {hasReviews && avaliacoes.length === 1 ? 'avaliação' : 'avaliações'})</span>
-                  </a>
-                );
-              })()}
+
             </div>
 
           <div className="flex flex-wrap gap-2">
