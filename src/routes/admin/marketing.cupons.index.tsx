@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useMarketing } from "@/stores/marketing";
 import { useAdmin } from "@/stores/admin";
-import { Search, Filter, ChevronDown, MoreHorizontal, Trash2, Plus } from "lucide-react";
+import { Search, Filter, ChevronDown, MoreHorizontal, Trash2, Plus, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -230,6 +230,12 @@ function CuponsIndexPage() {
                     </td>
                     <td className="px-4 py-4 text-slate-600">
                       {cupom.descricao}
+                      {isGlobalAdmin && cupom.lojaId && (
+                        <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                          <Store className="h-3 w-3" />
+                          {pharmacies.find(p => p.id === cupom.lojaId)?.nome || cupom.lojaId}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-slate-900 font-medium">
                       {cupom.numeroUtilizacoes}

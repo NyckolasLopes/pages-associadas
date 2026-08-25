@@ -23,6 +23,7 @@ export const Route = createFileRoute("/admin/marketing/promocoes/nova")({
 });
 
 import { useAdminProducts } from "@/stores/products";
+import { useAdminCategories } from "@/stores/categories";
 const ICONS = [
   { id: "flame", icon: Flame, label: "Fogo" },
   { id: "gift", icon: Gift, label: "Presente" },
@@ -44,8 +45,8 @@ function NovaPromocaoPage() {
   const navigate = useNavigate();
   const search: any = useSearch({ from: "/admin/marketing/promocoes/nova" });
   const { addPromocao, updatePromocao, promocoes } = useMarketing();
-  const { currentUser } = useAdmin();
-  const selectedStoreId = "1";
+  const { currentUser, activeStoreId } = useAdmin();
+  const selectedStoreId = activeStoreId || "1";
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : selectedStoreId;
   
@@ -61,6 +62,7 @@ function NovaPromocaoPage() {
 
   const { getStoreEffectiveProducts } = useAdminProducts();
   const produtos = useMemo(() => getStoreEffectiveProducts(effectiveStoreId), [getStoreEffectiveProducts, effectiveStoreId]);
+  const { categorias } = useAdminCategories();
 
   // Per-product configuration state for Leve + Pague
   const [produtosConfig, setProdutosConfig] = useState<Record<string, LevePagueProdutoConfig>>({});
@@ -99,6 +101,15 @@ function NovaPromocaoPage() {
       (p.id && String(p.id).includes(q))
     );
   }, [produtos, searchQuery]);
+
+  const filteredCategorias = useMemo(() => {
+    if (!searchQuery.trim()) return categorias;
+    const q = searchQuery.toLowerCase();
+    return categorias.filter((c: any) => 
+      c.nome.toLowerCase().includes(q) || 
+      (c.id && String(c.id).includes(q))
+    );
+  }, [categorias, searchQuery]);
 
   useEffect(() => {
     if (existing) {
@@ -554,7 +565,7 @@ function NovaPromocaoPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Cor do Selo/Banner</label>
                   <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
@@ -565,6 +576,19 @@ function NovaPromocaoPage() {
                       className="h-8 w-8 rounded cursor-pointer border-0 p-0"
                     />
                     <span className="text-xs font-mono font-bold text-slate-700 uppercase">{formData.corSelo || "#ea580c"}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Cor do Timer</label>
+                  <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                    <input
+                      type="color"
+                      value={formData.corTimer || "#0f172a"}
+                      onChange={(e) => setFormData({ ...formData, corTimer: e.target.value })}
+                      className="h-8 w-8 rounded cursor-pointer border-0 p-0"
+                    />
+                    <span className="text-xs font-mono font-bold text-slate-700 uppercase">{formData.corTimer || "#0f172a"}</span>
                   </div>
                 </div>
 
@@ -594,17 +618,40 @@ function NovaPromocaoPage() {
             </div>
           </div>
 
-          {/* Card: Seleção de Produtos Individuais */}
+          {/* Card: Seleção de Alvos */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 gap-4">
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <ShoppingBasket className="h-4 w-4 text-orange-600" /> 3. Produtos Participantes *
+                  <ShoppingBasket className="h-4 w-4 text-orange-600" /> 3. Itens Participantes *
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">Selecione os produtos específicos que receberão esta promoção.</p>
+                <div className="flex items-center gap-6 mt-3">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 font-medium">
+                    <input 
+                      type="radio" 
+                      name="tipoAlvo" 
+                      value="produtos" 
+                      checked={formData.tipoAlvo === "produtos"} 
+                      onChange={() => setFormData({ ...formData, tipoAlvo: "produtos", alvosId: [] })}
+                      className="w-4 h-4 text-orange-600 focus:ring-orange-600 border-slate-300"
+                    /> Produtos Específicos
+                  </label>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 font-medium">
+                    <input 
+                      type="radio" 
+                      name="tipoAlvo" 
+                      value="categorias" 
+                      checked={formData.tipoAlvo === "categorias"} 
+                      onChange={() => setFormData({ ...formData, tipoAlvo: "categorias", alvosId: [] })}
+                      className="w-4 h-4 text-orange-600 focus:ring-orange-600 border-slate-300"
+                    /> Categorias Inteiras
+                  </label>
+                </div>
               </div>
-              <span className="text-xs font-black bg-orange-100 text-orange-800 px-3 py-1 rounded-full">
-                {formData.alvosId.length} {formData.alvosId.length === 1 ? 'produto selecionado' : 'produtos selecionados'}
+              <span className="text-xs font-black bg-orange-100 text-orange-800 px-3 py-1 rounded-full whitespace-nowrap self-start sm:self-auto mt-1">
+                {formData.alvosId.length} {formData.tipoAlvo === "produtos" 
+                  ? (formData.alvosId.length === 1 ? 'produto selecionado' : 'produtos selecionados')
+                  : (formData.alvosId.length === 1 ? 'categoria selecionada' : 'categorias selecionadas')}
               </span>
             </div>
 
@@ -614,7 +661,7 @@ function NovaPromocaoPage() {
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input 
                   type="search"
-                  placeholder="Pesquisar produto por nome, marca ou código..."
+                  placeholder={formData.tipoAlvo === "produtos" ? "Pesquisar produto por nome, marca ou código..." : "Pesquisar categoria por nome..."}
                   className="pl-9 h-10 border-slate-300 bg-slate-50/50"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -636,60 +683,97 @@ function NovaPromocaoPage() {
               )}
             </div>
 
-            {/* Product Checklist Scrollable */}
+            {/* Item Checklist Scrollable */}
             <div className="border border-slate-200 rounded-xl max-h-[260px] overflow-y-auto divide-y divide-slate-100 bg-white">
-              {filteredProdutos.length > 0 ? (
-                filteredProdutos.map((p: any) => {
-                  const isChecked = formData.alvosId.includes(p.id);
-                  return (
-                    <label 
-                      key={p.id} 
-                      className={`flex items-center gap-3.5 p-3 hover:bg-slate-50 cursor-pointer transition-colors ${isChecked ? 'bg-orange-50/40 hover:bg-orange-50/70' : ''}`}
-                    >
-                      <input 
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormData({ ...formData, alvosId: [...formData.alvosId, p.id] });
-                            if (!selectedPreviewProductId) setSelectedPreviewProductId(p.id);
-                            // initialize config for this product if not set
-                            if (!produtosConfig[p.id]) {
-                              setProdutosConfig(prev => ({
-                                ...prev,
-                                [p.id]: {
-                                  quantidade: 2,
-                                  precoPorItem: +(p.precoPor * 0.85).toFixed(2)
-                                }
-                              }));
+              {formData.tipoAlvo === "produtos" ? (
+                filteredProdutos.length > 0 ? (
+                  filteredProdutos.map((p: any) => {
+                    const isChecked = formData.alvosId.includes(p.id);
+                    return (
+                      <label 
+                        key={p.id} 
+                        className={`flex items-center gap-3.5 p-3 hover:bg-slate-50 cursor-pointer transition-colors ${isChecked ? 'bg-orange-50/40 hover:bg-orange-50/70' : ''}`}
+                      >
+                        <input 
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({ ...formData, alvosId: [...formData.alvosId, p.id] });
+                              if (!selectedPreviewProductId) setSelectedPreviewProductId(p.id);
+                              // initialize config for this product if not set
+                              if (!produtosConfig[p.id]) {
+                                setProdutosConfig(prev => ({
+                                  ...prev,
+                                  [p.id]: {
+                                    quantidade: 2,
+                                    precoPorItem: +(p.precoPor * 0.85).toFixed(2)
+                                  }
+                                }));
+                              }
+                            } else {
+                              setFormData({ ...formData, alvosId: formData.alvosId.filter(id => id !== p.id) });
                             }
-                          } else {
-                            setFormData({ ...formData, alvosId: formData.alvosId.filter(id => id !== p.id) });
-                          }
-                        }}
-                        className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 accent-orange-600 cursor-pointer"
-                      />
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 p-1 flex items-center justify-center shrink-0 border border-slate-200">
-                        <img src={p.imagens?.[0] || "/placeholder.svg"} alt={p.nome} className="w-full h-full object-contain mix-blend-multiply" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-slate-900 truncate">{p.nome}</div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                          <span className="font-semibold">{p.marca || p.marca || "Associadas"}</span>
-                          <span>•</span>
-                          <span className="font-bold text-emerald-700">{brl(p.precoPor || 0)}</span>
+                          }}
+                          className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 accent-orange-600 cursor-pointer"
+                        />
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 p-1 flex items-center justify-center shrink-0 border border-slate-200">
+                          <img src={p.imagens?.[0] || "/placeholder.svg"} alt={p.nome} className="w-full h-full object-contain mix-blend-multiply" />
                         </div>
-                      </div>
-                      {isChecked && (
-                        <CheckCircle2 className="h-4 w-4 text-orange-600 shrink-0" />
-                      )}
-                    </label>
-                  );
-                })
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-slate-900 truncate">{p.nome}</div>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-2">
+                            <span className="font-semibold">{p.marca || "Associadas"}</span>
+                            <span>•</span>
+                            <span className="font-bold text-emerald-700">{brl(p.precoPor || 0)}</span>
+                          </div>
+                        </div>
+                        {isChecked && (
+                          <CheckCircle2 className="h-4 w-4 text-orange-600 shrink-0" />
+                        )}
+                      </label>
+                    );
+                  })
+                ) : (
+                  <div className="p-8 text-center text-sm text-slate-500">
+                    Nenhum produto encontrado para "{searchQuery}".
+                  </div>
+                )
               ) : (
-                <div className="p-8 text-center text-sm text-slate-500">
-                  Nenhum produto encontrado para "{searchQuery}".
-                </div>
+                filteredCategorias.length > 0 ? (
+                  filteredCategorias.map((c: any) => {
+                    const isChecked = formData.alvosId.includes(c.id);
+                    return (
+                      <label 
+                        key={c.id} 
+                        className={`flex items-center gap-3.5 p-3 hover:bg-slate-50 cursor-pointer transition-colors ${isChecked ? 'bg-orange-50/40 hover:bg-orange-50/70' : ''}`}
+                      >
+                        <input 
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({ ...formData, alvosId: [...formData.alvosId, c.id] });
+                            } else {
+                              setFormData({ ...formData, alvosId: formData.alvosId.filter(id => id !== c.id) });
+                            }
+                          }}
+                          className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 accent-orange-600 cursor-pointer"
+                        />
+                        <div className="flex-1 min-w-0 py-1">
+                          <div className="text-sm font-bold text-slate-900 truncate">{c.nome}</div>
+                        </div>
+                        {isChecked && (
+                          <CheckCircle2 className="h-4 w-4 text-orange-600 shrink-0" />
+                        )}
+                      </label>
+                    );
+                  })
+                ) : (
+                  <div className="p-8 text-center text-sm text-slate-500">
+                    Nenhuma categoria encontrada para "{searchQuery}".
+                  </div>
+                )
               )}
             </div>
           </div>

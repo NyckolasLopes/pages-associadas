@@ -1204,8 +1204,12 @@ function Checkout() {
                 setCreditCardStatus(localCardStatus);
               }
               if (paymentCategory !== "online" || paymentMethod !== "credit" || localCardStatus !== "refused") {
-                addOrder(newOrder);
-                clear();
+                  const appliedCoupon = useCart.getState().appliedCoupon;
+                  if (appliedCoupon) {
+                    useMarketing.getState().incrementCouponUsage(appliedCoupon);
+                  }
+                  addOrder(newOrder);
+                  clear();
                 
                 // Gerar mensagem do WhatsApp
                 const phone = (activeStore?.telefone || "51999999999").replace(/\D/g, "");

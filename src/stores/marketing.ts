@@ -47,6 +47,7 @@ export interface Promocao {
   corIcone?: string;
   corTextoBotao?: string;
   corBotao?: string;
+  corTimer?: string;
   textoBotao?: string;
   lojaId?: string; // empty/undefined for global network, or store ID
 }
@@ -66,6 +67,7 @@ export interface MarketingStore {
   removePromocao: (id: string) => Promise<void>;
   addLojaPromocao: (lojaId: string, promocao: Omit<Promocao, "id">) => Promise<void>;
   removeLojaPromocao: (lojaId: string, id: string) => Promise<void>;
+  incrementCouponUsage: (codigo: string) => Promise<void>;
 }
 
 export const useMarketing = create<MarketingStore>((set, get) => ({
@@ -128,6 +130,7 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
           corIcone: p.cor_icone,
           corTextoBotao: p.cor_texto_botao,
           corBotao: p.cor_botao,
+          corTimer: p.produtos_config?.__corTimer || p.cor_botao || "#0f172a",
           textoBotao: p.texto_botao,
           lojaId: p.loja_id || undefined
         };
@@ -200,7 +203,29 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
     }
   },
 
+  incrementCouponUsage: async (codigo: string) => {
+    const { data: cupom } = await supabase
+      .from('cupons' as any)
+      .select('id, numero_utilizacoes')
+      .ilike('codigo', codigo)
+      .single();
+      
+    if (cupom) {
+      const { error } = await supabase
+        .from('cupons' as any)
+        .update({ numero_utilizacoes: (cupom.numero_utilizacoes || 0) + 1 })
+        .eq('id', cupom.id);
+        
+      if (!error) {
+        await get().loadMarketing();
+      }
+    }
+  },
+
   addPromocao: async (promocao) => {
+    const conf = { ...promocao.produtosConfig } as any;
+    if (promocao.corTimer) conf.__corTimer = promocao.corTimer;
+    
     const dbPromo = {
       titulo: promocao.titulo,
       subtitulo: promocao.subtitulo,
@@ -215,7 +240,7 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       preco_promocional: promocao.precoPromocional,
       leve_pague_quantidade: promocao.levePague_quantidade,
       leve_pague_preco_por_item: promocao.levePague_precoPorItem,
-      produtos_config: promocao.produtosConfig || {},
+      produtos_config: conf,
       cor_selo: promocao.corSelo,
       cor_icone: promocao.corIcone,
       cor_texto_botao: promocao.corTextoBotao,
@@ -243,7 +268,12 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
     if (updatedFields.precoPromocional !== undefined) dbUpdate.preco_promocional = updatedFields.precoPromocional;
     if (updatedFields.levePague_quantidade !== undefined) dbUpdate.leve_pague_quantidade = updatedFields.levePague_quantidade;
     if (updatedFields.levePague_precoPorItem !== undefined) dbUpdate.leve_pague_preco_por_item = updatedFields.levePague_precoPorItem;
-    if (updatedFields.produtosConfig !== undefined) dbUpdate.produtos_config = updatedFields.produtosConfig;
+    if (updatedFields.produtosConfig !== undefined || updatedFields.corTimer !== undefined) {
+      const currentConfig = (get().promocoes.find(p => p.id === id)?.produtosConfig) || {};
+      const newConf = { ...currentConfig, ...(updatedFields.produtosConfig || {}) } as any;
+      if (updatedFields.corTimer) newConf.__corTimer = updatedFields.corTimer;
+      dbUpdate.produtos_config = newConf;
+    }
     if (updatedFields.corSelo !== undefined) dbUpdate.cor_selo = updatedFields.corSelo;
     if (updatedFields.corIcone !== undefined) dbUpdate.cor_icone = updatedFields.corIcone;
     if (updatedFields.corTextoBotao !== undefined) dbUpdate.cor_texto_botao = updatedFields.corTextoBotao;
