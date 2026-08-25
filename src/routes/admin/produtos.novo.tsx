@@ -53,6 +53,7 @@ function AdminNovoProduto() {
   const newProduct: Produto = {
     id: `prod-${Date.now()}`,
     sku: "",
+    codigoInterno: "",
     ean: "",
     nome: "",
     foto: "",

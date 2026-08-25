@@ -102,7 +102,8 @@ export function mapRowToProduto(d: any): Produto {
     estoquesPorLoja: d.estoques_por_loja || {},
     
     produtoNatureza: d.metadata?.natureza_produto || d.produto_natureza || "",
-    sku: d.sku || d.ean || "",
+    sku: d.codigo_interno || d.ean || "",
+    codigoInterno: d.codigo_interno || "",
     ean2: d.ean2 || "",
     ean3: d.ean3 || "",
     youtubeVideoUrl: d.metadata?.youtube_video_url || d.youtube_video_url || "",
