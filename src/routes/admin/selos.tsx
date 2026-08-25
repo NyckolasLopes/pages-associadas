@@ -74,7 +74,7 @@ function AdminSelos() {
     setIsLoadingProducts(true);
     
     try {
-      const { data } = await supabase.from('produtos').select('*').contains('internal_tags', [`selo:${selo.id}`]);
+      const { data } = await supabase.from('produtos').select('*').contains('internal_tags', JSON.stringify([`selo:${selo.id}`]));
       const matchedProducts = data ? data.map(mapRowToProduto) : [];
       setSelectedProductIds(new Set(matchedProducts.map(p => String(p.id))));
       setSelectedProductsData(matchedProducts);

@@ -671,7 +671,7 @@ export const catalog = {
   getOrderBumps: async (): Promise<Produto[]> => {
     await ensureHydrated();
     
-    let query = supabase.from('produtos').select('*').contains('internal_tags', ['orderBump']).limit(4);
+    let query = supabase.from('produtos').select('*').contains('internal_tags', JSON.stringify(['orderBump'])).limit(4);
     const tagged = await fetchFromSupabaseWithPrices(query);
     if (tagged.length > 0) return wait(tagged);
 

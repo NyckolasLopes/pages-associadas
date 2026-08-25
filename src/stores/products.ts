@@ -355,7 +355,7 @@ export const useAdminProducts = create<ProductsState>()(
           const { data: currentWithBadge, error: queryError } = await supabase
             .from('produtos')
             .select('id, internal_tags')
-            .contains('internal_tags', [`selo:${badgeId}`]);
+            .contains('internal_tags', JSON.stringify([`selo:${badgeId}`]));
             
           if (queryError) {
             console.error("Error querying products with badge:", queryError);
