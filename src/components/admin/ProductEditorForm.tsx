@@ -164,6 +164,26 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     }
   }, [open]);
 
+  useEffect(() => {
+    if (categorias.length > 0 && product && formData) {
+      const catIds: string[] = [];
+      const subIds: string[] = [];
+      (product.categoriasAdicionais || []).forEach(id => {
+         const cat = categorias.find(c => c.id === id);
+         if (cat) {
+            if (cat.parentId) subIds.push(id);
+            else catIds.push(id);
+         }
+      });
+      
+      const currentCatIds = formData.categoriasIds || [];
+      const currentSubIds = formData.subcategoriasIds || [];
+      if (JSON.stringify(currentCatIds) !== JSON.stringify(catIds) || JSON.stringify(currentSubIds) !== JSON.stringify(subIds)) {
+        setFormData(prev => ({ ...prev!, categoriasIds: catIds, subcategoriasIds: subIds }));
+      }
+    }
+  }, [categorias, product]);
+
   const handleSaveClick = () => {
     if (!formData?.nome?.trim()) {
       toast.error("O campo Nome do Produto é obrigatório.");
@@ -175,6 +195,12 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     }
 
     let finalFormData = { ...formData };
+    
+    // Combina as categorias e subcategorias de volta no campo categoriasAdicionais antes de salvar
+    finalFormData.categoriasAdicionais = [
+      ...(finalFormData.categoriasIds || []),
+      ...(finalFormData.subcategoriasIds || [])
+    ];
     
     // Se preencher apenas o "DE", considera-o como o "POR" (preço de venda real)
     if (finalFormData.precoDe > 0 && (!finalFormData.precoPor || finalFormData.precoPor === 0)) {
