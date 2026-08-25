@@ -730,7 +730,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     <img src={img.caminhoImagem || img} alt={`Imagem ${idx + 1}`} className="w-full h-full object-cover" />
                     <button 
                       onClick={() => handleRemoveImage(idx)}
-                      className="absolute top-1 left-1 bg-white hover:bg-red-50 text-red-500 rounded-md p-1.5 shadow-sm transition-colors z-10"
+                      className="absolute top-1 right-1 bg-white hover:bg-red-50 text-red-500 rounded-md p-1.5 shadow-sm transition-colors z-10"
                       title="Remover imagem"
                     >
                       <Trash2 className="w-4 h-4" />
