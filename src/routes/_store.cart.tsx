@@ -1314,7 +1314,6 @@ function CartPage() {
                         )}
                         <div className="text-lg font-bold text-foreground leading-tight">{brl(ep.precoPor * i.qty)}</div>
                         <div className="text-xs text-muted-foreground">
-                          {ep.precoDe && ep.precoDe > ep.precoPor && <span className="line-through mr-1">{brl(ep.precoDe)}</span>}
                           {brl(ep.precoPor)} un.
                         </div>
                       </>
