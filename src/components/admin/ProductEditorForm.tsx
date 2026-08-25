@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Produto, Categoria } from "@/types";
 import { catalog } from "@/services/catalog";
-import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X } from "lucide-react";
+import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X, Loader2 } from "lucide-react";
 import { getDeterministicStock } from "@/lib/stock";
 import { brl, getInstallmentText } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -973,6 +973,16 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           </div>
 
         </div>
+
+        {saveStep !== "idle" && (
+          <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+            <div className="bg-white p-8 rounded-xl shadow-xl flex flex-col items-center max-w-sm w-full text-center border border-slate-200 animate-in fade-in zoom-in duration-200">
+              <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mb-4" />
+              <h3 className="text-xl font-bold text-slate-800 mb-2">Aguarde um momento</h3>
+              <p className="text-slate-500 font-medium">Estamos salvando seu produto na rede...</p>
+            </div>
+          </div>
+        )}
       </>
   );
 
