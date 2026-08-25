@@ -977,9 +977,19 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         {saveStep !== "idle" && (
           <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
             <div className="bg-white p-8 rounded-xl shadow-xl flex flex-col items-center max-w-sm w-full text-center border border-slate-200 animate-in fade-in zoom-in duration-200">
-              <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mb-4" />
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Aguarde um momento</h3>
-              <p className="text-slate-500 font-medium">Estamos salvando seu produto na rede...</p>
+              {saveStep === "done" ? (
+                <>
+                  <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4 animate-in zoom-in" />
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Salvo com sucesso!</h3>
+                  <p className="text-slate-500 font-medium">As alterações foram registradas.</p>
+                </>
+              ) : (
+                <>
+                  <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mb-4" />
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Aguarde um momento</h3>
+                  <p className="text-slate-500 font-medium">Estamos salvando seu produto na rede...</p>
+                </>
+              )}
             </div>
           </div>
         )}
