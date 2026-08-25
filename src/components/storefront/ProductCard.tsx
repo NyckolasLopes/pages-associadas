@@ -196,7 +196,7 @@ function ProductCardComponent({
     }
   }
 
-  const isService = p.tipoProduto === "servico" || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
+  const isService = p.tipoProduto === "servico" || (p.tipoProduto !== "fisico" && (p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
   
   const activePharm = pharmacies.find(f => f.id === activeStoreId);
   if (isService && activePharm?.offersServices === false) {

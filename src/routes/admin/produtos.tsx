@@ -606,7 +606,7 @@ function AdminProdutos() {
           const pharm = pharmacies.find(ph => ph.id === currentLojaId);
           if (pharm && pharm.offersServices === false) {
             finalResults = finalResults.filter(p => {
-              const isService = p.tipoProduto === "servico" || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
+              const isService = p.tipoProduto === "servico" || (p.tipoProduto !== "fisico" && (p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
               return !isService;
             });
           }

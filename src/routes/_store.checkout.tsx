@@ -194,10 +194,7 @@ function Checkout() {
   };
 
   const isServiceProduct = (i: any) => {
-    return i?.categoriaId === "200" || 
-      (i?.subcategoriaId && String(i.subcategoriaId).startsWith("20")) ||
-      (i?.internalTags && i.internalTags.some((t: string) => t.toLowerCase() === "serviços de saúde" || t.toLowerCase() === "serviços")) ||
-      (i?.categoriasAdicionais && i.categoriasAdicionais.some((c: string) => c.toLowerCase() === "serviços de saúde" || c.toLowerCase() === "serviços"));
+    return i.tipoProduto === "servico" || (i.tipoProduto !== "fisico" && (i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))));
   };
 
   const hasPrescription = items.some(i => i.retemReceita || isServiceProduct(i));

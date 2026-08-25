@@ -1046,7 +1046,7 @@ function CartPage() {
                           const totalStockQty = itemsAvailability.reduce((sum, i) => sum + i.stock, 0);
 
                           const missingItems = itemsAvailability.filter(i => !i.available).map(i => i.item);
-                          const isServiceCart = items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")));
+                          const isServiceCart = items.some(i => i.tipoProduto === "servico" || (i.tipoProduto !== "fisico" && (i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")))));
                           
                           const totalPrice = items.reduce((acc, item) => {
                             const anyItem = item as any;

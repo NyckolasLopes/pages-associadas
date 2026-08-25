@@ -814,7 +814,7 @@ function PDP() {
   const isMedication = String(cat?.nome || "").toLowerCase().includes("medicamento") || String(p.nome || "").toLowerCase().includes("medicamento") || p.categoriaId === "142" || (p.tarja && p.tarja.trim() !== "") || isGenerico;
   const showPrincipioAtivo = isMedication;
   const hideReviews = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142")) || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
-  const isService = p.tipoProduto === "servico" || !!(p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20")));
+  const isService = p.tipoProduto === "servico" || (p.tipoProduto !== "fisico" && !!(p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
   
   // Produto precisa ter estoque (ou ser serviço suportado pela loja) e estar ativo globalmente
   // Além disso, se uma farmácia foi selecionada, deve estar ativo nessa farmácia.
