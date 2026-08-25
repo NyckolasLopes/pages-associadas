@@ -227,6 +227,24 @@ function CartPage() {
       setClientEmail(user.email || "");
       setClientPhone(formatPhone((user as any)?.telefone || (user as any)?.celular || (user as any)?.phone || ""));
       setClientCpf(formatCpfCnpj((user as any)?.cpf || (user as any)?.cnpj || ""));
+      
+      const addr = user.enderecos?.[0];
+      if (addr && !deliveryAddress && !deliveryNumber) {
+        setDeliveryAddress(addr.logradouro || "");
+        setDeliveryNumber(addr.numero || "");
+        setDeliveryComplement(addr.complemento || "");
+        setDeliveryBairro(addr.bairro || "");
+        setDeliveryCity(addr.cidade || "");
+        
+        const cleanCep = (addr.cep || "").replace(/\D/g, "");
+        if (cleanCep.length === 8 && !cep) {
+          setCep(cleanCep);
+        }
+        
+        if (addr.logradouro && addr.numero && addr.bairro && addr.cidade) {
+          setAddressStr(`${addr.logradouro}, ${addr.numero} ${addr.complemento ? ' - ' + addr.complemento : ''} - ${addr.bairro} - ${addr.cidade}/${addr.estado || 'BR'}`);
+        }
+      }
     }
   }, [user]);
 
@@ -830,27 +848,27 @@ function CartPage() {
       }).join("\n");
 
       const deliveryInfoText = deliveryMethod === "entrega"
-        ? `\u{1F539} *ENTREGA EM DOMICÍLIO:*\n${cleanAddress}, Nº ${cleanNumber} ${cleanComplement ? `(${cleanComplement})` : ""}\nBairro: ${cleanBairro} - ${deliveryCity || selectedPharmacy.cidade}/${selectedPharmacy.uf}\nCEP: ${deliveryCep || cep}`
-        : `\u{1F539} *RETIRADA NO BALCÃO:*\nFarmácia: ${selectedPharmacy.nome}\nEndereço: ${selectedPharmacy.endereco}, ${selectedPharmacy.bairro} - ${selectedPharmacy.cidade}`;
+        ? `🛵 *ENTREGA EM DOMICÍLIO:*\n${cleanAddress}, Nº ${cleanNumber} ${cleanComplement ? `(${cleanComplement})` : ""}\nBairro: ${cleanBairro} - ${deliveryCity || selectedPharmacy.cidade}/${selectedPharmacy.uf}\nCEP: ${deliveryCep || cep}`
+        : `🏬 *RETIRADA NO BALCÃO:*\nFarmácia: ${selectedPharmacy.nome}\nEndereço: ${selectedPharmacy.endereco}, ${selectedPharmacy.bairro} - ${selectedPharmacy.cidade}`;
 
-      const whatsappText = `\u{1F539} *NOVO PEDIDO - FARMÁCIAS ASSOCIADAS*\n` +
-        `\u{1F539} *Unidade:* ${selectedPharmacy.nome} (${selectedPharmacy.cidade}/${selectedPharmacy.uf})\n` +
-        `\u{1F539} *Pedido:* #${orderId}\n` +
-        `\u{1F539} *Data:* ${dateFormatted}\n\n` +
-        `\u{1F539} *CLIENTE:*\n• *Nome:* ${cleanName}\n• *Telefone:* ${cleanPhone}\n` +
+      const whatsappText = `🏥 *NOVO PEDIDO - FARMÁCIAS ASSOCIADAS*\n` +
+        `🏪 *Unidade:* ${selectedPharmacy.nome} (${selectedPharmacy.cidade}/${selectedPharmacy.uf})\n` +
+        `🧾 *Pedido:* #${orderId}\n` +
+        `📅 *Data:* ${dateFormatted}\n\n` +
+        `👤 *CLIENTE:*\n• *Nome:* ${cleanName}\n• *Telefone:* ${cleanPhone}\n` +
         (clientCpf ? `• *CPF:* ${clientCpf}\n` : "") +
         `\n${deliveryInfoText}\n\n` +
-        `\u{1F539} *FORMA DE PAGAMENTO:*\n• ${paymentLabel}` +
+        `💳 *FORMA DE PAGAMENTO:*\n• ${paymentLabel}` +
         (paymentMethod === "dinheiro" && trocoPara ? ` (Troco para ${trocoPara})` : "") +
-        `\n\n\u{1F539} *ITENS DO PEDIDO:*\n${itemsListText}\n\n` +
+        `\n\n🛍️ *ITENS DO PEDIDO:*\n${itemsListText}\n\n` +
         `---\n` +
-        `\u{1F539} *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
-        (storeDiscount > 0 ? `\u{1F539} *Desconto Produtos:* -R$ ${storeDiscount.toFixed(2)}\n` : "") +
-        (couponDisc > 0 ? `\u{1F539} *Cupom (${appliedCoupon}):* -R$ ${couponDisc.toFixed(2)}\n` : "") +
-        (deliveryMethod === "entrega" ? `\u{1F539} *Taxa de Entrega:* ${freightPrice === 0 ? "Grátis" : `R$ ${freightPrice.toFixed(2)}`}\n` : "") +
-        `\u{1F539} *TOTAL: R$ ${grandTotal.toFixed(2)}*\n` +
-        (cleanNotes ? `\n\u{1F539} *Observações:* ${cleanNotes}\n` : "") +
-        `\n\u{1F539} *Acompanhe em tempo real pelo link:*\n${window.location.origin}/pedidos?id=${orderId}`;
+        `💰 *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
+        (storeDiscount > 0 ? `🏷️ *Desconto Produtos:* -R$ ${storeDiscount.toFixed(2)}\n` : "") +
+        (couponDisc > 0 ? `🎟️ *Cupom (${appliedCoupon}):* -R$ ${couponDisc.toFixed(2)}\n` : "") +
+        (deliveryMethod === "entrega" ? `🚚 *Taxa de Entrega:* ${freightPrice === 0 ? "Grátis" : `R$ ${freightPrice.toFixed(2)}`}\n` : "") +
+        `💲 *TOTAL: R$ ${grandTotal.toFixed(2)}*\n` +
+        (cleanNotes ? `\n📝 *Observações:* ${cleanNotes}\n` : "") +
+        `\n🔗 *Acompanhe em tempo real pelo link:*\n${window.location.origin}/pedidos?id=${orderId}`;
 
       // Determina telefone de destino da farmácia
       const rawStorePhone = selectedPharmacy.whatsapp || selectedPharmacy.telefone || "51999999999";
@@ -874,6 +892,21 @@ function CartPage() {
       setIsSubmittingOrder(false);
     }
   };
+
+  if (mounted && !user) {
+    return (
+      <div className="container-fa py-24 flex flex-col items-center justify-center text-center">
+        <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
+          <Store className="w-10 h-10" />
+        </div>
+        <h2 className="text-3xl font-black text-slate-900 mb-3">Acesse sua conta</h2>
+        <p className="text-slate-500 mb-8 max-w-sm mx-auto">Você precisa estar logado para visualizar seu carrinho e finalizar compras.</p>
+        <Button onClick={() => useAuth.getState().setLoginOpen(true)} className="h-14 px-10 font-bold text-lg bg-emerald-600 hover:bg-emerald-700 text-white">
+          Fazer Login ou Cadastrar
+        </Button>
+      </div>
+    );
+  }
 
   if (mounted && items.length === 0) {
     return (

@@ -75,6 +75,12 @@ export function getEffectivePrice(item: any, pharmacyId: string | null): { preco
         precoPor = activeOferta.levePague_precoPorItem;
       }
     }
+
+    // 4. Encarte (Overrides all if store is Pleno)
+    if (activePharm && activePharm.categoriaAssociado === 'Pleno' && item.precoEncarte !== undefined) {
+      precoDe = precoPor; // The original price becomes the old price
+      precoPor = item.precoEncarte;
+    }
   }
 
   return { precoPor, precoDe };

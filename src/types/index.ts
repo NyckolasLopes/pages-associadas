@@ -92,6 +92,7 @@ export interface Produto {
   imagemAlt?: string;
   aVenda?: boolean;
 
+
   selo?: string; // Ação PBM
   precoSobConsulta?: boolean;
   linkProduto?: string;
@@ -113,6 +114,7 @@ export interface Produto {
   precoCampanha?: number;
   campanhaInicio?: string;
   campanhaFim?: string;
+  precoEncarte?: number;
   precosPorLoja?: Record<string, { precoDe: number; precoPor: number; ativo?: boolean; campanhaInicio?: string; campanhaFim?: string; destaque?: boolean }>;
   estoquesPorLoja?: Record<string, number>;
   preco?: number;

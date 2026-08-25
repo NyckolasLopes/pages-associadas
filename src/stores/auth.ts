@@ -17,6 +17,7 @@ interface User {
   email: string;
   cpf?: string;
   celular?: string;
+  enderecos?: any[];
   provider?: "email" | "google" | "apple" | "facebook";
 }
 
@@ -48,7 +49,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     // Fetch extended profile (nome, cpf, celular, has_logged_in_before)
     const { data: rawProfile } = await supabase
       .from("profiles" as any)
-      .select("nome, cpf, telefone, has_logged_in_before")
+      .select("nome, cpf, telefone, has_logged_in_before, enderecos")
       .eq("id", u.id)
       .single();
 
@@ -73,6 +74,7 @@ export const useAuth = create<AuthState>((set, get) => ({
         nome: profile?.nome || undefined,
         cpf: profile?.cpf || undefined,
         celular: profile?.telefone || undefined,
+        enderecos: profile?.enderecos || [],
         provider: "email",
       },
       loginOpen: false,
@@ -92,7 +94,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     const u = data.user;
     const { data: profile } = await supabase
       .from("profiles")
-      .select("nome, cpf, telefone")
+      .select("nome, cpf, telefone, enderecos")
       .eq("id", u.id)
       .single();
 

@@ -73,11 +73,13 @@ function AdminProdutosPrecos() {
   const pmcFileInputRef = useRef<HTMLInputElement>(null);
 
   // States for Encarte Import
-  const [pendingImportData, setPendingImportData] = useState<any[] | null>(null);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [importManualDates, setImportManualDates] = useState(false);
-  const [importStartDate, setImportStartDate] = useState("");
-  const [importEndDate, setImportEndDate] = useState("");
+  const [isImportEncarteOpen, setIsImportEncarteOpen] = useState(false);
+  const [importEncarteFileName, setImportEncarteFileName] = useState("");
+  const [encarteHeaders, setEncarteHeaders] = useState<string[]>([]);
+  const [encarteRows, setEncarteRows] = useState<any[]>([]);
+  const [selectedEncarteIdentifierCol, setSelectedEncarteIdentifierCol] = useState("");
+  const [selectedEncartePriceCol, setSelectedEncartePriceCol] = useState("");
+  const encarteFileInputRef = useRef<HTMLInputElement>(null);
   
   // State for edited prices and campaigns
   const [editingValues, setEditingValues] = useState<Record<string, { precoDe?: string, precoPor?: string, campanhaInicio?: string, campanhaFim?: string }>>({});
@@ -467,93 +469,115 @@ function AdminProdutosPrecos() {
     toast.success(checked ? "Produto destacado na sua vitrine." : "Destaque removido da sua vitrine.");
   };
 
-  const handleConfirmImport = async () => {
-    if (!pendingImportData) return;
-    if (!selectedPharmacyId || selectedPharmacyId === "global") {
-      toast.error("Por favor, selecione uma loja primeiro.");
+  const handleEncarteFileUpload = (file: File) => {
+    if (!file) return;
+    setImportEncarteFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+        if (data.length > 0) {
+          const rawHeaders = data[0] as string[];
+          setEncarteHeaders(rawHeaders.map((h, i) => h ? String(h) : `Coluna ${i + 1}`));
+          setEncarteRows(data.slice(1));
+          setIsImportEncarteOpen(true);
+        }
+
+        const rawJson = XLSX.utils.sheet_to_json(ws);
+        const headerNames = Object.keys(rawJson[0] || {});
+        let idCol = "";
+        let priceCol = "";
+
+        const commonIdNames = ["ean", "codigo_barras", "código de barras", "cod", "código"];
+        const commonPriceNames = ["preco", "preço", "valor", "preço_encarte", "preco_promocional"];
+
+        headerNames.forEach(h => {
+          const hl = h.toLowerCase();
+          if (!idCol && commonIdNames.some(c => hl.includes(c))) idCol = h;
+          if (!priceCol && commonPriceNames.some(c => hl.includes(c))) priceCol = h;
+        });
+
+        if (idCol) setSelectedEncarteIdentifierCol(idCol);
+        if (priceCol) setSelectedEncartePriceCol(priceCol);
+
+        toast.success(`Planilha Encarte "${file.name}" carregada com ${rawJson.length} itens!`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Erro ao ler o arquivo. Certifique-se de que é um formato válido (.xlsx, .xls ou .csv).");
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleConfirmImportEncarte = () => {
+    if (!selectedEncarteIdentifierCol || !selectedEncartePriceCol) {
+      toast.error("Selecione as colunas de EAN e de Preço Encarte.");
       return;
     }
-    
-    let inicioCampanha = importStartDate;
-    let fimCampanha = importEndDate;
 
-    if (!importManualDates) {
-      const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      inicioCampanha = firstDay.toISOString().split('T')[0];
-      fimCampanha = lastDay.toISOString().split('T')[0];
-    } else {
-      if (!inicioCampanha || !fimCampanha) {
-        toast.error("Por favor, preencha as datas de início e fim.");
+    const encarteMap = new Map<string, number>();
+    let invalidCount = 0;
+
+    encarteRows.forEach(row => {
+      const idRaw = String(row[selectedEncarteIdentifierCol] ?? "").trim();
+      const priceRaw = row[selectedEncartePriceCol];
+
+      if (!idRaw || priceRaw === undefined || priceRaw === null || priceRaw === "") {
+        invalidCount++;
         return;
       }
+
+      let priceNum = 0;
+      if (typeof priceRaw === "number") {
+        priceNum = priceRaw;
+      } else {
+        const cleanStr = String(priceRaw)
+          .replace("R$", "")
+          .replace(/\s/g, "")
+          .replace(/\./g, "")
+          .replace(",", ".");
+        priceNum = parseFloat(cleanStr);
+      }
+
+      if (isNaN(priceNum) || priceNum <= 0) {
+        invalidCount++;
+        return;
+      }
+
+      if (/^\d{7,14}$/.test(idRaw)) {
+        encarteMap.set(idRaw, priceNum);
+      }
+    });
+
+    if (encarteMap.size === 0) {
+      toast.error("Nenhum EAN/Preço válido foi identificado na planilha Encarte.");
+      return;
     }
 
     let updatedCount = 0;
-    
-    const badgeName = `Oferta de ${currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1)}`;
-    let ofertaSelo = selos.find(s => s.nome === badgeName);
-    
-    if (!ofertaSelo) {
-      ofertaSelo = {
-        id: `oferta-${new Date().getMonth()}`,
-        nome: badgeName,
-        ativo: true,
-        corFundo: "#f97316", // bg-orange-500
-        corTexto: "#ffffff"
-      };
-      addSelo(ofertaSelo);
-    }
-    
-    // A partir da linha 4 da planilha, que no índice (0-based) é 3
-    for (let i = 3; i < pendingImportData.length; i++) {
-      const row = pendingImportData[i] as any[];
-      if (!row || row.length === 0) continue;
-      
-      const ean = row[3]; // Coluna D (índice 3)
-      const precoCampanhaRaw = row[12]; // Coluna M (índice 12)
-      if (!ean || precoCampanhaRaw === undefined) continue;
 
-      const product = allVisibleProducts.find(p => p.ean === String(ean));
-      if (!product) continue;
-      
-      let precoCampanha = 0;
-      if (typeof precoCampanhaRaw === 'number') {
-        precoCampanha = precoCampanhaRaw;
-      } else {
-        precoCampanha = parseFloat(String(precoCampanhaRaw).replace(',', '.'));
-      }
-
-      if (isNaN(precoCampanha) || precoCampanha <= 0) continue;
-
-      const storePrices = product.precosPorLoja || {};
-      const currentStorePrice = storePrices[selectedPharmacyId] || {};
-      
-      const selosIdsList = product.selosIds || [];
-      const updatedSelosIds = [...new Set([...selosIdsList, ofertaSelo.id])];
-
-      addOrUpdateProduct({
-        ...product,
-        selosIds: updatedSelosIds,
-        precosPorLoja: {
-          ...storePrices,
-          [selectedPharmacyId]: {
-            ...currentStorePrice,
-            precoDe: product.precoPor,
-            precoPor: precoCampanha,
-            ativo: true,
-            campanhaInicio: inicioCampanha,
-            campanhaFim: fimCampanha
-          }
+    allVisibleProducts.forEach(p => {
+      if (p.ean) {
+        const encartePrice = encarteMap.get(p.ean);
+        if (encartePrice !== undefined) {
+          const newProduct = { ...p, precoEncarte: encartePrice };
+          addOrUpdateProduct(newProduct);
+          updatedCount++;
         }
-      });
-      updatedCount++;
-    }
-    
-    toast.success(`Planilha de encarte importada! ${updatedCount} produtos atualizados.`);
-    setIsImportModalOpen(false);
-    setPendingImportData(null);
+      }
+    });
+
+    toast.success(`Importação Encarte concluída! ${updatedCount} produtos atualizados com preço encarte.`);
+    setIsImportEncarteOpen(false);
+    setEncarteRows([]);
+    setEncarteHeaders([]);
+    setImportEncarteFileName("");
   };
 
 
@@ -794,7 +818,7 @@ function AdminProdutosPrecos() {
                             {campanhaAtiva && (
                               <Badge variant="default" className="bg-orange-500 hover:bg-orange-600 text-[10px] uppercase tracking-wider px-1.5 py-0">Em Campanha</Badge>
                             )}
-                            {isCampanhaInterna && !campanhaAtiva && (
+                            {isCampanhaInterna && !campanhaAtiva && !isGlobalAdmin() && (
                               <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-700 text-[10px] uppercase tracking-wider px-1.5 py-0 text-white">Em Campanha Interna</Badge>
                             )}
                           </div>

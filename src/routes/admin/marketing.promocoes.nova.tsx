@@ -62,7 +62,8 @@ function NovaPromocaoPage() {
 
   const { getStoreEffectiveProducts } = useAdminProducts();
   const produtos = useMemo(() => getStoreEffectiveProducts(effectiveStoreId), [getStoreEffectiveProducts, effectiveStoreId]);
-  const { categorias } = useAdminCategories();
+  const { getStoreCategories } = useAdminCategories();
+  const categorias = useMemo(() => getStoreCategories(effectiveStoreId), [getStoreCategories, effectiveStoreId]);
 
   // Per-product configuration state for Leve + Pague
   const [produtosConfig, setProdutosConfig] = useState<Record<string, LevePagueProdutoConfig>>({});

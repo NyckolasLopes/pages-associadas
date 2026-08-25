@@ -9,7 +9,7 @@ import { checkIsGenerico } from "@/lib/format";
 import { useAdminProducts, mapRowToProduto } from "@/stores/products";
 import { supabase } from "@/integrations/supabase/client";
 
-async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | null): Promise<Produto[]> {
+async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | null, includeInactive = false): Promise<Produto[]> {
   const timeoutMs = 10000;
   
   try {
@@ -88,7 +88,7 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
     }
     
     return enforceHealthServicesCategory(enhanceProduct(storeP as Produto));
-  }).filter((p: any) => p && p.ativo !== false);
+  }).filter((p: any) => p && (includeInactive || p.ativo !== false));
 
     return finalProducts;
   } catch (error) {
@@ -747,7 +747,7 @@ export const catalog = {
     query = query.range(params.page * params.pageSize, (params.page + 1) * params.pageSize - 1).order('id', { ascending: false });
 
     const { data, error, count } = await query;
-    if (error || !data) return { results: [], count: 0 };
+    if (error || !data || data.length === 0) return { results: [], count: 0 };
     
     // Convert to Produto and inject prices without filtering out stock
     const products = await fetchFromSupabaseWithPrices(
@@ -755,7 +755,8 @@ export const catalog = {
       // Wait, fetchFromSupabaseWithPrices takes a query builder.
       // We can just create a new query with `.in('id', data.map(d => d.id))` to let it do the price joining.
       supabase.from('produtos').select('*').in('id', data.map(d => d.id)).order('id', { ascending: false }),
-      params.lojaId
+      params.lojaId,
+      true // admin should see inactive products
     );
 
     // Reorder products back to match `data` order (if needed, but id desc is fine)
