@@ -176,6 +176,12 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
     let finalFormData = { ...formData };
     
+    // Se preencher apenas o "DE", considera-o como o "POR" (preço de venda real)
+    if (finalFormData.precoDe > 0 && (!finalFormData.precoPor || finalFormData.precoPor === 0)) {
+      finalFormData.precoPor = finalFormData.precoDe;
+      finalFormData.precoDe = 0;
+    }
+    
     // Limpeza de arrays vazios devido ao trailing comma antes de salvar
     if (finalFormData.eansSecundarios) {
       finalFormData.eansSecundarios = finalFormData.eansSecundarios.filter(Boolean);
