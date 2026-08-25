@@ -72,7 +72,7 @@ function AdminNovoProduto() {
     internalTags: [],
     ativo: false,
     visivel: false,
-    lancamento: false,
+    lancamento: true,
     origem: currentLojaId ? "Loja Individual" : "Manual",
     dataImportacao: new Date().toISOString(),
     tipoProduto: tipoParam,

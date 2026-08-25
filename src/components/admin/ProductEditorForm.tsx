@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useAdmin } from "@/stores/admin";
 import { useAdminProducts } from "@/stores/products";
 import { useAdminFiltros } from "@/stores/filtros";
+import { useSelos } from "@/stores/selos";
 import { useMarcasStore } from "@/stores/marcas";
 import { useVariacoesStore } from "@/stores/variacoes";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
@@ -44,6 +45,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [saveStep, setSaveStep] = useState<"idle" | "saving" | "syncing" | "done">("idle");
   const { pharmacies, currentUser, grupos } = useAdmin();
+  const allSelos = useSelos(s => s.selos);
   const isGlobalAdmin = currentUser?.proprietario || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total === true;
   const currentLoja = lojaId ? pharmacies.find(l => l.id === lojaId) : null;
   const canOfferServices = (isGlobalAdmin && !lojaId) ? true : currentLoja?.offersServices !== false;
@@ -172,13 +174,28 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       return;
     }
 
+    let finalFormData = { ...formData };
+    const lancamentoSelo = allSelos.find(s => s.nome.toLowerCase() === "lançamento" || s.nome.toLowerCase() === "lancamento");
+    
+    if (lancamentoSelo) {
+      let updatedSelosIds = [...(finalFormData.selosIds || [])];
+      if (finalFormData.lancamento) {
+        if (!updatedSelosIds.includes(lancamentoSelo.id)) {
+          updatedSelosIds.push(lancamentoSelo.id);
+        }
+      } else {
+        updatedSelosIds = updatedSelosIds.filter(id => id !== lancamentoSelo.id);
+      }
+      finalFormData.selosIds = updatedSelosIds;
+    }
+
     setSaveStep("saving");
     setTimeout(() => {
       setSaveStep("syncing");
       setTimeout(() => {
         setSaveStep("done");
         setTimeout(() => {
-          onSave(formData!);
+          onSave(finalFormData);
           setSaveStep("idle");
         }, 1500);
       }, 2500);
