@@ -622,18 +622,20 @@ function AdminProdutosPrecos() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            onClick={() => {
-              setTargetPharmacyId(selectedPharmacyId !== "global" ? selectedPharmacyId : (userStores[0]?.id || ""));
-              setIsImportMeusPrecosOpen(true);
-              setSpreadsheetRows([]);
-              setSpreadsheetHeaders([]);
-              setImportFileName("");
-            }}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-4 rounded-lg shadow-sm flex items-center gap-2"
-          >
-            <Upload className="h-4 w-4" /> Importar meus preços
-          </Button>
+          {!isGlobalAdmin() && (
+            <Button 
+              onClick={() => {
+                setTargetPharmacyId(selectedPharmacyId !== "global" ? selectedPharmacyId : (userStores[0]?.id || ""));
+                setIsImportMeusPrecosOpen(true);
+                setSpreadsheetRows([]);
+                setSpreadsheetHeaders([]);
+                setImportFileName("");
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-4 rounded-lg shadow-sm flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" /> Importar meus preços
+            </Button>
+          )}
 
           {isGlobalAdmin() && (
             <>
