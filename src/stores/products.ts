@@ -94,7 +94,8 @@ export function mapRowToProduto(d: any): Produto {
     termosPesquisa: d.termos_pesquisa || "",
     precoBase: Number(d.preco_base) || 0,
     seoTitulo: d.seo_titulo || "",
-    seoDescricao: d.seo_descricao || "",
+    seoDescricao: d.seo_descricao || d.meta_description || "",
+    metaDescription: d.meta_description || d.seo_descricao || "",
     imagemAlt: d.imagem_alt || "",
     tipoProduto: d.tipo_produto || "fisico",
     ncm: d.ncm || "",
@@ -202,7 +203,7 @@ export const useAdminProducts = create<ProductsState>()(
           ncm: formattedProduct.ncm || null,
           nivel_relevancia: formattedProduct.nivelRelevancia || 0,
           seo_titulo: formattedProduct.seoTitulo || null,
-          meta_description: formattedProduct.metaDescription || null,
+          seo_descricao: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
           termos_pesquisa: formattedProduct.termosPesquisa || null,
           imagem_alt: formattedProduct.imagemAlt || null,
           loja_id: lojaId || null, // <- ADD loja_id!
@@ -224,6 +225,7 @@ export const useAdminProducts = create<ProductsState>()(
             classificacao_registro: formattedProduct.classificacaoRegistro || null,
             tipo_medicamento: formattedProduct.tipoMedicamento || null,
             eans_secundarios: formattedProduct.eansSecundarios || [],
+            seo_descricao: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
           }
         });
         
