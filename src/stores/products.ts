@@ -89,6 +89,7 @@ export function mapRowToProduto(d: any): Produto {
     aVenda: d.a_venda !== false,
     visivel: d.visivel !== false,
     buscavel: d.buscavel !== false,
+    lancamento: d.lancamento || false,
     nivelRelevancia: d.nivel_relevancia || 0,
     termosPesquisa: d.termos_pesquisa || "",
     precoBase: Number(d.preco_base) || 0,
