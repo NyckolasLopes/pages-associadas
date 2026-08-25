@@ -71,7 +71,8 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
         setLoading(true);
         await loadProducts();
         const allProducts = getStoreEffectiveProducts(lojaId);
-        const allCats = await catalog.listCategories(true);
+        // Filtra "Marcas" (id 300 ou parentId 300) da lista de categorias vinculáveis
+        const allCats = (await catalog.listCategories(true)).filter(c => c.id !== "300" && c.parentId !== "300");
         setCategoriasOpcoes(allCats);
         setProdutosOpcoes(allProducts);
         setLoading(false);
