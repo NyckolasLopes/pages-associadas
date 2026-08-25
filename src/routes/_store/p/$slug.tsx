@@ -722,7 +722,7 @@ function PDP() {
 
   const desconto = finalPrecoDe > finalPrecoPor ? Math.round((1 - finalPrecoPor / finalPrecoDe) * 100) : 0;
 
-  const defaultImg = p.imagens?.[0] || productImage(p);
+  const defaultImg = productImage(p);
   const [selectedImage, setSelectedImage] = useState(defaultImg);
   const thumbScrollRef = useRef<HTMLDivElement>(null);
 
@@ -991,15 +991,18 @@ function PDP() {
                       <ProductStory videoUrl={storyUrl} productName={p.nome} inline={true} />
                     </div>
                   ))}
-                  {(p.imagens || []).map((img: any, idx: number) => (
-                    <button 
-                      key={idx} 
-                      onClick={() => setSelectedImage(img)}
-                      className={`w-20 h-20 shrink-0 snap-start border-2 rounded-xl overflow-hidden cursor-pointer bg-white transition ${selectedImage === img ? 'border-primary' : 'border-slate-200 hover:border-primary/50'}`}
-                    >
-                      <img src={img} alt={`Imagem ${idx + 1} de ${p.nome}`} className="w-full h-full object-contain p-2" />
-                    </button>
-                  ))}
+                  {(p.imagens || []).map((imgObj: any, idx: number) => {
+                    const imgUrl = typeof imgObj === 'string' ? imgObj : (imgObj.caminhoImagem || imgObj.url || imgObj);
+                    return (
+                      <button 
+                        key={idx} 
+                        onClick={() => setSelectedImage(imgUrl)}
+                        className={`w-20 h-20 shrink-0 snap-start border-2 rounded-xl overflow-hidden cursor-pointer bg-white transition ${selectedImage === imgUrl ? 'border-primary' : 'border-slate-200 hover:border-primary/50'}`}
+                      >
+                        <img src={imgUrl} alt={`Imagem ${idx + 1} de ${p.nome}`} className="w-full h-full object-contain p-2" />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
