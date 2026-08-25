@@ -28,7 +28,7 @@ export const Route = createFileRoute("/admin/marketing/cupons/")({
 
 function CuponsIndexPage() {
   const { cupons, addCoupon, removeCoupon, loadMarketing } = useMarketing();
-  const { currentUser, activeStoreId, grupos, lojas } = useAdmin();
+  const { currentUser, activeStoreId, grupos, pharmacies } = useAdmin();
 
   useEffect(() => {
     loadMarketing();
@@ -87,7 +87,7 @@ function CuponsIndexPage() {
                       <SelectTrigger><SelectValue placeholder="Todas as Lojas (Global)" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">Todas as Lojas (Global)</SelectItem>
-                        {lojas.map(loja => (
+                        {pharmacies.map(loja => (
                           <SelectItem key={loja.id} value={loja.id}>{loja.nome}</SelectItem>
                         ))}
                       </SelectContent>
