@@ -105,55 +105,64 @@ function AdminPaginasInformativas() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl border shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 font-medium border-b">
-              <tr>
-                <th className="px-4 py-3">Título</th>
-                <th className="px-4 py-3">Slug (URL)</th>
-                <th className="px-4 py-3">Coluna (Rodapé)</th>
-                <th className="px-4 py-3">Tipo</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {contentPages.map((page) => (
-                <tr key={page.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-semibold text-slate-800">{page.title}</td>
-                  <td className="px-4 py-3 text-slate-500">/{page.slug}</td>
-                  <td className="px-4 py-3 text-slate-500">{page.footerColumn}</td>
-                  <td className="px-4 py-3">
-                    {page.type === "external" ? (
-                      <span className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-1 rounded-md w-max">
-                        <Globe className="w-3.5 h-3.5" /> Link Externo
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md w-max">
-                        <FileText className="w-3.5 h-3.5" /> Conteúdo
-                      </span>
+      <div className="space-y-8">
+        {["Institucional", "Navegação", "Serviços", "Perfil", "Atendimento", "Segurança"].map((columnName) => {
+          const columnPages = contentPages.filter(p => p.footerColumn === columnName);
+          return (
+            <div key={columnName} className="bg-white rounded-xl border shadow-sm overflow-hidden">
+              <div className="bg-slate-50 px-4 py-3 border-b flex items-center justify-between">
+                <h3 className="font-bold text-slate-800 text-lg">{columnName}</h3>
+                <span className="text-sm text-slate-500 font-medium">{columnPages.length} página(s)</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-slate-500 font-medium border-b hidden sm:table-header-group">
+                    <tr>
+                      <th className="px-4 py-3 w-[35%]">Título</th>
+                      <th className="px-4 py-3 w-[30%]">Slug (URL)</th>
+                      <th className="px-4 py-3 w-[20%]">Tipo</th>
+                      <th className="px-4 py-3 w-[15%] text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {columnPages.map((page) => (
+                      <tr key={page.id} className="hover:bg-slate-50 flex flex-col sm:table-row">
+                        <td className="px-4 py-3 font-semibold text-slate-800">{page.title}</td>
+                        <td className="px-4 py-3 text-slate-500">/{page.slug}</td>
+                        <td className="px-4 py-3">
+                          {page.type === "external" ? (
+                            <span className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-1 rounded-md w-max">
+                              <Globe className="w-3.5 h-3.5" /> Link Externo
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md w-max">
+                              <FileText className="w-3.5 h-3.5" /> Conteúdo
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 sm:text-right space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => handleOpenModal(page)}>
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(page.id)} className="text-red-500 hover:text-red-600">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                    {columnPages.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                          Nenhuma página em {columnName}.
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleOpenModal(page)}>
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(page.id)} className="text-red-500 hover:text-red-600">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {contentPages.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                    Nenhuma página informativas cadastrada.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
