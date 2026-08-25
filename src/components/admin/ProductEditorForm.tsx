@@ -175,6 +175,15 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     }
 
     let finalFormData = { ...formData };
+    
+    // Limpeza de arrays vazios devido ao trailing comma antes de salvar
+    if (finalFormData.eansSecundarios) {
+      finalFormData.eansSecundarios = finalFormData.eansSecundarios.filter(Boolean);
+    }
+    if (finalFormData.internalTags) {
+      finalFormData.internalTags = finalFormData.internalTags.filter(Boolean);
+    }
+
     const lancamentoSelo = allSelos.find(s => s.nome.toLowerCase() === "lançamento" || s.nome.toLowerCase() === "lancamento");
     
     if (lancamentoSelo) {
@@ -292,7 +301,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             
             <div className="space-y-2">
               <Label className="font-bold text-xs uppercase text-slate-500">EANs Secundários (separados por vírgula)</Label>
-              <Input disabled={!isGlobalAdmin} value={(formData.eansSecundarios || []).join(", ")} onChange={e => setFormData({...formData, eansSecundarios: e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean)})} className="bg-white" placeholder="Ex: 7891234567890, 7890987654321" />
+              <Input disabled={!isGlobalAdmin} value={(formData.eansSecundarios || []).join(", ")} onChange={e => setFormData({...formData, eansSecundarios: e.target.value.split(',').map((s: string) => s.trim())})} className="bg-white" placeholder="Ex: 7891234567890, 7890987654321" />
             </div>
 
             <div className="space-y-2">
@@ -405,7 +414,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     if (!sub) return null;
                     const parent = categorias.find((c: any) => c.id === sub.parentId);
                     return (
-                      <Badge key={`sub-${subId}`} variant="secondary" className="flex items-center gap-1 py-1 bg-slate-100 border-slate-200">
+                      <Badge key={`sub-${subId}`} variant="secondary" className="flex items-center gap-1 py-1">
                         {parent ? `${parent.nome} > ` : ""}{sub.nome}
                         {!isGlobalAdmin ? null : (
                           <button 
@@ -876,15 +885,17 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     placeholder="Descrição da imagem para leitores de tela e Google Imagens" 
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="font-bold text-xs uppercase text-slate-500">Tags de Busca Internas</Label>
-                  <Textarea disabled={!isGlobalAdmin} 
-                    value={(formData.internalTags || []).join(", ")} 
-                    onChange={e => setFormData({...formData, internalTags: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} 
-                    className="bg-white min-h-[80px]" 
-                    placeholder="Ex: gripe, resfriado, febre, dor no corpo (separados por vírgula)" 
-                  />
-                  <span className="text-xs text-slate-400">Palavras-chave internas que facilitam a busca dentro do site. Não aparecem no Google.</span>
+                <div className="space-y-2 border-t pt-6">
+                  <div className="space-y-2">
+                    <Label className="font-bold text-xs uppercase text-slate-500">Tags de Busca Internas</Label>
+                    <Textarea disabled={!isGlobalAdmin} 
+                      value={(formData.internalTags || []).join(", ")} 
+                      onChange={e => setFormData({...formData, internalTags: e.target.value.split(',').map(s => s.trim())})} 
+                      className="bg-white min-h-[80px]" 
+                      placeholder="Ex: gripe, resfriado, febre, dor no corpo (separados por vírgula)" 
+                    />
+                    <span className="text-xs text-slate-400">Palavras-chave internas que facilitam a busca dentro do site. Não aparecem no Google.</span>
+                  </div>
                 </div>
               </div>
 

@@ -764,13 +764,19 @@ function PDP() {
 
     // Auto-select closest pharmacy on load (only if not forced to select)
     if (availablePharmacies.length > 0 && (!isShared || globalCep)) {
-      const closest = availablePharmacies[0];
-      if (closest._calculatedStock > 0 || isService) {
-        setSelectedPharmacyId(closest.id);
+      const currentSelected = selectedPharmacyId ? availablePharmacies.find((f: any) => f.id === selectedPharmacyId) : null;
+      if (currentSelected && (currentSelected._calculatedStock > 0 || isService)) {
+        // Already selected and valid, just set freight
         setSelectedFreight("pickup");
+      } else {
+        const closest = availablePharmacies[0];
+        if (closest._calculatedStock > 0 || isService) {
+          setSelectedPharmacyId(closest.id);
+          setSelectedFreight("pickup");
+        }
       }
     }
-  }, [p.id, p.imagens]);
+  }, [p.id, p.imagens, selectedPharmacyId]);
 
   useEffect(() => {
     if (globalCep !== cep) {

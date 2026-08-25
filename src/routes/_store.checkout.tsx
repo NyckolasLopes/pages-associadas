@@ -438,7 +438,7 @@ function Checkout() {
           <div className="grid sm:grid-cols-2 gap-3 mt-4">
             <div><Label>Nome completo</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
             <div><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-            <div><Label>CPF</Label><Input placeholder="000.000.000-00" value={cpf} onChange={handleCpfChange} /></div>
+            <div><Label>CPF</Label><Input placeholder="" value={cpf} onChange={handleCpfChange} /></div>
             <div><Label>Telefone</Label><Input placeholder="(51) 90000-0000" value={telefone} onChange={handleTelefoneChange} /></div>
           </div>
         </section>
@@ -828,7 +828,7 @@ function Checkout() {
                 <div>
                   <Label>CPF do titular do cartão</Label>
                   <Input 
-                    placeholder="000.000.000-00" 
+                    placeholder="" 
                     value={cardCpf} 
                     onChange={e => {
                       let v = e.target.value.replace(/\D/g, "");
@@ -1267,7 +1267,7 @@ function Checkout() {
               </div>
               <div>
                 <Label>CPF do autorizado</Label>
-                <Input placeholder="000.000.000-00" value={authCpf} onChange={(e) => {
+                <Input placeholder="" value={authCpf} onChange={(e) => {
                   let v = e.target.value.replace(/\D/g, "");
                   if (v.length > 11) v = v.slice(0, 11);
                   v = v.replace(/(\d{3})(\d)/, "$1.$2");

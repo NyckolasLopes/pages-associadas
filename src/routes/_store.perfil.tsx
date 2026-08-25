@@ -305,7 +305,7 @@ function PerfilPage() {
                   <div className="col-span-2 sm:col-span-2 grid sm:grid-cols-2 gap-4">
                     <div>
                       <Label>CPF ou CNPJ</Label>
-                      <Input type="text" value={editCpf} onChange={handleCpfChange} placeholder="000.000.000-00 ou 00.000.000/0001-00" />
+                      <Input type="text" value={editCpf} onChange={handleCpfChange} placeholder="" />
                     </div>
                     <div>
                       <Label>Celular / Telefone</Label>

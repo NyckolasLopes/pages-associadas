@@ -282,7 +282,7 @@ function CriarPedidoAdmin() {
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-600 block">CPF *</label>
                     <Input 
-                      placeholder="000.000.000-00" 
+                      placeholder="" 
                       value={cpf} 
                       onChange={(e) => setCpf(formatCpf(e.target.value))} 
                     />
