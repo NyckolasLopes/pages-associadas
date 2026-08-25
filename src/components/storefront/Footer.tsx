@@ -474,7 +474,7 @@ export function Footer() {
               </div>
               
               <div className="flex flex-col items-center justify-center gap-4 text-xs pt-6 border-t border-slate-100">
-                <span className="text-center text-slate-500">
+                <span className="text-center text-slate-500 pb-24 md:pb-0">
                   © {new Date().getFullYear()} Farmácias Associadas. Todos os direitos reservados.
                 </span>
               </div>

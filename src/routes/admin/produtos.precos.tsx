@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useAdminProducts } from "@/stores/products";
 import { useAdmin } from "@/stores/admin";
 import { useSelos } from "@/stores/selos";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
+import { catalog } from "@/services/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -91,6 +92,60 @@ function AdminProdutosPrecos() {
   const [campanhaFimModal, setCampanhaFimModal] = useState("");
   
   const currentMonthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
+
+  const [localProducts, setLocalProducts] = useState<Produto[]>([]);
+  const [campanhaLocalProducts, setCampanhaLocalProducts] = useState<Produto[]>([]);
+  
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        const { results } = await catalog.adminSearchProducts({
+          search,
+          page: 0,
+          pageSize: 50,
+          listFilter: "all",
+          lojaId: selectedPharmacyId === "global" ? undefined : selectedPharmacyId
+        });
+        if (active) setLocalProducts(results);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const t = setTimeout(load, 400);
+    return () => { active = false; clearTimeout(t); };
+  }, [search, selectedPharmacyId]);
+
+  useEffect(() => {
+    let active = true;
+    async function searchCampanha() {
+      if (!campanhaSearch) {
+        if (active) setCampanhaLocalProducts([]);
+        return;
+      }
+      try {
+        const { results } = await catalog.adminSearchProducts({
+          search: campanhaSearch,
+          page: 0,
+          pageSize: 50,
+          listFilter: "all",
+          lojaId: selectedPharmacyId === "global" ? undefined : selectedPharmacyId
+        });
+        if (active) setCampanhaLocalProducts(results);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const t = setTimeout(searchCampanha, 400);
+    return () => { active = false; clearTimeout(t); };
+  }, [campanhaSearch, selectedPharmacyId]);
+
+  const allVisibleProducts = useMemo(() => {
+    const map = new Map<string, Produto>();
+    localProducts.forEach(p => map.set(p.id, p));
+    campanhaLocalProducts.forEach(p => map.set(p.id, p));
+    return Array.from(map.values());
+  }, [localProducts, campanhaLocalProducts]);
 
   const handleMeusPrecosFileUpload = (file: File) => {
     if (!file) return;
@@ -225,7 +280,7 @@ function AdminProdutosPrecos() {
 
     let updatedCount = 0;
 
-    customProducts.forEach(p => {
+    allVisibleProducts.forEach(p => {
       const isMedicamento = p.categoriaId === "142" || p.categoriasAdicionais?.includes("142");
       if (isMedicamento && p.ean) {
         const pmcPrice = pmcMap.get(p.ean);
@@ -318,15 +373,8 @@ function AdminProdutosPrecos() {
   };
 
   const filtered = useMemo(() => {
-    let result = customProducts;
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (p) => p.nome?.toLowerCase().includes(q) || p.ean?.includes(q)
-      );
-    }
-    return result.slice(0, 50); // Mocks pagination limit for performance
-  }, [customProducts, search]);
+    return localProducts;
+  }, [localProducts]);
 
   const handleEditChange = (productId: string, field: "precoDe" | "precoPor" | "campanhaInicio" | "campanhaFim", value: string) => {
     setEditingValues(prev => ({
@@ -465,10 +513,9 @@ function AdminProdutosPrecos() {
       
       const ean = row[3]; // Coluna D (índice 3)
       const precoCampanhaRaw = row[12]; // Coluna M (índice 12)
-      
       if (!ean || precoCampanhaRaw === undefined) continue;
 
-      const product = customProducts.find(p => p.ean === String(ean));
+      const product = allVisibleProducts.find(p => p.ean === String(ean));
       if (!product) continue;
       
       let precoCampanha = 0;
@@ -529,7 +576,7 @@ function AdminProdutosPrecos() {
     let updatedCount = 0;
     
     selectedCampanhaProducts.forEach(productId => {
-      const product = customProducts.find(p => p.id === productId);
+      const product = allVisibleProducts.find(p => p.id === productId);
       const promoPrice = campanhaPrices[productId];
       
       if (product && promoPrice !== undefined && promoPrice < product.precoPor) {
@@ -998,22 +1045,22 @@ function AdminProdutosPrecos() {
                 />
               </div>
               <div className="border rounded-md max-h-[400px] overflow-y-auto">
-                <div className="divide-y">
-                  {customProducts.filter(p => p.nome.toLowerCase().includes(campanhaSearch.toLowerCase())).map(produto => (
-                    <div key={produto.id} className="flex items-center space-x-3 p-3 hover:bg-slate-50 transition-colors">
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {campanhaLocalProducts.map(p => (
+                    <div key={p.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50 transition-colors">
                       <Checkbox 
-                        id={`campanha-prod-${produto.id}`}
-                        checked={selectedCampanhaProducts.includes(produto.id)}
-                        onCheckedChange={() => handleCampanhaToggleProduct(produto.id)}
+                        id={`campanha-prod-${p.id}`}
+                        checked={selectedCampanhaProducts.includes(p.id)}
+                        onCheckedChange={() => handleCampanhaToggleProduct(p.id)}
                       />
-                      <label htmlFor={`campanha-prod-${produto.id}`} className="flex-1 cursor-pointer flex justify-between items-center text-sm font-medium leading-none">
-                        <span>{produto.nome}</span>
-                        <span className="text-slate-500">R$ {produto.precoPor.toFixed(2)}</span>
+                      <label htmlFor={`campanha-prod-${p.id}`} className="flex-1 cursor-pointer flex justify-between items-center text-sm font-medium leading-none">
+                        <span>{p.nome}</span>
+                        <span className="text-slate-500">R$ {p.precoPor.toFixed(2)}</span>
                       </label>
                     </div>
                   ))}
-                  {customProducts.length === 0 && (
-                    <div className="p-4 text-center text-slate-500 text-sm">Nenhum produto encontrado.</div>
+                  {campanhaLocalProducts.length === 0 && (
+                    <div className="text-center py-8 text-sm text-slate-500">Nenhum produto encontrado.</div>
                   )}
                 </div>
               </div>
@@ -1045,7 +1092,7 @@ function AdminProdutosPrecos() {
               
               <div className="space-y-4">
               {selectedCampanhaProducts.map(productId => {
-                const product = customProducts.find(p => p.id === productId);
+                const product = allVisibleProducts.find(p => p.id === productId);
                 if (!product) return null;
                 
                 const promoPrice = campanhaPrices[productId];
@@ -1101,7 +1148,7 @@ function AdminProdutosPrecos() {
                     className="bg-emerald-600 hover:bg-emerald-700"
                     disabled={
                       selectedCampanhaProducts.some(id => {
-                        const product = customProducts.find(p => p.id === id);
+                        const product = allVisibleProducts.find(p => p.id === id);
                         const price = campanhaPrices[id];
                         return !product || price === undefined || price >= product.precoPor;
                       })
