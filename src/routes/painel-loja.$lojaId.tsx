@@ -882,11 +882,12 @@ function PainelLoja() {
                             cy="50%"
                             innerRadius={65}
                             outerRadius={95}
-                            paddingAngle={4}
+                            paddingAngle={0}
                             dataKey="value"
+                            stroke="none"
                           >
                             {statusPieDataLoja.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
+                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                             ))}
                           </Pie>
                           <Tooltip

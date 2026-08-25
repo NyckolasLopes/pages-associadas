@@ -890,12 +890,13 @@ function Relatorios() {
                         innerRadius={90}
                         outerRadius={120}
                         fill="#8884d8"
-                        paddingAngle={5}
+                        paddingAngle={0}
                         dataKey="value"
+                        stroke="none"
                         label={({percent}) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}
                       >
                         {pieEnvioData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.name.includes("Retirada") ? "#10b981" : "#0ea5e9"} />
+                          <Cell key={`cell-${index}`} fill={entry.name.includes("Retirada") ? "#10b981" : "#0ea5e9"} stroke="none" />
                         ))}
                       </Pie>
                       <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
@@ -1000,12 +1001,13 @@ function Relatorios() {
                         innerRadius={90}
                         outerRadius={120}
                         fill="#8884d8"
-                        paddingAngle={5}
+                        paddingAngle={0}
                         dataKey="value"
+                        stroke="none"
                         label={({percent}) => percent > 0 ? `${(percent * 100).toFixed(0)}%` : ''}
                       >
                         {pieClientesData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.name === "Recorrentes" ? "#8b5cf6" : "#f97316"} />
+                          <Cell key={`cell-${index}`} fill={entry.name === "Recorrentes" ? "#8b5cf6" : "#f97316"} stroke="none" />
                         ))}
                       </Pie>
                       <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
