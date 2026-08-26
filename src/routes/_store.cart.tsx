@@ -618,7 +618,7 @@ function CartPage() {
   }, [selectedPharmacyId, cep]);
 
   const selectedFreight = freight?.find((f) => f.id === selected);
-  const freightPrice = selectedFreight?.price ?? 0;
+  const freightPrice = deliveryMethod === "entrega" ? (selectedFreight?.price ?? 0) : 0;
   const grandTotal = total + freightPrice;
 
   const closestPharmacyId = useMemo(() => {
@@ -1529,10 +1529,10 @@ function CartPage() {
               <span>
                 {deliveryMethod === "retirada" ? (
                   <span className="text-emerald-600 font-bold">Grátis</span>
-                ) : selectedFreight ? (
+                ) : (selectedFreight && selectedFreight.id !== "pickup") ? (
                   freightPrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(freightPrice)
                 ) : (
-                  "A calcular"
+                  <span className="text-muted-foreground text-xs">A calcular</span>
                 )}
               </span>
             </div>
@@ -1664,7 +1664,13 @@ function CartPage() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setDeliveryMethod("entrega")}
+                  onClick={() => {
+                      setDeliveryMethod("entrega");
+                      if (selected === "pickup") {
+                        const firstDelivery = freight?.find(f => f.id !== "pickup");
+                        if (firstDelivery) setSelected(firstDelivery.id);
+                      }
+                    }}
                   disabled={items.some(i => i.retemReceita)}
                   className={`border rounded-lg p-2.5 text-xs font-bold flex flex-col items-center gap-1 transition-all ${deliveryMethod === "entrega" ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20" : "bg-white text-slate-700 hover:bg-slate-100"}`}
                 >
@@ -1839,7 +1845,7 @@ function CartPage() {
                 {deliveryMethod === "entrega" && (
                   <div className="flex justify-between text-sm text-emerald-800">
                     <span>Frete</span>
-                    <span>{freightPrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(freightPrice)}</span>
+                    <span>{(selectedFreight && selectedFreight.id !== "pickup") ? (freightPrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(freightPrice)) : <span className="text-emerald-700/70 text-xs">A calcular</span>}</span>
                   </div>
                 )}
               </div>
