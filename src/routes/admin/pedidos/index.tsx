@@ -424,10 +424,13 @@ export function PedidosAdmin() {
   const filteredUnifiedOrders = useMemo(() => {
     return allUnifiedOrders.filter((item) => {
       // Filtro por view
-      if (mainView === "concluidos" && item.status !== "Concluído") return false;
+      if (mainView === "concluidos") {
+         const st = (item.status || "").toLowerCase();
+         if (!st.includes("conclu") && !st.includes("entregue")) return false;
+      }
       if (mainView === "carrinhos") {
          const st = (item.status || "").toLowerCase();
-         if (st.includes("conclu") || st.includes("cancel")) return false;
+         if (st.includes("conclu") || st.includes("cancel") || st.includes("entregue")) return false;
       }
 
       // Filtro por busca

@@ -358,7 +358,7 @@ export function PedidosAdmin() {
     return allUnifiedOrders.filter(item => {
         // Filtro por view - página específica de carrinhos abandonados, mostra somente pendentes
         const st = (item.status || "").toLowerCase();
-        if (st.includes("conclu") || st.includes("cancel")) return false;
+        if (st.includes("conclu") || st.includes("cancel") || st.includes("entregue")) return false;
 
       // Filtro por busca
       if (searchTerm) {

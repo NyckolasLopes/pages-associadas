@@ -62,7 +62,9 @@ export function useOrdersQuery({
       
       if (status && status !== 'todos') {
         if (status === 'Pendente') {
-           query = query.not('status', 'ilike', '%conclu%').not('status', 'ilike', '%cancel%');
+           query = query.not('status', 'ilike', '%conclu%').not('status', 'ilike', '%cancel%').not('status', 'ilike', '%entregue%');
+        } else if (status === 'Concluído' || status === 'Concluido') {
+           query = query.or('status.ilike.%conclu%,status.ilike.%entregue%');
         } else {
            query = query.eq('status', status);
         }
@@ -224,7 +226,7 @@ export function useOrdersKpis(lojaId?: string) {
       
       (data || []).forEach((d: any) => {
         const st = (d.status || "").toLowerCase();
-        if (st.includes("conclu")) concluidos++;
+        if (st.includes("conclu") || st.includes("entregue")) concluidos++;
         else if (st.includes("cancel")) cancelados++;
         else pendentes++;
       });
