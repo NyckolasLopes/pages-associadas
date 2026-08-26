@@ -10,8 +10,13 @@ import { toast } from "sonner";
 export function CompleteProfileModal() {
   const user = useAuth((s) => s.user);
   
-  // O modal deve aparecer se o usuário estiver logado E (não tiver CPF OU não tiver Celular OU não tiver Email).
-  const isMissingData = user && (!user.cpf || !user.celular || !user.email);
+  // O modal deve aparecer SE o usuário tiver algum dado preenchido em Meus Dados (nome, cpf ou celular) 
+  // MAS ainda faltar algo. Se ele tiver todos preenchidos, NÃO deve aparecer. 
+  // Se não tiver nenhum, também não aparece para não bloquear usuários novos.
+  const hasSomeProfileData = Boolean(user && (user.nome || user.cpf || user.celular));
+  const hasAllProfileData = Boolean(user && user.nome && user.cpf && user.celular && user.email);
+  const isMissingData = Boolean(user && hasSomeProfileData && !hasAllProfileData);
+  
   const [open, setOpen] = useState(false);
 
   const [nome, setNome] = useState(user?.name || "");
