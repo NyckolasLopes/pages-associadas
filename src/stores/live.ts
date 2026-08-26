@@ -157,7 +157,7 @@ export const useLive = create<LiveStore>((set, get) => ({
           if (typeof window !== 'undefined' && navigator.geolocation) {
             try {
               const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
               });
               
               const lat = pos.coords.latitude;

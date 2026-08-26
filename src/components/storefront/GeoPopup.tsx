@@ -34,7 +34,8 @@ export function GeoPopup() {
           },
           (err) => {
             console.error("Geolocation denied or error:", err);
-          }
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       }, 2500); // 2.5s delay to not impact LCP/FCP or hydration
       

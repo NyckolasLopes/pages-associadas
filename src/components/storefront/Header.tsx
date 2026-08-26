@@ -249,7 +249,8 @@ export function Header() {
         () => {
           setIsGeoLoading(false);
           toast.error("Permissão de localização negada. Por favor, digite seu CEP manualmente.", { id: toastId });
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
       setIsGeoLoading(false);
@@ -855,6 +856,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
         toast.error("Permissão de localização negada. Digite seu CEP manualmente.", { id: toastId });
         setIsGeoLoading(false);
       },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 

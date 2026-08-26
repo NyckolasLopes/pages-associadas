@@ -290,7 +290,7 @@ function CartPage() {
           toast.error("Erro ao obter localização.");
         }
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
