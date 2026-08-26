@@ -1,16 +1,14 @@
 import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
-import { Header } from "@/components/storefront/Header";
-import { Suspense, lazy, useMemo } from "react";
-import { useCart } from "@/stores/cart";
 import { useAdmin } from "@/stores/admin";
+import { useCart } from "@/stores/cart";
+import { Header } from "@/components/storefront/Header";
+import { Suspense, lazy, useMemo, useEffect } from "react";
+import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 
 const Footer = lazy(() => import("@/components/storefront/Footer").then(m => ({ default: m.Footer })));
 const FloatingElements = lazy(() => import("@/components/storefront/BackToTop").then(m => ({ default: m.FloatingElements })));
 const CookieBanner = lazy(() => import("@/components/storefront/CookieBanner").then(m => ({ default: m.CookieBanner })));
 const GeoPopup = lazy(() => import("@/components/storefront/GeoPopup").then(m => ({ default: m.GeoPopup })));
-import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
-
 
 /** Spinner neutro – sem logo de nenhuma bandeira */
 function NeutralSpinner() {
@@ -39,6 +37,17 @@ const PARCEIRO_THEME: Record<string, string> = {
   "--ring": "#a1a1aa",
 };
 
+/**
+ * Páginas do sistema que NÃO são slugs de loja.
+ * Quando a URL começa com um desses segmentos, não tentamos resolver
+ * como slug de loja – usamos o sessionStorage como fallback.
+ */
+const SYSTEM_PAGES = new Set([
+  'login', 'cadastro', 'perfil', 'pedidos', 'checkout',
+  'sucesso', 'compartilhado', 'faq', 'ajuda', 'mapa-site',
+  'politica-de-privacidade', 'pagina', 'admin',
+]);
+
 function safeSlugify(text: string): string {
   if (!text) return "";
   return text
@@ -54,17 +63,21 @@ function safeSlugify(text: string): string {
 function StoreLayout() {
   const location = useLocation();
   const isHome = location.pathname === "/";
+
+  // — Store state (todos os hooks ANTES de qualquer early return) —
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
   const pharmacies = useAdmin((s) => s.pharmacies);
   const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
 
-  // Extract potential store slug from URL (e.g. /minha-loja or /minha-loja/produto/...)
+  // Extrai o primeiro segmento da URL (ex: "zona-sul" de /zona-sul/produto/...)
   const pathParts = location.pathname.split('/').filter(Boolean);
-  const potentialSlug = pathParts[0];
+  const potentialSlug = pathParts[0] ?? "";
 
+  // — Resolução da farmácia ativa (prioridade: URL > sessionStorage > carrinho > primeira) —
   const activePharmacy = useMemo(() => {
-    // 1. O slug da URL tem prioridade ABSOLUTA - se estamos em /zona-sul/produto/..., carrega zona-sul
-    if (potentialSlug) {
+    // 1. Slug da URL (somente se NÃO for uma página do sistema)
+    if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug)) {
       const bySlug = pharmacies.find((p) => {
         const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
         return slug === potentialSlug;
@@ -72,25 +85,34 @@ function StoreLayout() {
       if (bySlug) return bySlug;
     }
 
-    // 2. Se não há slug na URL correspondente a uma loja, usa a farmácia selecionada no carrinho
+    // 2. Última loja visitada (para páginas sem slug: login, perfil, etc.)
+    try {
+      const lastSlug = sessionStorage.getItem('fa-last-store-slug');
+      if (lastSlug) {
+        const byLastSlug = pharmacies.find((p) => {
+          const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
+          return slug === lastSlug;
+        });
+        if (byLastSlug) return byLastSlug;
+      }
+    } catch { /* sessionStorage indisponível (SSR) */ }
+
+    // 3. Farmácia selecionada no carrinho
     if (selectedPharmacyId) {
-      return pharmacies.find((p) => p.id === selectedPharmacyId) || pharmacies[0] || null;
+      const byCart = pharmacies.find((p) => p.id === selectedPharmacyId);
+      if (byCart) return byCart;
     }
-    
+
+    // 4. Fallback: primeira da lista
     return pharmacies[0] || null;
   }, [selectedPharmacyId, pharmacies, potentialSlug]);
 
-  // ⏳ Aguarda lojas carregarem do Supabase antes de renderizar qualquer coisa.
-  // Isso evita o flash de outra loja enquanto os dados chegam.
-  if (!pharmaciesLoaded) {
-    return <NeutralSpinner />;
-  }
-
+  // — Tema CSS da loja (todos os hooks antes do early return) —
   const storeTheme = useMemo(() => {
     if (!activePharmacy) return undefined;
-    
+
     let themeToApply: Record<string, string | undefined> = {};
-    
+
     if (activePharmacy.categoriaAssociado === "Parceiro") {
       themeToApply = { ...PARCEIRO_THEME };
     }
@@ -101,7 +123,7 @@ function StoreLayout() {
       const secondary = t['--secondary'] || t.secondary;
       const accent = t['--accent'] || t.accent;
       const headerBg = t['--header-bg'] || t.headerBg;
-      
+
       const legacyTheme: Record<string, string | undefined> = {
         "--primary": primary,
         "--primary-foreground": "#ffffff",
@@ -124,15 +146,40 @@ function StoreLayout() {
         Object.entries(t).filter(([k, v]) => k.startsWith('--') && v)
       );
 
-      themeToApply = {
-        ...themeToApply,
-        ...cleanLegacyTheme,
-        ...customVars
-      };
+      themeToApply = { ...themeToApply, ...cleanLegacyTheme, ...customVars };
     }
-    
+
     return Object.keys(themeToApply).length > 0 ? (themeToApply as React.CSSProperties) : undefined;
   }, [activePharmacy]);
+
+  // — Efeitos (todos os hooks antes do early return) —
+  useEffect(() => {
+    if (!activePharmacy) return;
+
+    // Salva o slug da loja para páginas que não têm slug na URL (login, perfil, etc.)
+    const isStoreSlugPage = potentialSlug && !SYSTEM_PAGES.has(potentialSlug);
+    if (isStoreSlugPage) {
+      try {
+        const slug = activePharmacy.slug
+          ? safeSlugify(activePharmacy.slug)
+          : safeSlugify(activePharmacy.nome || activePharmacy.id);
+        sessionStorage.setItem('fa-last-store-slug', slug);
+      } catch { /* sessionStorage indisponível */ }
+    }
+
+    // Sincroniza selectedPharmacyId → cupons e carrinho reconhecem a loja correta
+    if (activePharmacy.id !== selectedPharmacyId) {
+      setSelectedPharmacyId(activePharmacy.id);
+    }
+  }, [activePharmacy?.id]);
+
+  // ─── Early returns (APÓS todos os hooks) ───────────────────────────────────
+
+  // ⏳ Aguarda lojas carregarem do Supabase antes de renderizar qualquer coisa.
+  // Evita o flash de outra loja enquanto os dados chegam.
+  if (!pharmaciesLoaded) {
+    return <NeutralSpinner />;
+  }
 
   if (activePharmacy?.virtualStoreStatus === "Inativa") {
     return (
@@ -152,7 +199,7 @@ function StoreLayout() {
 
   return (
     <div
-      className={`min-h-screen flex flex-col bg-background`}
+      className="min-h-screen flex flex-col bg-background"
       style={storeTheme}
     >
       {activePharmacy && (
