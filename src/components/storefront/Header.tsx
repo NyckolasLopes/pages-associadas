@@ -1048,6 +1048,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
   const marcas = useMarcasStore(s => s.marcas);
   const allCategories = useAdminCategories(s => s.categories);
   const params = useParams({ strict: false });
+  const activePharmacy = useActivePharmacy();
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
 
   const allSubs = useMemo(() => {
     const subs: Record<string, Categoria[]> = {};
