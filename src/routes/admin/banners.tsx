@@ -26,11 +26,11 @@ import { useAdminCategories } from "@/stores/categories";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { StoreStructureViewer } from "@/components/admin/StoreStructureViewer";
+
 import { StoreVitrinesConfig } from "@/components/admin/StoreVitrinesConfig";
 
 const bannersSearchSchema = z.object({
-  tab: z.enum(["banners", "estrutura", "vitrines", "logo", "cores"]).optional().catch("banners"),
+  tab: z.enum(["banners", "vitrines", "logo", "cores"]).optional().catch("banners"),
 });
 
 export const Route = createFileRoute("/admin/banners")({
@@ -179,11 +179,11 @@ function AdminBanners() {
   const [editingBanner, setEditingBanner] = useState<Partial<AdminBanner> | null>(null);
   const [bannerToDelete, setBannerToDelete] = useState<string | null>(null);
 
-  type TabType = "banners" | "estrutura" | "vitrines" | "logo" | "cores";
+  type TabType = "banners" | "vitrines" | "logo" | "cores";
 
   const searchParams = Route.useSearch();
   const navigate = Route.useNavigate();
-  const validTabs: TabType[] = ["banners", "estrutura", "vitrines", "logo", "cores"];
+  const validTabs: TabType[] = ["banners", "vitrines", "logo", "cores"];
   const currentTab: TabType = (searchParams?.tab && validTabs.includes(searchParams.tab as any))
     ? (searchParams.tab as TabType)
     : "banners";
@@ -405,12 +405,10 @@ function AdminBanners() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col">
           <h2 className="text-[22px] font-bold text-[#1a1a1a]">
-            {activeTab === "estrutura" ? "Estrutura da Loja" : activeTab === "vitrines" ? "Minhas Vitrines" : activeTab === "logo" ? "Logotipo da Loja" : activeTab === "cores" ? "Minhas Cores" : "Banners"}
+            {activeTab === "vitrines" ? "Minhas Vitrines" : activeTab === "logo" ? "Logotipo da Loja" : activeTab === "cores" ? "Minhas Cores" : "Banners"}
           </h2>
           <span className="text-sm font-medium text-slate-500">
-            {activeTab === "estrutura" 
-              ? "Panorama geral de todas as seções e blocos da sua loja" 
-              : activeTab === "vitrines" 
+            {activeTab === "vitrines" 
               ? "Gerencie e organize as vitrines e carrosséis de produtos" 
               : activeTab === "logo"
               ? "Gerencie a logomarca da sua loja"
@@ -718,13 +716,7 @@ function AdminBanners() {
       )
       )}
 
-      {/* Tab 2: Estrutura da Minha Loja (Panorama Geral) */}
-      {activeTab === "estrutura" && (
-        <StoreStructureViewer 
-          onNavigateTab={setActiveTab} 
-          onOpenNewBannerModal={openNewModal} 
-        />
-      )}
+
 
       {/* Tab 3: Minhas Vitrines (Configuração & Produtos) */}
       {activeTab === "vitrines" && (

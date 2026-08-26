@@ -553,11 +553,7 @@ function AdminLayout() {
                   Meus Banners
                 </Link>
               )}
-              {(isParceiro || can('pers_paginas')) && (
-                <Link to="/admin/banners" search={{ tab: "estrutura" }} className={subLinkClass}>
-                  Estrutura da Loja
-                </Link>
-              )}
+
               {(isParceiro || can('pers_cores')) && (
                 <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
                   Minhas Cores

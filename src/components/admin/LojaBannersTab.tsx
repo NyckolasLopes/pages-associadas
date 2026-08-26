@@ -19,14 +19,14 @@ import {
 } from "lucide-react";
 import { sanitizeText } from "@/lib/security";
 import { checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
-import { StoreStructureViewer } from "./StoreStructureViewer";
+
 import { StoreVitrinesConfig } from "./StoreVitrinesConfig";
 
 export function LojaBannersTab({ lojaId }: { lojaId: string }) {
   const { banners, addBanner, removeBanner, updateBanner, pharmacies } = useAdmin();
   const pharmacy = pharmacies.find((p) => p.id === lojaId);
 
-  const [activeSubTab, setActiveSubTab] = useState<"banners" | "estrutura" | "vitrines">("banners");
+  const [activeSubTab, setActiveSubTab] = useState<"banners" | "vitrines">("banners");
 
   // Filtra banners exclusivos desta loja ou globais com filtro de loja
   const lojaBanners = banners.filter((b) => b.lojaId === lojaId || b.farmaciaId === lojaId);
@@ -130,22 +130,7 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
           </span>
         </button>
 
-        <button
-          onClick={() => setActiveSubTab("estrutura")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
-            activeSubTab === "estrutura"
-              ? "bg-[#00B5AD] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <LayoutTemplate className="w-4 h-4" />
-          Estrutura da Minha Loja
-          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-            activeSubTab === "estrutura" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"
-          }`}>
-            Panorama Geral
-          </span>
-        </button>
+
 
         <button
           onClick={() => setActiveSubTab("vitrines")}
@@ -323,10 +308,7 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
         </div>
       )}
 
-      {/* Sub-aba 2: Estrutura da Minha Loja (Panorama Geral) */}
-      {activeSubTab === "estrutura" && (
-        <StoreStructureViewer onNavigateTab={setActiveSubTab} />
-      )}
+
 
       {/* Sub-aba 3: Minhas Vitrines (Configuração & Produtos) */}
       {activeSubTab === "vitrines" && (
