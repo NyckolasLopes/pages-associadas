@@ -63,6 +63,12 @@ function AoVivo() {
   const hojeStr = new Date().toLocaleDateString('pt-BR');
   const faturamentoHoje = pedidos
     .filter(p => p.data.split(' ')[0] === hojeStr)
+    .filter(p => {
+      if (!isGlobalAdmin || effectiveStoreId) {
+        return p.lojaId === effectiveStoreId;
+      }
+      return true;
+    })
     .reduce((acc, p) => acc + p.valores.total, 0);
 
   const valorVendido = faturamentoHoje.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
