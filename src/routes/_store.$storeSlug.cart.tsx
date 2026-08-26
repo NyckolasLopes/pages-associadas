@@ -618,7 +618,8 @@ function CartPage() {
   }, [selectedPharmacyId, cep]);
 
   const selectedFreight = freight?.find((f) => f.id === selected);
-  const freightPrice = deliveryMethod === "entrega" ? (selectedFreight?.price ?? 0) : 0;
+  const isDelivery = selected !== "pickup";
+  const freightPrice = isDelivery ? (selectedFreight?.price ?? 0) : 0;
   const grandTotal = total + freightPrice;
 
   const closestPharmacyId = useMemo(() => {
@@ -1525,9 +1526,9 @@ function CartPage() {
             </div>
 
             <div className="flex justify-between text-sm py-1">
-              <span className="text-muted-foreground">{deliveryMethod === "entrega" ? "Entrega" : "Retirada"}</span>
+              <span className="text-muted-foreground">{isDelivery ? "Entrega" : "Retirada"}</span>
               <span>
-                {deliveryMethod === "retirada" ? (
+                {!isDelivery ? (
                   <span className="text-emerald-600 font-bold">Grátis</span>
                 ) : (selectedFreight && selectedFreight.id !== "pickup") ? (
                   freightPrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(freightPrice)
