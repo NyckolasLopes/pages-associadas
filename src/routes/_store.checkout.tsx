@@ -415,11 +415,146 @@ function Checkout() {
     );
   }
 
+  const missingRequirements = (() => {
+    const missing: string[] = [];
+    if (visibleItems.length === 0) missing.push("Carrinho vazio");
+    if (!nome.trim()) missing.push("Nome completo");
+    if (!email.trim()) missing.push("E-mail");
+    if (cpf.replace(/\D/g,"").length !== 11) missing.push("CPF válido");
+    if (telefone.replace(/\D/g,"").length < 10) missing.push("Telefone válido");
+    if (deliveryMethod === "home" && !numero.trim()) missing.push("Número do endereço");
+    if (deliveryMethod === "store" && !pickupPersonType) missing.push("Quem irá retirar");
+    if (deliveryMethod === "store" && pickupPersonType === "other") {
+      if (!authName.trim()) missing.push("Nome do autorizado");
+      if (authCpf.replace(/\D/g,"").length !== 11) missing.push("CPF do autorizado");
+      if (authPhone.replace(/\D/g,"").length < 10) missing.push("Telefone do autorizado");
+    }
+    if (paymentCategory === "online" && paymentMethod === "credit") {
+      if (cardNumber.replace(/\D/g, "").length < 13) missing.push("Número do Cartão");
+      if (!cardName.trim()) missing.push("Nome no Cartão");
+      if (cardExpiry.length < 5) missing.push("Validade do Cartão");
+      if (cardCvv.length < 3) missing.push("CVV do Cartão");
+      if (cardCpf.replace(/\D/g, "").length !== 11) missing.push("CPF do Titular do Cartão");
+    }
+    return missing;
+  })();
+
+  const handleCheckout = () => { 
+    try {
+      checkoutSchema.parse({ nome, email, cpf, telefone });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        return;
+      }
+    }
+
+    const newOrder = {
+      id: `FA-${Date.now()}${Math.floor(Math.random() * 100)}`,
+      lojaId: activeStore?.id || "loja-poa-centro",
+      data: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      cliente: {
+        nome: nome,
+        email: email,
+        telefone: telefone,
+        cpf: cpf,
+        ip: "127.0.0.1",
+        tipo: "Padrão",
+        endereco: {
+          rua: deliveryMethod === "home" ? rua : (activeStore?.endereco || ""),
+          numero: deliveryMethod === "home" ? numero : "",
+          complemento: deliveryMethod === "home" ? complemento : "",
+          bairro: "",
+          cidade: activeStore?.cidade || "",
+          cep: deliveryMethod === "home" ? formCep : (geoCep || "")
+        }
+      },
+      modalidade: deliveryMethod === "store" ? "Retirada na Loja" : (selectedFreightObj?.label || "Entrega Padrão"),
+      pagamento: {
+        metodo: {
+          credit: "Cartão de Crédito",
+          pix: "Pix",
+          credit_machine: "Cartão de Crédito (Maquininha)",
+          debit_machine: "Cartão de Débito (Maquininha)",
+          cash: "Dinheiro",
+          pix_machine: "Pix",
+          pbm: "Convênio",
+          crediario: "Crediário"
+        }[paymentMethod as string] || "Outro",
+        idTransacao: "TX" + Math.floor(Math.random() * 100000),
+        cartaoFinal: paymentCategory === "online" && paymentMethod === "credit" && cardNumber.replace(/\D/g, "").length >= 4 
+          ? cardNumber.replace(/\D/g, "").slice(-4) 
+          : undefined
+      },
+      envio: {
+        metodo: deliveryMethod === "store" ? "Retirada na Loja" : (selectedFreightObj?.label || "Entrega Padrão"),
+        prazo: deliveryMethod === "store" ? "A partir de 30 minutos" : (selectedFreightObj?.eta || "Até 3 horas"),
+        endereco: deliveryMethod === "home" ? `${rua}, ${numero} ${complemento}` : (activeStore?.endereco || ""),
+        cidade: activeStore?.cidade || "",
+        cep: deliveryMethod === "home" ? formCep : (geoCep || "")
+      },
+      status: "Pago",
+      produtos: visibleItems.map(i => ({
+        produtoId: i.id,
+        nome: i.nome,
+        sku: String(i.id),
+        cores: "N/A",
+        disponibilidade: "Imediata",
+        qtd: i.qty,
+        quantidade: i.qty,
+        valorUnitario: getEffectivePrice(i, selectedPharmacyId).precoPor,
+        precoUnit: getEffectivePrice(i, selectedPharmacyId).precoPor,
+        foto: productImage(i)
+      })),
+      valores: {
+        produtos: visibleSubtotal,
+        subtotal: visibleSubtotal,
+        desconto: visibleStoreDisc + visiblePbmDisc + (couponApplied?.discount || 0),
+        frete: fretePrice,
+        total: finalTotal
+      },
+      historico: [
+        { data: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), situacao: "Pedido Efetuado", autor: "Cliente" }
+      ],
+      anotacoes: pickupPersonType === "other" ? `Autorizado para retirada: ${authName} (CPF: ${authCpf} - Tel: ${authPhone})` : ""
+    };
+    let localCardStatus = creditCardStatus;
+    if (paymentCategory === "online" && paymentMethod === "credit") {
+      const rand = Math.random();
+      if (rand < 0.6) localCardStatus = "approved";
+      else if (rand < 0.8) localCardStatus = "refused";
+      else localCardStatus = "analysis";
+      setCreditCardStatus(localCardStatus);
+    }
+    if (paymentCategory !== "online" || paymentMethod !== "credit" || localCardStatus !== "refused") {
+        const appliedCoupon = useCart.getState().appliedCoupon;
+        if (appliedCoupon) {
+          useMarketing.getState().incrementCouponUsage(appliedCoupon);
+        }
+        addOrder(newOrder);
+        clear();
+      
+      // Gerar mensagem do WhatsApp
+      const phone = (activeStore?.telefone || "51999999999").replace(/\D/g, "");
+      const waNumber = phone.startsWith("55") ? phone : `55${phone}`;
+      const itemsText = visibleItems.map(i => `- ${i.qty}x ${i.nome}`).join("%0A");
+      const deliveryText = deliveryMethod === "store" ? "Retirada na Loja" : "Entrega em Domicílio";
+      const totalText = brl(finalTotal);
+      
+      const text = `Olá! Acabei de fazer um pedido na loja virtual.%0A%0A*Pedido:* #${newOrder.id}%0A*Cliente:* ${nome}%0A*Entrega:* ${deliveryText}%0A%0A*Itens:*%0A${itemsText}%0A%0A*Total:* ${totalText}%0A%0AGostaria de prosseguir com o pedido.`;
+      
+      const waLink = `https://wa.me/${waNumber}?text=${text}`;
+      window.open(waLink, "_blank");
+    }
+    setOrderedTotal(finalTotal);
+    setDone(true); 
+  };
+
   if (!mounted || !user) return null;
 
   return (
     <>
-    <div className="container-fa py-4 md:py-8 grid lg:grid-cols-[1fr_380px] gap-6 md:gap-8 min-w-0">
+    <div className="container-fa py-4 md:py-8 flex flex-col-reverse lg:grid lg:grid-cols-[1fr_380px] gap-6 md:gap-8 min-w-0">
       <div className="space-y-6 min-w-0">
         <h1 className="text-xl md:text-2xl font-bold">Finalizar pedido</h1>
 
@@ -1083,171 +1218,49 @@ function Checkout() {
           </div>
         )}
 
-        {(() => {
-          const missingRequirements: string[] = [];
-          if (visibleItems.length === 0) missingRequirements.push("Carrinho vazio");
-          if (!nome.trim()) missingRequirements.push("Nome completo");
-          if (!email.trim()) missingRequirements.push("E-mail");
-          if (cpf.replace(/\D/g,"").length !== 11) missingRequirements.push("CPF válido");
-          if (telefone.replace(/\D/g,"").length < 10) missingRequirements.push("Telefone válido");
-          if (deliveryMethod === "home" && !numero.trim()) missingRequirements.push("Número do endereço");
-          if (deliveryMethod === "store" && !pickupPersonType) missingRequirements.push("Quem irá retirar");
-          if (deliveryMethod === "store" && pickupPersonType === "other") {
-            if (!authName.trim()) missingRequirements.push("Nome do autorizado");
-            if (authCpf.replace(/\D/g,"").length !== 11) missingRequirements.push("CPF do autorizado");
-            if (authPhone.replace(/\D/g,"").length < 10) missingRequirements.push("Telefone do autorizado");
-          }
-          if (paymentCategory === "online" && paymentMethod === "credit") {
-            if (cardNumber.replace(/\D/g, "").length < 13) missingRequirements.push("Número do Cartão");
-            if (!cardName.trim()) missingRequirements.push("Nome no Cartão");
-            if (cardExpiry.length < 5) missingRequirements.push("Validade do Cartão");
-            if (cardCvv.length < 3) missingRequirements.push("CVV do Cartão");
-            if (cardCpf.replace(/\D/g, "").length !== 11) missingRequirements.push("CPF do Titular do Cartão");
-          }
-
-          if (missingRequirements.length === 0) return null;
-
-          return (
-            <div className="bg-red-50 text-red-700 p-3 rounded-lg text-xs mt-4 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="font-bold mb-1.5 flex items-center gap-1.5"><AlertCircle className="w-4 h-4"/> Campos obrigatórios:</div>
-              <ul className="list-disc pl-5 space-y-0.5">
-                {missingRequirements.map(req => (
-                  <li key={req}>{req}</li>
-                ))}
-              </ul>
-            </div>
-          );
-        })()}
+        {missingRequirements.length > 0 && (
+          <div className="bg-red-50 text-red-700 p-3 rounded-lg text-xs mt-4 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300 hidden lg:block">
+            <div className="font-bold mb-1.5 flex items-center gap-1.5"><AlertCircle className="w-4 h-4"/> Campos obrigatórios:</div>
+            <ul className="list-disc pl-5 space-y-0.5">
+              {missingRequirements.map(req => (
+                <li key={req}>{req}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <Button
-          className="w-full mt-6 h-12 text-base font-bold shadow-sm disabled:opacity-50"
+          className="hidden lg:flex w-full mt-6 h-12 text-base font-bold shadow-sm disabled:opacity-50"
           size="lg"
-          disabled={
-            visibleItems.length === 0 || 
-            !nome.trim() || 
-            !email.trim() || 
-            cpf.replace(/\D/g,"").length !== 11 || 
-            telefone.replace(/\D/g,"").length < 10 || 
-            (deliveryMethod === "home" && !numero.trim()) ||
-            (deliveryMethod === "store" && !pickupPersonType) ||
-            (deliveryMethod === "store" && pickupPersonType === "other" && (!authName.trim() || authCpf.replace(/\D/g,"").length !== 11 || authPhone.replace(/\D/g,"").length < 10)) ||
-            (paymentCategory === "online" && paymentMethod === "credit" && (cardNumber.replace(/\D/g, "").length < 13 || !cardName.trim() || cardExpiry.length < 5 || cardCvv.length < 3 || cardCpf.replace(/\D/g, "").length !== 11))
-          }
-          onClick={() => { 
-            try {
-              checkoutSchema.parse({ nome, email, cpf, telefone });
-            } catch (err) {
-              if (err instanceof z.ZodError) {
-                toast.error(err.errors[0].message);
-                return;
-              }
-            }
-
-              const newOrder = {
-                id: `FA-${Date.now()}${Math.floor(Math.random() * 100)}`,
-                lojaId: activeStore?.id || "loja-poa-centro",
-              data: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-              cliente: {
-                nome: nome,
-                email: email,
-                telefone: telefone,
-                cpf: cpf,
-                ip: "127.0.0.1",
-                tipo: "Padrão",
-                endereco: {
-                  rua: deliveryMethod === "home" ? rua : (activeStore?.endereco || ""),
-                  numero: deliveryMethod === "home" ? numero : "",
-                  complemento: deliveryMethod === "home" ? complemento : "",
-                  bairro: "",
-                  cidade: activeStore?.cidade || "",
-                  cep: deliveryMethod === "home" ? formCep : (geoCep || "")
-                }
-              },
-              modalidade: deliveryMethod === "store" ? "Retirada na Loja" : (selectedFreightObj?.label || "Entrega Padrão"),
-              pagamento: {
-                metodo: {
-                  credit: "Cartão de Crédito",
-                  pix: "Pix",
-                  credit_machine: "Cartão de Crédito (Maquininha)",
-                  debit_machine: "Cartão de Débito (Maquininha)",
-                  cash: "Dinheiro",
-                  pix_machine: "Pix",
-                  pbm: "Convênio",
-                  crediario: "Crediário"
-                }[paymentMethod as string] || "Outro",
-                idTransacao: "TX" + Math.floor(Math.random() * 100000),
-                cartaoFinal: paymentCategory === "online" && paymentMethod === "credit" && cardNumber.replace(/\D/g, "").length >= 4 
-                  ? cardNumber.replace(/\D/g, "").slice(-4) 
-                  : undefined
-              },
-              envio: {
-                metodo: deliveryMethod === "store" ? "Retirada na Loja" : (selectedFreightObj?.label || "Entrega Padrão"),
-                prazo: deliveryMethod === "store" ? "A partir de 30 minutos" : (selectedFreightObj?.eta || "Até 3 horas"),
-                endereco: deliveryMethod === "home" ? `${rua}, ${numero} ${complemento}` : (activeStore?.endereco || ""),
-                cidade: activeStore?.cidade || "",
-                cep: deliveryMethod === "home" ? formCep : (geoCep || "")
-              },
-              status: "Pago",
-              produtos: visibleItems.map(i => ({
-                produtoId: i.id,
-                nome: i.nome,
-                sku: String(i.id),
-                cores: "N/A",
-                disponibilidade: "Imediata",
-                qtd: i.qty,
-                quantidade: i.qty,
-                valorUnitario: getEffectivePrice(i, selectedPharmacyId).precoPor,
-                precoUnit: getEffectivePrice(i, selectedPharmacyId).precoPor,
-                foto: productImage(i)
-              })),
-              valores: {
-                produtos: visibleSubtotal,
-                subtotal: visibleSubtotal,
-                desconto: visibleStoreDisc + visiblePbmDisc + (couponApplied?.discount || 0),
-                frete: fretePrice,
-                total: finalTotal
-              },
-              historico: [
-                { data: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), situacao: "Pedido Efetuado", autor: "Cliente" }
-              ],
-              anotacoes: pickupPersonType === "other" ? `Autorizado para retirada: ${authName} (CPF: ${authCpf} - Tel: ${authPhone})` : ""
-            };
-              let localCardStatus = creditCardStatus;
-              if (paymentCategory === "online" && paymentMethod === "credit") {
-                const rand = Math.random();
-                if (rand < 0.6) localCardStatus = "approved";
-                else if (rand < 0.8) localCardStatus = "refused";
-                else localCardStatus = "analysis";
-                setCreditCardStatus(localCardStatus);
-              }
-              if (paymentCategory !== "online" || paymentMethod !== "credit" || localCardStatus !== "refused") {
-                  const appliedCoupon = useCart.getState().appliedCoupon;
-                  if (appliedCoupon) {
-                    useMarketing.getState().incrementCouponUsage(appliedCoupon);
-                  }
-                  addOrder(newOrder);
-                  clear();
-                
-                // Gerar mensagem do WhatsApp
-                const phone = (activeStore?.telefone || "51999999999").replace(/\D/g, "");
-                const waNumber = phone.startsWith("55") ? phone : `55${phone}`;
-                const itemsText = visibleItems.map(i => `- ${i.qty}x ${i.nome}`).join("%0A");
-                const deliveryText = deliveryMethod === "store" ? "Retirada na Loja" : "Entrega em Domicílio";
-                const totalText = brl(finalTotal);
-                
-                const text = `Olá! Acabei de fazer um pedido na loja virtual.%0A%0A*Pedido:* #${newOrder.id}%0A*Cliente:* ${nome}%0A*Entrega:* ${deliveryText}%0A%0A*Itens:*%0A${itemsText}%0A%0A*Total:* ${totalText}%0A%0AGostaria de prosseguir com o pedido.`;
-                
-                const waLink = `https://wa.me/${waNumber}?text=${text}`;
-                window.open(waLink, "_blank");
-              }
-              setOrderedTotal(finalTotal);
-              setDone(true); 
-            }}
+          disabled={missingRequirements.length > 0}
+          onClick={handleCheckout}
         >
           <Lock className="h-4 w-4 mr-2 opacity-50" />
           Finalizar Pedido {brl(finalTotal)}
         </Button>
       </aside>
+    </div>
+
+    <div className="container-fa pb-8 lg:hidden mt-4">
+      {missingRequirements.length > 0 && (
+        <div className="bg-red-50 text-red-700 p-3 rounded-lg text-xs mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="font-bold mb-1.5 flex items-center gap-1.5"><AlertCircle className="w-4 h-4"/> Campos obrigatórios:</div>
+          <ul className="list-disc pl-5 space-y-0.5">
+            {missingRequirements.map(req => (
+              <li key={req}>{req}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <Button
+        className="w-full h-14 text-lg font-bold shadow-sm disabled:opacity-50"
+        size="lg"
+        disabled={missingRequirements.length > 0}
+        onClick={handleCheckout}
+      >
+        <Lock className="h-5 w-5 mr-2 opacity-50" />
+        Finalizar Pedido {brl(finalTotal)}
+      </Button>
     </div>
     
       <Dialog open={pickupDialogOpen} onOpenChange={(open) => {

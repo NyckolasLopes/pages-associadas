@@ -116,10 +116,12 @@ function ProductCardComponent({
   let isLocalStock = false;
   // isStoreContext: true when rendered inside a specific store route (has storeSlug param)
   const params = useParams({ strict: false });
-  const isStoreContext = !!((params as any)?.storeSlug);
+  const storeSlug = (params as any)?.storeSlug;
+  const storeFromSlug = storeSlug ? pharmacies.find(ph => ph.slug === storeSlug) : null;
+  const isStoreContext = !!storeSlug;
 
-  if (selectedStoreId) {
-    activeStoreId = selectedStoreId;
+  if (selectedStoreId || storeFromSlug) {
+    activeStoreId = selectedStoreId || storeFromSlug!.id;
     const isAtivoLocal = p.precosPorLoja?.[activeStoreId]?.ativo !== false;
     maxStock = isAtivoLocal ? getDeterministicStock(p, activeStoreId) : 0;
     isLocalStock = maxStock > 0;

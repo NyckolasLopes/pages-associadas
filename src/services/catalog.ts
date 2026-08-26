@@ -72,10 +72,10 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
     if (lojaId) {
        storeP.precoPor = storePrice?.precoPor !== undefined ? storePrice.precoPor : (ov.precoPor !== undefined ? ov.precoPor : p.precoPor);
        storeP.precoDe = storePrice?.precoDe !== undefined ? storePrice.precoDe : (ov.precoDe !== undefined ? ov.precoDe : p.precoDe);
-       // Use store stock if > 0, otherwise fall back to global estoque
-       const resolvedStock = (storeStock !== undefined && storeStock !== null && storeStock > 0) 
+       // Use store stock if explicitly set, otherwise fall back to global estoque
+       const resolvedStock = (storeStock !== undefined && storeStock !== null) 
          ? storeStock 
-         : (ov.estoque !== undefined && ov.estoque > 0 ? ov.estoque : (p.estoque || 0));
+         : (ov.estoque !== undefined && ov.estoque !== null ? ov.estoque : (p.estoque || 0));
        storeP.estoque = resolvedStock;
        storeP.ativo = storePrice?.ativo !== undefined ? storePrice.ativo : (ov.ativo !== undefined ? ov.ativo : (p.ativo ?? true));
        storeP.destaque = storePrice?.destaque !== undefined ? storePrice.destaque : (ov.destaque !== undefined ? ov.destaque : (p.destaque ?? false));
