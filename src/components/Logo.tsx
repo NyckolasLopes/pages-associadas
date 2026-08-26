@@ -15,8 +15,18 @@ export function Logo({ className = "h-10" }: { className?: string }) {
     setMounted(true);
   }, []);
 
-  // Use the specific store's logo if selected, otherwise fallback to global, then default
-  const activePharmacy = pharmacies.find(p => p.id === selectedPharmacyId);
+  // 1. URL slug tem prioridade absoluta (ex: /zona-sul/produto/... → logo da zona-sul)
+  const pharmacyBySlug = storeSlug
+    ? pharmacies.find(p => {
+        const slug = p.slug
+          ? p.slug.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")
+          : (p.nome || p.id).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+        return slug === storeSlug;
+      })
+    : null;
+
+  // 2. Fallback: farmácia selecionada no carrinho
+  const activePharmacy = pharmacyBySlug || pharmacies.find(p => p.id === selectedPharmacyId) || null;
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
   const displayLogo = activePharmacy?.logoUrl || (!isParceiro ? (globalLogoUrl || logoUrlDefault) : "");
 

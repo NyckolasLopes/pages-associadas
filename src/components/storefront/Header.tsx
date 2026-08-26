@@ -128,9 +128,24 @@ function getSubcategoryIcon(name: string) {
 
 export function Header() {
     const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
-    const activePharmacy = useAdmin.getState().pharmacies.find((p) => p.id === selectedPharmacyId) || useAdmin.getState().pharmacies[0] || null;
+    const pharmacies = useAdmin(s => s.pharmacies);
   const params = useParams({ strict: false });
   const isStoreContext = !!(params && (params as any).storeSlug);
+  const urlSlug = (params as any)?.storeSlug as string | undefined;
+
+  // URL slug tem prioridade absoluta sobre o carrinho
+  const activePharmacy = (() => {
+    if (urlSlug) {
+      const bySlug = pharmacies.find(p => {
+        const slug = p.slug
+          ? p.slug.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")
+          : (p.nome || p.id).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+        return slug === urlSlug;
+      });
+      if (bySlug) return bySlug;
+    }
+    return pharmacies.find(p => p.id === selectedPharmacyId) || pharmacies[0] || null;
+  })();
   const customProducts = useAdminProducts(s => s.customProducts);
   const { featuredCategories, storeFeaturedCategories } = useAdmin();
   const contentPages = useAdmin(s => s.contentPages);
