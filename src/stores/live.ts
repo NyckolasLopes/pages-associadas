@@ -163,12 +163,16 @@ export const useLive = create<LiveStore>((set, get) => ({
               const lat = pos.coords.latitude;
               const lng = pos.coords.longitude;
               
-              const nomRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+              const nomRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
+                headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' }
+              });
               if (nomRes.ok) {
                 const nomData = await nomRes.json();
                 const addr = nomData.address || {};
-                const city = addr.city || addr.town || addr.village || addr.municipality || "Desconhecida";
-                const uf = addr.state || "";
+                // Prioridade: city > town > village > county (não usar municipality pois pode retornar cidade vizinha)
+                const city = addr.city || addr.town || addr.village || addr.county || addr.region || "Desconhecida";
+                // Estado: usar state_code (ex: "RS") se disponível, senão state completo
+                const uf = addr.state_code || addr.state || "";
                 
                 realCity = {
                   nome: city,
