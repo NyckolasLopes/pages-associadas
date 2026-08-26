@@ -1611,7 +1611,7 @@ function StoreLogoConfig() {
 }
 
 function StoreColorsConfig() {
-  const { activeStoreId, pharmacies } = useAdmin();
+  const { activeStoreId, pharmacies, updatePharmacy } = useAdmin();
   const currentPharmacy = pharmacies.find(p => p.id === activeStoreId);
   const { cores, fetchConfigs, saveConfig } = useConfig();
   
@@ -1643,6 +1643,9 @@ function StoreColorsConfig() {
 
   const handleSave = async () => {
     await saveConfig("cores", colors, activeStoreId || undefined);
+    if (activeStoreId && currentPharmacy) {
+      await updatePharmacy(activeStoreId, { ...currentPharmacy, themeColors: colors } as any);
+    }
     toast.success("Cores salvas com sucesso!");
   };
 
@@ -1669,7 +1672,7 @@ function StoreColorsConfig() {
                     if (!text) return "";
                     return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
                   };
-                  window.open(`/${safeSlugify(currentPharmacy.nome || currentPharmacy.id)}`, '_blank');
+                  window.open(`/${currentPharmacy.slug || safeSlugify(currentPharmacy.nome || currentPharmacy.id)}`, '_blank');
                 }}
               >
                 <Eye className="w-4 h-4" /> Ver na minha loja
