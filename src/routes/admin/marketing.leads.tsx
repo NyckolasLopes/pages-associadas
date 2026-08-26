@@ -7,10 +7,10 @@ export const Route = createFileRoute("/admin/marketing/leads")({
 });
 
 function MarketingLeadsRoute() {
-  const { currentUser } = useAdmin();
+  const { currentUser, activeStoreId } = useAdmin();
   
-  const isGlobalAdmin = currentUser?.cargo === "Admin";
-  const lojaId = isGlobalAdmin ? undefined : currentUser?.lojaId;
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.grupoId === "grupo-admin";
+  const lojaId = isGlobalAdmin && (!activeStoreId || activeStoreId === "global") ? undefined : activeStoreId || currentUser?.lojasVinculadas?.[0];
 
   if (!isGlobalAdmin && !lojaId) {
     return (

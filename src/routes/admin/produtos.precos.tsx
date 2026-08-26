@@ -81,6 +81,11 @@ function AdminProdutosPrecos() {
   const [selectedEncartePriceCol, setSelectedEncartePriceCol] = useState("");
   const encarteFileInputRef = useRef<HTMLInputElement>(null);
   
+  const [importManualDates, setImportManualDates] = useState(false);
+  const [importStartDate, setImportStartDate] = useState("");
+  const [importEndDate, setImportEndDate] = useState("");
+  const [pendingImportData, setPendingImportData] = useState<any[]>([]);
+
   // State for edited prices and campaigns
   const [editingValues, setEditingValues] = useState<Record<string, { precoDe?: string, precoPor?: string, campanhaInicio?: string, campanhaFim?: string }>>({});
 

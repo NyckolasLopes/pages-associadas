@@ -585,12 +585,10 @@ function CartPage() {
     }
 
     if (opts.length > 0) {
-      const hasStandard = opts.find(o => o.id === "standard");
-      if (!forcePickup && hasStandard && selected === "pickup") {
-        setSelected("standard");
-      } else if (!opts.find(o => o.id === selected)) {
+      const firstDelivery = opts.find(o => o.id !== "pickup");
+      if (!opts.find(o => o.id === selected)) {
         if (forcePickup) setSelected("pickup");
-        else setSelected(hasStandard ? "standard" : opts[0].id);
+        else setSelected(firstDelivery ? firstDelivery.id : opts[0].id);
       }
     } else if (opts.length === 0) {
       if (forcePickup) {
@@ -1520,6 +1518,12 @@ function CartPage() {
                 <span>−{brl(couponDisc)}</span>
               </div>
             )}
+
+            <div className="flex justify-between text-sm py-1 font-medium border-t mt-1 pt-2 border-slate-100">
+              <span className="text-foreground">Subtotal de Produtos</span>
+              <span>{brl(Math.max(0, subtotal - storeDiscount - couponDisc))}</span>
+            </div>
+
             <div className="flex justify-between text-sm py-1">
               <span className="text-muted-foreground">{deliveryMethod === "entrega" ? "Entrega" : "Retirada"}</span>
               <span>

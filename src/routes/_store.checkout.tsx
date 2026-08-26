@@ -228,8 +228,24 @@ function Checkout() {
     if (mounted && user) {
       if (!nome) setNome(user.nome || user.name || "");
       if (!email) setEmail(user.email || "");
-      if (!cpf && (user as any).cpf) setCpf((user as any).cpf);
-      if (!telefone && ((user as any).celular || (user as any).phone)) setTelefone((user as any).celular || (user as any).phone);
+      
+      if (!cpf && (user as any).cpf) {
+        let v = String((user as any).cpf).replace(/\D/g, "");
+        if (v.length > 11) v = v.slice(0, 11);
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+        setCpf(v);
+      }
+      
+      const userPhone = (user as any).celular || (user as any).phone;
+      if (!telefone && userPhone) {
+        let v = String(userPhone).replace(/\D/g, "");
+        if (v.length > 11) v = v.slice(0, 11);
+        v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+        v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+        setTelefone(v);
+      }
     }
   }, [mounted, user]);
 
@@ -982,6 +998,10 @@ function Checkout() {
               <span>−{brl(couponApplied.discount)}</span>
             </div>
           )}
+          <div className="flex justify-between text-sm py-1 font-medium border-t mt-1 pt-2 border-slate-100">
+            <span className="text-foreground">Subtotal de Produtos</span>
+            <span>{brl(Math.max(0, visibleSubtotal - visibleStoreDisc - orderBumpDiscount - visiblePbmDisc - (couponApplied?.discount || 0)))}</span>
+          </div>
           <div className="flex justify-between text-xl font-bold pt-4 border-t mt-4">
             <span>Total</span>
             <span className="text-foreground">{brl(finalTotal)}</span>

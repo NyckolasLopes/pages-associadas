@@ -207,26 +207,26 @@ function ProductCardComponent({
   const isLocalActive = !activeStoreId || p.precosPorLoja?.[activeStoreId]?.ativo !== false;
   const isAvailable = (maxStock > 0 || isService) && isGlobalActive && isLocalActive;
   const isCampanha = isAvailable && isCampanhaAtiva(p);
-  let finalPrecoPor = p.precoPor;
-  let finalPrecoDe = p.precoDe;
+  let finalPrecoDe = Number(p.precoDe) || 0;
+  let finalPrecoPor = Number(p.precoPor) || finalPrecoDe || 0;
   let isLojaPromoActiva = false;
 
   if (isCampanha) {
-    finalPrecoPor = p.precoCampanha || p.precoPor;
+    finalPrecoPor = p.precoCampanha ? Number(p.precoCampanha) : finalPrecoPor;
   } else if (activeStoreId) {
     // 1. Base table price
     const activePharm = pharmacies.find(f => f.id === activeStoreId);
     if (activePharm) {
       const activeTabela = activePharm.tabelaPrecoId || "poa";
       const regPrice = regionalPrices[`${activeTabela}-${p.id}`];
-      if (regPrice !== undefined) finalPrecoPor = regPrice;
+      if (regPrice !== undefined) finalPrecoPor = Number(regPrice);
     }
     
     // 2. Specific store override
     if (p.precosPorLoja?.[activeStoreId]) {
       const pLoja = p.precosPorLoja[activeStoreId];
-      finalPrecoPor = pLoja.precoPor ?? finalPrecoPor;
-      finalPrecoDe = pLoja.precoDe ?? finalPrecoDe;
+      finalPrecoPor = pLoja.precoPor !== undefined && pLoja.precoPor !== null ? Number(pLoja.precoPor) : finalPrecoPor;
+      finalPrecoDe = pLoja.precoDe !== undefined && pLoja.precoDe !== null ? Number(pLoja.precoDe) : finalPrecoDe;
       
       if (pLoja.campanhaInicio || pLoja.campanhaFim) {
         const now = new Date();
