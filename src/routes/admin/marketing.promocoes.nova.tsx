@@ -24,6 +24,7 @@ export const Route = createFileRoute("/admin/marketing/promocoes/nova")({
 
 import { useAdminProducts } from "@/stores/products";
 import { useAdminCategories } from "@/stores/categories";
+import { catalog } from "@/services/catalog";
 const ICONS = [
   { id: "flame", icon: Flame, label: "Fogo" },
   { id: "gift", icon: Gift, label: "Presente" },
@@ -53,6 +54,11 @@ function NovaPromocaoPage() {
   const editingId = search?.id;
   const existing = promocoes.find((p) => p.id === editingId);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedProductsCache, setSelectedProductsCache] = useState<Record<string, any>>({});
+
   const [previewTab, setPreviewTab] = useState<"card" | "pdp">("card");
 
   // Default end date tomorrow
@@ -93,15 +99,42 @@ function NovaPromocaoPage() {
     lojaId: effectiveStoreId || undefined,
   });
 
-  const filteredProdutos = useMemo(() => {
-    if (!searchQuery.trim()) return produtos;
-    const q = searchQuery.toLowerCase();
-    return produtos.filter((p: any) => 
-      p.nome.toLowerCase().includes(q) || 
-      (p.marca && p.marca.toLowerCase().includes(q)) ||
-      (p.id && String(p.id).includes(q))
-    );
-  }, [produtos, searchQuery]);
+
+  useEffect(() => {
+    if (formData.tipoAlvo !== "produtos") return;
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await catalog.search(searchQuery);
+        setSearchResults(res.slice(0, 50));
+        setSelectedProductsCache(prev => {
+          const next = { ...prev };
+          res.forEach(p => { next[p.id] = p; });
+          return next;
+        });
+      } catch(e) {}
+      setIsSearching(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery, formData.tipoAlvo]);
+
+  useEffect(() => {
+    if (existing && existing.tipoAlvo === "produtos" && existing.alvosId.length > 0) {
+      Promise.all(existing.alvosId.map(id => catalog.getProductById(id, effectiveStoreId)))
+        .then(prods => {
+          setSelectedProductsCache(prev => {
+            const next = { ...prev };
+            prods.forEach(p => { if (p) next[p.id] = p; });
+            return next;
+          });
+        });
+    }
+  }, [existing, effectiveStoreId]);
+
 
   const filteredCategorias = useMemo(() => {
     if (!searchQuery.trim()) return categorias;
@@ -187,7 +220,7 @@ function NovaPromocaoPage() {
     setProdutosConfig(prev => {
       const next = { ...prev };
       formData.alvosId.forEach(id => {
-        const prod = produtos.find((p: any) => p.id === id);
+        const prod = selectedProductsCache[id];
         const originalPreco = prod?.precoPor || 10;
         const current = next[id] || { quantidade: batchQtd, precoPorItem: +(originalPreco * 0.85).toFixed(2) };
         next[id] = { ...current, quantidade: batchQtd };
@@ -205,7 +238,7 @@ function NovaPromocaoPage() {
     setProdutosConfig(prev => {
       const next = { ...prev };
       formData.alvosId.forEach(id => {
-        const prod = produtos.find((p: any) => p.id === id);
+        const prod = selectedProductsCache[id];
         const originalPreco = prod?.precoPor || 10;
         const novoPrecoItem = +(originalPreco * (1 - batchDescontoPct / 100)).toFixed(2);
         const current = next[id] || { quantidade: batchQtd || 2, precoPorItem: novoPrecoItem };
@@ -219,11 +252,11 @@ function NovaPromocaoPage() {
   // Selected sample product for live preview
   const sampleProduct = useMemo(() => {
     if (selectedPreviewProductId) {
-      const found = produtos.find((p: any) => p.id === selectedPreviewProductId);
+      const found = selectedProductsCache[selectedPreviewProductId];
       if (found) return found;
     }
     if (formData.alvosId.length > 0) {
-      const found = produtos.find((p: any) => formData.alvosId.includes(p.id));
+      const found = selectedProductsCache[formData.alvosId[0]];
       if (found) return found;
     }
     return produtos[0] || {
@@ -301,7 +334,7 @@ function NovaPromocaoPage() {
     const finalProdutosConfig: Record<string, LevePagueProdutoConfig> = {};
     if (formData.tipoCampanha === "leve_pague") {
       formData.alvosId.forEach(id => {
-        const prod = produtos.find((p: any) => p.id === id);
+        const prod = selectedProductsCache[id];
         const originalPreco = prod?.precoPor || 10;
         const cfg = produtosConfig[id] || {
           quantidade: formData.levePague_quantidade || 2,
@@ -705,8 +738,8 @@ function NovaPromocaoPage() {
             {/* Item Checklist Scrollable */}
             <div className="border border-slate-200 rounded-xl max-h-[260px] overflow-y-auto divide-y divide-slate-100 bg-white">
               {formData.tipoAlvo === "produtos" ? (
-                filteredProdutos.length > 0 ? (
-                  filteredProdutos.map((p: any) => {
+                searchResults.length > 0 ? (
+                  searchResults.map((p: any) => {
                     const isChecked = formData.alvosId.includes(p.id);
                     return (
                       <label 
@@ -755,7 +788,10 @@ function NovaPromocaoPage() {
                   })
                 ) : (
                   <div className="p-8 text-center text-sm text-slate-500">
-                    Nenhum produto encontrado para "{searchQuery}".
+                    {!searchQuery.trim() 
+                      ? "Digite algo para buscar produtos." 
+                      : `Nenhum produto encontrado para "${searchQuery}".`
+                    }
                   </div>
                 )
               ) : (
@@ -866,7 +902,7 @@ function NovaPromocaoPage() {
               {/* Individual Products Configuration Rows */}
               <div className="space-y-3">
                 {formData.alvosId.map(id => {
-                  const prod = produtos.find((p: any) => p.id === id);
+                  const prod = selectedProductsCache[id];
                   if (!prod) return null;
                   const originalPrice = prod.precoPor || 10;
                   const cfg = getProductConfig(id, originalPrice);
@@ -1015,7 +1051,7 @@ function NovaPromocaoPage() {
                   className="w-full bg-white text-xs font-bold text-slate-800 rounded-lg px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:ring-1 focus:ring-orange-500 truncate shadow-sm cursor-pointer"
                 >
                   {formData.alvosId.map(id => {
-                    const p = produtos.find((p: any) => p.id === id);
+                    const p = selectedProductsCache[id];
                     return (
                       <option key={id} value={id}>
                         {p?.nome || id}
