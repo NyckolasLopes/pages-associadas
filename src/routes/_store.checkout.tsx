@@ -340,7 +340,10 @@ function Checkout() {
   const deliveryOpts = cartFreightOpts.filter(f => f.id !== "pickup");
   
   const selectedFreightObj = deliveryOpts.find(f => f.id === selectedFreight) || deliveryOpts[0];
-  let fretePrice = deliveryMethod === "home" ? (selectedFreightObj?.price || 0) : 0;
+  let fretePrice: number | null = deliveryMethod === "home" 
+    ? (selectedFreightObj ? selectedFreightObj.price : null) 
+    : 0;
+
   if (couponApplied?.cupomData?.aplicarFreteGratis) {
     fretePrice = 0;
   }
@@ -1124,7 +1127,13 @@ function Checkout() {
           <div className="flex justify-between">
             <span className="text-muted-foreground">{deliveryMethod === "store" ? "Retirada" : "Frete"}</span>
             <span className={`font-medium ${fretePrice === 0 ? "text-green-600 font-bold" : ""}`}>
-              {fretePrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(fretePrice)}
+              {fretePrice === 0 ? (
+                <span className="text-emerald-600 font-bold">Grátis</span>
+              ) : fretePrice === null ? (
+                <span className="text-muted-foreground text-xs">A calcular</span>
+              ) : (
+                brl(fretePrice)
+              )}
             </span>
           </div>
           {couponApplied && (
