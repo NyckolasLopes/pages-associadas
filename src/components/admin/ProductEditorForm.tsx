@@ -184,7 +184,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     }
   }, [categorias, product]);
 
-  const handleSaveClick = () => {
+  const handleSaveClick = async () => {
     if (!formData?.nome?.trim()) {
       toast.error("O campo Nome do Produto é obrigatório.");
       return;
@@ -244,16 +244,18 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     }
 
     setSaveStep("saving");
-    setTimeout(() => {
-      setSaveStep("syncing");
+    
+    try {
+      await onSave(finalFormData);
+      setSaveStep("done");
       setTimeout(() => {
-        setSaveStep("done");
-        setTimeout(() => {
-          onSave(finalFormData);
-          setSaveStep("idle");
-        }, 1500);
-      }, 2500);
-    }, 1500);
+        setSaveStep("idle");
+      }, 1500);
+    } catch (error: any) {
+      setSaveStep("idle");
+      toast.error("Erro ao salvar produto. Verifique os dados e tente novamente.");
+      console.error("Erro no onSave:", error);
+    }
   };
 
   if (!product || !formData) return null;

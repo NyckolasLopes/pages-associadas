@@ -206,7 +206,6 @@ export const useAdminProducts = create<ProductsState>()(
           seo_descricao: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
           termos_pesquisa: formattedProduct.termosPesquisa || null,
           imagem_alt: formattedProduct.imagemAlt || null,
-          loja_id: lojaId || null, // <- ADD loja_id!
           metadata: {
             natureza_produto: formattedProduct.produtoNatureza || null,
             youtube_video_url: formattedProduct.youtubeVideoUrl || null,
