@@ -651,7 +651,7 @@ function PDP() {
 
   isLocalStock = maxStock > 0;
 
-  if (!isLocalStock && fornecedores && fornecedores.length > 0) {
+  if (!isLocalStock && fornecedores && fornecedores.length > 0 && !isStoreContext) {
     const citySuppliers = fornecedores.filter(f => normalize(f.cidade).includes(currentCity));
     activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
     
