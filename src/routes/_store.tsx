@@ -12,18 +12,19 @@ const GeoPopup = lazy(() => import("@/components/storefront/GeoPopup").then(m =>
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 
 
-function StorePendingComponent() {
+/** Spinner neutro – sem logo de nenhuma bandeira */
+function NeutralSpinner() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-      <img src="/icone-associadas.png" alt="Carregando..." className="w-16 h-16 animate-spin mb-6 drop-shadow-md" />
-      <p className="text-slate-500 font-bold animate-pulse tracking-wide">Carregando Farmácias Associadas...</p>
+      <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-slate-500 animate-spin mb-5" />
+      <p className="text-slate-400 text-sm font-medium animate-pulse tracking-wide">Carregando...</p>
     </div>
   );
 }
 
 export const Route = createFileRoute("/_store")({
   component: StoreLayout,
-  pendingComponent: StorePendingComponent,
+  pendingComponent: NeutralSpinner,
 });
 
 /** CSS overrides for Parceiro stores – neutral grey/black instead of brand green/orange */
@@ -55,8 +56,9 @@ function StoreLayout() {
   const isHome = location.pathname === "/";
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const pharmacies = useAdmin((s) => s.pharmacies);
+  const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
 
-  // Extract potential store slug from URL (e.g. /minha-loja)
+  // Extract potential store slug from URL (e.g. /minha-loja or /minha-loja/produto/...)
   const pathParts = location.pathname.split('/').filter(Boolean);
   const potentialSlug = pathParts[0];
 
@@ -77,6 +79,12 @@ function StoreLayout() {
     
     return pharmacies[0] || null;
   }, [selectedPharmacyId, pharmacies, potentialSlug]);
+
+  // ⏳ Aguarda lojas carregarem do Supabase antes de renderizar qualquer coisa.
+  // Isso evita o flash de outra loja enquanto os dados chegam.
+  if (!pharmaciesLoaded) {
+    return <NeutralSpinner />;
+  }
 
   const storeTheme = useMemo(() => {
     if (!activePharmacy) return undefined;

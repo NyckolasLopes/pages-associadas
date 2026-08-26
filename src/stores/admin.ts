@@ -293,6 +293,7 @@ interface AdminState {
 
   // Pharmacies
   pharmacies: Pharmacy[];
+  pharmaciesLoaded: boolean;
   addPharmacy: (p: Pharmacy) => Promise<void>;
   updatePharmacy: (id: string, p: Pharmacy) => Promise<void>;
   togglePharmacyStatus: (id: string) => Promise<void>;
@@ -933,6 +934,7 @@ export const useAdmin = create<AdminState>()(
       setIntegrations: (integrations) => set({ integrations }),
 
       pharmacies: [],
+      pharmaciesLoaded: false,
       loadPharmacies: async () => {
         // Throttle: ignora chamadas duplicadas dentro de 5s (evita duplo fetch no boot)
         const now = Date.now();
@@ -1027,7 +1029,7 @@ export const useAdmin = create<AdminState>()(
               offersServices: parsedThemeColors?.offersServices ?? false,
             };
           }) as unknown as Pharmacy[];
-          set({ pharmacies: loadedPharmacies });
+          set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true });
         }
       },
 
