@@ -709,7 +709,7 @@ export const catalog = {
     if (/^\d+$/.test(q)) {
       query = query.eq('ean', q);
     } else {
-      query = query.ilike('nome', `%${q}%`);
+      query = query.or(`nome.ilike.%${q}%,termos_pesquisa.ilike.%${q}%,metadata->>classe_terapeutica.ilike.%${q}%`);
     }
     
     query = query.range(page * pageSize, (page + 1) * pageSize - 1);
@@ -724,7 +724,7 @@ export const catalog = {
       if (/^\d+$/.test(params.search)) {
         query = query.eq('ean', params.search);
       } else {
-        query = query.ilike('nome', `%${params.search}%`);
+        query = query.or(`nome.ilike.%${params.search}%,termos_pesquisa.ilike.%${params.search}%,metadata->>classe_terapeutica.ilike.%${params.search}%`);
       }
     }
 

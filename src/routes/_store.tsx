@@ -4,6 +4,7 @@ import { useCart } from "@/stores/cart";
 import { Header } from "@/components/storefront/Header";
 import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
+import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
 
 const Footer = lazy(() => import("@/components/storefront/Footer").then(m => ({ default: m.Footer })));
 const FloatingElements = lazy(() => import("@/components/storefront/BackToTop").then(m => ({ default: m.FloatingElements })));
@@ -37,75 +38,19 @@ const PARCEIRO_THEME: Record<string, string> = {
   "--ring": "#a1a1aa",
 };
 
-/**
- * Páginas do sistema que NÃO são slugs de loja.
- * Quando a URL começa com um desses segmentos, não tentamos resolver
- * como slug de loja – usamos o sessionStorage como fallback.
- */
-const SYSTEM_PAGES = new Set([
-  'login', 'cadastro', 'perfil', 'pedidos', 'checkout',
-  'sucesso', 'compartilhado', 'faq', 'ajuda', 'mapa-site',
-  'politica-de-privacidade', 'pagina', 'admin',
-]);
-
-function safeSlugify(text: string): string {
-  if (!text) return "";
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 function StoreLayout() {
   const location = useLocation();
   const isHome = location.pathname === "/";
 
   // — Store state (todos os hooks ANTES de qualquer early return) —
-  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
-  const pharmacies = useAdmin((s) => s.pharmacies);
   const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
 
-  // Extrai o primeiro segmento da URL (ex: "zona-sul" de /zona-sul/produto/...)
   const pathParts = location.pathname.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
 
-  // — Resolução da farmácia ativa (prioridade: URL > sessionStorage > carrinho > primeira) —
-  const activePharmacy = useMemo(() => {
-    // 1. Slug da URL (somente se NÃO for uma página do sistema)
-    if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug)) {
-      const bySlug = pharmacies.find((p) => {
-        const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
-        return slug === potentialSlug;
-      });
-      if (bySlug) return bySlug;
-    }
-
-    // 2. Última loja visitada (para páginas sem slug: login, perfil, etc.)
-    try {
-      const lastSlug = sessionStorage.getItem('fa-last-store-slug');
-      if (lastSlug) {
-        const byLastSlug = pharmacies.find((p) => {
-          const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
-          return slug === lastSlug;
-        });
-        if (byLastSlug) return byLastSlug;
-      }
-    } catch { /* sessionStorage indisponível (SSR) */ }
-
-    // 3. Farmácia selecionada no carrinho
-    if (selectedPharmacyId) {
-      const byCart = pharmacies.find((p) => p.id === selectedPharmacyId);
-      if (byCart) return byCart;
-    }
-
-    // 4. Fallback: primeira da lista
-    return pharmacies[0] || null;
-  }, [selectedPharmacyId, pharmacies, potentialSlug]);
+  const activePharmacy = useActivePharmacy();
 
   // — Tema CSS da loja (todos os hooks antes do early return) —
   const storeTheme = useMemo(() => {

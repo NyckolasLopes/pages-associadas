@@ -427,7 +427,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   )}
                 </div>
 
-                {isGlobalAdmin && (
                   <div className="flex items-center gap-2 w-full">
                     <Select 
                       onValueChange={v => {
@@ -445,7 +444,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                       </SelectContent>
                     </Select>
                   </div>
-                )}
               </div>
 
               {/* Subcategorias Adicionais */}
@@ -479,7 +477,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   )}
                 </div>
 
-                {isGlobalAdmin && (
                   <div className="flex items-center gap-2 w-full">
                     <Select 
                       onValueChange={v => {
@@ -502,7 +499,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                       </SelectContent>
                     </Select>
                   </div>
-                )}
               </div>
             </div>
           </div>
@@ -518,7 +514,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">Classe Terapêutica</Label>
-                  <Input disabled={!isGlobalAdmin} value={formData.classeTerapeutica || ""} onChange={e => setFormData({...formData, classeTerapeutica: e.target.value})} className="bg-white" placeholder="Ex: Analgésico, Antitérmico" />
+                  <Input value={formData.classeTerapeutica || ""} onChange={e => setFormData({...formData, classeTerapeutica: e.target.value})} className="bg-white" placeholder="Ex: Analgésico, Antitérmico" />
                 </div>
               </div>
               <div className="space-y-6">
@@ -591,7 +587,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Alerta Regulatório (Texto)</Label>
-                <Textarea disabled={!isGlobalAdmin} value={formData.alertaTexto || (isMedicamento ? '"AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."' : "")} onChange={e => setFormData({...formData, alertaTexto: e.target.value})} className="bg-white" placeholder="Ex: Ao persistirem os sintomas, o médico deverá ser consultado." />
+                <Textarea value={formData.alertaTexto || (isMedicamento ? '"AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."' : "")} onChange={e => setFormData({...formData, alertaTexto: e.target.value})} className="bg-white" placeholder="Ex: Ao persistirem os sintomas, o médico deverá ser consultado." />
               </div>
             </div>
 
@@ -650,7 +646,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
             
             <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
-              <Switch disabled={!isGlobalAdmin} 
+              <Switch 
                 id="alertaRegulatorio" 
                 checked={formData.alertaRegulatorio} 
                 onCheckedChange={checked => setFormData({...formData, alertaRegulatorio: checked})}

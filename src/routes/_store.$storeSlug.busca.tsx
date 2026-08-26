@@ -11,7 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useSearchHistory } from "@/stores/searchHistory";
 import { useCart } from "@/stores/cart";
 
-export const Route = createFileRoute("/_store/busca")({
+export const Route = createFileRoute("/_store/$storeSlug/busca")({
   validateSearch: zodValidator(
     z.object({
       q: z.string().optional().default(""),

@@ -21,7 +21,7 @@ export function ServicesSection() {
               Tudo em um só lugar, na farmácia mais perto de você.
             </p>
           </div>
-          <Link to="/c/$slug" params={{ slug: "servicos-de-saude" }} className="hidden md:inline text-sm font-bold text-orange-100 hover:text-white hover:underline whitespace-nowrap">
+          <Link to="/$storeSlug/c/$slug" params={{ storeSlug: "loja-padrao", slug: "servicos-de-saude" }} className="hidden md:inline text-sm font-bold text-orange-100 hover:text-white hover:underline whitespace-nowrap">
             Ver todos →
           </Link>
         </div>

@@ -201,6 +201,8 @@ export const useAdminProducts = create<ProductsState>()(
           caracteristicas: formattedProduct.caracteristicas || [],
           tipo_receita: formattedProduct.tipoReceita || null,
           ncm: formattedProduct.ncm || null,
+          classe_terapeutica: formattedProduct.classeTerapeutica || null,
+          subcategorias_adicionais: formattedProduct.subcategoriasIds || [],
           nivel_relevancia: formattedProduct.nivelRelevancia || 0,
           seo_titulo: formattedProduct.seoTitulo || null,
           seo_descricao: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,

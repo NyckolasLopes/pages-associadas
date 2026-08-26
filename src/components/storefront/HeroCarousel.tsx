@@ -3,7 +3,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 
+import { useParams } from "@tanstack/react-router";
 export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full Banner", categoriaId }: { page?: string; lojaId?: string; posicao?: string; categoriaId?: string }) {
+  const params = useParams({ strict: false }) as { storeSlug?: string };
+  const storeSlug = params?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao";
   const { banners: adminBanners, pharmacies } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const effectiveLojaId = lojaId || selectedPharmacyId;
@@ -169,7 +172,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
         {bannersToRender.map((banner, idx) => (
           <div key={banner.id} className="w-full shrink-0 relative" style={{ aspectRatio: banner.mobileImageUrl ? undefined : aspectRatioDesktop }}>
             <a 
-              href={banner.link || "#"} 
+              href={banner.link?.match(/^\/(c|v|m|p|busca)\b/) ? `/${storeSlug}${banner.link}` : banner.link || "#"} 
               target={banner.link && (banner.link.startsWith("http") || banner.link.startsWith("//")) ? "_blank" : undefined}
               rel={banner.link && (banner.link.startsWith("http") || banner.link.startsWith("//")) ? "noopener noreferrer" : undefined}
               className="block w-full h-full"

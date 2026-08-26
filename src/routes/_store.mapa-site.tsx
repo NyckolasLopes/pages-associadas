@@ -39,7 +39,7 @@ function SiteMap() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Column title="Navegação Principal">
               <Row><Link to="/" className="hover:text-primary">→ Início</Link></Row>
-              <Row><Link to="/busca" className="hover:text-primary">→ Buscar produtos</Link></Row>
+              <Row><Link to="/$storeSlug/busca" params={{ storeSlug: "loja-padrao" }} className="hover:text-primary">→ Buscar produtos</Link></Row>
               <Row><Link to="/$storeSlug/cart" params={{ storeSlug: "loja-padrao" }} className="hover:text-primary">→ Cesta</Link></Row>
               <Row><Link to="/checkout" className="hover:text-primary">→ Checkout</Link></Row>
               <Row><Link to="/login" className="hover:text-primary">→ Entrar / Cadastrar</Link></Row>
@@ -49,8 +49,8 @@ function SiteMap() {
               {ROOT_CATS.map((c) => (
                 <Link
                   key={c.id}
-                  to="/c/$slug"
-                  params={{ slug: c.slug }}
+                  to="/$storeSlug/c/$slug"
+                  params={{ storeSlug: "loja-padrao", slug: c.slug }}
                   className="block text-sm hover:text-primary py-1"
                 >
                   → {c.nome}

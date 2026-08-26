@@ -17,7 +17,7 @@ import { GeoPopup } from "@/components/storefront/GeoPopup";
 import type { Produto, Categoria, VitrineLocal } from "@/types";
 import { useAdmin } from "@/stores/admin";
 import { useCart, useGeoCep } from "@/stores/cart";
-import mascot404 from "@/assets/404-mascot.png";
+import { NotFound } from "@/components/storefront/NotFound";
 import { useLive } from "@/stores/live";
 import { useAdminProducts } from "@/stores/products";
 import { useMarcasStore } from "@/stores/marcas";
@@ -68,9 +68,17 @@ function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: V
       try {
         const results = await Promise.all(
           vitrines.map(async (v) => {
-            const prods = (v.modo === "manual" && v.produtoIds && v.produtoIds.length > 0)
-              ? await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, v.produtoIds, lojaId)
-              : await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, undefined, lojaId);
+            let prods: Produto[] = [];
+            if (v.modo === "manual" && v.produtoIds && v.produtoIds.length > 0) {
+              prods = await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, v.produtoIds, lojaId);
+            } else {
+              prods = await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, undefined, lojaId);
+              if (v.produtoIds && v.produtoIds.length > 0) {
+                const highlighted = await catalog.productsByVitrine(v.id.toString(), "manual", undefined, v.produtoIds, lojaId);
+                const highlightedIds = new Set(highlighted.map(p => String(p.id)));
+                prods = [...highlighted, ...prods.filter(p => !highlightedIds.has(String(p.id)))];
+              }
+            }
             
             // Priority: Products with stock > 0 appear first
             const sortedProds = [...prods].sort((a, b) => {
@@ -595,17 +603,7 @@ function StoreHome() {
   }
 
   if (!loja) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center p-8 bg-slate-50">
-        <img src={mascot404} alt="Página não encontrada" className="w-full max-w-xl h-auto mb-8 drop-shadow-md" />
-        <a 
-          href="/" 
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center justify-center gap-2 px-6 py-3 rounded-md transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" /> Voltar para o início
-        </a>
-      </div>
-    );
+    return <NotFound type="page" />;
   }
 
   if (loja.virtualStoreStatus === 'Inativa') {

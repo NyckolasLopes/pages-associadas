@@ -12,11 +12,11 @@ import { SquarePromoGrid } from "@/components/storefront/SquarePromoGrid";
 import { sanitizeHtml } from "@/lib/security";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
-import mascot404 from "@/assets/404-mascot.png";
+import { NotFound } from "@/components/storefront/NotFound";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 
-export const Route = createFileRoute("/_store/c/$slug")({
+export const Route = createFileRoute("/_store/$storeSlug/c/$slug")({
   validateSearch: zodValidator(
     z.object({
       marcas: z.array(z.string()).optional(),
@@ -59,14 +59,7 @@ export const Route = createFileRoute("/_store/c/$slug")({
   errorComponent: ({ error }) => (
     <div className="container-fa py-12 text-center">{error.message}</div>
   ),
-  notFoundComponent: () => (
-    <div className="container-fa py-12 text-center flex flex-col items-center">
-      <img src={mascot404} alt="Categoria não encontrada" className="w-64 max-w-full h-auto mb-4 drop-shadow-md" />
-      <h1 className="text-2xl font-bold mb-2">Categoria não encontrada</h1>
-      <p className="text-muted-foreground mb-6">A categoria que você tentou acessar não existe.</p>
-      <Link to="/" className="text-blue-600 font-medium hover:underline">Voltar para o início</Link>
-    </div>
-  ),
+  notFoundComponent: () => <NotFound type="category" />,
   component: CategoryPage,
 });
 
@@ -157,7 +150,7 @@ function CategoryPage() {
 
       {/* Descrição Expansível */}
       {(cat.descricaoBreve || cat.descricaoHtml) && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8 shadow-sm">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between cursor-pointer" onClick={() => setDescExpanded(!descExpanded)}>
             <h3 className="font-bold text-slate-800 text-lg">Descrição da Categoria</h3>
             <button className="text-primary font-medium text-sm flex items-center gap-1 hover:underline">
@@ -166,7 +159,7 @@ function CategoryPage() {
             </button>
           </div>
           
-          <div className={`mt-3 prose prose-sm max-w-none text-slate-600 transition-all overflow-hidden ${descExpanded ? "max-h-[2000px] opacity-100" : "max-h-12 opacity-80"}`}>
+          <div className={`mt-3 prose prose-sm max-w-none text-slate-600 transition-all duration-300 ease-in-out ${descExpanded ? "max-h-[2000px] opacity-100" : "max-h-[4.5rem] overflow-hidden opacity-80"}`}>
             {cat.descricaoHtml ? (
               <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cat.descricaoHtml) }} />
             ) : (
@@ -177,20 +170,13 @@ function CategoryPage() {
           {!descExpanded && (
             <div 
               className="h-12 w-full absolute bottom-0 left-0 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none"
-              style={{ marginTop: '-3rem' }}
             />
           )}
         </div>
       )}
 
-      {/* Banners for Category Page */}
-      <div className="mt-6 mb-6">
-        <HeroCarousel page="Página de Categoria" categoriaId={cat.id} />
-        <SquarePromoGrid page="Página de Categoria" />
-      </div>
-
       {subs.length > 0 && (
-        <div className="mt-6 border rounded-xl p-4 bg-slate-50">
+        <div className="mt-6 border rounded-xl p-4 bg-slate-50 mb-6">
            <button 
              onClick={() => setShowSubs(!showSubs)}
              className="w-full flex items-center justify-between font-bold text-sm text-slate-700 hover:text-primary transition"
@@ -229,6 +215,12 @@ function CategoryPage() {
            )}
         </div>
       )}
+
+      {/* Banners for Category Page */}
+      <div className="mb-6">
+        <HeroCarousel page="Página de Categoria" categoriaId={cat.id} />
+        <SquarePromoGrid page="Página de Categoria" />
+      </div>
 
       <div className="mt-8 flex flex-col md:flex-row gap-8">
         {/* Sidebar Filters */}

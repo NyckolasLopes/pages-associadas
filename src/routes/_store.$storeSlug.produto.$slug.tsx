@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useCart, useGeoCep } from "@/stores/cart";
 import { useFavorites } from "@/stores/favorites";
 import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info } from "lucide-react";
+import { NotFound } from "@/components/storefront/NotFound";
 import categoriesData from "@/data/categories.json";
 import {
   Tooltip,
@@ -103,17 +104,7 @@ export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
       ],
     };
   },
-  notFoundComponent: () => (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-8 bg-slate-50">
-      <img src={mascotNotFound} alt="Produto não encontrado" className="w-full max-w-xl h-auto mb-8 drop-shadow-md" />
-      <a 
-        href="/" 
-        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center justify-center gap-2 px-6 py-3 rounded-md transition-colors"
-      >
-        <ChevronLeft className="w-5 h-5" /> Voltar para o início
-      </a>
-    </div>
-  ),
+  notFoundComponent: () => <NotFound type="product" />,
   errorComponent: ({ error }) => (
     <div className="container-fa py-12 text-center text-red-500">
       <h1 className="text-2xl font-bold mb-4">Erro ao carregar produto</h1>
@@ -897,13 +888,13 @@ function PDP() {
         <ChevronRight className="h-3 w-3" />
         {cat && (
           <>
-            <Link to="/c/$slug" params={{ slug: cat.slug }} className="hover:text-primary transition">{cat.nome}</Link>
+            <Link to="/$storeSlug/c/$slug" params={{ storeSlug: params?.storeSlug || "loja-padrao", slug: cat.slug }} className="hover:text-primary transition">{cat.nome}</Link>
             <ChevronRight className="h-3 w-3" />
           </>
         )}
         {subcat && (
           <>
-            <Link to="/c/$slug" params={{ slug: subcat.slug }} className="hover:text-primary transition">{subcat.nome}</Link>
+            <Link to="/$storeSlug/c/$slug" params={{ storeSlug: params?.storeSlug || "loja-padrao", slug: subcat.slug }} className="hover:text-primary transition">{subcat.nome}</Link>
             <ChevronRight className="h-3 w-3" />
           </>
         )}

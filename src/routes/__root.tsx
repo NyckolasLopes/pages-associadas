@@ -29,28 +29,10 @@ import { InstallPrompt } from "@/components/storefront/InstallPrompt";
 import { FloatingElements } from "@/components/storefront/BackToTop";
 import { PriceDropTracker } from "@/components/storefront/PriceDropTracker";
 
-import mascot404 from "@/assets/404-mascot.png";
+import { NotFound } from "@/components/storefront/NotFound";
 
 export function NotFoundComponent() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 pt-20">
-      <div className="max-w-md text-center flex flex-col items-center">
-        <img src={mascot404} alt="Erro 404 - Página não encontrada" className="w-96 max-w-full h-auto mb-2 drop-shadow-md" />
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">Página não encontrada</h1>
-        <p className="text-sm text-slate-500 mb-6">
-          Desculpe, não conseguimos encontrar a página que você está procurando.
-        </p>
-        <div className="mt-2">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-base font-bold text-primary-foreground transition-all hover:bg-primary/90 hover:scale-105 shadow-sm"
-          >
-            Voltar ao Início
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
+  return <NotFound type="page" />;
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {

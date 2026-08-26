@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
-export const Route = createFileRoute("/_store/m/$slug")({
+export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
   loader: async ({ params }) => {
     // We can't access zustand store directly in the loader without importing the state, 
     // but since it's an indexedDB persisted store it might not be hydrated yet on first load in the loader.

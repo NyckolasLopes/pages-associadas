@@ -292,10 +292,13 @@ function AdminBanners() {
     if (dragItem.current.position !== position || dragOverItem.current.position !== position) return;
     if (dragItem.current.index === dragOverItem.current.index) return;
 
+    const sourceIndex = dragItem.current.index;
+    const destIndex = dragOverItem.current.index;
+
     setLocalOrder(prev => {
       const newOrder = [...(prev[position] || [])];
-      const [moved] = newOrder.splice(dragItem.current!.index, 1);
-      newOrder.splice(dragOverItem.current!.index, 0, moved);
+      const [moved] = newOrder.splice(sourceIndex, 1);
+      newOrder.splice(destIndex, 0, moved);
       return { ...prev, [position]: newOrder };
     });
     setDirtyGroups(prev => new Set([...prev, position]));

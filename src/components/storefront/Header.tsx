@@ -970,7 +970,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               return (
                 <Link
                   key={c.id}
-                  to={(isNossasMarcas ? "/nossas-marcas" : "/c/$slug") as any}
+                  to={(isNossasMarcas ? "/nossas-marcas" : "/$storeSlug/c/$slug") as any}
                   params={(isNossasMarcas ? undefined : { slug: c.slug }) as any}
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold transition ${isOfertas ? 'bg-red-600 text-white hover:bg-red-700' : 'hover:bg-muted'}`}
@@ -1006,7 +1006,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                 </summary>
                 <div className="pl-11 pr-3 pb-2 flex flex-col">
                   <Link
-                    to={(isNossasMarcas ? "/nossas-marcas" : "/c/$slug") as any}
+                    to={(isNossasMarcas ? "/nossas-marcas" : "/$storeSlug/c/$slug") as any}
                     params={(isNossasMarcas ? undefined : { slug: c.slug }) as any}
                     onClick={() => setOpen(false)}
                     className="text-sm py-2 hover:text-primary text-muted-foreground font-medium border-b border-muted/30 last:border-0"
@@ -1016,8 +1016,8 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                   {renderItems.map((item: any) => (
                     <Link
                       key={item.id}
-                      to={isNossasMarcas ? "/m/$slug" : "/c/$slug"}
-                      params={{ slug: item.slug }}
+                      to={isNossasMarcas ? ("/$storeSlug/m/$slug" as any) : ("/$storeSlug/c/$slug" as any)}
+                      params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: item.slug  } as any}
                       onClick={() => setOpen(false)}
                       className="text-sm py-2 hover:text-primary text-muted-foreground font-medium border-b border-muted/30 last:border-0 flex items-center gap-2"
                     >
@@ -1124,7 +1124,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
         <ul className="flex items-stretch justify-start lg:justify-between w-full gap-1 lg:gap-2 xl:gap-8 overflow-x-auto scrollbar-none">
           <li onMouseEnter={() => handleMouseEnter("all")} className="shrink-0 flex items-center">
             <Link
-              to="/busca"
+              to={"/$storeSlug/busca" as any}
               className={`inline-flex items-center gap-1 xl:gap-2 px-1 lg:px-2 py-3 text-[11px] lg:text-[12px] xl:text-[13px] font-bold transition border-b-2 whitespace-nowrap ${
                 open === "all"
                   ? "border-accent text-white"
@@ -1142,8 +1142,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
             return (
               <li key={c.id} onMouseEnter={() => handleMouseEnter(c.id)} className="shrink-0 flex items-center">
                 <Link
-                  to="/c/$slug"
-                  params={{ slug: c.slug }}
+                  to={"/$storeSlug/c/$slug" as any}
+                  params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: c.slug  } as any}
                   className={`inline-flex items-center gap-1 xl:gap-2 text-[11px] lg:text-[12px] xl:text-[13px] font-bold transition whitespace-nowrap ${
                     isOfertas 
                       ? "bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-full"
@@ -1176,8 +1176,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                 {allRootCats.filter(c => c.id !== "300").map((c) => (
                   <div key={c.id} className="flex flex-col break-inside-avoid mb-10">
                     <Link
-                      to="/c/$slug"
-                      params={{ slug: c.slug }}
+                      to={"/$storeSlug/c/$slug" as any}
+                      params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: c.slug  } as any}
                       onClick={() => setOpen(null)}
                       className="font-bold text-primary-dark hover:underline text-sm mb-3 border-b border-muted pb-1.5 flex items-center gap-2"
                     >
@@ -1191,8 +1191,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                       {(allSubs[c.id] || []).slice(0, 10).map(s => (
                         <Link
                           key={s.id}
-                          to="/c/$slug"
-                          params={{ slug: s.slug }}
+                          to={"/$storeSlug/c/$slug" as any}
+                          params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: s.slug  } as any}
                           onClick={() => setOpen(null)}
                           className="text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/5 transition bg-muted/30 px-2.5 py-1.5 rounded-md leading-tight line-clamp-2 block"
                         >
@@ -1200,7 +1200,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                         </Link>
                       ))}
                       {(allSubs[c.id] || []).length > 10 && (
-                        <Link to="/c/$slug" params={{ slug: c.slug }} onClick={() => setOpen(null)} className="text-[11px] font-bold text-primary uppercase hover:underline flex items-center px-2 py-1.5">
+                        <Link to={"/$storeSlug/c/$slug" as any} params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: c.slug  } as any} onClick={() => setOpen(null)} className="text-[11px] font-bold text-primary uppercase hover:underline flex items-center px-2 py-1.5">
                           Ver mais...
                         </Link>
                       )}
@@ -1226,8 +1226,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                       {marcas.filter(m => m.marcaPropria).map(m => (
                         <Link
                           key={m.id}
-                          to="/m/$slug"
-                          params={{ slug: m.slug }}
+                          to={"/$storeSlug/m/$slug" as any}
+                          params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: m.slug  } as any}
                           onClick={() => setOpen(null)}
                           className="aspect-[4/3] flex items-center justify-center p-4 bg-white border border-slate-200 rounded-xl hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
                         >
@@ -1251,8 +1251,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   Categoria
                 </div>
                 <Link
-                  to="/c/$slug"
-                  params={{ slug: active.slug }}
+                  to={"/$storeSlug/c/$slug" as any}
+                  params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: active.slug  } as any}
                   onClick={() => setOpen(null)}
                   className="block mt-2 text-xl font-bold text-primary-dark hover:underline leading-tight"
                 >
@@ -1263,8 +1263,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(active.descricaoHtml) }}
                 />
                 <Link
-                  to="/c/$slug"
-                  params={{ slug: active.slug }}
+                  to={"/$storeSlug/c/$slug" as any}
+                  params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: active.slug  } as any}
                   onClick={() => setOpen(null)}
                   className="inline-flex items-center gap-1 mt-4 text-xs font-bold text-white bg-accent hover:bg-accent/90 px-3 py-1.5 rounded transition shadow-sm"
                 >
@@ -1275,8 +1275,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                 {(active.id === "300" ? marcas.filter(m => m.marcaPropria) : subs).map((s) => (
                   <Link
                     key={s.id}
-                    to={active.id === "300" ? "/m/$slug" : "/c/$slug"}
-                    params={{ slug: s.slug }}
+                    to={active.id === "300" ? ("/$storeSlug/m/$slug" as any) : ("/$storeSlug/c/$slug" as any)}
+                    params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: s.slug  } as any}
                     onClick={() => setOpen(null)}
                     className={active.id === "300" 
                       ? "aspect-square flex items-center justify-center p-4 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:shadow-lg hover:-translate-y-0.5 transition-all" 

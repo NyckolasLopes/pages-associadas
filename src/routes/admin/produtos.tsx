@@ -56,6 +56,7 @@ import {
 import { DescriptionImporter } from "@/components/admin/DescriptionImporter";
 import { BulkEditModal } from "@/components/admin/BulkEditModal";
 import { ProductEditorForm } from "@/components/admin/ProductEditorForm";
+import { HighlightProductModal } from "@/components/admin/HighlightProductModal";
 import { productImage } from "@/lib/format";
 
 import {
@@ -113,6 +114,7 @@ function AdminProdutos() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
+  const [highlightedProduct, setHighlightedProduct] = useState<Produto | null>(null);
   const [serverProducts, setServerProducts] = useState<Produto[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -991,33 +993,15 @@ function AdminProdutos() {
                           />
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {isGlobalAdmin && !currentLojaId ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={async () => {
-                                setServerProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, destaque: !p.destaque } : prod));
-                                await addOrUpdateProduct({ ...p, destaque: !p.destaque }, currentLojaId || undefined);
-                              }}
-                              className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
-                              title="Destacar produto na rede"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={async () => {
-                                setServerProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, destaque: !p.destaque } : prod));
-                                await updateStoreProductDestaque(currentLojaId!, p.id, !p.destaque);
-                              }}
-                              className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
-                              title="Destacar produto na sua loja"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setHighlightedProduct(p)}
+                            className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
+                            title="Destacar produto"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                          </Button>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1">

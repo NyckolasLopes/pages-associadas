@@ -2,7 +2,10 @@ import { useAdmin } from "@/stores/admin";
 
 import { useCart } from "@/stores/cart";
 
+import { useParams } from "@tanstack/react-router";
 export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
+  const params = useParams({ strict: false }) as { storeSlug?: string };
+  const storeSlug = params?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao";
   const { banners, pharmacies } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const effectiveLojaId = lojaId || selectedPharmacyId;
@@ -44,7 +47,7 @@ export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: s
         {miniBanners.map(b => (
           <a 
             key={b.id} 
-            href={b.link || "#"} 
+            href={b.link?.match(/^\/(c|v|m|p|busca)\b/) ? `/${storeSlug}${b.link}` : b.link || "#"} 
             target={b.target || "_self"}
             className="shrink-0 snap-start w-[160px] md:w-[200px] aspect-square rounded-2xl overflow-hidden shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition block relative"
           >

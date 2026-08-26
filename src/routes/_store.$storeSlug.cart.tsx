@@ -847,27 +847,27 @@ function CartPage() {
       }).join("\n");
 
       const deliveryInfoText = deliveryMethod === "entrega"
-        ? `🛵 *ENTREGA EM DOMICÍLIO:*\n${cleanAddress}, Nº ${cleanNumber} ${cleanComplement ? `(${cleanComplement})` : ""}\nBairro: ${cleanBairro} - ${deliveryCity || selectedPharmacy.cidade}/${selectedPharmacy.uf}\nCEP: ${deliveryCep || cep}`
-        : `🏬 *RETIRADA NO BALCÃO:*\nFarmácia: ${selectedPharmacy.nome}\nEndereço: ${selectedPharmacy.endereco}, ${selectedPharmacy.bairro} - ${selectedPharmacy.cidade}`;
+        ? `\u{1F6F5} *ENTREGA EM DOMICÍLIO:*\n${cleanAddress}, Nº ${cleanNumber} ${cleanComplement ? `(${cleanComplement})` : ""}\nBairro: ${cleanBairro} - ${deliveryCity || selectedPharmacy.cidade}/${selectedPharmacy.uf}\nCEP: ${deliveryCep || cep}`
+        : `\u{1F3EC} *RETIRADA NO BALCÃO:*\nFarmácia: ${selectedPharmacy.nome}\nEndereço: ${selectedPharmacy.endereco}, ${selectedPharmacy.bairro} - ${selectedPharmacy.cidade}`;
 
-      const whatsappText = `🏥 *NOVO PEDIDO - FARMÁCIAS ASSOCIADAS*\n` +
-        `🏪 *Unidade:* ${selectedPharmacy.nome} (${selectedPharmacy.cidade}/${selectedPharmacy.uf})\n` +
-        `🧾 *Pedido:* #${orderId}\n` +
-        `📅 *Data:* ${dateFormatted}\n\n` +
-        `👤 *CLIENTE:*\n• *Nome:* ${cleanName}\n• *Telefone:* ${cleanPhone}\n` +
+      const whatsappText = `\u{1F3E5} *NOVO PEDIDO - FARMÁCIAS ASSOCIADAS*\n` +
+        `\u{1F3EA} *Unidade:* ${selectedPharmacy.nome} (${selectedPharmacy.cidade}/${selectedPharmacy.uf})\n` +
+        `\u{1F9FE} *Pedido:* #${orderId}\n` +
+        `\u{1F4C5} *Data:* ${dateFormatted}\n\n` +
+        `\u{1F464} *CLIENTE:*\n• *Nome:* ${cleanName}\n• *Telefone:* ${cleanPhone}\n` +
         (clientCpf ? `• *CPF:* ${clientCpf}\n` : "") +
         `\n${deliveryInfoText}\n\n` +
-        `💳 *FORMA DE PAGAMENTO:*\n• ${paymentLabel}` +
+        `\u{1F4B3} *FORMA DE PAGAMENTO:*\n• ${paymentLabel}` +
         (paymentMethod === "dinheiro" && trocoPara ? ` (Troco para ${trocoPara})` : "") +
-        `\n\n🛍️ *ITENS DO PEDIDO:*\n${itemsListText}\n\n` +
+        `\n\n\u{1F6CD}\u{FE0F} *ITENS DO PEDIDO:*\n${itemsListText}\n\n` +
         `---\n` +
-        `💰 *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
-        (storeDiscount > 0 ? `🏷️ *Desconto Produtos:* -R$ ${storeDiscount.toFixed(2)}\n` : "") +
-        (couponDisc > 0 ? `🎟️ *Cupom (${appliedCoupon}):* -R$ ${couponDisc.toFixed(2)}\n` : "") +
-        (deliveryMethod === "entrega" ? `🚚 *Taxa de Entrega:* ${freightPrice === 0 ? "Grátis" : `R$ ${freightPrice.toFixed(2)}`}\n` : "") +
-        `💲 *TOTAL: R$ ${grandTotal.toFixed(2)}*\n` +
-        (cleanNotes ? `\n📝 *Observações:* ${cleanNotes}\n` : "") +
-        `\n🔗 *Acompanhe em tempo real pelo link:*\n${window.location.origin}/pedidos?id=${orderId}`;
+        `\u{1F4B0} *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
+        (storeDiscount > 0 ? `\u{1F3F7}\u{FE0F} *Desconto Produtos:* -R$ ${storeDiscount.toFixed(2)}\n` : "") +
+        (couponDisc > 0 ? `\u{1F3AB}\u{FE0F} *Cupom (${appliedCoupon}):* -R$ ${couponDisc.toFixed(2)}\n` : "") +
+        (deliveryMethod === "entrega" ? `\u{1F69A} *Taxa de Entrega:* ${freightPrice === 0 ? "Grátis" : `R$ ${freightPrice.toFixed(2)}`}\n` : "") +
+        `\u{1F4B2} *TOTAL: R$ ${grandTotal.toFixed(2)}*\n` +
+        (cleanNotes ? `\n\u{1F4DD} *Observações:* ${cleanNotes}\n` : "") +
+        `\n\u{1F517} *Acompanhe em tempo real pelo link:*\n${window.location.origin}/pedidos?id=${orderId}`;
 
       // Determina telefone de destino da farmácia
       const rawStorePhone = selectedPharmacy.whatsapp || selectedPharmacy.telefone || "51999999999";
