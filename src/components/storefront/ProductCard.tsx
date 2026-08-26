@@ -343,27 +343,13 @@ function ProductCardComponent({
           className={`w-full h-full object-contain transition-transform duration-500 md:group-hover:scale-110 ${maxStock === 0 && !isService ? 'grayscale opacity-75' : ''}`}
         />
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none items-start">
-          {recentlyAdded && (
-            <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max">
-              ACABOU DE CHEGAR
-            </span>
-          )}
 
-          {isCampanha && (
-            <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 w-max">
-              <Calendar className="h-3 w-3" /> Oferta de {new Date().toLocaleString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
-            </span>
-          )}
           {isService && servicoSelo?.ativo && (
             <span style={{ backgroundColor: servicoSelo?.corFundo, color: servicoSelo?.corTexto }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 w-max">
               <Stethoscope className="h-3 w-3" /> {servicoSelo?.nome?.toUpperCase() || "SERVIÇO"}
             </span>
           )}
-          {!isService && isGenerico && (
-            <span className="bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max">
-              GENÉRICO
-            </span>
-          )}
+
           {activeSelos.map(selo => (
             <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max">
               {selo.nome}

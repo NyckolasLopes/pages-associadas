@@ -961,22 +961,6 @@ function PDP() {
               )}
 
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 items-start pointer-events-none">
-                {isCampanha && (
-                  <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded shadow-sm flex items-center gap-1.5 w-max">
-                    <Calendar className="h-3.5 w-3.5" /> Oferta de {new Date().toLocaleString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
-                  </span>
-                )}
-                {isGenerico && (
-                  <span className="bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded shadow-sm w-max">
-                    GENÉRICO
-                  </span>
-                )}
-                {recentlyAdded && (
-                  <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded shadow-sm w-max">
-                    ACABOU DE CHEGAR
-                  </span>
-                )}
-
                 {activeSelos.length > 0 && activeSelos.map(selo => (
                   <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-xs font-bold px-3 py-1 rounded shadow-sm w-max">
                     {selo.nome}
