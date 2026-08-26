@@ -33,6 +33,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useOrders, Pedido } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
+import { useOrdersKpis } from "@/hooks/useOrdersQuery";
 import { useAbandonedCartsStore, AbandonedCart } from "@/stores/abandoned-carts";
 import { useCart } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
@@ -127,6 +128,7 @@ export function PedidosAdmin() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
   const [mainView, setMainView] = useState<"carrinhos">("carrinhos");
+  const { data: dbKpis } = useOrdersKpis(activeStoreId || undefined);
 
   const getLojaName = (id?: string, fallbackName?: string) => {
     const p = id ? pharmacies.find(ph => ph.id === id) : null;

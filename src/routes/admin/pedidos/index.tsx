@@ -358,7 +358,7 @@ export function PedidosAdmin() {
           : undefined,
         lojaId: order.lojaId,
         lojaNome: getLojaName(order.lojaId, order.lojaNome),
-        status: order.status || "novo",
+        status: (order.status || "Concluído") as any,
         statusDesc: STATUS_LABEL_MAP[order.status] || order.status || "Pedido Enviado",
         itensQtd: totalItemsCount,
         itensDesc: itemsListText,
