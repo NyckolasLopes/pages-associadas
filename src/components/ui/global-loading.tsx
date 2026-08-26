@@ -4,7 +4,7 @@ import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 
 export function GlobalLoading() {
   const dadosLoja = useConfig((s) => s.dadosLoja);
-  const { activePharmacy } = useActivePharmacy();
+  const activePharmacy = useActivePharmacy();
 
   // If in a partner store, use the partner's logo. If no partner logo, use null (don't fallback to pleno).
   // If in Pleno (or no specific store), fallback to the global dadosLoja.logoUrl
