@@ -78,16 +78,29 @@ function AdminDesignLogo() {
       await updatePharmacy(currentPharmacy.id, { ...currentPharmacy, [fieldName]: url });
       toast.success("Imagem atualizada com sucesso!");
     } catch (err: any) {
-      console.error("Erro ao enviar logo:", err);
-      // Fallback para base64 se o bucket não estiver configurado
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        if (typeof ev.target?.result === "string") {
-          await updatePharmacy(currentPharmacy.id, { ...currentPharmacy, [fieldName]: ev.target.result });
-          toast.success("Imagem salva localmente.");
-        }
-      };
-      reader.readAsDataURL(file);
+      console.error("Erro ao enviar logo via storage:", err);
+      try {
+        // Fallback para base64 se o bucket não estiver configurado
+        await new Promise<void>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = async (ev) => {
+            try {
+              if (typeof ev.target?.result === "string") {
+                await updatePharmacy(currentPharmacy.id, { ...currentPharmacy, [fieldName]: ev.target.result });
+                toast.success("Imagem salva localmente.");
+              }
+              resolve();
+            } catch (innerErr) {
+              reject(innerErr);
+            }
+          };
+          reader.onerror = () => reject(new Error("Erro ao ler o arquivo."));
+          reader.readAsDataURL(file);
+        });
+      } catch (base64Err: any) {
+        console.error("Erro no fallback base64:", base64Err);
+        toast.error("Erro ao salvar a imagem. Tente uma imagem mais leve ou contate o suporte.");
+      }
     } finally {
       setUploadingField(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
