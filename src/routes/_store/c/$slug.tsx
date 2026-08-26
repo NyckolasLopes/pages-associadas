@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Search as SearchIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, Search as SearchIcon, ChevronRight } from "lucide-react";
 import { catalog } from "@/services/catalog";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { sanitizeHtml } from "@/lib/security";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import mascot404 from "@/assets/404-mascot.png";
+import { useAdmin } from "@/stores/admin";
+import { useCart } from "@/stores/cart";
 
 export const Route = createFileRoute("/_store/c/$slug")({
   validateSearch: zodValidator(
@@ -73,17 +75,30 @@ function CategoryPage() {
   const searchParams = Route.useSearch();
   const navigate = useNavigate();
   const [showSubs, setShowSubs] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
   
   const [products, setProducts] = useState<Produto[]>(initialProducts);
   const [page, setPage] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(initialProducts.length >= 24);
 
+  const allBanners = useAdmin((s) => s.banners);
+  const lojaId = useCart((s) => s.selectedPharmacyId);
+  const pharmacies = useAdmin((s) => s.pharmacies);
+  
+  const categoryBanners = allBanners.filter(b => 
+    b.active && 
+    b.posicao === "Banner por Categoria" && 
+    String(b.topicoVinculado) === String(cat.id) &&
+    (!b.lojaId || b.lojaId === lojaId)
+  );
+
   // Reset pagination when category or filters change
   useEffect(() => {
     setProducts(initialProducts);
     setPage(0);
     setHasMore(initialProducts.length >= 24);
+    setDescExpanded(false);
   }, [cat.id, searchParams, initialProducts]);
 
   const loadMore = async () => {
@@ -127,15 +142,45 @@ function CategoryPage() {
         <Link to="/" className="hover:underline">Início</Link> /{" "}
         <span className="text-foreground">{cat.nome}</span>
       </nav>
-      <h1 className="text-3xl font-bold">{cat.nome}</h1>
-      {cat.descricaoBreve && (
-        <p className="text-sm text-slate-500 mt-2">{cat.descricaoBreve}</p>
+      <h1 className="text-3xl font-bold mb-4">{cat.nome}</h1>
+      
+      {/* Banner por Categoria renderizado logo abaixo do título */}
+      {categoryBanners.length > 0 && (
+        <div className="mb-6 rounded-xl overflow-hidden shadow-sm border border-slate-100">
+          <img 
+            src={categoryBanners[0].imageUrl} 
+            alt={categoryBanners[0].nome || cat.nome} 
+            className="w-full h-auto object-cover max-h-[300px]"
+          />
+        </div>
       )}
-      {cat.descricaoHtml && (
-        <div
-          className="prose prose-sm max-w-none mt-3 text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(cat.descricaoHtml) }}
-        />
+
+      {/* Descrição Expansível */}
+      {(cat.descricaoBreve || cat.descricaoHtml) && (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8 shadow-sm">
+          <div className="flex items-center justify-between cursor-pointer" onClick={() => setDescExpanded(!descExpanded)}>
+            <h3 className="font-bold text-slate-800 text-lg">Descrição da Categoria</h3>
+            <button className="text-primary font-medium text-sm flex items-center gap-1 hover:underline">
+              {descExpanded ? "Ler menos" : "Ler mais"}
+              {descExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+          </div>
+          
+          <div className={`mt-3 prose prose-sm max-w-none text-slate-600 transition-all overflow-hidden ${descExpanded ? "max-h-[2000px] opacity-100" : "max-h-12 opacity-80"}`}>
+            {cat.descricaoHtml ? (
+              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cat.descricaoHtml) }} />
+            ) : (
+              <p>{cat.descricaoBreve}</p>
+            )}
+          </div>
+          
+          {!descExpanded && (
+            <div 
+              className="h-12 w-full absolute bottom-0 left-0 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none"
+              style={{ marginTop: '-3rem' }}
+            />
+          )}
+        </div>
       )}
 
       {/* Banners for Category Page */}

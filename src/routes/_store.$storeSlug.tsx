@@ -254,36 +254,39 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
   };
 
   return (
-    <section className="bg-white border-y py-4">
+    <section className="bg-white border-y py-3 md:py-4 mt-4">
       <div className="container-fa">
-        <div className="flex gap-3 overflow-x-auto pb-2 px-4 -mx-4 md:px-0 md:mx-0 snap-x scrollbar-none lg:justify-between lg:gap-3 lg:items-stretch">
-          {tarjas.map(tarja => {
+        <div className="flex overflow-x-auto pb-2 px-4 -mx-4 md:px-0 md:mx-0 snap-x scrollbar-none lg:justify-between lg:items-stretch divide-x divide-slate-200">
+          {tarjas.map((tarja, index) => {
             const Icon = getIcon(tarja.imageUrl);
             
-            // Format text to support **bold** natively
+            // Format text to support **bold** natively (Title vs Subtitle)
             const formatText = (text?: string) => {
               if (!text) return null;
               const parts = text.split(/(\*\*.*?\*\*)/g);
-              return parts.map((part, i) => {
+              let content: React.ReactNode[] = [];
+              parts.forEach((part, i) => {
                 if (part.startsWith('**') && part.endsWith('**')) {
-                  return <><br key={`br-${i}`}/><strong key={i} className="text-slate-800">{part.slice(2, -2)}</strong></>;
+                  content.push(<strong key={i} className="block text-[#0a2540] font-bold text-[13px] md:text-[15px] leading-tight uppercase tracking-tight">{part.slice(2, -2)}</strong>);
+                } else if (part.trim().length > 0) {
+                  content.push(<span key={`text-${i}`} className="block text-slate-500 text-[11px] md:text-[13px] leading-tight">{part.trim()}</span>);
                 }
-                return part;
               });
+              return <div className="flex flex-col justify-center">{content}</div>;
             };
 
             return (
-              <div key={tarja.id} className="shrink-0 w-[260px] lg:w-auto lg:flex-1 bg-slate-50 rounded-xl py-3 px-4 flex items-center gap-3 snap-start border border-slate-100">
-                <div className="h-10 w-10 shrink-0 bg-white rounded-full flex items-center justify-center border border-slate-200 shadow-sm text-primary overflow-hidden">
+              <div key={tarja.id} className={`shrink-0 w-[240px] lg:flex-1 flex items-center justify-center gap-3 lg:gap-4 snap-start px-4 md:px-6 ${index === 0 ? 'pl-0' : ''} ${index === tarjas.length - 1 ? 'pr-0' : ''}`}>
+                <div className="h-10 w-10 md:h-12 md:w-12 shrink-0 flex items-center justify-center text-[#0a2540] overflow-hidden">
                   {Icon ? (
-                    <Icon className="h-5 w-5 stroke-[1.5]" />
+                    <Icon className="h-8 w-8 md:h-10 md:w-10 stroke-[1.5]" />
                   ) : tarja.imageUrl ? (
-                    <img src={tarja.imageUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={tarja.imageUrl} alt="" className="w-full h-full object-contain" />
                   ) : (
-                    <Truck className="h-5 w-5 stroke-[1.5]" />
+                    <Truck className="h-8 w-8 md:h-10 md:w-10 stroke-[1.5]" />
                   )}
                 </div>
-                <div className="text-[11px] xl:text-xs leading-[1.2] text-slate-500">
+                <div className="flex-1">
                   {formatText(tarja.nome)}
                 </div>
               </div>
@@ -302,7 +305,7 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: 
   
   const categorias = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
-    b.posicao === "Banner Categoria" &&
+    (b.posicao === "Banner Categoria" || b.posicao === "Banner Compre por categoria") &&
     (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
   )), [allBanners, page, lojaId, isParceiro]);
