@@ -5,22 +5,12 @@ import {
   Search,
   Filter,
   Download,
-  Printer,
-  ChevronLeft,
-  Package,
-  MapPin,
-  Check,
-  Mail,
   MessageSquare,
   AlertCircle,
   Store,
   Trash2,
-  Code,
-  Copy,
   ShoppingCart,
-  CheckCircle2,
   Clock,
-  Eye,
   Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,31 +21,22 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useOrders, Pedido } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
-import { useOrdersKpis } from "@/hooks/useOrdersQuery";
 import { useAbandonedCartsStore, AbandonedCart } from "@/stores/abandoned-carts";
-import { useCart } from "@/stores/cart";
-import { useAuth } from "@/stores/auth";
-import { AbandonedCartsWidget } from "@/components/admin/AbandonedCartsWidget";
 
 export const Route = createFileRoute("/admin/carrinhos-abandonados")({
   component: PedidosAdmin,
 });
 
-interface UnifiedOrderItem {
+interface AbandonedCartItem {
   id: string;
   data: string;
   dataOriginal: string;
   clienteNome: string;
   clienteTelefone: string;
   clienteEmail?: string;
-  clienteCpf?: string;
-  clienteEndereco?: string;
   lojaId?: string;
   lojaNome: string;
-  status: "Concluído" | "Pendente";
-  statusDesc: string;
   itensQtd: number;
   itensDesc: string;
   produtos: Array<{
@@ -66,23 +47,15 @@ interface UnifiedOrderItem {
     preco?: number;
     foto?: string;
     imagem?: string;
-    sku?: string;
   }>;
   total: number;
-  tipo: "pedido" | "carrinho";
-  rawOrder?: Pedido;
-  rawCart?: AbandonedCart;
+  rawCart: AbandonedCart;
 }
 
 import { useEffect } from 'react';
 
 export function PedidosAdmin() {
-  const { orders: allOrders, deleteOrder, loadOrders } = useOrders();
   const { pharmacies, currentUser, grupos, activeStoreId } = useAdmin();
-
-  useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
   
   // Carrinhos abandonados / itens de clientes logados
   const { carts: storeCarts, removeCart: removeStoreCart, loadCarts } = useAbandonedCartsStore();
@@ -91,12 +64,7 @@ export function PedidosAdmin() {
     loadCarts();
   }, [loadCarts]);
 
-  const cartItems = useCart(s => s.items);
-  const cartTotal = useCart(s => s.total());
-  const clearCart = useCart(s => s.clear);
-  const user = useAuth(s => s.user);
-  const lastUpdatedAt = useCart(s => (s as any).lastUpdatedAt);
-  const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
+
 
   const allAbandonedCartsRaw = [...storeCarts];
     
@@ -108,11 +76,7 @@ export function PedidosAdmin() {
 
   const isGlobalView = isGlobalAdmin() && !activeStoreId;
 
-  const orders = allOrders.filter(o => {
-    if (activeStoreId) return o.lojaId === activeStoreId;
-    if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(o.lojaId as string))) return false;
-    return true;
-  });
+
 
   const allAbandonedCarts = allAbandonedCartsRaw.filter(c => {
     if (activeStoreId) return c.lojaId === activeStoreId;
@@ -120,42 +84,30 @@ export function PedidosAdmin() {
     return true;
   });
 
-  const [selectedOrder, setSelectedOrder] = useState<Pedido | null>(null);
-  const [selectedCartItem, setSelectedCartItem] = useState<UnifiedOrderItem | null>(null);
+  const [selectedCartItem, setSelectedCartItem] = useState<AbandonedCartItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateStartFilter, setDateStartFilter] = useState("");
   const [dateEndFilter, setDateEndFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
-  const [mainView, setMainView] = useState<"carrinhos">("carrinhos");
-  const { data: dbKpis } = useOrdersKpis(activeStoreId || undefined);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string } | null>(null);
 
   const getLojaName = (id?: string, fallbackName?: string) => {
     const p = id ? pharmacies.find(ph => ph.id === id) : null;
     return p ? (p.nome) : (fallbackName || "Farmácias Associadas");
   };
 
-  const handleDelete = (id: string, tipo: "pedido" | "carrinho") => {
-    setItemToDelete({ id, tipo });
+  const handleDelete = (id: string) => {
+    setItemToDelete({ id });
     setConfirmOpen(true);
   };
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      if (itemToDelete.tipo === "pedido") {
-        deleteOrder(itemToDelete.id);
-        if (selectedOrder?.id === itemToDelete.id) setSelectedOrder(null);
-      } else {
-        if (itemToDelete.id === "#807099") {
-          clearCart();
-        } else {
-          removeStoreCart(itemToDelete.id);
-        }
-        if (selectedCartItem?.id === itemToDelete.id) setSelectedCartItem(null);
-      }
+      removeStoreCart(itemToDelete.id);
+      if (selectedCartItem?.id === itemToDelete.id) setSelectedCartItem(null);
       setConfirmOpen(false);
       setItemToDelete(null);
-      toast.success(itemToDelete.tipo === "pedido" ? "Pedido excluído com sucesso!" : "Carrinho excluído com sucesso!");
+      toast.success("Carrinho excluído com sucesso!");
     }
   };
 
@@ -253,56 +205,10 @@ export function PedidosAdmin() {
     toast.success(`Abrindo WhatsApp do cliente ${item.clienteNome}...`);
   };
 
-  // Unificação de todos os pedidos: Concluídos (via WhatsApp) + Pendentes (no carrinho)
-  const allUnifiedOrders: UnifiedOrderItem[] = useMemo(() => {
-    const list: UnifiedOrderItem[] = [];
-    const seenIds = new Set<string>();
-
-    // 1. Pedidos Concluídos (via WhatsApp / Finalizados)
-    orders.forEach(order => {
-      seenIds.add(order.id);
-      let dateFormatted = order.data;
-      try {
-        if (order.data.includes("T")) {
-          const d = new Date(order.data);
-          if (!isNaN(d.getTime())) {
-            dateFormatted = d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-          }
-        }
-      } catch {
-        dateFormatted = order.data;
-      }
-
-      const totalItemsCount = order.produtos?.reduce((acc, p) => acc + (p.qtd || p.quantidade || 1), 0) || order.produtos?.length || 1;
-      const itemsListText = (order.produtos || []).map(p => `${p.qtd || p.quantidade || 1}x ${p.nome}`).join(", ");
-
-      list.push({
-        id: order.id,
-        data: dateFormatted,
-        dataOriginal: order.data,
-        clienteNome: order.cliente?.nome || "Cliente",
-        clienteTelefone: order.cliente?.telefone || "Não informado",
-        clienteEmail: order.cliente?.email,
-        clienteCpf: order.cliente?.cpf,
-        clienteEndereco: order.cliente?.endereco ? `${order.cliente.endereco.rua}, ${order.cliente.endereco.numero} - ${order.cliente.endereco.bairro}` : undefined,
-        lojaId: order.lojaId,
-        lojaNome: getLojaName(order.lojaId, order.lojaNome),
-        status: "Concluído",
-        statusDesc: "Concluído (WhatsApp)",
-        itensQtd: totalItemsCount,
-        itensDesc: itemsListText,
-        produtos: order.produtos || [],
-        total: order.valores?.total || 0,
-        tipo: "pedido",
-        rawOrder: order,
-      });
-    });
-
-    // 2. Carrinhos Abandonados (Pendentes)
-    allAbandonedCarts.forEach(cart => {
-      if (seenIds.has(cart.id)) return;
-      seenIds.add(cart.id);
-      
+  // Apenas carrinhos abandonados reais (da tabela carrinhos_abandonados do Supabase)
+  // NÃO inclui pedidos concluídos nem pendentes — esses ficam em admin/pedidos
+  const abandonedCartItems: AbandonedCartItem[] = useMemo(() => {
+    return allAbandonedCarts.map(cart => {
       const cartItems = Array.isArray(cart.items) ? cart.items : Object.values(cart.items || {});
       const totalItemsCount = cartItems.reduce((acc: number, p: any) => acc + (p.qtd || p.quantidade || 1), 0) || cartItems.length || 0;
       const itemsListText = cartItems.map((p: any) => `${p.qtd || p.quantidade || 1}x ${p.nome}`).join(", ");
@@ -312,7 +218,7 @@ export function PedidosAdmin() {
         return acc + (pr * (p.qtd || p.quantidade || 1));
       }, 0);
 
-      list.push({
+      return {
         id: cart.id,
         data: cart.createdAt,
         dataOriginal: cart.createdAt,
@@ -321,8 +227,6 @@ export function PedidosAdmin() {
         clienteEmail: cart.email,
         lojaId: cart.lojaId,
         lojaNome: getLojaName(cart.lojaId, cart.lojaNome),
-        status: "Pendente",
-        statusDesc: "Pendente (Carrinho)",
         itensQtd: totalItemsCount,
         itensDesc: itemsListText,
         produtos: cartItems.map((p: any) => ({
@@ -333,33 +237,22 @@ export function PedidosAdmin() {
           qtd: p.qtd || p.quantidade || 1,
         })),
         total: cart.total > 0 ? cart.total : totalValue,
-        tipo: "carrinho",
         rawCart: cart,
-      });
-    });
-
-    // Ordenação do mais recente para o mais antigo
-    return list.sort((a, b) => {
+      };
+    }).sort((a, b) => {
       const timeA = new Date(a.dataOriginal).getTime() || 0;
       const timeB = new Date(b.dataOriginal).getTime() || 0;
       return timeB - timeA;
     });
-  }, [orders, allAbandonedCarts, pharmacies]);
+  }, [allAbandonedCarts, pharmacies]);
 
-  // KPIs: TOTAL DE PEDIDOS puxa TODOS os pedidos (Pendentes + Concluídos)
-    const kpis = {
-      total: (dbKpis?.total || 0) + allAbandonedCarts.length,
-      concluidos: dbKpis?.concluidos || 0,
-      carrinhosARecuperar: (dbKpis?.pendentes || 0) + allAbandonedCarts.length,
-    };
+  const kpis = {
+    carrinhosARecuperar: allAbandonedCarts.length,
+  };
 
   // Filtragem
-  const filteredUnifiedOrders = useMemo(() => {
-    return allUnifiedOrders.filter(item => {
-        // Filtro por view - página específica de carrinhos abandonados, mostra somente pendentes
-        const st = (item.status || "").toLowerCase();
-        if (st.includes("conclu") || st.includes("cancel") || st.includes("entregue")) return false;
-
+  const filteredCarts = useMemo(() => {
+    return abandonedCartItems.filter(item => {
       // Filtro por busca
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
@@ -385,19 +278,17 @@ export function PedidosAdmin() {
 
       return true;
     });
-  }, [allUnifiedOrders, mainView, searchTerm, dateStartFilter, dateEndFilter]);
+  }, [abandonedCartItems, searchTerm, dateStartFilter, dateEndFilter]);
 
   const exportToExcel = () => {
-    const headers = ["ID", "Data", "Cliente", "Email", "CPF", "Telefone", "Loja Faturamento", "Status", "Itens", "Total"];
-    const rows = filteredUnifiedOrders.map(o => [
+    const headers = ["ID", "Data", "Cliente", "Email", "Telefone", "Loja", "Itens", "Total"];
+    const rows = filteredCarts.map(o => [
       o.id,
       o.data,
       o.clienteNome,
       o.clienteEmail || "",
-      o.clienteCpf || "",
       o.clienteTelefone,
       o.lojaNome,
-      o.statusDesc,
       o.itensDesc,
       o.total.toString().replace('.', ',')
     ]);
@@ -407,7 +298,7 @@ export function PedidosAdmin() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "pedidos_associadas.csv");
+    link.setAttribute("download", "carrinhos_abandonados.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -450,218 +341,7 @@ export function PedidosAdmin() {
     toast.success("JSON exportado com sucesso!");
   };
 
-  // --- DETAILS VIEW FOR ORDER ---
-  if (selectedOrder) {
-    const isPickup = (selectedOrder.envio?.metodo || "").includes("Retirada");
 
-    return (
-      <div className="min-h-screen bg-slate-50/50 p-6 font-sans">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <button 
-            onClick={() => setSelectedOrder(null)}
-            className="flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-emerald-600 transition-colors print:hidden"
-          >
-            <ChevronLeft className="h-4 w-4" /> Voltar para lista de pedidos
-          </button>
-
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-black text-slate-800 tracking-tight">Pedido #{selectedOrder.numero || selectedOrder.id}</h1>
-                <div className="px-3 py-1 rounded-full text-xs font-bold border bg-emerald-100 text-emerald-700 border-emerald-200 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  Concluído (WhatsApp)
-                </div>
-              </div>
-              <span className="text-slate-500 font-medium text-sm flex items-center gap-2">
-                Efetuado em {selectedOrder.data} 
-                <span className="w-1 h-1 rounded-full bg-slate-300" /> 
-                <Store className="h-3 w-3" /> {getLojaName(selectedOrder.lojaId, selectedOrder.lojaNome)}
-              </span>
-            </div>
-            <div className="flex items-center gap-3 print:hidden">
-                {/* No Admin Global: Avisar Loja. No Painel da Loja (Meus Pedidos): Ver no WhatsApp do Cliente */}
-                {isGlobalView ? (
-                  <Button 
-                    className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
-                    onClick={() => {
-                      handleAvisarLoja({
-                        id: selectedOrder.id,
-                        lojaId: selectedOrder.lojaId,
-                        lojaNome: getLojaName(selectedOrder.lojaId),
-                        clienteNome: selectedOrder.cliente.nome,
-                        clienteTelefone: selectedOrder.cliente.telefone,
-                        total: selectedOrder.valores.total,
-                        status: "Concluído",
-                        produtos: selectedOrder.produtos || [],
-                      });
-                    }}
-                  >
-                    <Send className="h-4 w-4" />
-                    Avisar Loja (WhatsApp)
-                  </Button>
-                ) : (
-                  <Button 
-                    className="h-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
-                    onClick={() => {
-                      handleVerWhatsAppCliente({
-                        id: selectedOrder.id,
-                        lojaId: selectedOrder.lojaId,
-                        lojaNome: getLojaName(selectedOrder.lojaId),
-                        clienteNome: selectedOrder.cliente.nome,
-                        clienteTelefone: selectedOrder.cliente.telefone,
-                        total: selectedOrder.valores.total,
-                        status: "Concluído",
-                        produtos: selectedOrder.produtos || [],
-                      });
-                    }}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Ver no WhatsApp
-                  </Button>
-                )}
-                <Button variant="outline" className="h-10 font-bold bg-white text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2" onClick={() => handleDelete(selectedOrder.id, "pedido")}>
-                <Trash2 className="h-4 w-4" />
-                Excluir
-              </Button>
-              <Button variant="outline" className="h-10 font-bold bg-white gap-2" onClick={() => window.print()}>
-                <Printer className="h-4 w-4 text-slate-400" />
-                Imprimir
-              </Button>
-            </div>
-          </div>
-
-          {/* Info Blocks Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
-              <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <MapPin className="h-5 w-5" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Entrega / Logística</h3>
-              </div>
-              <div>
-                <div className="font-bold text-slate-800">{selectedOrder.envio?.metodo || "Padrão"}</div>
-                {!isPickup && selectedOrder.envio && (
-                  <>
-                    <div className="text-sm text-slate-500 mt-1">{selectedOrder.envio.endereco || "Endereço não informado"}</div>
-                    <div className="text-sm text-slate-500">{selectedOrder.envio.cidade || ""} {selectedOrder.envio.cep ? `- CEP: ${selectedOrder.envio.cep}` : ""}</div>
-                    <div className="text-xs font-bold text-slate-500 mt-3 pt-2 border-t">Prazo estimado: {selectedOrder.envio.prazo || "Imediato"}</div>
-                  </>
-                )}
-                {isPickup && (
-                  <>
-                    <div className="text-sm text-emerald-600 mt-1 font-bold">Retirada no balcão da loja.</div>
-                    <div className="text-sm text-slate-500 mt-1 font-medium">O cliente fará a retirada na unidade informada.</div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
-              <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <Store className="h-5 w-5" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Loja de Faturamento</h3>
-              </div>
-              <div>
-                <div className="font-bold text-slate-800">{getLojaName(selectedOrder.lojaId, selectedOrder.lojaNome)}</div>
-                <div className="text-sm text-slate-500 mt-1">Pedido direcionado para faturamento e entrega</div>
-                <div className="text-xs text-emerald-700 bg-emerald-50 font-bold p-2 rounded-lg mt-3 border border-emerald-100 flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5" /> Concluído pelo carrinho da loja
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100 shadow-sm space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Valor Total</h3>
-              </div>
-              <div className="text-3xl font-black text-slate-800">
-                {selectedOrder.valores.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              </div>
-              <div className="space-y-1.5 pt-3 border-t border-emerald-200/50">
-                <div className="flex justify-between text-sm font-medium text-slate-600">
-                  <span>Subtotal Produtos</span>
-                  <span className="font-bold">{(selectedOrder.valores?.produtos || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
-                </div>
-                <div className="flex justify-between text-sm font-medium text-slate-600">
-                  <span>Frete</span>
-                  <span className="font-bold">{(selectedOrder.valores?.frete || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6">
-            {/* Products List */}
-            <div className="bg-white border shadow-sm rounded-2xl overflow-hidden h-fit">
-              <div className="p-5 border-b flex items-center justify-between bg-slate-50/50">
-                <h3 className="font-bold text-slate-700 text-lg flex items-center gap-2">
-                  <Package className="h-5 w-5 text-emerald-600" />
-                  Itens do Pedido <Badge variant="secondary" className="ml-1 bg-white">{selectedOrder.produtos?.length || 0}</Badge>
-                </h3>
-              </div>
-              <div className="p-2 space-y-2">
-                {(selectedOrder.produtos || []).map(p => (
-                   <div key={p.sku || p.nome} className="flex items-center p-3 hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100">
-                      <div className="w-16 h-16 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                        <img src={p.foto || "https://placehold.co/100"} alt={p.nome} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <div className="font-bold text-slate-800 text-sm leading-tight hover:text-emerald-600 cursor-pointer">{p.nome}</div>
-                        {p.sku && <div className="text-xs text-slate-500 mt-1 font-medium">SKU: {p.sku}</div>}
-                      </div>
-                      <div className="px-6 text-center">
-                         <div className="text-[10px] font-bold text-slate-400 uppercase">Qtd</div>
-                         <div className="font-black text-slate-700 text-base">{p.qtd || p.quantidade || 1}</div>
-                      </div>
-                      <div className="px-4 text-right">
-                         <div className="text-[10px] font-bold text-slate-400 uppercase">Total</div>
-                         <div className="font-bold text-emerald-700">{((p.valorUnitario || p.preco || 0) * (p.qtd || p.quantidade || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
-                      </div>
-                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Client Profile */}
-            <div className="bg-white border shadow-sm rounded-2xl p-6 h-fit space-y-6">
-               <div>
-                  <h3 className="font-bold text-slate-800 mb-4 text-lg">Dados do Cliente</h3>
-                  <div className="flex items-center gap-3">
-                     <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 font-black text-lg flex items-center justify-center">
-                        {selectedOrder.cliente.nome.charAt(0)}
-                     </div>
-                     <div>
-                        <div className="font-bold text-slate-800 leading-tight">{selectedOrder.cliente.nome}</div>
-                        <div className="text-xs font-bold text-slate-500 mt-1">Cliente WhatsApp</div>
-                     </div>
-                  </div>
-               </div>
-
-               <div className="space-y-3 pt-4 border-t border-slate-100">
-                  {selectedOrder.cliente.email && (
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <Mail className="h-4 w-4 text-slate-400" />
-                      <span className="font-medium hover:text-emerald-600 cursor-pointer">{selectedOrder.cliente.email}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <MessageSquare className="h-4 w-4 text-green-500" />
-                    <span className="font-bold text-slate-800">{selectedOrder.cliente.telefone}</span>
-                  </div>
-                  {selectedOrder.cliente.cpf && (
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <span className="text-xs font-bold text-slate-400 uppercase w-4 text-center">CPF</span>
-                      <span className="font-medium">{selectedOrder.cliente.cpf}</span>
-                    </div>
-                  )}
-               </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    );
-  }
 
   // --- LIST VIEW ---
   return (
@@ -746,67 +426,53 @@ export function PedidosAdmin() {
             </div>
           </div>
 
-          {/* Tabela Unificada de Pedidos (Puxa Todos os Pedidos: Pendentes e Concluídos) */}
+          {/* Tabela de Carrinhos Abandonados */}
           <div className="overflow-x-auto min-h-[400px]">
             <table className="w-full text-left text-[13px] min-w-[800px]">
               <thead>
                 <tr className="border-b text-slate-400 text-[11px] font-black uppercase bg-white tracking-wider">
                   <th className="px-3 py-3 w-10 text-center"><Checkbox /></th>
-                  <th className="px-3 py-3 whitespace-nowrap">Pedido</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Carrinho</th>
                   <th className="px-3 py-3">Cliente</th>
-                  {isGlobalAdmin() && <th className="px-3 py-3 whitespace-nowrap">Loja Faturamento</th>}
+                  {isGlobalAdmin() && <th className="px-3 py-3 whitespace-nowrap">Loja</th>}
                   <th className="px-3 py-3 text-center">Status</th>
                   <th className="px-3 py-3">Itens</th>
                   <th className="px-3 py-3 text-right whitespace-nowrap">Total / Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredUnifiedOrders.length === 0 ? (
+                {filteredCarts.length === 0 ? (
                   <tr>
                     <td colSpan={isGlobalAdmin() ? 7 : 6} className="p-12 text-center text-slate-500 font-medium">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <AlertCircle className="w-8 h-8 text-slate-300 mb-2" />
-                        <span className="text-lg font-bold text-slate-700">Nenhum pedido encontrado.</span>
+                        <span className="text-lg font-bold text-slate-700">Nenhum carrinho abandonado encontrado.</span>
                         <span className="text-sm font-medium text-slate-500">Não encontramos nenhum registro com os filtros selecionados.</span>
                       </div>
                     </td>
                   </tr>
                 ) : null}
 
-                {filteredUnifiedOrders.map(item => {
-                  const isConcluido = item.status === "Concluído";
-                  const isPendente = item.status === "Pendente";
-
-                  return (
+                {filteredCarts.map(item => (
                     <tr 
                       key={item.id} 
-                      className={`transition-colors cursor-pointer group ${
-                        isPendente ? 'hover:bg-amber-50/30' : 'hover:bg-slate-50'
-                      }`}
-                      onClick={() => {
-                        if (item.tipo === "pedido" && item.rawOrder) {
-                          setSelectedOrder(item.rawOrder);
-                        } else {
-                          setSelectedCartItem(item);
-                        }
-                      }}
+                      className="transition-colors cursor-pointer group hover:bg-amber-50/30"
+                      onClick={() => setSelectedCartItem(item)}
                     >
                       <td className="px-3 py-3 text-center" onClick={e => e.stopPropagation()}>
                         <Checkbox />
                       </td>
 
-                      {/* Pedido & Data */}
+                      {/* Carrinho & Data */}
                       <td className="px-3 py-3 whitespace-nowrap">
-                        <div className="font-bold text-slate-800 text-[14px]">#{item.id}</div>
+                        <div className="font-bold text-slate-800 text-[14px]">#{item.id.substring(0, 8)}</div>
                         <div className="text-[11px] text-slate-400 mt-0.5">{item.data}</div>
                       </td>
 
                       {/* Cliente */}
                       <td className="px-3 py-3">
                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-110 transition-transform ${
-                              isConcluido ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
-                            }`}>
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-110 transition-transform bg-amber-100 text-amber-800">
                                {item.clienteNome.charAt(0)}
                             </div>
                             <div className="max-w-[180px]">
@@ -819,7 +485,7 @@ export function PedidosAdmin() {
                          </div>
                       </td>
 
-                      {/* Loja Faturamento */}
+                      {/* Loja */}
                       {isGlobalAdmin() && (
                         <td className="px-3 py-3 whitespace-nowrap">
                            <div className="flex items-center gap-2">
@@ -831,17 +497,10 @@ export function PedidosAdmin() {
 
                       {/* Status */}
                       <td className="px-3 py-3 text-center whitespace-nowrap">
-                        {isConcluido ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold gap-1 px-2.5 py-0.5">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                            Concluído (WhatsApp)
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-amber-100 text-amber-800 border-none font-bold gap-1 px-2.5 py-0.5">
-                            <Clock className="w-3 h-3 text-amber-700" />
-                            Pendente (Carrinho)
-                          </Badge>
-                        )}
+                        <Badge className="bg-amber-100 text-amber-800 border-none font-bold gap-1 px-2.5 py-0.5">
+                          <Clock className="w-3 h-3 text-amber-700" />
+                          Abandonado
+                        </Badge>
                       </td>
 
                       {/* Itens */}
@@ -857,12 +516,10 @@ export function PedidosAdmin() {
                       {/* Total / Ações */}
                       <td className="px-3 py-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
-                          {/* Preço Total */}
                           <div className="font-black text-slate-800 text-[15px] mr-2">
                             {item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                           </div>
 
-                          {/* Ação WhatsApp: No Admin Global avisa a loja faturadora. No Painel da Loja (Meus Pedidos), fala direto com o cliente */}
                           {isGlobalView ? (
                             <Button 
                               variant="outline" 
@@ -877,7 +534,7 @@ export function PedidosAdmin() {
                                   clienteNome: item.clienteNome,
                                   clienteTelefone: item.clienteTelefone,
                                   total: item.total,
-                                  status: item.status,
+                                  status: "Pendente",
                                   produtos: item.produtos,
                                 });
                               }}
@@ -900,7 +557,7 @@ export function PedidosAdmin() {
                                   clienteNome: item.clienteNome,
                                   clienteTelefone: item.clienteTelefone,
                                   total: item.total,
-                                  status: item.status,
+                                  status: "Pendente",
                                   produtos: item.produtos,
                                 });
                               }}
@@ -911,14 +568,13 @@ export function PedidosAdmin() {
                             </Button>
                           )}
 
-                          {/* Botão Excluir */}
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 shrink-0 rounded-lg" 
                             onClick={(e) => { 
                               e.stopPropagation(); 
-                              handleDelete(item.id, item.tipo); 
+                              handleDelete(item.id); 
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -926,8 +582,7 @@ export function PedidosAdmin() {
                         </div>
                       </td>
                     </tr>
-                  );
-                })}
+                  ))}
               </tbody>
             </table>
           </div>
@@ -1054,7 +709,7 @@ export function PedidosAdmin() {
                 <Button 
                   variant="outline" 
                   className="text-red-600 hover:bg-red-50 border-red-200 font-bold"
-                  onClick={() => handleDelete(selectedCartItem.id, "carrinho")}
+                  onClick={() => handleDelete(selectedCartItem.id)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
