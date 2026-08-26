@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
+import { useOrdersKpis } from "@/hooks/useOrdersQuery";
 import { useLive } from "@/stores/live";
 import { useOrders } from "@/stores/orders";
 import { useCart } from "@/stores/cart";
@@ -220,8 +221,11 @@ function AdminDashboard() {
   // Incluir o "live cart" se houver, igual na tela de detalhes
   const activeLiveCart = (user && cartItems.length > 0) ? 1 : 0;
   
+  
+  const { data: dbKpis } = useOrdersKpis(effectiveStoreId || undefined);
+
   const storeCarts = effectiveStoreId ? rawStoreCarts.filter(c => c.lojaId === effectiveStoreId) : rawStoreCarts;
-  const carrinhosRecuperar = storeCarts.length;
+  const carrinhosRecuperar = storeCarts.length + (dbKpis?.pendentes || 0);
 
   const formatDataHora = (dataStr: string) => {
     if (!dataStr) return "";

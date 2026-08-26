@@ -109,7 +109,7 @@ interface UnifiedOrderItem {
 }
 
 // import consolidado no topo
-import { useOrdersQuery } from "@/hooks/useOrdersQuery";
+import { useOrdersQuery, useOrdersKpis } from "@/hooks/useOrdersQuery";
 
 export function PedidosAdmin() {
   const { deleteOrder } = useOrders();
@@ -152,7 +152,7 @@ export function PedidosAdmin() {
     page,
     limit,
     lojaId: activeStoreId || undefined,
-    status: mainView === "carrinhos" ? undefined : (mainView === "concluidos" ? "Concluído" : undefined),
+    status: mainView === "carrinhos" ? "Pendente" : (mainView === "concluidos" ? "Concluído" : undefined),
     search: searchTerm,
     dateStart: dateStartFilter,
     dateEnd: dateEndFilter,
@@ -160,6 +160,9 @@ export function PedidosAdmin() {
 
   const orders = ordersResponse?.data || [];
   const totalOrdersCount = ordersResponse?.count || 0;
+
+  const { data: dbKpis } = useOrdersKpis(activeStoreId || undefined);
+
 
   const allAbandonedCarts = allAbandonedCartsRaw.filter((c) => {
     if (activeStoreId) return c.lojaId === activeStoreId;
@@ -412,9 +415,9 @@ export function PedidosAdmin() {
 
   // KPIs: TOTAL DE PEDIDOS puxa TODOS os pedidos (Pendentes + Concluídos)
   const kpis = {
-    total: allUnifiedOrders.length,
-    concluidos: orders.length,
-    carrinhosARecuperar: allAbandonedCarts.length,
+    total: (dbKpis?.total || 0) + allAbandonedCarts.length,
+    concluidos: dbKpis?.concluidos || 0,
+    carrinhosARecuperar: (dbKpis?.pendentes || 0) + allAbandonedCarts.length,
   };
 
   // Filtragem

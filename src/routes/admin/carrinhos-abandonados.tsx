@@ -345,11 +345,11 @@ export function PedidosAdmin() {
   }, [orders, allAbandonedCarts, pharmacies]);
 
   // KPIs: TOTAL DE PEDIDOS puxa TODOS os pedidos (Pendentes + Concluídos)
-  const kpis = {
-    total: allUnifiedOrders.length,
-    concluidos: orders.length,
-    carrinhosARecuperar: allAbandonedCarts.length,
-  };
+    const kpis = {
+      total: (dbKpis?.total || 0) + allAbandonedCarts.length,
+      concluidos: dbKpis?.concluidos || 0,
+      carrinhosARecuperar: (dbKpis?.pendentes || 0) + allAbandonedCarts.length,
+    };
 
   // Filtragem
   const filteredUnifiedOrders = useMemo(() => {

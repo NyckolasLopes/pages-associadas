@@ -83,7 +83,7 @@ function getUnifiedOrderStatus(order: { status?: string; origem?: string; type?:
   }
 
   // Carrinho abandonado / Aguardando pagamento -> Pendente
-  if (statusStr === "abandonado no carrinho" || origemStr === "carrinho") {
+  if (statusStr === "abandonado no carrinho" || origemStr === "carrinho" || statusStr === "pendente" || statusStr === "novo") {
     return { label: "Pendente", desc: "Abandonado no carrinho" };
   }
 
