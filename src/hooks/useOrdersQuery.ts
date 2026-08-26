@@ -61,7 +61,11 @@ export function useOrdersQuery({
       }
       
       if (status && status !== 'todos') {
-        query = query.eq('status', status);
+        if (status === 'Pendente') {
+           query = query.not('status', 'ilike', '%conclu%').not('status', 'ilike', '%cancel%');
+        } else {
+           query = query.eq('status', status);
+        }
       }
       
       if (dateStart) {

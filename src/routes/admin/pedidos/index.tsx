@@ -425,7 +425,10 @@ export function PedidosAdmin() {
     return allUnifiedOrders.filter((item) => {
       // Filtro por view
       if (mainView === "concluidos" && item.status !== "Concluído") return false;
-      if (mainView === "carrinhos" && item.status !== "Pendente") return false;
+      if (mainView === "carrinhos") {
+         const st = (item.status || "").toLowerCase();
+         if (st.includes("conclu") || st.includes("cancel")) return false;
+      }
 
       // Filtro por busca
       if (searchTerm) {
