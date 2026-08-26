@@ -344,7 +344,7 @@ export function Header() {
     if (p) {
       toast.success("Produto escaneado com sucesso!");
       setScannerOpen(false);
-      navigate({ to: "/$storeSlug/produto/$slug", params: { storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any, params: { slug: p.url } as any });
+      navigate({ to: "/$storeSlug/produto/$slug", params: { storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any });
     } else {
       setScanError(`Produto não cadastrado (EAN: ${code})`);
     }
@@ -1035,6 +1035,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const marcas = useMarcasStore(s => s.marcas);
   const allCategories = useAdminCategories(s => s.categories);
+  const params = useParams({ strict: false });
 
   const allSubs = useMemo(() => {
     const subs: Record<string, Categoria[]> = {};
