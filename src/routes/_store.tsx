@@ -61,16 +61,18 @@ function StoreLayout() {
   const potentialSlug = pathParts[0];
 
   const activePharmacy = useMemo(() => {
-    if (selectedPharmacyId) {
-      return pharmacies.find((p) => p.id === selectedPharmacyId) || pharmacies[0] || null;
-    }
-    
+    // 1. O slug da URL tem prioridade ABSOLUTA - se estamos em /zona-sul/produto/..., carrega zona-sul
     if (potentialSlug) {
       const bySlug = pharmacies.find((p) => {
         const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
         return slug === potentialSlug;
       });
       if (bySlug) return bySlug;
+    }
+
+    // 2. Se não há slug na URL correspondente a uma loja, usa a farmácia selecionada no carrinho
+    if (selectedPharmacyId) {
+      return pharmacies.find((p) => p.id === selectedPharmacyId) || pharmacies[0] || null;
     }
     
     return pharmacies[0] || null;
