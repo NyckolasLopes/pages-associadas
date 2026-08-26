@@ -79,41 +79,49 @@ function StoreLayout() {
   const storeTheme = useMemo(() => {
     if (!activePharmacy) return undefined;
     
+    let themeToApply: Record<string, string | undefined> = {};
+    
+    if (activePharmacy.categoriaAssociado === "Parceiro") {
+      themeToApply = { ...PARCEIRO_THEME };
+    }
+
     if (activePharmacy.themeColors) {
+      const t = activePharmacy.themeColors as Record<string, any>;
+      const primary = t['--primary'] || t.primary;
+      const secondary = t['--secondary'] || t.secondary;
+      const accent = t['--accent'] || t.accent;
+      const headerBg = t['--header-bg'] || t.headerBg;
+      
       const legacyTheme: Record<string, string | undefined> = {
-        "--primary": activePharmacy.themeColors.primary,
+        "--primary": primary,
         "--primary-foreground": "#ffffff",
-        "--primary-dark": activePharmacy.themeColors.primary,
-        "--secondary": activePharmacy.themeColors.secondary,
+        "--primary-dark": primary,
+        "--secondary": secondary,
         "--secondary-foreground": "#ffffff",
-        "--accent": activePharmacy.themeColors.accent,
+        "--accent": accent,
         "--accent-foreground": "#ffffff",
-        "--header-bg": activePharmacy.themeColors.headerBg || activePharmacy.themeColors.primary,
-        "--header-icons": activePharmacy.themeColors.headerIcons || "#ffffff",
-        "--search-bg": activePharmacy.themeColors.searchBg || "#ffffff",
-        "--institutional-bg": activePharmacy.themeColors.institutionalBg || "#f97316",
+        "--header-bg": headerBg || primary,
+        "--header-icons": t['--header-icons'] || t.headerIcons || "#ffffff",
+        "--search-bg": t['--search-bg'] || t.searchBg || "#ffffff",
+        "--institutional-bg": t['--institutional-bg'] || t.institutionalBg || "#f97316",
       };
 
-      // Filtra chaves legadas nulas para não sobrescrever
       const cleanLegacyTheme = Object.fromEntries(
         Object.entries(legacyTheme).filter(([_, v]) => v !== undefined)
       );
 
-      // Pega apenas as chaves que começam com '--' (novas vars de customização)
       const customVars = Object.fromEntries(
-        Object.entries(activePharmacy.themeColors).filter(([k, v]) => k.startsWith('--') && v)
+        Object.entries(t).filter(([k, v]) => k.startsWith('--') && v)
       );
 
-      return {
+      themeToApply = {
+        ...themeToApply,
         ...cleanLegacyTheme,
         ...customVars
-      } as React.CSSProperties;
+      };
     }
     
-    if (activePharmacy.categoriaAssociado === "Parceiro") {
-      return PARCEIRO_THEME as React.CSSProperties;
-    }
-    return undefined;
+    return Object.keys(themeToApply).length > 0 ? (themeToApply as React.CSSProperties) : undefined;
   }, [activePharmacy]);
 
   if (activePharmacy?.virtualStoreStatus === "Inativa") {
