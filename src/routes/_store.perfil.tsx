@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, KeyRound, Trash2, Plus, Home, Eye, EyeOff, Briefcase, Building2, Heart, Bell, X } from "lucide-react";
+import { MapPin, KeyRound, Trash2, Plus, Home, Eye, EyeOff, Briefcase, Building2, Heart, Bell, X, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getGreeting, brl, productImage } from "@/lib/format";
@@ -73,6 +73,7 @@ function PerfilPage() {
     { id: 1, type: "Casa", isPrincipal: true, rua: "Rua das Flores", numero: "123", bairro: "Centro", cidade: "Porto Alegre", estado: "RS", cep: "90000-000" }
   ]);
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const [newAddrCep, setNewAddrCep] = useState("");
   const [newAddrRua, setNewAddrRua] = useState("");
   const [newAddrNumero, setNewAddrNumero] = useState("");
@@ -218,12 +219,25 @@ function PerfilPage() {
     }
   };
 
+  const handleEditAddress = (addr: any) => {
+    setEditingAddressId(addr.id);
+    setNewAddrType(addr.type);
+    setNewAddrPrincipal(addr.isPrincipal);
+    setNewAddrRua(addr.rua);
+    setNewAddrNumero(addr.numero);
+    setNewAddrBairro(addr.bairro);
+    setNewAddrCidade(addr.cidade);
+    setNewAddrEstado(addr.estado);
+    setNewAddrCep(addr.cep);
+    setShowAddressForm(true);
+  };
+
   const handleAddAddress = (e: React.FormEvent) => {
     e.preventDefault();
-    if (addresses.length >= 3) return;
+    if (!editingAddressId && addresses.length >= 3) return;
     
     const newAddr = {
-      id: Date.now(),
+      id: editingAddressId || Date.now(),
       type: newAddrType,
       isPrincipal: addresses.length === 0 ? true : newAddrPrincipal,
       rua: newAddrRua || "Rua Exemplo",
@@ -234,13 +248,21 @@ function PerfilPage() {
       cep: newAddrCep || "00000-000"
     };
 
-    if (newAddr.isPrincipal) {
-      setAddresses(addresses.map(a => ({ ...a, isPrincipal: false })).concat(newAddr));
+    let updatedAddresses = addresses;
+    if (editingAddressId) {
+      updatedAddresses = addresses.map(a => a.id === editingAddressId ? newAddr : a);
     } else {
-      setAddresses([...addresses, newAddr]);
+      updatedAddresses = [...addresses, newAddr];
+    }
+    
+    if (newAddr.isPrincipal) {
+      setAddresses(updatedAddresses.map(a => a.id === newAddr.id ? { ...a, isPrincipal: true } : { ...a, isPrincipal: false }));
+    } else {
+      setAddresses(updatedAddresses);
     }
     
     setShowAddressForm(false);
+    setEditingAddressId(null);
     setNewAddrCep("");
     setNewAddrRua("");
     setNewAddrNumero("");
@@ -343,12 +365,22 @@ function PerfilPage() {
                     <p className="text-xs text-muted-foreground">{addr.bairro} - {addr.cidade}/{addr.estado}</p>
                     <p className="text-xs text-muted-foreground mt-1">CEP: {addr.cep}</p>
                     
-                    <button 
-                      className="absolute top-4 right-4 text-red-500 hover:text-red-700"
-                      onClick={() => setAddresses(addresses.filter(a => a.id !== addr.id))}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                      <button 
+                        className="text-muted-foreground hover:text-primary transition"
+                        onClick={() => handleEditAddress(addr)}
+                        title="Editar endereço"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button 
+                        className="text-red-500 hover:text-red-700 transition"
+                        onClick={() => setAddresses(addresses.filter(a => a.id !== addr.id))}
+                        title="Excluir endereço"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
                 
@@ -365,7 +397,7 @@ function PerfilPage() {
 
               {showAddressForm && (
                 <form onSubmit={handleAddAddress} className="border rounded-lg p-4 bg-muted/30 mt-4">
-                  <h3 className="font-bold text-sm mb-3">Novo Endereço</h3>
+                  <h3 className="font-bold text-sm mb-3">{editingAddressId ? "Editar Endereço" : "Novo Endereço"}</h3>
                   <div className="grid sm:grid-cols-2 gap-3 mb-4">
                     <div className="col-span-2 sm:col-span-1">
                       <Label>Tipo de Endereço</Label>
@@ -423,8 +455,11 @@ function PerfilPage() {
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setShowAddressForm(false)}>Cancelar</Button>
-                    <Button type="submit">Salvar Endereço</Button>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setShowAddressForm(false);
+                      setEditingAddressId(null);
+                    }}>Cancelar</Button>
+                    <Button type="submit">{editingAddressId ? "Salvar Alterações" : "Salvar Endereço"}</Button>
                   </div>
                 </form>
               )}
