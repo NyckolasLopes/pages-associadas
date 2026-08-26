@@ -48,6 +48,7 @@ import { useAdminCategories } from "@/stores/categories";
 import { useMarcasStore } from "@/stores/marcas";
 import { useMarketing } from "@/stores/marketing";
 import { useSearchHistory } from "@/stores/searchHistory";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 
 const FALLBACK_CATS_IDS = ["142", "143", "147", "144", "148", "200", "300"];
 const getSafeCategories = () => Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
@@ -133,19 +134,7 @@ export function Header() {
   const isStoreContext = !!(params && (params as any).storeSlug);
   const urlSlug = (params as any)?.storeSlug as string | undefined;
 
-  // URL slug tem prioridade absoluta sobre o carrinho
-  const activePharmacy = (() => {
-    if (urlSlug) {
-      const bySlug = pharmacies.find(p => {
-        const slug = p.slug
-          ? p.slug.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")
-          : (p.nome || p.id).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-        return slug === urlSlug;
-      });
-      if (bySlug) return bySlug;
-    }
-    return pharmacies.find(p => p.id === selectedPharmacyId) || pharmacies[0] || null;
-  })();
+  const activePharmacy = useActivePharmacy();
   const customProducts = useAdminProducts(s => s.customProducts);
   const { featuredCategories, storeFeaturedCategories } = useAdmin();
   const contentPages = useAdmin(s => s.contentPages);
@@ -408,7 +397,9 @@ export function Header() {
       {/* Top utility bar */}
       <div className="bg-primary text-primary-foreground text-xs hidden md:block">
         <div className="container-fa flex items-center justify-between h-9 gap-4">
-          <span className="hidden md:inline">Aqui você tem amigos.</span>
+          {!(activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.isPleno === false) && (
+            <span className="hidden md:inline">Aqui você tem amigos.</span>
+          )}
           <div className="flex items-center gap-2 md:gap-4 ml-auto overflow-x-auto whitespace-nowrap scrollbar-none">
             {contentPages.filter(p => p.location === "header" || p.location === "both").map(p => (
               p.type === "external" ? (

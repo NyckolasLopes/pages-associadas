@@ -5,25 +5,16 @@ import { Header } from "@/components/storefront/Header";
 import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
+import { GlobalLoading } from "@/components/ui/global-loading";
 
 const Footer = lazy(() => import("@/components/storefront/Footer").then(m => ({ default: m.Footer })));
 const FloatingElements = lazy(() => import("@/components/storefront/BackToTop").then(m => ({ default: m.FloatingElements })));
 const CookieBanner = lazy(() => import("@/components/storefront/CookieBanner").then(m => ({ default: m.CookieBanner })));
 const GeoPopup = lazy(() => import("@/components/storefront/GeoPopup").then(m => ({ default: m.GeoPopup })));
 
-/** Spinner neutro – sem logo de nenhuma bandeira */
-function NeutralSpinner() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-      <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-slate-500 animate-spin mb-5" />
-      <p className="text-slate-400 text-sm font-medium animate-pulse tracking-wide">Carregando...</p>
-    </div>
-  );
-}
-
 export const Route = createFileRoute("/_store")({
   component: StoreLayout,
-  pendingComponent: NeutralSpinner,
+  pendingComponent: GlobalLoading,
 });
 
 /** CSS overrides for Parceiro stores – neutral grey/black instead of brand green/orange */
@@ -118,12 +109,32 @@ function StoreLayout() {
     }
   }, [activePharmacy?.id]);
 
+  useEffect(() => {
+    if (!activePharmacy) return;
+    
+    // Attempt to find existing favicon or create a new one
+    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    
+    if (activePharmacy.faviconUrl) {
+      link.href = activePharmacy.faviconUrl;
+    } else if (activePharmacy.isPleno === false && activePharmacy.slug) {
+      link.href = 'data:,'; // Empty favicon for partners without custom favicon
+    } else {
+      link.href = '/favicon.png';
+    }
+  }, [activePharmacy?.faviconUrl, activePharmacy?.isPleno, activePharmacy?.slug]);
+
   // ─── Early returns (APÓS todos os hooks) ───────────────────────────────────
 
   // ⏳ Aguarda lojas carregarem do Supabase antes de renderizar qualquer coisa.
   // Evita o flash de outra loja enquanto os dados chegam.
   if (!pharmaciesLoaded) {
-    return <NeutralSpinner />;
+    return <GlobalLoading />;
   }
 
   if (activePharmacy?.virtualStoreStatus === "Inativa") {

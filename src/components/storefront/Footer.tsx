@@ -396,7 +396,7 @@ export function Footer() {
                 <span className="font-bold text-xl text-white">{activePharmacy.nome}</span>
               ) : (
                 <img
-                  src={activePharmacy?.footerLogoUrl || activePharmacy?.logoUrl || (activePharmacy?.categoriaAssociado === 'Parceiro' ? "" : (dadosLoja.logoUrl || logoUrlDefault))}
+                  src={activePharmacy?.footerLogoUrl || activePharmacy?.logoUrl || (activePharmacy?.categoriaAssociado === 'Parceiro' ? "" : (dadosLoja?.logoUrl || logoUrlDefault))}
                   alt="Logo Rodapé"
                   className="h-12 bg-white rounded-md p-2 w-auto object-contain"
                   loading="lazy"

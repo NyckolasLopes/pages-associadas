@@ -1,12 +1,21 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Download, Share } from "lucide-react";
+import { X, Download, Share, Info } from "lucide-react";
 import { toast } from "sonner";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [manualPromptOpen, setManualPromptOpen] = useState(false);
   const [isIos, setIsIos] = useState(false);
+  const activePharmacy = useActivePharmacy();
 
   useEffect(() => {
     // Check if already installed
@@ -28,10 +37,7 @@ export function InstallPrompt() {
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // If it's iOS and we haven't dismissed it, show the iOS prompt
-    // For iOS, there is no beforeinstallprompt, so we just show it if not installed
     if (isIOSDevice && !localStorage.getItem('pwa_dismissed')) {
-      // Delay prompt slightly so it's not aggressive
       const timer = setTimeout(() => setShowPrompt(true), 3000);
       return () => {
         clearTimeout(timer);
@@ -52,8 +58,9 @@ export function InstallPrompt() {
         }
         setDeferredPrompt(null);
       } else {
-        // Se for iOS ou se o prompt não estiver disponível (ex: já instalado), mostra o modal de instrução
-        setShowPrompt(true);
+        // Se for iOS ou Desktop sem prompt, mostra o Dialog com instruções
+        setManualPromptOpen(true);
+        setShowPrompt(false);
       }
     };
 
@@ -74,9 +81,8 @@ export function InstallPrompt() {
         console.error("Install prompt error", err);
       }
     } else {
-      toast("Para instalar, acesse o menu do navegador (⋮) e clique em 'Instalar Aplicativo' ou 'Adicionar à tela inicial'.", {
-        duration: 5000,
-      });
+      setManualPromptOpen(true);
+      setShowPrompt(false);
     }
   };
 
@@ -85,40 +91,95 @@ export function InstallPrompt() {
     localStorage.setItem('pwa_dismissed', 'true');
   };
 
-  if (!showPrompt) return null;
+  const appName = activePharmacy?.nome ? `App ${activePharmacy.nome}` : "App Farmácias Associadas";
+  const iconUrl = activePharmacy?.faviconUrl || "/favicon.png";
 
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-[200] md:left-auto md:right-6 md:bottom-6 md:w-80 bg-primary text-primary-foreground p-4 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col gap-3 border border-primary-dark animate-in slide-in-from-bottom-5 duration-500 fade-in">
-      <button onClick={handleDismiss} className="absolute top-2 right-2 p-1 text-primary-foreground/70 hover:text-white transition-colors rounded-full hover:bg-black/10">
-        <X className="h-4 w-4" />
-      </button>
-      
-      <div className="flex items-center gap-3">
-        <div className="bg-white rounded-lg p-2 shrink-0 shadow-sm">
-          <img src="/favicon.png" alt="Icon" className="w-8 h-8 rounded object-contain" />
+    <>
+      {showPrompt && (
+        <div className="fixed bottom-24 left-4 right-4 z-[200] md:left-auto md:right-6 md:bottom-6 md:w-80 bg-primary text-primary-foreground p-4 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col gap-3 border border-primary-dark animate-in slide-in-from-bottom-5 duration-500 fade-in">
+          <button onClick={handleDismiss} className="absolute top-2 right-2 p-1 text-primary-foreground/70 hover:text-white transition-colors rounded-full hover:bg-black/10">
+            <X className="h-4 w-4" />
+          </button>
+          
+          <div className="flex items-center gap-3">
+            <div className="bg-white rounded-lg p-2 shrink-0 shadow-sm">
+              <img src={iconUrl} alt="Icon" className="w-8 h-8 rounded object-contain" />
+            </div>
+            <div className="pr-4">
+              <p className="font-bold text-[13px] leading-tight mb-1">{appName}</p>
+              <p className="text-[11px] text-primary-foreground/90 leading-tight">Instale nosso app para acesso mais rápido e ofertas exclusivas!</p>
+            </div>
+          </div>
+          
+          {isIos ? (
+            <div className="bg-black/10 rounded-lg px-3 py-2 text-[11px] flex items-center justify-center gap-2 mt-1">
+              <span>Toque em</span>
+              <Share className="h-4 w-4 shrink-0" />
+              <span>e depois <strong>Adicionar à Tela de Início</strong></span>
+            </div>
+          ) : !deferredPrompt ? (
+            <div className="bg-black/10 rounded-lg px-3 py-2 text-[11px] flex flex-col items-center justify-center gap-1 mt-1 text-center">
+              <span>Para instalar, acesse o menu do seu navegador (⋮) e clique em <strong>Instalar Aplicativo</strong></span>
+            </div>
+          ) : (
+            <Button onClick={handleInstall} variant="secondary" className="w-full h-9 font-bold text-xs bg-white text-primary hover:bg-slate-50 mt-1 shadow-sm">
+              <Download className="h-4 w-4 mr-2" />
+              Instalar Aplicativo
+            </Button>
+          )}
         </div>
-        <div className="pr-4">
-          <p className="font-bold text-[13px] leading-tight mb-1">App Farmácias Associadas</p>
-          <p className="text-[11px] text-primary-foreground/90 leading-tight">Instale nosso app para acesso mais rápido e ofertas exclusivas!</p>
-        </div>
-      </div>
-      
-      {isIos ? (
-        <div className="bg-black/10 rounded-lg px-3 py-2 text-[11px] flex items-center justify-center gap-2 mt-1">
-          <span>Toque em</span>
-          <Share className="h-4 w-4 shrink-0" />
-          <span>e depois <strong>Adicionar à Tela de Início</strong></span>
-        </div>
-      ) : !deferredPrompt ? (
-        <div className="bg-black/10 rounded-lg px-3 py-2 text-[11px] flex flex-col items-center justify-center gap-1 mt-1 text-center">
-          <span>Para instalar, acesse o menu do seu navegador (⋮) e clique em <strong>Instalar Aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>.</span>
-        </div>
-      ) : (
-        <Button onClick={handleInstall} variant="secondary" className="w-full h-9 font-bold text-xs bg-white text-primary hover:bg-slate-50 mt-1 shadow-sm">
-          <Download className="h-4 w-4 mr-2" />
-          Instalar Aplicativo
-        </Button>
       )}
-    </div>
+
+      <Dialog open={manualPromptOpen} onOpenChange={setManualPromptOpen}>
+        <DialogContent className="max-w-sm rounded-2xl p-6 text-center">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl font-bold">Instalar Aplicativo</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-6 py-4">
+            <div className="h-20 w-20 bg-slate-100 rounded-2xl flex items-center justify-center shadow-inner border">
+              <img src={iconUrl} alt="App Icon" className="h-12 w-12 object-contain rounded-lg" />
+            </div>
+            <h3 className="font-bold text-lg">{appName}</h3>
+            
+            <div className="bg-slate-50 rounded-xl p-4 border w-full space-y-4">
+              {isIos ? (
+                <>
+                  <p className="text-sm font-medium text-slate-800">No iPhone ou iPad (Safari):</p>
+                  <ol className="text-sm text-slate-600 text-left space-y-3">
+                    <li className="flex items-start gap-2">
+                      <span className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
+                      <span>Toque no botão Compartilhar <Share className="inline h-4 w-4 mx-1" /> na barra inferior.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
+                      <span>Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong>.</span>
+                    </li>
+                  </ol>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-slate-800">No Android ou Computador:</p>
+                  <ol className="text-sm text-slate-600 text-left space-y-3">
+                    <li className="flex items-start gap-2">
+                      <span className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
+                      <span>Abra o menu do seu navegador (geralmente três pontinhos ⋮ no canto superior direito).</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
+                      <span>Selecione a opção <strong>"Instalar Aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.</span>
+                    </li>
+                  </ol>
+                </>
+              )}
+            </div>
+            
+            <Button onClick={() => setManualPromptOpen(false)} className="w-full font-bold h-12 rounded-xl">
+              Entendi
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

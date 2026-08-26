@@ -46,10 +46,11 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
 
       if (error) throw error;
 
-      const thirtySecondsAgo = new Date(Date.now() - 30000);
+      // Considera abandonado apenas se não houver atualização há mais de 15 minutos (900000 ms)
+      const fifteenMinutesAgo = new Date(Date.now() - 900000);
 
       const mapped: AbandonedCart[] = (data || [])
-        .filter((row: any) => new Date(row.updated_at) < thirtySecondsAgo)
+        .filter((row: any) => new Date(row.updated_at) < fifteenMinutesAgo)
         .map((row: any) => ({
         id: row.id,
         createdAt: new Date(row.created_at).toLocaleDateString('pt-BR') + ' ' + new Date(row.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),

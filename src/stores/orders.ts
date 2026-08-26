@@ -311,6 +311,15 @@ export const useOrders = create<OrdersState>((set, get) => ({
       }
     }
 
+    // Remove ou converte o carrinho abandonado, pois o pedido foi finalizado e não é mais pendente/abandonado
+    if (userId) {
+      await supabase
+        .from('carrinhos_abandonados' as any)
+        .update({ status: 'convertido', updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('status', 'abandonado');
+    }
+
     // Refresh orders from DB for consistency
     await get().loadOrders();
   },
