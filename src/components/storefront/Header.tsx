@@ -444,17 +444,19 @@ export function Header() {
                     setQ(e.target.value);
                     setSearchOpen(true);
                   }}
-                  placeholder="Escreva o que procura ou escaneie o codigo de barras"
-                  className="pl-10 pr-10 h-11 rounded-full border-2 focus-visible:border-primary w-full"
+                  placeholder={activePharmacy?.isPleno === false ? "Escreva o que procura" : "Escreva o que procura ou escaneie o codigo de barras"}
+                  className={`pl-10 h-11 rounded-full border-2 focus-visible:border-primary w-full ${activePharmacy?.isPleno === false ? 'pr-4' : 'pr-10'}`}
                 />
-                <button
-                  type="button"
-                  aria-label="Escanear código"
-                  onClick={() => setScannerOpen(true)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
-                >
-                  <Camera className="h-4 w-4" />
-                </button>
+                {activePharmacy?.isPleno !== false && (
+                  <button
+                    type="button"
+                    aria-label="Escanear código"
+                    onClick={() => setScannerOpen(true)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </PopoverTrigger>
             <PopoverContent
@@ -631,17 +633,19 @@ export function Header() {
                         setQ(e.target.value);
                         setSearchOpen(true);
                       }}
-                      placeholder="Escreva o que procura ou escaneie o codigo de barras"
-                      className="pl-10 pr-12 h-11 rounded-full border-2 w-full"
+                      placeholder={activePharmacy?.isPleno === false ? "Escreva o que procura" : "Escreva o que procura ou escaneie o codigo de barras"}
+                      className={`pl-10 h-11 rounded-full border-2 w-full ${activePharmacy?.isPleno === false ? 'pr-4' : 'pr-12'}`}
                     />
-                    <button
-                      type="button"
-                      aria-label="Escanear código"
-                      onClick={() => setScannerOpen(true)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
-                    >
-                      <Camera className="h-5 w-5" />
-                    </button>
+                    {activePharmacy?.isPleno !== false && (
+                      <button
+                        type="button"
+                        aria-label="Escanear código"
+                        onClick={() => setScannerOpen(true)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
+                      >
+                        <Camera className="h-5 w-5" />
+                      </button>
+                    )}
                   </div>
                 </PopoverTrigger>
                 <PopoverContent
