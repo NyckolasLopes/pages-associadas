@@ -261,7 +261,7 @@ export function Footer() {
                     lojaId: activePharmacy?.id,
                     lojaNome: activePharmacy?.pageTitle || dadosLoja.nomeDaLoja
                   });
-                  toast.success("Inscrição realizada — bem-vindo(a)!"); 
+                  toast.success("Inscrição realizada — obrigado!"); 
                   e.currentTarget.reset();
                 }
               }}
