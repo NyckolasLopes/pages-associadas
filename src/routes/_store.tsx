@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 import { Header } from "@/components/storefront/Header";
-import { Suspense, lazy, useMemo, useEffect } from "react";
+import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 
 const Footer = lazy(() => import("@/components/storefront/Footer").then(m => ({ default: m.Footer })));
@@ -149,7 +149,7 @@ function StoreLayout() {
       themeToApply = { ...themeToApply, ...cleanLegacyTheme, ...customVars };
     }
 
-    return Object.keys(themeToApply).length > 0 ? (themeToApply as React.CSSProperties) : undefined;
+    return Object.keys(themeToApply).length > 0 ? (themeToApply as CSSProperties) : undefined;
   }, [activePharmacy]);
 
   // — Efeitos (todos os hooks antes do early return) —
