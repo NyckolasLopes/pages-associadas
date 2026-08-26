@@ -939,97 +939,109 @@ export const useAdmin = create<AdminState>()(
         // Throttle: ignora chamadas duplicadas dentro de 5s (evita duplo fetch no boot)
         const now = Date.now();
         const last = (loadPharmaciesThrottle as any)._lastCall || 0;
-        if (now - last < 5000) return;
+        if (now - last < 5000) {
+          // Mesmo throttlado, desbloqueia a UI — os dados já foram carregados pelo primeiro fetch
+          set({ pharmaciesLoaded: true });
+          return;
+        }
         (loadPharmaciesThrottle as any)._lastCall = now;
 
-        const { data, error } = await supabase.from('lojas').select('*');
-        if (!error && data) {
-          const loadedPharmacies: Pharmacy[] = data.map((l: any) => {
-            let parsedThemeColors: any = {};
-            try {
-              parsedThemeColors = typeof l.theme_colors === 'string' ? JSON.parse(l.theme_colors) : (l.theme_colors || {});
-            } catch (e) {
-              console.error("Erro ao parsear theme_colors", e);
-            }
-            return {
-              id: l.id,
-              slug: l.slug || parsedThemeColors?.slug,
-              ativo: l.ativa ?? true,
-              cnpj: l.cnpj,
-              razaoSocial: l.razao_social,
-              nome: l.nome_fantasia,
-              email: l.email,
-              telefone: l.telefone,
-              horarioFuncionamento: l.horario_funcionamento || parsedThemeColors?.horario_funcionamento,
-              diasFuncionamento: parsedThemeColors?.diasFuncionamento || [1,2,3,4,5,6],
-                horariosPorDia: parsedThemeColors?.horariosPorDia || [],
-                datasEspeciais: parsedThemeColors?.datasEspeciais || [],
-              respTecnico: l.farmaceutico_responsavel || parsedThemeColors?.farmaceutico_responsavel,
-              inscricaoFarmaceutico: l.crf || parsedThemeColors?.crf,
-              alvara: l.alvara_sanitario || parsedThemeColors?.alvara_sanitario,
-              afe: l.afe || parsedThemeColors?.afe,
-              cep: l.cep || '',
-              endereco: l.logradouro || '',
-              numero: l.numero || '',
-              complemento: l.complemento || parsedThemeColors?.complemento || '',
-              bairro: l.bairro || '',
-              cidade: l.cidade || '',
-              uf: l.estado || '',
-              whatsapp: l.whatsapp || parsedThemeColors?.whatsapp || '',
-              pageTitle: parsedThemeColors?.pageTitle || '',
-              metaDescription: parsedThemeColors?.metaDescription || '',
-              seoDescricao: parsedThemeColors?.seoDescricao || '',
-              facebookPixelId: parsedThemeColors?.facebookPixelId || '',
-              googleAnalyticsId: parsedThemeColors?.googleAnalyticsId || '',
-              googleTagManagerId: parsedThemeColors?.googleTagManagerId || '',
-              footerPlataformaTexto: l.footer_plataforma_texto || parsedThemeColors?.footer_plataforma_texto || '',
-              footerDescricao: l.footer_descricao || parsedThemeColors?.footer_descricao || '',
-              footerTituloContato: l.footer_titulo_contato || parsedThemeColors?.footer_titulo_contato || '',
-              socialLinks: l.social_links || parsedThemeColors?.social_links || {},
-              topBarText: parsedThemeColors?.topBarText || '',
-              topBarBgColor: parsedThemeColors?.topBarBgColor || '',
-              topBarTextColor: parsedThemeColors?.topBarTextColor || '',
-              latitude: l.latitude,
-              longitude: l.longitude,
-              logoUrl: parsedThemeColors?.logoUrl || '',
-              faviconUrl: parsedThemeColors?.faviconUrl || '',
-              footerLogoUrl: parsedThemeColors?.footerLogoUrl || '',
-              anvisaLogoUrl: parsedThemeColors?.anvisaLogoUrl || '',
-              categoriaAssociado: l.categoria_associado || parsedThemeColors?.categoria_associado,
-              trabalhaComEncarte: l.trabalha_com_encarte || parsedThemeColors?.trabalha_com_encarte,
-              entregaExpressa: l.entrega_expressa || parsedThemeColors?.entrega_expressa,
-              virtualStoreStatus: l.status_loja_virtual || parsedThemeColors?.status_loja_virtual,
-              isVirtualStoreGenerated: !!l.status_loja_virtual,
-              api_key: l.api_key,
-              aceitaEntrega: parsedThemeColors?.aceitaEntrega ?? false,
-              modeloFrete: parsedThemeColors?.modeloFrete ?? 'raio',
-              horarioInicioEntrega: parsedThemeColors?.horarioInicioEntrega ?? '',
-              horarioFimEntrega: parsedThemeColors?.horarioFimEntrega ?? '',
-              horarioFimEntregaRisco: parsedThemeColors?.horarioFimEntregaRisco ?? '',
-              tempoEntrega: parsedThemeColors?.tempoEntrega ?? '',
-              custoEntrega: parsedThemeColors?.custoEntrega ?? 0,
-              raioEntregaKm: parsedThemeColors?.raioEntregaKm,
-              faixasCep: parsedThemeColors?.faixasCep ?? [],
-              aceitaRetirada: parsedThemeColors?.aceitaRetirada ?? false,
-              horarioInicioRetirada: parsedThemeColors?.horarioInicioRetirada ?? '',
-              horarioFimRetirada: parsedThemeColors?.horarioFimRetirada ?? '',
-              tempoRetirada: parsedThemeColors?.tempoRetirada ?? '',
-              aceitaUber: parsedThemeColors?.aceitaUber ?? false,
-              custoUber: parsedThemeColors?.custoUber ?? 0,
-              aceita99: parsedThemeColors?.aceita99 ?? false,
-              custo99: parsedThemeColors?.custo99 ?? 0,
-              aceitaMotoboy: parsedThemeColors?.aceitaMotoboy ?? false,
-              custoMotoboy: parsedThemeColors?.custoMotoboy ?? 0,
-              custoEntregaExpressa: parsedThemeColors?.custoEntregaExpressa ?? 0,
-              raiosEntrega: parsedThemeColors?.raiosEntrega ?? [],
-              faixasValorPedido: parsedThemeColors?.faixasValorPedido ?? [],
-              meiosEntregaPersonalizados: parsedThemeColors?.meiosEntregaPersonalizados ?? [],
-              themeColors: parsedThemeColors && Object.keys(parsedThemeColors).length > 0 ? parsedThemeColors : undefined,
-              sistemaUtilizado: l.sistema_utilizado || parsedThemeColors?.sistemaUtilizado || '',
-              offersServices: parsedThemeColors?.offersServices ?? false,
-            };
-          }) as unknown as Pharmacy[];
-          set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true });
+        try {
+          const { data, error } = await supabase.from('lojas').select('*');
+          if (!error && data) {
+            const loadedPharmacies: Pharmacy[] = data.map((l: any) => {
+              let parsedThemeColors: any = {};
+              try {
+                parsedThemeColors = typeof l.theme_colors === 'string' ? JSON.parse(l.theme_colors) : (l.theme_colors || {});
+              } catch (e) {
+                console.error("Erro ao parsear theme_colors", e);
+              }
+              return {
+                id: l.id,
+                slug: l.slug || parsedThemeColors?.slug,
+                ativo: l.ativa ?? true,
+                cnpj: l.cnpj,
+                razaoSocial: l.razao_social,
+                nome: l.nome_fantasia,
+                email: l.email,
+                telefone: l.telefone,
+                horarioFuncionamento: l.horario_funcionamento || parsedThemeColors?.horario_funcionamento,
+                diasFuncionamento: parsedThemeColors?.diasFuncionamento || [1,2,3,4,5,6],
+                  horariosPorDia: parsedThemeColors?.horariosPorDia || [],
+                  datasEspeciais: parsedThemeColors?.datasEspeciais || [],
+                respTecnico: l.farmaceutico_responsavel || parsedThemeColors?.farmaceutico_responsavel,
+                inscricaoFarmaceutico: l.crf || parsedThemeColors?.crf,
+                alvara: l.alvara_sanitario || parsedThemeColors?.alvara_sanitario,
+                afe: l.afe || parsedThemeColors?.afe,
+                cep: l.cep || '',
+                endereco: l.logradouro || '',
+                numero: l.numero || '',
+                complemento: l.complemento || parsedThemeColors?.complemento || '',
+                bairro: l.bairro || '',
+                cidade: l.cidade || '',
+                uf: l.estado || '',
+                whatsapp: l.whatsapp || parsedThemeColors?.whatsapp || '',
+                pageTitle: parsedThemeColors?.pageTitle || '',
+                metaDescription: parsedThemeColors?.metaDescription || '',
+                seoDescricao: parsedThemeColors?.seoDescricao || '',
+                facebookPixelId: parsedThemeColors?.facebookPixelId || '',
+                googleAnalyticsId: parsedThemeColors?.googleAnalyticsId || '',
+                googleTagManagerId: parsedThemeColors?.googleTagManagerId || '',
+                footerPlataformaTexto: l.footer_plataforma_texto || parsedThemeColors?.footer_plataforma_texto || '',
+                footerDescricao: l.footer_descricao || parsedThemeColors?.footer_descricao || '',
+                footerTituloContato: l.footer_titulo_contato || parsedThemeColors?.footer_titulo_contato || '',
+                socialLinks: l.social_links || parsedThemeColors?.social_links || {},
+                topBarText: parsedThemeColors?.topBarText || '',
+                topBarBgColor: parsedThemeColors?.topBarBgColor || '',
+                topBarTextColor: parsedThemeColors?.topBarTextColor || '',
+                latitude: l.latitude,
+                longitude: l.longitude,
+                logoUrl: parsedThemeColors?.logoUrl || '',
+                faviconUrl: parsedThemeColors?.faviconUrl || '',
+                footerLogoUrl: parsedThemeColors?.footerLogoUrl || '',
+                anvisaLogoUrl: parsedThemeColors?.anvisaLogoUrl || '',
+                categoriaAssociado: l.categoria_associado || parsedThemeColors?.categoria_associado,
+                trabalhaComEncarte: l.trabalha_com_encarte || parsedThemeColors?.trabalha_com_encarte,
+                entregaExpressa: l.entrega_expressa || parsedThemeColors?.entrega_expressa,
+                virtualStoreStatus: l.status_loja_virtual || parsedThemeColors?.status_loja_virtual,
+                isVirtualStoreGenerated: !!l.status_loja_virtual,
+                api_key: l.api_key,
+                aceitaEntrega: parsedThemeColors?.aceitaEntrega ?? false,
+                modeloFrete: parsedThemeColors?.modeloFrete ?? 'raio',
+                horarioInicioEntrega: parsedThemeColors?.horarioInicioEntrega ?? '',
+                horarioFimEntrega: parsedThemeColors?.horarioFimEntrega ?? '',
+                horarioFimEntregaRisco: parsedThemeColors?.horarioFimEntregaRisco ?? '',
+                tempoEntrega: parsedThemeColors?.tempoEntrega ?? '',
+                custoEntrega: parsedThemeColors?.custoEntrega ?? 0,
+                raioEntregaKm: parsedThemeColors?.raioEntregaKm,
+                faixasCep: parsedThemeColors?.faixasCep ?? [],
+                aceitaRetirada: parsedThemeColors?.aceitaRetirada ?? false,
+                horarioInicioRetirada: parsedThemeColors?.horarioInicioRetirada ?? '',
+                horarioFimRetirada: parsedThemeColors?.horarioFimRetirada ?? '',
+                tempoRetirada: parsedThemeColors?.tempoRetirada ?? '',
+                aceitaUber: parsedThemeColors?.aceitaUber ?? false,
+                custoUber: parsedThemeColors?.custoUber ?? 0,
+                aceita99: parsedThemeColors?.aceita99 ?? false,
+                custo99: parsedThemeColors?.custo99 ?? 0,
+                aceitaMotoboy: parsedThemeColors?.aceitaMotoboy ?? false,
+                custoMotoboy: parsedThemeColors?.custoMotoboy ?? 0,
+                custoEntregaExpressa: parsedThemeColors?.custoEntregaExpressa ?? 0,
+                raiosEntrega: parsedThemeColors?.raiosEntrega ?? [],
+                faixasValorPedido: parsedThemeColors?.faixasValorPedido ?? [],
+                meiosEntregaPersonalizados: parsedThemeColors?.meiosEntregaPersonalizados ?? [],
+                themeColors: parsedThemeColors && Object.keys(parsedThemeColors).length > 0 ? parsedThemeColors : undefined,
+                sistemaUtilizado: l.sistema_utilizado || parsedThemeColors?.sistemaUtilizado || '',
+                offersServices: parsedThemeColors?.offersServices ?? false,
+              };
+            }) as unknown as Pharmacy[];
+            set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true });
+          } else {
+            // Mesmo em caso de erro, desbloqueia a UI (mostra loja vazia ou fallback)
+            set({ pharmaciesLoaded: true });
+          }
+        } catch {
+          // Erro de rede — desbloqueia a UI para não ficar em spinner infinito
+          set({ pharmaciesLoaded: true });
         }
       },
 
