@@ -787,7 +787,7 @@ function PDP() {
     // Auto-select closest pharmacy on load (only if not forced to select)
     if (availablePharmacies.length > 0 && (!isShared || globalCep)) {
       const currentSelected = selectedPharmacyId ? availablePharmacies.find((f: any) => f.id === selectedPharmacyId) : null;
-      if (currentSelected && (currentSelected._calculatedStock > 0 || isService)) {
+      if (currentSelected) {
         // Already selected and valid, just set freight
         setSelectedFreight("pickup");
       } else {
