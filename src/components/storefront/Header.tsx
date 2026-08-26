@@ -183,10 +183,10 @@ export function Header() {
   const handleCheckoutClick = () => {
     if (!useAuth.getState().user) {
       setDrawer(false);
-      navigate({ to: "/login", search: { redirect: "/cart" } as any });
+      navigate({ to: "/login", search: { redirect: `/${(params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao"}/cart` } as any });
     } else {
       setDrawer(false);
-      navigate({ to: "/cart" });
+      navigate({ to: "/$storeSlug/cart", params: { storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao" } as any });
     }
   };
 
@@ -344,7 +344,7 @@ export function Header() {
     if (p) {
       toast.success("Produto escaneado com sucesso!");
       setScannerOpen(false);
-      navigate({ to: "/p/$slug", params: { slug: p.url } as any });
+      navigate({ to: "/$storeSlug/produto/$slug", params: { storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any, params: { slug: p.url } as any });
     } else {
       setScanError(`Produto não cadastrado (EAN: ${code})`);
     }
@@ -480,8 +480,8 @@ export function Header() {
                   {results.map((p) => (
                     <Link
                       key={p.id}
-                      to={"/p/$slug" as any}
-                      params={{ slug: p.url } as any}
+                      to={"/$storeSlug/produto/$slug" as any}
+                      params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any}
                       onClick={() => setSearchOpen(false)}
                       className="flex items-center gap-3 p-3 hover:bg-muted border-b last:border-0"
                     >
@@ -668,8 +668,8 @@ export function Header() {
                       {results.map((p) => (
                         <Link
                           key={p.id}
-                          to={"/p/$slug" as any}
-                          params={{ slug: p.url } as any}
+                          to={"/$storeSlug/produto/$slug" as any}
+                          params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any}
                           onClick={() => {
                             setSearchOpen(false);
                             setMobileSearchOpen(false);
@@ -1284,8 +1284,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   {catProducts.map(p => (
                     <Link
                       key={p.id}
-                      to={"/p/$slug" as any}
-                      params={{ slug: p.url } as any}
+                      to={"/$storeSlug/produto/$slug" as any}
+                      params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any}
                       onClick={() => setOpen(null)}
                       className="group flex flex-col bg-white rounded border hover:border-primary transition p-3"
                     >

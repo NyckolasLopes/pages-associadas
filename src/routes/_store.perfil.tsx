@@ -592,7 +592,7 @@ function PerfilPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {favoriteProducts.map(p => (
                      <div key={p.id} className="bg-card border rounded-xl p-4 flex flex-col gap-3 relative group hover:shadow-md transition-shadow">
-                        <Link to="/p/$slug" params={{ slug: p.url || p.id }} className="flex-1 flex flex-col items-center text-center gap-3">
+                        <Link to="/$storeSlug/produto/$slug" params={{ storeSlug: "loja-padrao", slug: p.url || p.id }} className="flex-1 flex flex-col items-center text-center gap-3">
                            <div className="w-full bg-white rounded-lg p-2 aspect-square flex items-center justify-center mb-2">
                              <img src={productImage(p)} alt={p.nome} className="w-full h-full object-contain mix-blend-multiply" />
                            </div>

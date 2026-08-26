@@ -46,7 +46,7 @@ const PromoIcon = ({ id, className }: { id: string, className?: string }) => {
   return <Flame className={className} />;
 };
 
-export const Route = createFileRoute("/_store/p/$slug")({
+export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
   validateSearch: (search: Record<string, unknown>): { shared?: string } => {
     return {
       shared: search.shared as string | undefined,
@@ -574,7 +574,7 @@ function PDP() {
           deliveryPrice = matchingRaio.preco;
         }
       } else if (f.meiosEntregaPersonalizados && f.meiosEntregaPersonalizados.length > 0) {
-        let lowestCustom = null;
+        let lowestCustom: number | null = null;
         f.meiosEntregaPersonalizados.filter(m => m.ativo).forEach(m => {
           if (m.raios && m.raios.length > 0) {
              const matchingRaio = [...m.raios].sort((a, b) => a.ateKm - b.ateKm).find(r => distance <= r.ateKm);
@@ -875,7 +875,7 @@ function PDP() {
     },
     "offers": {
       "@type": "Offer",
-      "url": `https://associadas.com.br/p/${p.url || p.slug || p.id}`,
+      "url": `https://associadas.com.br/loja-padrao/produto/${p.url || p.slug || p.id}`,
       "priceCurrency": "BRL",
       "price": (finalPrecoPor || 0).toString(),
       "availability": maxStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",

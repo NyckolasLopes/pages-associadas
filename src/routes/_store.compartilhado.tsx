@@ -39,7 +39,7 @@ function CompartilhadoPage() {
       }
       
       // Redirect to cart and trigger the forced pharmacy selection modal
-      navigate({ to: "/cart", search: { shared: "true" } });
+      navigate({ to: "/$storeSlug/cart", params: { storeSlug: "loja-padrao" }, search: { shared: "true" } as any });
     }
     loadSharedCart();
   }, [search.c, navigate, add, clear]);

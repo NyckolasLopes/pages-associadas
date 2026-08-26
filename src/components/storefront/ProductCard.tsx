@@ -328,9 +328,9 @@ function ProductCardComponent({
 
 
       <Link
-        to="/p/$slug"
+        to="/$storeSlug/produto/$slug"
         preload="intent"
-        params={{ slug: p.url || p.id }}
+        params={{ storeSlug: (params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao", slug: p.url || p.id }}
         className="relative aspect-square bg-white p-4 block"
       >
         <img
@@ -371,9 +371,9 @@ function ProductCardComponent({
           {p.marca}
         </div>
         <Link
-          to="/p/$slug"
+          to="/$storeSlug/produto/$slug"
           preload="intent"
-          params={{ slug: p.url || p.id }}
+          params={{ storeSlug: (params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao", slug: p.url || p.id }}
           className="text-sm md:text-[15px] font-bold line-clamp-2 h-[2.5em] hover:text-primary-dark leading-tight overflow-hidden"
         >
           {p.nome}
@@ -460,7 +460,7 @@ function ProductCardComponent({
                   if (!p.precoSobConsulta) {
                     add({ ...p, estoque: Math.max(1, maxStock) }); 
                   } else {
-                    window.location.href = `/p/${p.url || p.id}`;
+                    window.location.href = `/${(params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao"}/produto/${p.url || p.id}`;
                   }
                 }}
                 style={

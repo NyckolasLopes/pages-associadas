@@ -85,7 +85,7 @@ function getDynamicETA(inicio: string, fim: string, diasAbertos: number[], tempo
   }
 }
 
-export const Route = createFileRoute("/_store/cart")({
+export const Route = createFileRoute("/_store/$storeSlug/cart")({
   validateSearch: (search: Record<string, unknown>): { shared?: string } => {
     return {
       shared: search.shared as string | undefined,

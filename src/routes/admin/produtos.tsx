@@ -340,7 +340,7 @@ function AdminProdutos() {
       <g:id>${p.id}</g:id>
       <g:title><![CDATA[${p.nome}]]></g:title>
       <g:description><![CDATA[${p.descricao || p.nome}]]></g:description>
-      <g:link>https://associadas.com.br/p/${p.id}</g:link>
+      <g:link>https://associadas.com.br/loja-padrao/produto/${p.id}</g:link>
       <g:image_link>${imgLink}</g:image_link>
       <g:condition>new</g:condition>
       <g:availability>in stock</g:availability>

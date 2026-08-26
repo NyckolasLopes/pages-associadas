@@ -109,7 +109,7 @@ export function PromoCardBadge({
 }
 
 /**
- * Large, expanded promotional banner for the Product Page (_store/p/$slug.tsx)
+ * Large, expanded promotional banner for the Product Page (_store/$storeSlug/produto/$slug.tsx)
  */
 export function PromoProductPageBanner({
   promo,

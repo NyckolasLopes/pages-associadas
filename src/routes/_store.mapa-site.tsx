@@ -40,7 +40,7 @@ function SiteMap() {
             <Column title="Navegação Principal">
               <Row><Link to="/" className="hover:text-primary">→ Início</Link></Row>
               <Row><Link to="/busca" className="hover:text-primary">→ Buscar produtos</Link></Row>
-              <Row><Link to="/cart" className="hover:text-primary">→ Cesta</Link></Row>
+              <Row><Link to="/$storeSlug/cart" params={{ storeSlug: "loja-padrao" }} className="hover:text-primary">→ Cesta</Link></Row>
               <Row><Link to="/checkout" className="hover:text-primary">→ Checkout</Link></Row>
               <Row><Link to="/login" className="hover:text-primary">→ Entrar / Cadastrar</Link></Row>
             </Column>

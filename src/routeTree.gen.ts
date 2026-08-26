@@ -49,15 +49,14 @@ import { Route as StoreLoginRouteImport } from './routes/_store.login'
 import { Route as StoreFaqRouteImport } from './routes/_store.faq'
 import { Route as StoreCompartilhadoRouteImport } from './routes/_store.compartilhado'
 import { Route as StoreCheckoutRouteImport } from './routes/_store.checkout'
-import { Route as StoreCartRouteImport } from './routes/_store.cart'
 import { Route as StoreCadastroRouteImport } from './routes/_store.cadastro'
 import { Route as StoreBuscaRouteImport } from './routes/_store/busca'
-import { Route as StoreStoreSlugRouteImport } from './routes/_store.$storeSlug'
 import { Route as AdminPedidosIndexRouteImport } from './routes/admin/pedidos/index'
 import { Route as AdminLojasIndexRouteImport } from './routes/admin/lojas.index'
 import { Route as AdminDesignIndexRouteImport } from './routes/admin/design.index'
 import { Route as AdminConfiguracoesIndexRouteImport } from './routes/admin/configuracoes.index'
 import { Route as AdminClientesIndexRouteImport } from './routes/admin/clientes/index'
+import { Route as StoreStoreSlugIndexRouteImport } from './routes/_store.$storeSlug.index'
 import { Route as AdminVariacoesNovaRouteImport } from './routes/admin/variacoes.nova'
 import { Route as AdminSolucoesAplicativosRouteImport } from './routes/admin/solucoes.aplicativos'
 import { Route as AdminSelosNovoRouteImport } from './routes/admin/selos.novo'
@@ -92,14 +91,15 @@ import { Route as AdminCanaisGoogleShoppingRouteImport } from './routes/admin/ca
 import { Route as AdminCanaisFarmaciasappRouteImport } from './routes/admin/canais.farmaciasapp'
 import { Route as StoreVSlugRouteImport } from './routes/_store/v/$slug'
 import { Route as StorePaginaSlugRouteImport } from './routes/_store.pagina.$slug'
-import { Route as StorePSlugRouteImport } from './routes/_store/p/$slug'
 import { Route as StoreMSlugRouteImport } from './routes/_store/m/$slug'
 import { Route as StoreCSlugRouteImport } from './routes/_store/c/$slug'
 import { Route as StoreAjudaPageRouteImport } from './routes/_store.ajuda.$page'
+import { Route as StoreStoreSlugCartRouteImport } from './routes/_store.$storeSlug.cart'
 import { Route as AdminMarketingPromocoesIndexRouteImport } from './routes/admin/marketing.promocoes.index'
 import { Route as AdminMarketingCuponsIndexRouteImport } from './routes/admin/marketing.cupons.index'
 import { Route as AdminMarketingPromocoesNovaRouteImport } from './routes/admin/marketing.promocoes.nova'
 import { Route as AdminMarketingCuponsNovoRouteImport } from './routes/admin/marketing.cupons.novo'
+import { Route as StoreStoreSlugProdutoSlugRouteImport } from './routes/_store.$storeSlug.produto.$slug'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -303,11 +303,6 @@ const StoreCheckoutRoute = StoreCheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => StoreRoute,
 } as any)
-const StoreCartRoute = StoreCartRouteImport.update({
-  id: '/cart',
-  path: '/cart',
-  getParentRoute: () => StoreRoute,
-} as any)
 const StoreCadastroRoute = StoreCadastroRouteImport.update({
   id: '/cadastro',
   path: '/cadastro',
@@ -316,11 +311,6 @@ const StoreCadastroRoute = StoreCadastroRouteImport.update({
 const StoreBuscaRoute = StoreBuscaRouteImport.update({
   id: '/busca',
   path: '/busca',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreStoreSlugRoute = StoreStoreSlugRouteImport.update({
-  id: '/$storeSlug',
-  path: '/$storeSlug',
   getParentRoute: () => StoreRoute,
 } as any)
 const AdminPedidosIndexRoute = AdminPedidosIndexRouteImport.update({
@@ -347,6 +337,11 @@ const AdminClientesIndexRoute = AdminClientesIndexRouteImport.update({
   id: '/clientes/',
   path: '/clientes/',
   getParentRoute: () => AdminRoute,
+} as any)
+const StoreStoreSlugIndexRoute = StoreStoreSlugIndexRouteImport.update({
+  id: '/$storeSlug/',
+  path: '/$storeSlug/',
+  getParentRoute: () => StoreRoute,
 } as any)
 const AdminVariacoesNovaRoute = AdminVariacoesNovaRouteImport.update({
   id: '/nova',
@@ -527,11 +522,6 @@ const StorePaginaSlugRoute = StorePaginaSlugRouteImport.update({
   path: '/pagina/$slug',
   getParentRoute: () => StoreRoute,
 } as any)
-const StorePSlugRoute = StorePSlugRouteImport.update({
-  id: '/p/$slug',
-  path: '/p/$slug',
-  getParentRoute: () => StoreRoute,
-} as any)
 const StoreMSlugRoute = StoreMSlugRouteImport.update({
   id: '/m/$slug',
   path: '/m/$slug',
@@ -545,6 +535,11 @@ const StoreCSlugRoute = StoreCSlugRouteImport.update({
 const StoreAjudaPageRoute = StoreAjudaPageRouteImport.update({
   id: '/ajuda/$page',
   path: '/ajuda/$page',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreStoreSlugCartRoute = StoreStoreSlugCartRouteImport.update({
+  id: '/$storeSlug/cart',
+  path: '/$storeSlug/cart',
   getParentRoute: () => StoreRoute,
 } as any)
 const AdminMarketingPromocoesIndexRoute =
@@ -571,14 +566,18 @@ const AdminMarketingCuponsNovoRoute =
     path: '/marketing/cupons/novo',
     getParentRoute: () => AdminRoute,
   } as any)
+const StoreStoreSlugProdutoSlugRoute =
+  StoreStoreSlugProdutoSlugRouteImport.update({
+    id: '/$storeSlug/produto/$slug',
+    path: '/$storeSlug/produto/$slug',
+    getParentRoute: () => StoreRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/$storeSlug': typeof StoreStoreSlugRoute
   '/busca': typeof StoreBuscaRoute
   '/cadastro': typeof StoreCadastroRoute
-  '/cart': typeof StoreCartRoute
   '/checkout': typeof StoreCheckoutRoute
   '/compartilhado': typeof StoreCompartilhadoRoute
   '/faq': typeof StoreFaqRoute
@@ -616,10 +615,10 @@ export interface FileRoutesByFullPath {
   '/painel-loja/$lojaId': typeof PainelLojaLojaIdRoute
   '/painel-loja/old': typeof PainelLojaOldRoute
   '/admin/': typeof AdminIndexRoute
+  '/$storeSlug/cart': typeof StoreStoreSlugCartRoute
   '/ajuda/$page': typeof StoreAjudaPageRoute
   '/c/$slug': typeof StoreCSlugRoute
   '/m/$slug': typeof StoreMSlugRoute
-  '/p/$slug': typeof StorePSlugRoute
   '/pagina/$slug': typeof StorePaginaSlugRoute
   '/v/$slug': typeof StoreVSlugRoute
   '/admin/canais/farmaciasapp': typeof AdminCanaisFarmaciasappRoute
@@ -654,11 +653,13 @@ export interface FileRoutesByFullPath {
   '/admin/selos/novo': typeof AdminSelosNovoRoute
   '/admin/solucoes/aplicativos': typeof AdminSolucoesAplicativosRoute
   '/admin/variacoes/nova': typeof AdminVariacoesNovaRoute
+  '/$storeSlug/': typeof StoreStoreSlugIndexRoute
   '/admin/clientes/': typeof AdminClientesIndexRoute
   '/admin/configuracoes/': typeof AdminConfiguracoesIndexRoute
   '/admin/design/': typeof AdminDesignIndexRoute
   '/admin/lojas/': typeof AdminLojasIndexRoute
   '/admin/pedidos/': typeof AdminPedidosIndexRoute
+  '/$storeSlug/produto/$slug': typeof StoreStoreSlugProdutoSlugRoute
   '/admin/marketing/cupons/novo': typeof AdminMarketingCuponsNovoRoute
   '/admin/marketing/promocoes/nova': typeof AdminMarketingPromocoesNovaRoute
   '/admin/marketing/cupons/': typeof AdminMarketingCuponsIndexRoute
@@ -666,10 +667,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/$storeSlug': typeof StoreStoreSlugRoute
   '/busca': typeof StoreBuscaRoute
   '/cadastro': typeof StoreCadastroRoute
-  '/cart': typeof StoreCartRoute
   '/checkout': typeof StoreCheckoutRoute
   '/compartilhado': typeof StoreCompartilhadoRoute
   '/faq': typeof StoreFaqRoute
@@ -707,10 +706,10 @@ export interface FileRoutesByTo {
   '/painel-loja/$lojaId': typeof PainelLojaLojaIdRoute
   '/painel-loja/old': typeof PainelLojaOldRoute
   '/admin': typeof AdminIndexRoute
+  '/$storeSlug/cart': typeof StoreStoreSlugCartRoute
   '/ajuda/$page': typeof StoreAjudaPageRoute
   '/c/$slug': typeof StoreCSlugRoute
   '/m/$slug': typeof StoreMSlugRoute
-  '/p/$slug': typeof StorePSlugRoute
   '/pagina/$slug': typeof StorePaginaSlugRoute
   '/v/$slug': typeof StoreVSlugRoute
   '/admin/canais/farmaciasapp': typeof AdminCanaisFarmaciasappRoute
@@ -745,11 +744,13 @@ export interface FileRoutesByTo {
   '/admin/selos/novo': typeof AdminSelosNovoRoute
   '/admin/solucoes/aplicativos': typeof AdminSolucoesAplicativosRoute
   '/admin/variacoes/nova': typeof AdminVariacoesNovaRoute
+  '/$storeSlug': typeof StoreStoreSlugIndexRoute
   '/admin/clientes': typeof AdminClientesIndexRoute
   '/admin/configuracoes': typeof AdminConfiguracoesIndexRoute
   '/admin/design': typeof AdminDesignIndexRoute
   '/admin/lojas': typeof AdminLojasIndexRoute
   '/admin/pedidos': typeof AdminPedidosIndexRoute
+  '/$storeSlug/produto/$slug': typeof StoreStoreSlugProdutoSlugRoute
   '/admin/marketing/cupons/novo': typeof AdminMarketingCuponsNovoRoute
   '/admin/marketing/promocoes/nova': typeof AdminMarketingPromocoesNovaRoute
   '/admin/marketing/cupons': typeof AdminMarketingCuponsIndexRoute
@@ -760,10 +761,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_store': typeof StoreRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
-  '/_store/$storeSlug': typeof StoreStoreSlugRoute
   '/_store/busca': typeof StoreBuscaRoute
   '/_store/cadastro': typeof StoreCadastroRoute
-  '/_store/cart': typeof StoreCartRoute
   '/_store/checkout': typeof StoreCheckoutRoute
   '/_store/compartilhado': typeof StoreCompartilhadoRoute
   '/_store/faq': typeof StoreFaqRoute
@@ -801,10 +800,10 @@ export interface FileRoutesById {
   '/painel-loja/$lojaId': typeof PainelLojaLojaIdRoute
   '/painel-loja/old': typeof PainelLojaOldRoute
   '/admin/': typeof AdminIndexRoute
+  '/_store/$storeSlug/cart': typeof StoreStoreSlugCartRoute
   '/_store/ajuda/$page': typeof StoreAjudaPageRoute
   '/_store/c/$slug': typeof StoreCSlugRoute
   '/_store/m/$slug': typeof StoreMSlugRoute
-  '/_store/p/$slug': typeof StorePSlugRoute
   '/_store/pagina/$slug': typeof StorePaginaSlugRoute
   '/_store/v/$slug': typeof StoreVSlugRoute
   '/admin/canais/farmaciasapp': typeof AdminCanaisFarmaciasappRoute
@@ -839,11 +838,13 @@ export interface FileRoutesById {
   '/admin/selos/novo': typeof AdminSelosNovoRoute
   '/admin/solucoes/aplicativos': typeof AdminSolucoesAplicativosRoute
   '/admin/variacoes/nova': typeof AdminVariacoesNovaRoute
+  '/_store/$storeSlug/': typeof StoreStoreSlugIndexRoute
   '/admin/clientes/': typeof AdminClientesIndexRoute
   '/admin/configuracoes/': typeof AdminConfiguracoesIndexRoute
   '/admin/design/': typeof AdminDesignIndexRoute
   '/admin/lojas/': typeof AdminLojasIndexRoute
   '/admin/pedidos/': typeof AdminPedidosIndexRoute
+  '/_store/$storeSlug/produto/$slug': typeof StoreStoreSlugProdutoSlugRoute
   '/admin/marketing/cupons/novo': typeof AdminMarketingCuponsNovoRoute
   '/admin/marketing/promocoes/nova': typeof AdminMarketingPromocoesNovaRoute
   '/admin/marketing/cupons/': typeof AdminMarketingCuponsIndexRoute
@@ -854,10 +855,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/$storeSlug'
     | '/busca'
     | '/cadastro'
-    | '/cart'
     | '/checkout'
     | '/compartilhado'
     | '/faq'
@@ -895,10 +894,10 @@ export interface FileRouteTypes {
     | '/painel-loja/$lojaId'
     | '/painel-loja/old'
     | '/admin/'
+    | '/$storeSlug/cart'
     | '/ajuda/$page'
     | '/c/$slug'
     | '/m/$slug'
-    | '/p/$slug'
     | '/pagina/$slug'
     | '/v/$slug'
     | '/admin/canais/farmaciasapp'
@@ -933,11 +932,13 @@ export interface FileRouteTypes {
     | '/admin/selos/novo'
     | '/admin/solucoes/aplicativos'
     | '/admin/variacoes/nova'
+    | '/$storeSlug/'
     | '/admin/clientes/'
     | '/admin/configuracoes/'
     | '/admin/design/'
     | '/admin/lojas/'
     | '/admin/pedidos/'
+    | '/$storeSlug/produto/$slug'
     | '/admin/marketing/cupons/novo'
     | '/admin/marketing/promocoes/nova'
     | '/admin/marketing/cupons/'
@@ -945,10 +946,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/$storeSlug'
     | '/busca'
     | '/cadastro'
-    | '/cart'
     | '/checkout'
     | '/compartilhado'
     | '/faq'
@@ -986,10 +985,10 @@ export interface FileRouteTypes {
     | '/painel-loja/$lojaId'
     | '/painel-loja/old'
     | '/admin'
+    | '/$storeSlug/cart'
     | '/ajuda/$page'
     | '/c/$slug'
     | '/m/$slug'
-    | '/p/$slug'
     | '/pagina/$slug'
     | '/v/$slug'
     | '/admin/canais/farmaciasapp'
@@ -1024,11 +1023,13 @@ export interface FileRouteTypes {
     | '/admin/selos/novo'
     | '/admin/solucoes/aplicativos'
     | '/admin/variacoes/nova'
+    | '/$storeSlug'
     | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/design'
     | '/admin/lojas'
     | '/admin/pedidos'
+    | '/$storeSlug/produto/$slug'
     | '/admin/marketing/cupons/novo'
     | '/admin/marketing/promocoes/nova'
     | '/admin/marketing/cupons'
@@ -1038,10 +1039,8 @@ export interface FileRouteTypes {
     | '/'
     | '/_store'
     | '/admin'
-    | '/_store/$storeSlug'
     | '/_store/busca'
     | '/_store/cadastro'
-    | '/_store/cart'
     | '/_store/checkout'
     | '/_store/compartilhado'
     | '/_store/faq'
@@ -1079,10 +1078,10 @@ export interface FileRouteTypes {
     | '/painel-loja/$lojaId'
     | '/painel-loja/old'
     | '/admin/'
+    | '/_store/$storeSlug/cart'
     | '/_store/ajuda/$page'
     | '/_store/c/$slug'
     | '/_store/m/$slug'
-    | '/_store/p/$slug'
     | '/_store/pagina/$slug'
     | '/_store/v/$slug'
     | '/admin/canais/farmaciasapp'
@@ -1117,11 +1116,13 @@ export interface FileRouteTypes {
     | '/admin/selos/novo'
     | '/admin/solucoes/aplicativos'
     | '/admin/variacoes/nova'
+    | '/_store/$storeSlug/'
     | '/admin/clientes/'
     | '/admin/configuracoes/'
     | '/admin/design/'
     | '/admin/lojas/'
     | '/admin/pedidos/'
+    | '/_store/$storeSlug/produto/$slug'
     | '/admin/marketing/cupons/novo'
     | '/admin/marketing/promocoes/nova'
     | '/admin/marketing/cupons/'
@@ -1419,13 +1420,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreCheckoutRouteImport
       parentRoute: typeof StoreRoute
     }
-    '/_store/cart': {
-      id: '/_store/cart'
-      path: '/cart'
-      fullPath: '/cart'
-      preLoaderRoute: typeof StoreCartRouteImport
-      parentRoute: typeof StoreRoute
-    }
     '/_store/cadastro': {
       id: '/_store/cadastro'
       path: '/cadastro'
@@ -1438,13 +1432,6 @@ declare module '@tanstack/react-router' {
       path: '/busca'
       fullPath: '/busca'
       preLoaderRoute: typeof StoreBuscaRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/_store/$storeSlug': {
-      id: '/_store/$storeSlug'
-      path: '/$storeSlug'
-      fullPath: '/$storeSlug'
-      preLoaderRoute: typeof StoreStoreSlugRouteImport
       parentRoute: typeof StoreRoute
     }
     '/admin/pedidos/': {
@@ -1481,6 +1468,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/clientes/'
       preLoaderRoute: typeof AdminClientesIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/_store/$storeSlug/': {
+      id: '/_store/$storeSlug/'
+      path: '/$storeSlug'
+      fullPath: '/$storeSlug/'
+      preLoaderRoute: typeof StoreStoreSlugIndexRouteImport
+      parentRoute: typeof StoreRoute
     }
     '/admin/variacoes/nova': {
       id: '/admin/variacoes/nova'
@@ -1720,13 +1714,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StorePaginaSlugRouteImport
       parentRoute: typeof StoreRoute
     }
-    '/_store/p/$slug': {
-      id: '/_store/p/$slug'
-      path: '/p/$slug'
-      fullPath: '/p/$slug'
-      preLoaderRoute: typeof StorePSlugRouteImport
-      parentRoute: typeof StoreRoute
-    }
     '/_store/m/$slug': {
       id: '/_store/m/$slug'
       path: '/m/$slug'
@@ -1746,6 +1733,13 @@ declare module '@tanstack/react-router' {
       path: '/ajuda/$page'
       fullPath: '/ajuda/$page'
       preLoaderRoute: typeof StoreAjudaPageRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/_store/$storeSlug/cart': {
+      id: '/_store/$storeSlug/cart'
+      path: '/$storeSlug/cart'
+      fullPath: '/$storeSlug/cart'
+      preLoaderRoute: typeof StoreStoreSlugCartRouteImport
       parentRoute: typeof StoreRoute
     }
     '/admin/marketing/promocoes/': {
@@ -1776,14 +1770,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMarketingCuponsNovoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_store/$storeSlug/produto/$slug': {
+      id: '/_store/$storeSlug/produto/$slug'
+      path: '/$storeSlug/produto/$slug'
+      fullPath: '/$storeSlug/produto/$slug'
+      preLoaderRoute: typeof StoreStoreSlugProdutoSlugRouteImport
+      parentRoute: typeof StoreRoute
+    }
   }
 }
 
 interface StoreRouteChildren {
-  StoreStoreSlugRoute: typeof StoreStoreSlugRoute
   StoreBuscaRoute: typeof StoreBuscaRoute
   StoreCadastroRoute: typeof StoreCadastroRoute
-  StoreCartRoute: typeof StoreCartRoute
   StoreCheckoutRoute: typeof StoreCheckoutRoute
   StoreCompartilhadoRoute: typeof StoreCompartilhadoRoute
   StoreFaqRoute: typeof StoreFaqRoute
@@ -1793,19 +1792,19 @@ interface StoreRouteChildren {
   StorePerfilRoute: typeof StorePerfilRoute
   StorePoliticaDePrivacidadeRoute: typeof StorePoliticaDePrivacidadeRoute
   StoreSucessoRoute: typeof StoreSucessoRoute
+  StoreStoreSlugCartRoute: typeof StoreStoreSlugCartRoute
   StoreAjudaPageRoute: typeof StoreAjudaPageRoute
   StoreCSlugRoute: typeof StoreCSlugRoute
   StoreMSlugRoute: typeof StoreMSlugRoute
-  StorePSlugRoute: typeof StorePSlugRoute
   StorePaginaSlugRoute: typeof StorePaginaSlugRoute
   StoreVSlugRoute: typeof StoreVSlugRoute
+  StoreStoreSlugIndexRoute: typeof StoreStoreSlugIndexRoute
+  StoreStoreSlugProdutoSlugRoute: typeof StoreStoreSlugProdutoSlugRoute
 }
 
 const StoreRouteChildren: StoreRouteChildren = {
-  StoreStoreSlugRoute: StoreStoreSlugRoute,
   StoreBuscaRoute: StoreBuscaRoute,
   StoreCadastroRoute: StoreCadastroRoute,
-  StoreCartRoute: StoreCartRoute,
   StoreCheckoutRoute: StoreCheckoutRoute,
   StoreCompartilhadoRoute: StoreCompartilhadoRoute,
   StoreFaqRoute: StoreFaqRoute,
@@ -1815,12 +1814,14 @@ const StoreRouteChildren: StoreRouteChildren = {
   StorePerfilRoute: StorePerfilRoute,
   StorePoliticaDePrivacidadeRoute: StorePoliticaDePrivacidadeRoute,
   StoreSucessoRoute: StoreSucessoRoute,
+  StoreStoreSlugCartRoute: StoreStoreSlugCartRoute,
   StoreAjudaPageRoute: StoreAjudaPageRoute,
   StoreCSlugRoute: StoreCSlugRoute,
   StoreMSlugRoute: StoreMSlugRoute,
-  StorePSlugRoute: StorePSlugRoute,
   StorePaginaSlugRoute: StorePaginaSlugRoute,
   StoreVSlugRoute: StoreVSlugRoute,
+  StoreStoreSlugIndexRoute: StoreStoreSlugIndexRoute,
+  StoreStoreSlugProdutoSlugRoute: StoreStoreSlugProdutoSlugRoute,
 }
 
 const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)

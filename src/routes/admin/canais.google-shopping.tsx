@@ -43,7 +43,7 @@ function GoogleShoppingPage() {
       <g:id>${p.id}</g:id>
       <g:title><![CDATA[${p.nome}]]></g:title>
       <g:description><![CDATA[${p.descricao || p.nome}]]></g:description>
-      <g:link>https://associadas.com.br/p/${p.url}</g:link>
+      <g:link>https://associadas.com.br/loja-padrao/produto/${p.url}</g:link>
       <g:image_link>${p.possuiImagem ? "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/" + (p.ean || p.id) + ".jpg" : "https://placehold.co/600x600?text=Sem+Foto"}</g:image_link>
       <g:condition>new</g:condition>
       <g:availability>${p.estoque > 0 ? 'in stock' : 'out of stock'}</g:availability>

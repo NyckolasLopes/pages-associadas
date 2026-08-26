@@ -166,7 +166,7 @@ function safeSlugify(text: string): string {
     .replace(/^-|-$/g, "");
 }
 
-export const Route = createFileRoute("/_store/$storeSlug")({
+export const Route = createFileRoute("/_store/$storeSlug/")({
   head: () => {
     const title = "Farmácias Associadas — Medicamentos, dermocosméticos e mais";
     const desc = "Compre online medicamentos, vitaminas, dermocosméticos e itens de higiene com entrega rápida. Aqui você tem amigos.";
