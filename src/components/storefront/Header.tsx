@@ -832,7 +832,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   const [mounted, setMounted] = useState(false);
   const user = useAuth((s) => s.user);
   const marcas = useMarcasStore((s) => s.marcas);
-  const activePharmacy = usePharmacyStore((s) => s.activePharmacy);
+  const activePharmacy = useActivePharmacy();
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
   const allCategories = useAdminCategories(s => s.categories);
   
