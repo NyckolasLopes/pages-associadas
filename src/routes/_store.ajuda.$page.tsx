@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { POLICIES } from "@/data/policies";
 import { ChevronRight } from "lucide-react";
@@ -6,10 +7,10 @@ import { NotFound } from "@/components/storefront/NotFound";
 export const Route = createFileRoute("/_store/ajuda/$page")({
   head: ({ params }) => {
     const p = POLICIES[params.page];
-    if (!p) return { meta: [{ title: "Não encontrado — Farmácias Associadas" }] };
+    if (!p) return { meta: [{ title: `Não encontrado — ${getBrandNameForHead()}` }] };
     return {
       meta: [
-        { title: `${p.title} — Farmácias Associadas` },
+        { title: `${p.title} — ${getBrandNameForHead()}` },
         { name: "description", content: p.description },
         { property: "og:title", content: p.title },
         { property: "og:description", content: p.description },

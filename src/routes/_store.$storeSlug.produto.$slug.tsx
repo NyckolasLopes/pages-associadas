@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, notFound, Link, useParams } from "@tanstack/react-router";
 import mascotNotFound from "@/assets/produto-nao-encontrado.png";
 import { catalog } from "@/services/catalog";
@@ -85,7 +86,7 @@ export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
     if (!loaderData) return {};
     const p = loaderData.p;
     if (!p) return {};
-    const title = `${p.nome} — Farmácias Associadas`;
+    const title = `${p.nome} — ${getBrandNameForHead()}`;
     const desc = (p.descricao || `Compre ${p.nome} com o melhor preço nas Farmácias Associadas. Entrega rápida e segura.`).slice(0, 160);
     const img = productImage(p);
     

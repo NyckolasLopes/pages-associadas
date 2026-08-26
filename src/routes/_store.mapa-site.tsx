@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, Map } from "lucide-react";
 import categoriesData from "@/data/categories.json";
@@ -8,7 +9,7 @@ const ROOT_CATS = (categoriesData as Categoria[]).filter((c) => !c.parentId);
 export const Route = createFileRoute("/_store/mapa-site")({
   head: () => ({
     meta: [
-      { title: "Mapa do Site — Farmácias Associadas" },
+      { title: `Mapa do Site — ${getBrandNameForHead()}` },
       { name: "description", content: "Navegue por todas as páginas e seções do site das Farmácias Associadas." },
       { property: "og:title", content: "Mapa do Site" },
       { property: "og:description", content: "Visão hierárquica de todas as rotas do site." },

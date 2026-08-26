@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, HelpCircle } from "lucide-react";
 import {
@@ -10,7 +11,7 @@ import {
 export const Route = createFileRoute("/_store/faq")({
   head: () => ({
     meta: [
-      { title: "Perguntas Frequentes (FAQ) — Farmácias Associadas" },
+      { title: `Perguntas Frequentes (FAQ) — ${getBrandNameForHead()}` },
       { name: "description", content: "Tire suas dúvidas sobre compras, entrega, retirada, medicamentos controlados, pagamentos e devoluções na rede Farmácias Associadas." },
       { property: "og:title", content: "Perguntas Frequentes (FAQ)" },
       { property: "og:description", content: "Respostas rápidas para suas dúvidas sobre o site das Farmácias Associadas." },

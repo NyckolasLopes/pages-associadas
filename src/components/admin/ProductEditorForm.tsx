@@ -716,7 +716,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             
             <div className="space-y-4">
               <div className="flex flex-wrap gap-4">
-                {((formData.imagens || []) as any[]).map((img: any, idx: number) => (
+                {((formData.imagens || []) as any[]).filter(i => i !== '/placeholder.svg').map((img: any, idx: number) => (
                   <div 
                     key={idx} 
                     className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group cursor-grab active:cursor-grabbing"
@@ -741,22 +741,11 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   </div>
                 ))}
                 
-                {((formData.imagens || []) as any[]).length === 0 && (
+                {((formData.imagens || []) as any[]).filter(i => i !== '/placeholder.svg').length === 0 && (
                   <div className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group opacity-80" title="Imagem gerada automaticamente. Faça upload de uma imagem para substituir.">
                     <img src={productImage(formData)} alt="Imagem Padrão" className="w-full h-full object-cover" />
-                    <button 
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setFormData({ ...formData, imagens: ['/placeholder.svg'] });
-                      }}
-                      className="absolute top-1 left-1 bg-white hover:bg-red-50 text-red-500 rounded-md p-1.5 shadow-sm transition-colors z-10"
-                      title="Remover imagem padrão"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/90 text-white text-[10px] text-center py-1 font-bold z-10 pointer-events-none">
-                      Capa
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity text-center px-2">
+                      Imagem Automática (Mockup)
                     </div>
                   </div>
                 )}

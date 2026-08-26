@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/stores/auth";
 import { useFavorites } from "@/stores/favorites";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/_store/perfil")({
       tab: search.tab as string | undefined,
     }
   },
-  head: () => ({ meta: [{ title: "Meus Dados — Farmácias Associadas" }] }),
+  head: () => ({ meta: [{ title: `Meus Dados — ${getBrandNameForHead()}` }] }),
   component: PerfilPage,
 });
 

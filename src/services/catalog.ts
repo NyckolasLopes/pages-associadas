@@ -775,7 +775,29 @@ export const catalog = {
   featured: async (lojaId?: string | null) => {
     await ensureHydrated();
     let query = supabase.from('produtos').select('*').eq('destaque', true).limit(12);
-    const comDestaqueAll = await fetchFromSupabaseWithPrices(query, lojaId);
+    let comDestaqueAll = await fetchFromSupabaseWithPrices(query, lojaId);
+    
+    // Se tiver lojaId, buscar também os destaques específicos da loja
+    if (lojaId) {
+      const { data: storeDestaques } = await supabase
+        .from('produto_precos_loja')
+        .select('produto_id')
+        .eq('loja_id', lojaId)
+        .eq('destaque', true);
+        
+      if (storeDestaques && storeDestaques.length > 0) {
+        const storeFeaturedIds = storeDestaques.map(d => d.produto_id);
+        const existingIds = new Set(comDestaqueAll.map(p => p.id));
+        const missingIds = storeFeaturedIds.filter(id => !existingIds.has(id));
+        
+        if (missingIds.length > 0) {
+          let storeQuery = supabase.from('produtos').select('*').in('id', missingIds);
+          const extraStoreProducts = await fetchFromSupabaseWithPrices(storeQuery, lojaId);
+          comDestaqueAll = [...extraStoreProducts, ...comDestaqueAll];
+        }
+      }
+    }
+
     const comDestaque = comDestaqueAll;
     
     if (comDestaque.length < 12) {

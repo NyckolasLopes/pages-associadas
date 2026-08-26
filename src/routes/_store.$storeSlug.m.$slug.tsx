@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { catalog } from "@/services/catalog";
 import { ProductCard } from "@/components/storefront/ProductCard";
@@ -31,9 +32,9 @@ export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
     
     return {
       meta: [
-        { title: `${brandName} — Farmácias Associadas` },
+        { title: `${brandName} — ${getBrandNameForHead()}` },
         { name: "description", content: desc },
-        { property: "og:title", content: `${brandName} — Farmácias Associadas` },
+        { property: "og:title", content: `${brandName} — ${getBrandNameForHead()}` },
         { property: "og:description", content: desc }
       ],
     };

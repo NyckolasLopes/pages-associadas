@@ -1,17 +1,15 @@
 import { Spinner } from "./spinner";
 import { useConfig } from "@/stores/config";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { useLocation } from "@tanstack/react-router";
 
 export function GlobalLoading() {
   const dadosLoja = useConfig((s) => s.dadosLoja);
   const activePharmacy = useActivePharmacy();
+  const location = useLocation();
 
-  // If in a partner store, use the partner's logo. If no partner logo, use null (don't fallback to pleno).
-  // If in Pleno (or no specific store), fallback to the global dadosLoja.logoUrl
-  const isParceiro = activePharmacy && activePharmacy.isPleno === false;
-  const logoToUse = isParceiro 
-    ? activePharmacy?.logoUrl || null
-    : activePharmacy?.logoUrl || dadosLoja?.logoUrl;
+  const isAdmin = location.pathname.startsWith('/admin');
+  const logoToUse = isAdmin ? "/logo.png" : (dadosLoja?.logoUrl || "/logo.png");
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center animate-in fade-in duration-300">

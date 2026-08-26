@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useEffect, useState, useMemo } from "react";
 import { Header } from "@/components/storefront/Header";
@@ -35,7 +36,9 @@ const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 function getDeduplicatedBanners(bannersToFilter: any[]) {
   const uniqueMap = new Map();
   for (const b of bannersToFilter) {
-    const key = (b.imageUrl || "") + b.posicao;
+    // Deduplicate by name and position so store-specific banners override global banners with the same name.
+    // If nome is empty, fallback to id so they don't overwrite each other randomly.
+    const key = (b.nome || b.id) + b.posicao;
     if (!uniqueMap.has(key) || b.lojaId) {
       uniqueMap.set(key, b);
     }
@@ -176,7 +179,7 @@ function safeSlugify(text: string): string {
 
 export const Route = createFileRoute("/_store/$storeSlug/")({
   head: () => {
-    const title = "Farmácias Associadas — Medicamentos, dermocosméticos e mais";
+    const title = `${getBrandNameForHead()} — Medicamentos, dermocosméticos e mais`;
     const desc = "Compre online medicamentos, vitaminas, dermocosméticos e itens de higiene com entrega rápida. Aqui você tem amigos.";
     return {
       meta: [
@@ -554,24 +557,32 @@ function StoreHome() {
   const featuredCategoriesIds = useAdmin((s) => s.featuredCategories);
   const [featuredCategoriesData, setFeaturedCategoriesData] = useState<Array<{categoria: Categoria, produtos: Produto[]}>>([]);
   
-  const grid = featured.slice(0, 12);
+  const [localFeatured, setLocalFeatured] = useState<Produto[]>(featured);
+  const grid = localFeatured.slice(0, 12);
   const brandsRef = useRef<HTMLDivElement>(null);
 
   const customProducts = useAdminProducts((s) => s.customProducts);
+  
+  // Re-fetch featured when lojaId is available
+  useEffect(() => {
+    if (lojaId) {
+      catalog.featured(lojaId).then(setLocalFeatured);
+    }
+  }, [lojaId, customProducts]);
   
   useEffect(() => {
     async function loadFeatured() {
       const data = await Promise.all(
         featuredCategoriesIds.map(async (id) => {
           const categoria = await catalog.getCategoryById(id);
-          const produtos = await catalog.productsByCategory(id);
+          const produtos = await catalog.productsByCategory(id, undefined, lojaId);
           return categoria ? { categoria, produtos } : null;
         })
       );
       setFeaturedCategoriesData(data.filter(Boolean) as any);
     }
     loadFeatured();
-  }, [featuredCategoriesIds, customProducts]);
+  }, [featuredCategoriesIds, customProducts, lojaId]);
 
   const { marcas } = useMarcasStore();
   const activeMarcas = marcas.filter(m => m.ativo && m.destaque);

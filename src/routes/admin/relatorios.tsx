@@ -37,6 +37,9 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area
 } from "recharts";
 import { useState, useMemo, useEffect } from "react";
+import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -67,6 +70,10 @@ function Relatorios() {
   const [abcRegion, setAbcRegion] = useState<string>("Todas");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [date, setDate] = useState<{ from?: Date, to?: Date }>({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  });
 
   const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
   
@@ -188,8 +195,32 @@ function Relatorios() {
     if (activeStoreId) {
       filtered = filtered.filter(o => o.lojaId === activeStoreId);
     }
+    
+    if (date?.from) {
+       filtered = filtered.filter(o => {
+          let dStr = o.data;
+          if (dStr && typeof dStr === 'string' && dStr.includes(' ')) {
+              dStr = dStr.replace(' ', 'T');
+          }
+          const orderDate = new Date(dStr);
+          if (isNaN(orderDate.getTime())) return true;
+          
+          const from = new Date(date.from!);
+          from.setHours(0,0,0,0);
+          
+          if (orderDate < from) return false;
+          
+          if (date.to) {
+             const to = new Date(date.to);
+             to.setHours(23,59,59,999);
+             if (orderDate > to) return false;
+          }
+          return true;
+       });
+    }
+
     return filtered;
-  }, [rawOrders, activeStoreId]);
+  }, [rawOrders, activeStoreId, date]);
 
   // SLA Stats Calculation
   const slaStats = useMemo(() => {
@@ -265,6 +296,44 @@ function Relatorios() {
 
     return { stats, tempoMedioGlobal, porcAtrasados, porcNoPrazo, totalCount };
   }, [rawOrders, pharmacies, activeStoreId]);
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
+  const handleExportExcel = () => {
+    if (orders.length === 0) {
+      alert("Nenhum dado para exportar");
+      return;
+    }
+
+    const headers = ["Data", "Pedido", "Loja", "Cliente", "Email", "Telefone", "Total", "Status", "Método Pagamento", "Entrega/Retirada"];
+    const rows = orders.map(o => {
+       const lojaNome = pharmacies.find(p => p.id === o.lojaId)?.nome || o.lojaNome || o.lojaId || "N/A";
+       return [
+         o.data,
+         o.numero || o.id,
+         lojaNome,
+         o.cliente?.nome || "N/A",
+         o.cliente?.email || "N/A",
+         o.cliente?.telefone || "N/A",
+         o.valores?.total?.toString() || "0",
+         o.status || "N/A",
+         o.pagamento?.metodo || "N/A",
+         o.envio?.metodo || "N/A"
+       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",");
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `relatorio_pedidos_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Calculations for charts based on real data
   
@@ -491,20 +560,38 @@ function Relatorios() {
               <PopoverTrigger asChild>
                 <Button variant="outline" className="h-10 px-4 flex items-center gap-2 bg-slate-50 text-sm font-semibold border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-800">
                   <CalendarIcon className="h-4 w-4 text-slate-500" />
-                  01/06/2026 até 25/06/2026
+                  {date?.from ? (
+                    date.to ? (
+                      <>
+                        {format(date.from, "dd/MM/yyyy")} até {format(date.to, "dd/MM/yyyy")}
+                      </>
+                    ) : (
+                      format(date.from, "dd/MM/yyyy")
+                    )
+                  ) : (
+                    <span>Selecione um período</span>
+                  )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[600px] p-0 border-slate-200 shadow-xl rounded-xl" align="start">
+              <PopoverContent className="w-auto p-0 border-slate-200 shadow-xl rounded-xl" align="start">
                 <div className="flex">
-                  <div className="w-40 border-r border-slate-100 py-2 bg-slate-50/50 rounded-l-xl">
-                    {["Hoje", "Ontem", "Últimos 7 dias", "Mês atual", "Mês passado"].map((opt) => (
-                      <button key={opt} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
-                        {opt}
-                      </button>
-                    ))}
+                  <div className="w-40 border-r border-slate-100 py-2 bg-slate-50/50 rounded-l-xl flex flex-col">
+                    <button onClick={() => setDate({ from: new Date(), to: new Date() })} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">Hoje</button>
+                    <button onClick={() => setDate({ from: subDays(new Date(), 1), to: subDays(new Date(), 1) })} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">Ontem</button>
+                    <button onClick={() => setDate({ from: subDays(new Date(), 6), to: new Date() })} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">Últimos 7 dias</button>
+                    <button onClick={() => setDate({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) })} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">Mês atual</button>
+                    <button onClick={() => setDate({ from: startOfMonth(subMonths(new Date(), 1)), to: endOfMonth(subMonths(new Date(), 1)) })} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">Mês passado</button>
                   </div>
-                  <div className="flex-1 p-6 flex items-center justify-center bg-white rounded-r-xl">
-                    <p className="text-sm font-medium text-slate-400">Calendário completo aqui...</p>
+                  <div className="p-2 bg-white rounded-r-xl">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={date?.from}
+                      selected={date as any}
+                      onSelect={setDate as any}
+                      numberOfMonths={2}
+                      locale={ptBR}
+                    />
                   </div>
                 </div>
               </PopoverContent>
@@ -542,11 +629,11 @@ function Relatorios() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border-slate-100">
-                <DropdownMenuItem className="cursor-pointer font-bold text-slate-600 py-2">
+                <DropdownMenuItem onClick={handleExportExcel} className="cursor-pointer font-bold text-slate-600 py-2">
                   <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
                   Exportar para Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer font-bold text-slate-600 py-2">
+                <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer font-bold text-slate-600 py-2">
                   <FileText className="h-4 w-4 mr-2 text-red-600" />
                   Exportar para PDF
                 </DropdownMenuItem>

@@ -93,7 +93,7 @@ export function PedidosAdmin() {
 
   const getLojaName = (id?: string, fallbackName?: string) => {
     const p = id ? pharmacies.find(ph => ph.id === id) : null;
-    return p ? (p.nome) : (fallbackName || "Farmácias Associadas");
+    return p ? (p.nome) : (fallbackName || (p?.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas"));
   };
 
   const handleDelete = (id: string) => {
@@ -139,7 +139,7 @@ export function PedidosAdmin() {
     const isPendente = item.status === "Pendente";
 
     const message = isPendente
-      ? `\u{1F539} *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
+      ? `\u{1F539} *ADMINISTRADOR*\n` +
         `\u{1F539} *Unidade:* ${loja?.nome || item.lojaNome}\n` +
         `⚠️ *AVISO DE PEDIDO PENDENTE / CARRINHO ABANDONADO*\n\n` +
         `Olá equipe! Há um pedido pendente/carrinho em aberto no sistema.\n\n` +
@@ -148,7 +148,7 @@ export function PedidosAdmin() {
         `\u{1F539} *Itens do Pedido:*\n${itemsList}\n\n` +
         `\u{1F539} *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `👉 *Ação necessária:* Por favor, entrem em contato com o cliente para dar seguimento ao atendimento e finalizar a compra!`
-      : `\u{1F539} *FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL*\n` +
+      : `\u{1F539} *${loja?.categoriaAssociado === 'Parceiro' ? 'PAINEL DA LOJA' : 'FARMÁCIAS ASSOCIADAS - ADMIN GLOBAL'}*\n` +
         `\u{1F539} *Unidade:* ${loja?.nome || item.lojaNome}\n` +
         `🔔 *AVISO DE PEDIDO CONCLUÍDO (#${item.id})*\n\n` +
         `Olá equipe! Temos um pedido registrado para a sua loja.\n\n` +
@@ -182,19 +182,20 @@ export function PedidosAdmin() {
     }
 
     const loja = pharmacies.find(p => p.id === item.lojaId);
-    const lojaNome = loja?.nome || item.lojaNome || "Farmácias Associadas";
+    const lojaNome = loja?.nome || item.lojaNome || (loja?.categoriaAssociado === 'Parceiro' ? 'Loja Parceira' : 'Farmácias Associadas');
+    const isParceiro = loja?.categoriaAssociado === 'Parceiro';
     const itemsList = item.produtos.map(p => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`).join("\n");
     const isPendente = item.status === "Pendente";
 
     const message = isPendente
       ? `Olá ${item.clienteNome}, tudo bem? 😊\n\n` +
-        `Aqui é da *${lojaNome}* (Farmácias Associadas).\n` +
+        `Aqui é da *${lojaNome}*${isParceiro ? '' : ' (Farmácias Associadas)'}.\n` +
         `Notamos que você selecionou alguns produtos em nosso site e gostaríamos de ajudar a finalizar seu pedido:\n\n` +
         `\u{1F539} *Itens:*\n${itemsList}\n\n` +
         `\u{1F539} *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +
         `Como prefere realizar o pagamento ou entrega? Estamos à disposição para atendê-lo(a)!`
       : `Olá ${item.clienteNome}, tudo bem? 😊\n\n` +
-        `Aqui é da *${lojaNome}* (Farmácias Associadas).\n` +
+        `Aqui é da *${lojaNome}*${isParceiro ? '' : ' (Farmácias Associadas)'}.\n` +
         `Recebemos o seu pedido *#${item.id}* com sucesso!\n\n` +
         `\u{1F539} *Itens:*\n${itemsList}\n\n` +
         `\u{1F539} *Total:* ${item.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}\n\n` +

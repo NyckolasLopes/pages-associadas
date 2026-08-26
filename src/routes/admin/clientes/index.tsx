@@ -123,7 +123,7 @@ function ClientesAdmin() {
       const key = `${cleanPhone || cleanEmail || c.id}`;
 
       const loja = pharmacies.find((p) => p.id === targetLojaId);
-      const lojaNome = loja?.nome || (c as any).lojaNome || `Farmácias Associadas #${targetLojaId}`;
+      const lojaNome = loja?.nome || (c as any).lojaNome || (loja?.categoriaAssociado === 'Parceiro' ? `Loja Parceira #${targetLojaId}` : `Farmácias Associadas #${targetLojaId}`);
 
       customerMap.set(key, {
         id: c.id,
@@ -158,7 +158,7 @@ function ClientesAdmin() {
       const key = `${cleanPhone || cleanEmail || order.cliente.nome}`;
 
       const loja = pharmacies.find((p) => p.id === orderLojaId);
-      const lojaNome = loja?.nome || order.lojaNome || `Farmácias Associadas #${orderLojaId}`;
+      const lojaNome = loja?.nome || order.lojaNome || (loja?.categoriaAssociado === 'Parceiro' ? `Loja Parceira #${orderLojaId}` : `Farmácias Associadas #${orderLojaId}`);
       const orderTotal = Number(order.valores?.total || 0);
       const orderData = order.data || new Date().toISOString();
       const itensCount = (order.produtos || order.itens || []).reduce((acc, it) => acc + (it.qtd || it.quantidade || 1), 0);
@@ -295,7 +295,8 @@ function ClientesAdmin() {
       return;
     }
     const fullPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
-    const msg = encodeURIComponent(`Olá ${name}, tudo bem? Aqui é das Farmácias Associadas! Como podemos lhe ajudar hoje?`);
+    const brandName = activeLoja ? activeLoja.nome : "Farmácias Associadas";
+    const msg = encodeURIComponent(`Olá ${name}, tudo bem? Aqui é da ${brandName}! Como podemos lhe ajudar hoje?`);
     window.open(`https://wa.me/${fullPhone}?text=${msg}`, "_blank");
   };
 

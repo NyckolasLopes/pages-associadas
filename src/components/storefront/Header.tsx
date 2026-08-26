@@ -832,6 +832,8 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   const [mounted, setMounted] = useState(false);
   const user = useAuth((s) => s.user);
   const marcas = useMarcasStore((s) => s.marcas);
+  const activePharmacy = usePharmacyStore((s) => s.activePharmacy);
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
   const allCategories = useAdminCategories(s => s.categories);
   
   const detectCep = (closeFn: () => void) => {
@@ -971,7 +973,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                   className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold transition ${isOfertas ? 'bg-red-600 text-white hover:bg-red-700' : 'hover:bg-muted'}`}
                 >
                   {isNossasMarcas ? (
-                    <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />
+                    !isParceiro && <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />
                   ) : Icon ? (
                     <Icon className="h-5 w-5" />
                   ) : null}
@@ -985,7 +987,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                 <summary className={`flex items-center justify-between px-3 py-3 rounded-lg text-sm font-bold cursor-pointer transition list-none [&::-webkit-details-marker]:hidden ${isOfertas ? 'bg-red-600 text-white hover:bg-red-700' : 'hover:bg-muted'}`}>
                   <div className="flex items-center gap-3">
                     {isNossasMarcas ? (
-                      <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />
+                      !isParceiro && <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />
                     ) : Icon ? (
                       <Icon className="h-5 w-5" />
                     ) : null}
@@ -1148,7 +1150,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   }`}
                 >
                   {c.id === "300" ? (
-                    <img src="/icone-associadas.png" alt="" className="h-4 w-4 object-contain brightness-0 invert" />
+                    !isParceiro && <img src="/icone-associadas.png" alt="" className="h-4 w-4 object-contain brightness-0 invert" />
                   ) : Icon ? (
                     <Icon className="h-4 w-4" />
                   ) : null}
@@ -1214,7 +1216,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                       onClick={() => setOpen(null)}
                       className="font-bold text-primary-dark hover:underline text-base mb-6 flex items-center gap-2"
                     >
-                      <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />
+                      {!isParceiro && <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />}
                       {brandsCat.nome}
                     </Link>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">

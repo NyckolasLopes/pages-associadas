@@ -1,0 +1,1 @@
+import { createClient } from '@supabase/supabase-js'; import * as dotenv from 'dotenv'; dotenv.config(); const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY); supabase.from('banners').select('*').in('nome', ['teste', 'teste 2']).then(({data, error}) => console.log(JSON.stringify(data || error, null, 2)));

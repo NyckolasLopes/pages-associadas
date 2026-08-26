@@ -208,20 +208,38 @@ function AdminProdutos() {
       lojaId: currentLojaId || undefined,
       isIndividualLoja: !!currentLojaId,
     };
-    await addOrUpdateProduct(finalProduct, currentLojaId || undefined);
-    setEditorOpen(false);
-    toast.success(
-      currentLojaId
-        ? `Produto atualizado exclusivamente para a loja ${currentLoja?.nome || ""}!`
-        : `Produto atualizado no Catálogo Geral da Rede!`
-    );
-    // Reload server products after update
-    const numericPageSize = parseInt(pageSize, 10);
-    catalog.adminSearchProducts({ search, page, pageSize: numericPageSize, listFilter, lojaId: currentLojaId || undefined })
-      .then(({ results, count }) => {
-        setServerProducts(results);
-        setTotalProducts(count);
-      });
+    
+    try {
+      await addOrUpdateProduct(finalProduct, currentLojaId || undefined);
+      setEditorOpen(false);
+      toast.success(
+        currentLojaId
+          ? `Produto atualizado exclusivamente para a loja ${currentLoja?.nome || ""}!`
+          : `Produto atualizado no Catálogo Geral da Rede!`
+      );
+
+      // Reload server products after update
+      const numericPageSize = parseInt(pageSize, 10);
+      catalog.adminSearchProducts({ search, page, pageSize: numericPageSize, listFilter, lojaId: currentLojaId || undefined })
+        .then(({ results, count }) => {
+          setServerProducts(results);
+          setTotalProducts(count);
+          if (currentLojaId) {
+            setLojaApiDataMap(prev => ({
+              ...prev,
+              [finalProduct.id]: {
+                ...(prev[finalProduct.id] || {}),
+                precoPor: finalProduct.precoPor || 0,
+                precoDe: finalProduct.precoDe || 0,
+                estoque: finalProduct.estoque || 0
+              }
+            }));
+          }
+        });
+    } catch (error: any) {
+      console.error("Erro ao salvar produto:", error);
+      toast.error(`Erro ao salvar produto: ${error.message || "Verifique o console para mais detalhes."}`);
+    }
   };
 
   const handleExportJson = async () => {
@@ -1156,6 +1174,23 @@ function AdminProdutos() {
         product={editingProduct}
         onSave={handleSaveProduct}
         lojaId={currentLojaId}
+      />
+      
+      {/* Highlight Modal */}
+      <HighlightProductModal
+        isOpen={!!highlightedProduct}
+        onClose={() => setHighlightedProduct(null)}
+        product={highlightedProduct}
+        lojaId={currentLojaId}
+        onSaveDestaqueGlobal={async (destaque) => {
+          if (!highlightedProduct) return;
+          if (isGlobalAdmin && !currentLojaId) {
+            await addOrUpdateProduct({ ...highlightedProduct, destaque }, undefined);
+          } else if (currentLojaId) {
+            await updateStoreProductDestaque(currentLojaId, highlightedProduct.id, destaque);
+          }
+          setServerProducts(prev => prev.map(p => p.id === highlightedProduct.id ? { ...p, destaque } : p));
+        }}
       />
       
       {/* Nested Routes (like /admin/produtos/novo) */}

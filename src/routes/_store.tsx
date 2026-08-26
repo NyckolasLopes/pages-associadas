@@ -160,7 +160,7 @@ function StoreLayout() {
     >
       {activePharmacy && (
         <>
-          <title>{activePharmacy.pageTitle || activePharmacy.nome || "Farmácias Associadas"}</title>
+          <title>{activePharmacy.pageTitle || activePharmacy.nome || (activePharmacy.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas")}</title>
           <meta name="description" content={activePharmacy.metaDescription || "Sua farmácia online de confiança."} />
         </>
       )}

@@ -26,13 +26,7 @@ function AdminCategorias() {
   const { featuredCategories, toggleFeaturedCategory, storeFeaturedCategories, toggleStoreFeaturedCategory, categoryIcons, activeStoreId, pharmacies, currentUser } = useAdmin();
   const { 
     categories: networkCategories, 
-    storeCategories, 
-    isStoreUsingCustomCategories,
-    removeCategory, 
-    importNetworkCategoriesToStore, 
-    removeStoreCategory, 
-    resetStoreToNetwork, 
-    getStoreCategories 
+    removeCategory 
   } = useAdminCategories();
   
   const search = Route.useSearch().q || "";
@@ -43,18 +37,15 @@ function AdminCategorias() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
-  const [confirmImportOpen, setConfirmImportOpen] = useState(false);
-  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [subirDadosOpen, setSubirDadosOpen] = useState(false);
 
   // Active Store Context (either selected in top header or user's assigned store)
   const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
   const currentLoja = pharmacies.find(p => p.id === currentLojaId);
-  const isStoreCustom = currentLojaId ? !!isStoreUsingCustomCategories[currentLojaId] : false;
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas?.length === 0;
 
   // Effective categories for current view
-  const allCategories: Categoria[] = currentLojaId ? getStoreCategories(currentLojaId) : networkCategories;
+  const allCategories: Categoria[] = networkCategories;
   
   // Effective featured categories (fallback to network if store hasn't customized)
   const effectiveFeaturedCategories = (!isGlobalAdmin && currentLojaId) 
@@ -89,35 +80,13 @@ function AdminCategorias() {
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      if (currentLojaId) {
-        removeStoreCategory(currentLojaId, itemToDelete.id);
-      } else {
-        removeCategory(itemToDelete.id);
-      }
+      removeCategory(itemToDelete.id);
       toast.success("Categoria removida com sucesso");
       setConfirmOpen(false);
       setItemToDelete(null);
     }
   };
 
-  const handleImportNetworkCategories = () => {
-    if (!currentLojaId) {
-      toast.error("Selecione uma loja para importar a categorização da rede.");
-      return;
-    }
-    importNetworkCategoriesToStore(currentLojaId);
-    setConfirmImportOpen(false);
-    toast.success("Categorização padrão da rede importada com sucesso!", {
-      description: "Agora sua loja tem sua própria lista de categorias. Suas alterações não afetarão o padrão da rede."
-    });
-  };
-
-  const handleResetToNetwork = () => {
-    if (!currentLojaId) return;
-    resetStoreToNetwork(currentLojaId);
-    setConfirmResetOpen(false);
-    toast.success("Categorização restaurada para o padrão oficial da rede.");
-  };
   
   const categoryTree = allCategories
     .filter(c => !c.parentId)
@@ -154,39 +123,12 @@ function AdminCategorias() {
             </span>
           </div>
           <span className="text-sm font-medium text-slate-500">
-            {currentLojaId 
-              ? "Crie categorias exclusivas para a sua loja ou importe o padrão oficial da rede." 
-              : "Gerencie a árvore de categorias e subcategorias de produtos."}
+            Gerencie a árvore de categorias e subcategorias de produtos.
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <StoreSelector className="mb-0" />
-          {currentLojaId && isGlobalAdmin && (
-            <>
-              <Button 
-                onClick={() => setConfirmImportOpen(true)}
-                variant="outline"
-                className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 font-bold h-10 px-4 gap-2 shadow-sm"
-              >
-                <DownloadCloud className="w-4 h-4 text-emerald-600" />
-                Ter Categorização da Rede
-              </Button>
-
-              {isStoreCustom && (
-                <Button 
-                  onClick={() => setConfirmResetOpen(true)}
-                  variant="outline"
-                  className="bg-white text-slate-600 border-slate-200 hover:bg-slate-50 font-semibold h-10 px-3 gap-1.5 shadow-sm text-xs"
-                  title="Restaurar padrão da rede"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-                  Restaurar Padrão
-                </Button>
-              )}
-            </>
-          )}
-
           {isGlobalAdmin && (
             <Button 
               onClick={() => {
@@ -200,31 +142,6 @@ function AdminCategorias() {
           )}
         </div>
       </div>
-
-      {/* Store Isolation Info Banner */}
-      {currentLojaId && isGlobalAdmin && (
-        <div className={`p-4 rounded-xl border flex items-start gap-3.5 ${
-          isStoreCustom 
-            ? "bg-amber-50/60 border-amber-200 text-amber-900" 
-            : "bg-blue-50/60 border-blue-200 text-blue-900"
-        }`}>
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-            isStoreCustom ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-          }`}>
-            <ShieldCheck className="w-4 h-4" />
-          </div>
-          <div className="flex-1 text-xs space-y-1">
-            <div className="font-bold text-sm">
-              {isStoreCustom ? "Categorização personalizada da sua loja ativa" : "Sua loja está utilizando a categorização padrão da rede"}
-            </div>
-            <p className="leading-relaxed opacity-90">
-              {isStoreCustom 
-                ? "As alterações, criações, edições e exclusões feitas nesta tela são exclusivas para a sua loja e NÃO refletem no cadastro geral da rede."
-                : "Clique em 'Ter Categorização da Rede' para criar uma cópia independente das categorias da rede e poder editá-las livremente."}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Main Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -407,22 +324,6 @@ function AdminCategorias() {
         onConfirm={confirmDelete}
         title={itemToDelete ? `Tem certeza que deseja remover a categoria ${itemToDelete.name}?` : "Tem certeza que deseja remover?"}
         description="Esta ação removerá a categoria da sua loja e não poderá ser desfeita."
-      />
-
-      <ConfirmDialog
-        isOpen={confirmImportOpen}
-        onClose={() => setConfirmImportOpen(false)}
-        onConfirm={handleImportNetworkCategories}
-        title="Importar categorização padrão da rede?"
-        description="Esta ação irá criar uma cópia de todas as categorias oficiais da rede para a sua loja. Todas as edições e alterações que você fizer serão exclusivas da sua loja e NÃO refletirão no cadastro geral da rede."
-      />
-
-      <ConfirmDialog
-        isOpen={confirmResetOpen}
-        onClose={() => setConfirmResetOpen(false)}
-        onConfirm={handleResetToNetwork}
-        title="Restaurar categorização da rede?"
-        description="Esta ação irá descartar as customizações de categoria desta loja e voltar a acompanhar a categorização padrão da rede."
       />
 
       <CategoryFormModal 

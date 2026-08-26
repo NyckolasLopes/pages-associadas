@@ -190,7 +190,6 @@ export const useAdminProducts = create<ProductsState>()(
           video_url: formattedProduct.videoUrl || null,
           destaque: formattedProduct.destaque || false,
           ativo: formattedProduct.ativo !== false,
-          visivel: formattedProduct.visivel !== false,
           buscavel: formattedProduct.buscavel !== false,
           lancamento: formattedProduct.lancamento || false,
           produto_natureza: formattedProduct.produtoNatureza || null,
@@ -205,34 +204,29 @@ export const useAdminProducts = create<ProductsState>()(
           subcategorias_adicionais: formattedProduct.subcategoriasIds || [],
           nivel_relevancia: formattedProduct.nivelRelevancia || 0,
           seo_titulo: formattedProduct.seoTitulo || null,
-          seo_descricao: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
+          meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
           termos_pesquisa: formattedProduct.termosPesquisa || null,
-          imagem_alt: formattedProduct.imagemAlt || null,
-          metadata: {
-            natureza_produto: formattedProduct.produtoNatureza || null,
-            youtube_video_url: formattedProduct.youtubeVideoUrl || null,
-            tipo_receita: formattedProduct.tipoReceita || null,
-            resumo_descricao: formattedProduct.resumoDescricao || null,
-            qtd_embalagem: formattedProduct.quantidadeEmbalagem || 0,
-            unidade_embalagem: formattedProduct.unidadeEmbalagem || null,
-            qtd_conteudo: formattedProduct.quantidadeConteudo || 0,
-            unidade_conteudo: formattedProduct.unidadeConteudo || null,
-            sabor: formattedProduct.sabor || null,
-            fps: formattedProduct.fps || 0,
-            faixa_etaria: formattedProduct.faixaEtaria || null,
-            classe_terapeutica: formattedProduct.classeTerapeutica || null,
-            indicacao_terapeutica: formattedProduct.indicacaoTerapeutica || null,
-            tipo_de_preco: formattedProduct.tipoDePreco || null,
-            classificacao_registro: formattedProduct.classificacaoRegistro || null,
-            tipo_medicamento: formattedProduct.tipoMedicamento || null,
-            eans_secundarios: formattedProduct.eansSecundarios || [],
-            seo_descricao: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
-          }
+          imagem_alt: formattedProduct.imagemAlt || null
         });
         
         if (error) {
           console.error("Erro ao salvar o produto no Supabase:", error);
           throw error;
+        }
+
+        if (lojaId) {
+          const { error: storeError } = await supabase.from('produto_precos_loja').upsert({
+            produto_id: formattedProduct.id,
+            loja_id: lojaId,
+            preco_de: formattedProduct.precoDe || 0,
+            preco_por: formattedProduct.precoPor || 0,
+            estoque: formattedProduct.estoque || 0,
+            ativo: formattedProduct.ativo !== false
+          });
+          if (storeError) {
+            console.error("Erro ao salvar o preço da loja no Supabase:", storeError);
+            throw storeError;
+          }
         }
       },
       removeProduct: async (id, lojaId) => {

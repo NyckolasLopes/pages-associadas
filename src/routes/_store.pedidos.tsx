@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/stores/auth";
 import { useEffect, useState, useMemo } from "react";
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/_store/pedidos")({
       novo: search.novo as string | undefined,
     };
   },
-  head: () => ({ meta: [{ title: "Acompanhar Pedido — Farmácias Associadas" }] }),
+  head: () => ({ meta: [{ title: `Acompanhar Pedido — ${getBrandNameForHead()}` }] }),
   component: PedidosPage,
 });
 

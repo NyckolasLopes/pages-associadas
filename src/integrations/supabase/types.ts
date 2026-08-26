@@ -269,6 +269,7 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          destaque: boolean | null
           estoque: number
           id: string
           loja_id: string

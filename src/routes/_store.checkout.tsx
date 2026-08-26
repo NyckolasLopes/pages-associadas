@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 // @ts-nocheck
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import productsJson from "@/data/products.json";
@@ -22,7 +23,7 @@ import type { Produto } from "@/types";
 import { z } from "zod";
 
 export const Route = createFileRoute("/_store/checkout")({
-  head: () => ({ meta: [{ title: "Checkout — Farmácias Associadas" }] }),
+  head: () => ({ meta: [{ title: `Checkout — ${getBrandNameForHead()}` }] }),
   component: Checkout,
 });
 

@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Search as SearchIcon, ChevronRight } from "lucide-react";

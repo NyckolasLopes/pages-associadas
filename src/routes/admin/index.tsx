@@ -255,7 +255,7 @@ function AdminDashboard() {
             Olá, {currentUser?.name || "Administrador"}! 👋
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            {effectiveStoreId ? `Visão da Loja: ${pharmacies.find(p => p.id === effectiveStoreId)?.nome || ""}` : "Painel Geral da Rede de Farmácias Associadas"}
+            {effectiveStoreId ? `Visão da Loja: ${pharmacies.find(p => p.id === effectiveStoreId)?.nome || ""}` : (isParceiro ? "Painel Administrativo da Loja" : "Painel Geral da Rede de Farmácias Associadas")}
           </p>
         </div>
         <StoreSelector />

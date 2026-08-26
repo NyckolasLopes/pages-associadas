@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/_store/cadastro")({
   validateSearch: zodValidator(
     z.object({ redirect: z.string().optional().default("/pedidos") })
   ),
-  head: () => ({ meta: [{ title: "Cadastro — Farmácias Associadas" }] }),
+  head: () => ({ meta: [{ title: `Cadastro — ${getBrandNameForHead()}` }] }),
   component: CadastroPage,
 });
 

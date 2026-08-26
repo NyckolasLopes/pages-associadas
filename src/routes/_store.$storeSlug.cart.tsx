@@ -1,3 +1,4 @@
+import { getBrandNameForHead } from "@/utils/brand";
 // @ts-nocheck
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -91,7 +92,7 @@ export const Route = createFileRoute("/_store/$storeSlug/cart")({
       shared: search.shared as string | undefined,
     }
   },
-  head: () => ({ meta: [{ title: "Carrinho — Farmácias Associadas" }] }),
+  head: () => ({ meta: [{ title: `Carrinho — ${getBrandNameForHead()}` }] }),
   component: CartPage,
 });
 

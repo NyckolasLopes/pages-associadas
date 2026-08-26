@@ -385,8 +385,8 @@ function AdminLayout() {
           <div className="text-xs text-muted-foreground mt-1">
             {isGlobalAdmin ? "Sede Administrativa" : (activeStoreId ? (() => {
               const store = pharmacies.find(p => p.id === activeStoreId);
-              return store ? `${store.cidade || ''} - Admin ${store.nome}` : "Farmácias Associadas";
-            })() : "Farmácias Associadas")}
+                return store ? `${store.cidade || ''} - Admin ${store.nome}` : (isParceiro ? "Painel Administrativo" : "Farmácias Associadas");
+              })() : (isParceiro ? "Painel Administrativo" : "Farmácias Associadas"))}
           </div>
         </div>
         <button onClick={() => setMobileMenuOpen(true)} className="p-2 border border-slate-200 rounded-md hover:bg-slate-50 text-slate-600">
@@ -414,8 +414,8 @@ function AdminLayout() {
             <div className="text-xs text-muted-foreground mt-1">
               {isGlobalAdmin ? "Sede Administrativa" : (activeStoreId ? (() => {
                 const store = pharmacies.find(p => p.id === activeStoreId);
-                return store ? `${store.cidade || ''} - Admin ${store.nome}` : "Farmácias Associadas";
-              })() : "Farmácias Associadas")}
+                return store ? `${store.cidade || ''} - Admin ${store.nome}` : (isParceiro ? "Painel Administrativo" : "Farmácias Associadas");
+              })() : (isParceiro ? "Painel Administrativo" : "Farmácias Associadas"))}
             </div>
           </div>
           <button 
