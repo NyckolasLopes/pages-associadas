@@ -722,7 +722,29 @@ function PDP() {
 
   const desconto = finalPrecoDe > finalPrecoPor ? Math.round((1 - finalPrecoPor / finalPrecoDe) * 100) : 0;
 
-  const defaultImg = productImage(p);
+  const allImages = React.useMemo(() => {
+    const list: string[] = [];
+    const parsedImagens = (p.imagens || []).map((imgObj: any) => {
+      return typeof imgObj === 'string' ? imgObj : (imgObj?.caminhoImagem || imgObj?.url || imgObj);
+    }).filter((url: any) => typeof url === 'string' && url.length > 0);
+
+    parsedImagens.forEach((img: string) => {
+      if (!list.includes(img)) list.push(img);
+    });
+
+    const capa = p.imagem || p.foto;
+    if (capa && typeof capa === 'string' && capa !== "/produtos/generico.webp" && !list.includes(capa)) {
+      list.unshift(capa);
+    }
+
+    if (list.length === 0) {
+      list.push(productImage(p));
+    }
+
+    return list;
+  }, [p.imagem, p.foto, p.imagens]);
+
+  const defaultImg = allImages[0];
   const [selectedImage, setSelectedImage] = useState(defaultImg);
   const thumbScrollRef = useRef<HTMLDivElement>(null);
 
@@ -753,7 +775,7 @@ function PDP() {
     setMounted(true);
     useFavorites.persist.rehydrate();
     window.scrollTo(0, 0);
-    setSelectedImage(p.imagens?.[0] || productImage(p));
+    setSelectedImage(allImages[0]);
     
     const isMedicationCheck = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142"));
     setFreightTab((isMedicationCheck && !!p.retemReceita) ? "retirada" : "entrega");
@@ -971,7 +993,7 @@ function PDP() {
                 </button>
               )}
             </div>
-            {((p.imagens && p.imagens.length > 1) || (p.storiesProduto && p.storiesProduto.length > 0)) && (
+            {(allImages.length > 1 || (p.storiesProduto && p.storiesProduto.length > 0)) && (
               <div className="relative max-w-[500px] mx-auto w-full group">
                 <div ref={thumbScrollRef} className="flex gap-3 overflow-x-auto pb-2 snap-x scrollbar-none scroll-smooth">
                   {p.storiesProduto && p.storiesProduto.length > 0 && p.storiesProduto.map((storyUrl: string, idx: number) => (
@@ -979,8 +1001,7 @@ function PDP() {
                       <ProductStory videoUrl={storyUrl} productName={p.nome} inline={true} />
                     </div>
                   ))}
-                  {(p.imagens || []).map((imgObj: any, idx: number) => {
-                    const imgUrl = typeof imgObj === 'string' ? imgObj : (imgObj.caminhoImagem || imgObj.url || imgObj);
+                  {allImages.map((imgUrl: string, idx: number) => {
                     return (
                       <button 
                         key={idx} 
