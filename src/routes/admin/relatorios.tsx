@@ -228,28 +228,20 @@ function Relatorios() {
     let totalCount = 0;
     let globalAtrasados = 0;
 
-    const filteredRawOrders = activeStoreId ? rawOrders.filter(o => o.lojaId === activeStoreId) : rawOrders;
+    const ordersByLoja: Record<string, typeof orders> = {};
     
-    // Group orders by lojaId to avoid O(N*M) loop
-    const ordersByLoja: Record<string, typeof rawOrders> = {};
-    
-    filteredRawOrders.forEach(pedido => {
-      if (pedido.status.toLowerCase() === "cancelado") return;
-      
+    orders.forEach(pedido => {
       const lojaId = pedido.lojaId;
       if (lojaId) {
         if (!ordersByLoja[lojaId]) ordersByLoja[lojaId] = [];
         ordersByLoja[lojaId].push(pedido);
       }
       
-      // Calculate SLA for this specific order
-      const separacao = pedido.historico?.find(h => h.situacao.toLowerCase() === "em separação");
-      const conclusao = pedido.historico?.find(h => 
-        h.situacao.toLowerCase() === "pronto para retirada" ||
-        h.situacao.toLowerCase() === "pronta para retirada" || 
-        h.situacao.toLowerCase() === "em rota de entrega" || 
-        h.situacao.toLowerCase() === "enviado" || 
-        h.situacao.toLowerCase() === "entregue"
+      const hist = [...(pedido.historico || [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+      const separacao = hist.find(h => h.situacao.toLowerCase() === "em separação");
+      const conclusao = hist.find(h => 
+        ["pronto para retirada", "pronta para retirada", "em rota de entrega", "enviado", "entregue"]
+          .includes(h.situacao.toLowerCase())
       );
       
       if (separacao && conclusao) {
@@ -265,13 +257,11 @@ function Relatorios() {
       let count = 0;
 
       lojaOrders.forEach(pedido => {
-        const separacao = pedido.historico?.find(h => h.situacao?.toLowerCase() === "em separação");
-        const conclusao = pedido.historico?.find(h => 
-          h.situacao?.toLowerCase() === "pronto para retirada" || 
-          h.situacao?.toLowerCase() === "pronta para retirada" || 
-          h.situacao?.toLowerCase() === "em rota de entrega" || 
-          h.situacao?.toLowerCase() === "enviado" || 
-          h.situacao?.toLowerCase() === "entregue"
+        const hist = [...(pedido.historico || [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+        const separacao = hist.find(h => h.situacao?.toLowerCase() === "em separação");
+        const conclusao = hist.find(h => 
+          ["pronto para retirada", "pronta para retirada", "em rota de entrega", "enviado", "entregue"]
+            .includes(h.situacao?.toLowerCase() || "")
         );
         
         if (separacao && conclusao) {
@@ -298,7 +288,7 @@ function Relatorios() {
     const porcNoPrazo = totalCount > 0 ? 100 - porcAtrasados : 100;
 
     return { stats, tempoMedioGlobal, porcAtrasados, porcNoPrazo, totalCount };
-  }, [rawOrders, pharmacies, activeStoreId]);
+  }, [orders, pharmacies]);
 
   const handleExportPDF = () => {
     window.print();

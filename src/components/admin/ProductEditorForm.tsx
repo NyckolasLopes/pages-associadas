@@ -194,7 +194,14 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       toast.error("O campo Nome do Produto é obrigatório.");
       return;
     }
-    if (!formData?.ean?.trim()) {
+    // Para serviços, EAN não é obrigatório — gera um código automático se vazio
+    if (formData?.tipoProduto === "servico") {
+      if (!formData?.ean?.trim()) {
+        setFormData(prev => prev ? { ...prev, ean: `SRV-${Date.now()}` } : prev);
+        // Atualiza o formData local para o restante do save
+        formData.ean = `SRV-${Date.now()}`;
+      }
+    } else if (!formData?.ean?.trim()) {
       toast.error("O campo EAN / Código de Barras é obrigatório.");
       return;
     }
@@ -267,6 +274,204 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
   const isMedicamento = categorias.find(c => String(c.id) === String(formData.categoriaId))?.slug === 'medicamentos' || 
                         categorias.find(c => String(c.id) === String(formData.categoriaId))?.nome?.toLowerCase() === 'medicamentos';
+
+  const isServico = formData.tipoProduto === "servico";
+
+  // ---- Formulário simplificado para SERVIÇOS ----
+  const serviceContent = (
+    <>
+      {/* Header Fixo */}
+      <div className="flex items-center justify-between px-8 py-4 bg-white border-b sticky -top-4 md:-top-8 z-20 shadow-sm">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9 12l2 2 4-4"/></svg>
+              Serviço
+            </span>
+            <h2 className="text-xl font-bold text-slate-800">{formData.nome || "Novo Serviço"}</h2>
+          </div>
+          <div className="text-sm text-slate-500 mt-1">Cadastro simplificado de serviço farmacêutico</div>
+        </div>
+        <div className="flex items-center gap-3">
+          {headerActions}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleSaveClick} disabled={saveStep !== "idle"} className="bg-purple-700 hover:bg-purple-800 text-white font-bold px-8">
+            Salvar Serviço
+          </Button>
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div className="flex-1 overflow-y-auto p-8 space-y-8 max-w-3xl mx-auto w-full">
+
+        {/* Status */}
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
+          <h3 className="font-bold text-lg text-slate-800 pb-3 border-b">Status do Serviço</h3>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100 flex-1">
+              <Switch disabled={!isGlobalAdmin}
+                id="ativo-srv"
+                checked={formData.ativo}
+                onCheckedChange={checked => setFormData({...formData, ativo: checked})}
+              />
+              <Label htmlFor="ativo-srv" className="font-medium cursor-pointer">Serviço Ativo</Label>
+            </div>
+            <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100 flex-1">
+              <Switch disabled={!isGlobalAdmin}
+                id="visivel-srv"
+                checked={formData.visivel ?? true}
+                onCheckedChange={checked => setFormData({...formData, visivel: checked})}
+              />
+              <Label htmlFor="visivel-srv" className="font-medium cursor-pointer">Visível na Loja</Label>
+            </div>
+          </div>
+        </div>
+
+        {/* Informações do Serviço */}
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-6">
+          <h3 className="font-bold text-lg text-slate-800 pb-3 border-b">Informações do Serviço</h3>
+
+          <div className="space-y-2">
+            <Label className="font-bold text-xs uppercase text-slate-500">Nome do Serviço *</Label>
+            <Input
+              disabled={!isGlobalAdmin}
+              maxLength={120}
+              value={formData.nome || ""}
+              onChange={e => setFormData({...formData, nome: e.target.value})}
+              className="bg-white text-lg h-12"
+              placeholder="Ex: Aferição de Pressão Arterial, Aplicação de Injeção..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-bold text-xs uppercase text-slate-500">Descrição do Serviço</Label>
+            <Textarea
+              disabled={!isGlobalAdmin}
+              value={formData.descricao || ""}
+              onChange={e => setFormData({...formData, descricao: e.target.value})}
+              className="bg-white min-h-[120px]"
+              placeholder="Descreva o serviço: o que é feito, benefícios, duração estimada, como funciona..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-bold text-xs uppercase text-slate-500">Como se Preparar / Entre em Contato</Label>
+            <Textarea
+              disabled={!isGlobalAdmin}
+              value={(formData as any).instrucaoPreparacao || ""}
+              onChange={e => setFormData({...formData, instrucaoPreparacao: e.target.value} as any)}
+              className="bg-white min-h-[100px]"
+              placeholder="Entre em contato com a farmácia para saber como se preparar para esse serviço. Ex: Jejum de 8 horas necessário, trazer documento com foto..."
+            />
+            <p className="text-xs text-slate-400">Este texto será exibido na página do serviço para orientar o cliente.</p>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="font-bold text-xs uppercase text-slate-500">Exige Prescrição Médica?</Label>
+            <div className="flex gap-4">
+              {[
+                { value: "nao", label: "Não exige prescrição" },
+                { value: "sim", label: "Sim, exige prescrição" },
+                { value: "recomendado", label: "Recomendado ter prescrição" },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFormData({...formData, prescricaoServico: opt.value} as any)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 text-sm font-bold transition-all ${
+                    ((formData as any).prescricaoServico || "nao") === opt.value
+                      ? "border-purple-600 bg-purple-50 text-purple-700"
+                      : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Imagem */}
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
+          <h3 className="font-bold text-lg text-slate-800 pb-3 border-b">Imagem do Serviço</h3>
+          <div className="flex flex-wrap gap-4">
+            {((formData.imagens || []) as any[]).filter((i: any) => i !== '/placeholder.svg').map((img: any, idx: number) => (
+              <div key={idx} className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group">
+                <img src={img.caminhoImagem || img} alt={`Imagem ${idx + 1}`} className="w-full h-full object-cover" />
+                <button
+                  onClick={() => handleRemoveImage(idx)}
+                  className="absolute top-1 right-1 bg-white hover:bg-red-50 text-red-500 rounded-md p-1.5 shadow-sm transition-colors z-10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            {isGlobalAdmin && ((formData.imagens || []) as any[]).length < 3 && (
+              <div className="w-32 h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-purple-600 hover:border-purple-600 hover:bg-purple-50 cursor-pointer transition-colors relative">
+                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleImageUpload} />
+                <svg className="h-6 w-6 mb-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span className="text-xs font-medium text-center px-2">Upload Foto</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Preço */}
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-6">
+          <h3 className="font-bold text-lg text-slate-800 pb-3 border-b">Precificação</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="font-bold text-xs uppercase text-slate-500">Preço (De) — R$</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
+                <NumericInput
+                  disabled={!isGlobalAdmin}
+                  value={formData.precoDe}
+                  onChange={val => setFormData({...formData, precoDe: val || 0})}
+                  className="bg-white pl-9 font-bold text-slate-700"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-xs uppercase text-slate-500">Preço (Por) — R$</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
+                <NumericInput
+                  disabled={!isGlobalAdmin}
+                  value={formData.precoPor}
+                  onChange={val => setFormData({...formData, precoPor: val || 0})}
+                  className="bg-white pl-9 font-bold text-purple-700"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {saveStep !== "idle" && (
+        <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white p-8 rounded-xl shadow-xl flex flex-col items-center max-w-sm w-full text-center border border-slate-200 animate-in fade-in zoom-in duration-200">
+            {saveStep === "done" ? (
+              <>
+                <CheckCircle2 className="w-16 h-16 text-purple-500 mb-4 animate-in zoom-in" />
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Salvo com sucesso!</h3>
+                <p className="text-slate-500 font-medium">O serviço foi cadastrado.</p>
+              </>
+            ) : (
+              <>
+                <Loader2 className="w-12 h-12 text-purple-600 animate-spin mb-4" />
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Aguarde um momento</h3>
+                <p className="text-slate-500 font-medium">Salvando serviço na rede...</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   const content = (
     <>
@@ -990,8 +1195,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
   if (asPage) {
     return (
-        <div className="flex flex-col bg-slate-100 -mt-4 md:-mt-8 -mx-4 md:-mx-8 min-h-[calc(100vh-4rem)]">
-          {content}
+        <div className="flex flex-col bg-slate-100 -mt-4 md:-mt-8 -mx-4 md:-mx-8 min-h-[calc(100vh-4rem)] relative">
+          {isServico ? serviceContent : content}
         </div>
     );
   }
@@ -999,9 +1204,9 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[95vw] w-[1200px] h-[95vh] p-0 overflow-hidden flex flex-col bg-slate-50">
-          <DialogTitle className="sr-only">Editor de Produto</DialogTitle>
-          {content}
+        <DialogContent className={`max-w-[95vw] ${isServico ? 'w-[900px]' : 'w-[1200px]'} h-[95vh] p-0 overflow-hidden flex flex-col bg-slate-50 relative`}>
+          <DialogTitle className="sr-only">{isServico ? "Editor de Serviço" : "Editor de Produto"}</DialogTitle>
+          {isServico ? serviceContent : content}
         </DialogContent>
       </Dialog>
     </>

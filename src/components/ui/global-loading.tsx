@@ -10,16 +10,25 @@ export function GlobalLoading() {
 
   const isAdmin = location.pathname.startsWith('/admin');
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  // Qualquer loja específica de vitrine (não admin) usa o logo dela
+  const isStoreContext = !isAdmin && !!activePharmacy;
 
-  let logoToUse = "/logo.png";
+  let logoToUse: string;
   if (isAdmin) {
+    // Admin sempre usa o logo da rede
     logoToUse = "/logo.png";
+  } else if (isStoreContext && activePharmacy?.logoUrl) {
+    // Vitrine com logo cadastrado: usa o logo da loja
+    logoToUse = activePharmacy.logoUrl;
   } else if (isParceiro) {
-    logoToUse = activePharmacy?.logoUrl || "";
+    // Parceiro sem logo: sem logo nenhum
+    logoToUse = "";
   } else {
-    logoToUse = activePharmacy?.logoUrl || dadosLoja?.logoUrl || "/logo.png";
+    // Loja da rede sem logo próprio: usa o logo padrão da rede
+    logoToUse = dadosLoja?.logoUrl || "/logo.png";
   }
 
+  // Parceiros não usam o spinner verde da rede (sem identidade visual da rede)
   const showSpinner = !isParceiro;
 
   return (
