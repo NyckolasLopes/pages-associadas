@@ -25,7 +25,7 @@ export function RadioToggle({ label, value, onChange, className }: RadioTogglePr
           type="button"
           onClick={() => onChange(false)}
           className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
-            !value ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+            !value ? "bg-slate-700 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
           }`}
         >
           Não
