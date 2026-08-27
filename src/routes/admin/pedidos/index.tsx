@@ -144,7 +144,7 @@ export function PedidosAdmin() {
   const [dateEndFilter, setDateEndFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
-  const [mainView, setMainView] = useState<"todos" | "concluidos" | "pendentes" | "carrinhos">("todos");
+  const [mainView, setMainView] = useState<"todos" | "concluidos" | "pendentes">("todos");
   const [showApiDoc, setShowApiDoc] = useState(false);
 
   // Fetch orders with React Query (Server-side)
@@ -369,41 +369,7 @@ export function PedidosAdmin() {
       });
     });
 
-    // 2. Carrinhos Abandonados (Pendentes)
-    allAbandonedCarts.forEach((cart) => {
-      seenIds.add(cart.id);
 
-      const totalItemsCount =
-        cart.items?.reduce((acc, p) => acc + (p.qtd || 1), 0) || cart.items?.length || 1;
-      const itemsListText = (cart.items || []).map((p) => `${p.qtd || 1}x ${p.nome}`).join(", ");
-
-      list.push({
-        id: cart.id,
-        data: cart.abandonedAt,
-        dataOriginal: cart.abandonedAt,
-        clienteNome: cart.client || "Cliente",
-        clienteTelefone: cart.phone || "Não informado",
-        clienteEndereco: cart.address,
-        lojaId: cart.lojaId,
-        lojaNome: getLojaName(cart.lojaId),
-        status: "Pendente",
-        statusDesc: "Pendente (Carrinho)",
-        itensQtd: totalItemsCount,
-        itensDesc: itemsListText,
-        produtos:
-          cart.items?.map((i: any) => ({
-            nome: i.nome,
-            qtd: i.qtd,
-            quantidade: i.qtd,
-            valorUnitario: i.valorUnitario,
-            preco: i.valorUnitario,
-            ean: i.ean,
-          })) || [],
-        total: cart.total || 0,
-        tipo: "carrinho",
-        rawCart: cart,
-      });
-    });
 
     // Ordenação do mais recente para o mais antigo
     return list.sort((a, b) => {
@@ -415,10 +381,9 @@ export function PedidosAdmin() {
 
   // KPIs: TOTAL DE PEDIDOS puxa TODOS os pedidos (Pendentes + Concluídos)
   const kpis = {
-    total: (dbKpis?.total || 0) + allAbandonedCarts.length,
+    total: dbKpis?.total || 0,
     concluidos: dbKpis?.concluidos || 0,
     pendentes: dbKpis?.pendentes || 0,
-    carrinhosARecuperar: allAbandonedCarts.length,
   };
 
   // Filtragem
@@ -434,9 +399,7 @@ export function PedidosAdmin() {
          const st = (item.status || "").toLowerCase();
          if (st.includes("conclu") || st.includes("cancel") || st.includes("entregue")) return false;
       }
-      if (mainView === "carrinhos") {
-         if (item.tipo !== "carrinho") return false;
-      }
+
 
       // Filtro por busca
       if (searchTerm) {
@@ -920,8 +883,7 @@ export function PedidosAdmin() {
               {isGlobalView ? "Pedidos da Rede" : "Meus Pedidos"}
             </h1>
             <span className="text-slate-500 font-medium text-sm">
-              Visão geral consolidada de todos os pedidos concluídos via WhatsApp e pendentes no
-              carrinho.
+              Visão geral consolidada de todos os pedidos concluídos via WhatsApp.
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -946,31 +908,8 @@ export function PedidosAdmin() {
           </div>
         </div>
 
-        {/* 3 KPIs Principais: TOTAL DE PEDIDOS (Concluídos + Pendentes), CONCLUIDO, CARRINHOS A RECUPERAR */}
+        {/* 2 KPIs Principais: CONCLUIDO, PENDENTE */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* TOTAL DE PEDIDOS - Puxa todos os pedidos (Pendentes e Concluídos) */}
-          <div
-            onClick={() => setMainView("todos")}
-            className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
-              mainView === "todos"
-                ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20"
-                : ""
-            }`}
-          >
-            <div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
-                TOTAL DE PEDIDOS
-              </p>
-              <p className="text-3xl font-black text-slate-800">{kpis.total}</p>
-              <span className="text-[12px] text-slate-500 font-medium">
-                Geral unificado
-              </span>
-            </div>
-            <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center">
-              <Package className="h-6 w-6" />
-            </div>
-          </div>
-
           {/* CONCLUÍDO (WHATSAPP) */}
           <div
             onClick={() => setMainView("concluidos")}
@@ -1014,29 +953,6 @@ export function PedidosAdmin() {
             </div>
             <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center">
               <Package className="h-6 w-6" />
-            </div>
-          </div>
-
-          {/* CARRINHOS A RECUPERAR */}
-          <div
-            onClick={() => setMainView("carrinhos")}
-            className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
-              mainView === "carrinhos"
-                ? "ring-2 ring-amber-500 border-amber-500 bg-amber-50/20"
-                : ""
-            }`}
-          >
-            <div>
-              <p className="text-amber-600 text-xs font-bold uppercase tracking-wider mb-1">
-                CARRINHOS ABANDONADOS
-              </p>
-              <p className="text-3xl font-black text-amber-700">{kpis.carrinhosARecuperar}</p>
-              <span className="text-[12px] text-amber-600 font-semibold">
-                Sem finalizar (Logado)
-              </span>
-            </div>
-            <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
-              <ShoppingCart className="h-6 w-6" />
             </div>
           </div>
         </div>
@@ -1087,16 +1003,6 @@ export function PedidosAdmin() {
                   }`}
                 >
                   Pendentes ({kpis.pendentes})
-                </button>
-                <button
-                  onClick={() => setMainView("carrinhos")}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                    mainView === "carrinhos"
-                      ? "bg-white text-amber-700 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  Carrinhos ({kpis.carrinhosARecuperar})
                 </button>
               </div>
 

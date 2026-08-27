@@ -82,9 +82,14 @@ function getUnifiedOrderStatus(order: { status?: string; origem?: string; type?:
     return { label: "Cancelado", desc: "Cancelado" };
   }
 
-  // Carrinho abandonado / Aguardando pagamento -> Pendente
-  if (statusStr === "abandonado no carrinho" || origemStr === "carrinho" || statusStr === "pendente" || statusStr === "novo") {
+  // Carrinho abandonado 
+  if (statusStr === "abandonado no carrinho" || origemStr === "carrinho") {
     return { label: "Pendente", desc: "Abandonado no carrinho" };
+  }
+
+  // Pedido real pendente
+  if (statusStr === "pendente" || statusStr === "novo") {
+    return { label: "Pendente", desc: "Aguardando Atendimento" };
   }
 
   // Qualquer pedido real finalizado via site (que vai pro WhatsApp) é Concluído
@@ -299,7 +304,7 @@ function Metricas() {
   const statusPieData = useMemo(() => {
     const data = [];
     if (concluidosCount > 0) data.push({ name: "Concluído (WhatsApp)", value: concluidosCount, color: "#10b981" });
-    if (pendentesCount > 0) data.push({ name: "Pendente (Carrinho)", value: pendentesCount, color: "#f59e0b" });
+    if (pendentesCount > 0) data.push({ name: "Pendente", value: pendentesCount, color: "#f59e0b" });
     if (canceladosCount > 0) data.push({ name: "Cancelado", value: canceladosCount, color: "#ef4444" });
     return data;
   }, [concluidosCount, pendentesCount, canceladosCount]);
@@ -438,7 +443,7 @@ function Metricas() {
           </div>
         </div>
 
-        {/* Card 3: Pedidos Pendentes (Carrinho Abandonado) */}
+        {/* Card 3: Pedidos Pendentes */}
         <div className="bg-white rounded-2xl border shadow-sm p-5 flex flex-col justify-between hover:border-amber-200 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -458,7 +463,7 @@ function Metricas() {
               </Badge>
             </div>
             <div className="text-xs text-slate-500 mt-1 font-medium">
-              Abandonado no carrinho
+              Aguardando atendimento
             </div>
           </div>
         </div>
@@ -564,7 +569,7 @@ function Metricas() {
               <div className="text-lg font-black text-emerald-700 mt-0.5">{concluidosCount} ({concluidosPct}%)</div>
             </div>
             <div className="p-2.5 bg-amber-50/70 rounded-xl border border-amber-100">
-              <div className="text-[11px] font-bold text-amber-800 uppercase">Pendentes (Carrinho)</div>
+              <div className="text-[11px] font-bold text-amber-800 uppercase">Pendentes</div>
               <div className="text-lg font-black text-amber-700 mt-0.5">{pendentesCount} ({pendentesPct}%)</div>
             </div>
           </div>

@@ -1151,7 +1151,7 @@ function Relatorios() {
                 </div>
                 <h3 className="text-xl font-black text-slate-800 mb-2">Monitoramento de SLA de Separação</h3>
                 <p className="text-slate-500 font-medium mb-8 max-w-2xl mx-auto">
-                  O tempo de separação é calculado a partir do momento em que o pedido é registrado como <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Em separação</span> até o momento em que a loja altera seu status para <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Pronto para retirada</span> ou <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Entregue</span>.
+                  O tempo de separação é calculado a partir do momento em que o pedido é registrado como <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Em separação</span> até o momento em que a loja altera seu status para <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Em rota de entrega</span>, <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Pronto para retirada</span> ou <span className="font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">Entregue</span>.
                 </p>
                 
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">

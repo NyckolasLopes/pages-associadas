@@ -317,7 +317,7 @@ export function Header() {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (q) navigate({ to: "/busca", search: { q } });
+    if (q) navigate({ to: `/${storeSlug}/busca`, search: { q } } as any);
   };
 
   const handleScan = async (rawCode: string) => {
@@ -475,7 +475,7 @@ export function Header() {
                       onClick={() => {
                         setQ(sug);
                         setSearchOpen(false);
-                        navigate({ to: "/busca", search: { q: sug } as any });
+                        navigate({ to: `/${storeSlug}/busca`, search: { q: sug } } as any);
                       }}
                     >
                       <Search className="h-4 w-4 text-muted-foreground" />
@@ -513,7 +513,7 @@ export function Header() {
                         className="w-full text-center text-sm font-bold text-primary py-2 hover:underline"
                         onClick={() => {
                           setSearchOpen(false);
-                          navigate({ to: "/busca", search: { q } as any });
+                          navigate({ to: `/${storeSlug}/busca`, search: { q } } as any);
                         }}
                       >
                         Ver todos os resultados
@@ -665,7 +665,7 @@ export function Header() {
                             setQ(sug);
                             setSearchOpen(false);
                             setMobileSearchOpen(false);
-                            navigate({ to: "/busca", search: { q: sug } as any });
+                            navigate({ to: `/${storeSlug}/busca`, search: { q: sug } } as any);
                           }}
                         >
                           <Search className="h-4 w-4 text-muted-foreground" />
@@ -707,7 +707,7 @@ export function Header() {
                             onClick={() => {
                               setSearchOpen(false);
                               setMobileSearchOpen(false);
-                              navigate({ to: "/busca", search: { q } as any });
+                              navigate({ to: `/${storeSlug}/busca`, search: { q } } as any);
                             }}
                           >
                             Ver todos os resultados

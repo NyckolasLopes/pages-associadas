@@ -177,7 +177,7 @@ export function Footer() {
               {RELATED_LINKS.map((link) => (
                 <Link
                   key={link}
-                  to="/busca"
+                  to={`/${storeSlug}/busca` as any}
                   search={{ q: link }}
                   className="bg-primary/10 text-primary hover:bg-primary hover:text-white border border-primary/20 transition px-3 py-1.5 rounded text-[13px] md:text-sm font-medium"
                 >
@@ -232,7 +232,7 @@ export function Footer() {
               {topTerms.map((t) => (
                 <Link
                   key={t}
-                  to="/busca"
+                  to={`/${storeSlug}/busca` as any}
                   search={{ q: t }}
                   className="inline-block"
                 >

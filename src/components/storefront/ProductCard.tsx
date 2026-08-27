@@ -209,8 +209,8 @@ function ProductCardComponent({
   const isLocalActive = !activeStoreId || p.precosPorLoja?.[activeStoreId]?.ativo !== false;
   const isAvailable = (maxStock > 0 || isService) && isGlobalActive && isLocalActive;
   const isCampanha = isAvailable && isCampanhaAtiva(p);
-  let finalPrecoPor = Number(p.precoPor ?? p.preco ?? 0);
-  let finalPrecoDe = Number(p.precoDe ?? finalPrecoPor);
+  let finalPrecoPor = Number(p.precoPor || p.preco || 0);
+  let finalPrecoDe = Number(p.precoDe || finalPrecoPor);
   let isLojaPromoActiva = false;
 
   if (isCampanha) {
