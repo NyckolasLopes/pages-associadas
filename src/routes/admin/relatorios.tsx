@@ -245,7 +245,9 @@ function Relatorios() {
       // Calculate SLA for this specific order
       const separacao = pedido.historico?.find(h => h.situacao.toLowerCase() === "em separação");
       const conclusao = pedido.historico?.find(h => 
+        h.situacao.toLowerCase() === "pronto para retirada" ||
         h.situacao.toLowerCase() === "pronta para retirada" || 
+        h.situacao.toLowerCase() === "em rota de entrega" || 
         h.situacao.toLowerCase() === "enviado" || 
         h.situacao.toLowerCase() === "entregue"
       );
@@ -265,7 +267,9 @@ function Relatorios() {
       lojaOrders.forEach(pedido => {
         const separacao = pedido.historico?.find(h => h.situacao?.toLowerCase() === "em separação");
         const conclusao = pedido.historico?.find(h => 
+          h.situacao?.toLowerCase() === "pronto para retirada" || 
           h.situacao?.toLowerCase() === "pronta para retirada" || 
+          h.situacao?.toLowerCase() === "em rota de entrega" || 
           h.situacao?.toLowerCase() === "enviado" || 
           h.situacao?.toLowerCase() === "entregue"
         );

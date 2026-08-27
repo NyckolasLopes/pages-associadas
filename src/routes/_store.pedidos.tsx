@@ -277,6 +277,14 @@ function PedidosPage() {
                           {STATUS_STEPS.map((step, idx) => {
                             const isDone = stepIdx >= idx;
                             const isCurrent = stepIdx === idx;
+                            
+                            let displayLabel = step.label;
+                            if (step.key === "Pronto") {
+                              const modalidade = (order.modalidade || "Retirada").toLowerCase();
+                              const isRetirada = modalidade.includes("retirada") || modalidade.includes("balcão") || modalidade.includes("loja");
+                              displayLabel = isRetirada ? "Pronta para retirada" : "Em rota de entrega";
+                            }
+
                             return (
                               <div key={step.key} className="flex flex-col items-center text-center">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
@@ -289,7 +297,7 @@ function PedidosPage() {
                                 <span className={`text-[11px] font-bold mt-1.5 line-clamp-1 ${
                                   isDone ? "text-slate-800" : "text-slate-400"
                                 }`}>
-                                  {step.label}
+                                  {displayLabel}
                                 </span>
                               </div>
                             );

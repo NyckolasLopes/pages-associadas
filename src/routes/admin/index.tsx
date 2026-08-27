@@ -228,7 +228,7 @@ function AdminDashboard() {
   const { data: dbKpis } = useOrdersKpis(effectiveStoreId || undefined);
 
   const storeCarts = effectiveStoreId ? rawStoreCarts.filter(c => c.lojaId === effectiveStoreId) : rawStoreCarts;
-  const carrinhosRecuperar = storeCarts.length + (dbKpis?.pendentes || 0);
+  const carrinhosRecuperar = storeCarts.length;
 
   const formatDataHora = (dataStr: string) => {
     if (!dataStr) return "";

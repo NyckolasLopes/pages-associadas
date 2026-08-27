@@ -12,7 +12,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getGreeting, brl, productImage } from "@/lib/format";
 import { toast } from "sonner";
 import { catalog } from "@/services/catalog";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_store/perfil")({
   validateSearch: (search: Record<string, unknown>): { tab?: string } => {
@@ -351,7 +361,7 @@ function PerfilPage() {
               <div className="grid sm:grid-cols-2 gap-4">
                 {addresses.map((addr) => (
                   <div key={addr.id} className="border rounded-lg p-4 relative">
-                    <div className="flex items-center justify-between mb-2 pr-6">
+                    <div className="flex items-center justify-between mb-2 pr-16">
                       <div className="flex items-center gap-2">
                         {addr.type === "Trabalho" ? <Briefcase className="h-4 w-4 text-muted-foreground" /> :
                          addr.type === "Local" ? <Building2 className="h-4 w-4 text-muted-foreground" /> :
@@ -526,29 +536,47 @@ function PerfilPage() {
               <p className="text-sm text-red-800">
                 Ao excluir sua conta, todos os seus dados pessoais, endereços e histórico de pedidos serão removidos permanentemente. Esta ação não pode ser desfeita.
               </p>
-              <ConfirmDialog {...({ children: undefined } as any)}
-                title="Você tem certeza que deseja excluir sua conta pra sempre?"
-                description="Você perderá todos os dados de pedidos já feitos e todas as configurações salvas. Esta ação é irreversível."
-                confirmText="Sim, excluir conta"
-                cancelText="Cancelar"
-                onConfirm={async () => {
-                  try {
-                    const success = await deleteAccount();
-                    if (!success) {
-                      toast.error("Falha ao excluir a conta. Tente novamente ou entre em contato com o suporte.");
-                      return;
-                    }
-                    toast.success("Sua conta foi excluída com sucesso.");
-                    navigate({ to: "/" });
-                  } catch (e: any) {
-                    toast.error("Erro ao excluir conta: " + e.message);
-                  }
-                }}
-              >
-                <Button variant="destructive">
-                  Excluir conta definitivamente
-                </Button>
-              </ConfirmDialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    Excluir conta definitivamente
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="border-0 shadow-2xl rounded-2xl max-w-md">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-xl font-bold text-red-700">
+                      Você tem certeza que deseja excluir sua conta pra sempre?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-slate-600 text-sm">
+                      Você perderá todos os dados de pedidos já feitos e todas as configurações salvas. Esta ação é irreversível.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="mt-4 gap-2">
+                    <AlertDialogCancel className="border-slate-200 text-slate-600 hover:bg-slate-50">
+                      Não, cancelar
+                    </AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        try {
+                          const success = await deleteAccount();
+                          if (!success) {
+                            toast.error("Falha ao excluir a conta. Tente novamente ou entre em contato com o suporte.");
+                            return;
+                          }
+                          toast.success("Sua conta foi excluída com sucesso.");
+                          navigate({ to: "/" });
+                        } catch (e: any) {
+                          toast.error("Erro ao excluir conta: " + e.message);
+                        }
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white font-medium shadow-sm px-6"
+                    >
+                      Sim, excluir conta
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </>
         ) : (

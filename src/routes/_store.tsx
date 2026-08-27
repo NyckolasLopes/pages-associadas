@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
+import { useAuth } from "@/stores/auth";
 import { Header } from "@/components/storefront/Header";
 import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
@@ -37,6 +38,7 @@ function StoreLayout() {
   const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
   const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const logout = useAuth((s) => s.logout);
 
   const pathParts = location.pathname.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
@@ -105,6 +107,9 @@ function StoreLayout() {
 
     // Sincroniza selectedPharmacyId → cupons e carrinho reconhecem a loja correta
     if (activePharmacy.id !== selectedPharmacyId) {
+      if (selectedPharmacyId) {
+        logout();
+      }
       setSelectedPharmacyId(activePharmacy.id);
     }
   }, [activePharmacy?.id]);

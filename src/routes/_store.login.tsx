@@ -17,14 +17,14 @@ const loginSchema = z.object({
 
 export const Route = createFileRoute("/_store/login")({
   validateSearch: zodValidator(
-    z.object({ redirect: z.string().optional().default("/carrinho") }),
+    z.object({ redirect: z.string().optional().default("/") }).catchall(z.any())
   ),
   head: () => ({ meta: [{ title: `Entrar — ${getBrandNameForHead()}` }] }),
   component: LoginPage,
 });
 
 function LoginPage() {
-  const { redirect } = Route.useSearch();
+  const { redirect, ...restSearch } = Route.useSearch() as any;
   const navigate = useNavigate();
   const login = useAuth((s) => s.login);
   const verifyOtp = useAuth((s) => s.verifyOtp);
@@ -106,7 +106,7 @@ function LoginPage() {
       toast.success("Código de segurança enviado para o seu e-mail!");
     } else if (result === true) {
       localStorage.setItem("fa_login_attempts", "0");
-      navigate({ to: redirect as any });
+      navigate({ to: redirect as any, search: restSearch });
     } else {
       const attempts = parseInt(localStorage.getItem("fa_login_attempts") || "0") + 1;
       localStorage.setItem("fa_login_attempts", attempts.toString());
@@ -128,7 +128,7 @@ function LoginPage() {
     const ok = await verifyOtp(email, token);
     if (ok) {
       toast.success("Verificação concluída!");
-      navigate({ to: redirect as any });
+      navigate({ to: redirect as any, search: restSearch });
     } else {
       toast.error("Código incorreto ou expirado.");
     }
