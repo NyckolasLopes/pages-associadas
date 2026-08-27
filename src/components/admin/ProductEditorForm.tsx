@@ -282,7 +282,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const serviceContent = (
     <>
       {/* Header Fixo */}
-      <div className={`flex items-center justify-between px-8 py-4 bg-white border-b sticky z-20 shadow-sm ${asPage ? "-top-4 md:-top-8" : "top-0"}`}>
+      <div className={`flex items-center justify-between px-8 py-4 bg-white border-b sticky z-20 shadow-sm ${asPage ? "-top-4 md:-top-8" : "top-0 sm:rounded-t-lg"}`}>
         <div>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">
@@ -299,6 +299,11 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           <Button onClick={handleSaveClick} disabled={saveStep !== "idle"} className="bg-purple-700 hover:bg-purple-800 text-white font-bold px-8">
             Salvar Serviço
           </Button>
+          {!asPage && (
+            <button onClick={() => onOpenChange(false)} className="ml-2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors" title="Fechar">
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -477,7 +482,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const content = (
     <>
         {/* Header Fixo */}
-        <div className={`flex items-center justify-between px-8 py-4 bg-white border-b sticky z-50 shadow-sm ${asPage ? "-top-4 md:-top-8" : "top-0"}`}>
+        <div className={`flex items-center justify-between px-8 py-4 bg-white border-b sticky z-50 shadow-sm ${asPage ? "-top-4 md:-top-8" : "top-0 sm:rounded-t-lg"}`}>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-800">
@@ -492,6 +497,11 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <Button onClick={handleSaveClick} disabled={saveStep !== "idle"} className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-8">
               Salvar produto
             </Button>
+            {!asPage && (
+              <button onClick={() => onOpenChange(false)} className="ml-2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors" title="Fechar">
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 
