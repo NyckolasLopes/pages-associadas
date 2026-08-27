@@ -15,6 +15,7 @@ if (typeof window !== "undefined") {
 // então eventos SIGNED_IN subsequentes são apenas re-hidratações silenciosas (renovação de token,
 // navegação entre páginas, troca de aba) — não devem exibir o toast.
 let _hadSessionOnInit = false;
+let _isLoggingOut = false;
 
 interface User {
   id?: string;
@@ -45,6 +46,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   loginOpen: false,
 
   login: async (email, password) => {
+    _isLoggingOut = false;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       if (error.status === 429) return "rate_limit";
@@ -84,11 +86,13 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 
   sendOtp: async (email: string) => {
+    _isLoggingOut = false;
     const { error } = await supabase.auth.signInWithOtp({ email });
     return !error;
   },
 
   verifyOtp: async (email: string, token: string) => {
+    _isLoggingOut = false;
     const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
     if (error || !data.user) return false;
 
@@ -115,6 +119,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 
   loginWithProvider: async (provider, redirectPath) => {
+    _isLoggingOut = false;
     const redirectTo = redirectPath 
       ? `${window.location.origin}${redirectPath}`
       : window.location.origin;
@@ -126,6 +131,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    _isLoggingOut = true;
     // Invalidates refresh token on Supabase server
     await supabase.auth.signOut();
     _hadSessionOnInit = false;
@@ -141,6 +147,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 
   deleteAccount: async () => {
+    _isLoggingOut = true;
     const { error } = await supabase.rpc('delete_own_account');
     if (error) {
       console.error("Error deleting account:", error);
@@ -167,7 +174,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   _initListener: () => {
     // Restore current session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
+      if (session?.user && !_isLoggingOut) {
         // Sessão ativa — flag para suprimir toast em eventos subsequentes
         _hadSessionOnInit = true;
         const u = session.user;
@@ -177,6 +184,7 @@ export const useAuth = create<AuthState>((set, get) => ({
           .eq("id", u.id)
           .single()
           .then(({ data: profile }) => {
+            if (_isLoggingOut) return;
             set({
               user: {
                 id: u.id,
@@ -196,13 +204,14 @@ export const useAuth = create<AuthState>((set, get) => ({
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || !session) {
         _hadSessionOnInit = false;
+        _isLoggingOut = false; // Reset the flag
         set({ user: null });
         try {
           import("./favorites").then(({ useFavorites }) => {
             useFavorites.getState().clearAll();
           });
         } catch (e) {}
-      } else if (session?.user) {
+      } else if (session?.user && !_isLoggingOut) {
         if (event === "SIGNED_IN") {
           // Não exibe toast global para evitar duplicação com as páginas de login
           if (!_hadSessionOnInit) {
@@ -216,6 +225,7 @@ export const useAuth = create<AuthState>((set, get) => ({
           .eq("id", u.id)
           .single()
           .then(({ data: profile }) => {
+            if (_isLoggingOut) return;
             set({
               user: {
                 id: u.id,

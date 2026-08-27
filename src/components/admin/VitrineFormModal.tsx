@@ -100,18 +100,32 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
       setSearchResults([]);
       return;
     }
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       setIsSearching(true);
-      try {
-        const res = await catalog.search(searchProduto, undefined, lojaId);
-        setSearchResults(res.slice(0, 50));
-        setSelectedProductsCache(prev => {
-          const next = { ...prev };
-          res.forEach((p: any) => { next[String(p.id)] = p; });
-          return next;
-        });
-      } catch (e) {}
-      setIsSearching(false);
+      import("@/integrations/supabase/client").then(async ({ supabase }) => {
+        try {
+          const { data } = await supabase
+            .from('produtos')
+            .select('id, nome, preco_por, preco_de, imagem_url')
+            .ilike('nome', `%${searchProduto}%`)
+            .limit(50);
+            
+          if (data) {
+            setSearchResults(data as any);
+            setSelectedProductsCache(prev => {
+              const next = { ...prev };
+              data.forEach(p => { next[String(p.id)] = { ...p, id: String(p.id) }; });
+              return next;
+            });
+          } else {
+            setSearchResults([]);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsSearching(false);
+        }
+      });
     }, 400);
     return () => clearTimeout(timer);
   }, [searchProduto, lojaId]);

@@ -207,8 +207,8 @@ function GerarLojaPage() {
                   }`}>
                     <Store className="w-6 h-6" />
                   </div>
-                  <div className="min-w-0 flex-1 pr-32">
-                    <h3 className="font-bold text-slate-900 text-lg truncate mb-1" title={pharmacy.nome}>
+                  <div className="min-w-0 flex-1 pr-28">
+                    <h3 className="font-bold text-slate-900 text-lg mb-1 leading-tight" title={pharmacy.nome}>
                       {pharmacy.nome}
                     </h3>
                     <div className="flex flex-col gap-2">

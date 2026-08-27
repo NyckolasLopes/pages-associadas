@@ -91,7 +91,9 @@ function AdminProdutos() {
     resetStoreProductsToGeneral,
     updateStoreProductStatus,
     updateStoreProductDestaque,
-    bulkUpdateStoreProductStatus
+    bulkUpdateStoreProductStatus,
+    vitrines,
+    storeVitrines
   } = useAdminProducts();
   const { regions, prices } = useRegionsStore();
   const { pharmacies, activeStoreId, currentUser, grupos } = useAdmin();
@@ -1052,15 +1054,21 @@ function AdminProdutos() {
                           />
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setHighlightedProduct(p)}
-                            className={`h-7 w-7 scale-90 ${p.destaque ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
-                            title="Destacar produto"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.destaque ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                          </Button>
+                          {(() => {
+                            const activeVitrines = currentLojaId ? (storeVitrines[currentLojaId] || []) : vitrines;
+                            const isHighlighted = p.destaque || activeVitrines.some(v => v.produtoIds?.includes(String(p.id)));
+                            return (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setHighlightedProduct(p)}
+                                className={`h-7 w-7 scale-90 ${isHighlighted ? 'text-amber-400 hover:text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
+                                title="Destacar produto"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={isHighlighted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                              </Button>
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1">
@@ -1226,7 +1234,9 @@ function AdminProdutos() {
         onSaveDestaqueGlobal={async (destaque) => {
           if (!highlightedProduct) return;
           if (isGlobalAdmin && !currentLojaId) {
-            await addOrUpdateProduct({ ...highlightedProduct, destaque }, undefined);
+            const { supabase } = await import("@/integrations/supabase/client");
+            const { error } = await supabase.from('produtos').update({ destaque }).eq('id', highlightedProduct.id);
+            if (error) throw error;
           } else if (currentLojaId) {
             await updateStoreProductDestaque(currentLojaId, highlightedProduct.id, destaque);
           }

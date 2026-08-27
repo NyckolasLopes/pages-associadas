@@ -294,6 +294,7 @@ interface AdminState {
   // Pharmacies
   pharmacies: Pharmacy[];
   pharmaciesLoaded: boolean;
+  pharmaciesFresh: boolean;
   addPharmacy: (p: Pharmacy) => Promise<void>;
   updatePharmacy: (id: string, p: Pharmacy) => Promise<void>;
   togglePharmacyStatus: (id: string) => Promise<void>;
@@ -935,6 +936,7 @@ export const useAdmin = create<AdminState>()(
 
       pharmacies: [],
       pharmaciesLoaded: false,
+      pharmaciesFresh: false,
       loadPharmacies: async () => {
         // Throttle: ignora chamadas duplicadas dentro de 5s (evita duplo fetch no boot)
         const now = Date.now();
@@ -1034,10 +1036,10 @@ export const useAdmin = create<AdminState>()(
                 offersServices: parsedThemeColors?.offersServices ?? false,
               };
             }) as unknown as Pharmacy[];
-            set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true });
+            set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
           } else {
             // Mesmo em caso de erro, desbloqueia a UI (mostra loja vazia ou fallback)
-            set({ pharmaciesLoaded: true });
+            set({ pharmaciesLoaded: true, pharmaciesFresh: true });
           }
         } catch {
           // Erro de rede — desbloqueia a UI para não ficar em spinner infinito

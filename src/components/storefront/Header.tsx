@@ -1421,7 +1421,16 @@ function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
               <div className="mt-2 flex flex-col gap-2">
 
                 <div className="flex items-center gap-1.5">
-                  <button onClick={() => setQty(i.id, i.qty - 1)} className="h-8 w-8 border rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                  <button 
+                    onClick={() => {
+                      if (i.qty <= 1) {
+                        toast.info("Atenção", { description: "Clique no botão 'Remover' para limpar seu carrinho." });
+                      } else {
+                        setQty(i.id, i.qty - 1);
+                      }
+                    }} 
+                    className="h-8 w-8 border rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                  >
                     −
                   </button>
                   <div className="w-8 text-center text-sm font-bold text-slate-800">{i.qty}</div>

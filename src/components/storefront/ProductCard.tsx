@@ -513,7 +513,17 @@ function ProductCardComponent({
                 EM OFERTA
               </span>
             )}
-            {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && !activeSeloNormalizedNames.includes(normalizeForMatch(p.selo)) && (
+            {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (() => {
+              const normalizedPSelo = normalizeForMatch(p.selo);
+              const isSeloServicoLinked = p.selosIds?.includes('servico');
+              const isSeloGenLinked = p.selosIds?.includes('gen');
+              
+              if (activeSeloNormalizedNames.includes(normalizedPSelo)) return false;
+              if (isSeloServicoLinked && normalizedPSelo.includes("SERVICO")) return false;
+              if (isSeloGenLinked && normalizedPSelo.includes("GENERICO")) return false;
+              
+              return true;
+            })() && (
             <span className="inline-block self-start text-[10px] font-bold bg-accent text-accent-foreground px-2 py-0.5 rounded">
               {formatPbmName(p.selo)}
             </span>

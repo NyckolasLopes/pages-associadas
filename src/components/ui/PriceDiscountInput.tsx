@@ -8,6 +8,7 @@ interface PriceDiscountInputProps {
   onChange: (promoPrice: number) => void;
   className?: string;
   disabled?: boolean;
+  hideDiscounts?: boolean;
 }
 
 export function PriceDiscountInput({
@@ -15,7 +16,8 @@ export function PriceDiscountInput({
   initialPromoPrice,
   onChange,
   className = "",
-  disabled = false
+  disabled = false,
+  hideDiscounts = false
 }: PriceDiscountInputProps) {
   const [promoPriceStr, setPromoPriceStr] = useState("");
   const [discountValueStr, setDiscountValueStr] = useState("");
@@ -93,10 +95,10 @@ export function PriceDiscountInput({
     onChange(promo);
   };
 
-  const isInvalid = parseNum(promoPriceStr) >= basePrice && basePrice > 0;
+  const isInvalid = !hideDiscounts && parseNum(promoPriceStr) >= basePrice && basePrice > 0;
 
   return (
-    <div className={`grid grid-cols-3 gap-2 ${className}`}>
+    <div className={`grid ${hideDiscounts ? 'grid-cols-1' : 'grid-cols-3'} gap-2 ${className}`}>
       <div className="space-y-1">
         <label className="text-xs font-semibold text-slate-500">Preço Final (R$)</label>
         <div className="relative">
@@ -112,36 +114,40 @@ export function PriceDiscountInput({
           />
         </div>
       </div>
-      <div className="space-y-1">
-        <label className="text-xs font-semibold text-slate-500">Desconto (R$)</label>
-        <div className="relative">
-          <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          <Input 
-            value={discountValueStr} 
-            onChange={e => handleDiscountValueChange(e.target.value)} 
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => { setIsFocused(false); }}
-            disabled={disabled}
-            className="pl-7 h-9 text-sm"
-            placeholder="0,00"
-          />
-        </div>
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs font-semibold text-slate-500">Desconto (%)</label>
-        <div className="relative">
-          <Percent className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          <Input 
-            value={discountPercentStr} 
-            onChange={e => handleDiscountPercentChange(e.target.value)} 
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => { setIsFocused(false); }}
-            disabled={disabled}
-            className="pl-7 h-9 text-sm"
-            placeholder="0,00"
-          />
-        </div>
-      </div>
+      {!hideDiscounts && (
+        <>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-500">Desconto (R$)</label>
+            <div className="relative">
+              <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input 
+                value={discountValueStr} 
+                onChange={e => handleDiscountValueChange(e.target.value)} 
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => { setIsFocused(false); }}
+                disabled={disabled}
+                className="pl-7 h-9 text-sm"
+                placeholder="0,00"
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-500">Desconto (%)</label>
+            <div className="relative">
+              <Percent className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input 
+                value={discountPercentStr} 
+                onChange={e => handleDiscountPercentChange(e.target.value)} 
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => { setIsFocused(false); }}
+                disabled={disabled}
+                className="pl-7 h-9 text-sm"
+                placeholder="0,00"
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

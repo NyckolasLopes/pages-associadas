@@ -925,6 +925,7 @@ function AdminProdutosPrecos() {
                                     initialPromoPrice={parseFloat(displayPor || "0") || undefined}
                                     onChange={(val) => handleEditChange(produto.id, "precoPor", val.toString())}
                                     disabled={campanhaAtiva || isMedicamento}
+                                    hideDiscounts={isMedicamento}
                                   />
                                   {isMedicamento && (
                                     <Badge variant="outline" className="bg-blue-50 text-blue-700 mt-2 text-[10px]">

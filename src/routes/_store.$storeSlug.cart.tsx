@@ -608,7 +608,11 @@ function CartPage() {
           setSelected("pickup");
           setDeliveryMethod("retirada");
         } else {
-          setSelected(firstDelivery ? firstDelivery.id : opts[0].id);
+          if (!firstDelivery && selected !== "pickup") {
+            setSelected("delivery_placeholder");
+          } else {
+            setSelected(firstDelivery ? firstDelivery.id : opts[0].id);
+          }
         }
       }
 
@@ -1324,7 +1328,7 @@ function CartPage() {
                         <button 
                           onClick={() => {
                             if (i.qty <= 1) {
-                              toast.info("Atenção", { description: "Clique no botão 'Remover' para retirar este item do seu carrinho." });
+                              toast.info("Atenção", { description: "Clique no botão 'Remover' para limpar seu carrinho." });
                             } else {
                               setQty(i.id, i.qty - 1);
                             }

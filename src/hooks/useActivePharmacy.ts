@@ -37,6 +37,11 @@ export function useActivePharmacy() {
         return slug === potentialSlug;
       });
       if (bySlug) return bySlug;
+
+      // Se não encontrou pelo slug, mas a lista de lojas ainda não foi atualizada do servidor,
+      // retorna null para aguardar o carregamento (mostra spinner) e evitar piscar a loja fallback (Porto Alegre).
+      const isFresh = useAdmin.getState().pharmaciesFresh;
+      if (!isFresh) return null;
     }
 
     // 2. Última loja visitada

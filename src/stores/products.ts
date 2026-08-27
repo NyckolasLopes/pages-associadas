@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Produto, Vitrine } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { supabaseStorage } from "@/lib/supabaseStorage";
 import { toTitleCase } from "@/lib/utils";
 
@@ -190,37 +191,19 @@ export const useAdminProducts = create<ProductsState>()(
           video_url: formattedProduct.videoUrl || null,
           destaque: formattedProduct.destaque || false,
           ativo: formattedProduct.ativo !== false,
-          buscavel: formattedProduct.buscavel !== false,
           lancamento: formattedProduct.lancamento || false,
-          metadata: {
-            natureza_produto: formattedProduct.produtoNatureza || null,
-            tipo_produto: formattedProduct.tipoProduto || null,
-            codigo_interno: formattedProduct.codigoInterno || null,
-            alerta_texto: formattedProduct.alertaTexto || null,
-            alerta_regulatorio: formattedProduct.alertaRegulatorio || false,
-            caracteristicas: formattedProduct.caracteristicas || [],
-            tipo_receita: formattedProduct.tipoReceita || null,
-            ncm: formattedProduct.ncm || null,
-            classe_terapeutica: formattedProduct.classeTerapeutica || null,
-            indicacao_terapeutica: formattedProduct.indicacaoTerapeutica || null,
-            tipo_de_preco: formattedProduct.tipoDePreco || null,
-            classificacao_registro: formattedProduct.classificacaoRegistro || null,
-            tipo_medicamento: formattedProduct.tipoMedicamento || null,
-            qtd_embalagem: formattedProduct.quantidadeEmbalagem || 0,
-            unidade_embalagem: formattedProduct.unidadeEmbalagem || null,
-            qtd_conteudo: formattedProduct.quantidadeConteudo || 0,
-            unidade_conteudo: formattedProduct.unidadeConteudo || null,
-            sabor: formattedProduct.sabor || null,
-            fps: formattedProduct.fps || 0,
-            faixa_etaria: formattedProduct.faixaEtaria || null,
-            nivel_relevancia: formattedProduct.nivelRelevancia || 0,
-            seo_titulo: formattedProduct.seoTitulo || null,
-            meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
-            termos_pesquisa: formattedProduct.termosPesquisa || null,
-            imagem_alt: formattedProduct.imagemAlt || null,
-            eans_secundarios: formattedProduct.eansSecundarios || [],
-            resumo_descricao: formattedProduct.resumoDescricao || null
-          }
+          produto_natureza: formattedProduct.produtoNatureza || null,
+          tipo_produto: formattedProduct.tipoProduto || null,
+          codigo_interno: formattedProduct.codigoInterno || null,
+          caracteristicas: formattedProduct.caracteristicas || [],
+          ncm: formattedProduct.ncm || null,
+          classe_terapeutica: formattedProduct.classeTerapeutica || null,
+          indicacao_terapeutica: formattedProduct.indicacaoTerapeutica || null,
+          tipo_medicamento: formattedProduct.tipoMedicamento || null,
+          faixa_etaria: formattedProduct.faixaEtaria || null,
+          titulo_seo: formattedProduct.seoTitulo || null,
+          meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
+          eans_secundarios: formattedProduct.eansSecundarios || [],
         });
         
         if (error) {
@@ -383,7 +366,9 @@ export const useAdminProducts = create<ProductsState>()(
             if (hasIt && !shouldHaveIt) {
               return { ...p, selosIds: p.selosIds?.filter(id => id !== badgeId) };
             } else if (!hasIt && shouldHaveIt) {
-              return { ...p, selosIds: [...(p.selosIds || []), badgeId] };
+              const newP = { ...p, selosIds: [...(p.selosIds || []), badgeId] };
+              if (badgeId === 'servico') newP.tipoProduto = 'servico';
+              return newP;
             }
             return p;
           });
@@ -431,7 +416,10 @@ export const useAdminProducts = create<ProductsState>()(
                 const tags = Array.isArray(parsedTags) ? parsedTags : [];
                 if (!tags.includes(`selo:${badgeId}`)) {
                   const newTags = [...tags, `selo:${badgeId}`];
-                  const { error } = await supabase.from('produtos').update({ internal_tags: newTags }).eq('id', p.id);
+                  const updates: any = { internal_tags: newTags };
+                  if (badgeId === 'servico') updates.tipo_produto = 'servico';
+                  
+                  const { error } = await supabase.from('produtos').update(updates).eq('id', p.id);
                   if (error) console.error("Error adding badge to product", p.id, error);
                 }
               }
@@ -654,15 +642,37 @@ export const useAdminProducts = create<ProductsState>()(
 
         // Supabase DB Update
         try {
-          await supabase.from('produto_precos_loja').upsert({
-            loja_id: lojaId,
-            produto_id: productId,
-            preco_de: precoDe !== undefined ? precoDe : p.precoDe,
-            preco_por: precoPor,
-            ativo: ativo
-          }, { onConflict: "loja_id, produto_id" });
+          const { data: existing } = await supabase.from('produto_precos_loja')
+            .select('id')
+            .eq('loja_id', lojaId)
+            .eq('produto_id', productId)
+            .maybeSingle();
+
+          let error;
+          if (existing) {
+            const res = await supabase.from('produto_precos_loja').update({
+              preco_de: precoDe !== undefined ? precoDe : p.precoDe,
+              preco_por: precoPor,
+              ativo: ativo
+            }).eq('id', existing.id);
+            error = res.error;
+          } else {
+            const res = await supabase.from('produto_precos_loja').insert({
+              loja_id: lojaId,
+              produto_id: productId,
+              preco_de: precoDe !== undefined ? precoDe : p.precoDe,
+              preco_por: precoPor,
+              ativo: ativo
+            });
+            error = res.error;
+          }
+
+          if (error) {
+            console.error("Supabase Error updating store price:", error);
+            toast.error("Erro ao salvar o preço no banco de dados.");
+          }
         } catch(e) {
-          console.error("Failed to update store price", e);
+          console.error("Exception in update store price", e);
         }
       },
       updateStoreProductStatus: async (lojaId, productId, ativo) => {
@@ -689,13 +699,32 @@ export const useAdminProducts = create<ProductsState>()(
 
         // Supabase DB Update
         try {
-          await supabase.from('produto_precos_loja').upsert({
-            loja_id: lojaId,
-            produto_id: productId,
-            ativo: ativo
-          }, { onConflict: "loja_id, produto_id" });
+          const { data: existing } = await supabase.from('produto_precos_loja')
+            .select('id')
+            .eq('loja_id', lojaId)
+            .eq('produto_id', productId)
+            .maybeSingle();
+
+          let error;
+          if (existing) {
+            const res = await supabase.from('produto_precos_loja').update({
+              ativo: ativo
+            }).eq('id', existing.id);
+            error = res.error;
+          } else {
+            const res = await supabase.from('produto_precos_loja').insert({
+              loja_id: lojaId,
+              produto_id: productId,
+              ativo: ativo
+            });
+            error = res.error;
+          }
+
+          if (error) {
+            console.error("Supabase Error updating store status:", error);
+          }
         } catch(e) {
-          console.error("Failed to update store status", e);
+          console.error("Exception in update store status", e);
         }
       },
       updateStoreProductDestaque: async (lojaId, productId, destaque) => {
@@ -722,13 +751,32 @@ export const useAdminProducts = create<ProductsState>()(
 
         // Supabase DB Update
         try {
-          await supabase.from('produto_precos_loja').upsert({
-            loja_id: lojaId,
-            produto_id: productId,
-            destaque: destaque
-          }, { onConflict: "loja_id, produto_id" });
+          const { data: existing } = await supabase.from('produto_precos_loja')
+            .select('id')
+            .eq('loja_id', lojaId)
+            .eq('produto_id', productId)
+            .maybeSingle();
+
+          let error;
+          if (existing) {
+            const res = await supabase.from('produto_precos_loja').update({
+              destaque: destaque
+            }).eq('id', existing.id);
+            error = res.error;
+          } else {
+            const res = await supabase.from('produto_precos_loja').insert({
+              loja_id: lojaId,
+              produto_id: productId,
+              destaque: destaque
+            });
+            error = res.error;
+          }
+
+          if (error) {
+            console.error("Supabase Error updating store destaque:", error);
+          }
         } catch(e) {
-          console.error("Failed to update store destaque", e);
+          console.error("Exception in update store destaque", e);
         }
       },
       updateStoreProductStock: async (lojaId, productId, estoque) => {
@@ -750,15 +798,34 @@ export const useAdminProducts = create<ProductsState>()(
           } : x)
         }));
 
+        // Supabase DB Update
         try {
-          // Também atualizamos a tabela produto_precos_loja para manter sincronia
-          await supabase.from("produto_precos_loja").upsert({
-            loja_id: lojaId,
-            produto_id: productId,
-            estoque: estoque
-          }, { onConflict: "loja_id, produto_id" });
-        } catch (e) {
-          console.error("Supabase might be offline, stock updated locally", e);
+          const { data: existing } = await supabase.from('produto_precos_loja')
+            .select('id')
+            .eq('loja_id', lojaId)
+            .eq('produto_id', productId)
+            .maybeSingle();
+
+          let error;
+          if (existing) {
+            const res = await supabase.from('produto_precos_loja').update({
+              estoque: estoque
+            }).eq('id', existing.id);
+            error = res.error;
+          } else {
+            const res = await supabase.from('produto_precos_loja').insert({
+              loja_id: lojaId,
+              produto_id: productId,
+              estoque: estoque
+            });
+            error = res.error;
+          }
+
+          if (error) {
+            console.error("Supabase Error updating store stock:", error);
+          }
+        } catch(e) {
+          console.error("Exception in update store stock", e);
         }
       },
       bulkUpdateStoreProductStatus: async (lojaId, productIds, ativo) => {

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation, useRouterState } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
@@ -34,6 +34,15 @@ const PARCEIRO_THEME: Record<string, string> = {
 function StoreLayout() {
   const location = useLocation();
   const isHome = location.pathname === "/";
+  
+  const isNavigatingStore = useRouterState({
+    select: (s) => {
+      if (s.status !== 'pending') return false;
+      const currentSlug = s.location.pathname.split('/')[1];
+      const pendingSlug = s.pendingLocation?.pathname.split('/')[1];
+      return currentSlug !== pendingSlug && !!pendingSlug && !SYSTEM_PAGES.has(pendingSlug);
+    }
+  });
 
   // — Store state (todos os hooks ANTES de qualquer early return) —
   const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
@@ -183,8 +192,8 @@ function StoreLayout() {
   // ─── Early returns (APÓS todos os hooks) ───────────────────────────────────
 
   // ⏳ Aguarda lojas carregarem do Supabase antes de renderizar qualquer coisa.
-  // Evita o flash de outra loja enquanto os dados chegam.
-  if (!pharmaciesLoaded) {
+  // Evita o flash de outra loja enquanto os dados chegam ou ao navegar entre lojas.
+  if (!pharmaciesLoaded || isNavigatingStore || !activePharmacy) {
     return <GlobalLoading />;
   }
 

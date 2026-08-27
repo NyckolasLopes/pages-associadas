@@ -477,7 +477,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const content = (
     <>
         {/* Header Fixo */}
-        <div className="flex items-center justify-between px-8 py-4 bg-white border-b sticky -top-4 md:-top-8 z-20 shadow-sm">
+        <div className="flex items-center justify-between px-8 py-4 bg-white border-b sticky top-0 z-50 shadow-sm">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-800">
@@ -495,8 +495,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           </div>
         </div>
 
-        {/* Content com Scroll Linear */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-8 max-w-6xl mx-auto w-full">
+        {/* Content */}
+        <div className="p-8 space-y-8 max-w-6xl mx-auto w-full">
           
           {/* Card: Informações Básicas */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
@@ -1205,7 +1205,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`max-w-[95vw] ${isServico ? 'w-[900px]' : 'w-[1200px]'} h-[95vh] p-0 overflow-hidden flex flex-col bg-slate-50 relative`}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className={`max-w-[95vw] ${isServico ? 'w-[900px]' : 'w-[1200px]'} h-[95vh] p-0 overflow-y-auto block bg-slate-50 relative`}>
           <DialogTitle className="sr-only">{isServico ? "Editor de Serviço" : "Editor de Produto"}</DialogTitle>
           {isServico ? serviceContent : content}
         </DialogContent>
