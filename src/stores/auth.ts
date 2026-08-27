@@ -11,6 +11,11 @@ if (typeof window !== "undefined") {
   } catch {}
 }
 
+// Flag de módulo: quando true, havia uma sessão ativa no momento do init,
+// então eventos SIGNED_IN subsequentes são apenas re-hidratações silenciosas (renovação de token,
+// navegação entre páginas, troca de aba) — não devem exibir o toast.
+let _hadSessionOnInit = false;
+
 interface User {
   id?: string;
   name?: string;
@@ -123,6 +128,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   logout: async () => {
     // Invalidates refresh token on Supabase server
     await supabase.auth.signOut();
+    _hadSessionOnInit = false;
     set({ user: null });
     try {
       const { useFavorites } = await import("./favorites");
@@ -162,6 +168,8 @@ export const useAuth = create<AuthState>((set, get) => ({
     // Restore current session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        // Sessão ativa — flag para suprimir toast em eventos subsequentes
+        _hadSessionOnInit = true;
         const u = session.user;
         supabase
           .from("profiles")
@@ -187,6 +195,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     // Listen for auth state changes (login/logout from any tab)
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || !session) {
+        _hadSessionOnInit = false;
         set({ user: null });
         try {
           import("./favorites").then(({ useFavorites }) => {
@@ -195,7 +204,11 @@ export const useAuth = create<AuthState>((set, get) => ({
         } catch (e) {}
       } else if (session?.user) {
         if (event === "SIGNED_IN") {
-          toast.success("Login efetuado com sucesso!");
+          // Só exibe toast em login genuíno — não em renovações de token ou navegação entre páginas
+          if (!_hadSessionOnInit) {
+            _hadSessionOnInit = true;
+            toast.success("Login efetuado com sucesso!");
+          }
         }
         const u = session.user;
         supabase
