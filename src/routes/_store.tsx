@@ -63,7 +63,7 @@ function StoreLayout() {
 
     let themeToApply: Record<string, string | undefined> = {};
 
-    if (activePharmacy.categoriaAssociado === "Parceiro") {
+    if (activePharmacy.categoriaAssociado === "Parceiro" || activePharmacy.categoriaAssociado === "Associado") {
       themeToApply = { ...PARCEIRO_THEME };
     }
 
@@ -141,7 +141,7 @@ function StoreLayout() {
     
     if (activePharmacy.faviconUrl) {
       link.href = activePharmacy.faviconUrl;
-    } else if (activePharmacy.categoriaAssociado === 'Parceiro') {
+    } else if (activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado') {
       link.href = 'data:,'; // Empty favicon for partners without custom favicon
     } else {
       link.href = '/favicon.png';
@@ -155,9 +155,9 @@ function StoreLayout() {
       document.head.appendChild(manifestLink);
     }
     
-    const isParceiro = activePharmacy.categoriaAssociado === 'Parceiro';
-    const appName = isParceiro && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
-    const manifestIcon = activePharmacy.faviconUrl || (isParceiro ? "data:," : "/favicon.png");
+    const isParceiroOrAssociado = activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado';
+    const appName = isParceiroOrAssociado && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
+    const manifestIcon = activePharmacy.faviconUrl || (isParceiroOrAssociado ? "data:," : "/favicon.png");
     
     const manifest = {
       name: appName,
@@ -220,7 +220,7 @@ function StoreLayout() {
     >
       {activePharmacy && (
         <>
-          <title>{activePharmacy.pageTitle || activePharmacy.nome || (activePharmacy.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas")}</title>
+          <title>{activePharmacy.pageTitle || activePharmacy.nome || (['Parceiro', 'Associado'].includes(activePharmacy.categoriaAssociado || '') ? "Loja Parceira" : "Farmácias Associadas")}</title>
           <meta name="description" content={activePharmacy.metaDescription || "Sua farmácia online de confiança."} />
         </>
       )}
