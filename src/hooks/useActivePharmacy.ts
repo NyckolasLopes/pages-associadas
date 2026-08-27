@@ -25,6 +25,7 @@ export function useActivePharmacy() {
   const location = useLocation();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const pharmacies = useAdmin((s) => s.pharmacies);
+  const pharmaciesFresh = useAdmin((s) => s.pharmaciesFresh);
 
   const pathParts = location.pathname.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
@@ -40,8 +41,7 @@ export function useActivePharmacy() {
 
       // Se não encontrou pelo slug, mas a lista de lojas ainda não foi atualizada do servidor,
       // retorna null para aguardar o carregamento (mostra spinner) e evitar piscar a loja fallback (Porto Alegre).
-      const isFresh = useAdmin.getState().pharmaciesFresh;
-      if (!isFresh) return null;
+      if (!pharmaciesFresh) return null;
     }
 
     // 2. Última loja visitada

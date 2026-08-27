@@ -248,7 +248,8 @@ function AdminBanners() {
         const pPos = pos.toLowerCase();
         return bPos === pPos || 
                bPos === pPos.replace(" ", "") || 
-               (pPos === "mini banner" && bPos.includes("mini banner"));
+               (pPos === "mini banner" && bPos.includes("mini banner")) ||
+               (pPos === "banner compre por categoria" && bPos === "banner categoria");
       }).filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
     };
   });
@@ -264,14 +265,13 @@ function AdminBanners() {
   useEffect(() => {
     const next: Record<string, string[]> = {};
     BANNER_POSITIONS.forEach(pos => {
-      const items = banners
-        .filter(b => {
-          const bPos = (b.posicao || "").toLowerCase().trim();
-          const pPos = pos.toLowerCase();
-          return bPos === pPos || bPos === pPos.replace(" ", "") ||
-            (pPos === "mini banner" && bPos.includes("mini banner"));
-        })
-        .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+      const items = banners.filter(b => {
+        const bPos = (b.posicao || "").toLowerCase().trim();
+        const pPos = pos.toLowerCase();
+        return bPos === pPos || bPos === pPos.replace(" ", "") ||
+          (pPos === "mini banner" && bPos.includes("mini banner")) ||
+          (pPos === "banner compre por categoria" && bPos === "banner categoria");
+      }).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
       next[pos] = items.map(b => b.id);
     });
     setLocalOrder(next);

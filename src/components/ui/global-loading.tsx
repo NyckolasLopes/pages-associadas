@@ -49,11 +49,11 @@ export function GlobalLoading() {
           <img src={logoToUse} alt="Logo" className="h-12 w-auto mb-6 object-contain" />
         ) : showSpinner ? (
           <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-            <Spinner className="w-8 h-8 text-primary" />
+            <Spinner className="w-8 h-8 text-primary" forceGeneric={isStoreContextLoading} />
           </div>
         ) : null}
         
-        {logoToUse && showSpinner && <Spinner className="w-8 h-8 mb-4 text-primary" />}
+        {logoToUse && showSpinner && <Spinner className="w-8 h-8 mb-4 text-primary" forceGeneric={isStoreContextLoading} />}
         
         <h3 className="text-lg font-bold text-slate-800">Carregando...</h3>
         <p className="text-sm text-muted-foreground mt-2">
