@@ -56,13 +56,7 @@ export const useAuth = create<AuthState>((set, get) => ({
 
     const profile = rawProfile as any;
 
-    if (profile?.has_logged_in_before) {
-      // 2FA Flow: already logged in before, require OTP.
-      await supabase.auth.signOut(); // silent logout
-      const { error: otpError } = await supabase.auth.signInWithOtp({ email });
-      if (otpError) return false;
-      return "otp_required" as any; // Cast for now, will fix interface below
-    } else {
+    if (!profile?.has_logged_in_before) {
       // First time login with email/password. Mark as logged in.
       await supabase.from("profiles" as any).update({ has_logged_in_before: true }).eq("id", u.id);
     }
