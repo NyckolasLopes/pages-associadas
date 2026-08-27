@@ -212,6 +212,12 @@ export const useAdminProducts = create<ProductsState>()(
         }
 
         if (lojaId) {
+          const localOverrides = formattedProduct.precosPorLoja?.[lojaId] || {};
+          const pDe = localOverrides.precoDe ?? formattedProduct.precoDe ?? 0;
+          const pPor = localOverrides.precoPor ?? formattedProduct.precoPor ?? 0;
+          const pEst = localOverrides.estoque ?? formattedProduct.estoque ?? 0;
+          const pAtivo = localOverrides.ativo ?? formattedProduct.ativo ?? true;
+
           const { data: existing, error: findError } = await supabase.from('produto_precos_loja')
             .select('id')
             .eq('produto_id', formattedProduct.id)
@@ -221,20 +227,20 @@ export const useAdminProducts = create<ProductsState>()(
           let storeError;
           if (existing) {
             const res = await supabase.from('produto_precos_loja').update({
-              preco_de: formattedProduct.precoDe || 0,
-              preco_por: formattedProduct.precoPor || 0,
-              estoque: formattedProduct.estoque || 0,
-              ativo: formattedProduct.ativo !== false
+              preco_de: pDe,
+              preco_por: pPor,
+              estoque: pEst,
+              ativo: pAtivo
             }).eq('id', existing.id);
             storeError = res.error;
           } else {
             const res = await supabase.from('produto_precos_loja').insert({
               produto_id: formattedProduct.id,
               loja_id: lojaId,
-              preco_de: formattedProduct.precoDe || 0,
-              preco_por: formattedProduct.precoPor || 0,
-              estoque: formattedProduct.estoque || 0,
-              ativo: formattedProduct.ativo !== false
+              preco_de: pDe,
+              preco_por: pPor,
+              estoque: pEst,
+              ativo: pAtivo
             });
             storeError = res.error;
           }

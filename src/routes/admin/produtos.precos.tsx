@@ -439,7 +439,7 @@ function AdminProdutosPrecos() {
       };
     }
 
-    addOrUpdateProduct(updatedProduct);
+    addOrUpdateProduct(updatedProduct, selectedPharmacyId === "global" ? null : selectedPharmacyId);
     
     // Limpa a edição
     setEditingValues(prev => {
@@ -569,7 +569,7 @@ function AdminProdutosPrecos() {
         const encartePrice = encarteMap.get(p.ean);
         if (encartePrice !== undefined) {
           const newProduct = { ...p, precoEncarte: encartePrice };
-          addOrUpdateProduct(newProduct);
+          addOrUpdateProduct(newProduct, null);
           updatedCount++;
         }
       }
@@ -619,7 +619,7 @@ function AdminProdutosPrecos() {
           ...(isDefinitive ? { campanhaInicio: "", campanhaFim: "" } : { campanhaInicio: campanhaInicioModal, campanhaFim: campanhaFimModal })
         };
 
-        addOrUpdateProduct(updatedProduct);
+        addOrUpdateProduct(updatedProduct, null);
         updatedCount++;
       }
     });
