@@ -212,14 +212,33 @@ export const useAdminProducts = create<ProductsState>()(
         }
 
         if (lojaId) {
-          const { error: storeError } = await supabase.from('produto_precos_loja').upsert({
-            produto_id: formattedProduct.id,
-            loja_id: lojaId,
-            preco_de: formattedProduct.precoDe || 0,
-            preco_por: formattedProduct.precoPor || 0,
-            estoque: formattedProduct.estoque || 0,
-            ativo: formattedProduct.ativo !== false
-          });
+          const { data: existing, error: findError } = await supabase.from('produto_precos_loja')
+            .select('id')
+            .eq('produto_id', formattedProduct.id)
+            .eq('loja_id', lojaId)
+            .maybeSingle();
+            
+          let storeError;
+          if (existing) {
+            const res = await supabase.from('produto_precos_loja').update({
+              preco_de: formattedProduct.precoDe || 0,
+              preco_por: formattedProduct.precoPor || 0,
+              estoque: formattedProduct.estoque || 0,
+              ativo: formattedProduct.ativo !== false
+            }).eq('id', existing.id);
+            storeError = res.error;
+          } else {
+            const res = await supabase.from('produto_precos_loja').insert({
+              produto_id: formattedProduct.id,
+              loja_id: lojaId,
+              preco_de: formattedProduct.precoDe || 0,
+              preco_por: formattedProduct.precoPor || 0,
+              estoque: formattedProduct.estoque || 0,
+              ativo: formattedProduct.ativo !== false
+            });
+            storeError = res.error;
+          }
+
           if (storeError) {
             console.error("Erro ao salvar o preço da loja no Supabase:", storeError);
             throw storeError;
