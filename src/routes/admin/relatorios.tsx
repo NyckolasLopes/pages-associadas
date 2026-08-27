@@ -1350,26 +1350,7 @@ function Relatorios() {
           )}
         </div>
 
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-3">
-            <Select defaultValue="30">
-              <SelectTrigger className="w-24 h-10 bg-white font-bold border-slate-200">
-                <SelectValue placeholder="30" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30" className="font-bold">30</SelectItem>
-                <SelectItem value="50" className="font-bold">50</SelectItem>
-                <SelectItem value="100" className="font-bold">100</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Itens por página</span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-500 font-bold">
-            <div className="h-10 w-10 border-2 border-emerald-500 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-700">1</div>
-            <div className="h-10 w-10 rounded-lg flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600">2</div>
-            <div className="h-10 w-10 rounded-lg flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600">3</div>
-          </div>
-        </div>
+
       </div>
     );
   }
