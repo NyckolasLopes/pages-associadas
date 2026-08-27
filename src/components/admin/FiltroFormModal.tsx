@@ -77,6 +77,43 @@ export function FiltroFormModal({ isOpen, onClose, filtro, onSave }: FiltroFormM
     setOpcoes(opcoes.map(o => o.id === id ? { ...o, ...updates } : o));
   };
 
+  const handleImageUpload = (id: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 200;
+        const MAX_HEIGHT = 200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        const compressedBase64 = canvas.toDataURL("image/webp", 0.8);
+        updateOpcao(id, { imagem: compressedBase64 });
+      };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = () => {
     if (!nome.trim()) {
       toast.error("Nome do filtro é obrigatório.");
@@ -216,9 +253,40 @@ export function FiltroFormModal({ isOpen, onClose, filtro, onSave }: FiltroFormM
                           />
                         </div>
 
-                        <Button variant="ghost" size="sm" className="h-8 text-xs text-slate-500 font-medium">
-                          <ImageIcon className="h-4 w-4 mr-1" /> Selecionar imagem
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            id={`img-upload-${opcao.id}`}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleImageUpload(opcao.id, file);
+                            }}
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-xs text-slate-500 font-medium"
+                            type="button"
+                            onClick={() => document.getElementById(`img-upload-${opcao.id}`)?.click()}
+                          >
+                            <ImageIcon className="h-4 w-4 mr-1" /> 
+                            {opcao.imagem ? "Trocar imagem" : "Selecionar imagem"}
+                          </Button>
+                          {opcao.imagem && (
+                            <div className="relative group/img w-8 h-8 rounded border overflow-hidden shrink-0">
+                              <img src={opcao.imagem} alt="" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => updateOpcao(opcao.id, { imagem: undefined })}
+                                className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
 
                         <button 
                           onClick={() => removeOpcao(opcao.id)}
