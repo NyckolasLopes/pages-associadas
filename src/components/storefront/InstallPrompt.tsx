@@ -51,12 +51,19 @@ export function InstallPrompt() {
   useEffect(() => {
     const customTriggerHandler = async () => {
       if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
+        try {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            setShowPrompt(false);
+          }
+          setDeferredPrompt(null);
+        } catch (err) {
+          console.error("Install prompt error", err);
+          setManualPromptOpen(true);
           setShowPrompt(false);
+          setDeferredPrompt(null);
         }
-        setDeferredPrompt(null);
       } else {
         // Se for iOS ou Desktop sem prompt, mostra o Dialog com instruções
         setManualPromptOpen(true);
@@ -79,6 +86,9 @@ export function InstallPrompt() {
         setDeferredPrompt(null);
       } catch (err) {
         console.error("Install prompt error", err);
+        setManualPromptOpen(true);
+        setShowPrompt(false);
+        setDeferredPrompt(null);
       }
     } else {
       setManualPromptOpen(true);
