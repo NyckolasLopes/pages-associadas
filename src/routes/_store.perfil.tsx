@@ -53,6 +53,7 @@ const formatPhone = (value: string) => {
 function PerfilPage() {
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
+  const deleteAccount = useAuth((s) => s.deleteAccount);
   const login = useAuth((s) => s.login);
   const { ids: favoriteIds, toggle: toggleFavorite, notifications: favNotifications, clearNotifications: clearFavNotifications } = useFavorites();
   const navigate = useNavigate();
@@ -532,12 +533,12 @@ function PerfilPage() {
                 cancelText="Cancelar"
                 onConfirm={async () => {
                   try {
-                    const { supabase } = await import("@/integrations/supabase/client");
-      // @ts-ignore
-                    const { error } = await supabase.rpcsupabase.functions.invoke("delete_own_account" as any);
-                    if (error) throw error;
-                    toast.success("Conta excluída com sucesso.");
-                    logout();
+                    const success = await deleteAccount();
+                    if (!success) {
+                      toast.error("Falha ao excluir a conta. Tente novamente ou entre em contato com o suporte.");
+                      return;
+                    }
+                    toast.success("Sua conta foi excluída com sucesso.");
                     navigate({ to: "/" });
                   } catch (e: any) {
                     toast.error("Erro ao excluir conta: " + e.message);

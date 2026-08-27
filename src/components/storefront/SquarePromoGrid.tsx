@@ -2,10 +2,11 @@ import { useAdmin } from "@/stores/admin";
 
 import { useCart } from "@/stores/cart";
 
-import { useParams } from "@tanstack/react-router";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+
 export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
-  const params = useParams({ strict: false }) as { storeSlug?: string };
-  const storeSlug = params?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao";
+  const activePharmacy = useActivePharmacy();
+  const storeSlug = activePharmacy?.slug || "loja-padrao";
   const { banners, pharmacies } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const effectiveLojaId = lojaId || selectedPharmacyId;

@@ -187,10 +187,10 @@ export function Header() {
   const handleCheckoutClick = () => {
     if (!useAuth.getState().user) {
       setDrawer(false);
-      navigate({ to: "/login", search: { redirect: `/${(params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao"}/cart` } as any });
+      navigate({ to: "/login", search: { redirect: `/${activePharmacy?.slug || "loja-padrao"}/cart` } as any });
     } else {
       setDrawer(false);
-      navigate({ to: "/$storeSlug/cart", params: { storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao" } as any });
+      navigate({ to: "/$storeSlug/cart", params: { storeSlug: activePharmacy?.slug || "loja-padrao" } as any });
     }
   };
 
@@ -348,7 +348,7 @@ export function Header() {
     if (p) {
       toast.success("Produto escaneado com sucesso!");
       setScannerOpen(false);
-      navigate({ to: "/$storeSlug/produto/$slug", params: { storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any });
+      navigate({ to: "/$storeSlug/produto/$slug", params: { storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url } as any });
     } else {
       setScanError(`Produto não cadastrado (EAN: ${code})`);
     }
@@ -489,7 +489,7 @@ export function Header() {
                     <Link
                       key={p.id}
                       to={"/$storeSlug/produto/$slug" as any}
-                      params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any}
+                      params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url } as any}
                       onClick={() => setSearchOpen(false)}
                       className="flex items-center gap-3 p-3 hover:bg-muted border-b last:border-0"
                     >
@@ -679,7 +679,7 @@ export function Header() {
                         <Link
                           key={p.id}
                           to={"/$storeSlug/produto/$slug" as any}
-                          params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any}
+                          params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url } as any}
                           onClick={() => {
                             setSearchOpen(false);
                             setMobileSearchOpen(false);
@@ -1014,7 +1014,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                     <Link
                       key={item.id}
                       to={isNossasMarcas ? ("/$storeSlug/m/$slug" as any) : ("/$storeSlug/c/$slug" as any)}
-                      params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: item.slug  } as any}
+                      params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: item.slug  } as any}
                       onClick={() => setOpen(false)}
                       className="text-sm py-2 hover:text-primary text-muted-foreground font-medium border-b border-muted/30 last:border-0 flex items-center gap-2"
                     >
@@ -1142,7 +1142,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
               <li key={c.id} onMouseEnter={() => handleMouseEnter(c.id)} className="shrink-0 flex items-center">
                 <Link
                   to={"/$storeSlug/c/$slug" as any}
-                  params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: c.slug  } as any}
+                  params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: c.slug  } as any}
                   className={`inline-flex items-center gap-1 xl:gap-2 text-[11px] lg:text-[12px] xl:text-[13px] font-bold transition whitespace-nowrap ${
                     isOfertas 
                       ? "bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-full"
@@ -1176,7 +1176,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   <div key={c.id} className="flex flex-col break-inside-avoid mb-10">
                     <Link
                       to={"/$storeSlug/c/$slug" as any}
-                      params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: c.slug  } as any}
+                      params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: c.slug  } as any}
                       onClick={() => setOpen(null)}
                       className="font-bold text-primary-dark hover:underline text-sm mb-3 border-b border-muted pb-1.5 flex items-center gap-2"
                     >
@@ -1191,7 +1191,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                         <Link
                           key={s.id}
                           to={"/$storeSlug/c/$slug" as any}
-                          params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: s.slug  } as any}
+                          params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: s.slug  } as any}
                           onClick={() => setOpen(null)}
                           className="text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/5 transition bg-muted/30 px-2.5 py-1.5 rounded-md leading-tight line-clamp-2 block"
                         >
@@ -1199,7 +1199,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                         </Link>
                       ))}
                       {(allSubs[c.id] || []).length > 10 && (
-                        <Link to={"/$storeSlug/c/$slug" as any} params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: c.slug  } as any} onClick={() => setOpen(null)} className="text-[11px] font-bold text-primary uppercase hover:underline flex items-center px-2 py-1.5">
+                        <Link to={"/$storeSlug/c/$slug" as any} params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: c.slug  } as any} onClick={() => setOpen(null)} className="text-[11px] font-bold text-primary uppercase hover:underline flex items-center px-2 py-1.5">
                           Ver mais...
                         </Link>
                       )}
@@ -1226,7 +1226,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                         <Link
                           key={m.id}
                           to={"/$storeSlug/m/$slug" as any}
-                          params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: m.slug  } as any}
+                          params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: m.slug  } as any}
                           onClick={() => setOpen(null)}
                           className="aspect-[4/3] flex items-center justify-center p-4 bg-white border border-slate-200 rounded-xl hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
                         >
@@ -1251,7 +1251,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                 </div>
                 <Link
                   to={"/$storeSlug/c/$slug" as any}
-                  params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: active.slug  } as any}
+                  params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: active.slug  } as any}
                   onClick={() => setOpen(null)}
                   className="block mt-2 text-xl font-bold text-primary-dark hover:underline leading-tight"
                 >
@@ -1263,7 +1263,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                 />
                 <Link
                   to={"/$storeSlug/c/$slug" as any}
-                  params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: active.slug  } as any}
+                  params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: active.slug  } as any}
                   onClick={() => setOpen(null)}
                   className="inline-flex items-center gap-1 mt-4 text-xs font-bold text-white bg-accent hover:bg-accent/90 px-3 py-1.5 rounded transition shadow-sm"
                 >
@@ -1275,7 +1275,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   <Link
                     key={s.id}
                     to={active.id === "300" ? ("/$storeSlug/m/$slug" as any) : ("/$storeSlug/c/$slug" as any)}
-                    params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: s.slug  } as any}
+                    params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: s.slug  } as any}
                     onClick={() => setOpen(null)}
                     className={active.id === "300" 
                       ? "aspect-square flex items-center justify-center p-4 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:shadow-lg hover:-translate-y-0.5 transition-all" 
@@ -1300,7 +1300,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                     <Link
                       key={p.id}
                       to={"/$storeSlug/produto/$slug" as any}
-                      params={{ storeSlug: (params as any)?.storeSlug || useAdmin.getState().pharmacies[0]?.slug || "loja-padrao", slug: p.url } as any}
+                      params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url } as any}
                       onClick={() => setOpen(null)}
                       className="group flex flex-col bg-white rounded border hover:border-primary transition p-3"
                     >

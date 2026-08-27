@@ -29,6 +29,7 @@ interface AuthState {
   verifyOtp: (email: string, token: string) => Promise<boolean>;
   loginWithProvider: (provider: "google" | "apple" | "facebook", redirectPath?: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<boolean>;
   setLoginOpen: (open: boolean) => void;
   _initListener: () => void;
 }
@@ -136,6 +137,27 @@ export const useAuth = create<AuthState>((set, get) => ({
       const { useCart } = await import("./cart");
       useCart.getState().clear();
     } catch (e) {}
+  },
+
+  deleteAccount: async () => {
+    const { error } = await supabase.rpc('delete_own_account');
+    if (error) {
+      console.error("Error deleting account:", error);
+      return false;
+    }
+    
+    await supabase.auth.signOut();
+    set({ user: null });
+    try {
+      const { useFavorites } = await import("./favorites");
+      useFavorites.getState().clearAll();
+    } catch (e) {}
+    try {
+      const { useCart } = await import("./cart");
+      useCart.getState().clear();
+    } catch (e) {}
+    
+    return true;
   },
 
   setLoginOpen: (open) => set({ loginOpen: open }),
