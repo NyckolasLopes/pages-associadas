@@ -46,7 +46,7 @@ function StoreLayout() {
 
   // — Store state (todos os hooks ANTES de qualquer early return) —
   const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
-  const clearCart = useCart((s) => s.clearCart);
+  const clearCart = useCart((s) => s.clear);
   const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const logout = useAuth((s) => s.logout);

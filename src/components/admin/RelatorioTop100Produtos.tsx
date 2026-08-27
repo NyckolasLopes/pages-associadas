@@ -57,7 +57,10 @@ import { useOrders } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
 import { useAdminProducts } from "@/stores/products";
 import { toast } from "sonner";
-import { isToday, isYesterday, isThisWeek, isThisMonth, isThisYear, subDays, parseISO } from "date-fns";
+import { isToday, isYesterday, isThisWeek, isThisMonth, isThisYear, subDays, parseISO, format, startOfDay, endOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { DateRange } from "react-day-picker";
 
 interface RelatorioTop100Props {
   lojaId?: string | null;
@@ -119,7 +122,8 @@ export function RelatorioTop100Produtos({
   // State
   const [criterio, setCriterio] = useState<"quantidade" | "faturamento">("quantidade");
   const [selectedLoja, setSelectedLoja] = useState<string>(lojaId || "all");
-  const [periodo, setPeriodo] = useState<"all" | "today" | "7days" | "30days" | "thisMonth" | "thisYear">("all");
+  const [periodo, setPeriodo] = useState<"all" | "today" | "7days" | "30days" | "thisMonth" | "custom">("all");
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [pageSize, setPageSize] = useState<number>(100);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -178,7 +182,10 @@ export function RelatorioTop100Produtos({
         if (periodo === "7days" && orderDate < subDays(now, 7)) return false;
         if (periodo === "30days" && orderDate < subDays(now, 30)) return false;
         if (periodo === "thisMonth" && !isThisMonth(orderDate)) return false;
-        if (periodo === "thisYear" && !isThisYear(orderDate)) return false;
+        if (periodo === "custom" && customDateRange?.from) {
+          if (orderDate < startOfDay(customDateRange.from)) return false;
+          if (customDateRange.to && orderDate > endOfDay(customDateRange.to)) return false;
+        }
       }
 
       return true;
@@ -426,6 +433,12 @@ export function RelatorioTop100Produtos({
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16 print:p-0 print:space-y-4">
+      <style>{`
+        @media print {
+          @page { size: landscape; margin: 1cm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `}</style>
       {/* Top Bar with Back Navigation & Print Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs print:hidden">
         <div className="flex items-center gap-3">
@@ -639,21 +652,59 @@ export function RelatorioTop100Produtos({
             )}
 
             {/* Period filter */}
-            <div className="flex items-center gap-2 min-w-[170px]">
-              <CalendarIcon className="w-4 h-4 text-slate-500 shrink-0" />
-              <Select value={periodo} onValueChange={(val: any) => setPeriodo(val)}>
-                <SelectTrigger className="h-9 text-xs font-bold bg-white border-slate-200 rounded-xl shadow-2xs">
-                  <SelectValue placeholder="Período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="font-bold">Todo o Período</SelectItem>
-                  <SelectItem value="today" className="font-semibold">Hoje</SelectItem>
-                  <SelectItem value="7days" className="font-semibold">Últimos 7 dias</SelectItem>
-                  <SelectItem value="30days" className="font-semibold">Últimos 30 dias</SelectItem>
-                  <SelectItem value="thisMonth" className="font-semibold">Este Mês</SelectItem>
-                  <SelectItem value="thisYear" className="font-semibold">Este Ano</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-[170px]">
+                <CalendarIcon className="w-4 h-4 text-slate-500 shrink-0" />
+                <Select value={periodo} onValueChange={(val: any) => setPeriodo(val)}>
+                  <SelectTrigger className="h-9 text-xs font-bold bg-white border-slate-200 rounded-xl shadow-2xs">
+                    <SelectValue placeholder="Período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="font-bold">Todo o Período</SelectItem>
+                    <SelectItem value="today" className="font-semibold">Hoje</SelectItem>
+                    <SelectItem value="7days" className="font-semibold">Últimos 7 dias</SelectItem>
+                    <SelectItem value="30days" className="font-semibold">Últimos 30 dias</SelectItem>
+                    <SelectItem value="thisMonth" className="font-semibold">Este Mês</SelectItem>
+                    <SelectItem value="custom" className="font-semibold">Período</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {periodo === "custom" && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-9 w-[260px] justify-start text-left font-semibold text-xs border-slate-200 rounded-xl shadow-2xs bg-white"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
+                      {customDateRange?.from ? (
+                        customDateRange.to ? (
+                          <>
+                            {format(customDateRange.from, "dd/MM/yyyy")} -{" "}
+                            {format(customDateRange.to, "dd/MM/yyyy")}
+                          </>
+                        ) : (
+                          format(customDateRange.from, "dd/MM/yyyy")
+                        )
+                      ) : (
+                        <span className="text-slate-400">Selecione o período</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={customDateRange?.from}
+                      selected={customDateRange}
+                      onSelect={setCustomDateRange}
+                      numberOfMonths={2}
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           </div>
         </div>
@@ -784,12 +835,12 @@ export function RelatorioTop100Produtos({
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto print:overflow-visible print:w-full">
+            <table className="w-full text-left text-sm print:text-xs">
               <thead>
-                <tr className="border-b bg-slate-50/80 text-slate-500 text-[11px] font-black uppercase tracking-wider">
+                <tr className="border-b bg-slate-50/80 text-slate-500 text-[11px] font-black uppercase tracking-wider print:text-[10px]">
                   <th className="py-3.5 px-4 w-16 text-center">Posição</th>
-                  <th className="py-3.5 px-4 min-w-[260px]">Produto</th>
+                  <th className="py-3.5 px-4 min-w-[260px] print:min-w-0 print:w-auto">Produto</th>
                   <th className="py-3.5 px-4">SKU / EAN</th>
 
                   <th className="py-3.5 px-4 text-center">

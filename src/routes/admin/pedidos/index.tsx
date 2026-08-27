@@ -116,7 +116,12 @@ export function PedidosAdmin() {
   const { pharmacies, currentUser, grupos, activeStoreId } = useAdmin();
 
   // Carrinhos abandonados / itens de clientes logados
-  const { carts: storeCarts, removeCart: removeStoreCart } = useAbandonedCartsStore();
+  const { carts: storeCarts, removeCart: removeStoreCart, loadCarts } = useAbandonedCartsStore();
+
+  useEffect(() => {
+    loadCarts();
+  }, [loadCarts]);
+
   const cartItems = useCart((s) => s.items);
   const cartTotal = useCart((s) => s.total());
   const clearCart = useCart((s) => s.clear);
@@ -142,6 +147,9 @@ export function PedidosAdmin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateStartFilter, setDateStartFilter] = useState("");
   const [dateEndFilter, setDateEndFilter] = useState("");
+  const [tempDateStart, setTempDateStart] = useState("");
+  const [tempDateEnd, setTempDateEnd] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
   const [mainView, setMainView] = useState<"todos" | "concluidos" | "pendentes">("todos");
@@ -1029,55 +1037,76 @@ export function PedidosAdmin() {
                 </button>
               </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-10 font-bold gap-2 bg-white text-slate-600 border-slate-200"
+              <Popover open={isFilterOpen} onOpenChange={(open) => {
+                  setIsFilterOpen(open);
+                  if (open) {
+                    setTempDateStart(dateStartFilter);
+                    setTempDateEnd(dateEndFilter);
+                  }
+                }}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      className="h-10 font-bold gap-2 bg-white text-slate-600 border-slate-200"
+                    >
+                      <Filter className="h-4 w-4" /> Período
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[340px] p-4 rounded-xl border-slate-200 shadow-xl"
+                    align="end"
                   >
-                    <Filter className="h-4 w-4" /> Período
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-80 p-4 rounded-xl border-slate-200 shadow-xl"
-                  align="end"
-                >
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-slate-800">Filtrar por data</h4>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        Período
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="date"
-                          className="h-8 text-xs font-bold"
-                          value={dateStartFilter}
-                          onChange={(e) => setDateStartFilter(e.target.value)}
-                        />
-                        <span className="text-slate-400 font-medium">a</span>
-                        <Input
-                          type="date"
-                          className="h-8 text-xs font-bold"
-                          value={dateEndFilter}
-                          onChange={(e) => setDateEndFilter(e.target.value)}
-                        />
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-slate-800">Filtrar por data</h4>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                          Período
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="date"
+                            className="h-8 text-xs font-bold flex-1"
+                            value={tempDateStart}
+                            onChange={(e) => setTempDateStart(e.target.value)}
+                          />
+                          <span className="text-slate-400 font-medium">a</span>
+                          <Input
+                            type="date"
+                            className="h-8 text-xs font-bold flex-1"
+                            value={tempDateEnd}
+                            onChange={(e) => setTempDateEnd(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 pt-2">
+                        <Button
+                          className="w-full font-bold h-9 bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => {
+                            setDateStartFilter(tempDateStart);
+                            setDateEndFilter(tempDateEnd);
+                            setIsFilterOpen(false);
+                          }}
+                        >
+                          Aplicar Filtro
+                        </Button>
+                        <Button
+                          className="w-full font-bold h-9 bg-slate-100 hover:bg-slate-200 text-slate-700"
+                          onClick={() => {
+                            setTempDateStart("");
+                            setTempDateEnd("");
+                            setDateStartFilter("");
+                            setDateEndFilter("");
+                            setIsFilterOpen(false);
+                          }}
+                          variant="ghost"
+                        >
+                          Limpar Filtro
+                        </Button>
                       </div>
                     </div>
-
-                    <Button
-                      className="w-full font-bold h-9 bg-slate-100 hover:bg-slate-200 text-slate-700"
-                      onClick={() => {
-                        setDateStartFilter("");
-                        setDateEndFilter("");
-                      }}
-                      variant="ghost"
-                    >
-                      Limpar Filtro de Data
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  </PopoverContent>
+                </Popover>
             </div>
           </div>
 

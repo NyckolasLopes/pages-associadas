@@ -121,7 +121,7 @@ export function useCartSync() {
       } catch (err) {
         console.error("Failed to sync cart:", err);
       }
-    }, 2000); // 2 segundos de debounce para não inundar o banco
+    }, 500); // 500ms de debounce para registrar o abandono mais rápido
 
     return () => {
       if (syncTimeout.current) {

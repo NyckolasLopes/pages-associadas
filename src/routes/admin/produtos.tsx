@@ -830,7 +830,7 @@ function AdminProdutos() {
             <Badge variant="secondary" className="text-xs">{totalProducts}</Badge>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {totalProducts > 0 && (
+            {(totalProducts > 0 || search.length > 0 || listFilter !== 'all') && (
               <div className="w-full sm:w-48">
                 <Select value={listFilter} onValueChange={(v) => { setListFilter(v); setPage(0); }}>
                   <SelectTrigger className="h-8 text-xs bg-white">
@@ -851,7 +851,7 @@ function AdminProdutos() {
                 </Select>
               </div>
             )}
-            {totalProducts > 0 && (
+            {(totalProducts > 0 || search.length > 0 || listFilter !== 'all') && (
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -872,36 +872,51 @@ function AdminProdutos() {
             <p className="text-slate-500 font-medium">Carregando produtos...</p>
           </div>
         ) : totalProducts === 0 ? (
-          <div className="p-12 text-center">
-            <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-              <FileSpreadsheet className="h-8 w-8 text-slate-400" />
-            </div>
-            <p className="font-bold text-slate-600 mb-1">Nenhum produto cadastrado</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              {currentLojaId 
-                ? "Esta loja ainda não possui produtos ativos. Importe uma planilha ou clique em 'Restaurar Catálogo da Rede'."
-                : "Importe uma planilha Excel ou JSON para começar a gerenciar seu catálogo."}
-            </p>
-            <div className="flex justify-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={generateTemplate}
-                className="font-bold text-xs"
-              >
-                <Download className="h-3.5 w-3.5 mr-1.5" />
-                Baixar Modelo
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setImporterOpen(true)}
-                className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700"
-              >
-                <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
-                Importar Produtos
+          search.length > 0 || listFilter !== 'all' ? (
+            <div className="p-12 text-center">
+              <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                <Search className="h-8 w-8 text-slate-400" />
+              </div>
+              <p className="font-bold text-slate-600 mb-1">Nenhum produto encontrado</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Não encontramos resultados para a sua busca ou filtro.
+              </p>
+              <Button variant="outline" onClick={() => { setSearch(''); setListFilter('all'); setPage(0); }}>
+                Limpar Filtros
               </Button>
             </div>
-          </div>
+          ) : (
+            <div className="p-12 text-center">
+              <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                <FileSpreadsheet className="h-8 w-8 text-slate-400" />
+              </div>
+              <p className="font-bold text-slate-600 mb-1">Nenhum produto cadastrado</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {currentLojaId 
+                  ? "Esta loja ainda não possui produtos ativos. Importe uma planilha ou clique em 'Restaurar Catálogo da Rede'."
+                  : "Importe uma planilha Excel ou JSON para começar a gerenciar seu catálogo."}
+              </p>
+              <div className="flex justify-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={generateTemplate}
+                  className="font-bold text-xs"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                  Baixar Modelo
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setImporterOpen(true)}
+                  className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
+                  Importar Produtos
+                </Button>
+              </div>
+            </div>
+          )
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -1096,9 +1111,11 @@ function AdminProdutos() {
                                   size="icon"
                                   className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
                                   onClick={() => {
-                                    setServerProducts(prev => prev.filter(prod => prod.id !== p.id));
-                                    removeProduct(p.id, currentLojaId || undefined);
-                                    toast.success(currentLojaId ? "Produto removido da sua loja!" : "Produto removido da rede!");
+                                    if (window.confirm("Tem certeza que deseja excluir este produto?")) {
+                                      setServerProducts(prev => prev.filter(prod => prod.id !== p.id));
+                                      removeProduct(p.id, currentLojaId || undefined);
+                                      toast.success(currentLojaId ? "Produto removido da sua loja!" : "Produto removido da rede!");
+                                    }
                                   }}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import * as XLSX from "xlsx";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { 
   Package, 
@@ -300,32 +301,26 @@ function Relatorios() {
       return;
     }
 
-    const headers = ["Data", "Pedido", "Loja", "Cliente", "Email", "Telefone", "Total", "Status", "Método Pagamento", "Entrega/Retirada"];
     const rows = orders.map(o => {
        const lojaNome = pharmacies.find(p => p.id === o.lojaId)?.nome || o.lojaNome || o.lojaId || "N/A";
-       return [
-         o.data,
-         o.numero || o.id,
-         lojaNome,
-         o.cliente?.nome || "N/A",
-         o.cliente?.email || "N/A",
-         o.cliente?.telefone || "N/A",
-         o.valores?.total?.toString() || "0",
-         o.status || "N/A",
-         o.pagamento?.metodo || "N/A",
-         o.envio?.metodo || "N/A"
-       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",");
+       return {
+         "Data": o.data,
+         "Pedido": o.numero || o.id,
+         "Loja": lojaNome,
+         "Cliente": o.cliente?.nome || "N/A",
+         "Email": o.cliente?.email || "N/A",
+         "Telefone": o.cliente?.telefone || "N/A",
+         "Total (R$)": Number(o.valores?.total || 0).toFixed(2),
+         "Status": o.status || "N/A",
+         "Método Pagamento": o.pagamento?.metodo || "N/A",
+         "Entrega/Retirada": o.envio?.metodo || "N/A"
+       };
     });
 
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `relatorio_pedidos_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
+    XLSX.writeFile(wb, `relatorio_pedidos_${format(new Date(), 'yyyyMMdd_HHmmss')}.xlsx`);
   };
 
   // Calculations for charts based on real data
@@ -529,7 +524,14 @@ function Relatorios() {
 
   if (activeReport) {
     return (
-      <div className="space-y-6 max-w-6xl pb-10">
+      <div className="space-y-6 max-w-6xl pb-10 print:p-0 print:space-y-4 print:max-w-none print:w-full">
+        <style>{`
+          @media print {
+            @page { size: landscape; margin: 1cm; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .overflow-x-auto, .overflow-hidden { overflow: visible !important; }
+          }
+        `}</style>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border shadow-sm print:hidden">
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => setActiveReport(null)} className="h-10 px-4 rounded-lg flex items-center gap-2 font-bold text-slate-600">
@@ -621,11 +623,11 @@ function Relatorios() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border-slate-100">
-                <DropdownMenuItem onClick={handleExportExcel} className="cursor-pointer font-bold text-slate-600 py-2">
+                <DropdownMenuItem onSelect={handleExportExcel} className="cursor-pointer font-bold text-slate-600 py-2">
                   <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
                   Exportar para Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer font-bold text-slate-600 py-2">
+                <DropdownMenuItem onSelect={handleExportPDF} className="cursor-pointer font-bold text-slate-600 py-2">
                   <FileText className="h-4 w-4 mr-2 text-red-600" />
                   Exportar para PDF
                 </DropdownMenuItem>
