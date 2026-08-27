@@ -34,8 +34,12 @@ const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 function getDeduplicatedBanners(bannersToFilter: any[]) {
+  // Se houver banners específicos desta loja na lista, eles têm precedência absoluta sobre os globais
+  const hasStoreBanners = bannersToFilter.some(b => !!b.lojaId);
+  const targetBanners = hasStoreBanners ? bannersToFilter.filter(b => !!b.lojaId) : bannersToFilter;
+
   const uniqueMap = new Map();
-  for (const b of bannersToFilter) {
+  for (const b of targetBanners) {
     // Deduplicate by name and position so store-specific banners override global banners with the same name.
     // If nome is empty, fallback to id so they don't overwrite each other randomly.
     const key = (b.nome || b.id) + b.posicao;
