@@ -178,6 +178,15 @@ function AdminBanners() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Partial<AdminBanner> | null>(null);
   const [bannerToDelete, setBannerToDelete] = useState<string | null>(null);
+  const [selectedBanners, setSelectedBanners] = useState<string[]>([]);
+
+  const handleDeleteSelected = (groupIds: string[]) => {
+    if (confirm(`Tem certeza que deseja excluir os ${groupIds.length} banner(s) selecionado(s)?`)) {
+      groupIds.forEach(id => removeBanner(id));
+      setSelectedBanners(prev => prev.filter(id => !groupIds.includes(id)));
+      toast.success(`${groupIds.length} banner(s) removido(s) com sucesso`);
+    }
+  };
 
   type TabType = "banners" | "vitrines" | "logo" | "cores";
 
@@ -538,9 +547,19 @@ function AdminBanners() {
             <div key={groupIdx} className="bg-white border border-slate-200 rounded-md overflow-hidden mb-6">
               <div className="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 className="font-bold text-[#3a4454] text-[17px]">{group.position}</h3>
-                <button onClick={() => openNewModal(group.position)} className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-[13px] font-medium">
-                  <PlusCircle className="w-4 h-4" /> Adicionar {group.position.toLowerCase()}
-                </button>
+                <div className="flex items-center gap-3">
+                  {group.items.some(b => selectedBanners.includes(b.id)) && (
+                    <button 
+                      onClick={() => handleDeleteSelected(group.items.map(b => b.id).filter(id => selectedBanners.includes(id)))} 
+                      className="flex items-center gap-1.5 text-red-500 hover:text-red-700 text-[13px] font-medium"
+                    >
+                      <Trash2 className="w-4 h-4" /> Excluir selecionados
+                    </button>
+                  )}
+                  <button onClick={() => openNewModal(group.position)} className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-[13px] font-medium">
+                    <PlusCircle className="w-4 h-4" /> Adicionar {group.position.toLowerCase()}
+                  </button>
+                </div>
               </div>
               
               <div className="overflow-x-auto">
@@ -548,7 +567,18 @@ function AdminBanners() {
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-[#556376] font-medium text-[13px]">
                       <th className="p-3 w-14 text-center">
-                        <input type="checkbox" className="rounded border-slate-300 w-3.5 h-3.5" />
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-slate-300 w-3.5 h-3.5 cursor-pointer"
+                          checked={group.items.length > 0 && group.items.every(b => selectedBanners.includes(b.id))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedBanners(prev => [...new Set([...prev, ...group.items.map(b => b.id)])]);
+                            } else {
+                              setSelectedBanners(prev => prev.filter(id => !group.items.find(b => b.id === id)));
+                            }
+                          }}
+                        />
                       </th>
                       <th className="p-3">Nome do banner</th>
                       <th className="p-3 text-center">Data início agendamento</th>
@@ -577,7 +607,18 @@ function AdminBanners() {
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-3">
                             <GripVertical className="w-4 h-4 text-slate-400 cursor-grab hover:text-slate-700" />
-                            <input type="checkbox" className="rounded border-slate-300 w-3.5 h-3.5" />
+                            <input 
+                              type="checkbox" 
+                              className="rounded border-slate-300 w-3.5 h-3.5 cursor-pointer"
+                              checked={selectedBanners.includes(banner.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedBanners(prev => [...prev, banner.id]);
+                                } else {
+                                  setSelectedBanners(prev => prev.filter(id => id !== banner.id));
+                                }
+                              }}
+                            />
                           </div>
                         </td>
                         <td className="p-3">

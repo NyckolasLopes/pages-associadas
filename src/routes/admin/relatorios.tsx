@@ -69,7 +69,6 @@ function Relatorios() {
   const [activeReport, setActiveReport] = useState<string | null>(null);
   const [abcRegion, setAbcRegion] = useState<string>("Todas");
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [date, setDate] = useState<{ from?: Date, to?: Date }>({
     from: subDays(new Date(), 30),
     to: new Date()
@@ -428,9 +427,8 @@ function Relatorios() {
   const allEnvioPorLojaData = Object.values(envioPorLojaMap)
     .sort((a,b) => b.total - a.total)
     .filter(d => activeReport === "retirada-vs-entrega" ? d.name.toLowerCase().includes(searchTerm.toLowerCase()) : true);
-  const totalPagesEnvio = Math.ceil(allEnvioPorLojaData.length / 20);
   const envioPorLojaData = activeReport === "retirada-vs-entrega" 
-    ? allEnvioPorLojaData.slice((currentPage - 1) * 20, currentPage * 20)
+    ? allEnvioPorLojaData
     : allEnvioPorLojaData.slice(0, 15);
 
   // 4. Clientes Recorrentes
@@ -616,7 +614,7 @@ function Relatorios() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
                   value={searchTerm}
-                  onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder={activeReport === "retirada-vs-entrega" ? "Buscar por loja..." : "buscar no relatório..."} 
                   className="pl-9 h-10 placeholder:text-slate-400 bg-white border-slate-200 font-medium"
                 />
@@ -1069,30 +1067,6 @@ function Relatorios() {
                         ))}
                       </tbody>
                     </table>
-                    
-                    {totalPagesEnvio > 1 && (
-                      <div className="flex items-center justify-center gap-2 p-4 border-t border-slate-100 bg-white">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                          disabled={currentPage === 1}
-                        >
-                          Anterior
-                        </Button>
-                        <span className="text-sm font-medium text-slate-500">
-                          Página {currentPage} de {totalPagesEnvio}
-                        </span>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setCurrentPage(p => Math.min(totalPagesEnvio, p + 1))}
-                          disabled={currentPage === totalPagesEnvio}
-                        >
-                          Próxima
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
