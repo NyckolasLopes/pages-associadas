@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useParams } from "@tanstack/react-router";
 import {
   Instagram, Facebook, Linkedin, Youtube, CreditCard, Banknote, Wallet,
   Mail, Phone, MapPin, Send, Flame, Users, ShieldCheck, Smartphone, Link as LinkIcon, Music, Twitter, Twitch, Github, FileText
@@ -56,6 +56,10 @@ export function Footer() {
   }, [pharmacies, selectedPharmacyId]);
 
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  
+  const params = useParams({ strict: false });
+  const urlSlug = (params as any)?.storeSlug as string | undefined;
+  const storeSlug = urlSlug || activePharmacy?.slug || "poa";
 
   const diferenciaisBanners = banners.filter((b) => {
     if (b.posicao !== "Banner Diferenciais" || !b.active) return false;

@@ -133,8 +133,9 @@ export function Header() {
   const params = useParams({ strict: false });
   const isStoreContext = !!(params && (params as any).storeSlug);
   const urlSlug = (params as any)?.storeSlug as string | undefined;
-
+  
   const activePharmacy = useActivePharmacy();
+  const storeSlug = urlSlug || activePharmacy?.slug || "poa";
   const customProducts = useAdminProducts(s => s.customProducts);
   const { featuredCategories, storeFeaturedCategories } = useAdmin();
   const contentPages = useAdmin(s => s.contentPages);

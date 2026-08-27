@@ -304,7 +304,7 @@ function Metricas() {
   const statusPieData = useMemo(() => {
     const data = [];
     if (concluidosCount > 0) data.push({ name: "Concluído (WhatsApp)", value: concluidosCount, color: "#10b981" });
-    if (pendentesCount > 0) data.push({ name: "Pendente", value: pendentesCount, color: "#f59e0b" });
+    if (pendentesCount > 0) data.push({ name: "Pendente", value: pendentesCount, color: "#3b82f6" });
     if (canceladosCount > 0) data.push({ name: "Cancelado", value: canceladosCount, color: "#ef4444" });
     return data;
   }, [concluidosCount, pendentesCount, canceladosCount]);
@@ -444,21 +444,21 @@ function Metricas() {
         </div>
 
         {/* Card 3: Pedidos Pendentes */}
-        <div className="bg-white rounded-2xl border shadow-sm p-5 flex flex-col justify-between hover:border-amber-200 transition-all">
+        <div className="bg-white rounded-2xl border shadow-sm p-5 flex flex-col justify-between hover:border-blue-200 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Pedidos Pendentes
             </span>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div>
             <div className="flex items-baseline gap-2">
-              <div className="text-3xl font-black text-amber-600 tracking-tight">
+              <div className="text-3xl font-black text-blue-600 tracking-tight">
                 {pendentesCount}
               </div>
-              <Badge className="bg-amber-100 text-amber-800 border-0 text-[11px] font-bold">
+              <Badge className="bg-blue-100 text-blue-800 border-0 text-[11px] font-bold">
                 {pendentesPct}% do total
               </Badge>
             </div>
@@ -568,9 +568,9 @@ function Metricas() {
               <div className="text-[11px] font-bold text-emerald-800 uppercase">Concluídos (WhatsApp)</div>
               <div className="text-lg font-black text-emerald-700 mt-0.5">{concluidosCount} ({concluidosPct}%)</div>
             </div>
-            <div className="p-2.5 bg-amber-50/70 rounded-xl border border-amber-100">
-              <div className="text-[11px] font-bold text-amber-800 uppercase">Pendentes</div>
-              <div className="text-lg font-black text-amber-700 mt-0.5">{pendentesCount} ({pendentesPct}%)</div>
+            <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-100">
+              <div className="text-[11px] font-bold text-blue-800 uppercase">Pendentes</div>
+              <div className="text-lg font-black text-blue-700 mt-0.5">{pendentesCount} ({pendentesPct}%)</div>
             </div>
           </div>
         </div>
@@ -637,10 +637,10 @@ function Metricas() {
                   <div className="text-2xl font-black text-emerald-700 mt-1">{concluidosCount}</div>
                   <div className="text-[11px] text-emerald-600 font-medium mt-1">{concluidosPct}% de taxa</div>
                 </div>
-                <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-center">
-                  <div className="text-xs font-bold text-amber-800 uppercase">Pendentes</div>
-                  <div className="text-2xl font-black text-amber-700 mt-1">{pendentesCount}</div>
-                  <div className="text-[11px] text-amber-600 font-medium mt-1">Aguardando ação</div>
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
+                  <div className="text-xs font-bold text-blue-800 uppercase">Pendentes</div>
+                  <div className="text-2xl font-black text-blue-700 mt-1">{pendentesCount}</div>
+                  <div className="text-[11px] text-blue-600 font-medium mt-1">Aguardando ação</div>
                 </div>
               </div>
             )}
@@ -810,7 +810,7 @@ function Metricas() {
               <button
                 type="button"
                 onClick={() => setSelectedStatusFilter("Pendente")}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${selectedStatusFilter === "Pendente" ? "bg-amber-500 text-white shadow-sm" : "text-amber-700 hover:bg-amber-50"}`}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${selectedStatusFilter === "Pendente" ? "bg-blue-500 text-white shadow-sm" : "text-blue-700 hover:bg-blue-50"}`}
               >
                 Pendentes ({pendentesCount})
               </button>
@@ -891,8 +891,8 @@ function Metricas() {
                           </span>
                         )}
                         {isPendente && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            <span className="w-2 h-2 rounded-full bg-blue-500" />
                             Pendente
                           </span>
                         )}
