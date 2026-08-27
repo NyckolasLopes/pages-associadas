@@ -132,7 +132,48 @@ function StoreLayout() {
     } else {
       link.href = '/favicon.png';
     }
-  }, [activePharmacy?.faviconUrl, activePharmacy?.isPleno, activePharmacy?.slug]);
+
+    // Attempt to update manifest dynamically for PWA install prompt
+    let manifestLink = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      document.head.appendChild(manifestLink);
+    }
+    
+    const isParceiro = activePharmacy.categoriaAssociado === 'Parceiro';
+    const appName = isParceiro && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
+    const manifestIcon = activePharmacy.faviconUrl || "/favicon.png";
+    
+    const manifest = {
+      name: appName,
+      short_name: appName,
+      start_url: `/${activePharmacy.slug || ""}`,
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#00B5AD",
+      icons: [
+        {
+          src: manifestIcon,
+          sizes: "192x192",
+          type: "image/png"
+        },
+        {
+          src: manifestIcon,
+          sizes: "512x512",
+          type: "image/png"
+        }
+      ]
+    };
+    
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    manifestLink.href = manifestURL;
+    
+    return () => {
+      URL.revokeObjectURL(manifestURL);
+    };
+  }, [activePharmacy?.faviconUrl, activePharmacy?.isPleno, activePharmacy?.slug, activePharmacy?.nome, activePharmacy?.categoriaAssociado]);
 
   // ─── Early returns (APÓS todos os hooks) ───────────────────────────────────
 

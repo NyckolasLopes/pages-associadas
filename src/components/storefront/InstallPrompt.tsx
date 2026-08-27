@@ -91,7 +91,8 @@ export function InstallPrompt() {
     localStorage.setItem('pwa_dismissed', 'true');
   };
 
-  const appName = activePharmacy?.nome ? `App ${activePharmacy.nome}` : "App Farmácias Associadas";
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  const appName = isParceiro && activePharmacy?.nome ? `App ${activePharmacy.nome}` : (activePharmacy?.nome ? `App ${activePharmacy.nome}` : "App Farmácias Associadas");
   const iconUrl = activePharmacy?.faviconUrl || "/favicon.png";
 
   return (

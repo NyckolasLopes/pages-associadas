@@ -205,11 +205,17 @@ export function Footer() {
             }}
             className="flex items-center gap-4 bg-white text-primary p-4 rounded-lg border border-transparent hover:border-primary transition shadow-sm group cursor-pointer"
           >
-            <div className="h-12 w-12 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition">
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            <div className="h-12 w-12 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition overflow-hidden">
+              {activePharmacy?.faviconUrl ? (
+                <img src={activePharmacy.faviconUrl} alt="App" className="h-8 w-8 object-contain" />
+              ) : (
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              )}
             </div>
             <div>
-              <h4 className="font-bold text-sm">Baixe nosso App</h4>
+              <h4 className="font-bold text-sm">
+                Baixe o App {activePharmacy?.categoriaAssociado === 'Parceiro' && activePharmacy.nome ? activePharmacy.nome : ""}
+              </h4>
               <p className="text-xs opacity-90">Tenha a farmácia na palma da sua mão e ofertas exclusivas.</p>
             </div>
           </a>
