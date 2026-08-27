@@ -127,7 +127,7 @@ function StoreLayout() {
     
     if (activePharmacy.faviconUrl) {
       link.href = activePharmacy.faviconUrl;
-    } else if (activePharmacy.isPleno === false && activePharmacy.slug) {
+    } else if (activePharmacy.categoriaAssociado === 'Parceiro') {
       link.href = 'data:,'; // Empty favicon for partners without custom favicon
     } else {
       link.href = '/favicon.png';
@@ -143,7 +143,7 @@ function StoreLayout() {
     
     const isParceiro = activePharmacy.categoriaAssociado === 'Parceiro';
     const appName = isParceiro && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
-    const manifestIcon = activePharmacy.faviconUrl || "/favicon.png";
+    const manifestIcon = activePharmacy.faviconUrl || (isParceiro ? "data:," : "/favicon.png");
     
     const manifest = {
       name: appName,
