@@ -46,6 +46,9 @@ function AdminDashboard() {
   // No Painel Global (que administra todas as lojas), nunca filtra por loja individual e mostra o painel geral da rede
   const effectiveStoreId = isGlobalAdmin ? (activeStoreId || null) : (activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null);
 
+  const activeStore = pharmacies.find(p => p.id === effectiveStoreId);
+  const isParceiro = activeStore?.categoriaAssociado?.toString().toLowerCase() === 'parceiro' || activeStore?.nome?.toLowerCase().includes('parceiro');
+
   
   const { visitors: rawVisitors, totalAcessos, lojasAcessos, fetchRealAcessos } = useLive();
   const visitors = useMemo(() => {

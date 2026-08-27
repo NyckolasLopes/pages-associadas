@@ -587,14 +587,27 @@ function CartPage() {
 
     if (opts.length > 0) {
       const firstDelivery = opts.find(o => o.id !== "pickup");
-      if (!opts.find(o => o.id === selected)) {
-        if (forcePickup) setSelected("pickup");
-        else setSelected(firstDelivery ? firstDelivery.id : opts[0].id);
+      
+      if (!forcePickup && firstDelivery) {
+        setSelected(firstDelivery.id);
+        setDeliveryMethod("entrega");
+      } else if (!opts.find(o => o.id === selected)) {
+        if (forcePickup) {
+          setSelected("pickup");
+          setDeliveryMethod("retirada");
+        } else {
+          setSelected(firstDelivery ? firstDelivery.id : opts[0].id);
+        }
+      }
+
+      if (!forcePickup && !firstDelivery) {
+         toast.error("Entrega indisponível", { description: "Não encontramos opções de entrega para o CEP informado. Apenas retirada na loja está disponível." });
+         setSelected("pickup");
+         setDeliveryMethod("retirada");
       }
     } else if (opts.length === 0) {
-      if (forcePickup) {
-         setSelected("pickup");
-      }
+      setSelected("pickup");
+      setDeliveryMethod("retirada");
     }
     
     setFreight(opts);
