@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import React, { useEffect, useState, useRef } from "react";
 import { ProductStory } from "@/components/storefront/ProductStory";
 import { ProductCard } from "@/components/storefront/ProductCard";
-import { Flame, Gift, ShoppingBag } from "lucide-react";
+import { Flame, Gift, ShoppingBag, Stethoscope } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAdmin } from "@/stores/admin";
 import { useAdminProducts } from "@/stores/products";
@@ -346,6 +346,8 @@ function PDP() {
   const setLoginOpen = useAuth((s) => s.setLoginOpen);
   const allSelos = useSelos((s) => s.selos);
   const activeSelos = allSelos.filter(s => s.ativo && p.selosIds?.includes(s.id));
+  const normalizeForMatch = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+  const activeSeloNormalizedNames = activeSelos.map(s => normalizeForMatch(s.nome));
   const fav = useFavorites((s) => s.ids.includes(p.id));
   const toggleFav = useFavorites((s) => s.toggle);
   const [mounted, setMounted] = useState(false);
@@ -959,8 +961,9 @@ function PDP() {
 
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 items-start pointer-events-none">
                 {activeSelos.length > 0 && activeSelos.map(selo => (
-                  <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-xs font-bold px-3 py-1 rounded shadow-sm w-max">
-                    {selo.nome}
+                  <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-xs font-bold px-3 py-1 rounded shadow-sm flex items-center gap-1 w-max">
+                    {selo.id === 'servico' && <Stethoscope className="h-3 w-3" />}
+                    {selo.id === 'servico' ? (selo.nome?.toUpperCase() || "SERVIÇO") : selo.nome}
                   </span>
                 ))}
               </div>
@@ -1221,7 +1224,7 @@ function PDP() {
                   EM OFERTA
                 </span>
               )}
-              {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (
+              {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && !activeSeloNormalizedNames.includes(normalizeForMatch(p.selo)) && (
                   <div className="mb-1">
                     <span className="inline-block text-[11px] font-bold bg-accent text-accent-foreground px-2 py-0.5 rounded">
                       {formatPbmName(p.selo)}

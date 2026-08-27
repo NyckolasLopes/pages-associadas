@@ -289,6 +289,9 @@ function ProductCardComponent({
   const allSelos = useSelos((s) => s.selos);
   const activeSelos = allSelos.filter(s => s.ativo && p.selosIds?.includes(s.id));
   const servicoSelo = allSelos.find(s => s.id === "servico");
+  
+  const normalizeForMatch = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+  const activeSeloNormalizedNames = activeSelos.map(s => normalizeForMatch(s.nome));
 
   return (
     <article className="group bg-card rounded-xl border hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative h-full w-full">
@@ -349,15 +352,10 @@ function ProductCardComponent({
         />
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none items-start">
 
-          {isService && servicoSelo?.ativo && (
-            <span style={{ backgroundColor: servicoSelo?.corFundo, color: servicoSelo?.corTexto }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 w-max">
-              <Stethoscope className="h-3 w-3" /> {servicoSelo?.nome?.toUpperCase() || "SERVIÇO"}
-            </span>
-          )}
-
           {activeSelos.map(selo => (
-            <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm w-max">
-              {selo.nome}
+            <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 w-max">
+              {selo.id === 'servico' && <Stethoscope className="h-3 w-3" />}
+              {selo.id === 'servico' ? (selo.nome?.toUpperCase() || "SERVIÇO") : selo.nome}
             </span>
           ))}
         </div>
@@ -515,7 +513,7 @@ function ProductCardComponent({
                 EM OFERTA
               </span>
             )}
-            {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (
+            {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && !activeSeloNormalizedNames.includes(normalizeForMatch(p.selo)) && (
             <span className="inline-block self-start text-[10px] font-bold bg-accent text-accent-foreground px-2 py-0.5 rounded">
               {formatPbmName(p.selo)}
             </span>
