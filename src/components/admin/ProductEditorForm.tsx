@@ -38,9 +38,10 @@ interface ProductEditorFormProps {
   asPage?: boolean;
   lojaId?: string | null;
   headerActions?: React.ReactNode;
+  isNew?: boolean;
 }
 
-export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage, lojaId, headerActions }: ProductEditorFormProps) {
+export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage, lojaId, headerActions, isNew = false }: ProductEditorFormProps) {
   const [formData, setFormData] = useState<Produto | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [saveStep, setSaveStep] = useState<"idle" | "saving" | "syncing" | "done">("idle");
@@ -480,7 +481,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-800">
-                {product.id.startsWith("prod-") ? "Novo Produto" : `Editar Produto: ${product.nome}`}
+                {isNew ? "Novo Produto" : `Editar Produto: ${product.nome}`}
               </h2>
             </div>
             <div className="text-sm text-slate-500 mt-1">Código: {product.codigoInterno || product.id} • Cadastrado via {product.origem || "Sistema"}</div>

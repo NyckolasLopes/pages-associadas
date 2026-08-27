@@ -126,13 +126,9 @@ function AdminProdutosPrecos() {
   useEffect(() => {
     let active = true;
     async function searchCampanha() {
-      if (!campanhaSearch) {
-        if (active) setCampanhaLocalProducts([]);
-        return;
-      }
       try {
         const { results } = await catalog.adminSearchProducts({
-          search: campanhaSearch,
+          search: campanhaSearch || "", // Fetch default list if search is empty
           page: 0,
           pageSize: 50,
           listFilter: "all",
@@ -146,6 +142,7 @@ function AdminProdutosPrecos() {
     const t = setTimeout(searchCampanha, 400);
     return () => { active = false; clearTimeout(t); };
   }, [campanhaSearch, selectedPharmacyId]);
+
 
   const allVisibleProducts = useMemo(() => {
     const map = new Map<string, Produto>();
@@ -801,10 +798,11 @@ function AdminProdutosPrecos() {
                 const displayInicio = (edits?.campanhaInicio ?? produto.campanhaInicio ?? "").substring(0, 10);
                 const displayFim = (edits?.campanhaFim ?? produto.campanhaFim ?? "").substring(0, 10);
 
-                const hasCustomPrice = !!lojaPreco;
-                const isCampanhaInterna = !isGlobal && hasCustomPrice && (lojaPreco.precoDe > lojaPreco.precoPor);
-                const disponivel = lojaPreco?.ativo ?? true;
                 const isMedicamento = produto.categoriaId === "142" || produto.categoriasAdicionais?.includes("142");
+                const hasCustomPrice = !!lojaPreco;
+                const isCampanhaInterna = !isGlobal && hasCustomPrice && !!lojaPreco.campanhaInicio && !!lojaPreco.campanhaFim && !isMedicamento;
+                const disponivel = lojaPreco?.ativo ?? true;
+
 
                 return (
                   <tr key={produto.id} className="hover:bg-slate-50 transition-colors group">
@@ -966,7 +964,7 @@ function AdminProdutosPrecos() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-center border-l border-slate-100">
+                        <td className="px-4 py-4 text-center border-l border-slate-100 align-middle">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <Switch 
                               checked={disponivel}
@@ -976,18 +974,10 @@ function AdminProdutosPrecos() {
                             <span className={`text-[10px] font-bold uppercase ${disponivel ? 'text-emerald-600' : 'text-slate-400'}`}>
                               {disponivel ? 'Disponível' : 'Indisponível'}
                             </span>
-                            <div className="w-full h-px bg-slate-200 my-1" />
-                            <Switch 
-                              checked={lojaPreco?.destaque ?? false}
-                              onCheckedChange={(checked) => handleToggleDestaque(produto, checked)}
-                              className="data-[state=checked]:bg-amber-500"
-                            />
-                            <span className={`text-[10px] font-bold uppercase ${lojaPreco?.destaque ? 'text-amber-600' : 'text-slate-400'}`}>
-                              {lojaPreco?.destaque ? 'Destacado' : 'Não Destacado'}
-                            </span>
                           </div>
                         </td>
                       </>
+
                     )}
                   </tr>
                 );

@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
+import { useFavorites } from "@/stores/favorites";
 import { Header } from "@/components/storefront/Header";
 import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
@@ -36,9 +37,11 @@ function StoreLayout() {
 
   // — Store state (todos os hooks ANTES de qualquer early return) —
   const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
+  const clearCart = useCart((s) => s.clearCart);
   const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const logout = useAuth((s) => s.logout);
+  const clearFavorites = useFavorites((s) => s.clearAll);
 
   const pathParts = location.pathname.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
@@ -109,6 +112,8 @@ function StoreLayout() {
     if (activePharmacy.id !== selectedPharmacyId) {
       if (selectedPharmacyId) {
         logout();
+        clearCart();
+        clearFavorites();
       }
       setSelectedPharmacyId(activePharmacy.id);
     }

@@ -242,6 +242,47 @@ function AdminProdutos() {
     }
   };
 
+  const handleDuplicateProduct = async (p: Produto) => {
+    const newId = Math.random().toString(36).substring(2, 10);
+    const newUrl = `${p.url}-duplicado-${newId}`;
+    
+    const duplicatedProduct: Produto = {
+      ...p,
+      id: newId,
+      nome: `DUPLICADO - ${p.nome}`,
+      url: newUrl,
+      lojaId: currentLojaId || undefined,
+      isIndividualLoja: !!currentLojaId,
+    };
+
+    try {
+      await addOrUpdateProduct(duplicatedProduct, currentLojaId || undefined);
+      toast.success("Produto duplicado com sucesso!");
+      
+      // Reload server products after update
+      const numericPageSize = parseInt(pageSize, 10);
+      catalog.adminSearchProducts({ search, page, pageSize: numericPageSize, listFilter, lojaId: currentLojaId || undefined })
+        .then(({ results, count }) => {
+          setServerProducts(results);
+          setTotalProducts(count);
+          if (currentLojaId) {
+            setLojaApiDataMap(prev => ({
+              ...prev,
+              [duplicatedProduct.id]: {
+                ...(prev[duplicatedProduct.id] || {}),
+                precoPor: duplicatedProduct.precoPor || 0,
+                precoDe: duplicatedProduct.precoDe || 0,
+                estoque: duplicatedProduct.estoque || 0
+              }
+            }));
+          }
+        });
+    } catch (error: any) {
+      console.error("Erro ao duplicar produto:", error);
+      toast.error(`Erro ao duplicar produto: ${error.message || "Verifique o console para mais detalhes."}`);
+    }
+  };
+
   const handleExportJson = async () => {
     setIsLoading(true);
     try {
@@ -1038,7 +1079,7 @@ function AdminProdutos() {
                                   size="icon"
                                   title="Duplicar Produto"
                                   className="h-7 w-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                                  onClick={() => {}}
+                                  onClick={() => handleDuplicateProduct(p)}
                                 >
                                   <Copy className="h-4 w-4" />
                                 </Button>

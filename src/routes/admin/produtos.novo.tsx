@@ -90,6 +90,7 @@ function AdminNovoProduto() {
         onSave={handleSave}
         asPage={true}
         lojaId={currentLojaId}
+        isNew={true}
         headerActions={
           <>
             <StoreSelector className="mb-0" />

@@ -204,10 +204,9 @@ export const useAuth = create<AuthState>((set, get) => ({
         } catch (e) {}
       } else if (session?.user) {
         if (event === "SIGNED_IN") {
-          // Só exibe toast em login genuíno — não em renovações de token ou navegação entre páginas
+          // Não exibe toast global para evitar duplicação com as páginas de login
           if (!_hadSessionOnInit) {
             _hadSessionOnInit = true;
-            toast.success("Login efetuado com sucesso!");
           }
         }
         const u = session.user;
