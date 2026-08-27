@@ -598,7 +598,7 @@ function Relatorios() {
         <div className="bg-white rounded-xl border shadow-sm">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50/50 rounded-t-xl print:hidden">
             <div className="flex items-center gap-3">
-              {activeReport !== "retirada-vs-entrega" && (
+              {activeReport !== "retirada-vs-entrega" && activeReport !== "sla-entrega" && (
                 <Button variant="outline" className="h-10 px-4 text-sm font-bold bg-white">
                   <Filter className="h-4 w-4 mr-2 text-slate-400" />
                   Filtros Avançados

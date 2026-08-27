@@ -192,21 +192,35 @@ export const useAdminProducts = create<ProductsState>()(
           ativo: formattedProduct.ativo !== false,
           buscavel: formattedProduct.buscavel !== false,
           lancamento: formattedProduct.lancamento || false,
-          produto_natureza: formattedProduct.produtoNatureza || null,
-          tipo_produto: formattedProduct.tipoProduto || null,
-          codigo_interno: formattedProduct.codigoInterno || null,
-          alerta_texto: formattedProduct.alertaTexto || null,
-          alerta_regulatorio: formattedProduct.alertaRegulatorio || false,
-          caracteristicas: formattedProduct.caracteristicas || [],
-          tipo_receita: formattedProduct.tipoReceita || null,
-          ncm: formattedProduct.ncm || null,
-          classe_terapeutica: formattedProduct.classeTerapeutica || null,
-          subcategorias_adicionais: formattedProduct.subcategoriasIds || [],
-          nivel_relevancia: formattedProduct.nivelRelevancia || 0,
-          seo_titulo: formattedProduct.seoTitulo || null,
-          meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
-          termos_pesquisa: formattedProduct.termosPesquisa || null,
-          imagem_alt: formattedProduct.imagemAlt || null
+          metadata: {
+            natureza_produto: formattedProduct.produtoNatureza || null,
+            tipo_produto: formattedProduct.tipoProduto || null,
+            codigo_interno: formattedProduct.codigoInterno || null,
+            alerta_texto: formattedProduct.alertaTexto || null,
+            alerta_regulatorio: formattedProduct.alertaRegulatorio || false,
+            caracteristicas: formattedProduct.caracteristicas || [],
+            tipo_receita: formattedProduct.tipoReceita || null,
+            ncm: formattedProduct.ncm || null,
+            classe_terapeutica: formattedProduct.classeTerapeutica || null,
+            indicacao_terapeutica: formattedProduct.indicacaoTerapeutica || null,
+            tipo_de_preco: formattedProduct.tipoDePreco || null,
+            classificacao_registro: formattedProduct.classificacaoRegistro || null,
+            tipo_medicamento: formattedProduct.tipoMedicamento || null,
+            qtd_embalagem: formattedProduct.quantidadeEmbalagem || 0,
+            unidade_embalagem: formattedProduct.unidadeEmbalagem || null,
+            qtd_conteudo: formattedProduct.quantidadeConteudo || 0,
+            unidade_conteudo: formattedProduct.unidadeConteudo || null,
+            sabor: formattedProduct.sabor || null,
+            fps: formattedProduct.fps || 0,
+            faixa_etaria: formattedProduct.faixaEtaria || null,
+            nivel_relevancia: formattedProduct.nivelRelevancia || 0,
+            seo_titulo: formattedProduct.seoTitulo || null,
+            meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
+            termos_pesquisa: formattedProduct.termosPesquisa || null,
+            imagem_alt: formattedProduct.imagemAlt || null,
+            eans_secundarios: formattedProduct.eansSecundarios || [],
+            resumo_descricao: formattedProduct.resumoDescricao || null
+          }
         });
         
         if (error) {
@@ -476,17 +490,17 @@ export const useAdminProducts = create<ProductsState>()(
       }),
       updateVitrine: (v, lojaId) => set((s) => {
         if (!lojaId) return { vitrines: s.vitrines.map(x => x.id === v.id ? v : x) };
-        const storeVits = s.storeVitrines[lojaId] || [];
+        const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
         return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(x => x.id === v.id ? v : x) } };
       }),
       removeVitrine: (id, lojaId) => set((s) => {
         if (!lojaId) return { vitrines: s.vitrines.filter(v => v.id !== id) };
-        const storeVits = s.storeVitrines[lojaId] || [];
+        const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
         return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.filter(v => v.id !== id) } };
       }),
       toggleVitrine: (id, lojaId) => set((s) => {
         if (!lojaId) return { vitrines: s.vitrines.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v) };
-        const storeVits = s.storeVitrines[lojaId] || [];
+        const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
         return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v) } };
       }),
       updateProductDescriptions: async (updates, lojaId) => {
@@ -930,9 +944,36 @@ export const useAdminProducts = create<ProductsState>()(
             currentVitrines = [...currentVitrines, ...defaults];
             hasChanged = true;
           }
-          
           if (hasChanged) {
-            useAdminProducts.setState({ vitrines: currentVitrines });
+            // Deduplicate to clean up existing messed up state
+            const deduplicated = currentVitrines.filter((v, index, self) => index === self.findIndex((t) => t.id === v.id));
+            useAdminProducts.setState({ vitrines: deduplicated });
+          } else {
+            // Even if no defaults were added, let's run a deduplication pass just in case
+            const deduplicated = currentVitrines.filter((v, index, self) => index === self.findIndex((t) => t.id === v.id));
+            if (deduplicated.length !== currentVitrines.length) {
+              useAdminProducts.setState({ vitrines: deduplicated });
+            }
+          }
+
+          // Deduplicate storeVitrines as well to clean up corrupted states
+          const currentStoreVitrines = state.storeVitrines || {};
+          let storeVitrinesChanged = false;
+          const newStoreVitrines = { ...currentStoreVitrines };
+
+          for (const lojaId in newStoreVitrines) {
+            const vits = newStoreVitrines[lojaId];
+            if (vits && vits.length > 0) {
+              const deduplicatedVits = vits.filter((v, index, self) => index === self.findIndex((t) => t.id === v.id));
+              if (deduplicatedVits.length !== vits.length) {
+                newStoreVitrines[lojaId] = deduplicatedVits;
+                storeVitrinesChanged = true;
+              }
+            }
+          }
+
+          if (storeVitrinesChanged) {
+            useAdminProducts.setState({ storeVitrines: newStoreVitrines });
           }
         }
       }

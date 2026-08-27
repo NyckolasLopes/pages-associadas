@@ -11,6 +11,11 @@ import { FileUp } from "lucide-react";
 import { SubirDadosLojaModal } from "@/components/admin/SubirDadosLojaModal";
 
 export const Route = createFileRoute("/admin/produtos/novo")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      tipo: search.tipo as string | undefined,
+    }
+  },
   component: AdminNovoProduto,
 });
 
@@ -23,9 +28,8 @@ function AdminNovoProduto() {
   const currentLojaId = activeStoreId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas[0]) || null;
   const currentLoja = pharmacies.find(p => p.id === currentLojaId);
 
-  // Basic query params read (without typing)
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
-  const tipoParam = searchParams.get("tipo") || "";
+  const search = Route.useSearch() as any;
+  const tipoParam = search.tipo || "";
 
   const handleSave = async (product: Produto) => {
     const finalProduct: Produto = {

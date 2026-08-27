@@ -124,14 +124,17 @@ function NovaPromocaoPage() {
 
   useEffect(() => {
     if (existing && existing.tipoAlvo === "produtos" && existing.alvosId.length > 0) {
-      Promise.all(existing.alvosId.map(id => catalog.getProductById(id, effectiveStoreId)))
-        .then(prods => {
-          setSelectedProductsCache(prev => {
-            const next = { ...prev };
-            prods.forEach(p => { if (p) next[p.id] = p; });
-            return next;
-          });
+      import("@/integrations/supabase/client").then(({ supabase }) => {
+        supabase.from('produtos').select('*').in('id', existing.alvosId).then(({ data }) => {
+          if (data) {
+            setSelectedProductsCache(prev => {
+              const next = { ...prev };
+              data.forEach(p => { next[String(p.id)] = p; });
+              return next;
+            });
+          }
         });
+      });
     }
   }, [existing, effectiveStoreId]);
 

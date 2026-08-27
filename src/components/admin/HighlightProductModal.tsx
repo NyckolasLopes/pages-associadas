@@ -16,8 +16,13 @@ interface HighlightProductModalProps {
 }
 
 export function HighlightProductModal({ product, isOpen, onClose, lojaId, onSaveDestaqueGlobal }: HighlightProductModalProps) {
-  const { getStoreVitrines, updateVitrine } = useAdminProducts();
-  const vitrines = getStoreVitrines(lojaId);
+  const { updateVitrine } = useAdminProducts();
+  const globalVitrines = useAdminProducts(s => s.vitrines);
+  const localVitrines = useAdminProducts(s => lojaId ? s.storeVitrines[lojaId] : undefined);
+  
+  // Deduplicate vitrines by ID just in case there's corrupted data
+  const rawVitrines = (lojaId && localVitrines && localVitrines.length > 0) ? localVitrines : globalVitrines;
+  const vitrines = rawVitrines.filter((v, index, self) => index === self.findIndex((t) => t.id === v.id));
 
   if (!product) return null;
 

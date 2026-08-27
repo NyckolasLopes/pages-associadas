@@ -37,11 +37,13 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
   const [ordem, setOrdem] = useState<number>(0);
   
   const [categoriasOpcoes, setCategoriasOpcoes] = useState<Categoria[]>([]);
-  const [produtosOpcoes, setProdutosOpcoes] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Search state for products
   const [searchProduto, setSearchProduto] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedProductsCache, setSelectedProductsCache] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -69,17 +71,50 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
       
       async function loadOptions() {
         setLoading(true);
-        await loadProducts();
-        const allProducts = getStoreEffectiveProducts(lojaId);
         // Filtra "Marcas" (id 300 ou parentId 300) da lista de categorias vinculáveis
         const allCats = (await catalog.listCategories(true)).filter(c => c.id !== "300" && c.parentId !== "300");
         setCategoriasOpcoes(allCats);
-        setProdutosOpcoes(allProducts);
         setLoading(false);
       }
       loadOptions();
+
+      if (vitrine && vitrine.produtoIds && vitrine.produtoIds.length > 0) {
+        import("@/integrations/supabase/client").then(({ supabase }) => {
+          supabase.from('produtos').select('id, nome, preco_por, preco_de, imagem_url').in('id', vitrine.produtoIds)
+            .then(({ data }) => {
+              if (data) {
+                setSelectedProductsCache(prev => {
+                  const next = { ...prev };
+                  data.forEach(p => { next[String(p.id)] = { ...p, id: String(p.id) }; });
+                  return next;
+                });
+              }
+            });
+        });
+      }
     }
   }, [isOpen, vitrine]);
+
+  useEffect(() => {
+    if (!searchProduto.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await catalog.search(searchProduto, undefined, lojaId);
+        setSearchResults(res.slice(0, 50));
+        setSelectedProductsCache(prev => {
+          const next = { ...prev };
+          res.forEach((p: any) => { next[String(p.id)] = p; });
+          return next;
+        });
+      } catch (e) {}
+      setIsSearching(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchProduto, lojaId]);
 
   const handleSave = () => {
     if (!nome.trim()) {
@@ -113,12 +148,8 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
     onClose();
   };
 
-  const searchLower = searchProduto.toLowerCase();
-  const selectedProductsList = produtosOpcoes.filter(p => produtoIds.includes(String(p.id)));
-  const unselectedFilteredProducts = produtosOpcoes
-    .filter(p => !produtoIds.includes(String(p.id)))
-    .filter(p => (p.nome || "").toLowerCase().includes(searchLower))
-    .slice(0, 50);
+  const selectedProductsList = produtoIds.map(id => selectedProductsCache[id]).filter(Boolean);
+  const unselectedFilteredProducts = searchResults.filter((p: any) => !produtoIds.includes(String(p.id)));
   const filteredProducts = [...selectedProductsList, ...unselectedFilteredProducts];
 
   const toggleProduct = (rawId: string | number) => {
@@ -130,8 +161,8 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
     }
   };
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{vitrine ? "Editar Vitrine" : "Nova Vitrine"}</DialogTitle>
         </DialogHeader>

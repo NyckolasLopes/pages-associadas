@@ -445,10 +445,10 @@ export function Header() {
                     setQ(e.target.value);
                     setSearchOpen(true);
                   }}
-                  placeholder={activePharmacy?.isPleno === false ? "Escreva o que procura" : "Escreva o que procura ou escaneie o codigo de barras"}
-                  className={`pl-10 h-11 rounded-full border-2 focus-visible:border-primary w-full ${activePharmacy?.isPleno === false ? 'pr-4' : 'pr-10'}`}
+                  placeholder={activePharmacy?.isPleno === false || activePharmacy?.categoriaAssociado === 'Parceiro' ? "Escreva o que procura" : "Escreva o que procura ou escaneie o codigo de barras"}
+                  className={`pl-10 h-11 rounded-full border-2 focus-visible:border-primary w-full ${activePharmacy?.isPleno === false || activePharmacy?.categoriaAssociado === 'Parceiro' ? 'pr-4' : 'pr-10'}`}
                 />
-                {activePharmacy?.isPleno !== false && (
+                {activePharmacy?.isPleno !== false && activePharmacy?.categoriaAssociado !== 'Parceiro' && (
                   <button
                     type="button"
                     aria-label="Escanear código"
@@ -634,10 +634,10 @@ export function Header() {
                         setQ(e.target.value);
                         setSearchOpen(true);
                       }}
-                      placeholder={activePharmacy?.isPleno === false ? "Escreva o que procura" : "Escreva o que procura ou escaneie o codigo de barras"}
-                      className={`pl-10 h-11 rounded-full border-2 w-full ${activePharmacy?.isPleno === false ? 'pr-4' : 'pr-12'}`}
+                      placeholder={activePharmacy?.isPleno === false || activePharmacy?.categoriaAssociado === 'Parceiro' ? "Escreva o que procura" : "Escreva o que procura ou escaneie o codigo de barras"}
+                      className={`pl-10 h-11 rounded-full border-2 w-full ${activePharmacy?.isPleno === false || activePharmacy?.categoriaAssociado === 'Parceiro' ? 'pr-4' : 'pr-12'}`}
                     />
-                    {activePharmacy?.isPleno !== false && (
+                    {activePharmacy?.isPleno !== false && activePharmacy?.categoriaAssociado !== 'Parceiro' && (
                       <button
                         type="button"
                         aria-label="Escanear código"

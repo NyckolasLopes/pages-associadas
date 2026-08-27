@@ -124,7 +124,8 @@ export const useOrders = create<OrdersState>((set, get) => ({
     let query = supabase
       .from('pedidos')
       .select('*, pedido_itens(*, produtos(imagens)), pedido_historico_status(*)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(1000);
 
     // Restringir a query se não for admin global
     if (!profile?.is_admin) {

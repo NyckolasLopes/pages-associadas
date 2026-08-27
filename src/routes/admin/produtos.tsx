@@ -799,7 +799,7 @@ function AdminProdutos() {
                   className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700"
                 >
                   <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
-                  Importar Planilha
+                  Importar Produtos
                 </Button>
                 <Button
                   variant="outline"
@@ -896,7 +896,7 @@ function AdminProdutos() {
                 className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700"
               >
                 <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
-                Importar Planilha
+                Importar Produtos
               </Button>
             </div>
           </div>

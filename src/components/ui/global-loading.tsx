@@ -13,23 +13,34 @@ export function GlobalLoading() {
   // Qualquer loja específica de vitrine (não admin) usa o logo dela
   const isStoreContext = !isAdmin && !!activePharmacy;
 
-  let logoToUse: string;
+  let logoToUse: string = "";
+  let isStoreContextLoading = false;
+
   if (isAdmin) {
     // Admin sempre usa o logo da rede
     logoToUse = "/logo.png";
-  } else if (isStoreContext && activePharmacy?.logoUrl) {
-    // Vitrine com logo cadastrado: usa o logo da loja
-    logoToUse = activePharmacy.logoUrl;
-  } else if (isParceiro) {
-    // Parceiro sem logo: sem logo nenhum
-    logoToUse = "";
+  } else if (activePharmacy) {
+    if (isParceiro) {
+      // Parceiro usa o próprio logo, se tiver. Se não, fica vazio.
+      logoToUse = activePharmacy.logoUrl || "";
+    } else {
+      // Vitrine da rede plena: usa o próprio logo, ou o padrão da rede
+      logoToUse = activePharmacy.logoUrl || dadosLoja?.logoUrl || "/logo.png";
+    }
   } else {
-    // Loja da rede sem logo próprio: usa o logo padrão da rede
-    logoToUse = dadosLoja?.logoUrl || "/logo.png";
+    // Estamos carregando os dados da farmácia ainda.
+    // Se a rota principal for "/", é a matriz. Senão, é uma loja específica (ainda desconhecida).
+    if (location.pathname === "/") {
+      logoToUse = dadosLoja?.logoUrl || "/logo.png";
+    } else {
+      isStoreContextLoading = true;
+      logoToUse = ""; // Não exibe logo até saber se é parceiro ou pleno
+    }
   }
 
-  // Parceiros não usam o spinner verde da rede (sem identidade visual da rede)
-  const showSpinner = !isParceiro;
+  // Se for parceiro (ou estamos carregando uma loja e não sabemos quem é), o spinner pode aparecer se não houver logo.
+  // Se for parceiro COM logo, não mostra o spinner da rede.
+  const showSpinner = true; 
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center animate-in fade-in duration-300">
