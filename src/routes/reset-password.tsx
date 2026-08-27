@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { StoreLayout } from "@/components/storefront/StoreLayout";
 
 export const Route = createFileRoute("/reset-password")({
   component: ResetPassword,
@@ -51,35 +50,33 @@ function ResetPassword() {
   };
 
   return (
-    <StoreLayout>
-      <div className="container max-w-md mx-auto py-20 px-4">
-        <h1 className="text-2xl font-bold mb-6 text-center">Criar nova senha</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Nova senha</Label>
-            <Input 
-              type="password" 
-              required 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Confirmar nova senha</Label>
-            <Input 
-              type="password" 
-              required 
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={6}
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Atualizando..." : "Atualizar senha"}
-          </Button>
-        </form>
-      </div>
-    </StoreLayout>
+    <div className="container max-w-md mx-auto py-20 px-4">
+      <h1 className="text-2xl font-bold mb-6 text-center">Criar nova senha</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label>Nova senha</Label>
+          <Input 
+            type="password" 
+            required 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Confirmar nova senha</Label>
+          <Input 
+            type="password" 
+            required 
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            minLength={6}
+          />
+        </div>
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Atualizando..." : "Atualizar senha"}
+        </Button>
+      </form>
+    </div>
   );
 }

@@ -1,5 +1,8 @@
 import { type Produto } from "@/types";
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { useAdmin } from "@/stores/admin";
+import { useSelos } from "@/stores/selos";
+import { getStoreSlugFromUrl } from "@/lib/utils";
 import {
   Carousel,
   CarouselContent,
@@ -9,6 +12,23 @@ import {
 } from "@/components/ui/carousel";
 
 export function ProductCarousel({ products, selectedStoreId }: { products: Produto[], selectedStoreId?: string }) {
+  const pharmacies = useAdmin(s => s.pharmacies);
+  const allSelos = useSelos((s) => s.selos);
+  const activeStoreId = selectedStoreId || getStoreSlugFromUrl();
+  const activePharm = pharmacies.find(f => f.id === activeStoreId);
+
+  const visibleProducts = products.filter(p => {
+    const activeSelos = allSelos.filter(s => s.ativo && p.selosIds?.includes(s.id));
+    const isServiceByTag = p.selo?.toUpperCase() === "SERVIÇO";
+    const isServiceBySelo = activeSelos.some(s => s.id === 'servico' || s.nome.toUpperCase() === "SERVIÇO");
+    const isServiceByType = p.tipoProduto === "servico";
+    const isService = isServiceByTag || isServiceBySelo || isServiceByType;
+    
+    if (isService && activePharm?.offersServices === false) {
+      return false;
+    }
+    return true;
+  });
   return (
     <div className="relative group w-full">
       <Carousel
@@ -20,7 +40,7 @@ export function ProductCarousel({ products, selectedStoreId }: { products: Produ
         className="w-full"
       >
         <CarouselContent className="-ml-3 pb-4 md:pb-2">
-          {products.map((p) => (
+          {visibleProducts.map((p) => (
             <CarouselItem
               key={p.id}
               className="pl-3 basis-[45vw] sm:basis-[30vw] md:basis-[25%] lg:basis-[20%] flex"
