@@ -1,5 +1,12 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { Search, ChevronDown, Star, Trash2, Edit2, X, UploadCloud } from "lucide-react";
+import { Search, ChevronDown, Star, Trash2, Edit2, X, UploadCloud, Download } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +32,7 @@ export const Route = createFileRoute("/admin/marcas")({
 
 function AdminMarcas() {
   const { removeMarca, updateMarca, getStoreEffectiveMarcas } = useMarcasStore();
+  const _reactiveForce = useMarcasStore((s) => s.marcas);
   const { activeStoreId } = useAdmin();
   const marcas = getStoreEffectiveMarcas(activeStoreId || undefined);
   
@@ -33,9 +41,9 @@ function AdminMarcas() {
 
   const filteredMarcas = useMemo(() => {
     return marcas.filter((m) => 
-      m.nome.toLowerCase().includes(searchTerm.toLowerCase())
+      m.nome?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [marcas, searchTerm]);
+  }, [marcas, searchTerm, _reactiveForce]);
 
   // Edit Modal State
   const [nome, setNome] = useState("");
@@ -119,8 +127,9 @@ function AdminMarcas() {
         marcaPropria
       });
       setEditingMarca(null);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error(e?.message || "Erro ao salvar marca. Verifique as permissões.");
     } finally {
       setIsSaving(false);
     }
@@ -151,9 +160,18 @@ function AdminMarcas() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" className="h-10 px-4 text-sm font-medium text-slate-400 bg-white border-slate-200">
-            Ações <ChevronDown className="h-4 w-4 ml-2" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-10 px-4 text-sm font-medium text-slate-400 bg-white border-slate-200">
+                Ações <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => toast.info("Exportação em breve")}>
+                <Download className="mr-2 h-4 w-4 text-slate-500" /> Exportar Planilha
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         
         <div className="w-full overflow-x-auto">

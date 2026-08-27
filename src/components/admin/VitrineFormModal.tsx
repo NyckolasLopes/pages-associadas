@@ -96,19 +96,19 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
   }, [isOpen, vitrine]);
 
   useEffect(() => {
-    if (!searchProduto.trim()) {
-      setSearchResults([]);
-      return;
-    }
     const timer = setTimeout(() => {
       setIsSearching(true);
       import("@/integrations/supabase/client").then(async ({ supabase }) => {
         try {
-          const { data } = await supabase
+          let query = supabase
             .from('produtos')
-            .select('id, nome, preco_por, preco_de, imagem_url')
-            .ilike('nome', `%${searchProduto}%`)
-            .limit(50);
+            .select('id, nome, preco_por, preco_de, imagem_url');
+
+          if (searchProduto.trim()) {
+            query = query.ilike('nome', `%${searchProduto}%`);
+          }
+
+          const { data } = await query.limit(50);
             
           if (data) {
             setSearchResults(data as any);

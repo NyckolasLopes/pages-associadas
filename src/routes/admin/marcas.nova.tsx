@@ -92,8 +92,8 @@ function AdminMarcaNova() {
       });
       toast.success("Marca criada com sucesso!");
       navigate({ to: "/admin/marcas" });
-    } catch (e) {
-      toast.error("Erro ao criar marca. Verifique as permissões.");
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao criar marca. Verifique as permissões.");
     } finally {
       setIsSaving(false);
     }
@@ -146,7 +146,7 @@ function AdminMarcaNova() {
               <Label className="text-sm font-bold text-slate-700">Nome da marca <span className="text-red-500">*</span></Label>
               <Input 
                 className="h-10 border-slate-200" 
-                placeholder="Ex: Apple" 
+                placeholder="Ex: REVITART" 
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
               />
