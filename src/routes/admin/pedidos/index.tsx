@@ -144,7 +144,7 @@ export function PedidosAdmin() {
   const [dateEndFilter, setDateEndFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
-  const [mainView, setMainView] = useState<"todos" | "concluidos" | "carrinhos">("todos");
+  const [mainView, setMainView] = useState<"todos" | "concluidos" | "pendentes" | "carrinhos">("todos");
   const [showApiDoc, setShowApiDoc] = useState(false);
 
   // Fetch orders with React Query (Server-side)
@@ -152,7 +152,7 @@ export function PedidosAdmin() {
     page,
     limit,
     lojaId: activeStoreId || undefined,
-    status: mainView === "carrinhos" ? "Pendente" : (mainView === "concluidos" ? "Concluído" : undefined),
+    status: mainView === "pendentes" ? "Pendente" : (mainView === "concluidos" ? "Concluído" : undefined),
     search: searchTerm,
     dateStart: dateStartFilter,
     dateEnd: dateEndFilter,
@@ -417,7 +417,8 @@ export function PedidosAdmin() {
   const kpis = {
     total: (dbKpis?.total || 0) + allAbandonedCarts.length,
     concluidos: dbKpis?.concluidos || 0,
-    carrinhosARecuperar: (dbKpis?.pendentes || 0) + allAbandonedCarts.length,
+    pendentes: dbKpis?.pendentes || 0,
+    carrinhosARecuperar: allAbandonedCarts.length,
   };
 
   // Filtragem
@@ -428,9 +429,13 @@ export function PedidosAdmin() {
          const st = (item.status || "").toLowerCase();
          if (!st.includes("conclu") && !st.includes("entregue")) return false;
       }
-      if (mainView === "carrinhos") {
+      if (mainView === "pendentes") {
+         if (item.tipo !== "pedido") return false;
          const st = (item.status || "").toLowerCase();
          if (st.includes("conclu") || st.includes("cancel") || st.includes("entregue")) return false;
+      }
+      if (mainView === "carrinhos") {
+         if (item.tipo !== "carrinho") return false;
       }
 
       // Filtro por busca
@@ -942,7 +947,7 @@ export function PedidosAdmin() {
         </div>
 
         {/* 3 KPIs Principais: TOTAL DE PEDIDOS (Concluídos + Pendentes), CONCLUIDO, CARRINHOS A RECUPERAR */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* TOTAL DE PEDIDOS - Puxa todos os pedidos (Pendentes e Concluídos) */}
           <div
             onClick={() => setMainView("todos")}
@@ -958,7 +963,7 @@ export function PedidosAdmin() {
               </p>
               <p className="text-3xl font-black text-slate-800">{kpis.total}</p>
               <span className="text-[12px] text-slate-500 font-medium">
-                {kpis.concluidos} concluídos + {kpis.carrinhosARecuperar} pendentes
+                Geral unificado
               </span>
             </div>
             <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center">
@@ -977,7 +982,7 @@ export function PedidosAdmin() {
           >
             <div>
               <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">
-                CONCLUÍDO
+                CONCLUÍDOS
               </p>
               <p className="text-3xl font-black text-emerald-700">{kpis.concluidos}</p>
               <span className="text-[12px] text-emerald-600 font-semibold">
@@ -989,7 +994,30 @@ export function PedidosAdmin() {
             </div>
           </div>
 
-          {/* CARRINHOS A RECUPERAR / PENDENTES */}
+          {/* PEDIDOS PENDENTES */}
+          <div
+            onClick={() => setMainView("pendentes")}
+            className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+              mainView === "pendentes"
+                ? "ring-2 ring-blue-500 border-blue-500 bg-blue-50/20"
+                : ""
+            }`}
+          >
+            <div>
+              <p className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">
+                PEDIDOS PENDENTES
+              </p>
+              <p className="text-3xl font-black text-blue-700">{kpis.pendentes}</p>
+              <span className="text-[12px] text-blue-600 font-semibold">
+                Aguardando finalização
+              </span>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center">
+              <Package className="h-6 w-6" />
+            </div>
+          </div>
+
+          {/* CARRINHOS A RECUPERAR */}
           <div
             onClick={() => setMainView("carrinhos")}
             className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
@@ -1000,11 +1028,11 @@ export function PedidosAdmin() {
           >
             <div>
               <p className="text-amber-600 text-xs font-bold uppercase tracking-wider mb-1">
-                CARRINHOS A RECUPERAR
+                CARRINHOS ABANDONADOS
               </p>
               <p className="text-3xl font-black text-amber-700">{kpis.carrinhosARecuperar}</p>
               <span className="text-[12px] text-amber-600 font-semibold">
-                Clientes com itens no carrinho
+                Sem finalizar (Logado)
               </span>
             </div>
             <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
@@ -1051,6 +1079,16 @@ export function PedidosAdmin() {
                   Concluídos ({kpis.concluidos})
                 </button>
                 <button
+                  onClick={() => setMainView("pendentes")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    mainView === "pendentes"
+                      ? "bg-white text-blue-700 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Pendentes ({kpis.pendentes})
+                </button>
+                <button
                   onClick={() => setMainView("carrinhos")}
                   className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                     mainView === "carrinhos"
@@ -1058,7 +1096,7 @@ export function PedidosAdmin() {
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  Pendentes / Carrinhos ({kpis.carrinhosARecuperar})
+                  Carrinhos ({kpis.carrinhosARecuperar})
                 </button>
               </div>
 

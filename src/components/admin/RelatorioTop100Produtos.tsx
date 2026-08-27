@@ -121,7 +121,7 @@ export function RelatorioTop100Produtos({
   const [selectedLoja, setSelectedLoja] = useState<string>(lojaId || "all");
   const [periodo, setPeriodo] = useState<"all" | "today" | "7days" | "30days" | "thisMonth" | "thisYear">("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [pageSize, setPageSize] = useState<number>(25);
+  const [pageSize, setPageSize] = useState<number>(100);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Sync selectedLoja if prop lojaId changes
@@ -778,17 +778,7 @@ export function RelatorioTop100Produtos({
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <span className="text-xs text-slate-500 font-bold">Linhas por página:</span>
-              <Select value={String(pageSize)} onValueChange={(val) => { setPageSize(Number(val)); setCurrentPage(1); }}>
-                <SelectTrigger className="w-20 h-8 text-xs font-bold border-slate-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="25" className="font-bold">25</SelectItem>
-                  <SelectItem value="50" className="font-bold">50</SelectItem>
-                  <SelectItem value="100" className="font-bold">100</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Pagination control removed per user request */}
             </div>
           </div>
         </CardHeader>
