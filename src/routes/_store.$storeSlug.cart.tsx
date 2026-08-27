@@ -30,8 +30,20 @@ import type { Produto } from "@/types";
 import { getCityFromCep, isCampanhaAtiva, getCepCoordinates, normalizeString } from "@/lib/utils";
 import { getRoadDistanceKm } from "@/lib/distanceApis";
 
-function getDynamicETA(inicio: string, fim: string, diasAbertos: number[], tempoMinutos: string, mode: "Entrega" | "Retirada") {
-  const fallback = mode === "Entrega" ? (tempoMinutos ? `Em até ${tempoMinutos}` : "Em breve") : (tempoMinutos ? `Retirada em até ${tempoMinutos}` : "Retirada a partir de 30 minutos");
+function getDynamicETA(inicio: string, fim: string, diasAbertos: number[], tempoStr: string, mode: "Entrega" | "Retirada") {
+  let tempoFormatado = tempoStr;
+  if (tempoStr && !isNaN(Number(tempoStr))) {
+    const num = Number(tempoStr);
+    if (num < 60) {
+      tempoFormatado = `${num} minutos`;
+    } else if (num % 60 === 0) {
+      tempoFormatado = `${Math.floor(num / 60)} hora${Math.floor(num / 60) > 1 ? 's' : ''}`;
+    } else {
+      tempoFormatado = `${Math.floor(num / 60)} hora${Math.floor(num / 60) > 1 ? 's' : ''} e ${num % 60} minutos`;
+    }
+  }
+
+  const fallback = mode === "Entrega" ? (tempoFormatado ? `Em até ${tempoFormatado}` : "Em breve") : (tempoFormatado ? `Retirada em até ${tempoFormatado}` : "Retirada a partir de 30 minutos");
   if (!inicio || !fim || !diasAbertos || diasAbertos.length === 0) {
     return fallback;
   }
@@ -51,7 +63,7 @@ function getDynamicETA(inicio: string, fim: string, diasAbertos: number[], tempo
     const isTodayOpen = diasAbertos.includes(currentDay);
     
     if (isTodayOpen && currentTime >= inicioTime && currentTime <= fimTime) {
-      const baseTempo = tempoMinutos ? `em até ${tempoMinutos}` : "em breve";
+      const baseTempo = tempoFormatado ? `em até ${tempoFormatado}` : "em breve";
       return mode === "Entrega" ? `Chegará hoje ${baseTempo}` : `Retire hoje ${baseTempo}`;
     }
 
@@ -602,8 +614,7 @@ function CartPage() {
 
       if (!forcePickup && !firstDelivery) {
          toast.error("Entrega indisponível", { description: "Não encontramos opções de entrega para o CEP informado. Apenas retirada na loja está disponível." });
-         setSelected("pickup");
-         setDeliveryMethod("retirada");
+         // Removing setSelected("pickup") so it stays on the delivery tab to show the message
       }
     } else if (opts.length === 0) {
       setSelected("pickup");
@@ -1310,7 +1321,16 @@ function CartPage() {
 
                     <div className="inline-flex flex-col items-center sm:items-start">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setQty(i.id, i.qty - 1)} className="h-8 w-8 border rounded flex items-center justify-center">−</button>
+                        <button 
+                          onClick={() => {
+                            if (i.qty <= 1) {
+                              toast.info("Atenção", { description: "Clique no botão 'Remover' para retirar este item do seu carrinho." });
+                            } else {
+                              setQty(i.id, i.qty - 1);
+                            }
+                          }} 
+                          className="h-8 w-8 border rounded flex items-center justify-center"
+                        >−</button>
                         <span className="text-sm w-8 text-center font-bold">{i.qty}</span>
                         <button 
                           onClick={() => setQty(i.id, i.qty + 1)} 
@@ -1494,7 +1514,7 @@ function CartPage() {
                         </div>
                       ) : (
                          cep.replace(/\D/g, "").length >= 8 && !isCalcLoading ? (
-                           <div className="text-sm text-red-600 font-medium mt-3">Não há opções de entrega disponíveis para este CEP ou farmácia.</div>
+                           <div className="text-sm text-red-600 font-medium mt-3">Não há opções de entrega disponíveis para este CEP. Apenas retirada na loja está disponível.</div>
                          ) : null
                       )}
                     </div>

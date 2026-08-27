@@ -182,11 +182,12 @@ function Checkout() {
     }
 
     let discount = 0;
+    const baseSubtotal = Math.max(0, subtotal - visibleStoreDisc - orderBumpDiscount - visiblePbmDisc);
     if (cupom.tipoDesconto === "percentual") {
       discount = (subtotal * cupom.valorDesconto) / 100;
     } else {
       discount = cupom.valorDesconto;
-      if (discount > subtotal) discount = subtotal;
+      if (discount > baseSubtotal) discount = baseSubtotal;
     }
 
     setCouponApplied({ code, discount, cupomData: cupom });
@@ -1049,7 +1050,17 @@ function Checkout() {
                 </div>
                 <div className="flex items-center gap-3 mt-1.5">
                   <div className="flex items-center border rounded-md">
-                    <button type="button" onClick={() => i.qty > 1 ? setQty(i.id, i.qty - 1) : remove(i.id)} className="px-2 py-0.5 text-muted-foreground hover:bg-slate-100 hover:text-slate-900 transition-colors">-</button>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        if (i.qty <= 1) {
+                          toast.info("Atenção", { description: "Clique no botão 'Remover' para limpar este item do seu carrinho." });
+                        } else {
+                          setQty(i.id, i.qty - 1);
+                        }
+                      }} 
+                      className="px-2 py-0.5 text-muted-foreground hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                    >-</button>
                     <span className="px-2 py-0.5 text-xs font-medium border-x bg-slate-50 min-w-[2rem] text-center">{i.qty}</span>
                     <button type="button" onClick={() => setQty(i.id, i.qty + 1)} className="px-2 py-0.5 text-muted-foreground hover:bg-slate-100 hover:text-slate-900 transition-colors">+</button>
                   </div>

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Limpeza de segurança: remove credenciais antigas do localStorage legado
 if (typeof window !== "undefined") {
@@ -193,6 +194,9 @@ export const useAuth = create<AuthState>((set, get) => ({
           });
         } catch (e) {}
       } else if (session?.user) {
+        if (event === "SIGNED_IN") {
+          toast.success("Login efetuado com sucesso!");
+        }
         const u = session.user;
         supabase
           .from("profiles")

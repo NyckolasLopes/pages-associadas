@@ -51,8 +51,13 @@ export function getEffectivePrice(item: any, pharmacyId: string | null): { preco
     // 2. Specific store override
     if (item.precosPorLoja?.[pharmacyId]) {
       const loja = item.precosPorLoja[pharmacyId];
-      precoPor = loja.precoPor;
-      precoDe = loja.precoDe;
+      const lojaPrecoPor = loja.precoPor ? Number(loja.precoPor) : 0;
+      const lojaPrecoDe = loja.precoDe ? Number(loja.precoDe) : lojaPrecoPor;
+      
+      if (lojaPrecoPor > 0 || lojaPrecoDe > 0) {
+        precoPor = lojaPrecoPor || lojaPrecoDe;
+        precoDe = lojaPrecoDe || lojaPrecoPor;
+      }
     }
 
     // 3. Store-specific Oferta do Mês
@@ -296,14 +301,15 @@ export const useCart = create<CartState>()(
         if (!coupon) return 0;
         if (coupon.lojaId && coupon.lojaId !== pid) return 0;
         
-        const sub = get().subtotal() - get().storeDiscount() - get().pbmDiscount();
-        if (sub <= 0) return 0;
-        if (coupon.valorMinimo && sub < coupon.valorMinimo) return 0;
+        const rawSubtotal = get().subtotal();
+        const subAfterDiscounts = rawSubtotal - get().storeDiscount() - get().pbmDiscount();
+        if (rawSubtotal <= 0) return 0;
+        if (coupon.valorMinimo && rawSubtotal < coupon.valorMinimo) return 0;
         
         if (coupon.tipoDesconto === "percentual") {
-          return (sub * coupon.valorDesconto) / 100;
+          return (rawSubtotal * coupon.valorDesconto) / 100;
         } else {
-          return Math.min(sub, coupon.valorDesconto);
+          return Math.min(subAfterDiscounts, coupon.valorDesconto);
         }
       },
       applyCoupon: (rawCode: string) => {
@@ -318,8 +324,8 @@ export const useCart = create<CartState>()(
         if (coupon.lojaId && coupon.lojaId !== pid) {
           return { success: false, message: "Este cupom é exclusivo de outra unidade." };
         }
-        const sub = get().subtotal() - get().storeDiscount() - get().pbmDiscount();
-        if (coupon.valorMinimo && sub < coupon.valorMinimo) {
+        const rawSubtotal = get().subtotal();
+        if (coupon.valorMinimo && rawSubtotal < coupon.valorMinimo) {
           return { success: false, message: `Valor mínimo para este cupom: R$ ${coupon.valorMinimo.toFixed(2)}` };
         }
         set({ appliedCoupon: clean });

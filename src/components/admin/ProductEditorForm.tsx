@@ -133,6 +133,11 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         initialImagens = [{ caminhoImagem: product.foto }];
       }
 
+      let initialTipoProduto = product.tipoProduto || "";
+      if ((product.selosIds || []).includes("servico") || product.selo === "servico") {
+        initialTipoProduto = "servico";
+      }
+
       setFormData({ 
         ...product, 
         imagens: initialImagens,
@@ -141,7 +146,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         visivel: product.visivel ?? true,
         destaque: product.destaque ?? false,
         aVenda: product.aVenda ?? true,
-        tipoProduto: product.tipoProduto || "",
+        tipoProduto: initialTipoProduto,
         selo: product.selo || "",
         tipoDePreco: product.tipoDePreco || "normal",
         tipoMedicamento: product.tipoMedicamento || "",

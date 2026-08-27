@@ -168,12 +168,23 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                   />
                 </div>
                  <div className="space-y-2 col-span-2">
-                  <Label>Tempo de Entrega Prometido</Label>
+                  <Label className="font-bold">Tempo de Entrega Prometido (Minutos)</Label>
                   <Input
-                    placeholder="Ex: 45 a 60 minutos"
+                    type="number"
+                    min="1"
+                    placeholder="Ex: 60"
                     value={formData.tempoEntrega || ""}
                     onChange={(e) => setFormData({ ...formData, tempoEntrega: e.target.value })}
                   />
+                  <p className="text-xs text-slate-500">
+                    Na loja aparecerá como: {formData.tempoEntrega && !isNaN(Number(formData.tempoEntrega)) ? (
+                      Number(formData.tempoEntrega) < 60 
+                        ? `${formData.tempoEntrega} minutos` 
+                        : (Number(formData.tempoEntrega) % 60 === 0)
+                          ? `${Math.floor(Number(formData.tempoEntrega) / 60)} hora${Math.floor(Number(formData.tempoEntrega) / 60) > 1 ? 's' : ''}`
+                          : `${Math.floor(Number(formData.tempoEntrega) / 60)} hora${Math.floor(Number(formData.tempoEntrega) / 60) > 1 ? 's' : ''} e ${Number(formData.tempoEntrega) % 60} minutos`
+                    ) : (formData.tempoEntrega || "Ex: 60")}
+                  </p>
                 </div>
             </div>
 
@@ -428,12 +439,23 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-bold">Tempo de Entrega Prometido</Label>
+                  <Label className="font-bold">Tempo de Entrega Prometido (Minutos)</Label>
                   <Input 
-                    placeholder="Ex: Até 60 min, Mesma hora..." 
+                    type="number"
+                    min="1"
+                    placeholder="Ex: 60" 
                     value={editingMethod.tempoEntrega} 
                     onChange={e => setEditingMethod({...editingMethod, tempoEntrega: e.target.value})} 
                   />
+                  <p className="text-xs text-slate-500">
+                    Na loja aparecerá como: {editingMethod.tempoEntrega && !isNaN(Number(editingMethod.tempoEntrega)) ? (
+                      Number(editingMethod.tempoEntrega) < 60 
+                        ? `${editingMethod.tempoEntrega} minutos` 
+                        : (Number(editingMethod.tempoEntrega) % 60 === 0)
+                          ? `${Math.floor(Number(editingMethod.tempoEntrega) / 60)} hora${Math.floor(Number(editingMethod.tempoEntrega) / 60) > 1 ? 's' : ''}`
+                          : `${Math.floor(Number(editingMethod.tempoEntrega) / 60)} hora${Math.floor(Number(editingMethod.tempoEntrega) / 60) > 1 ? 's' : ''} e ${Number(editingMethod.tempoEntrega) % 60} minutos`
+                    ) : (editingMethod.tempoEntrega || "Ex: 60")}
+                  </p>
                 </div>
               </div>
               

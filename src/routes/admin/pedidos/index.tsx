@@ -908,8 +908,31 @@ export function PedidosAdmin() {
           </div>
         </div>
 
-        {/* 2 KPIs Principais: CONCLUIDO, PENDENTE */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* 3 KPIs Principais: TOTAL, CONCLUIDO, PENDENTE */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* TOTAL DE PEDIDOS - Puxa todos os pedidos (Pendentes e Concluídos) */}
+          <div
+            onClick={() => setMainView("todos")}
+            className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+              mainView === "todos"
+                ? "ring-2 ring-slate-500 border-slate-500 bg-slate-50/50"
+                : ""
+            }`}
+          >
+            <div>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
+                TOTAL DE PEDIDOS
+              </p>
+              <p className="text-3xl font-black text-slate-800">{kpis.total}</p>
+              <span className="text-[12px] text-slate-500 font-medium">
+                Geral unificado
+              </span>
+            </div>
+            <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center">
+              <Package className="h-6 w-6" />
+            </div>
+          </div>
+
           {/* CONCLUÍDO (WHATSAPP) */}
           <div
             onClick={() => setMainView("concluidos")}

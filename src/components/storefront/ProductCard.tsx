@@ -227,8 +227,13 @@ function ProductCardComponent({
     // 2. Specific store override
     if (p.precosPorLoja?.[activeStoreId]) {
       const pLoja = p.precosPorLoja[activeStoreId];
-      finalPrecoPor = pLoja.precoPor !== undefined && pLoja.precoPor !== null ? Number(pLoja.precoPor) : finalPrecoPor;
-      finalPrecoDe = pLoja.precoDe !== undefined && pLoja.precoDe !== null ? Number(pLoja.precoDe) : finalPrecoDe;
+      const lojaPrecoPor = pLoja.precoPor ? Number(pLoja.precoPor) : 0;
+      const lojaPrecoDe = pLoja.precoDe ? Number(pLoja.precoDe) : lojaPrecoPor;
+      
+      if (lojaPrecoPor > 0 || lojaPrecoDe > 0) {
+        finalPrecoPor = lojaPrecoPor || lojaPrecoDe;
+        finalPrecoDe = lojaPrecoDe || lojaPrecoPor;
+      }
       
       if (pLoja.campanhaInicio || pLoja.campanhaFim) {
         const now = new Date();

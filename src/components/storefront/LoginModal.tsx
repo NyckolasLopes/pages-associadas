@@ -6,14 +6,13 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/stores/auth";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 
 export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boolean, onOpenChange: (open: boolean) => void, onLoginSuccess: () => void }) {
   const login = useAuth(s => s.login);
-  const verifyOtp = useAuth(s => s.verifyOtp);
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [step, setStep] = useState<"credentials" | "otp">("credentials");
-  const [otpToken, setOtpToken] = useState("");
+  const [step, setStep] = useState<"credentials" | "reset">("credentials");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,24 +21,23 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
     
     if (step === "credentials") {
       const res = await login(email, senha);
-      if (res === "otp_required") {
-        setStep("otp");
-        toast.info("Por segurança, enviamos um código para o seu e-mail.");
-      } else if (res === true) {
+      if (res === true) {
         onOpenChange(false);
         onLoginSuccess();
+      } else if (res === "rate_limit") {
+        toast.error("Muitas tentativas. Tente novamente mais tarde.");
       } else {
         toast.error("Credenciais inválidas");
       }
     } else {
-      const res = await verifyOtp(email, otpToken);
-      if (res) {
-        toast.success("Login realizado com sucesso!");
-        setStep("credentials");
-        onOpenChange(false);
-        onLoginSuccess();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error("Erro ao enviar e-mail de recuperação.");
       } else {
-        toast.error("Código inválido ou expirado.");
+        toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+        setStep("credentials");
       }
     }
     
@@ -50,7 +48,7 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Acesse sua conta</DialogTitle>
+          <DialogTitle>{step === "credentials" ? "Acesse sua conta" : "Recuperar Senha"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {step === "credentials" ? (
@@ -66,7 +64,12 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
                 />
               </div>
               <div className="space-y-2">
-                <Label>Senha</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Senha</Label>
+                  <button type="button" onClick={() => setStep("reset")} className="text-xs text-primary hover:underline">
+                    Esqueceu a senha?
+                  </button>
+                </div>
                 <Input 
                   required 
                   type="password" 
@@ -84,22 +87,20 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
           ) : (
             <>
               <div className="space-y-2">
-                <Label>Código de Segurança (2FA)</Label>
+                <Label>E-mail para recuperação</Label>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Enviamos um código de segurança de 6 dígitos para o seu e-mail: <strong className="text-slate-800">{email}</strong>.
+                  Digite seu e-mail abaixo e enviaremos um link para você redefinir sua senha.
                 </p>
                 <Input 
                   required 
-                  type="text" 
-                  maxLength={6}
-                  value={otpToken} 
-                  onChange={e => setOtpToken(e.target.value)} 
-                  placeholder="000000" 
-                  className="text-center text-2xl tracking-[0.5em] font-bold"
+                  type="email"
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  placeholder="voce@email.com" 
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Verificando..." : "Confirmar e Entrar"}
+                {loading ? "Enviando..." : "Enviar link de recuperação"}
               </Button>
               <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("credentials")}>
                 Voltar
