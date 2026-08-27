@@ -282,7 +282,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const serviceContent = (
     <>
       {/* Header Fixo */}
-      <div className="flex items-center justify-between px-8 py-4 bg-white border-b sticky -top-4 md:-top-8 z-20 shadow-sm">
+      <div className={`flex items-center justify-between px-8 py-4 bg-white border-b sticky z-20 shadow-sm ${asPage ? "-top-4 md:-top-8" : "top-0"}`}>
         <div>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">
@@ -477,7 +477,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const content = (
     <>
         {/* Header Fixo */}
-        <div className="flex items-center justify-between px-8 py-4 bg-white border-b sticky top-0 z-50 shadow-sm">
+        <div className={`flex items-center justify-between px-8 py-4 bg-white border-b sticky z-50 shadow-sm ${asPage ? "-top-4 md:-top-8" : "top-0"}`}>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-800">

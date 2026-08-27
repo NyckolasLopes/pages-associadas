@@ -86,7 +86,7 @@ function AdminNovoProduto() {
   };
 
   return (
-    <div className="bg-slate-50 min-h-[80vh]">
+    <>
       <ProductEditorForm 
         open={true}
         onOpenChange={(open) => !open && handleCancel()}
@@ -106,7 +106,7 @@ function AdminNovoProduto() {
         open={subirDadosOpen}
         onOpenChange={setSubirDadosOpen}
       />
-    </div>
+    </>
   );
 }
 

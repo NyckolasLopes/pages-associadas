@@ -91,9 +91,11 @@ export function InstallPrompt() {
     localStorage.setItem('pwa_dismissed', 'true');
   };
 
-  const isParceiroOrAssociado = activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.categoriaAssociado === 'Associado';
+  const cat = activePharmacy?.categoriaAssociado?.toString().toLowerCase() || '';
+  const isParceiroOrAssociado = cat === 'parceiro' || cat === 'associado' || activePharmacy?.nome?.toLowerCase().includes('parceiro');
   const appName = isParceiroOrAssociado && activePharmacy?.nome ? `App ${activePharmacy.nome}` : (activePharmacy?.nome ? `App ${activePharmacy.nome}` : "App Farmácias Associadas");
-  const iconUrl = activePharmacy?.faviconUrl || (isParceiroOrAssociado ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'%3E%3C/path%3E%3Cpolyline points='9 22 9 12 15 12 15 22'%3E%3C/polyline%3E%3C/svg%3E" : "/favicon.png");
+  // @ts-ignore
+  const iconUrl = activePharmacy?.faviconUrl || activePharmacy?.logoUrl || (isParceiroOrAssociado ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'%3E%3C/path%3E%3Cpolyline points='9 22 9 12 15 12 15 22'%3E%3C/polyline%3E%3C/svg%3E" : "/favicon.png");
 
   return (
     <>
@@ -113,22 +115,10 @@ export function InstallPrompt() {
             </div>
           </div>
           
-          {isIos ? (
-            <div className="bg-black/10 rounded-lg px-3 py-2 text-[11px] flex items-center justify-center gap-2 mt-1">
-              <span>Toque em</span>
-              <Share className="h-4 w-4 shrink-0" />
-              <span>e depois <strong>Adicionar à Tela de Início</strong></span>
-            </div>
-          ) : !deferredPrompt ? (
-            <div className="bg-black/10 rounded-lg px-3 py-2 text-[11px] flex flex-col items-center justify-center gap-1 mt-1 text-center">
-              <span>Para instalar, acesse o menu do seu navegador (⋮) e clique em <strong>Instalar Aplicativo</strong></span>
-            </div>
-          ) : (
-            <Button onClick={handleInstall} variant="secondary" className="w-full h-9 font-bold text-xs bg-white text-primary hover:bg-slate-50 mt-1 shadow-sm">
-              <Download className="h-4 w-4 mr-2" />
-              Instalar Aplicativo
-            </Button>
-          )}
+          <Button onClick={handleInstall} variant="secondary" className="w-full h-9 font-bold text-xs bg-white text-primary hover:bg-slate-50 mt-1 shadow-sm">
+            <Download className="h-4 w-4 mr-2" />
+            Instalar Aplicativo
+          </Button>
         </div>
       )}
 
