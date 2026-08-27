@@ -2,7 +2,7 @@ import { type Produto } from "@/types";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { useAdmin } from "@/stores/admin";
 import { useSelos } from "@/stores/selos";
-import { getStoreSlugFromUrl } from "@/lib/utils";
+import { useParams } from "@tanstack/react-router";
 import {
   Carousel,
   CarouselContent,
@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/carousel";
 
 export function ProductCarousel({ products, selectedStoreId }: { products: Produto[], selectedStoreId?: string }) {
+  const params = useParams({ strict: false });
   const pharmacies = useAdmin(s => s.pharmacies);
   const allSelos = useSelos((s) => s.selos);
-  const activeStoreId = selectedStoreId || getStoreSlugFromUrl();
-  const activePharm = pharmacies.find(f => f.id === activeStoreId);
+  const storeSlug = (params as any)?.storeSlug;
+  const activeStoreId = selectedStoreId || pharmacies.find(f => f.slug === storeSlug)?.id;
+  const activePharm = activeStoreId ? pharmacies.find(f => f.id === activeStoreId) : undefined;
 
   const visibleProducts = products.filter(p => {
     const activeSelos = allSelos.filter(s => s.ativo && p.selosIds?.includes(s.id));
