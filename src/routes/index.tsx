@@ -78,12 +78,11 @@ function IndexGateway() {
     let minDist = Infinity;
 
     for (const store of activeStores) {
-      if (store.latitude && store.lat !== undefined) {
-        const sLat = store.latitude || store.lat;
-        const sLng = (store as any).longitude || (store as any).lng || 0; 
+      const sLat = store.latitude || store.lat;
+      const sLng = (store as any).longitude || (store as any).lng; 
         
-        if (sLat && sLng) {
-          const dist = haversineKm(lat, lng, Number(sLat), Number(sLng));
+      if (sLat && sLng) {
+        const dist = haversineKm(lat, lng, Number(sLat), Number(sLng));
           if (dist < minDist) {
             minDist = dist;
             closest = store;
