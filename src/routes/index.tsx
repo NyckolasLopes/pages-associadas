@@ -54,19 +54,24 @@ function IndexGateway() {
     return pharmacies.filter(p => p.ativo !== false && p.virtualStoreStatus !== 'Inativa');
   }, [pharmacies]);
 
-  const cities = useMemo(() => {
-    const citySet = new Set<string>();
+  const bairros = useMemo(() => {
+    const bairroSet = new Set<string>();
     activeStores.forEach(store => {
-      if (store.cidade) {
-        citySet.add(store.cidade.trim());
+      const b = store.bairro || store.cidade;
+      if (b) {
+        bairroSet.add(b.trim());
       }
     });
-    return Array.from(citySet).sort();
+    return Array.from(bairroSet).sort();
   }, [activeStores]);
 
   const handleCityChange = (cidade: string) => {
     setSelectedCity(cidade);
-    const cityStores = activeStores.filter(p => p.cidade?.trim().toLowerCase() === cidade.toLowerCase());
+    setIsSearchByLocation(false);
+    const cityStores = activeStores.filter(p => {
+      const b = p.bairro || p.cidade;
+      return b?.trim().toLowerCase() === cidade.toLowerCase();
+    });
     if (cityStores.length > 0) {
       setFoundStores(cityStores);
       setIsSearchByLocation(false);
@@ -223,18 +228,18 @@ function IndexGateway() {
                   <span className="w-full border-t border-slate-200/60" />
                 </div>
                 <div className="relative flex justify-center text-[11px] uppercase">
-                  <span className="bg-transparent px-3 text-slate-400 font-bold tracking-widest backdrop-blur-md">selecione a cidade</span>
+                  <span className="bg-transparent px-3 text-slate-400 font-bold tracking-widest backdrop-blur-md">selecione o bairro ou cidade</span>
                 </div>
               </div>
 
               <div className="space-y-2 pt-1">
                 <Select value={selectedCity} onValueChange={handleCityChange}>
                   <SelectTrigger className="w-full h-14 bg-white/80 border-slate-200 rounded-xl font-medium text-slate-700 shadow-sm focus:ring-emerald-500/30">
-                    <SelectValue placeholder="Escolher uma cidade..." />
+                    <SelectValue placeholder="Escolher..." />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                    {cities.map(city => (
-                      <SelectItem key={city} value={city} className="cursor-pointer py-3">{city}</SelectItem>
+                  <SelectContent className="rounded-xl border-slate-100 shadow-xl max-h-[300px]">
+                    {bairros.map(b => (
+                      <SelectItem key={b} value={b} className="cursor-pointer py-3">{b}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -244,16 +249,13 @@ function IndexGateway() {
             /* Search Results */
             <div className="space-y-6 animate-in zoom-in-95 duration-500 flex-1 flex flex-col">
               <div className="text-center space-y-2 mb-2">
-                <div className="mx-auto h-16 w-16 bg-gradient-to-tr from-emerald-100 to-teal-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm border border-emerald-100/50 transform rotate-3 overflow-hidden">
-                  <Store className="h-8 w-8 -rotate-3" />
-                </div>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">
                   Lojas Encontradas
                 </h2>
                 {isSearchByLocation ? (
                   <p className="text-sm text-slate-500 font-medium">Lojas mais próximas de você</p>
                 ) : (
-                  <p className="text-sm text-slate-500 font-medium">Lojas na cidade de <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md mx-1 font-bold">{selectedCity}</span></p>
+                  <p className="text-sm text-slate-500 font-medium">Lojas em <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md mx-1 font-bold">{selectedCity}</span></p>
                 )}
               </div>
 
@@ -264,7 +266,7 @@ function IndexGateway() {
                     <div>
                       <div className="flex items-center gap-3 mb-3">
                         <img 
-                          src={store.categoria === 'Pleno' ? '/favicon-pleno.png' : '/favicon.ico'} 
+                          src={store.faviconUrl || '/favicon.png'} 
                           alt="Logo da loja" 
                           className="h-8 w-8 object-contain shrink-0" 
                         />
@@ -275,7 +277,7 @@ function IndexGateway() {
                         <p className="text-sm text-slate-500 flex items-start gap-2 font-medium">
                           <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-emerald-500" />
                           <span className="line-clamp-2 leading-snug">
-                            {store.cidade} - {store.uf}
+                            {store.bairro ? `${store.bairro}, ${store.cidade} - ${store.uf}` : `${store.cidade} - ${store.uf}`}
                           </span>
                         </p>
                         
