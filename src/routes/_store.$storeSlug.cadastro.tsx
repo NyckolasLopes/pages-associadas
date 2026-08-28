@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { UserPlus, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_store/cadastro")({
+export const Route = createFileRoute("/_store/$storeSlug/cadastro")({
   validateSearch: zodValidator(
     z.object({ redirect: z.string().optional().default("/pedidos") })
   ),
@@ -253,7 +253,7 @@ function CadastroPage() {
 
       <div className="mt-8 text-center text-sm text-muted-foreground border-t pt-6">
         Já tem uma conta?{" "}
-        <Link to="/login" className="text-primary font-bold hover:underline">
+        <Link to="/$storeSlug/login" params={{ storeSlug }} className="text-primary font-bold hover:underline">
           Entrar
         </Link>
       </div>

@@ -18,7 +18,7 @@ import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/ra
 import { sanitizeText } from "@/lib/security";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_store/pedidos")({
+export const Route = createFileRoute("/_store/$storeSlug/pedidos")({
   validateSearch: (search: Record<string, unknown>): { id?: string; novo?: string } => {
     return {
       id: search.id as string | undefined,
@@ -47,6 +47,7 @@ function getStepIndex(status: string): number {
 
 function PedidosPage() {
   const searchParams = Route.useSearch();
+  const { storeSlug } = Route.useParams();
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
   const navigate = useNavigate();
@@ -196,14 +197,14 @@ function PedidosPage() {
           </div>
 
           <nav className="flex flex-col gap-1">
-            <Link to="/pedidos" className="px-4 py-2.5 bg-primary/10 text-primary font-bold rounded-xl text-sm flex items-center justify-between">
+            <Link to="/$storeSlug/pedidos" params={{ storeSlug }} className="px-4 py-2.5 bg-primary/10 text-primary font-bold rounded-xl text-sm flex items-center justify-between">
               <span>Meus Pedidos</span>
               <Package className="w-4 h-4" />
             </Link>
-            <Link to="/perfil" className="px-4 py-2.5 text-muted-foreground hover:bg-muted font-bold rounded-xl text-sm transition">
+            <Link to="/$storeSlug/perfil" params={{ storeSlug }} className="px-4 py-2.5 text-muted-foreground hover:bg-muted font-bold rounded-xl text-sm transition">
               Meus Dados
             </Link>
-            <Link to="/perfil" search={{ tab: "favoritos" }} className="px-4 py-2.5 flex items-center justify-between text-muted-foreground hover:bg-muted font-bold rounded-xl text-sm transition">
+            <Link to="/$storeSlug/perfil" params={{ storeSlug }} search={{ tab: "favoritos" }} className="px-4 py-2.5 flex items-center justify-between text-muted-foreground hover:bg-muted font-bold rounded-xl text-sm transition">
               <span>Meus Favoritos</span>
               {favoriteIds.length > 0 && (
                 <span className="bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold">

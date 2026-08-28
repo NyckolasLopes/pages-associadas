@@ -22,7 +22,7 @@ import { catalog } from "@/services/catalog";
 import type { Produto } from "@/types";
 import { z } from "zod";
 
-export const Route = createFileRoute("/_store/checkout")({
+export const Route = createFileRoute("/_store/$storeSlug/checkout")({
   head: () => ({ meta: [{ title: `Checkout — ${getBrandNameForHead()}` }] }),
   component: Checkout,
 });

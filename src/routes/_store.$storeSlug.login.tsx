@@ -15,7 +15,7 @@ const loginSchema = z.object({
   pass: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.")
 });
 
-export const Route = createFileRoute("/_store/login")({
+export const Route = createFileRoute("/_store/$storeSlug/login")({
   validateSearch: zodValidator(
     z.object({ redirect: z.string().optional().default("/") }).catchall(z.any())
   ),
@@ -278,7 +278,7 @@ function LoginPage() {
             </form>
             <div className="mt-8 text-center text-sm text-muted-foreground border-t pt-6">
               Ainda não tem conta?{" "}
-              <Link to="/cadastro" search={{ redirect }} className="text-primary font-bold hover:underline">
+              <Link to="/$storeSlug/cadastro" params={{ storeSlug }} search={{ redirect }} className="text-primary font-bold hover:underline">
                 Cadastre-se grátis
               </Link>
             </div>

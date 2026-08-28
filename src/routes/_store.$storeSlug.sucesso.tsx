@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Pedido } from "@/stores/orders";
 
-export const Route = createFileRoute("/_store/sucesso")({
+export const Route = createFileRoute("/_store/$storeSlug/sucesso")({
   component: SucessoPage,
 });
 

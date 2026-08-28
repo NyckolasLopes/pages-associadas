@@ -5,7 +5,7 @@ import { catalog } from "@/services/catalog";
 import { Loader2 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 
-export const Route = createFileRoute("/_store/compartilhado")({
+export const Route = createFileRoute("/_store/$storeSlug/compartilhado")({
   component: CompartilhadoPage,
 });
 

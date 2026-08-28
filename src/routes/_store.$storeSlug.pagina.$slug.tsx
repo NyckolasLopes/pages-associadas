@@ -6,7 +6,7 @@ import { NotFound } from "@/components/storefront/NotFound";
 
 import { sanitizeHtml } from "@/lib/security";
 
-export const Route = createFileRoute("/_store/pagina/$slug")({
+export const Route = createFileRoute("/_store/$storeSlug/pagina/$slug")({
   component: PaginaConteudo,
   loader: ({ params }) => {
     return { slug: params.slug };

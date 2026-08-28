@@ -189,7 +189,7 @@ export function Header() {
   const handleCheckoutClick = () => {
     if (!useAuth.getState().user) {
       setDrawer(false);
-      navigate({ to: "/login", search: { redirect: `/${activePharmacy?.slug || "loja-padrao"}/cart` } as any });
+      navigate({ to: "/$storeSlug/login", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { redirect: `/${activePharmacy?.slug || "loja-padrao"}/cart` } as any });
     } else {
       setDrawer(false);
       navigate({ to: "/$storeSlug/cart", params: { storeSlug: activePharmacy?.slug || "loja-padrao" } as any });
@@ -539,7 +539,7 @@ export function Header() {
 
         {/* Account & Pedidos */}
         <div className="hidden lg:flex items-center gap-4 ml-4">
-          <Link to={user ? "/pedidos" : "/login"} search={user ? undefined : { redirect: "/pedidos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
+          <Link to={user ? "/$storeSlug/pedidos" : "/$storeSlug/login"} params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={user ? undefined : { redirect: `/${activePharmacy?.slug || "loja-padrao"}/pedidos` } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
             <div className={`p-2 rounded-full transition group-hover:bg-primary/20 ${!isParceiro ? 'bg-primary/10' : ''}`} style={isParceiro ? { backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' } : undefined}>
               <Package className={`h-5 w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
             </div>
@@ -549,7 +549,7 @@ export function Header() {
             </div>
           </Link>
 
-          <Link to={user ? "/perfil" : "/login"} search={user ? { tab: "favoritos" } : { redirect: "/perfil", tab: "favoritos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
+          <Link to={user ? "/$storeSlug/perfil" : "/$storeSlug/login"} params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={user ? { tab: "favoritos" } : { redirect: `/${activePharmacy?.slug || "loja-padrao"}/perfil`, tab: "favoritos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
             <div className={`p-2 rounded-full transition group-hover:bg-primary/20 ${!isParceiro ? 'bg-primary/10' : ''}`} style={isParceiro ? { backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' } : undefined}>
               <Heart className={`h-5 w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
             </div>
@@ -562,14 +562,14 @@ export function Header() {
           <div className="w-px h-8 bg-border"></div>
 
           {mounted && user ? (
-            <Link to="/perfil" className="flex flex-col items-start text-sm max-w-[120px] hover:opacity-80 transition cursor-pointer">
+            <Link to="/$storeSlug/perfil" params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} className="flex flex-col items-start text-sm max-w-[120px] hover:opacity-80 transition cursor-pointer">
               <span className="text-[10px] font-bold text-muted-foreground leading-tight truncate w-full">
                 {getGreeting()}
               </span>
               <span className="font-bold text-primary truncate w-full leading-tight">{user?.name?.split(" ")[0]}</span>
             </Link>
           ) : (
-            <Button variant="ghost" onClick={() => navigate({ to: "/login", search: { redirect: window.location.pathname } as any })} style={isParceiro ? { color: 'var(--header-icons, var(--foreground))' } : undefined}>
+            <Button variant="ghost" onClick={() => navigate({ to: "/$storeSlug/login", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { redirect: window.location.pathname } as any })} style={isParceiro ? { color: 'var(--header-icons, var(--foreground))' } : undefined}>
               <User className="h-4 w-4 mr-1" /> Entrar
             </Button>
           )}
@@ -928,7 +928,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               </div>
               <div className="flex-1 overflow-hidden">
                 <SheetTitle className="truncate text-base leading-tight text-primary">{getGreeting()} {user?.name?.split(" ")[0]}</SheetTitle>
-                <Link to="/perfil" className="text-muted-foreground text-xs font-bold hover:underline" onClick={() => setOpen(false)}>Meus Dados</Link>
+                <Link to="/$storeSlug/perfil" params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} className="text-muted-foreground text-xs font-bold hover:underline" onClick={() => setOpen(false)}>Meus Dados</Link>
               </div>
             </div>
           ) : (
@@ -939,7 +939,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               <div className="flex-1 overflow-hidden">
                 <SheetTitle className="text-base leading-tight">{getGreeting()} visitante</SheetTitle>
                 <div className="text-xs text-muted-foreground">
-                  <Link to="/login" search={{ redirect: window.location.pathname } as any} className="text-primary font-bold hover:underline" onClick={() => setOpen(false)}>Entre</Link> ou cadastre-se
+                  <Link to="/$storeSlug/login" params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={{ redirect: window.location.pathname } as any} className="text-primary font-bold hover:underline" onClick={() => setOpen(false)}>Entre</Link> ou cadastre-se
                 </div>
               </div>
             </div>
@@ -949,12 +949,12 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
           {/* Links rápidos no Menu (Mobile) */}
           <div className="mb-4 space-y-2">
 
-            <Link to={user ? "/pedidos" : "/login"} search={user ? undefined : { redirect: "/pedidos" } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
+            <Link to={user ? "/$storeSlug/pedidos" : "/$storeSlug/login"} params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={user ? undefined : { redirect: `/${activePharmacy?.slug || "loja-padrao"}/pedidos` } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
               <Package className="h-5 w-5 text-primary shrink-0" />
               <span className="text-sm font-bold flex-1">Acompanhe seus pedidos</span>
             </Link>
 
-            <Link to={user ? "/perfil" : "/login"} search={user ? { tab: "favoritos" } : { redirect: "/perfil", tab: "favoritos" } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
+            <Link to={user ? "/$storeSlug/perfil" : "/$storeSlug/login"} params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={user ? { tab: "favoritos" } : { redirect: `/${activePharmacy?.slug || "loja-padrao"}/perfil`, tab: "favoritos" } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
               <Heart className="h-5 w-5 text-primary shrink-0" />
               <span className="text-sm font-bold flex-1">Meus Favoritos</span>
             </Link>

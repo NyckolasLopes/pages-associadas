@@ -310,7 +310,11 @@ function ProductCardComponent({
             e.preventDefault();
             if (!user) {
               toast.info("Por favor, faça login para adicionar aos favoritos.");
-              navigate({ to: "/login", search: { redirect: window.location.pathname } as any });
+              navigate({ 
+                to: "/$storeSlug/login", 
+                params: { storeSlug: (params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao" },
+                search: { redirect: window.location.pathname } as any 
+              });
               return;
             }
             toggleFav(p.id, finalPrecoPor);

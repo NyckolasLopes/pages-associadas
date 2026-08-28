@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export const Route = createFileRoute("/_store/perfil")({
+export const Route = createFileRoute("/_store/$storeSlug/perfil")({
   validateSearch: (search: Record<string, unknown>): { tab?: string } => {
     return {
       tab: search.tab as string | undefined,
@@ -68,6 +68,7 @@ function PerfilPage() {
   const { ids: favoriteIds, toggle: toggleFavorite, notifications: favNotifications, clearNotifications: clearFavNotifications } = useFavorites();
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const { storeSlug } = Route.useParams();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"dados" | "favoritos">(search.tab === "favoritos" ? "favoritos" : "dados");
   const [favoriteProducts, setFavoriteProducts] = useState<any[]>([]);
@@ -134,7 +135,7 @@ function PerfilPage() {
       <div className="container-fa py-16 text-center">
         <h1 className="text-2xl font-bold">Acesse sua conta</h1>
         <p className="text-muted-foreground mt-2">Você precisa estar logado para ver seus dados.</p>
-        <Link to="/login">
+        <Link to="/$storeSlug/login" params={{ storeSlug }}>
           <Button className="mt-6">Entrar</Button>
         </Link>
       </div>
@@ -297,7 +298,7 @@ function PerfilPage() {
         </div>
         
         <nav className="flex flex-col gap-1">
-          <Link to="/pedidos" className="px-4 py-2 text-muted-foreground hover:bg-muted font-bold rounded-lg text-sm">
+          <Link to="/$storeSlug/pedidos" params={{ storeSlug }} className="px-4 py-2 text-muted-foreground hover:bg-muted font-bold rounded-lg text-sm">
             Meus Pedidos
           </Link>
           <button 

@@ -4,7 +4,7 @@ import { POLICIES } from "@/data/policies";
 import { ChevronRight } from "lucide-react";
 import { NotFound } from "@/components/storefront/NotFound";
 
-export const Route = createFileRoute("/_store/ajuda/$page")({
+export const Route = createFileRoute("/_store/$storeSlug/ajuda/$page")({
   head: ({ params }) => {
     const p = POLICIES[params.page];
     if (!p) return { meta: [{ title: `Não encontrado — ${getBrandNameForHead()}` }] };

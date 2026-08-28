@@ -6,7 +6,7 @@ import type { Categoria } from "@/types";
 
 const ROOT_CATS = (categoriesData as Categoria[]).filter((c) => !c.parentId);
 
-export const Route = createFileRoute("/_store/mapa-site")({
+export const Route = createFileRoute("/_store/$storeSlug/mapa-site")({
   head: () => ({
     meta: [
       { title: `Mapa do Site — ${getBrandNameForHead()}` },

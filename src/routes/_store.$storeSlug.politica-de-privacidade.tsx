@@ -2,7 +2,7 @@ import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldCheck, Scale, FileText } from "lucide-react";
 
-export const Route = createFileRoute("/_store/politica-de-privacidade")({
+export const Route = createFileRoute("/_store/$storeSlug/politica-de-privacidade")({
   head: () => ({ meta: [{ title: `Política de Privacidade — ${getBrandNameForHead()}` }] }),
   component: PoliticaPrivacidadePage,
 });

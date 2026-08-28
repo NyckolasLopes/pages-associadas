@@ -8,7 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-export const Route = createFileRoute("/_store/faq")({
+export const Route = createFileRoute("/_store/$storeSlug/faq")({
   head: () => ({
     meta: [
       { title: `Perguntas Frequentes (FAQ) — ${getBrandNameForHead()}` },
