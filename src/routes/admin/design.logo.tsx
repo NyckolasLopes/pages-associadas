@@ -51,7 +51,7 @@ function AdminDesignLogo() {
   const defaultLogo = isParceiro ? "" : logoUrlDefault;
   const defaultFavicon = isParceiro ? "" : "/favicon.png";
   const defaultFooterLogo = isParceiro ? "" : logoUrlDefault;
-  const defaultAnvisaLogo = logoAnvisaDefault;
+  const defaultAnvisaLogo = isParceiro ? "" : logoAnvisaDefault;
 
   const currentLogo = currentPharmacy?.logoUrl || defaultLogo;
   const currentFavicon = currentPharmacy?.faviconUrl || defaultFavicon;

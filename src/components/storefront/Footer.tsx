@@ -474,20 +474,21 @@ export function Footer() {
           </div>
         </div>
 
-        {activePharmacy?.categoriaAssociado !== 'Parceiro' && (
           <div className="border-t border-slate-200 pb-6 md:pb-8">
             <div className="container-fa py-8 flex flex-col gap-8">
-              <div className="flex flex-col md:flex-row items-center justify-center w-full gap-10">
+              {(activePharmacy?.anvisaLogoUrl || activePharmacy?.categoriaAssociado !== 'Parceiro') && (
+                <div className="flex flex-col md:flex-row items-center justify-center w-full gap-10">
                 <img
                   src={activePharmacy?.anvisaLogoUrl || logoAnvisa}
-                  alt="A Farmácias Associadas segue as normas e regulamentações da ANVISA"
+                  alt={activePharmacy?.anvisaLogoUrl ? "Selo da Anvisa" : "A Farmácias Associadas segue as normas e regulamentações da ANVISA"}
                   className="h-12 md:h-[68px] w-auto object-contain"
                   width={120}
                   height={68}
                   loading="lazy"
                   decoding="async"
                 />
-              </div>
+                </div>
+              )}
               
               <div className="flex flex-col items-center justify-center gap-4 text-xs pt-6 border-t border-slate-100">
                 <span className="text-center text-slate-500 pb-24 md:pb-0">
@@ -496,8 +497,7 @@ export function Footer() {
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
     </footer>
     </>
   );
