@@ -287,9 +287,9 @@ function IndexGateway() {
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 rounded-l-2xl"></div>
                     <div>
                       <div className="flex items-center gap-3 mb-3">
-                        {store.faviconUrl ? (
+                        {store.faviconUrl || store.logoUrl ? (
                           <img 
-                            src={store.faviconUrl} 
+                            src={store.faviconUrl || store.logoUrl} 
                             alt="Logo da loja" 
                             className="h-8 w-8 object-contain shrink-0" 
                           />
