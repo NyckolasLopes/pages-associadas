@@ -56,9 +56,9 @@ function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: V
   
   const vitrines = useMemo(() => 
     (allVitrines || [])
-      .filter(v => v.ativa && v.local === local)
+      .filter(v => v.ativa && v.local === local && (!v.lojaVinculadaId || v.lojaVinculadaId === lojaId))
       .sort((a, b) => (a.ordem || 0) - (b.ordem || 0)),
-    [allVitrines, local]
+    [allVitrines, local, lojaId]
   );
   const [data, setData] = useState<Record<number, Produto[]>>({});
   const allBanners = useAdmin((s) => s.banners);

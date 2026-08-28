@@ -33,6 +33,7 @@ export const Route = createFileRoute("/_store/$storeSlug/v/$slug")({
     const lojaId = useCart.getState().selectedPharmacyId;
     const vitrines = useAdminProducts.getState().getStoreVitrines(lojaId);
     const vitrine = vitrines.find(v => {
+      if (v.lojaVinculadaId && v.lojaVinculadaId !== lojaId) return false;
       const slug = v.linkSeo || v.nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
       return slug === params.slug;
     });

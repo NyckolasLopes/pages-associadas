@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminProducts } from "@/stores/products";
+import { useAdmin } from "@/stores/admin";
 import { Vitrine, VitrineLocal, Categoria, Produto } from "@/types";
 import { catalog } from "@/services/catalog";
 import { toast } from "sonner";
@@ -35,6 +36,9 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
   const [modo, setModo] = useState<"categoria" | "manual">("categoria");
   const [produtoIds, setProdutoIds] = useState<string[]>([]);
   const [ordem, setOrdem] = useState<number>(0);
+  const [lojaVinculadaId, setLojaVinculadaId] = useState<string>("global_all");
+  
+  const pharmacies = useAdmin((s) => s.pharmacies);
   
   const [categoriasOpcoes, setCategoriasOpcoes] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +61,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
         setModo(vitrine.modo || "categoria");
         setProdutoIds(vitrine.produtoIds || []);
         setOrdem(vitrine.ordem || 0);
+        setLojaVinculadaId(vitrine.lojaVinculadaId || "global_all");
       } else {
         setNome("");
         setAtiva(true);
@@ -67,6 +72,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
         setModo("categoria");
         setProdutoIds([]);
         setOrdem(0);
+        setLojaVinculadaId("global_all");
       }
       
       async function loadOptions() {
@@ -140,6 +146,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
       modo,
       produtoIds,
       ordem,
+      lojaVinculadaId: lojaVinculadaId === "global_all" ? undefined : lojaVinculadaId,
     };
     
     if (vitrine) {
@@ -172,9 +179,28 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
         </DialogHeader>
         
         <div className="grid gap-6 py-4">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-white bg-primary px-2 py-1 rounded uppercase tracking-wider">ATIVO</span>
-            <Switch checked={ativa} onCheckedChange={setAtiva} />
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-white bg-primary px-2 py-1 rounded uppercase tracking-wider">ATIVO</span>
+              <Switch checked={ativa} onCheckedChange={setAtiva} />
+            </div>
+            
+            {!lojaId && (
+              <div className="flex-1 flex items-center gap-2 ml-4">
+                <Label className="font-bold text-sm whitespace-nowrap">Vincular à Loja:</Label>
+                <Select value={lojaVinculadaId} onValueChange={setLojaVinculadaId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Todas as lojas (Global)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="global_all">Todas as lojas (Global)</SelectItem>
+                    {pharmacies?.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.nomeFantasia || p.razaoSocial}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

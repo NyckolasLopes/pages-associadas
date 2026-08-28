@@ -253,6 +253,7 @@ export interface Vitrine {
   ordem?: number;
   produtoIds?: string[];
   modo?: "categoria" | "manual";
+  lojaVinculadaId?: string;
 }
 export interface Avaliacao {
   id: string;
