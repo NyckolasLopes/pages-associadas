@@ -18,7 +18,7 @@ export function Spinner({ className, size = 32, style, forceGeneric, ...props }:
     return <Loader2 size={size} className={cn("animate-spin text-primary", className)} style={style} />;
   }
 
-  let spinIcon = "/loading-icon.png";
+  let spinIcon = "/favicon.png";
 
   if (!isAdmin && activePharmacy?.faviconUrl) {
     spinIcon = activePharmacy.faviconUrl;
