@@ -7,7 +7,6 @@ if (typeof window !== "undefined") {
   try {
     localStorage.removeItem("fa-auth");
     localStorage.removeItem("fa-auth-storage");
-    localStorage.removeItem("supabase.auth.token");
   } catch {}
 }
 
