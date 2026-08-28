@@ -841,7 +841,7 @@ function PDP() {
   // Produto precisa ter estoque (ou ser serviço suportado pela loja) e estar ativo globalmente
   // Além disso, se uma farmácia foi selecionada, deve estar ativo nessa farmácia.
   const isGlobalActive = p.ativo !== false && p.aVenda !== false;
-  const isLocalActive = !activeStoreId || p.precosPorLoja?.[activeStoreId]?.ativo !== false;
+  const isLocalActive = !selectedPharmacyId || p.precosPorLoja?.[selectedPharmacyId]?.ativo !== false;
   const storeOffersServices = !loja || loja.offersServices !== false;
   const isAvailable = (maxStock > 0 || (isService && storeOffersServices)) && isGlobalActive && isLocalActive;
 
