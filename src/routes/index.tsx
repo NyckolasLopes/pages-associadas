@@ -151,7 +151,15 @@ function IndexGateway() {
   };
 
   return (
-    <div className="min-h-screen bg-emerald-600 bg-cover bg-center flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden font-sans transition-all" style={{ backgroundImage: "url('/bg-home.jpg')" }}>
+    <div className="min-h-screen bg-emerald-700 flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden font-sans group transition-all">
+      {/* Animated Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center transition-transform duration-[7000ms] ease-out group-hover:scale-110" 
+        style={{ backgroundImage: "url('/bg-home.jpg')" }}
+      ></div>
+      {/* Overlay Escuro para destacar o modal principal */}
+      <div className="absolute inset-0 bg-emerald-950/20 mix-blend-multiply pointer-events-none transition-opacity duration-1000 group-hover:opacity-60"></div>
+
       {/* Background decoration - Light Premium Mesh Gradients */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-emerald-100/50 rounded-full blur-[120px] opacity-80 mix-blend-multiply"></div>
