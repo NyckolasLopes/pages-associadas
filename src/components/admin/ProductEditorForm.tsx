@@ -207,6 +207,26 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       return;
     }
 
+    if (!isGlobalAdmin) {
+      const isMedicamentoLocal = categorias.find(c => String(c.id) === String(formData?.categoriaId))?.slug === 'medicamentos' || 
+                                 categorias.find(c => String(c.id) === String(formData?.subcategoriaId))?.slug === 'medicamentos';
+      if (isMedicamentoLocal) {
+        const baseProduct = customProducts.find(p => p.id === formData?.id);
+        const maxPrecoDe = baseProduct?.precoDe || 0;
+        const maxPrecoPor = baseProduct?.precoPor || maxPrecoDe;
+
+        if (maxPrecoPor > 0 && formData?.precoPor && formData.precoPor > maxPrecoPor) {
+          toast.error(`Para medicamentos, seu Preço (por) não pode exceder o preço base da rede (${maxPrecoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}).`);
+          return;
+        }
+
+        if (maxPrecoDe > 0 && formData?.precoDe && formData.precoDe > maxPrecoDe) {
+          toast.error(`Para medicamentos, seu Preço (de) não pode exceder o PMC base da rede (${maxPrecoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}).`);
+          return;
+        }
+      }
+    }
+
     let finalFormData = { ...formData };
     
     // Combina as categorias e subcategorias de volta no campo categoriasAdicionais antes de salvar
@@ -1018,7 +1038,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
                   <NumericInput 
-                    disabled={!isGlobalAdmin && isMedicamento}
                     value={formData.precoDe} 
                     onChange={val => setFormData({...formData, precoDe: val || 0})} 
                     className="bg-white pl-9 font-bold text-slate-700" 
@@ -1032,7 +1051,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">R$</span>
                   <NumericInput 
-                    disabled={!isGlobalAdmin && isMedicamento}
                     value={formData.precoPor} 
                     onChange={val => setFormData({...formData, precoPor: val || 0})} 
                     className="bg-white pl-9 font-bold text-emerald-700" 
@@ -1040,9 +1058,9 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   />
                 </div>
                 {!isGlobalAdmin && isMedicamento && (
-                  <div className="mt-1 text-xs text-red-500 font-medium">Preço de medicamentos bloqueado para edição.</div>
+                  <div className="mt-1 text-xs text-slate-500 font-medium">Medicamentos: permitido apenas preço igual ou menor que o da rede.</div>
                 )}
-                {!isGlobalAdmin && !isMedicamento && (
+                {!isGlobalAdmin && (
                   <div className="mt-1 text-xs font-bold">
                     {(() => {
                       const basePrice = customProducts.find(p => p.id === formData.id)?.precoPor || 0;
