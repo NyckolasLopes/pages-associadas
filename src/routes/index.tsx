@@ -292,9 +292,9 @@ function IndexGateway() {
                     )}
                     <div className="pt-1">
                       <div className="flex items-center gap-3 mb-3">
-                        {store.faviconUrl || store.logoUrl ? (
+                        {store.faviconUrl || store.logoUrl || store.categoriaAssociado !== 'Parceiro' ? (
                           <img 
-                            src={store.faviconUrl || store.logoUrl} 
+                            src={store.faviconUrl || store.logoUrl || '/favicon.png'} 
                             alt="Logo da loja" 
                             className="h-8 w-8 object-contain shrink-0" 
                           />
