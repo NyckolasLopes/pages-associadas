@@ -699,7 +699,7 @@ function PDP() {
   }
 
   // 3. Store-specific & Global Promotions
-  const effectiveStoreId = String(loja?.id || "1");
+  const effectiveStoreId = activePharmacyId || String(loja?.id || "1");
   const lojaPromocoes = marketingState.lojaPromocoes[effectiveStoreId] || [];
   const globalPromocoes = promocoes.filter((p: any) => !p.lojaId);
   const padraoPromo = getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes);

@@ -67,7 +67,7 @@ export function PromoCardBadge({
         style={{ backgroundColor: themeColor }}
       >
         <span className="flex items-center gap-1 truncate">
-          <IconComponent className="w-3.5 h-3.5 shrink-0 animate-bounce" />
+          <IconComponent className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate uppercase tracking-tight">Leve {qtd} por {brl(precoItem)} un</span>
         </span>
         <span className="bg-black/20 px-1.5 py-0.5 rounded text-[10px] font-black shrink-0">
@@ -81,7 +81,7 @@ export function PromoCardBadge({
   if (time.hasTimer && !time.isExpired) {
     return (
       <div 
-        className="w-full text-white text-[11px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center justify-between gap-1 transition-all animate-pulse"
+        className="w-full text-white text-[11px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center justify-between gap-1 transition-all"
         style={{ backgroundColor: themeColor }}
       >
         <div className="flex items-center gap-1 truncate">
