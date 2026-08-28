@@ -561,7 +561,7 @@ export function Header() {
               <span className="font-bold text-primary truncate w-full leading-tight">{user?.name?.split(" ")[0]}</span>
             </Link>
           ) : (
-            <Button variant="ghost" onClick={() => navigate({ to: "/login" })}>
+            <Button variant="ghost" onClick={() => navigate({ to: "/login", search: { redirect: window.location.pathname } as any })}>
               <User className="h-4 w-4 mr-1" /> Entrar
             </Button>
           )}
@@ -933,7 +933,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               <div className="flex-1 overflow-hidden">
                 <SheetTitle className="text-base leading-tight">{getGreeting()} visitante</SheetTitle>
                 <div className="text-xs text-muted-foreground">
-                  <Link to="/login" className="text-primary font-bold hover:underline" onClick={() => setOpen(false)}>Entre</Link> ou cadastre-se
+                  <Link to="/login" search={{ redirect: window.location.pathname } as any} className="text-primary font-bold hover:underline" onClick={() => setOpen(false)}>Entre</Link> ou cadastre-se
                 </div>
               </div>
             </div>
