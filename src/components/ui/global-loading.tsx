@@ -24,8 +24,9 @@ export function GlobalLoading() {
       // Parceiro usa o próprio logo, se tiver. Se não, fica vazio.
       logoToUse = activePharmacy.logoUrl || "";
     } else {
-      // Vitrine da rede plena: usa o próprio logo, ou o padrão da rede
-      logoToUse = activePharmacy.logoUrl || dadosLoja?.logoUrl || "/logo.png";
+      // Vitrine da rede plena: o usuário pediu APENAS o spin com o favicon da associadas.
+      // Então não usamos o logo grande.
+      logoToUse = ""; 
     }
   } else {
     // Estamos carregando os dados da farmácia ainda.
@@ -48,8 +49,8 @@ export function GlobalLoading() {
         {logoToUse ? (
           <img src={logoToUse} alt="Logo" className="h-12 w-auto mb-6 object-contain" />
         ) : showSpinner ? (
-          <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-            <Spinner className="w-8 h-8 text-primary" />
+          <div className="flex items-center justify-center mb-6">
+            <Spinner className="w-16 h-16 text-primary" />
           </div>
         ) : null}
         
