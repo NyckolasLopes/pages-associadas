@@ -261,65 +261,86 @@ function AdminDesignCores() {
 
               {/* Banner Area */}
               <div 
-                className="h-24 flex flex-col items-center justify-center p-4 text-center mt-2 mx-2 rounded-lg"
+                className="h-28 flex flex-col items-center justify-center p-4 text-center mt-2 mx-2 rounded-lg relative overflow-hidden"
                 style={{ backgroundColor: colors['--muted'] || '#f1f5f9' }}
               >
-                <div className="text-[10px] font-bold px-2 py-1 bg-black text-white rounded mb-1">OFERTAS ESPECIAIS</div>
-                <div className="font-bold text-lg leading-tight">CUIDADO DIÁRIO</div>
-                <div className="text-[10px] text-slate-500 mt-1">Até 50% de desconto</div>
+                <div 
+                  className="absolute top-2 left-2 text-[8px] font-bold px-2 py-0.5 rounded shadow-sm"
+                  style={{ backgroundColor: colors['--secondary'] || '#f37021', color: '#ffffff' }}
+                >
+                  DESTAQUE DA SEMANA
+                </div>
+                <div className="font-bold text-lg leading-tight mt-2" style={{ color: colors['--foreground'] || '#1e293b' }}>CUIDADO DIÁRIO</div>
+                <div className="text-[10px] mt-1" style={{ color: colors['--primary'] || '#00b5ad' }}>Até 50% de desconto</div>
               </div>
 
               {/* Produtos Area */}
               <div className="flex-1 p-4">
                 <div className="flex justify-between items-center mb-3">
-                  <div className="font-bold text-sm">Mais Pedidos</div>
+                  <div className="font-bold text-sm" style={{ color: colors['--foreground'] || '#1e293b' }}>Mais Pedidos</div>
                   <div className="text-[10px] font-bold" style={{ color: colors['--primary'] || '#00b5ad' }}>VER TODOS</div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Produto 1 */}
-                  <div className="border rounded-lg p-2 bg-white shadow-sm flex flex-col" style={{ borderColor: colors['--border'] || '#e2e8f0' }}>
-                    <div className="bg-slate-100 aspect-square rounded mb-2 flex items-center justify-center text-slate-300 text-[10px]">Produto</div>
+                <div className="grid grid-cols-2 gap-3 relative">
+                  {/* Produto 1 (Comprar) */}
+                  <div className="border rounded-lg p-2 bg-white shadow-sm flex flex-col relative" style={{ borderColor: colors['--border'] || '#e2e8f0', backgroundColor: colors['--background'] || '#ffffff' }}>
+                    <div 
+                      className="absolute -top-1 -right-1 text-[8px] font-bold px-1.5 py-0.5 rounded-full"
+                      style={{ backgroundColor: colors['--secondary'] || '#f37021', color: '#ffffff' }}
+                    >
+                      -15%
+                    </div>
+                    <div className="bg-slate-100 aspect-square rounded mb-2 flex items-center justify-center text-slate-300 text-[10px]">Foto</div>
                     <div className="w-16 h-2 bg-slate-200 rounded-full mb-1 mt-auto"></div>
                     <div className="text-[10px] text-slate-400 line-through">R$ 29,90</div>
-                    <div className="font-bold text-sm" style={{ color: colors['--primary'] || '#00b5ad' }}>R$ 19,90</div>
+                    <div className="font-bold text-sm" style={{ color: colors['--primary'] || '#00b5ad' }}>R$ 25,40</div>
                     <div 
-                      className="mt-2 w-full py-1.5 rounded text-[10px] font-bold text-center text-white"
+                      className="mt-2 w-full py-1.5 rounded text-[10px] font-bold text-center text-white transition-opacity hover:opacity-90 cursor-pointer"
                       style={{ backgroundColor: colors['--primary'] || '#00b5ad' }}
                     >
                       COMPRAR
                     </div>
                   </div>
                   
-                  {/* Produto 2 */}
-                  <div className="border rounded-lg p-2 bg-white shadow-sm flex flex-col" style={{ borderColor: colors['--border'] || '#e2e8f0' }}>
-                    <div className="bg-slate-100 aspect-square rounded mb-2 flex items-center justify-center text-slate-300 text-[10px]">Produto</div>
+                  {/* Produto 2 (Esgotado) */}
+                  <div className="border rounded-lg p-2 bg-white shadow-sm flex flex-col opacity-75" style={{ borderColor: colors['--border'] || '#e2e8f0', backgroundColor: colors['--background'] || '#ffffff' }}>
+                    <div className="bg-slate-100 aspect-square rounded mb-2 flex items-center justify-center text-slate-300 text-[10px]">Foto</div>
                     <div className="w-16 h-2 bg-slate-200 rounded-full mb-1 mt-auto"></div>
-                    <div className="text-[10px] text-slate-400 line-through">R$ 29,90</div>
-                    <div className="font-bold text-sm" style={{ color: colors['--primary'] || '#00b5ad' }}>R$ 19,90</div>
+                    <div className="text-[10px] text-slate-400 opacity-0">R$ 29,90</div>
+                    <div className="font-bold text-sm" style={{ color: colors['--foreground'] || '#1e293b' }}>R$ 19,90</div>
                     <div 
-                      className="mt-2 w-full py-1.5 rounded text-[10px] font-bold text-center text-white"
-                      style={{ backgroundColor: colors['--primary'] || '#00b5ad' }}
+                      className="mt-2 w-full py-1.5 rounded text-[9px] font-bold text-center text-white"
+                      style={{ backgroundColor: colors['--destructive'] || '#ef4444' }}
                     >
-                      COMPRAR
+                      ESGOTADO
                     </div>
+                  </div>
+
+                  {/* Simulação de Toast (Sucesso) */}
+                  <div 
+                    className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%] px-3 py-2 rounded-lg shadow-lg flex items-center gap-2 text-[10px] font-bold text-white z-10"
+                    style={{ backgroundColor: colors['--success'] || '#22c55e' }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Adicionado à cesta!
                   </div>
                 </div>
               </div>
 
               {/* Footer Area */}
               <div 
-                className="mt-auto p-4 flex flex-col items-center justify-center text-center gap-3"
+                className="mt-auto p-4 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden"
                 style={{ 
                   backgroundColor: colors['--footer-bg'] || colors['--primary'] || '#00b5ad',
                   color: colors['--footer-text'] || '#ffffff'
                 }}
               >
-                <div className="font-bold text-sm">Farmácias Associadas</div>
-                <div className="text-[8px] opacity-80 leading-tight px-4">
-                  Farmácias Associadas, muito mais que farmácia, aqui você tem amigos.
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at center, white 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                <div className="font-bold text-sm z-10">Farmácias Associadas</div>
+                <div className="text-[8px] opacity-90 leading-tight px-4 z-10">
+                  Muito mais que farmácia, aqui você tem amigos.
                 </div>
-                <div className="flex w-full justify-around mt-2">
+                <div className="flex w-full justify-around mt-2 z-10">
                   <div className="flex flex-col items-center gap-1">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, currentColor 20%, transparent)' }}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
