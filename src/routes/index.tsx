@@ -246,11 +246,19 @@ function IndexGateway() {
             /* Search Results */
             <div className="space-y-6 animate-in zoom-in-95 duration-500 flex-1 flex flex-col">
               <div className="text-center space-y-2 mb-2">
-                <div className="mx-auto h-16 w-16 bg-gradient-to-tr from-emerald-100 to-teal-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm border border-emerald-100/50 transform rotate-3">
-                  <Store className="h-8 w-8 -rotate-3" />
+                <div className="mx-auto h-16 w-16 bg-gradient-to-tr from-emerald-100 to-teal-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm border border-emerald-100/50 transform rotate-3 overflow-hidden">
+                  {foundStores.length === 1 ? (
+                    <img 
+                      src={foundStores[0].categoria === 'Pleno' ? '/favicon-pleno.png' : '/favicon.ico'} 
+                      alt="Logo" 
+                      className="h-10 w-10 -rotate-3 object-contain" 
+                    />
+                  ) : (
+                    <Store className="h-8 w-8 -rotate-3" />
+                  )}
                 </div>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">
-                  {foundStores.length > 1 ? "Lojas Encontradas" : "Loja Encontrada"}
+                  {foundStores.length > 1 ? "Lojas Encontradas" : foundStores[0].nome}
                 </h2>
                 {distanceKm !== null ? (
                   <p className="text-sm text-slate-500 font-medium">
@@ -266,8 +274,10 @@ function IndexGateway() {
                   <div key={store.id || idx} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden flex flex-col gap-4 group cursor-default">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 rounded-l-2xl"></div>
                     <div>
-                      <h3 className="font-extrabold text-slate-800 text-lg group-hover:text-emerald-700 transition-colors">{store.nome}</h3>
-                      <p className="text-sm text-slate-500 flex items-start gap-2 mt-2 font-medium">
+                      {foundStores.length > 1 && (
+                        <h3 className="font-extrabold text-slate-800 text-lg group-hover:text-emerald-700 transition-colors">{store.nome}</h3>
+                      )}
+                      <p className={`text-sm text-slate-500 flex items-start gap-2 font-medium ${foundStores.length > 1 ? 'mt-2' : ''}`}>
                         <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-emerald-500" />
                         <span className="line-clamp-2 leading-snug">
                           {store.cidade} - {store.uf}
