@@ -135,6 +135,7 @@ export function Header() {
   const urlSlug = (params as any)?.storeSlug as string | undefined;
   
   const activePharmacy = useActivePharmacy();
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
   const storeSlug = urlSlug || activePharmacy?.slug || "poa";
   const customProducts = useAdminProducts(s => s.customProducts);
   const { featuredCategories, storeFeaturedCategories } = useAdmin();
