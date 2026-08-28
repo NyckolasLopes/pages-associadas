@@ -1,17 +1,30 @@
 import { Spinner } from "./spinner";
 import { useConfig } from "@/stores/config";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { useAdmin } from "@/stores/admin";
 import { useLocation } from "@tanstack/react-router";
 
 export function GlobalLoading() {
   const dadosLoja = useConfig((s) => s.dadosLoja);
   const activePharmacy = useActivePharmacy();
+  const pharmacies = useAdmin((s) => s.pharmacies);
   const location = useLocation();
 
   const isAdmin = location.pathname.startsWith('/admin');
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
-  // Qualquer loja específica de vitrine (não admin) usa o logo dela
-  const isStoreContext = !isAdmin && !!activePharmacy;
+  
+  // Tentar inferir a farmácia pelo cache ou slug se activePharmacy ainda for null
+  let inferredPharmacy = activePharmacy;
+  if (!inferredPharmacy && pharmacies.length > 0) {
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    const potentialSlug = pathParts[0] ?? "";
+    inferredPharmacy = pharmacies.find((p) => {
+      const slug = p.slug ? p.slug : (p.nome || p.id);
+      return slug.toLowerCase().replace(/\s+/g, '-') === potentialSlug;
+    }) || null;
+  }
+
+  const isParceiro = inferredPharmacy?.categoriaAssociado === 'Parceiro';
+  const isStoreContext = !isAdmin && !!inferredPharmacy;
 
   let logoToUse: string = "";
   let useFaviconSpinner = false;
@@ -19,19 +32,27 @@ export function GlobalLoading() {
   if (isAdmin) {
     // Admin sempre usa o logo da rede
     logoToUse = "/logo.png";
-  } else if (activePharmacy) {
+  } else if (inferredPharmacy) {
     if (isParceiro) {
       // Parceiro usa o próprio logo, se tiver. Se não, fica vazio (usando o spinner padrão).
-      logoToUse = activePharmacy.logoUrl || "";
+      logoToUse = inferredPharmacy.logoUrl || "";
     } else {
       // Vitrine da rede plena usa apenas o favicon girando
       useFaviconSpinner = true;
     }
   } else {
-    // Estamos carregando os dados da farmácia ainda. 
-    // Para não arriscar exibir o favicon das Farmácias Associadas numa loja parceira,
-    // usamos o spinner genérico.
-    useFaviconSpinner = false;
+    // Estamos carregando os dados da farmácia e o cache está vazio.
+    // Vamos tentar adivinhar pelo slug se é uma loja plena padrão.
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    const slug = pathParts[0] ?? "";
+    
+    // Se não tem slug (home), ou se é porto-alegre/loja-padrao, assumimos pleno (favicon)
+    if (!slug || slug === 'porto-alegre' || slug === 'loja-padrao') {
+      useFaviconSpinner = true;
+    } else {
+      // Slug desconhecido no primeiro carregamento: usar spinner genérico para não vazar FA
+      useFaviconSpinner = false;
+    }
   }
 
   return (
