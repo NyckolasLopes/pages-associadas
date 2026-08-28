@@ -532,9 +532,9 @@ function Checkout() {
       setCreditCardStatus(localCardStatus);
     }
     if (paymentCategory !== "online" || paymentMethod !== "credit" || localCardStatus !== "refused") {
-        const appliedCoupon = useCart.getState().appliedCoupon;
-        if (appliedCoupon) {
-          useMarketing.getState().incrementCouponUsage(appliedCoupon);
+        const appliedCode = couponApplied?.code || useCart.getState().appliedCoupon;
+        if (appliedCode) {
+          useMarketing.getState().incrementCouponUsage(appliedCode);
         }
         addOrder(newOrder);
         clear();

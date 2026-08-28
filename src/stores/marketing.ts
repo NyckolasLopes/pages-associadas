@@ -204,17 +204,42 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
   },
 
   incrementCouponUsage: async (codigo: string) => {
-    const { data: cupom } = await supabase
-      .from('cupons' as any)
-      .select('id, numero_utilizacoes')
-      .ilike('codigo', codigo)
-      .single();
+    // 1. Tentar encontrar o cupom exato na memória (que respeita a loja atual)
+    const { useCart } = await import('@/stores/cart');
+    const pid = useCart.getState().selectedPharmacyId;
+    
+    const cupons = get().cupons;
+    const cupomMem = cupons.find(c => 
+      c.codigo.toUpperCase() === codigo.toUpperCase() && 
+      (!c.lojaId || c.lojaId === pid)
+    );
+
+    let cupomId = null;
+    let usosAtuais = 0;
+
+    if (cupomMem) {
+      cupomId = cupomMem.id;
+      usosAtuais = cupomMem.numeroUtilizacoes || 0;
+    } else {
+      // Fallback: se não achar na memória, tenta pelo banco
+      const { data: cupomBanco } = await supabase
+        .from('cupons' as any)
+        .select('id, numero_utilizacoes')
+        .ilike('codigo', codigo)
+        .limit(1)
+        .maybeSingle();
+        
+      if (cupomBanco) {
+        cupomId = cupomBanco.id;
+        usosAtuais = cupomBanco.numero_utilizacoes || 0;
+      }
+    }
       
-    if (cupom) {
+    if (cupomId) {
       const { error } = await supabase
         .from('cupons' as any)
-        .update({ numero_utilizacoes: (cupom.numero_utilizacoes || 0) + 1 })
-        .eq('id', cupom.id);
+        .update({ numero_utilizacoes: usosAtuais + 1 })
+        .eq('id', cupomId);
         
       if (!error) {
         await get().loadMarketing();
