@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { useCart, useGeoCep } from "../stores/cart";
 import { useAuth } from "@/stores/auth";
 import { useCartSync } from "@/hooks/useCartSync";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 import { useAdminProducts } from "@/stores/products";
 import { useAdmin } from "../stores/admin";
 import { useLive } from "../stores/live";
@@ -158,9 +159,36 @@ function RootComponent() {
   const isAdmin = location.pathname.startsWith("/admin");
   const redirects = useConfig((s) => s.redirects);
   const scripts = useConfig((s) => s.scripts);
+  const activePharmacy = useActivePharmacy();
 
   // Sincroniza carrinhos abandonados
   useCartSync();
+
+  // Injeção de Cores Customizadas (Design System Dinâmico)
+  useEffect(() => {
+    // Se for admin, a store do useAdmin() rege as cores do preview em tempo real.
+    // Se for visitante da vitrine, usamos as cores salvas da loja atual (Parceiro).
+    const colorsToInject = isAdmin ? themeColors : activePharmacy?.themeColors;
+
+    if (!colorsToInject || Object.keys(colorsToInject).length === 0) {
+      return;
+    }
+
+    const style = document.createElement('style');
+    let cssString = ':root {\n';
+    Object.entries(colorsToInject).forEach(([key, value]) => {
+      if (value) {
+        cssString += `  ${key}: ${value};\n`;
+      }
+    });
+    cssString += '}\n';
+    style.innerHTML = cssString;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, [isAdmin, themeColors, activePharmacy?.themeColors]);
 
   useEffect(() => {
     // Check for 301 redirects
