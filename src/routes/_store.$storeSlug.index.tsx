@@ -12,6 +12,7 @@ import { ServicesSection } from "@/components/storefront/ServicesSection";
 import { Clock, Store, Percent, Activity, ScanBarcode, Pill, Sparkles, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Sun, TrendingUp, Heart, Handshake, Tag, Droplets, HeartPulse, Eye, Smile, User, Scale, Coffee, Dumbbell, Thermometer, BriefcaseMedical, Battery, Wind, Flame, Truck, MapPin, ShieldCheck, Banknote, ChevronLeft, ChevronRight, ExternalLink, Star } from "lucide-react";
 import { isCampanhaAtiva } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
+import { LazySection } from "@/components/ui/LazySection";
 
 import { GeoPopup } from "@/components/storefront/GeoPopup";
 // InstallPrompt are rendered globally in __root.tsx
@@ -652,32 +653,38 @@ function StoreHome() {
 
         {/* As vitrines agora são todas gerenciadas dinamicamente via Admin */}
 
-        <section className="container-fa pt-2 pb-6 relative group">
-          <h1 className="text-xl md:text-2xl font-bold mb-4">Compre por categoria</h1>
-          <DynamicCategoriaBanners lojaId={lojaId} />
-        </section>
+        <LazySection height="250px">
+          <section className="container-fa pt-2 pb-6 relative group">
+            <h1 className="text-xl md:text-2xl font-bold mb-4">Compre por categoria</h1>
+            <DynamicCategoriaBanners lojaId={lojaId} />
+          </section>
+        </LazySection>
 
-
-
-        <DynamicVitrines local="espaco_1" lojaId={lojaId} />
+        <LazySection height="400px">
+          <DynamicVitrines local="espaco_1" lojaId={lojaId} />
+        </LazySection>
         
-        <DynamicExtraBanners lojaId={lojaId} />
+        <LazySection height="250px">
+          <DynamicExtraBanners lojaId={lojaId} />
+        </LazySection>
         
         {loja?.offersServices !== false && (
-          <>
+          <LazySection height="300px">
             <ServicesSection />
             <DynamicTopicBanners topicId="servicos" lojaId={lojaId} />
-          </>
+          </LazySection>
         )}
         
-        <DynamicVitrines local="espaco_2" lojaId={lojaId} />
+        <LazySection height="400px">
+          <DynamicVitrines local="espaco_2" lojaId={lojaId} />
+        </LazySection>
 
 
 
 
         {/* Diferenciais da Rede */}
         {loja?.categoriaAssociado !== 'Parceiro' && (
-          <>
+          <LazySection height="400px">
             <section className="container-fa my-12">
               <div className="bg-orange-500 text-white rounded-2xl p-6 md:p-8">
                 <div className="text-center mb-8">
@@ -725,55 +732,59 @@ function StoreHome() {
               </div>
             </section>
             <DynamicTopicBanners topicId="diferenciais" lojaId={lojaId} />
-          </>
+          </LazySection>
         )}
         
-        <DynamicVitrines local="espaco_3" lojaId={lojaId} />
+        <LazySection height="400px">
+          <DynamicVitrines local="espaco_3" lojaId={lojaId} />
+        </LazySection>
 
         {/* Parceiros / Marcas */}
-        <section className="container-fa my-12">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Handshake className="h-6 w-6 text-primary" />
-              <h2 className="text-xl md:text-2xl font-bold">Somos parceiros das melhores marcas</h2>
+        <LazySection height="300px">
+          <section className="container-fa my-12">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Handshake className="h-6 w-6 text-primary" />
+                <h2 className="text-xl md:text-2xl font-bold">Somos parceiros das melhores marcas</h2>
+              </div>
             </div>
-          </div>
-          
-          <div className="relative group w-full">
-            <Carousel
-              opts={{
-                align: "start",
-                loop: false,
-                dragFree: true,
-              }}
-              className="w-full"
-            >
-              <CarouselContent className="-ml-4 md:-ml-6 pb-4">
-                {activeMarcas.map((marca) => (
-                  <CarouselItem
-                    key={marca.id}
-                    className="pl-4 md:pl-6 basis-auto flex"
-                  >
-                    <Link 
-                      to="/m/$slug"
-                      params={{ slug: marca.seoUrl || marca.slug }}
-                      className="shrink-0 w-[120px] h-[80px] md:w-[150px] md:h-[100px] bg-white border rounded-xl flex items-center justify-center shadow-sm hover:border-[#00AFA9] transition cursor-pointer p-4"
-                      title={marca.nome}
+            
+            <div className="relative group w-full">
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: false,
+                  dragFree: true,
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="-ml-4 md:-ml-6 pb-4">
+                  {activeMarcas.map((marca) => (
+                    <CarouselItem
+                      key={marca.id}
+                      className="pl-4 md:pl-6 basis-auto flex"
                     >
-                      {marca.logo ? (
-                        <img src={marca.logo} alt={marca.nome} className="w-full h-full object-contain" />
-                      ) : (
-                        <span className="font-black text-muted-foreground/60 tracking-wider text-sm md:text-base text-center px-2">{marca.nome}</span>
-                      )}
-                    </Link>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" />
-              <CarouselNext className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" />
-            </Carousel>
-          </div>
-        </section>
+                      <Link 
+                        to="/m/$slug"
+                        params={{ slug: marca.seoUrl || marca.slug }}
+                        className="shrink-0 w-[120px] h-[80px] md:w-[150px] md:h-[100px] bg-white border rounded-xl flex items-center justify-center shadow-sm hover:border-[#00AFA9] transition cursor-pointer p-4"
+                        title={marca.nome}
+                      >
+                        {marca.logo ? (
+                          <img src={marca.logo} alt={marca.nome} className="w-full h-full object-contain" />
+                        ) : (
+                          <span className="font-black text-muted-foreground/60 tracking-wider text-sm md:text-base text-center px-2">{marca.nome}</span>
+                        )}
+                      </Link>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" />
+                <CarouselNext className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" />
+              </Carousel>
+            </div>
+          </section>
+        </LazySection>
 
 
 
