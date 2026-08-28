@@ -24,23 +24,15 @@ export function GlobalLoading() {
       // Parceiro usa o próprio logo, se tiver. Se não, fica vazio.
       logoToUse = activePharmacy.logoUrl || "";
     } else {
-      // Vitrine da rede plena: o usuário pediu APENAS o spin com o favicon da associadas.
-      // Então não usamos o logo grande.
-      logoToUse = ""; 
+      // Vitrine da rede plena usa o logo da rede (Farmácias Associadas)
+      logoToUse = activePharmacy.logoUrl || dadosLoja?.logoUrl || "/logo.png"; 
     }
   } else {
     // Estamos carregando os dados da farmácia ainda.
-    // Se a rota principal for "/", é a matriz. Senão, é uma loja específica (ainda desconhecida).
-    if (location.pathname === "/") {
-      logoToUse = dadosLoja?.logoUrl || "/logo.png";
-    } else {
-      isStoreContextLoading = true;
-      logoToUse = ""; // Não exibe logo até saber se é parceiro ou pleno
-    }
+    logoToUse = dadosLoja?.logoUrl || "/logo.png";
   }
 
-  // Se for parceiro (ou estamos carregando uma loja e não sabemos quem é), o spinner pode aparecer se não houver logo.
-  // Se for parceiro COM logo, não mostra o spinner da rede.
+  // Sempre mostra o spinner
   const showSpinner = true; 
 
   return (

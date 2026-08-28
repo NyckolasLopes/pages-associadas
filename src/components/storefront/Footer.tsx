@@ -196,8 +196,8 @@ export function Footer() {
       <footer 
         className="pb-24 md:pb-0"
         style={{ 
-          backgroundColor: 'var(--footer-bg, var(--primary))',
-          color: 'var(--footer-text, var(--primary-foreground))'
+          backgroundColor: 'var(--footer-bg, hsl(var(--primary)))',
+          color: 'var(--footer-text, hsl(var(--primary-foreground)))'
         }}
       >
         {/* Pre-Footer Cards */}

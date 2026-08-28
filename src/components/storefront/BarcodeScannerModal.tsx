@@ -22,6 +22,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onScan, scanError, onC
   const scannerRef = useRef<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
 
   const latestOnScan = useRef(onScan);
   const latestOnOpenChange = useRef(onOpenChange);
@@ -134,15 +135,12 @@ export function BarcodeScannerModal({ open, onOpenChange, onScan, scanError, onC
       }
     };
 
-    const timeoutId = setTimeout(() => {
-      if (document.getElementById("reader")) {
-        startScanner();
-      }
-    }, 100);
+    if (document.getElementById("reader")) {
+      startScanner();
+    }
 
     return () => {
       isUnmounted = true;
-      clearTimeout(timeoutId);
       if (scannerRef.current) {
         try {
           if (scannerRef.current.isScanning) {
@@ -159,7 +157,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onScan, scanError, onC
         }
       }
     };
-  }, [open, isScriptLoaded]);
+  }, [open, isScriptLoaded, retryCount]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -193,9 +191,20 @@ export function BarcodeScannerModal({ open, onOpenChange, onScan, scanError, onC
               </button>
             </div>
           ) : errorMsg ? (
-            <div className="text-center p-4">
+            <div className="text-center p-4 flex flex-col items-center">
               <AlertCircle className="h-10 w-10 text-destructive mx-auto mb-2" />
-              <p className="text-sm font-bold text-destructive">{errorMsg}</p>
+              <p className="text-sm font-bold text-destructive mb-4">{errorMsg}</p>
+              <Button 
+                onClick={() => {
+                  setErrorMsg(null);
+                  // We emit a custom event that our useEffect will catch, or we can just 
+                  // toggle a state to force a retry. Since we don't have startScanner in scope here,
+                  // we can use a retry counter state.
+                  setRetryCount(c => c + 1);
+                }}
+              >
+                Permitir Câmera e Tentar Novamente
+              </Button>
             </div>
           ) : !isScriptLoaded ? (
             <div className="text-muted-foreground text-sm font-bold animate-pulse">Carregando câmera...</div>
