@@ -576,7 +576,7 @@ export function Header() {
         {/* Cesta */}
         <Sheet open={mounted && drawerOpen} onOpenChange={setDrawer}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="relative gap-2" style={{ color: 'var(--header-icons, var(--primary))', borderColor: 'color-mix(in srgb, var(--header-icons, var(--border)) 20%, transparent)' }}>
+            <Button variant="outline" className="relative gap-2 border-[var(--header-icons,var(--primary))] text-[var(--header-icons,var(--primary))] hover:bg-[var(--header-icons,var(--primary))] hover:text-white transition-colors">
               <ShoppingBasket className="h-5 w-5" />
               <span className="hidden sm:inline">Cesta</span>
               {mounted && count > 0 && (
