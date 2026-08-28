@@ -166,9 +166,14 @@ function RootComponent() {
 
   // Injeção de Cores Customizadas (Design System Dinâmico)
   useEffect(() => {
-    // Se for admin, a store do useAdmin() rege as cores do preview em tempo real.
-    // Se for visitante da vitrine, usamos as cores salvas da loja atual (Parceiro).
-    const colorsToInject = isAdmin ? themeColors : activePharmacy?.themeColors;
+    // Apenas injeta cores customizadas se for Preview do Admin ou se a loja for Parceiro
+    let colorsToInject = null;
+    
+    if (isAdmin) {
+      colorsToInject = themeColors;
+    } else if (activePharmacy?.categoriaAssociado === 'Parceiro') {
+      colorsToInject = activePharmacy.themeColors;
+    }
 
     if (!colorsToInject || Object.keys(colorsToInject).length === 0) {
       return;
