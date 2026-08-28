@@ -165,9 +165,12 @@ function IndexGateway() {
     >
       {/* Animated Background Image - Parallax on Mouse Move */}
       <div 
-        className="absolute -inset-10 bg-cover bg-center transition-transform duration-[400ms] ease-out" 
+        className="absolute -inset-10 transition-transform duration-[400ms] ease-out opacity-90" 
         style={{ 
           backgroundImage: "url('/bg-home.jpg')",
+          backgroundSize: "600px", // Fixa o tamanho para evitar esticamento em telas grandes
+          backgroundRepeat: "repeat", // Repete a imagem em formato mosaico
+          backgroundPosition: "center",
           transform: `translate(${mousePos.x}px, ${mousePos.y}px) scale(1.02)`
         }}
       ></div>
