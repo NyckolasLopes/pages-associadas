@@ -106,18 +106,28 @@ function NovaPromocaoPage() {
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await catalog.search(searchQuery);
-        setSearchResults(res.slice(0, 50));
-        setSelectedProductsCache(prev => {
-          const next = { ...prev };
-          res.forEach(p => { next[p.id] = p; });
-          return next;
-        });
+        if (!searchQuery.trim()) {
+          const list = produtos.slice(0, 50);
+          setSearchResults(list);
+          setSelectedProductsCache(prev => {
+            const next = { ...prev };
+            list.forEach(p => { next[p.id] = p; });
+            return next;
+          });
+        } else {
+          const res = await catalog.search(searchQuery);
+          setSearchResults(res.slice(0, 50));
+          setSelectedProductsCache(prev => {
+            const next = { ...prev };
+            res.forEach(p => { next[p.id] = p; });
+            return next;
+          });
+        }
       } catch(e) {}
       setIsSearching(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchQuery, formData.tipoAlvo]);
+  }, [searchQuery, formData.tipoAlvo, produtos]);
 
   useEffect(() => {
     if (existing && existing.tipoAlvo === "produtos" && existing.alvosId.length > 0) {

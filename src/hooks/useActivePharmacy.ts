@@ -27,15 +27,26 @@ export function useActivePharmacy() {
   const pharmacies = useAdmin((s) => s.pharmacies);
   const pharmaciesFresh = useAdmin((s) => s.pharmaciesFresh);
 
+  const search = location.search as any;
   const pathParts = location.pathname.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
+  
+  let redirectSlug = "";
+  if (search?.redirect) {
+    const redirectParts = decodeURIComponent(search.redirect).split('/').filter(Boolean);
+    if (redirectParts[0] && !SYSTEM_PAGES.has(redirectParts[0])) {
+      redirectSlug = redirectParts[0];
+    }
+  }
 
   const activePharmacy = useMemo(() => {
-    // 1. Slug da URL
-    if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug)) {
+    // 1. Slug da URL ou Redirect
+    const slugToSearch = (potentialSlug && !SYSTEM_PAGES.has(potentialSlug)) ? potentialSlug : redirectSlug;
+    
+    if (slugToSearch) {
       const bySlug = pharmacies.find((p) => {
         const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
-        return slug === potentialSlug;
+        return slug === slugToSearch;
       });
       if (bySlug) return bySlug;
 
@@ -63,8 +74,9 @@ export function useActivePharmacy() {
     }
 
     // 4. Fallback
-    return pharmacies[0] || null;
-  }, [selectedPharmacyId, pharmacies, potentialSlug]);
+    // Avoid returning the first pharmacy automatically for the global network
+    return null;
+  }, [selectedPharmacyId, pharmacies, potentialSlug, redirectSlug, pharmaciesFresh]);
 
   return activePharmacy;
 }

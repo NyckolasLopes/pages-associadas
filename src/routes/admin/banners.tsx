@@ -62,13 +62,170 @@ function getDimensionsForPosition(pos: string) {
   switch (pos) {
     case "Full Banner": return { desktop: "1800x600px", mobile: "800x800px" };
     case "Mini Banner": return { desktop: "600x600px", mobile: "600x600px" };
-    case "Banner Tarja": return { desktop: "1920x200px", mobile: "800x200px" };
+    case "Banner Tarja": return { desktop: "Auto (Max 4 itens)", mobile: "Auto (Carrossel)" };
     case "Banner Compre por categoria": return { desktop: "200x200px", mobile: "200x200px" };
     case "Banner por Categoria": return { desktop: "1920x400px", mobile: "800x400px" };
     case "Banner Extra": return { desktop: "1200x300px", mobile: "800x400px" };
     case "Banner Diferenciais": return { desktop: "400x400px", mobile: "400x400px" };
     default: return { desktop: "Auto", mobile: "Auto" };
   }
+}
+
+function BannerTarjaBuilder({ editingBanner, setEditingBanner }: any) {
+  const getItems = () => {
+    try {
+      if (editingBanner.formatoExtra) {
+        const parsed = JSON.parse(editingBanner.formatoExtra);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch(e) {}
+    return [];
+  };
+  
+  const items = getItems();
+  
+  const updateItem = (index: number, field: string, value: string) => {
+    const newItems = [...items];
+    if (!newItems[index]) newItems[index] = { icon: "", title: "", subtitle: "" };
+    newItems[index][field] = value;
+    setEditingBanner({ ...editingBanner, formatoExtra: JSON.stringify(newItems) });
+  };
+  
+  const addItem = () => {
+    if (items.length >= 4) return;
+    const newItems = [...items, { icon: "", title: "", subtitle: "" }];
+    setEditingBanner({ ...editingBanner, formatoExtra: JSON.stringify(newItems) });
+  };
+  
+  const removeItem = (index: number) => {
+    const newItems = items.filter((_, i) => i !== index);
+    setEditingBanner({ ...editingBanner, formatoExtra: JSON.stringify(newItems) });
+  };
+
+  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_SIZE = 120;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        const base64 = canvas.toDataURL("image/webp", 0.9);
+        updateItem(index, 'icon', base64);
+      };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="bg-orange-50 border border-orange-200 rounded p-6 space-y-4">
+      <div>
+        <h3 className="font-bold text-orange-800 text-lg">Construtor de Banner Tarja (Até 4 Itens)</h3>
+        <p className="text-sm text-orange-700">
+          Adicione até 4 itens que serão exibidos lado a lado na tarja de vantagens.
+        </p>
+      </div>
+      
+      <div className="space-y-4">
+        {items.map((item: any, index: number) => (
+          <div key={index} className="bg-white p-4 rounded-lg border border-slate-200 relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute top-2 right-2 text-red-500 hover:bg-red-50"
+              onClick={() => removeItem(index)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+            
+            <div className="flex gap-4">
+              <div className="w-20 shrink-0">
+                <Label className="text-xs font-bold text-slate-700 mb-2 block">Ícone</Label>
+                <label className="border border-slate-200 rounded-lg w-16 h-16 flex items-center justify-center cursor-pointer hover:bg-slate-50 relative overflow-hidden bg-slate-50">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={(e) => handleIconUpload(e, index)}
+                  />
+                  {item.icon ? (
+                    item.icon.startsWith('icon:') ? (
+                       (() => {
+                          const Icon = getIcon(item.icon);
+                          return Icon ? <Icon className="w-6 h-6 text-[#00B5AD]" /> : <ImageIcon className="w-6 h-6 text-slate-400" />;
+                       })()
+                    ) : (
+                      <img src={item.icon} alt="Icon" className="w-full h-full object-contain p-1" />
+                    )
+                  ) : (
+                    <UploadCloud className="w-6 h-6 text-slate-400" />
+                  )}
+                </label>
+              </div>
+              
+              <div className="flex-1 space-y-3">
+                <div>
+                   <Label className="text-xs font-bold text-slate-700">Título</Label>
+                   <Input 
+                     value={item.title || ""} 
+                     onChange={(e) => updateItem(index, 'title', e.target.value)}
+                     placeholder="Ex: DESCONTO DE 10%" 
+                     className="h-8 text-sm bg-white font-bold"
+                   />
+                </div>
+                <div>
+                   <Label className="text-xs font-bold text-slate-700">Subtítulo</Label>
+                   <Input 
+                     value={item.subtitle || ""} 
+                     onChange={(e) => updateItem(index, 'subtitle', e.target.value)}
+                     placeholder="Ex: Pagando no pix ou boleto" 
+                     className="h-8 text-sm bg-white"
+                   />
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-3">
+               <Label className="text-xs font-bold text-slate-700 block mb-1">Ou use um ícone da biblioteca (Ex: icon:Truck)</Label>
+               <Input 
+                 value={item.icon && item.icon.startsWith('icon:') ? item.icon : ""} 
+                 onChange={(e) => updateItem(index, 'icon', e.target.value)}
+                 placeholder="icon:Truck, icon:Store, icon:Percent..." 
+                 className="h-8 text-sm bg-white w-full max-w-xs"
+               />
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {items.length < 4 && (
+        <Button onClick={addItem} variant="outline" className="w-full border-dashed bg-white">
+          <Plus className="w-4 h-4 mr-2" />
+          Adicionar Item
+        </Button>
+      )}
+    </div>
+  );
 }
 
 function AdminBanners() {
@@ -1014,15 +1171,15 @@ function AdminBanners() {
 
               {/* IMAGENS */}
               <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-8">
-                {editingBanner.posicao === "Banner Tarja" || editingBanner.posicao === "Banner Compre por categoria" ? (
+                {editingBanner.posicao === "Banner Tarja" ? (
+                  <BannerTarjaBuilder editingBanner={editingBanner} setEditingBanner={setEditingBanner} />
+                ) : editingBanner.posicao === "Banner Compre por categoria" ? (
                   <div className="bg-orange-50 border border-orange-200 rounded p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-bold text-orange-800 text-lg">Configuração de Cartão ({editingBanner.posicao})</h3>
                         <p className="text-sm text-orange-700">
-                          {editingBanner.posicao === "Banner Tarja" 
-                            ? 'Os Banners Tarja são os cartões de vantagens que aparecem na loja (ex: "Compre pelo site...").' 
-                            : 'Os Banners Compre por categoria são os ícones redondos que aparecem na seção "Compre por categoria".'}
+                          Os Banners Compre por categoria são os ícones redondos que aparecem na seção "Compre por categoria".
                         </p>
                       </div>
                       {dimensions && <span className="text-xs bg-orange-100 px-2 py-1 rounded text-orange-800 font-bold font-mono border border-orange-200 shadow-sm">{dimensions.desktop}</span>}
@@ -1072,7 +1229,7 @@ function AdminBanners() {
                       <Input 
                         value={editingBanner.imageUrl || ""} 
                         onChange={e => setEditingBanner({...editingBanner, imageUrl: e.target.value})}
-                        placeholder={editingBanner.posicao === "Banner Tarja" ? "Ou use: icon:Truck, icon:Store..." : "Ou use: icon:Thermometer ou URL da imagem (200x200)"}
+                        placeholder="Ou use: icon:Thermometer ou URL da imagem (200x200)"
                         className="bg-white"
                       />
                       <p className="text-xs text-slate-500">O texto abaixo do ícone será o "Nome do banner". Você pode fazer upload de uma imagem, colar uma URL ou usar ícones (ex: icon:Truck).</p>
@@ -1775,60 +1932,62 @@ function StoreColorsConfig() {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-slate-100">
-            <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-              <LayoutTemplate className="w-5 h-5 text-slate-400" /> Estrutura
-            </h4>
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.headerBg || colors.primary }} />
-                <div className="flex-1">
-                  <Label className="font-bold text-sm text-slate-700">Fundo do Cabeçalho</Label>
-                  <p className="text-xs text-slate-500 mb-2">Cor do topo do site.</p>
-                  <div className="flex items-center gap-2">
-                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.headerBg || colors.primary} onChange={e => updateColor("headerBg", e.target.value)} />
-                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.headerBg || colors.primary} onChange={e => updateColor("headerBg", e.target.value)} />
+          {currentPharmacy?.categoriaAssociado === 'Parceiro' && (
+            <div className="pt-8 border-t border-slate-100">
+              <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <LayoutTemplate className="w-5 h-5 text-slate-400" /> Estrutura
+              </h4>
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.headerBg || colors.primary }} />
+                  <div className="flex-1">
+                    <Label className="font-bold text-sm text-slate-700">Fundo do Cabeçalho</Label>
+                    <p className="text-xs text-slate-500 mb-2">Cor do topo do site.</p>
+                    <div className="flex items-center gap-2">
+                      <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.headerBg || colors.primary} onChange={e => updateColor("headerBg", e.target.value)} />
+                      <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.headerBg || colors.primary} onChange={e => updateColor("headerBg", e.target.value)} />
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.headerIcons || "#ffffff" }} />
-                <div className="flex-1">
-                  <Label className="font-bold text-sm text-slate-700">Ícones do Cabeçalho</Label>
-                  <p className="text-xs text-slate-500 mb-2">Cor dos ícones de carrinho, usuário etc.</p>
-                  <div className="flex items-center gap-2">
-                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.headerIcons || "#ffffff"} onChange={e => updateColor("headerIcons", e.target.value)} />
-                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.headerIcons || "#ffffff"} onChange={e => updateColor("headerIcons", e.target.value)} />
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.headerIcons || "#ffffff" }} />
+                  <div className="flex-1">
+                    <Label className="font-bold text-sm text-slate-700">Ícones do Cabeçalho</Label>
+                    <p className="text-xs text-slate-500 mb-2">Cor dos ícones de carrinho, usuário etc.</p>
+                    <div className="flex items-center gap-2">
+                      <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.headerIcons || "#ffffff"} onChange={e => updateColor("headerIcons", e.target.value)} />
+                      <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.headerIcons || "#ffffff"} onChange={e => updateColor("headerIcons", e.target.value)} />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.searchBg || "#ffffff" }} />
-                <div className="flex-1">
-                  <Label className="font-bold text-sm text-slate-700">Barra de Pesquisa</Label>
-                  <p className="text-xs text-slate-500 mb-2">Cor de fundo do campo de busca.</p>
-                  <div className="flex items-center gap-2">
-                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.searchBg || "#ffffff"} onChange={e => updateColor("searchBg", e.target.value)} />
-                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.searchBg || "#ffffff"} onChange={e => updateColor("searchBg", e.target.value)} />
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.searchBg || "#ffffff" }} />
+                  <div className="flex-1">
+                    <Label className="font-bold text-sm text-slate-700">Barra de Pesquisa</Label>
+                    <p className="text-xs text-slate-500 mb-2">Cor de fundo do campo de busca.</p>
+                    <div className="flex items-center gap-2">
+                      <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.searchBg || "#ffffff"} onChange={e => updateColor("searchBg", e.target.value)} />
+                      <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.searchBg || "#ffffff"} onChange={e => updateColor("searchBg", e.target.value)} />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.institutionalBg || "#f97316" }} />
-                <div className="flex-1">
-                  <Label className="font-bold text-sm text-slate-700">Sessões Institucionais (Ex: Imagens)</Label>
-                  <p className="text-xs text-slate-500 mb-2">Cor de fundo das seções institucionais (como Serviços de Saúde e Diferenciais da Farmácia).</p>
-                  <div className="flex items-center gap-2">
-                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.institutionalBg || "#f97316"} onChange={e => updateColor("institutionalBg", e.target.value)} />
-                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.institutionalBg || "#f97316"} onChange={e => updateColor("institutionalBg", e.target.value)} />
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.institutionalBg || "#f97316" }} />
+                  <div className="flex-1">
+                    <Label className="font-bold text-sm text-slate-700">Sessões Institucionais (Ex: Imagens)</Label>
+                    <p className="text-xs text-slate-500 mb-2">Cor de fundo das seções institucionais (como Serviços de Saúde e Diferenciais da Farmácia).</p>
+                    <div className="flex items-center gap-2">
+                      <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.institutionalBg || "#f97316"} onChange={e => updateColor("institutionalBg", e.target.value)} />
+                      <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.institutionalBg || "#f97316"} onChange={e => updateColor("institutionalBg", e.target.value)} />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right Column: Preview */}

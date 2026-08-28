@@ -250,14 +250,36 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
   const pharmacies = useAdmin((s) => s.pharmacies);
   const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
-  const tarjas = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
+  const tarjasOld = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
     b.posicao === "Banner Tarja" &&
     (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
   )), [allBanners, page, lojaId, isParceiro]);
   
-  if (tarjas.length === 0) return null;
+  const tarjaItems = useMemo(() => {
+    const bannerWithJson = tarjasOld.find(b => b.formatoExtra && b.formatoExtra.trim().startsWith('['));
+    if (bannerWithJson) {
+      try {
+        const parsed = JSON.parse(bannerWithJson.formatoExtra!);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch(e) {}
+    }
+    
+    // Legacy fallback
+    if (tarjasOld.length > 0) {
+      return tarjasOld.map(b => ({
+        icon: b.imageUrl,
+        title: "",
+        subtitle: b.nome,
+        isLegacy: true,
+      }));
+    }
+    
+    return [];
+  }, [tarjasOld]);
+  
+  if (tarjaItems.length === 0) return null;
 
   const getIcon = (url: string) => {
     if (!url || !url.startsWith("icon:")) return null;
@@ -273,11 +295,11 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
     <section className="bg-white border-y py-3 md:py-4 mt-4">
       <div className="container-fa">
         <div className="flex overflow-x-auto pb-2 px-4 -mx-4 md:px-0 md:mx-0 snap-x scrollbar-none lg:justify-between lg:items-stretch divide-x divide-slate-200">
-          {tarjas.map((tarja, index) => {
-            const Icon = getIcon(tarja.imageUrl);
+          {tarjaItems.map((item, index) => {
+            const Icon = getIcon(item.icon);
             
-            // Format text to support **bold** natively (Title vs Subtitle)
-            const formatText = (text?: string) => {
+            // Format text for legacy items (supporting **bold**)
+            const formatLegacyText = (text?: string) => {
               if (!text) return null;
               const parts = text.split(/(\*\*.*?\*\*)/g);
               let content: React.ReactNode[] = [];
@@ -292,18 +314,25 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
             };
 
             return (
-              <div key={tarja.id} className={`shrink-0 w-[240px] lg:flex-1 flex items-center justify-center gap-3 lg:gap-4 snap-start px-4 md:px-6 ${index === 0 ? 'pl-0' : ''} ${index === tarjas.length - 1 ? 'pr-0' : ''}`}>
+              <div key={index} className={`shrink-0 w-[240px] lg:flex-1 flex items-center justify-center gap-3 lg:gap-4 snap-start px-4 md:px-6 ${index === 0 ? 'pl-0' : ''} ${index === tarjaItems.length - 1 ? 'pr-0' : ''}`}>
                 <div className="h-10 w-10 md:h-12 md:w-12 shrink-0 flex items-center justify-center text-[#0a2540] overflow-hidden">
                   {Icon ? (
                     <Icon className="h-8 w-8 md:h-10 md:w-10 stroke-[1.5]" />
-                  ) : tarja.imageUrl ? (
-                    <img src={tarja.imageUrl} alt="" className="w-full h-full object-contain" />
+                  ) : item.icon ? (
+                    <img src={item.icon} alt="" className="w-full h-full object-contain" />
                   ) : (
                     <Truck className="h-8 w-8 md:h-10 md:w-10 stroke-[1.5]" />
                   )}
                 </div>
                 <div className="flex-1">
-                  {formatText(tarja.nome)}
+                  {item.isLegacy ? (
+                    formatLegacyText(item.subtitle)
+                  ) : (
+                    <div className="flex flex-col justify-center">
+                      {item.title && <strong className="block text-[#0a2540] font-bold text-[13px] md:text-[15px] leading-tight uppercase tracking-tight">{item.title}</strong>}
+                      {item.subtitle && <span className="block text-slate-500 text-[11px] md:text-[13px] leading-tight">{item.subtitle}</span>}
+                    </div>
+                  )}
                 </div>
               </div>
             );

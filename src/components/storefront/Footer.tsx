@@ -30,6 +30,7 @@ import { useLeads } from "@/stores/leads";
 import { useCart } from "@/stores/cart";
 import { useSearchHistory } from "@/stores/searchHistory";
 import { useMemo, useEffect, useState } from "react";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 
 const TOP_TERMS = [
   "Dipirona", "Vitamina D", "Paracetamol", "Protetor solar", "Whey protein",
@@ -50,16 +51,9 @@ export function Footer() {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const { banners, pharmacies } = useAdmin();
-  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
-  const activePharmacy = useMemo(() => {
-    return pharmacies.find(p => p.id === selectedPharmacyId) || pharmacies[0] || null;
-  }, [pharmacies, selectedPharmacyId]);
-
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
-  
-  const params = useParams({ strict: false });
-  const urlSlug = (params as any)?.storeSlug as string | undefined;
-  const storeSlug = urlSlug || activePharmacy?.slug || "poa";
+  const activePharmacy = useActivePharmacy();
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.isPleno === false;
+  const storeSlug = activePharmacy?.slug || "poa";
 
   const diferenciaisBanners = banners.filter((b) => {
     if (b.posicao !== "Banner Diferenciais" || !b.active) return false;
@@ -225,13 +219,15 @@ export function Footer() {
               <p className="text-xs opacity-90">Tenha a farmácia na palma da sua mão e ofertas exclusivas.</p>
             </div>
           </a>
-          <a href={`tel:${(activePharmacy?.telefone || dadosLoja.telefone)?.replace(/\\D/g, "") || "5133633900"}`} className="flex items-center gap-4 bg-white text-primary p-4 rounded-lg border border-transparent hover:border-primary transition shadow-sm group">
+          <a href={`https://wa.me/55${(activePharmacy?.whatsapp || dadosLoja.whatsapp || activePharmacy?.telefone || dadosLoja.telefone)?.replace(/\D/g, "") || "5133633900"}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 bg-white text-primary p-4 rounded-lg border border-transparent hover:border-primary transition shadow-sm group">
             <div className="h-12 w-12 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition">
-              <Phone className="h-6 w-6" />
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.487-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+              </svg>
             </div>
             <div>
               <h4 className="font-bold text-sm">Fale Conosco</h4>
-              <p className="text-xs opacity-90">Ligue {activePharmacy?.telefone || dadosLoja.telefone} ou WhatsApp {activePharmacy?.whatsapp || dadosLoja.whatsapp}.</p>
+              <p className="text-xs opacity-90">WhatsApp {activePharmacy?.whatsapp || dadosLoja.whatsapp || activePharmacy?.telefone || dadosLoja.telefone}</p>
             </div>
           </a>
         </div>
@@ -408,11 +404,11 @@ export function Footer() {
         <div className="container-fa py-8 grid lg:grid-cols-2 gap-8 items-start">
           <div>
             <Link to="/" className="inline-flex items-center">
-              {activePharmacy?.categoriaAssociado === 'Parceiro' && !activePharmacy?.footerLogoUrl && !activePharmacy?.logoUrl ? (
-                <span className="font-bold text-xl text-white">{activePharmacy.nome}</span>
+              {isParceiro && !activePharmacy?.footerLogoUrl && !activePharmacy?.logoUrl ? (
+                <span className="font-bold text-xl text-white">{activePharmacy?.nome}</span>
               ) : (
                 <img
-                  src={activePharmacy?.footerLogoUrl || activePharmacy?.logoUrl || (activePharmacy?.categoriaAssociado === 'Parceiro' ? "" : (dadosLoja?.logoUrl || logoUrlDefault))}
+                  src={activePharmacy?.footerLogoUrl || activePharmacy?.logoUrl || (isParceiro ? "" : (dadosLoja?.logoUrl || logoUrlDefault))}
                   alt="Logo Rodapé"
                   className="h-12 bg-white rounded-md p-2 w-auto object-contain"
                   loading="lazy"
@@ -440,11 +436,24 @@ export function Footer() {
 
           <div className="text-sm space-y-2 opacity-95">
             <h3 className="font-bold uppercase text-xs tracking-wider opacity-80">{tituloCentralRelacionamento}</h3>
-            <div className="flex items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> CNPJ: {activePharmacy?.cnpj || dadosLoja.cnpj}</div>
-            <div className="flex items-start gap-2"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{activePharmacy?.endereco || dadosLoja.endereco}, {activePharmacy?.numero || dadosLoja.numero}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} — {activePharmacy?.bairro || dadosLoja.bairro}, {activePharmacy?.cidade || dadosLoja.cidade}/{activePharmacy?.uf || dadosLoja.estado} — CEP {activePharmacy?.cep || dadosLoja.cep}</div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {activePharmacy?.telefone || dadosLoja.telefone}</div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> WhatsApp: {activePharmacy?.whatsapp || dadosLoja.whatsapp}</div>
-            <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {activePharmacy?.email || dadosLoja.email}</div>
+            {(activePharmacy?.cnpj || !isParceiro) && (
+              <div className="flex items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> CNPJ: {activePharmacy?.cnpj || (!isParceiro ? dadosLoja.cnpj : '')}</div>
+            )}
+            {(!isParceiro || activePharmacy?.endereco) && (
+              <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
+                {activePharmacy?.endereco || (!isParceiro ? dadosLoja.endereco : '')}, {activePharmacy?.numero || (!isParceiro ? dadosLoja.numero : '')}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (!isParceiro && dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} {activePharmacy?.bairro ? `— ${activePharmacy.bairro}` : (!isParceiro ? `— ${dadosLoja.bairro}` : '')}, {activePharmacy?.cidade || (!isParceiro ? dadosLoja.cidade : '')}/{activePharmacy?.uf || (!isParceiro ? dadosLoja.estado : '')} {activePharmacy?.cep ? `— CEP ${activePharmacy.cep}` : (!isParceiro ? `— CEP ${dadosLoja.cep}` : '')}
+              </div>
+            )}
+            {(activePharmacy?.telefone || !isParceiro) && (
+              <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {activePharmacy?.telefone || (!isParceiro ? dadosLoja.telefone : '')}</div>
+            )}
+            {(activePharmacy?.whatsapp || !isParceiro) && (
+              <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> WhatsApp: {activePharmacy?.whatsapp || (!isParceiro ? dadosLoja.whatsapp : '')}</div>
+            )}
+            {(activePharmacy?.email || !isParceiro) && (
+              <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {activePharmacy?.email || (!isParceiro ? dadosLoja.email : '')}</div>
+            )}
           </div>
 
         </div>
@@ -453,20 +462,20 @@ export function Footer() {
       {/* Legal */}
       <div className="bg-white text-slate-800 border-t-4 border-accent">
         <div className="container-fa py-6">
-          <div className="text-[11px] leading-relaxed text-slate-700">
+          <div className="text-[11px] leading-relaxed text-slate-700 break-words overflow-hidden w-full max-w-full">
             {activePharmacy?.footerPlataformaTexto ? (
-              <p className="whitespace-pre-wrap">{activePharmacy.footerPlataformaTexto}</p>
+              <p className="whitespace-pre-wrap break-words">{activePharmacy.footerPlataformaTexto}</p>
             ) : (
               <>
-                <p>
+                <p className="break-words">
                   <strong>Plataforma Digital de Vendas da Rede:</strong> {activePharmacy?.razaoSocial || dadosLoja.razaoSocial} | CNPJ: {activePharmacy?.cnpj || dadosLoja.cnpj} | {activePharmacy?.endereco || dadosLoja.endereco}, {activePharmacy?.numero || dadosLoja.numero}{activePharmacy?.complemento ? ` - ${activePharmacy.complemento}` : (dadosLoja.complemento ? ` - ${dadosLoja.complemento}` : '')} - {activePharmacy?.bairro || dadosLoja.bairro} - {activePharmacy?.cidade || dadosLoja.cidade}/{activePharmacy?.uf || dadosLoja.estado} - CEP: {activePharmacy?.cep || dadosLoja.cep}
                 </p>
                 
                 {activePharmacy?.footerAvisoLegal ? (
-                  <p className="mt-2 text-justify whitespace-pre-wrap">{activePharmacy.footerAvisoLegal}</p>
+                  <p className="mt-2 text-justify whitespace-pre-wrap break-words">{activePharmacy.footerAvisoLegal}</p>
                 ) : (
-                  <p className="mt-2 text-justify">
-                    <strong>AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009):</strong> Este site é uma vitrine digital de intermediação. A venda, a conferência de estoque, o faturamento (emissão da Nota Fiscal), a dispensação e a entrega dos produtos são de responsabilidade exclusiva da Farmácia Parceira da rede selecionada pelo consumidor no momento da compra. Os dados técnicos específicos do estabelecimento vendedor (Razão Social, CNPJ, AFE, CRF e Nome do Farmacêutico Responsável) serão apresentados detalhadamente na tela de resumo do pedido (checkout) e constarão obrigatoriamente no documento fiscal impresso entregue junto com as mercadorias. As informações contidas neste site não devem ser usadas para automedicação e não substituem, em hipótese alguma, as orientações dadas pelo profissional da área. Somente o médico e o farmacêutico estão aptos a diagnosticar qualquer problema de saúde e prescrever o tratamento adequado. Ao persistirem os sintomas, um médico deverá ser consultado. Os preços e promoções divulgados no site são válidos apenas para compras feitas pela internet. Todos os pedidos efetuados estão sujeitos à confirmação da disponibilidade de produto em nosso estoque. Maiores esclarecimentos, consultar o site: <a href="https://www.anvisa.gov.br" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">www.anvisa.gov.br</a>.
+                  <p className="mt-2 text-justify break-words">
+                    <strong>AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009):</strong> Este site é uma vitrine digital de intermediação. A venda, a conferência de estoque, o faturamento (emissão da Nota Fiscal), a dispensação e a entrega dos produtos são de responsabilidade exclusiva da Farmácia Parceira da rede selecionada pelo consumidor no momento da compra. Os dados técnicos específicos do estabelecimento vendedor (Razão Social, CNPJ, AFE, CRF e Nome do Farmacêutico Responsável) serão apresentados detalhadamente na tela de resumo do pedido (checkout) e constarão obrigatoriamente no documento fiscal impresso entregue junto com as mercadorias. As informações contidas neste site não devem ser usadas para automedicação e não substituem, em hipótese alguma, as orientações dadas pelo profissional da área. Somente o médico e o farmacêutico estão aptos a diagnosticar qualquer problema de saúde e prescrever o tratamento adequado. Ao persistirem os sintomas, um médico deverá ser consultado. Os preços e promoções divulgados no site são válidos apenas para compras feitas pela internet. Todos os pedidos efetuados estão sujeitos à confirmação da disponibilidade de produto em nosso estoque. Maiores esclarecimentos, consultar o site: <a href="https://www.anvisa.gov.br" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary break-all">www.anvisa.gov.br</a>.
                   </p>
                 )}
               </>

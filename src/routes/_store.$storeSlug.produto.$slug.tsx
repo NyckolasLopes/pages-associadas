@@ -57,8 +57,14 @@ export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
   loader: async ({ params }) => {
     const p = await catalog.getProductBySlug(params.slug);
     if (!p) throw notFound();
-    const [loja, cat, subcat, crossSell, compreJuntoPartner] = await Promise.all([
-      catalog.activeStore(),
+    const storeSlug = params.storeSlug;
+    const { useAdmin } = await import("@/stores/admin");
+    const pharmacies = useAdmin.getState().pharmacies;
+    let loja = pharmacies.find((ph: any) => (ph.slug || "").toLowerCase() === storeSlug.toLowerCase());
+    if (!loja) {
+      loja = pharmacies.filter((ph: any) => ph.ativo !== false)[0] || pharmacies[0];
+    }
+    const [cat, subcat, crossSell, compreJuntoPartner] = await Promise.all([
       p.categoriaId ? catalog.getCategoryById(p.categoriaId) : Promise.resolve(null),
       p.subcategoriaId ? catalog.getCategoryById(p.subcategoriaId) : Promise.resolve(null),
       catalog.crossSell([p.id], 5, p.categoriaId),

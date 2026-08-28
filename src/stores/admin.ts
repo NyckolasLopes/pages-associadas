@@ -870,6 +870,7 @@ export const useAdmin = create<AdminState>()(
           start_date: (banner.startDate && banner.startDate.trim() !== "") ? new Date(banner.startDate).toISOString() : null,
           end_date: (banner.endDate && banner.endDate.trim() !== "") ? new Date(banner.endDate).toISOString() : null,
           loja_id: banner.lojaId || null,
+          farmacia_id: banner.farmaciaId || banner.lojaId || null,
           vitrine_vinculada: banner.vitrineVinculada,
           banner_vinculado: banner.bannerVinculado,
           topico_vinculado: banner.topicoVinculado,
@@ -903,6 +904,8 @@ export const useAdmin = create<AdminState>()(
         if (banner.active !== undefined) payload.ativo = banner.active;
         if (banner.startDate !== undefined) payload.start_date = (banner.startDate && banner.startDate.trim() !== "") ? new Date(banner.startDate).toISOString() : null;
         if (banner.endDate !== undefined) payload.end_date = (banner.endDate && banner.endDate.trim() !== "") ? new Date(banner.endDate).toISOString() : null;
+        if (banner.lojaId !== undefined) payload.loja_id = banner.lojaId;
+        if (banner.farmaciaId !== undefined) payload.farmacia_id = banner.farmaciaId;
         if (banner.vitrineVinculada !== undefined) payload.vitrine_vinculada = banner.vitrineVinculada;
         if (banner.bannerVinculado !== undefined) payload.banner_vinculado = banner.bannerVinculado;
         if (banner.topicoVinculado !== undefined) payload.topico_vinculado = banner.topicoVinculado;

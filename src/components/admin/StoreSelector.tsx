@@ -21,7 +21,6 @@ export function StoreSelector({ className }: StoreSelectorProps) {
     ? pharmacies 
     : pharmacies.filter(p => currentUser.lojasVinculadas?.includes(p.id));
 
-  if (isGlobalAdmin) return null;
   if (userStores.length === 0) return null;
   if (!isGlobalAdmin && userStores.length <= 1) return null;
 

@@ -172,7 +172,14 @@ function CartPage() {
   const promocoes = useMarketing((s) => s.promocoes);
   
   const allPharmacies = useAdmin((s) => s.pharmacies);
-  const selectedPharmacy = allPharmacies.find(p => p.id === selectedPharmacyId);
+  const { storeSlug } = Route.useParams();
+  const selectedPharmacy = useMemo(() => {
+    if (storeSlug) {
+      const p = allPharmacies.find(ph => (ph.slug || "").toLowerCase() === storeSlug.toLowerCase());
+      if (p) return p;
+    }
+    return allPharmacies.find(p => p.id === selectedPharmacyId);
+  }, [allPharmacies, selectedPharmacyId, storeSlug]);
 
   const storeStatus = useMemo(() => {
     if (!selectedPharmacy) return null;
@@ -1510,9 +1517,9 @@ function CartPage() {
                                 <Icon className="h-4 w-4 text-primary" />
                                 <div className="flex-1">
                                   <div className="text-sm font-bold">{f.label}</div>
-                                  <div className="text-xs text-emerald-600 font-medium">{f.eta}</div>
+                                  <div className="text-xs text-primary font-medium">{f.eta}</div>
                                 </div>
-                                <span className="text-sm font-bold">{f.price === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(f.price)}</span>
+                                <span className="text-sm font-bold">{f.price === 0 ? <span className="text-primary font-bold">Grátis</span> : brl(f.price)}</span>
                               </label>
                             )
                           })}
@@ -1526,10 +1533,10 @@ function CartPage() {
                   )}
 
                   {selected === "pickup" && selectedPharmacy && (
-                    <div className="bg-emerald-50 text-emerald-900 text-xs p-3 rounded border border-emerald-200 mt-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="bg-primary/10 text-primary-dark text-xs p-3 rounded border border-primary/20 mt-3 animate-in fade-in slide-in-from-top-2">
                       <div className="font-bold flex items-center gap-1.5 mb-1.5"><MapPin className="h-4 w-4"/> {hasService ? "Local de Realização do Serviço" : "Atenção ao Endereço de Retirada"}</div>
                       <p>{hasService ? "Dirija-se ao local abaixo para realização do serviço:" : "O seu pedido deverá ser retirado presencialmente no seguinte endereço:"}</p>
-                      <p className="mt-1.5 font-bold text-sm bg-white p-2 rounded shadow-sm border border-emerald-100">{selectedPharmacy.endereco}</p>
+                      <p className="mt-1.5 font-bold text-sm bg-white p-2 rounded shadow-sm border border-primary/10">{selectedPharmacy.endereco}</p>
                     </div>
                   )}
                 </div>
@@ -1546,14 +1553,14 @@ function CartPage() {
               <span>{brl(subtotal)}</span>
             </div>
             {storeDiscount > 0 && (
-              <div className="flex justify-between text-sm text-green-600 font-bold py-1">
+              <div className="flex justify-between text-sm text-primary font-bold py-1">
                 <span>Desconto Produtos</span>
                 <span>−{brl(storeDiscount)}</span>
               </div>
             )}
 
             {couponDisc > 0 && (
-              <div className="flex justify-between text-sm text-emerald-600 font-bold py-1">
+              <div className="flex justify-between text-sm text-primary font-bold py-1">
                 <span className="flex items-center gap-1"><Tag className="h-3.5 w-3.5"/> Desconto do Cupom ({appliedCoupon})</span>
                 <span>−{brl(couponDisc)}</span>
               </div>
@@ -1568,9 +1575,9 @@ function CartPage() {
               <span className="text-muted-foreground">{isDelivery ? "Entrega" : "Retirada"}</span>
               <span>
                 {!isDelivery ? (
-                  <span className="text-emerald-600 font-bold">Grátis</span>
+                  <span className="text-primary font-bold">Grátis</span>
                 ) : (selectedFreight && selectedFreight.id !== "pickup") ? (
-                  freightPrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(freightPrice)
+                  freightPrice === 0 ? <span className="text-primary font-bold">Grátis</span> : brl(freightPrice)
                 ) : (
                   <span className="text-muted-foreground text-xs">A calcular</span>
                 )}
@@ -1583,13 +1590,13 @@ function CartPage() {
                 <Tag className="h-3.5 w-3.5 text-primary" /> Cupom de Desconto
               </div>
               {appliedCoupon ? (
-                <div className="flex items-center justify-between bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg px-3 py-2 text-xs">
+                <div className="flex items-center justify-between bg-primary/10 text-primary-dark border border-primary/20 rounded-lg px-3 py-2 text-xs">
                   <div className="font-bold flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
                     <span>{appliedCoupon}</span>
-                    <span className="text-emerald-700 font-normal">(-{brl(couponDisc)})</span>
+                    <span className="text-primary font-normal">(-{brl(couponDisc)})</span>
                   </div>
-                  <button onClick={removeCoupon} className="text-emerald-900 hover:text-red-600 font-bold ml-2">
+                  <button onClick={removeCoupon} className="text-primary hover:text-red-600 font-bold ml-2">
                     Remover
                   </button>
                 </div>
@@ -1612,7 +1619,7 @@ function CartPage() {
                 </div>
               )}
               {couponFeedback && (
-                <p className={`text-[11px] mt-1.5 font-medium ${couponFeedback.includes("sucesso") ? "text-emerald-600" : "text-destructive"}`}>
+                <p className={`text-[11px] mt-1.5 font-medium ${couponFeedback.includes("sucesso") ? "text-primary" : "text-destructive"}`}>
                   {couponFeedback}
                 </p>
               )}
@@ -1631,7 +1638,7 @@ function CartPage() {
             </div>
 
             <Button
-              className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-6 text-base shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+              className="w-full mt-4 bg-primary hover:bg-primary-dark text-primary-foreground font-bold py-6 text-base shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
               size="lg"
               onClick={goToCheckout}
             >
@@ -1646,9 +1653,9 @@ function CartPage() {
       <Dialog open={whatsAppModalOpen} onOpenChange={setWhatsAppModalOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center gap-2.5 text-emerald-700">
-              <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                <MessageCircle className="h-5 w-5 text-emerald-600" />
+            <div className="flex items-center gap-2.5 text-primary">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <MessageCircle className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <DialogTitle className="text-lg font-bold">Enviar Pedido para a Loja</DialogTitle>
@@ -1870,30 +1877,30 @@ function CartPage() {
             </div>
 
             {/* Resumo do Valor */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-              <div className="space-y-1.5 mb-3 border-b border-emerald-200/50 pb-3">
-                <div className="flex justify-between text-sm text-emerald-800">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+              <div className="space-y-1.5 mb-3 border-b border-primary/10 pb-3">
+                <div className="flex justify-between text-sm text-primary-dark">
                   <span>Subtotal ({items.length} itens)</span>
                   <span>{brl(subtotal)}</span>
                 </div>
                 {(storeDiscount + pbmDisc + couponDisc) > 0 && (
-                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                  <div className="flex justify-between text-sm text-primary font-medium">
                     <span>Descontos</span>
                     <span>-{brl(storeDiscount + pbmDisc + couponDisc)}</span>
                   </div>
                 )}
                 {deliveryMethod === "entrega" && (
-                  <div className="flex justify-between text-sm text-emerald-800">
+                  <div className="flex justify-between text-sm text-primary-dark">
                     <span>Frete</span>
-                    <span>{(selectedFreight && selectedFreight.id !== "pickup") ? (freightPrice === 0 ? <span className="text-emerald-600 font-bold">Grátis</span> : brl(freightPrice)) : <span className="text-emerald-700/70 text-xs">A calcular</span>}</span>
+                    <span>{(selectedFreight && selectedFreight.id !== "pickup") ? (freightPrice === 0 ? <span className="text-primary font-bold">Grátis</span> : brl(freightPrice)) : <span className="text-primary/70 text-xs">A calcular</span>}</span>
                   </div>
                 )}
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-emerald-700">Pagamento acertado na {deliveryMethod}</span>
+                <span className="text-xs text-primary">Pagamento acertado na {deliveryMethod}</span>
                 <div className="text-right flex items-center gap-2">
-                  <span className="text-xs text-emerald-800 font-bold uppercase">Total</span>
-                  <span className="text-lg font-bold text-emerald-900">{brl(grandTotal)}</span>
+                  <span className="text-xs text-primary-dark font-bold uppercase">Total</span>
+                  <span className="text-lg font-bold text-foreground">{brl(grandTotal)}</span>
                 </div>
               </div>
             </div>
@@ -1901,7 +1908,7 @@ function CartPage() {
             <Button
               type="submit"
               disabled={isSubmittingOrder || (deliveryMethod === "entrega" && (!deliveryNumber || isEditingAddress))}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-6 text-base shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
+              className="w-full bg-primary hover:bg-primary-dark text-primary-foreground font-bold py-6 text-base shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
             >
               <Send className="h-5 w-5" />
               {isSubmittingOrder ? "Processando..." : "Finalizar Pedido"}

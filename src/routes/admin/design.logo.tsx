@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { useAdmin } from "@/stores/admin";
+import { useConfig } from "@/stores/config";
 import { Button } from "@/components/ui/button";
 import { Upload, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import logoUrlDefault from "@/assets/logo.png";
 import logoAnvisaDefault from "@/assets/logo-anvisa.png";
@@ -34,8 +35,13 @@ async function uploadLogoToStorage(file: File, path: string): Promise<string> {
 
 function AdminDesignLogo() {
   const { activeStoreId, currentUser, pharmacies, updatePharmacy } = useAdmin();
+  const { logo: globalLogo, fetchConfigs, saveConfig } = useConfig();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchConfigs();
+  }, [fetchConfigs]);
 
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   let storeId = activeStoreId;
@@ -44,7 +50,7 @@ function AdminDesignLogo() {
     storeId = currentUser.lojasVinculadas[0];
   }
 
-  const currentPharmacy = pharmacies.find((p) => p.id === storeId);
+  const currentPharmacy = storeId ? pharmacies.find((p) => p.id === storeId) : null;
   const isParceiro = currentPharmacy?.categoriaAssociado === 'Parceiro';
   const isPleno = currentPharmacy?.categoriaAssociado === 'Pleno';
 
@@ -53,10 +59,10 @@ function AdminDesignLogo() {
   const defaultFooterLogo = isParceiro ? "" : logoUrlDefault;
   const defaultAnvisaLogo = isParceiro ? "" : logoAnvisaDefault;
 
-  const currentLogo = currentPharmacy?.logoUrl || defaultLogo;
-  const currentFavicon = currentPharmacy?.faviconUrl || defaultFavicon;
-  const currentFooterLogo = currentPharmacy?.footerLogoUrl || defaultFooterLogo;
-  const currentAnvisaLogo = currentPharmacy?.anvisaLogoUrl || defaultAnvisaLogo;
+  const currentLogo = currentPharmacy ? (currentPharmacy.logoUrl || defaultLogo) : (globalLogo || defaultLogo);
+  const currentFavicon = currentPharmacy ? (currentPharmacy.faviconUrl || defaultFavicon) : defaultFavicon;
+  const currentFooterLogo = currentPharmacy ? (currentPharmacy.footerLogoUrl || defaultFooterLogo) : defaultFooterLogo;
+  const currentAnvisaLogo = currentPharmacy ? (currentPharmacy.anvisaLogoUrl || defaultAnvisaLogo) : defaultAnvisaLogo;
 
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -65,7 +71,9 @@ function AdminDesignLogo() {
     maxSizeMB: number = 2
   ) => {
     const file = e.target.files?.[0];
-    if (!file || !currentPharmacy) return;
+    if (!file) return;
+    // Se não for admin global e não tem currentPharmacy, falha
+    if (!isGlobalAdmin && !currentPharmacy) return;
 
     if (file.size > maxSizeMB * 1024 * 1024) {
       toast.error(`O arquivo deve ter no máximo ${maxSizeMB}MB.`);
@@ -74,33 +82,22 @@ function AdminDesignLogo() {
 
     setUploadingField(fieldName);
     try {
-      const url = await uploadLogoToStorage(file, `${currentPharmacy.id}/${storagePath}`);
-      await updatePharmacy(currentPharmacy.id, { ...currentPharmacy, [fieldName]: url });
+      const storagePrefix = currentPharmacy ? currentPharmacy.id : "global";
+      const url = await uploadLogoToStorage(file, `${storagePrefix}/${storagePath}`);
+      
+      if (currentPharmacy) {
+        await updatePharmacy(currentPharmacy.id, { ...currentPharmacy, [fieldName]: url });
+      } else {
+        if (fieldName === 'logoUrl') {
+          await saveConfig("logo", url);
+        } else {
+          toast.info("Apenas o logo principal é suportado globalmente no momento.");
+        }
+      }
       toast.success("Imagem atualizada com sucesso!");
     } catch (err: any) {
       console.error("Erro ao enviar logo via storage:", err);
-      try {
-        // Fallback para base64 se o bucket não estiver configurado
-        await new Promise<void>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = async (ev) => {
-            try {
-              if (typeof ev.target?.result === "string") {
-                await updatePharmacy(currentPharmacy.id, { ...currentPharmacy, [fieldName]: ev.target.result });
-                toast.success("Imagem salva localmente.");
-              }
-              resolve();
-            } catch (innerErr) {
-              reject(innerErr);
-            }
-          };
-          reader.onerror = () => reject(new Error("Erro ao ler o arquivo."));
-          reader.readAsDataURL(file);
-        });
-      } catch (base64Err: any) {
-        console.error("Erro no fallback base64:", base64Err);
-        toast.error("Erro ao salvar a imagem. Tente uma imagem mais leve ou contate o suporte.");
-      }
+      toast.error("Erro ao salvar a imagem.");
     } finally {
       setUploadingField(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -115,7 +112,7 @@ function AdminDesignLogo() {
     }
   };
 
-  if (!storeId || !currentPharmacy) {
+  if (!isGlobalAdmin && (!storeId || !currentPharmacy)) {
     return (
       <div className="p-8 text-center text-slate-500 bg-white rounded-lg shadow-sm border">
         Selecione uma loja específica no topo para visualizar ou alterar o logo e favicon.
@@ -128,7 +125,7 @@ function AdminDesignLogo() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Logo e Favicon</h2>
-          <p className="text-muted-foreground">Gerencie a identidade visual da loja <strong>{currentPharmacy.nome}</strong>.</p>
+          <p className="text-muted-foreground">Gerencie a identidade visual {currentPharmacy ? `da loja ${currentPharmacy.nome}` : 'global da rede'}.</p>
         </div>
         <StoreSelector className="mb-0" />
       </div>
@@ -160,21 +157,21 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.logoUrl && !isPleno && (
+              {currentPharmacy?.logoUrl && !isPleno && (
                 <button onClick={() => {
-                  updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl: "" });
+                  if (currentPharmacy?.id) updatePharmacy(currentPharmacy.id, { ...currentPharmacy, logoUrl: "" } as any);
                   toast.success("Logo removido!");
                 }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
             </div>
-            {!currentPharmacy.logoUrl && !isParceiro && (
+            {!currentPharmacy?.logoUrl && !isParceiro && (
               <p className="text-xs font-medium text-slate-400 mt-4">
                 Exibindo logo padrão do tema (Farmácias Associadas).
               </p>
             )}
-            {!currentPharmacy.logoUrl && isParceiro && (
+            {!currentPharmacy?.logoUrl && isParceiro && (
               <p className="text-xs font-medium text-amber-600 mt-4 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200">
                 Lojas parceiras não utilizam a logo da rede. Envie a logo da sua farmácia.
               </p>
@@ -206,21 +203,21 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.faviconUrl && !isPleno && (
+              {currentPharmacy?.faviconUrl && !isPleno && (
                 <button onClick={() => {
-                  updatePharmacy(currentPharmacy.id, { ...currentPharmacy, faviconUrl: "" });
+                  if (currentPharmacy?.id) updatePharmacy(currentPharmacy.id, { ...currentPharmacy, faviconUrl: "" } as any);
                   toast.success("Favicon removido!");
                 }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
             </div>
-            {!currentPharmacy.faviconUrl && !isParceiro && (
+            {!currentPharmacy?.faviconUrl && !isParceiro && (
               <p className="text-xs font-medium text-slate-400 mt-4">
-                Exibindo ícone padrão do tema (Farmácias Associadas).
+                Exibindo favicon padrão do tema.
               </p>
             )}
-            {!currentPharmacy.faviconUrl && isParceiro && (
+            {!currentPharmacy?.faviconUrl && isParceiro && (
               <p className="text-xs font-medium text-amber-600 mt-4 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200">
                 Lojas parceiras não utilizam o ícone da rede. Envie o ícone da sua farmácia.
               </p>
@@ -250,18 +247,18 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.footerLogoUrl && (
+              {currentPharmacy?.footerLogoUrl && (
                 <button onClick={() => {
-                  updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: "" });
+                  if (currentPharmacy?.id) updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: "" } as any);
                   toast.success("Logo do rodapé removido!");
                 }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
             </div>
-            {!currentPharmacy.footerLogoUrl && (
+            {!currentPharmacy?.footerLogoUrl && (
               <p className="text-xs font-medium text-slate-400 mt-4">
-                Exibindo logo padrão. Envie para alterar.
+                Exibindo logo padrão do tema no rodapé. alterar.
               </p>
             )}
             <p className="text-xs text-muted-foreground max-w-[300px] mt-4">
@@ -289,18 +286,18 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.anvisaLogoUrl && (
+              {currentPharmacy?.anvisaLogoUrl && (
                 <button onClick={() => {
-                  updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: "" });
-                  toast.success("Selo da Anvisa removido!");
+                  if (currentPharmacy?.id) updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: "" } as any);
+                  toast.success("Logo da Anvisa removido!");
                 }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
             </div>
-            {!currentPharmacy.anvisaLogoUrl && (
+            {!currentPharmacy?.anvisaLogoUrl && (
               <p className="text-xs font-medium text-slate-400 mt-4">
-                Exibindo selo padrão da Anvisa.
+                Nenhum logo da Anvisa configurado.
               </p>
             )}
             <p className="text-xs text-muted-foreground max-w-[300px] mt-4">

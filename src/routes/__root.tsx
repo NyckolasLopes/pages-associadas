@@ -95,9 +95,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const bairro = dadosLoja?.bairro || "Matriz";
 
     const adminState = useAdmin.getState();
-    const currentPharmacy = adminState.pharmacies.find(p => p.id === adminState.activeStoreId);
-    const themeColor = currentPharmacy?.topBarBgColor || currentPharmacy?.themeColors?.['--primary'] || "#00B5AD";
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : "/";
+    const storeSlug = pathname.split("/")[1];
+    
+    let currentPharmacy = null;
+    if (storeSlug && !['admin', 'auth', 'cart', 'checkout', 'p'].includes(storeSlug)) {
+      currentPharmacy = adminState.pharmacies.find(p => (p.slug || "").toLowerCase() === storeSlug.toLowerCase());
+    }
+    if (!currentPharmacy) {
+      currentPharmacy = adminState.pharmacies.find(p => p.id === adminState.activeStoreId);
+    }
 
+    const globalLogo = useConfig.getState().logo;
+    const themeColor = currentPharmacy?.topBarBgColor || currentPharmacy?.themeColors?.['--primary'] || "#00B5AD";
+    const faviconHref = currentPharmacy?.faviconUrl || currentPharmacy?.logoUrl || globalLogo || "/favicon.png";
     return {
       meta: [
         { charSet: "utf-8" },
@@ -121,11 +132,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
         { rel: "stylesheet", href: appCss },
+        { rel: "icon", href: faviconHref, type: "image/png" },
+        { rel: "shortcut icon", href: faviconHref, type: "image/png" },
         {
           rel: "stylesheet",
           href: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;500;700;900&display=swap",
         },
-        { rel: "icon", type: "image/png", href: "/favicon.png" },
         { rel: "manifest", href: "/manifest.json" },
       ],
     };

@@ -102,6 +102,25 @@ function StoreLayout() {
     return Object.keys(themeToApply).length > 0 ? (themeToApply as CSSProperties) : undefined;
   }, [activePharmacy]);
 
+  useEffect(() => {
+    if (storeTheme) {
+      Object.entries(storeTheme).forEach(([key, value]) => {
+        if (key.startsWith('--')) {
+          document.documentElement.style.setProperty(key, value as string);
+        }
+      });
+    }
+    return () => {
+      if (storeTheme) {
+        Object.entries(storeTheme).forEach(([key]) => {
+          if (key.startsWith('--')) {
+            document.documentElement.style.removeProperty(key);
+          }
+        });
+      }
+    };
+  }, [storeTheme]);
+
   // — Efeitos (todos os hooks antes do early return) —
   useEffect(() => {
     if (!activePharmacy) return;
@@ -144,7 +163,7 @@ function StoreLayout() {
     
     if (activePharmacy.faviconUrl) {
       newLink.href = activePharmacy.faviconUrl;
-    } else if (activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado') {
+    } else if (activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado' || activePharmacy.isPleno === false) {
       newLink.href = 'data:,'; // Empty favicon for partners without custom favicon
     } else {
       newLink.href = globalFavicon || '/favicon.png';

@@ -57,6 +57,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { productImage } from "@/lib/format";
 
 import { Spinner } from "@/components/ui/spinner";
 
@@ -794,7 +795,7 @@ export function PedidosAdmin() {
                   >
                     <div className="w-16 h-16 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                       <img
-                        src={p.foto || "https://placehold.co/100"}
+                        src={productImage(p.foto || p.imagem || p.imagens)}
                         alt={p.nome}
                         className="w-full h-full object-cover"
                       />

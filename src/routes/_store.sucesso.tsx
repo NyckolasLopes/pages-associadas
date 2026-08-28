@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { MessageCircle, CheckCircle2, Package, Truck, Clock, ShoppingBag, MapPin, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,9 +33,15 @@ function TimelineStep({ icon: Icon, label, active, isLast = false }: { icon: any
 function SucessoPage() {
   const search = Route.useSearch() as any;
   const navigate = useNavigate();
+  const params = useParams({ strict: false }) as any;
   const allPharmacies = useAdmin((s) => s.pharmacies);
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
-  const activeStore = allPharmacies.find((p) => p.id === selectedPharmacyId) || allPharmacies[0];
+  
+  const activeStore = allPharmacies.find((p) => 
+    p.slug === params?.storeSlug || 
+    p.id === params?.storeSlug || 
+    p.id === selectedPharmacyId
+  ) || allPharmacies[0];
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
