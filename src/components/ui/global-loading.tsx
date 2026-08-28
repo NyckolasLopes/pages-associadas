@@ -21,15 +21,17 @@ export function GlobalLoading() {
     logoToUse = "/logo.png";
   } else if (activePharmacy) {
     if (isParceiro) {
-      // Parceiro usa o próprio logo, se tiver. Se não, fica vazio.
+      // Parceiro usa o próprio logo, se tiver. Se não, fica vazio (usando o spinner padrão).
       logoToUse = activePharmacy.logoUrl || "";
     } else {
       // Vitrine da rede plena usa apenas o favicon girando
       useFaviconSpinner = true;
     }
   } else {
-    // Estamos carregando os dados da farmácia ainda, por padrão usamos o favicon
-    useFaviconSpinner = true;
+    // Estamos carregando os dados da farmácia ainda. 
+    // Para não arriscar exibir o favicon das Farmácias Associadas numa loja parceira,
+    // usamos o spinner genérico.
+    useFaviconSpinner = false;
   }
 
   return (
