@@ -539,8 +539,8 @@ export function Header() {
         {/* Account & Pedidos */}
         <div className="hidden lg:flex items-center gap-4 ml-4">
           <Link to={user ? "/pedidos" : "/login"} search={user ? undefined : { redirect: "/pedidos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
-            <div className="p-2 rounded-full transition" style={{ backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' }}>
-              <Package className="h-5 w-5" style={{ color: 'var(--header-icons, var(--primary))' }} />
+            <div className={`p-2 rounded-full transition group-hover:bg-primary/20 ${!isParceiro ? 'bg-primary/10' : ''}`} style={isParceiro ? { backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' } : undefined}>
+              <Package className={`h-5 w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] uppercase font-bold text-muted-foreground leading-tight">Acompanhar</span>
@@ -549,8 +549,8 @@ export function Header() {
           </Link>
 
           <Link to={user ? "/perfil" : "/login"} search={user ? { tab: "favoritos" } : { redirect: "/perfil", tab: "favoritos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
-            <div className="p-2 rounded-full transition" style={{ backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' }}>
-              <Heart className="h-5 w-5" style={{ color: 'var(--header-icons, var(--primary))' }} />
+            <div className={`p-2 rounded-full transition group-hover:bg-primary/20 ${!isParceiro ? 'bg-primary/10' : ''}`} style={isParceiro ? { backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' } : undefined}>
+              <Heart className={`h-5 w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] uppercase font-bold text-muted-foreground leading-tight">Ver Lista</span>
@@ -568,7 +568,7 @@ export function Header() {
               <span className="font-bold text-primary truncate w-full leading-tight">{user?.name?.split(" ")[0]}</span>
             </Link>
           ) : (
-            <Button variant="ghost" onClick={() => navigate({ to: "/login", search: { redirect: window.location.pathname } as any })} style={{ color: 'var(--header-icons, var(--foreground))' }}>
+            <Button variant="ghost" onClick={() => navigate({ to: "/login", search: { redirect: window.location.pathname } as any })} style={isParceiro ? { color: 'var(--header-icons, var(--foreground))' } : undefined}>
               <User className="h-4 w-4 mr-1" /> Entrar
             </Button>
           )}
@@ -576,7 +576,7 @@ export function Header() {
         {/* Cesta */}
         <Sheet open={mounted && drawerOpen} onOpenChange={setDrawer}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="relative gap-2 border-[var(--header-icons,var(--primary))] text-[var(--header-icons,var(--primary))] hover:bg-[var(--header-icons,var(--primary))] hover:text-white transition-colors">
+            <Button variant="outline" className={`relative gap-2 transition-colors ${isParceiro ? 'border-[var(--header-icons,var(--primary))] text-[var(--header-icons,var(--primary))] hover:bg-[var(--header-icons,var(--primary))] hover:text-white' : 'border-primary text-primary hover:bg-primary hover:text-white'}`}>
               <ShoppingBasket className="h-5 w-5" />
               <span className="hidden sm:inline">Cesta</span>
               {mounted && count > 0 && (
