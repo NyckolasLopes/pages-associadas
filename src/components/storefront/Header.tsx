@@ -381,15 +381,15 @@ export function Header() {
       />
       <header 
         className="sticky top-0 z-40 border-b shadow-sm"
-        style={{ backgroundColor: 'var(--header-bg, hsl(var(--background)))' }}
+        style={{ backgroundColor: 'var(--header-bg, var(--background))' }}
       >
       {/* Top Announcement Bar */}
       {(activePharmacy?.topBarText || !activePharmacy) && (
         <div 
           className="text-center text-xs py-1.5 font-bold flex items-center justify-center overflow-hidden"
           style={{ 
-            backgroundColor: `var(--topbar-bg, ${activePharmacy?.topBarBgColor || 'hsl(var(--accent))'})`, 
-            color: `var(--topbar-text, ${activePharmacy?.topBarTextColor || 'hsl(var(--accent-foreground))'})` 
+            backgroundColor: `var(--topbar-bg, ${activePharmacy?.topBarBgColor || 'var(--accent)'})`, 
+            color: `var(--topbar-text, ${activePharmacy?.topBarTextColor || 'var(--accent-foreground)'})` 
           }}
         >
           <div>
@@ -402,8 +402,8 @@ export function Header() {
       <div 
         className="text-xs hidden md:block"
         style={{ 
-          backgroundColor: 'var(--info-bar-bg, hsl(var(--primary)))', 
-          color: 'var(--info-bar-text, hsl(var(--primary-foreground)))' 
+          backgroundColor: 'var(--info-bar-bg, var(--primary))', 
+          color: 'var(--info-bar-text, var(--primary-foreground))' 
         }}
       >
         <div className="container-fa flex items-center justify-between h-9 gap-4">
@@ -539,8 +539,8 @@ export function Header() {
         {/* Account & Pedidos */}
         <div className="hidden lg:flex items-center gap-4 ml-4">
           <Link to={user ? "/pedidos" : "/login"} search={user ? undefined : { redirect: "/pedidos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
-            <div className="p-2 rounded-full transition" style={{ backgroundColor: 'color-mix(in srgb, var(--header-icons, hsl(var(--primary))) 10%, transparent)' }}>
-              <Package className="h-5 w-5" style={{ color: 'var(--header-icons, hsl(var(--primary)))' }} />
+            <div className="p-2 rounded-full transition" style={{ backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' }}>
+              <Package className="h-5 w-5" style={{ color: 'var(--header-icons, var(--primary))' }} />
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] uppercase font-bold text-muted-foreground leading-tight">Acompanhar</span>
@@ -549,8 +549,8 @@ export function Header() {
           </Link>
 
           <Link to={user ? "/perfil" : "/login"} search={user ? { tab: "favoritos" } : { redirect: "/perfil", tab: "favoritos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
-            <div className="p-2 rounded-full transition" style={{ backgroundColor: 'color-mix(in srgb, var(--header-icons, hsl(var(--primary))) 10%, transparent)' }}>
-              <Heart className="h-5 w-5" style={{ color: 'var(--header-icons, hsl(var(--primary)))' }} />
+            <div className="p-2 rounded-full transition" style={{ backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' }}>
+              <Heart className="h-5 w-5" style={{ color: 'var(--header-icons, var(--primary))' }} />
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] uppercase font-bold text-muted-foreground leading-tight">Ver Lista</span>
@@ -568,7 +568,7 @@ export function Header() {
               <span className="font-bold text-primary truncate w-full leading-tight">{user?.name?.split(" ")[0]}</span>
             </Link>
           ) : (
-            <Button variant="ghost" onClick={() => navigate({ to: "/login", search: { redirect: window.location.pathname } as any })} style={{ color: 'var(--header-icons, hsl(var(--foreground)))' }}>
+            <Button variant="ghost" onClick={() => navigate({ to: "/login", search: { redirect: window.location.pathname } as any })} style={{ color: 'var(--header-icons, var(--foreground))' }}>
               <User className="h-4 w-4 mr-1" /> Entrar
             </Button>
           )}
@@ -576,7 +576,7 @@ export function Header() {
         {/* Cesta */}
         <Sheet open={mounted && drawerOpen} onOpenChange={setDrawer}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="relative gap-2" style={{ color: 'var(--header-icons, hsl(var(--primary)))', borderColor: 'color-mix(in srgb, var(--header-icons, hsl(var(--border))) 20%, transparent)' }}>
+            <Button variant="outline" className="relative gap-2" style={{ color: 'var(--header-icons, var(--primary))', borderColor: 'color-mix(in srgb, var(--header-icons, var(--border)) 20%, transparent)' }}>
               <ShoppingBasket className="h-5 w-5" />
               <span className="hidden sm:inline">Cesta</span>
               {mounted && count > 0 && (
@@ -1127,7 +1127,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
   return (
     <nav
       className={`hidden md:block border-t relative transition-opacity duration-300 ${mounted ? "opacity-100" : "opacity-0"}`}
-      style={{ backgroundColor: 'var(--menu-bg, hsl(var(--primary)))', color: 'var(--menu-text, hsl(var(--primary-foreground)))' }}
+      style={{ backgroundColor: 'var(--menu-bg, var(--primary))', color: 'var(--menu-text, var(--primary-foreground))' }}
       onMouseLeave={handleMouseLeave}
     >
       <div className="container-fa">
