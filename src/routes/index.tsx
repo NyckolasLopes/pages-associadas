@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Navigation, Search, Store, ArrowRight, Loader2 } from "lucide-react";
 import { getCepCoordsWithFallback, haversineKm } from "@/lib/distanceApis";
 import { toast } from "sonner";
-import AssociadasLogo from "@/assets/logo-associadas.png";
+import AssociadasLogo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
   component: IndexGateway,
