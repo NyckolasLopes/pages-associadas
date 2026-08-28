@@ -486,7 +486,9 @@ export function Header() {
                 </div>
               ) : (
                 <>
-                  {results.map((p) => (
+                  {results.map((p) => {
+                    const ep = getEffectivePrice(p, activePharmacy?.id || selectedPharmacyId);
+                    return (
                     <Link
                       key={p.id}
                       to={"/$storeSlug/produto/$slug" as any}
@@ -504,9 +506,9 @@ export function Header() {
                         <div className="text-sm font-bold truncate">{p.nome}</div>
                         <div className="text-xs text-muted-foreground">{p.marca}</div>
                       </div>
-                      <div className="text-sm font-bold text-foreground">{brl(p.precoPor)}</div>
+                      <div className="text-sm font-bold text-foreground">{brl(ep.precoPor)}</div>
                     </Link>
-                  ))}
+                  )})}
                   {results.length > 0 && (
                     <div className="p-2 border-t">
                       <button
@@ -676,7 +678,9 @@ export function Header() {
                     </div>
                   ) : (
                     <>
-                      {results.map((p) => (
+                      {results.map((p) => {
+                        const ep = getEffectivePrice(p, activePharmacy?.id || selectedPharmacyId);
+                        return (
                         <Link
                           key={p.id}
                           to={"/$storeSlug/produto/$slug" as any}
@@ -697,9 +701,9 @@ export function Header() {
                             <div className="text-sm font-bold truncate">{p.nome}</div>
                             <div className="text-xs text-muted-foreground">{p.marca}</div>
                           </div>
-                          <div className="text-sm font-bold text-foreground">{brl(p.precoPor)}</div>
+                          <div className="text-sm font-bold text-foreground">{brl(ep.precoPor)}</div>
                         </Link>
-                      ))}
+                      )})}
                       {results.length > 0 && (
                         <div className="p-2 border-t">
                           <button
@@ -1297,7 +1301,9 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   Destaques da categoria
                 </div>
                 <div className="grid grid-cols-3 gap-4 flex-1 content-start">
-                  {catProducts.map(p => (
+                  {catProducts.map(p => {
+                    const ep = getEffectivePrice(p, activePharmacy?.id || selectedPharmacyId);
+                    return (
                     <Link
                       key={p.id}
                       to={"/$storeSlug/produto/$slug" as any}
@@ -1319,9 +1325,9 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                       </div>
                       <div className="text-[10px] font-bold text-muted-foreground uppercase truncate mb-1">{p.marca}</div>
                       <div className="text-xs font-bold line-clamp-2 leading-tight mb-3 group-hover:text-primary transition min-h-[32px]">{p.nome}</div>
-                      <div className="text-sm font-bold text-foreground mt-auto">{brl(p.precoPor)}</div>
+                      <div className="text-sm font-bold text-foreground mt-auto">{brl(ep.precoPor)}</div>
                     </Link>
-                  ))}
+                  )})}
                 </div>
               </div>
               )}
