@@ -481,12 +481,12 @@ function NovaPromocaoPage() {
                         style={formData.icone === item.id ? { 
                           borderColor: formData.corSelo || '#ea580c', 
                           backgroundColor: (formData.corSelo || '#ea580c') + '15', 
-                          color: formData.corIcone || formData.corSelo || '#ea580c'
+                          color: '#000000'
                         } : {}}
                         className={`h-11 flex-1 rounded-lg flex items-center justify-center border-2 transition-all ${
                           formData.icone === item.id 
                             ? 'shadow-sm ring-1 ring-orange-400'
-                            : 'border-slate-200 text-slate-400 hover:border-slate-300'
+                            : 'border-slate-200 text-slate-800 hover:border-slate-400 hover:text-black'
                         }`}
                       >
                         <item.icon className="w-5 h-5" />
