@@ -379,14 +379,17 @@ export function Header() {
         scanError={scanError}
         onClearError={handleClearError}
       />
-      <header className="sticky top-0 z-40 bg-background border-b shadow-sm">
+      <header 
+        className="sticky top-0 z-40 border-b shadow-sm"
+        style={{ backgroundColor: 'var(--header-bg, var(--background))' }}
+      >
       {/* Top Announcement Bar */}
       {(activePharmacy?.topBarText || !activePharmacy) && (
         <div 
           className="text-center text-xs py-1.5 font-bold flex items-center justify-center overflow-hidden"
           style={{ 
-            backgroundColor: activePharmacy?.topBarBgColor || 'var(--accent)', 
-            color: activePharmacy?.topBarTextColor || 'var(--accent-foreground)' 
+            backgroundColor: `var(--topbar-bg, ${activePharmacy?.topBarBgColor || 'var(--accent)'})`, 
+            color: `var(--topbar-text, ${activePharmacy?.topBarTextColor || 'var(--accent-foreground)'})` 
           }}
         >
           <div>
@@ -396,7 +399,13 @@ export function Header() {
       )}
 
       {/* Top utility bar */}
-      <div className="bg-primary text-primary-foreground text-xs hidden md:block">
+      <div 
+        className="text-xs hidden md:block"
+        style={{ 
+          backgroundColor: 'var(--info-bar-bg, var(--primary))', 
+          color: 'var(--info-bar-text, var(--primary-foreground))' 
+        }}
+      >
         <div className="container-fa flex items-center justify-between h-9 gap-4">
           {!(activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.isPleno === false) && (
             <span className="hidden md:inline">Aqui você tem amigos.</span>
@@ -445,19 +454,17 @@ export function Header() {
                     setQ(e.target.value);
                     setSearchOpen(true);
                   }}
-                  placeholder={activePharmacy?.isPleno === false || activePharmacy?.categoriaAssociado === 'Parceiro' ? "Escreva o que procura" : "Escreva o que procura ou escaneie o codigo de barras"}
-                  className={`pl-10 h-11 rounded-full border-2 focus-visible:border-primary w-full ${activePharmacy?.isPleno === false || activePharmacy?.categoriaAssociado === 'Parceiro' ? 'pr-4' : 'pr-10'}`}
+                  placeholder="Escreva o que procura ou escaneie o codigo de barras"
+                  className="pl-10 h-11 rounded-full border-2 focus-visible:border-primary w-full pr-10"
                 />
-                {activePharmacy?.isPleno !== false && activePharmacy?.categoriaAssociado !== 'Parceiro' && (
-                  <button
-                    type="button"
-                    aria-label="Escanear código"
-                    onClick={() => setScannerOpen(true)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  aria-label="Escanear código"
+                  onClick={() => setScannerOpen(true)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                >
+                  <Camera className="h-4 w-4" />
+                </button>
               </div>
             </PopoverTrigger>
             <PopoverContent
@@ -532,8 +539,8 @@ export function Header() {
         {/* Account & Pedidos */}
         <div className="hidden lg:flex items-center gap-4 ml-4">
           <Link to={user ? "/pedidos" : "/login"} search={user ? undefined : { redirect: "/pedidos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
-            <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition">
-              <Package className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-full transition" style={{ backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' }}>
+              <Package className="h-5 w-5" style={{ color: 'var(--header-icons, var(--primary))' }} />
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] uppercase font-bold text-muted-foreground leading-tight">Acompanhar</span>
@@ -542,8 +549,8 @@ export function Header() {
           </Link>
 
           <Link to={user ? "/perfil" : "/login"} search={user ? { tab: "favoritos" } : { redirect: "/perfil", tab: "favoritos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
-            <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition">
-              <Heart className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-full transition" style={{ backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' }}>
+              <Heart className="h-5 w-5" style={{ color: 'var(--header-icons, var(--primary))' }} />
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] uppercase font-bold text-muted-foreground leading-tight">Ver Lista</span>
@@ -561,7 +568,7 @@ export function Header() {
               <span className="font-bold text-primary truncate w-full leading-tight">{user?.name?.split(" ")[0]}</span>
             </Link>
           ) : (
-            <Button variant="ghost" onClick={() => navigate({ to: "/login", search: { redirect: window.location.pathname } as any })}>
+            <Button variant="ghost" onClick={() => navigate({ to: "/login", search: { redirect: window.location.pathname } as any })} style={{ color: 'var(--header-icons, var(--foreground))' }}>
               <User className="h-4 w-4 mr-1" /> Entrar
             </Button>
           )}
@@ -569,7 +576,7 @@ export function Header() {
         {/* Cesta */}
         <Sheet open={mounted && drawerOpen} onOpenChange={setDrawer}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="relative gap-2">
+            <Button variant="outline" className="relative gap-2" style={{ color: 'var(--header-icons, var(--primary))', borderColor: 'color-mix(in srgb, var(--header-icons, var(--border)) 20%, transparent)' }}>
               <ShoppingBasket className="h-5 w-5" />
               <span className="hidden sm:inline">Cesta</span>
               {mounted && count > 0 && (
@@ -636,19 +643,17 @@ export function Header() {
                         setQ(e.target.value);
                         setSearchOpen(true);
                       }}
-                      placeholder={activePharmacy?.isPleno === false || activePharmacy?.categoriaAssociado === 'Parceiro' ? "Escreva o que procura" : "Escreva o que procura ou escaneie o codigo de barras"}
-                      className={`pl-10 h-11 rounded-full border-2 w-full ${activePharmacy?.isPleno === false || activePharmacy?.categoriaAssociado === 'Parceiro' ? 'pr-4' : 'pr-12'}`}
+                      placeholder="Escreva o que procura ou escaneie o codigo de barras"
+                      className="pl-10 h-11 rounded-full border-2 w-full pr-12"
                     />
-                    {activePharmacy?.isPleno !== false && activePharmacy?.categoriaAssociado !== 'Parceiro' && (
-                      <button
-                        type="button"
-                        aria-label="Escanear código"
-                        onClick={() => setScannerOpen(true)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
-                      >
-                        <Camera className="h-5 w-5" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      aria-label="Escanear código"
+                      onClick={() => setScannerOpen(true)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
+                    >
+                      <Camera className="h-5 w-5" />
+                    </button>
                   </div>
                 </PopoverTrigger>
                 <PopoverContent
@@ -1121,7 +1126,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
 
   return (
     <nav
-      className={`hidden md:block border-t bg-primary text-primary-foreground relative transition-opacity duration-300 ${mounted ? "opacity-100" : "opacity-0"}`}
+      className={`hidden md:block border-t relative transition-opacity duration-300 ${mounted ? "opacity-100" : "opacity-0"}`}
+      style={{ backgroundColor: 'var(--menu-bg, var(--primary))', color: 'var(--menu-text, var(--primary-foreground))' }}
       onMouseLeave={handleMouseLeave}
     >
       <div className="container-fa">
@@ -1131,8 +1137,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
               to={"/$storeSlug/busca" as any}
               className={`inline-flex items-center gap-1 xl:gap-2 px-1 lg:px-2 py-3 text-[11px] lg:text-[12px] xl:text-[13px] font-bold transition border-b-2 whitespace-nowrap ${
                 open === "all"
-                  ? "border-accent text-white"
-                  : "border-transparent text-white/95 hover:text-white"
+                  ? "border-accent"
+                  : "border-transparent opacity-90 hover:opacity-100"
               }`}
             >
               <Menu className="h-4 w-4" />
@@ -1302,7 +1308,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                 </div>
                 <div className="grid grid-cols-3 gap-4 flex-1 content-start">
                   {catProducts.map(p => {
-                    const ep = getEffectivePrice(p, activePharmacy?.id || selectedPharmacyId);
+                    const ep = getEffectivePrice(p, activePharmacy?.id || "");
                     return (
                     <Link
                       key={p.id}

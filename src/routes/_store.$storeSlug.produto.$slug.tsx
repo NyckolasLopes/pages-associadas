@@ -662,15 +662,15 @@ function PDP() {
     maxStock = supplierStock > 0 ? supplierStock : 0;
   }
 
-  const activeStoreId = selectedPharmacyId || (availablePharmacies.length > 0 ? availablePharmacies[0].id : null);
+  const activePharmacyId = selectedPharmacyId || (availablePharmacies.length > 0 ? availablePharmacies[0].id : null);
   let finalPrecoDe = Number(p.precoDe) || 0;
   let finalPrecoPor = Number(p.precoPor) || finalPrecoDe || 0;
 
   if (isCampanha) {
     finalPrecoPor = p.precoCampanha ? Number(p.precoCampanha) : finalPrecoPor;
-  } else if (activeStoreId) {
+  } else if (activePharmacyId) {
     // 1. Base table price
-    const activePharm = availablePharmacies.find(f => f.id === activeStoreId);
+    const activePharm = availablePharmacies.find(f => f.id === activePharmacyId);
     if (activePharm) {
       const activeTabela = activePharm.tabelaPrecoId || "poa";
       const regPrice = regionalPrices[`${activeTabela}-${p.id}`];
@@ -678,8 +678,8 @@ function PDP() {
     }
     
     // 2. Specific store override
-      if (p.precosPorLoja?.[activeStoreId]) {
-        const pLoja = p.precosPorLoja[activeStoreId];
+      if (p.precosPorLoja?.[activePharmacyId]) {
+        const pLoja = p.precosPorLoja[activePharmacyId];
         const lojaPrecoPor = pLoja.precoPor ? Number(pLoja.precoPor) : 0;
         const lojaPrecoDe = pLoja.precoDe ? Number(pLoja.precoDe) : lojaPrecoPor;
         
@@ -699,7 +699,8 @@ function PDP() {
   }
 
   // 3. Store-specific & Global Promotions
-  const lojaPromocoes = activeStoreId ? marketingState.lojaPromocoes[activeStoreId] || [] : [];
+  const effectiveStoreId = String(loja?.id || "1");
+  const lojaPromocoes = marketingState.lojaPromocoes[effectiveStoreId] || [];
   const globalPromocoes = promocoes.filter((p: any) => !p.lojaId);
   const padraoPromo = getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes);
   const levePaguePromo = getLevePaguePromotion(p, globalPromocoes, lojaPromocoes);

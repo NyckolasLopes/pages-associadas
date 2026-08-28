@@ -35,7 +35,7 @@ function formatCep(value: string) {
 
 function IndexGateway() {
   const navigate = useNavigate();
-  const { pharmacies, pharmaciesLoaded, loadPharmacies } = useAdmin();
+  const { pharmacies, pharmaciesLoaded, loadPharmacies, logoUrl: globalLogo, faviconUrl: globalFavicon } = useAdmin();
   const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
 
   const [cep, setCep] = useState("");
@@ -292,17 +292,28 @@ function IndexGateway() {
                     )}
                     <div className="pt-1">
                       <div className="flex items-center gap-3 mb-3">
-                        {store.faviconUrl || store.logoUrl || store.categoriaAssociado !== 'Parceiro' ? (
-                          <img 
-                            src={store.faviconUrl || store.logoUrl || '/favicon.png'} 
-                            alt="Logo da loja" 
-                            className="h-8 w-8 object-contain shrink-0" 
-                          />
-                        ) : (
-                          <div className="h-8 w-8 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-center text-[7px] font-bold text-slate-400 text-center leading-tight shrink-0 overflow-hidden shadow-inner">
-                            Sem<br/>Logo
-                          </div>
-                        )}
+                        {(() => {
+                          const isParceiro = store.categoriaAssociado === 'Parceiro' || store.isPleno === false;
+                          const effectiveFavicon = store.faviconUrl || (!isParceiro ? globalFavicon : null);
+                          const effectiveLogo = store.logoUrl || (!isParceiro ? globalLogo : null);
+                          const displaySrc = effectiveFavicon || effectiveLogo || (!isParceiro ? '/favicon.png' : null);
+                          
+                          if (displaySrc) {
+                            return (
+                              <img 
+                                src={displaySrc} 
+                                alt="Logo da loja" 
+                                className="h-8 w-8 object-contain shrink-0" 
+                              />
+                            );
+                          }
+                          
+                          return (
+                            <div className="h-8 w-8 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-center text-[7px] font-bold text-slate-400 text-center leading-tight shrink-0 overflow-hidden shadow-inner">
+                              Sem<br/>Logo
+                            </div>
+                          );
+                        })()}
                         <h3 className="font-extrabold text-slate-800 text-lg group-hover:text-emerald-700 transition-colors leading-tight">{store.nome}</h3>
                       </div>
                       

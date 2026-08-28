@@ -13,29 +13,51 @@ export const Route = createFileRoute("/admin/design/cores")({
 
 const COLOR_GROUPS = [
   {
-    title: "Cores Principais",
+    title: "Cores Principais (Marca)",
     description: "As cores de destaque que definem a identidade da sua marca.",
     items: [
-      { id: "--primary", label: "Cor Primária", description: "Usada em botões principais e cabeçalho.", default: "#00b5ad" },
-      { id: "--secondary", label: "Cor Secundária", description: "Usada em botões secundários e detalhes.", default: "#f37021" },
+      { id: "--primary", label: "Cor Primária", description: "Usada em botões e destaques.", default: "#00b5ad" },
+      { id: "--secondary", label: "Cor Secundária", description: "Usada em botões secundários e ofertas.", default: "#f37021" },
     ]
   },
   {
-    title: "Cores Base",
-    description: "Cores de fundo e textos.",
+    title: "Cores Base (Layout)",
+    description: "Cores de fundo e textos gerais.",
     items: [
-      { id: "--background", label: "Fundo Geral (Background)", description: "Cor de fundo principal do site.", default: "#ffffff" },
+      { id: "--background", label: "Fundo Geral", description: "Cor de fundo principal do site.", default: "#ffffff" },
       { id: "--foreground", label: "Texto Base", description: "Cor principal para os textos.", default: "#1e293b" },
-      { id: "--muted", label: "Fundo Secundário (Muted)", description: "Fundo de áreas de destaque leve, como menus secundários.", default: "#f1f5f9" },
-      { id: "--border", label: "Bordas", description: "Cor das linhas divisórias e bordas.", default: "#e2e8f0" },
+      { id: "--muted", label: "Fundo Secundário (Muted)", description: "Fundo de áreas de destaque leve.", default: "#f1f5f9" },
+      { id: "--border", label: "Bordas", description: "Cor das linhas divisórias.", default: "#e2e8f0" },
     ]
   },
   {
-    title: "Feedback e Status",
-    description: "Cores para alertas e mensagens ao usuário.",
+    title: "Cabeçalho e Barras",
+    description: "Configuração específica do topo do site.",
     items: [
-      { id: "--success", label: "Sucesso", description: "Usada em mensagens e botões de sucesso.", default: "#22c55e" },
-      { id: "--destructive", label: "Alerta / Erro", description: "Usada em mensagens de erro ou ações destrutivas.", default: "#ef4444" },
+      { id: "--topbar-bg", label: "Fundo da Faixa Superior", description: "Barra de anúncios no topo.", default: "#f37021" },
+      { id: "--topbar-text", label: "Texto da Faixa Superior", description: "Texto da barra de anúncios.", default: "#ffffff" },
+      { id: "--info-bar-bg", label: "Fundo da Faixa de Infos", description: "Barra de telefones e links.", default: "#00b5ad" },
+      { id: "--info-bar-text", label: "Texto da Faixa de Infos", description: "Texto da barra de telefones.", default: "#ffffff" },
+      { id: "--header-bg", label: "Fundo do Cabeçalho", description: "Área da logo e busca.", default: "#ffffff" },
+      { id: "--header-icons", label: "Ícones do Cabeçalho", description: "Cor da cesta e usuário.", default: "#00b5ad" },
+    ]
+  },
+  {
+    title: "Navegação e Rodapé",
+    description: "Configuração de menus e da área inferior.",
+    items: [
+      { id: "--menu-bg", label: "Fundo do Menu", description: "Fundo da barra de navegação.", default: "#ffffff" },
+      { id: "--menu-text", label: "Texto do Menu", description: "Textos da barra de navegação.", default: "#1e293b" },
+      { id: "--footer-bg", label: "Fundo do Rodapé", description: "Fundo principal do rodapé.", default: "#00b5ad" },
+      { id: "--footer-text", label: "Texto do Rodapé", description: "Cor dos textos no rodapé.", default: "#ffffff" },
+    ]
+  },
+  {
+    title: "Feedback",
+    description: "Status do sistema.",
+    items: [
+      { id: "--success", label: "Sucesso", description: "Botões de confirmação.", default: "#22c55e" },
+      { id: "--destructive", label: "Erro", description: "Mensagens de erro.", default: "#ef4444" },
     ]
   }
 ];
@@ -176,30 +198,70 @@ function AdminDesignCores() {
                 color: colors['--foreground'] || '#1e293b'
               }}
             >
+              {/* Topbar Mockup */}
+              <div 
+                className="text-center text-[8px] py-1 font-bold tracking-tight"
+                style={{ 
+                  backgroundColor: colors['--topbar-bg'] || colors['--secondary'] || '#f37021', 
+                  color: colors['--topbar-text'] || '#ffffff'
+                }}
+              >
+                Cupom de primeira compra: 10OFF
+              </div>
+
+              {/* Info Bar Mockup */}
+              <div 
+                className="flex items-center justify-between px-4 py-1 text-[8px]"
+                style={{ 
+                  backgroundColor: colors['--info-bar-bg'] || colors['--primary'] || '#00b5ad', 
+                  color: colors['--info-bar-text'] || '#ffffff'
+                }}
+              >
+                <span>Aqui você tem amigos.</span>
+                <span className="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  Atendimento
+                </span>
+              </div>
+
               {/* Header Mockup */}
               <div 
-                className="pt-8 pb-4 px-4 flex flex-col gap-3"
+                className="pt-3 pb-3 px-4 flex flex-col gap-3 border-b"
                 style={{ 
-                  backgroundColor: colors['--primary'] || '#00b5ad', 
-                  color: '#ffffff'
+                  backgroundColor: colors['--header-bg'] || colors['--background'] || '#ffffff', 
+                  color: colors['--foreground'] || '#1e293b',
+                  borderColor: colors['--border'] || '#e2e8f0'
                 }}
               >
                 <div className="flex justify-between items-center">
-                  <div className="font-bold text-sm tracking-tight">Minha Loja</div>
-                  <div className="flex gap-3">
+                  <div className="font-bold text-sm tracking-tight flex items-center gap-1">
+                    <div className="w-5 h-5 rounded-full" style={{ backgroundColor: colors['--primary'] || '#00b5ad' }}></div>
+                    Minha Loja
+                  </div>
+                  <div className="flex gap-3" style={{ color: colors['--header-icons'] || colors['--primary'] || '#00b5ad' }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
                   </div>
                 </div>
-                <div className="w-full h-8 bg-white/90 rounded-md flex items-center px-3 gap-2 text-slate-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                  <div className="w-24 h-2 bg-slate-200 rounded-full"></div>
-                </div>
+              </div>
+
+              {/* Menu Superior Mockup */}
+              <div 
+                className="flex items-center gap-4 px-4 py-2 border-b text-[10px] font-bold shadow-sm"
+                style={{ 
+                  backgroundColor: colors['--menu-bg'] || colors['--background'] || '#ffffff', 
+                  color: colors['--menu-text'] || colors['--foreground'] || '#1e293b',
+                  borderColor: colors['--border'] || '#e2e8f0'
+                }}
+              >
+                <span>Medicamentos</span>
+                <span>Beleza</span>
+                <span>Dermocosméticos</span>
               </div>
 
               {/* Banner Area */}
               <div 
-                className="h-28 flex flex-col items-center justify-center p-4 text-center"
+                className="h-24 flex flex-col items-center justify-center p-4 text-center mt-2 mx-2 rounded-lg"
                 style={{ backgroundColor: colors['--muted'] || '#f1f5f9' }}
               >
                 <div className="text-[10px] font-bold px-2 py-1 bg-black text-white rounded mb-1">OFERTAS ESPECIAIS</div>
@@ -249,8 +311,8 @@ function AdminDesignCores() {
               <div 
                 className="mt-auto p-4 flex flex-col items-center justify-center text-center gap-3"
                 style={{ 
-                  backgroundColor: colors['--secondary'] || '#f37021',
-                  color: '#ffffff'
+                  backgroundColor: colors['--footer-bg'] || colors['--primary'] || '#00b5ad',
+                  color: colors['--footer-text'] || '#ffffff'
                 }}
               >
                 <div className="font-bold text-sm">Farmácias Associadas</div>
@@ -259,13 +321,13 @@ function AdminDesignCores() {
                 </div>
                 <div className="flex w-full justify-around mt-2">
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, currentColor 20%, transparent)' }}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
                     </div>
                     <div className="text-[7px]">Atendimento Humanizado</div>
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, currentColor 20%, transparent)' }}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
                     </div>
                     <div className="text-[7px]">Entrega Rápida</div>

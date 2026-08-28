@@ -95,6 +95,7 @@ function NovaPromocaoPage() {
     corIcone: "#ffffff",
     corTextoBotao: "#ffffff",
     corBotao: "#ea580c",
+    corTimer: "#0f172a",
     textoBotao: "COMPRAR",
     lojaId: effectiveStoreId || undefined,
   });
@@ -102,10 +103,6 @@ function NovaPromocaoPage() {
 
   useEffect(() => {
     if (formData.tipoAlvo !== "produtos") return;
-    if (!searchQuery.trim()) {
-      setSearchResults(produtos.slice(0, 50));
-      return;
-    }
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
@@ -120,7 +117,7 @@ function NovaPromocaoPage() {
       setIsSearching(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchQuery, formData.tipoAlvo, produtos]);
+  }, [searchQuery, formData.tipoAlvo]);
 
   useEffect(() => {
     if (existing && existing.tipoAlvo === "produtos" && existing.alvosId.length > 0) {
@@ -312,6 +309,7 @@ function NovaPromocaoPage() {
     corIcone: formData.corIcone,
     corTextoBotao: formData.corTextoBotao,
     corBotao: formData.corBotao,
+    corTimer: formData.corTimer,
     textoBotao: formData.textoBotao,
     lojaId: formData.lojaId,
   }), [formData, sampleConfig, produtosConfig, previewOriginalPrice]);

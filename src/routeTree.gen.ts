@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as StoreRouteImport } from './routes/_store'
 import { Route as IndexRouteImport } from './routes/index'
@@ -101,6 +102,11 @@ import { Route as StoreStoreSlugProdutoSlugRouteImport } from './routes/_store.$
 import { Route as StoreStoreSlugMSlugRouteImport } from './routes/_store.$storeSlug.m.$slug'
 import { Route as StoreStoreSlugCSlugRouteImport } from './routes/_store.$storeSlug.c.$slug'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -576,6 +582,7 @@ const StoreStoreSlugCSlugRoute = StoreStoreSlugCSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/cadastro': typeof StoreCadastroRoute
   '/checkout': typeof StoreCheckoutRoute
   '/compartilhado': typeof StoreCompartilhadoRoute
@@ -667,6 +674,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/cadastro': typeof StoreCadastroRoute
   '/checkout': typeof StoreCheckoutRoute
   '/compartilhado': typeof StoreCompartilhadoRoute
@@ -761,6 +769,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_store': typeof StoreRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/_store/cadastro': typeof StoreCadastroRoute
   '/_store/checkout': typeof StoreCheckoutRoute
   '/_store/compartilhado': typeof StoreCompartilhadoRoute
@@ -855,6 +864,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/reset-password'
     | '/cadastro'
     | '/checkout'
     | '/compartilhado'
@@ -946,6 +956,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/reset-password'
     | '/cadastro'
     | '/checkout'
     | '/compartilhado'
@@ -1039,6 +1050,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_store'
     | '/admin'
+    | '/reset-password'
     | '/_store/cadastro'
     | '/_store/checkout'
     | '/_store/compartilhado'
@@ -1133,6 +1145,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   StoreRoute: typeof StoreRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   InscricaoTokenRoute: typeof InscricaoTokenRoute
   PainelLojaLojaIdRoute: typeof PainelLojaLojaIdRoute
   PainelLojaOldRoute: typeof PainelLojaOldRoute
@@ -1140,6 +1153,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -2019,6 +2039,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   StoreRoute: StoreRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   InscricaoTokenRoute: InscricaoTokenRoute,
   PainelLojaLojaIdRoute: PainelLojaLojaIdRoute,
   PainelLojaOldRoute: PainelLojaOldRoute,

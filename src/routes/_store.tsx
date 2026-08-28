@@ -131,21 +131,26 @@ function StoreLayout() {
   useEffect(() => {
     if (!activePharmacy) return;
     
-    // Attempt to find existing favicon or create a new one
-    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
+    // Remove existing favicons to force browser to detect the change
+    const existingLinks = document.querySelectorAll("link[rel~='icon'], link[rel~='shortcut icon']");
+    existingLinks.forEach(l => l.remove());
+    
+    // Create new favicon link
+    const newLink = document.createElement('link');
+    newLink.rel = 'icon';
+    newLink.type = 'image/png';
+    
+    const globalFavicon = useAdmin.getState().faviconUrl;
     
     if (activePharmacy.faviconUrl) {
-      link.href = activePharmacy.faviconUrl;
+      newLink.href = activePharmacy.faviconUrl;
     } else if (activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado') {
-      link.href = 'data:,'; // Empty favicon for partners without custom favicon
+      newLink.href = 'data:,'; // Empty favicon for partners without custom favicon
     } else {
-      link.href = '/favicon.png';
+      newLink.href = globalFavicon || '/favicon.png';
     }
+    
+    document.head.appendChild(newLink);
 
     // Attempt to update manifest dynamically for PWA install prompt
     let manifestLink = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
@@ -157,7 +162,7 @@ function StoreLayout() {
     
     const isParceiroOrAssociado = activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado';
     const appName = isParceiroOrAssociado && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
-    const manifestIcon = activePharmacy.faviconUrl || (isParceiroOrAssociado ? "data:," : "/favicon.png");
+    const manifestIcon = activePharmacy.faviconUrl || (isParceiroOrAssociado ? "data:," : (globalFavicon || "/favicon.png"));
     
     const manifest = {
       name: appName,

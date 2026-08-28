@@ -56,6 +56,7 @@ export function PromoCardBadge({
   const time = usePromoTimer(promo.dataFim, promo.horaFim);
   const IconComponent = getPromoIcon(promo.icone);
   const themeColor = promo.corBotao || promo.corSelo || "#dc2626";
+  const timerColor = promo.corTimer || "rgba(0,0,0,0.3)";
 
   if (promo.tipoCampanha === "leve_pague") {
     const qtd = promo.levePague_quantidade || 2;
@@ -89,7 +90,10 @@ export function PromoCardBadge({
             {promo.titulo ? promo.titulo.slice(0, 18) : "OFERTA"}
           </span>
         </div>
-        <div className="font-mono bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider text-white shrink-0">
+        <div 
+          className="font-mono backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider text-white shrink-0"
+          style={{ backgroundColor: timerColor === "rgba(0,0,0,0.3)" ? timerColor : timerColor }}
+        >
           {time.formatted}
         </div>
       </div>

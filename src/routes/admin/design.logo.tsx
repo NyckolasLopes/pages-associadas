@@ -232,9 +232,10 @@ function AdminDesignLogo() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-          <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-            <div className="flex items-center gap-1">
+        {!isParceiro && (
+          <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+              <div className="flex items-center gap-1">
               <span className="font-bold text-sm">Logo do Rodapé</span>
             </div>
             {!isPleno && (
@@ -271,46 +272,9 @@ function AdminDesignLogo() {
             </p>
           </div>
         </div>
+        )}
 
-        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-          <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-            <div className="flex items-center gap-1">
-              <span className="font-bold text-sm">Selo da Anvisa</span>
-            </div>
-            {!isPleno && (
-              <Button variant="outline" size="sm" disabled={uploadingField === 'anvisaLogoUrl'} onClick={() => triggerUpload('anvisaLogoUrl', 'anvisa-logo')}>
-                {uploadingField === 'anvisaLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
-              </Button>
-            )}
-          </div>
-          <div className="p-12 flex flex-col items-center justify-center text-center">
-            <div className="relative group inline-block">
-              {currentAnvisaLogo ? (
-                <img src={currentAnvisaLogo} alt="Logo Anvisa" className="h-16 object-contain border rounded-lg bg-slate-50 p-2" />
-              ) : (
-                <div className="h-16 w-32 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400">
-                  <ImageIcon className="w-6 h-6" />
-                </div>
-              )}
-              {currentPharmacy.anvisaLogoUrl && !isPleno && (
-                <button onClick={() => {
-                  updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: "" });
-                  toast.success("Selo da Anvisa removido!");
-                }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-            {!currentPharmacy.anvisaLogoUrl && (
-              <p className="text-xs font-medium text-slate-400 mt-4">
-                Exibindo selo padrão da Anvisa.
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground max-w-[300px] mt-4">
-              Tamanho ideal: <strong>240 x 136px</strong>. Tamanho máximo <strong>1MB</strong>.
-            </p>
-          </div>
-        </div>
+
       </div>
     </div>
   );

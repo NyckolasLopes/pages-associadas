@@ -1167,6 +1167,7 @@ function CartPage() {
                                   )}
                                 </div>
                                 <div className="flex flex-wrap gap-1.5 items-center">
+                                  {index === 0 && <span className="inline-flex items-center bg-green-100 text-green-700 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded shadow-sm">Mais próxima</span>}
                                   {isMelhorPreco && <span className="inline-flex items-center bg-amber-100 text-amber-800 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded shadow-sm">Melhor Preço</span>}
                                 </div>
                               </div>

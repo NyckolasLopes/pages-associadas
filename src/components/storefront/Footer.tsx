@@ -193,7 +193,13 @@ export function Footer() {
         </div>
       )}
 
-      <footer className="bg-primary text-primary-foreground pb-24 md:pb-0">
+      <footer 
+        className="pb-24 md:pb-0"
+        style={{ 
+          backgroundColor: 'var(--footer-bg, var(--primary))',
+          color: 'var(--footer-text, var(--primary-foreground))'
+        }}
+      >
         {/* Pre-Footer Cards */}
         <div className="bg-secondary text-white border-b border-white/15">
         <div className="container-fa py-6 grid md:grid-cols-2 gap-4">
