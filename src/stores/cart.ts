@@ -64,8 +64,15 @@ export function getEffectivePrice(item: any, pharmacyId: string | null): { preco
     const marketingState = useMarketing.getState();
     const storePromos = marketingState.lojaPromocoes[pharmacyId] || [];
     const globalPromos = marketingState.promocoes || [];
-    const storeOferta = storePromos.find(p => p.ativa && p.tipoCampanha === 'padrao' && p.alvosId.some((id: any) => String(id) === String(item.id)));
-    const globalOferta = storeOferta ? null : globalPromos.find(p => p.ativa && p.tipoCampanha === 'padrao' && p.alvosId.some((id: any) => String(id) === String(item.id)));
+    const checkTarget = (p: any, i: any) => {
+      const tipo = p.tipoAlvo || 'produtos';
+      if (tipo === 'categorias') {
+        return p.alvosId.some((id: any) => String(id) === String(i.categoriaId));
+      }
+      return p.alvosId.some((id: any) => String(id) === String(i.id));
+    };
+    const storeOferta = storePromos.find(p => p.ativa && p.tipoCampanha === 'padrao' && checkTarget(p, item));
+    const globalOferta = storeOferta ? null : globalPromos.find(p => p.ativa && p.tipoCampanha === 'padrao' && checkTarget(p, item));
     const activeOferta = storeOferta || globalOferta;
     
     if (activeOferta) {

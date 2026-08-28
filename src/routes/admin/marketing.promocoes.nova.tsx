@@ -168,7 +168,7 @@ function NovaPromocaoPage() {
       setProdutosConfig(initialConfigs);
       setFormData({
         titulo: existing.titulo,
-        tipoAlvo: "produtos",
+        tipoAlvo: existing.tipoAlvo || "produtos",
         alvosId: existing.alvosId || [],
         dataFim: existing.dataFim || defaultDateFim,
         horaFim: existing.horaFim || "23:59",
@@ -296,7 +296,7 @@ function NovaPromocaoPage() {
   const previewPromoObj: Promocao = useMemo(() => ({
     id: "preview-promo",
     titulo: formData.titulo || "OFERTA EXCLUSIVA",
-    tipoAlvo: "produtos",
+    tipoAlvo: formData.tipoAlvo,
     alvosId: formData.alvosId,
     dataFim: formData.dataFim,
     horaFim: formData.horaFim,
@@ -354,7 +354,7 @@ function NovaPromocaoPage() {
 
     const payload: Omit<Promocao, "id"> = {
       ...formData,
-      tipoAlvo: "produtos",
+      tipoAlvo: formData.tipoAlvo,
       produtosConfig: formData.tipoCampanha === "leve_pague" ? finalProdutosConfig : undefined,
       levePague_quantidade: firstConfig ? firstConfig.quantidade : formData.levePague_quantidade,
       levePague_precoPorItem: firstConfig ? firstConfig.precoPorItem : formData.levePague_precoPorItem,

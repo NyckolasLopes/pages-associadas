@@ -307,9 +307,16 @@ export function getLevePaguePromotion(produto: any, promocoes: any[] = [], store
       if (!isNaN(fim.getTime()) && now > fim) return false;
     }
     
-    // Apenas produto individual
-    if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.id))) {
-      return true;
+    // Verificar se o produto ou categoria está no alvo
+    const tipo = p.tipoAlvo || "produtos";
+    if (tipo === "categorias") {
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.categoriaId))) {
+        return true;
+      }
+    } else {
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.id))) {
+        return true;
+      }
     }
     
     return false;
@@ -349,9 +356,16 @@ export function getPadraoPromotionWithTimer(produto: any, promocoes: any[] = [],
       if (!isNaN(fim.getTime()) && now > fim) return false;
     }
     
-    // Apenas produto individual
-    if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.id))) {
-      return true;
+    // Verificar se o produto ou categoria está no alvo
+    const tipo = p.tipoAlvo || "produtos";
+    if (tipo === "categorias") {
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.categoriaId))) {
+        return true;
+      }
+    } else {
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.id))) {
+        return true;
+      }
     }
     
     return false;
