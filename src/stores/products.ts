@@ -492,9 +492,19 @@ export const useAdminProducts = create<ProductsState>()(
         if (!lojaId) {
           const nextId = s.vitrines.length > 0 ? Math.max(...s.vitrines.map(x => x.id)) + 1 : 1;
           const maxOrdem = s.vitrines.filter(x => x.local === v.local).reduce((max, x) => Math.max(max, x.ordem || 0), 0);
-          return { vitrines: [...s.vitrines, { ...v, id: nextId, ordem: v.ordem || maxOrdem + 1 }] };
+          const newVitrine = { ...v, id: nextId, ordem: v.ordem || maxOrdem + 1 };
+          
+          const newStoreVitrines = { ...s.storeVitrines };
+          Object.keys(newStoreVitrines).forEach(key => {
+            if (newStoreVitrines[key] && newStoreVitrines[key].length > 0) {
+              const storeMaxOrdem = newStoreVitrines[key].filter(x => x.local === v.local).reduce((max, x) => Math.max(max, x.ordem || 0), 0);
+              newStoreVitrines[key] = [...newStoreVitrines[key], { ...newVitrine, ordem: v.ordem || storeMaxOrdem + 1 }];
+            }
+          });
+          
+          return { vitrines: [...s.vitrines, newVitrine], storeVitrines: newStoreVitrines };
         } else {
-          const storeVits = s.storeVitrines[lojaId] || [];
+          const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
           const allVits = [...s.vitrines, ...Object.values(s.storeVitrines).flat()];
           const nextId = allVits.length > 0 ? Math.max(...allVits.map(x => x.id)) + 1 : 1;
           const maxOrdem = storeVits.filter(x => x.local === v.local).reduce((max, x) => Math.max(max, x.ordem || 0), 0);
@@ -502,17 +512,41 @@ export const useAdminProducts = create<ProductsState>()(
         }
       }),
       updateVitrine: (v, lojaId) => set((s) => {
-        if (!lojaId) return { vitrines: s.vitrines.map(x => x.id === v.id ? v : x) };
+        if (!lojaId) {
+          const newStoreVitrines = { ...s.storeVitrines };
+          Object.keys(newStoreVitrines).forEach(key => {
+            if (newStoreVitrines[key] && newStoreVitrines[key].some(x => x.id === v.id)) {
+              newStoreVitrines[key] = newStoreVitrines[key].map(x => x.id === v.id ? v : x);
+            }
+          });
+          return { vitrines: s.vitrines.map(x => x.id === v.id ? v : x), storeVitrines: newStoreVitrines };
+        }
         const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
         return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(x => x.id === v.id ? v : x) } };
       }),
       removeVitrine: (id, lojaId) => set((s) => {
-        if (!lojaId) return { vitrines: s.vitrines.filter(v => v.id !== id) };
+        if (!lojaId) {
+          const newStoreVitrines = { ...s.storeVitrines };
+          Object.keys(newStoreVitrines).forEach(key => {
+            if (newStoreVitrines[key]) {
+              newStoreVitrines[key] = newStoreVitrines[key].filter(v => v.id !== id);
+            }
+          });
+          return { vitrines: s.vitrines.filter(v => v.id !== id), storeVitrines: newStoreVitrines };
+        }
         const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
         return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.filter(v => v.id !== id) } };
       }),
       toggleVitrine: (id, lojaId) => set((s) => {
-        if (!lojaId) return { vitrines: s.vitrines.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v) };
+        if (!lojaId) {
+          const newStoreVitrines = { ...s.storeVitrines };
+          Object.keys(newStoreVitrines).forEach(key => {
+            if (newStoreVitrines[key] && newStoreVitrines[key].some(v => v.id === id)) {
+              newStoreVitrines[key] = newStoreVitrines[key].map(v => v.id === id ? { ...v, ativa: !v.ativa } : v);
+            }
+          });
+          return { vitrines: s.vitrines.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v), storeVitrines: newStoreVitrines };
+        }
         const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
         return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v) } };
       }),
