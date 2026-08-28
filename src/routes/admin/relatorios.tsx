@@ -239,11 +239,14 @@ function Relatorios() {
       }
       
       const hist = [...(pedido.historico || [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
-      const separacao = hist.find(h => h.situacao.toLowerCase() === "em separação");
-      const conclusao = hist.find(h => 
-        ["pronto para retirada", "pronta para retirada", "em rota de entrega", "enviado", "entregue"]
-          .includes(h.situacao.toLowerCase())
-      );
+      const separacao = hist.find(h => {
+        const s = h.situacao?.toLowerCase() || "";
+        return s === "em separação" || s === "separacao" || s === "em separacao" || s === "separando";
+      });
+      const conclusao = hist.find(h => {
+        const s = h.situacao?.toLowerCase() || "";
+        return ["pronto para retirada", "pronta para retirada", "pronto", "em rota de entrega", "em rota", "enviado", "entregue"].includes(s);
+      });
       
       if (separacao && conclusao) {
         const ms = new Date(conclusao.data).getTime() - new Date(separacao.data).getTime();
@@ -259,11 +262,14 @@ function Relatorios() {
 
       lojaOrders.forEach(pedido => {
         const hist = [...(pedido.historico || [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
-        const separacao = hist.find(h => h.situacao?.toLowerCase() === "em separação");
-        const conclusao = hist.find(h => 
-          ["pronto para retirada", "pronta para retirada", "em rota de entrega", "enviado", "entregue"]
-            .includes(h.situacao?.toLowerCase() || "")
-        );
+        const separacao = hist.find(h => {
+          const s = h.situacao?.toLowerCase() || "";
+          return s === "em separação" || s === "separacao" || s === "em separacao" || s === "separando";
+        });
+        const conclusao = hist.find(h => {
+          const s = h.situacao?.toLowerCase() || "";
+          return ["pronto para retirada", "pronta para retirada", "pronto", "em rota de entrega", "em rota", "enviado", "entregue"].includes(s);
+        });
         
         if (separacao && conclusao) {
           const ms = new Date(conclusao.data).getTime() - new Date(separacao.data).getTime();
