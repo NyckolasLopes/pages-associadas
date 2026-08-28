@@ -41,7 +41,7 @@ function IndexGateway() {
   const [cep, setCep] = useState("");
   const [loadingLoc, setLoadingLoc] = useState(false);
   const [foundStores, setFoundStores] = useState<any[]>([]);
-  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [isSearchByLocation, setIsSearchByLocation] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("");
 
   useEffect(() => {
@@ -69,13 +69,12 @@ function IndexGateway() {
     const cityStores = activeStores.filter(p => p.cidade?.trim().toLowerCase() === cidade.toLowerCase());
     if (cityStores.length > 0) {
       setFoundStores(cityStores);
-      setDistanceKm(null);
+      setIsSearchByLocation(false);
     }
   };
 
   const findNearestStore = (lat: number, lng: number) => {
-    let closest: any = null;
-    let minDist = Infinity;
+    let storesWithDist: any[] = [];
 
     for (const store of activeStores) {
       const sLat = (store as any).latitude || store.lat;
@@ -83,16 +82,15 @@ function IndexGateway() {
         
       if (sLat && sLng) {
         const dist = haversineKm(lat, lng, Number(sLat), Number(sLng));
-        if (dist < minDist) {
-          minDist = dist;
-          closest = store;
-        }
+        storesWithDist.push({ ...store, distanceKm: dist });
       }
     }
 
-    if (closest) {
-      setFoundStores([closest]);
-      setDistanceKm(minDist);
+    if (storesWithDist.length > 0) {
+      storesWithDist.sort((a, b) => a.distanceKm - b.distanceKm);
+      setFoundStores(storesWithDist);
+      setSelectedCity("");
+      setIsSearchByLocation(true);
     } else {
       toast.error("Não encontramos lojas com coordenadas cadastradas.");
     }
@@ -148,7 +146,7 @@ function IndexGateway() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-slate-50 bg-cover bg-center flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden font-sans transition-all" style={{ backgroundImage: "url('/bg-home.webp')" }}>
       {/* Background decoration - Light Premium Mesh Gradients */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-emerald-100/50 rounded-full blur-[120px] opacity-80 mix-blend-multiply"></div>
@@ -247,23 +245,13 @@ function IndexGateway() {
             <div className="space-y-6 animate-in zoom-in-95 duration-500 flex-1 flex flex-col">
               <div className="text-center space-y-2 mb-2">
                 <div className="mx-auto h-16 w-16 bg-gradient-to-tr from-emerald-100 to-teal-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm border border-emerald-100/50 transform rotate-3 overflow-hidden">
-                  {foundStores.length === 1 ? (
-                    <img 
-                      src={foundStores[0].categoria === 'Pleno' ? '/favicon-pleno.png' : '/favicon.ico'} 
-                      alt="Logo" 
-                      className="h-10 w-10 -rotate-3 object-contain" 
-                    />
-                  ) : (
-                    <Store className="h-8 w-8 -rotate-3" />
-                  )}
+                  <Store className="h-8 w-8 -rotate-3" />
                 </div>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">
-                  {foundStores.length > 1 ? "Lojas Encontradas" : foundStores[0].nome}
+                  Lojas Encontradas
                 </h2>
-                {distanceKm !== null ? (
-                  <p className="text-sm text-slate-500 font-medium">
-                    Aproximadamente <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md mx-1 font-bold">{distanceKm < 1 ? "< 1" : distanceKm.toFixed(1)} km</span> de distância
-                  </p>
+                {isSearchByLocation ? (
+                  <p className="text-sm text-slate-500 font-medium">Lojas mais próximas de você</p>
                 ) : (
                   <p className="text-sm text-slate-500 font-medium">Lojas na cidade de <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md mx-1 font-bold">{selectedCity}</span></p>
                 )}
@@ -274,15 +262,30 @@ function IndexGateway() {
                   <div key={store.id || idx} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden flex flex-col gap-4 group cursor-default">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 rounded-l-2xl"></div>
                     <div>
-                      {foundStores.length > 1 && (
-                        <h3 className="font-extrabold text-slate-800 text-lg group-hover:text-emerald-700 transition-colors">{store.nome}</h3>
-                      )}
-                      <p className={`text-sm text-slate-500 flex items-start gap-2 font-medium ${foundStores.length > 1 ? 'mt-2' : ''}`}>
-                        <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-emerald-500" />
-                        <span className="line-clamp-2 leading-snug">
-                          {store.cidade} - {store.uf}
-                        </span>
-                      </p>
+                      <div className="flex items-center gap-3 mb-3">
+                        <img 
+                          src={store.categoria === 'Pleno' ? '/favicon-pleno.png' : '/favicon.ico'} 
+                          alt="Logo da loja" 
+                          className="h-8 w-8 object-contain shrink-0" 
+                        />
+                        <h3 className="font-extrabold text-slate-800 text-lg group-hover:text-emerald-700 transition-colors leading-tight">{store.nome}</h3>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <p className="text-sm text-slate-500 flex items-start gap-2 font-medium">
+                          <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-emerald-500" />
+                          <span className="line-clamp-2 leading-snug">
+                            {store.cidade} - {store.uf}
+                          </span>
+                        </p>
+                        
+                        {store.distanceKm !== undefined && (
+                          <p className="text-sm text-emerald-700 flex items-center gap-2 font-bold bg-emerald-50 w-fit px-2.5 py-1 rounded-md border border-emerald-100">
+                            <Navigation className="h-3.5 w-3.5" />
+                            {store.distanceKm < 1 ? "Menos de 1 km de distância" : `${store.distanceKm.toFixed(1)} km de distância`}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <Button 
                       className="w-full h-12 font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-md hover:shadow-lg transition-all"
