@@ -103,7 +103,7 @@ function NovaPromocaoPage() {
   useEffect(() => {
     if (formData.tipoAlvo !== "produtos") return;
     if (!searchQuery.trim()) {
-      setSearchResults([]);
+      setSearchResults(produtos.slice(0, 50));
       return;
     }
     const timer = setTimeout(async () => {
@@ -120,7 +120,7 @@ function NovaPromocaoPage() {
       setIsSearching(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchQuery, formData.tipoAlvo]);
+  }, [searchQuery, formData.tipoAlvo, produtos]);
 
   useEffect(() => {
     if (existing && existing.tipoAlvo === "produtos" && existing.alvosId.length > 0) {
@@ -792,7 +792,7 @@ function NovaPromocaoPage() {
                 ) : (
                   <div className="p-8 text-center text-sm text-slate-500">
                     {!searchQuery.trim() 
-                      ? "Digite algo para buscar produtos." 
+                      ? "Nenhum produto cadastrado." 
                       : `Nenhum produto encontrado para "${searchQuery}".`
                     }
                   </div>
