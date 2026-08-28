@@ -1215,7 +1215,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent onInteractOutside={(e) => e.preventDefault()} className={`max-w-[95vw] ${isServico ? 'w-[900px]' : 'w-[1200px]'} h-[95vh] p-0 overflow-y-auto block bg-slate-50 relative`}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className={`max-w-[95vw] ${isServico ? 'w-[900px]' : 'w-[1200px]'} h-[95vh] p-0 overflow-y-auto bg-slate-50`}>
           <DialogTitle className="sr-only">{isServico ? "Editor de Serviço" : "Editor de Produto"}</DialogTitle>
           {isServico ? serviceContent : content}
         </DialogContent>
