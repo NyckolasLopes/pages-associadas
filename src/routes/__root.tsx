@@ -93,6 +93,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const description = dadosLoja?.descricao || "Medicamentos, dermocosméticos, vitaminas e cuidado para toda a família, com entrega rápida e farmacêutico responsável. Aqui você tem amigos.";
     const bairro = dadosLoja?.bairro || "Matriz";
 
+    const adminState = useAdmin.getState();
+    const currentPharmacy = adminState.pharmacies.find(p => p.id === adminState.activeStoreId);
+    const themeColor = currentPharmacy?.topBarBgColor || currentPharmacy?.themeColors?.['--primary'] || "#00B5AD";
+
     return {
       meta: [
         { charSet: "utf-8" },
@@ -106,7 +110,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           name: "description",
           content: description,
         },
-        { name: "theme-color", content: "#00B5AD" },
+        { name: "theme-color", content: themeColor },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
