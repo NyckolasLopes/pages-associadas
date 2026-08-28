@@ -81,8 +81,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onScan, scanError, onC
             { facingMode: "environment" },
             {
               fps: 10,
-              qrbox: { width: 250, height: 150 },
-              aspectRatio: 1.0,
+              qrbox: 250,
             },
             (decodedText: string) => {
               if (isUnmounted) return;
@@ -105,8 +104,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onScan, scanError, onC
               cameras[0].id,
               {
                 fps: 10,
-                qrbox: { width: 250, height: 150 },
-                aspectRatio: 1.0,
+                qrbox: 250,
               },
               (decodedText: string) => {
                 if (isUnmounted) return;
@@ -129,7 +127,8 @@ export function BarcodeScannerModal({ open, onOpenChange, onScan, scanError, onC
           } else if (err.message === "NO_CAMERAS") {
              setErrorMsg("Nenhuma câmera encontrada neste dispositivo.");
           } else {
-             setErrorMsg("Não foi possível iniciar a câmera. Por favor, permita o acesso e verifique se ela não está em uso por outro aplicativo.");
+             const detailedMsg = err?.message || typeof err === 'string' ? err : 'Erro desconhecido';
+             setErrorMsg(`Não foi possível iniciar a câmera. Por favor, permita o acesso e verifique se ela não está em uso por outro aplicativo. (${detailedMsg})`);
           }
         }
       }
