@@ -40,7 +40,7 @@ function IndexGateway() {
 
   const [cep, setCep] = useState("");
   const [loadingLoc, setLoadingLoc] = useState(false);
-  const [nearestStore, setNearestStore] = useState<any | null>(null);
+  const [foundStores, setFoundStores] = useState<any[]>([]);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [selectedCity, setSelectedCity] = useState<string>("");
 
@@ -66,9 +66,9 @@ function IndexGateway() {
 
   const handleCityChange = (cidade: string) => {
     setSelectedCity(cidade);
-    const cityStores = activeStores.filter(p => p.cidade?.trim() === cidade);
+    const cityStores = activeStores.filter(p => p.cidade?.trim().toLowerCase() === cidade.toLowerCase());
     if (cityStores.length > 0) {
-      setNearestStore(cityStores[0]); // Pick first one as nearest visually
+      setFoundStores(cityStores);
       setDistanceKm(null);
     }
   };
@@ -92,7 +92,7 @@ function IndexGateway() {
     }
 
     if (closest) {
-      setNearestStore(closest);
+      setFoundStores([closest]);
       setDistanceKm(minDist);
     } else {
       toast.error("Não encontramos lojas com coordenadas cadastradas.");
@@ -172,7 +172,7 @@ function IndexGateway() {
 
         <div className="p-6 space-y-6 flex-1 flex flex-col min-h-[360px]">
           {/* Location Gateway */}
-          {!nearestStore ? (
+          {foundStores.length === 0 ? (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1">
               <div className="space-y-3">
                 <label className="text-sm font-bold text-slate-700">De qual cidade você está acessando?</label>
@@ -241,47 +241,55 @@ function IndexGateway() {
               </div>
             </div>
           ) : (
-            /* Nearest Store Result */
-            <div className="space-y-6 animate-in zoom-in-95 duration-300 flex-1 flex flex-col justify-center">
-              <div className="text-center space-y-2">
-                <div className="mx-auto h-20 w-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                  <Store className="h-10 w-10" />
+            /* Search Results */
+            <div className="space-y-6 animate-in zoom-in-95 duration-300 flex-1 flex flex-col">
+              <div className="text-center space-y-2 mb-2">
+                <div className="mx-auto h-16 w-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                  <Store className="h-8 w-8" />
                 </div>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Loja Encontrada</h2>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                  {foundStores.length > 1 ? "Lojas Encontradas" : "Loja Encontrada"}
+                </h2>
                 {distanceKm !== null ? (
                   <p className="text-sm text-slate-500">
                     Aproximadamente <strong className="text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md mx-1">{distanceKm < 1 ? "< 1" : distanceKm.toFixed(1)} km</strong> de distância
                   </p>
                 ) : (
-                  <p className="text-sm text-slate-500">Loja selecionada na cidade de <strong className="text-slate-700">{selectedCity}</strong></p>
+                  <p className="text-sm text-slate-500">Lojas na cidade de <strong className="text-slate-700">{selectedCity}</strong></p>
                 )}
               </div>
 
-              <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-5 mt-4 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-                <h3 className="font-bold text-slate-800 text-lg mb-1">{nearestStore.nome}</h3>
-                <p className="text-sm text-slate-500 flex items-start gap-1.5 mt-2">
-                  <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-slate-400" />
-                  <span className="line-clamp-2 leading-tight">
-                    {nearestStore.cidade} - {nearestStore.uf}
-                  </span>
-                </p>
+              <div className="flex-1 overflow-y-auto pr-1 space-y-3 max-h-[280px] scrollbar-thin scrollbar-thumb-slate-200">
+                {foundStores.map((store, idx) => (
+                  <div key={store.id || idx} className="bg-slate-50/50 border border-slate-200 rounded-xl p-4 shadow-sm relative overflow-hidden flex flex-col gap-3">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-base">{store.nome}</h3>
+                      <p className="text-xs text-slate-500 flex items-start gap-1.5 mt-1.5">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-400" />
+                        <span className="line-clamp-2 leading-tight">
+                          {store.cidade} - {store.uf}
+                        </span>
+                      </p>
+                    </div>
+                    <Button 
+                      className="w-full h-10 font-bold"
+                      onClick={() => goToStore(store)}
+                    >
+                      Acessar Loja
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                ))}
               </div>
 
-              <div className="pt-6 flex gap-3 mt-auto">
+              <div className="pt-2 mt-auto">
                 <Button 
                   variant="outline" 
-                  className="flex-1 h-12 font-bold"
-                  onClick={() => setNearestStore(null)}
+                  className="w-full h-12 font-bold"
+                  onClick={() => setFoundStores([])}
                 >
-                  Voltar
-                </Button>
-                <Button 
-                  className="flex-1 h-12 font-bold"
-                  onClick={() => goToStore(nearestStore)}
-                >
-                  Acessar Loja
-                  <ArrowRight className="h-5 w-5 ml-2" />
+                  Voltar e buscar novamente
                 </Button>
               </div>
             </div>
