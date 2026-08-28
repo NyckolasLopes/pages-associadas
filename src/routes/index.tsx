@@ -167,7 +167,7 @@ function IndexGateway() {
         <div className="absolute top-[20%] left-[20%] w-[500px] h-[500px] bg-blue-50/50 rounded-full blur-[100px] opacity-60 mix-blend-multiply"></div>
       </div>
 
-      <div className="w-full max-w-md bg-white/70 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white overflow-hidden relative z-10 flex flex-col transition-all duration-500">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white overflow-hidden relative z-10 flex flex-col transition-all duration-500">
         {/* Header */}
         <div className="pt-10 pb-6 px-8 text-center relative">
           <img 
