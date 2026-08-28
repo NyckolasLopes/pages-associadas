@@ -273,11 +273,17 @@ function IndexGateway() {
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 rounded-l-2xl"></div>
                     <div>
                       <div className="flex items-center gap-3 mb-3">
-                        <img 
-                          src={store.faviconUrl || '/favicon.png'} 
-                          alt="Logo da loja" 
-                          className="h-8 w-8 object-contain shrink-0" 
-                        />
+                        {store.faviconUrl ? (
+                          <img 
+                            src={store.faviconUrl} 
+                            alt="Logo da loja" 
+                            className="h-8 w-8 object-contain shrink-0" 
+                          />
+                        ) : (
+                          <div className="h-8 w-8 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-center text-[7px] font-bold text-slate-400 text-center leading-tight shrink-0 overflow-hidden shadow-inner">
+                            Sem<br/>Logo
+                          </div>
+                        )}
                         <h3 className="font-extrabold text-slate-800 text-lg group-hover:text-emerald-700 transition-colors leading-tight">{store.nome}</h3>
                       </div>
                       
