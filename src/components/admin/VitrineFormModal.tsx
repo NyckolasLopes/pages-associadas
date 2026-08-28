@@ -80,7 +80,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
 
       if (vitrine && vitrine.produtoIds && vitrine.produtoIds.length > 0) {
         import("@/integrations/supabase/client").then(({ supabase }) => {
-          supabase.from('produtos').select('id, nome, preco_por, preco_de, imagem_url').in('id', vitrine.produtoIds)
+          supabase.from('produtos').select('*').in('id', vitrine.produtoIds)
             .then(({ data }) => {
               if (data) {
                 setSelectedProductsCache(prev => {
@@ -89,7 +89,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
                   return next;
                 });
               }
-            });
+            }).catch(console.error);
         });
       }
     }
@@ -98,34 +98,24 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsSearching(true);
-      import("@/integrations/supabase/client").then(async ({ supabase }) => {
-        try {
-          let query = supabase
-            .from('produtos')
-            .select('id, nome, preco_por, preco_de, imagem_url');
-
-          if (searchProduto.trim()) {
-            query = query.ilike('nome', `%${searchProduto}%`);
-          }
-
-          const { data } = await query.limit(50);
-            
-          if (data) {
-            setSearchResults(data as any);
-            setSelectedProductsCache(prev => {
-              const next = { ...prev };
-              data.forEach(p => { next[String(p.id)] = { ...p, id: String(p.id) }; });
-              return next;
-            });
-          } else {
-            setSearchResults([]);
-          }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setIsSearching(false);
+      catalog.adminSearchProducts({
+        search: searchProduto.trim(),
+        page: 0,
+        pageSize: 50,
+        listFilter: 'all',
+        lojaId
+      }).then(({ results }) => {
+        if (results && results.length > 0) {
+          setSearchResults(results as any);
+          setSelectedProductsCache(prev => {
+            const next = { ...prev };
+            results.forEach(p => { next[String(p.id)] = { ...p, id: String(p.id) }; });
+            return next;
+          });
+        } else {
+          setSearchResults([]);
         }
-      });
+      }).catch(console.error).finally(() => setIsSearching(false));
     }, 400);
     return () => clearTimeout(timer);
   }, [searchProduto, lojaId]);
