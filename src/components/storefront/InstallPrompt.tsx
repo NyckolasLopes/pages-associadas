@@ -37,6 +37,12 @@ export function InstallPrompt() {
 
     window.addEventListener('beforeinstallprompt', handler);
 
+    // Se o evento disparou antes do React montar, pegamos da window global
+    if ((window as any).deferredPWAInstallPrompt) {
+      handler((window as any).deferredPWAInstallPrompt);
+      (window as any).deferredPWAInstallPrompt = null;
+    }
+
     if (isIOSDevice && !localStorage.getItem('pwa_dismissed')) {
       const timer = setTimeout(() => setShowPrompt(true), 3000);
       return () => {
