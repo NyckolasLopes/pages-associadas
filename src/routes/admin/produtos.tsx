@@ -1258,6 +1258,7 @@ function AdminProdutos() {
             await updateStoreProductDestaque(currentLojaId, highlightedProduct.id, destaque);
           }
           setServerProducts(prev => prev.map(p => p.id === highlightedProduct.id ? { ...p, destaque } : p));
+          setHighlightedProduct(prev => prev ? { ...prev, destaque } : prev);
         }}
       />
       
