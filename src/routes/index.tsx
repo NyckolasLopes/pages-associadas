@@ -285,7 +285,12 @@ function IndexGateway() {
                 {foundStores.map((store, idx) => (
                   <div key={store.id || idx} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden flex flex-col gap-4 group cursor-default">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 rounded-l-2xl"></div>
-                    <div>
+                    {isSearchByLocation && idx === 0 && (
+                      <div className="absolute top-0 right-0 bg-emerald-100 text-emerald-800 text-[9px] font-black tracking-widest uppercase px-3 py-1 rounded-bl-xl border-b border-l border-emerald-200 z-10 flex items-center gap-1">
+                        <MapPin className="w-2.5 h-2.5" /> MAIS PRÓXIMA
+                      </div>
+                    )}
+                    <div className="pt-1">
                       <div className="flex items-center gap-3 mb-3">
                         {store.faviconUrl || store.logoUrl ? (
                           <img 
