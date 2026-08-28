@@ -154,7 +154,7 @@ export function PromoProductPageBanner({
             className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0 shadow-inner"
             style={{ color: iconColor }}
           >
-            <IconComponent className="w-5 h-5 animate-pulse" />
+            <IconComponent className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ export function PromoLevePagueOfferBox({
         style={{ backgroundColor: themeColor }}
       >
         <div className="flex items-center gap-2">
-          <Tag className="w-5 h-5 animate-bounce" />
+          <Tag className="w-5 h-5" />
           <span className="font-black text-sm uppercase tracking-wide">
             {promo.titulo || `Leve ${qtd} e Pague Menos`}
           </span>

@@ -237,11 +237,9 @@ function AdminDesignLogo() {
             <div className="flex items-center gap-1">
               <span className="font-bold text-sm">Logo do Rodapé</span>
             </div>
-            {!isPleno && (
-              <Button variant="outline" size="sm" disabled={uploadingField === 'footerLogoUrl'} onClick={() => triggerUpload('footerLogoUrl', 'footer-logo')}>
-                {uploadingField === 'footerLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
-              </Button>
-            )}
+            <Button variant="outline" size="sm" disabled={uploadingField === 'footerLogoUrl'} onClick={() => triggerUpload('footerLogoUrl', 'footer-logo')}>
+              {uploadingField === 'footerLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
+            </Button>
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
@@ -252,7 +250,7 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.footerLogoUrl && !isPleno && (
+              {currentPharmacy.footerLogoUrl && (
                 <button onClick={() => {
                   updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: "" });
                   toast.success("Logo do rodapé removido!");
@@ -278,11 +276,9 @@ function AdminDesignLogo() {
             <div className="flex items-center gap-1">
               <span className="font-bold text-sm">Selo da Anvisa</span>
             </div>
-            {!isPleno && (
-              <Button variant="outline" size="sm" disabled={uploadingField === 'anvisaLogoUrl'} onClick={() => triggerUpload('anvisaLogoUrl', 'anvisa-logo')}>
-                {uploadingField === 'anvisaLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
-              </Button>
-            )}
+            <Button variant="outline" size="sm" disabled={uploadingField === 'anvisaLogoUrl'} onClick={() => triggerUpload('anvisaLogoUrl', 'anvisa-logo')}>
+              {uploadingField === 'anvisaLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
+            </Button>
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
@@ -293,7 +289,7 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy.anvisaLogoUrl && !isPleno && (
+              {currentPharmacy.anvisaLogoUrl && (
                 <button onClick={() => {
                   updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: "" });
                   toast.success("Selo da Anvisa removido!");

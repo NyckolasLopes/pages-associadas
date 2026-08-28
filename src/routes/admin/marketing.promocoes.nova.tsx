@@ -92,7 +92,7 @@ function NovaPromocaoPage() {
     levePague_precoPorItem: 0,
     produtosConfig: {},
     corSelo: "#ea580c",
-    corIcone: "#ffffff",
+    corIcone: "#000000",
     corTextoBotao: "#ffffff",
     corBotao: "#ea580c",
     corTimer: "#0f172a",
@@ -602,7 +602,7 @@ function NovaPromocaoPage() {
                       onClick={() => setFormData({
                         ...formData,
                         corSelo: c.bg,
-                        corIcone: "#ffffff",
+                        corIcone: "#000000",
                         corBotao: c.bg,
                       })}
                       className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-400 transition"
