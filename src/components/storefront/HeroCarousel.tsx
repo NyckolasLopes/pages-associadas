@@ -113,8 +113,8 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
     <section 
       className={`relative w-full overflow-hidden bg-[#f5f5f5] ${
         page === "Página de Categoria" 
-          ? "aspect-[800/400] md:aspect-[1920/350]" 
-          : "aspect-[800/800] sm:aspect-[1800/600] md:aspect-[1920/600]"
+          ? "aspect-[2/1] sm:aspect-[2.5/1] md:aspect-[1920/350]" 
+          : "aspect-[2/1] sm:aspect-[2.5/1] md:aspect-[1920/600]"
       }`}
     >
       {/* Preload imediato do primeiro banner crítico (Desktop e Mobile) */}
@@ -163,7 +163,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
                       media="(max-width: 767px)"
                       srcSet={banner.mobileImageUrl}
                       width={800}
-                      height={800}
+                      height={400}
                     />
                   )}
                   {/* Imagem principal com alta prioridade no primeiro slide e lazy no restante */}

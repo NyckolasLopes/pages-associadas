@@ -11,6 +11,26 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+export function ProductCarouselSkeleton() {
+  return (
+    <div className="flex gap-3 overflow-hidden pb-4 md:pb-2 pt-1">
+      {[1, 2, 3, 4, 5].map((idx) => (
+        <div
+          key={idx}
+          className="shrink-0 w-[44vw] sm:w-[30vw] md:w-[25%] lg:w-[20%] rounded-2xl border bg-card p-3 flex flex-col gap-2.5 animate-pulse"
+        >
+          <div className="aspect-square w-full rounded-xl bg-muted" />
+          <div className="h-3 w-1/3 bg-muted rounded" />
+          <div className="h-4 w-full bg-muted rounded" />
+          <div className="h-4 w-2/3 bg-muted rounded" />
+          <div className="h-5 w-1/2 bg-muted rounded mt-auto" />
+          <div className="h-9 w-full bg-primary/10 rounded-xl" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ProductCarousel({ products, selectedStoreId }: { products: Produto[], selectedStoreId?: string }) {
   const params = useParams({ strict: false });
   const pharmacies = useAdmin(s => s.pharmacies);
@@ -45,7 +65,7 @@ export function ProductCarousel({ products, selectedStoreId }: { products: Produ
           {visibleProducts.map((p) => (
             <CarouselItem
               key={p.id}
-              className="pl-3 basis-[45vw] sm:basis-[30vw] md:basis-[25%] lg:basis-[20%] flex"
+              className="pl-3 basis-[44vw] sm:basis-[30vw] md:basis-[25%] lg:basis-[20%] flex"
             >
               <div className="w-full h-full pb-1">
                 <ProductCard p={p} selectedStoreId={selectedStoreId} />

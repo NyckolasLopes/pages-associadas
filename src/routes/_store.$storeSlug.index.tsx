@@ -5,7 +5,7 @@ import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
 import { catalog } from "@/services/catalog";
 import { ProductCard } from "@/components/storefront/ProductCard";
-import { ProductCarousel } from "@/components/storefront/ProductCarousel";
+import { ProductCarousel, ProductCarouselSkeleton } from "@/components/storefront/ProductCarousel";
 import { HeroCarousel } from "@/components/storefront/HeroCarousel";
 import { SquarePromoGrid } from "@/components/storefront/SquarePromoGrid";
 import { ServicesSection } from "@/components/storefront/ServicesSection";
@@ -51,123 +51,137 @@ function getDeduplicatedBanners(bannersToFilter: any[]) {
   return Array.from(uniqueMap.values());
 }
 
-function DynamicVitrines({ local, page = "Página inicial", lojaId, storeSlug: propStoreSlug }: { local: VitrineLocal; page?: string; lojaId?: string; storeSlug?: string }) {
-  const allVitrines = useAdminProducts((s) => s.getStoreVitrines(lojaId));
-  const customProducts = useAdminProducts((s) => s.customProducts);
-  const params = useParams({ strict: false });
-  const storeSlug = propStoreSlug || (params as any)?.storeSlug || "loja-padrao";
-  
-  const vitrines = useMemo(() => 
-    (allVitrines || [])
-      .filter(v => v.ativa && v.local === local && (!v.lojaVinculadaId || v.lojaVinculadaId === lojaId))
-      .sort((a, b) => (a.ordem || 0) - (b.ordem || 0)),
-    [allVitrines, local, lojaId]
-  );
-  const [data, setData] = useState<Record<number, Produto[]>>({});
-  const allBanners = useAdmin((s) => s.banners);
-  const pharmacies = useAdmin((s) => s.pharmacies);
-  const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
+function SingleDynamicVitrine({
+  vitrine,
+  lojaId,
+  storeSlug,
+  page,
+  allBanners,
+}: {
+  vitrine: any;
+  lojaId?: string;
+  storeSlug: string;
+  page: string;
+  allBanners: any[];
+}) {
+  const [prods, setProds] = useState<Produto[] | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isCancelled = false;
     async function load() {
-      if (vitrines.length === 0) {
-        setData({});
-        return;
-      }
+      setLoading(true);
       try {
-        const results = await Promise.all(
-          vitrines.map(async (v) => {
-            let prods: Produto[] = [];
-            if (v.modo === "manual" && v.produtoIds && v.produtoIds.length > 0) {
-              prods = await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, v.produtoIds, lojaId);
-            } else {
-              prods = await catalog.productsByVitrine(v.id.toString(), v.categoriaId, undefined, undefined, lojaId);
-              if (v.produtoIds && v.produtoIds.length > 0) {
-                const highlighted = await catalog.productsByVitrine(v.id.toString(), "manual", undefined, v.produtoIds, lojaId);
-                const highlightedIds = new Set(highlighted.map(p => String(p.id)));
-                prods = [...highlighted, ...prods.filter(p => !highlightedIds.has(String(p.id)))];
-              }
-            }
-            
-            // Priority: Products with stock > 0 appear first
-            const sortedProds = [...prods].sort((a, b) => {
-              // fallback to a fake ID if lojaId is missing so we use the best stock
-              const storeId = lojaId || undefined;
-              const stockA = getDeterministicStock(a, storeId) > 0 ? 1 : 0;
-              const stockB = getDeterministicStock(b, storeId) > 0 ? 1 : 0;
-              return stockB - stockA;
-            });
-            
-            return { id: v.id, prods: sortedProds };
-          })
-        );
+        let results: Produto[] = [];
+        if (vitrine.modo === "manual" && vitrine.produtoIds && vitrine.produtoIds.length > 0) {
+          results = await catalog.productsByVitrine(vitrine.id.toString(), vitrine.categoriaId, undefined, vitrine.produtoIds, lojaId);
+        } else {
+          results = await catalog.productsByVitrine(vitrine.id.toString(), vitrine.categoriaId, undefined, undefined, lojaId);
+          if (vitrine.produtoIds && vitrine.produtoIds.length > 0) {
+            const highlighted = await catalog.productsByVitrine(vitrine.id.toString(), "manual", undefined, vitrine.produtoIds, lojaId);
+            const highlightedIds = new Set(highlighted.map(p => String(p.id)));
+            results = [...highlighted, ...results.filter(p => !highlightedIds.has(String(p.id)))];
+          }
+        }
+        
+        const sorted = [...results].sort((a, b) => {
+          const stockA = getDeterministicStock(a, lojaId) > 0 ? 1 : 0;
+          const stockB = getDeterministicStock(b, lojaId) > 0 ? 1 : 0;
+          return stockB - stockA;
+        });
+
         if (!isCancelled) {
-          const res: Record<number, Produto[]> = {};
-          results.forEach(({ id, prods }) => {
-            res[id] = prods;
-          });
-          setData(res);
+          setProds(sorted);
         }
       } catch (err) {
-        console.error("Erro ao carregar vitrines concorrentes:", err);
+        if (!isCancelled) setProds([]);
+      } finally {
+        if (!isCancelled) setLoading(false);
       }
     }
     load();
     return () => {
       isCancelled = true;
     };
-  }, [vitrines, customProducts, lojaId]);
+  }, [vitrine.id, vitrine.modo, vitrine.categoriaId, JSON.stringify(vitrine.produtoIds), lojaId]);
+
+  if (!loading && (!prods || prods.length === 0)) {
+    return null;
+  }
+
+  const linkedBanners = allBanners.filter(b => 
+    b.active && 
+    b.posicao === "Banner Extra" &&
+    b.vitrineVinculada === vitrine.id.toString() &&
+    (b.lojaId === lojaId || !b.lojaId) && 
+    (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
+  );
+  const IconComponent = vitrine.icone ? VITRINE_ICONS[vitrine.icone] || Sparkles : Sparkles;
+  const vitrineSlug = vitrine.linkSeo || vitrine.nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+
+  return (
+    <div>
+      <section className="container-fa py-4 md:py-6">
+        <div className="flex items-end justify-between mb-3 md:mb-4">
+          <h2 className="text-lg md:text-2xl font-bold flex items-center gap-2 text-foreground">
+            <IconComponent className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+            {vitrine.nome}
+          </h2>
+          <Link
+            to="/$storeSlug/v/$slug"
+            params={{ storeSlug: storeSlug || "loja-padrao", slug: vitrineSlug }}
+            className="text-xs md:text-sm font-bold text-primary hover:underline flex items-center gap-1"
+          >
+            Ver todos <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        {vitrine.descricaoSeo && (
+          <p className="sr-only">{vitrine.descricaoSeo}</p>
+        )}
+        {loading ? (
+          <ProductCarouselSkeleton />
+        ) : (
+          <ProductCarousel products={prods || []} selectedStoreId={lojaId} />
+        )}
+      </section>
+      
+      {linkedBanners.length > 0 && (
+        <div className="container-fa pb-4 md:pb-6 flex flex-col gap-4 md:gap-6">
+          {linkedBanners.map(banner => (
+            <RecursiveBanner key={banner.id} banner={banner} allBanners={allBanners} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DynamicVitrines({ local, page = "Página inicial", lojaId, storeSlug: propStoreSlug }: { local: VitrineLocal; page?: string; lojaId?: string; storeSlug?: string }) {
+  const allVitrines = useAdminProducts((s) => s.getStoreVitrines(lojaId));
+  const params = useParams({ strict: false });
+  const storeSlug = propStoreSlug || (params as any)?.storeSlug || "loja-padrao";
+  const allBanners = useAdmin((s) => s.banners);
+
+  const vitrines = useMemo(() => 
+    (allVitrines || [])
+      .filter(v => v.ativa && v.local === local && (!v.lojaVinculadaId || v.lojaVinculadaId === lojaId))
+      .sort((a, b) => (a.ordem || 0) - (b.ordem || 0)),
+    [allVitrines, local, lojaId]
+  );
 
   return (
     <>
-      {vitrines.map(v => {
-        const prods = data[v.id] || [];
-        if (prods.length === 0) return null;
-        
-        const linkedBanners = allBanners.filter(b => 
-          b.active && 
-          b.posicao === "Banner Extra" &&
-          b.vitrineVinculada === v.id.toString() &&
-          (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) && 
-          (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-        );
-        const IconComponent = v.icone ? VITRINE_ICONS[v.icone] || Sparkles : Sparkles;
-        const vitrineSlug = v.linkSeo || v.nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-
-        return (
-          <div key={v.id}>
-            <section className="container-fa py-6">
-              <div className="flex items-end justify-between mb-4">
-                <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-                  <IconComponent className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                  {v.nome}
-                </h2>
-                <Link
-                  to="/$storeSlug/v/$slug"
-                  params={{ storeSlug: storeSlug || "loja-padrao", slug: vitrineSlug }}
-                  className="hidden sm:inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline"
-                >
-                  Ver todos <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-              {/* SEO/AEO/GEO hidden description */}
-              {v.descricaoSeo && (
-                <p className="sr-only">{v.descricaoSeo}</p>
-              )}
-              <ProductCarousel products={prods} selectedStoreId={lojaId} />
-            </section>
-            
-            {linkedBanners.length > 0 && (
-              <div className="container-fa pb-6 flex flex-col gap-6">
-                {linkedBanners.map(banner => (
-                  <RecursiveBanner key={banner.id} banner={banner} allBanners={allBanners} />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {vitrines.map(v => (
+        <LazySection key={v.id} height="360px">
+          <SingleDynamicVitrine
+            vitrine={v}
+            lojaId={lojaId}
+            storeSlug={storeSlug}
+            page={page}
+            allBanners={allBanners}
+          />
+        </LazySection>
+      ))}
     </>
   );
 }
@@ -747,18 +761,14 @@ function StoreHome() {
 
         <SquarePromoGrid lojaId={lojaId} />
 
-        {/* As vitrines agora são todas gerenciadas dinamicamente via Admin */}
+        {/* Top critical above-the-fold content: render immediately */}
+        <section className="container-fa pt-2 pb-4 md:pb-6 relative group">
+          <h1 className="text-lg md:text-2xl font-bold mb-3 md:mb-4 text-foreground">Compre por categoria</h1>
+          <DynamicCategoriaBanners lojaId={lojaId} />
+        </section>
 
-        <LazySection height="250px">
-          <section className="container-fa pt-2 pb-6 relative group">
-            <h1 className="text-xl md:text-2xl font-bold mb-4">Compre por categoria</h1>
-            <DynamicCategoriaBanners lojaId={lojaId} />
-          </section>
-        </LazySection>
-
-        <LazySection height="400px">
-          <DynamicVitrines local="espaco_1" lojaId={lojaId} storeSlug={storeSlug} />
-        </LazySection>
+        {/* Dynamic Vitrines Space 1: each individual vitrine is lazy loaded with skeleton */}
+        <DynamicVitrines local="espaco_1" lojaId={lojaId} storeSlug={storeSlug} />
         
         <LazySection height="250px">
           <DynamicExtraBanners lojaId={lojaId} />
@@ -771,9 +781,8 @@ function StoreHome() {
           </LazySection>
         )}
         
-        <LazySection height="400px">
-          <DynamicVitrines local="espaco_2" lojaId={lojaId} storeSlug={storeSlug} />
-        </LazySection>
+        {/* Dynamic Vitrines Space 2: each individual vitrine is lazy loaded with skeleton */}
+        <DynamicVitrines local="espaco_2" lojaId={lojaId} storeSlug={storeSlug} />
 
 
 
