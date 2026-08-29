@@ -610,26 +610,27 @@ function CartPage() {
       if (!forcePickup && firstDelivery) {
         setSelected(firstDelivery.id);
         setDeliveryMethod("entrega");
-      } else if (!opts.find(o => o.id === selected)) {
-        if (forcePickup) {
-          setSelected("pickup");
-          setDeliveryMethod("retirada");
-        } else {
-          if (!firstDelivery && selected !== "pickup") {
-            setSelected("delivery_placeholder");
-          } else {
-            setSelected(firstDelivery ? firstDelivery.id : opts[0].id);
-          }
+      } else if (forcePickup) {
+        setSelected("pickup");
+        setDeliveryMethod("retirada");
+      } else {
+        if (!firstDelivery) {
+          setSelected("delivery_placeholder");
+          setDeliveryMethod("entrega");
+          toast.error("Entrega indisponível", { description: "Não há opções de entrega disponíveis para o CEP informado." });
+        } else if (!opts.find(o => o.id === selected)) {
+          setSelected(firstDelivery.id);
+          setDeliveryMethod("entrega");
         }
       }
-
-      if (!forcePickup && !firstDelivery) {
-         toast.error("Entrega indisponível", { description: "Não encontramos opções de entrega para o CEP informado. Apenas retirada na loja está disponível." });
-         // Removing setSelected("pickup") so it stays on the delivery tab to show the message
+    } else {
+      if (!forcePickup && selected !== "pickup") {
+        setSelected("delivery_placeholder");
+        setDeliveryMethod("entrega");
+      } else {
+        setSelected("pickup");
+        setDeliveryMethod("retirada");
       }
-    } else if (opts.length === 0) {
-      setSelected("pickup");
-      setDeliveryMethod("retirada");
     }
     
     setFreight(opts);
@@ -698,6 +699,13 @@ function CartPage() {
     }
     
     const forcePickup = items.some(i => i.retemReceita || i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")));
+
+    if (!forcePickup && (selected === "delivery_placeholder" || (!selected && deliveryMethod === "entrega"))) {
+      toast.error("Opção de entrega indisponível", {
+        description: "Não há opções de entrega disponíveis para o CEP informado. Por favor, revise o CEP ou selecione a opção de Retirada na loja caso queira retirar."
+      });
+      return;
+    }
 
     if (!forcePickup && !selected) {
       setNoFreightAlertOpen(true);
@@ -1526,7 +1534,7 @@ function CartPage() {
                         </div>
                       ) : (
                          cep.replace(/\D/g, "").length >= 8 && !isCalcLoading ? (
-                           <div className="text-sm text-red-600 font-medium mt-3">Não há opções de entrega disponíveis para este CEP. Apenas retirada na loja está disponível.</div>
+                           <div className="text-sm text-red-600 font-medium mt-3">Não há opções de entrega disponíveis para este CEP.</div>
                          ) : null
                       )}
                     </div>
