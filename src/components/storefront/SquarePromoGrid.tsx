@@ -26,7 +26,6 @@ export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: s
       if (b.lojaId) {
         if (b.lojaId !== effectiveLojaId) return false;
       } else {
-        if (isParceiro) return false;
         if (hasLocalBannerForPosition) return false;
       }
     } else {

@@ -196,6 +196,11 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
     const pharmacy = pharmacies.find(
       (p) => (p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id)) === storeSlug || p.id === storeSlug
     );
+    if (pharmacy?.id) {
+      await adminState.fetchBanners(pharmacy.id);
+    } else {
+      await adminState.fetchBanners();
+    }
     return { pharmacy, storeSlug };
   },
   head: ({ loaderData }) => {
@@ -283,15 +288,13 @@ function getSubcategoryIcon(name: string) {
 
 function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
   const allBanners = useAdmin((s) => s.banners);
-  const pharmacies = useAdmin((s) => s.pharmacies);
-  const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
   const tarjasOld = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
     b.posicao === "Banner Tarja" &&
-    (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
+    (b.lojaId === lojaId || !b.lojaId) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  )), [allBanners, page, lojaId, isParceiro]);
+  )), [allBanners, page, lojaId]);
   
   const tarjaItems = useMemo(() => {
     const bannerWithJson = tarjasOld.find(b => b.formatoExtra && b.formatoExtra.trim().startsWith('['));
@@ -381,15 +384,13 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
 
 function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
   const allBanners = useAdmin((s) => s.banners);
-  const pharmacies = useAdmin((s) => s.pharmacies);
-  const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
   const categorias = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
     (b.posicao === "Banner Categoria" || b.posicao === "Banner Compre por categoria") &&
-    (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
+    (b.lojaId === lojaId || !b.lojaId) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  )), [allBanners, page, lojaId, isParceiro]);
+  )), [allBanners, page, lojaId]);
   
   if (categorias.length === 0) return null;
 
@@ -490,8 +491,6 @@ function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[
 
 function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
   const allBanners = useAdmin((s) => s.banners);
-  const pharmacies = useAdmin((s) => s.pharmacies);
-  const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
   const extras = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
@@ -499,9 +498,9 @@ function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: stri
     (!b.vitrineVinculada || b.vitrineVinculada === "none") && 
     (!b.topicoVinculado || b.topicoVinculado === "none") &&
     (!b.bannerVinculado || b.bannerVinculado === "none") &&
-    (b.lojaId === lojaId || (!b.lojaId && !isParceiro)) &&
+    (b.lojaId === lojaId || !b.lojaId) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  )), [allBanners, page, lojaId, isParceiro]);
+  )), [allBanners, page, lojaId]);
   
   if (extras.length === 0) return null;
 
@@ -516,13 +515,10 @@ function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: stri
 
 function DynamicTopicBanners({ topicId, page = "Página inicial", lojaId }: { topicId: string; page?: string; lojaId?: string }) {
   const allBanners = useAdmin((s) => s.banners);
-  const pharmacies = useAdmin((s) => s.pharmacies);
-  const isParceiro = pharmacies.find(p => p.id === lojaId)?.categoriaAssociado === 'Parceiro';
   
   const extras = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => {
     if (!b.active) return false;
     if (b.lojaId && b.lojaId !== lojaId) return false;
-    if (!b.lojaId && isParceiro) return false;
     if (b.paginaPublicacao && b.paginaPublicacao !== "Todas as páginas" && b.paginaPublicacao !== page) return false;
     if (b.bannerVinculado && b.bannerVinculado !== "none") return false;
 
@@ -531,7 +527,7 @@ function DynamicTopicBanners({ topicId, page = "Página inicial", lojaId }: { to
     }
 
     return b.posicao === "Banner Extra" && b.topicoVinculado === topicId;
-  })), [allBanners, page, lojaId, isParceiro, topicId]);
+  })), [allBanners, page, lojaId, topicId]);
   
   if (extras.length === 0) return null;
 

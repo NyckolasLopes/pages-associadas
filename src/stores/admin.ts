@@ -868,7 +868,7 @@ export const useAdmin = create<AdminState>()(
       themeColors: {},
       setThemeColors: (themeColors) => set({ themeColors }),
 
-      banners: [],
+      banners: defaultBanners,
       setBanners: (banners) => set({ banners }),
       fetchBanners: async (lojaId?: string) => {
         let query = supabase.from('banners' as any).select('*');
@@ -876,7 +876,7 @@ export const useAdmin = create<AdminState>()(
           query = query.or(`loja_id.eq.${lojaId},loja_id.is.null`);
         }
         const { data, error } = await query;
-        if (!error && data) {
+        if (!error && data && data.length > 0) {
           const formatToLocalDatetime = (isoString: string) => {
             if (!isoString) return "";
             const d = new Date(isoString);
@@ -911,6 +911,8 @@ export const useAdmin = create<AdminState>()(
             ordem: b.ordem ?? 0,
           })) as AdminBanner[];
           set({ banners: parsedBanners });
+        } else if (!error && data && data.length === 0) {
+          set({ banners: defaultBanners });
         }
       },
       addBanner: async (banner) => {

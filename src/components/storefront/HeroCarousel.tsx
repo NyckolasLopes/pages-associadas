@@ -7,15 +7,24 @@ import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full Banner", categoriaId }: { page?: string; lojaId?: string; posicao?: string; categoriaId?: string }) {
   const activePharmacy = useActivePharmacy();
   const storeSlug = activePharmacy?.slug || "loja-padrao";
-  const { banners: adminBanners, pharmacies } = useAdmin();
+  const { banners: adminBanners, pharmacies, fetchBanners } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
-  const effectiveLojaId = lojaId || selectedPharmacyId;
-  const isParceiro = pharmacies?.find(p => p.id === effectiveLojaId)?.categoriaAssociado === 'Parceiro';
+  const effectiveLojaId = lojaId || selectedPharmacyId || activePharmacy?.id;
 
   const [i, setI] = useState(0);
 
+  useEffect(() => {
+    if (effectiveLojaId) {
+      fetchBanners(effectiveLojaId);
+    } else {
+      fetchBanners();
+    }
+  }, [effectiveLojaId, fetchBanners]);
+
   const activeBanners = useMemo(() => {
-    return adminBanners.filter(b => {
+    const bannersList = adminBanners && adminBanners.length > 0 ? adminBanners : [];
+    
+    const filtered = bannersList.filter(b => {
       // Both Full Banner and Banner por Categoria share this carousel component
       if (b.posicao !== "Full Banner" && b.posicao !== "Banner por Categoria") return false;
       
@@ -29,7 +38,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
       if (!b.active) return false;
       
       // Check if there are ANY local banners for this position in this store
-      const hasLocalBannerForPosition = adminBanners.some(
+      const hasLocalBannerForPosition = bannersList.some(
         local => {
           if (local.lojaId !== effectiveLojaId || local.posicao !== b.posicao) return false;
           if (b.posicao === "Banner por Categoria") {
@@ -44,11 +53,11 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
         if (b.lojaId) {
           if (b.lojaId !== effectiveLojaId) return false;
         } else {
-          if (isParceiro) return false;
-          if (hasLocalBannerForPosition) return false; // Hide global if local override exists
+          // Se a loja cadastrou banners próprios para essa posição, oculta os globais
+          if (hasLocalBannerForPosition) return false;
         }
       } else {
-        // Se não tem loja selecionada (ex: página inicial global), não mostra banners de lojas específicas
+        // Se não tem loja selecionada, não mostra banners de lojas específicas
         if (b.lojaId) return false;
       }
 
@@ -58,7 +67,9 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
       if (b.endDate && new Date(b.endDate) < now) return false;
       return true;
     });
-  }, [adminBanners, page, categoriaId, effectiveLojaId, isParceiro]);
+
+    return filtered;
+  }, [adminBanners, page, categoriaId, effectiveLojaId]);
 
   const deduplicatedActiveBanners = useMemo(() => {
     const uniqueMap = new Map();
