@@ -20,7 +20,7 @@ import { sanitizeHtml } from "@/lib/security";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState, useRef } from "react";
-import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
 import { ProductStory } from "@/components/storefront/ProductStory";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { Flame, Gift, ShoppingBag, Stethoscope } from "lucide-react";
