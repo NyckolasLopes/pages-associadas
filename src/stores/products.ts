@@ -983,9 +983,16 @@ export const useAdminProducts = create<ProductsState>()(
           else if (cleanNome && nameMap.has(cleanNome)) matched = nameMap.get(cleanNome);
 
           if (matched) {
+            const isMedicamento = matched.categoriaId === "142" || matched.categoriasAdicionais?.includes("142");
+            const pmcMax = Math.max(matched.precoDe || 0, matched.precoPor || 0);
+            let finalPrecoPor = item.precoPor;
+            if (isMedicamento && pmcMax > 0 && finalPrecoPor > pmcMax) {
+              finalPrecoPor = pmcMax; // Limita ao teto PMC estipulado pela rede
+            }
+
             updatesToApply.set(matched.id, {
               precoDe: item.precoDe !== undefined ? item.precoDe : matched.precoDe,
-              precoPor: item.precoPor,
+              precoPor: finalPrecoPor,
               estoque: item.estoque,
               ativo: item.ativo !== undefined ? item.ativo : true
             });

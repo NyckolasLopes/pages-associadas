@@ -209,19 +209,21 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
     if (!isGlobalAdmin) {
       const isMedicamentoLocal = categorias.find(c => String(c.id) === String(formData?.categoriaId))?.slug === 'medicamentos' || 
-                                 categorias.find(c => String(c.id) === String(formData?.subcategoriaId))?.slug === 'medicamentos';
+                                 categorias.find(c => String(c.id) === String(formData?.subcategoriaId))?.slug === 'medicamentos' ||
+                                 formData?.categoriaId === "142" || formData?.categoriasAdicionais?.includes("142");
       if (isMedicamentoLocal) {
         const baseProduct = customProducts.find(p => p.id === formData?.id);
-        const maxPrecoDe = baseProduct?.precoDe || 0;
+        const maxPrecoDe = baseProduct?.precoDe || baseProduct?.precoPor || 0;
         const maxPrecoPor = baseProduct?.precoPor || maxPrecoDe;
+        const pmcMax = Math.max(maxPrecoDe, maxPrecoPor);
 
-        if (maxPrecoPor > 0 && formData?.precoPor && formData.precoPor > maxPrecoPor) {
-          toast.error(`Para medicamentos, seu Preço (por) não pode exceder o preço base da rede (${maxPrecoPor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}).`);
+        if (pmcMax > 0 && formData?.precoPor && formData.precoPor > pmcMax) {
+          toast.error(`Para medicamentos, seu preço não pode ultrapassar o teto PMC informado pela rede (${pmcMax.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}). Você pode praticar qualquer valor abaixo desse teto.`);
           return;
         }
 
         if (maxPrecoDe > 0 && formData?.precoDe && formData.precoDe > maxPrecoDe) {
-          toast.error(`Para medicamentos, seu Preço (de) não pode exceder o PMC base da rede (${maxPrecoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}).`);
+          toast.error(`Para medicamentos, seu Preço De não pode exceder o PMC base da rede (${maxPrecoDe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}).`);
           return;
         }
       }
@@ -1058,7 +1060,13 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   />
                 </div>
                 {!isGlobalAdmin && isMedicamento && (
-                  <div className="mt-1 text-xs text-slate-500 font-medium">Medicamentos: permitido apenas preço igual ou menor que o da rede.</div>
+                  <div className="mt-1 text-xs text-blue-700 font-medium bg-blue-50 p-2 rounded-lg border border-blue-100">
+                    <strong>Tabela PMC:</strong> Permitido praticar qualquer preço com desconto. O valor não pode ultrapassar o teto PMC da rede ({(() => {
+                      const baseProduct = customProducts.find(p => p.id === formData.id);
+                      const pmc = Math.max(baseProduct?.precoDe || 0, baseProduct?.precoPor || 0);
+                      return pmc > 0 ? pmc.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "PMC";
+                    })()}).
+                  </div>
                 )}
                 {!isGlobalAdmin && (
                   <div className="mt-1 text-xs font-bold">

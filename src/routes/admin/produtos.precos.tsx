@@ -426,6 +426,17 @@ function AdminProdutosPrecos() {
         return;
       }
 
+      // Validação de PMC para Medicamentos: apenas não pode ser superior ao teto PMC da rede
+      const isMedicamento = produto.categoriaId === "142" || produto.categoriasAdicionais?.includes("142");
+      const globalPor = produto.precoPor || produto.precoDe || 0;
+      const globalDe = produto.precoDe || produto.precoPor || 0;
+      const pmcMax = Math.max(globalPor, globalDe);
+
+      if (isMedicamento && pmcMax > 0 && parsedPor > pmcMax) {
+        toast.error(`Para medicamentos, o preço (${formatCurrency(parsedPor)}) não pode exceder o teto PMC informado pela rede (${formatCurrency(pmcMax)}). Você pode praticar qualquer valor com desconto abaixo desse limite.`);
+        return;
+      }
+
       if (!updatedProduct.precosPorLoja) {
         updatedProduct.precosPorLoja = {};
       }
@@ -924,30 +935,33 @@ function AdminProdutosPrecos() {
                                     basePrice={globalPor}
                                     initialPromoPrice={parseFloat(displayPor || "0") || undefined}
                                     onChange={(val) => handleEditChange(produto.id, "precoPor", val.toString())}
-                                    disabled={campanhaAtiva || isMedicamento}
-                                    hideDiscounts={isMedicamento}
+                                    disabled={campanhaAtiva}
+                                    hideDiscounts={false}
                                   />
                                   {isMedicamento && (
-                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 mt-2 text-[10px]">
-                                      Preço Bloqueado (Tabela PMC)
-                                    </Badge>
+                                    <div className="flex items-center gap-1.5 mt-2">
+                                      <Badge variant="outline" className="bg-blue-50 text-blue-700 text-[10px] font-bold border-blue-200">
+                                        Teto PMC: {formatCurrency(Math.max(globalPor, globalDe))}
+                                      </Badge>
+                                      <span className="text-[10px] text-slate-400 italic">(Permitido apenas abaixo do teto)</span>
+                                    </div>
                                   )}
                                 </>
                               )}
                             </div>
                             
                             <div className="flex flex-col gap-1 mt-4">
-                              {edits !== undefined && !campanhaAtiva && !isMedicamento ? (
+                              {edits !== undefined && !campanhaAtiva ? (
                                 <Button size="sm" onClick={() => handleSavePrice(produto)} className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold">
                                   Salvar
                                 </Button>
-                              ) : hasCustomPrice && !campanhaAtiva && !isMedicamento ? (
+                              ) : hasCustomPrice && !campanhaAtiva ? (
                                 <Button size="sm" variant="outline" onClick={() => handleEditChange(produto.id, "precoDe", lojaPreco.precoDe.toString())} className="h-8 px-3 text-xs text-emerald-700 border-emerald-200">
                                   Editar
                                 </Button>
                               ) : null}
                               
-                              {hasCustomPrice && edits === undefined && !isMedicamento && (
+                              {hasCustomPrice && edits === undefined && (
                                 <Button 
                                   size="sm" 
                                   variant="ghost" 
@@ -1426,7 +1440,7 @@ function AdminProdutosPrecos() {
               Importar Planilha PMC
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Anexe sua planilha PMC (Preço Máximo ao Consumidor). O preço configurado aqui <strong>sobrescreverá o preço global</strong> e bloqueará edições para todas as farmácias associadas, caso o produto pertença à categoria <strong>Medicamentos</strong>.
+              Anexe sua planilha PMC (Preço Máximo ao Consumidor). O preço configurado aqui <strong>definirá o teto máximo global</strong> para medicamentos. As farmácias associadas poderão praticar preços com desconto, mas o sistema impedirá qualquer valor acima do PMC estabelecido.
             </DialogDescription>
           </DialogHeader>
 
