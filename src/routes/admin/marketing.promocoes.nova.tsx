@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { 
   ArrowLeft, Save, Flame, Gift, Star, Zap, ShoppingBag, Search, 
-  Eye, Tag, Clock, ShoppingBasket, CheckCircle2,
+  Eye, Tag, Clock, ShoppingBasket, CheckCircle2, Loader2,
   Percent, ArrowRight, Layers, HelpCircle
 } from "lucide-react";
 import { useMarketing, Promocao, LevePagueProdutoConfig } from "@/stores/marketing";
@@ -102,32 +102,54 @@ function NovaPromocaoPage() {
 
 
   useEffect(() => {
+    useAdminCategories.getState().loadCategories();
+  }, []);
+
+  useEffect(() => {
     if (formData.tipoAlvo !== "produtos") return;
+    let isMounted = true;
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        if (!searchQuery.trim()) {
-          const list = produtos.slice(0, 50);
+        const { results } = await catalog.adminSearchProducts({
+          search: searchQuery.trim(),
+          page: 0,
+          pageSize: 60,
+          listFilter: "all",
+          lojaId: effectiveStoreId || undefined,
+        });
+
+        let list = results || [];
+        if (list.length === 0 && !searchQuery.trim()) {
+          const fallback = await catalog.adminSearchProducts({
+            search: "",
+            page: 0,
+            pageSize: 60,
+            listFilter: "all",
+          });
+          list = fallback.results || [];
+        }
+
+        if (isMounted) {
           setSearchResults(list);
           setSelectedProductsCache(prev => {
             const next = { ...prev };
             list.forEach(p => { next[p.id] = p; });
             return next;
           });
-        } else {
-          const res = await catalog.search(searchQuery);
-          setSearchResults(res.slice(0, 50));
-          setSelectedProductsCache(prev => {
-            const next = { ...prev };
-            res.forEach(p => { next[p.id] = p; });
-            return next;
-          });
         }
-      } catch(e) {}
-      setIsSearching(false);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery, formData.tipoAlvo, produtos]);
+      } catch (e) {
+        console.error("Erro ao carregar produtos para promoção:", e);
+      } finally {
+        if (isMounted) setIsSearching(false);
+      }
+    }, searchQuery ? 300 : 0);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, formData.tipoAlvo, effectiveStoreId]);
 
   useEffect(() => {
     if (existing && existing.tipoAlvo === "produtos" && existing.alvosId.length > 0) {
@@ -749,9 +771,16 @@ function NovaPromocaoPage() {
             {/* Item Checklist Scrollable */}
             <div className="border border-slate-200 rounded-xl max-h-[260px] overflow-y-auto divide-y divide-slate-100 bg-white">
               {formData.tipoAlvo === "produtos" ? (
-                searchResults.length > 0 ? (
+                isSearching ? (
+                  <div className="p-8 flex flex-col items-center justify-center text-sm text-slate-500 gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+                    <span>Carregando produtos...</span>
+                  </div>
+                ) : searchResults.length > 0 ? (
                   searchResults.map((p: any) => {
                     const isChecked = formData.alvosId.includes(p.id);
+                    const prodImage = p.imagens?.[0] || p.foto || p.imagem || (p.possuiImagem && p.ean ? `https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/${p.ean}.jpg` : "/placeholder.svg");
+                    const prodPrice = p.precoPor || p.preco_por || p.precoDe || p.preco_de || 0;
                     return (
                       <label 
                         key={p.id} 
@@ -770,7 +799,7 @@ function NovaPromocaoPage() {
                                   ...prev,
                                   [p.id]: {
                                     quantidade: 2,
-                                    precoPorItem: +(p.precoPor * 0.85).toFixed(2)
+                                    precoPorItem: +(prodPrice * 0.85).toFixed(2)
                                   }
                                 }));
                               }
@@ -781,14 +810,14 @@ function NovaPromocaoPage() {
                           className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 accent-orange-600 cursor-pointer"
                         />
                         <div className="w-10 h-10 rounded-lg bg-slate-100 p-1 flex items-center justify-center shrink-0 border border-slate-200">
-                          <img src={p.imagens?.[0] || "/placeholder.svg"} alt={p.nome} className="w-full h-full object-contain mix-blend-multiply" />
+                          <img src={prodImage} alt={p.nome} className="w-full h-full object-contain mix-blend-multiply" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-bold text-slate-900 truncate">{p.nome}</div>
                           <div className="text-[11px] text-slate-500 flex items-center gap-2">
                             <span className="font-semibold">{p.marca || "Associadas"}</span>
                             <span>•</span>
-                            <span className="font-bold text-emerald-700">{brl(p.precoPor || 0)}</span>
+                            <span className="font-bold text-emerald-700">{brl(prodPrice)}</span>
                           </div>
                         </div>
                         {isChecked && (
