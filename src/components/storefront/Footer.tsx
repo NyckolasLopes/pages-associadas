@@ -114,6 +114,90 @@ export function Footer() {
     }
   }, [activePharmacy?.id, getTopTerms]);
 
+  // Páginas do Rodapé dinâmicas por categoria de loja
+  const institucionalPages = useMemo(() => {
+    if (isParceiro) {
+      return [
+        { id: "quem-somos", title: "Quem Somos", slug: "quem-somos", type: "text" },
+        { id: "politica-de-privacidade", title: "Política de Privacidade", to: `/${storeSlug}/politica-de-privacidade` },
+        { id: "trocas-e-devolucoes", title: "Trocas e Devoluções", slug: "trocas-e-devolucoes", type: "text" },
+      ];
+    }
+    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Institucional");
+  }, [isParceiro, contentPages, storeSlug]);
+
+  const navegacaoPages = useMemo(() => {
+    if (isParceiro) {
+      const list: any[] = [
+        { id: "mapa-site", title: "Mapa do Site", to: `/${storeSlug}/mapa-site` },
+        { id: "todas-categorias", title: "Categorias", to: `/${storeSlug}/c` },
+        { id: "todas-marcas", title: "Marcas", to: `/${storeSlug}/m` },
+      ];
+      if (activePharmacy?.offersServices) {
+        list.push({ id: "servicos", title: "Serviços Farmacêuticos", to: `/${storeSlug}/servicos` });
+      }
+      return list;
+    }
+    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Navegação");
+  }, [isParceiro, contentPages, activePharmacy?.offersServices, storeSlug]);
+
+  const perfilPages = useMemo(() => {
+    if (isParceiro) {
+      return [
+        { id: "criar-cadastro", title: "Criar Cadastro", to: `/${storeSlug}/cadastro` },
+        { id: "alterar-dados", title: "Alterar Dados", to: `/${storeSlug}/perfil` },
+        { id: "enderecos", title: "Endereços", to: `/${storeSlug}/perfil` },
+        { id: "acompanhar-pedido", title: "Acompanhar Pedido", to: `/${storeSlug}/pedidos` },
+      ];
+    }
+    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Perfil");
+  }, [isParceiro, contentPages, storeSlug]);
+
+  const atendimentoPages = useMemo(() => {
+    if (isParceiro) {
+      const partnerPhone = (activePharmacy?.whatsapp || activePharmacy?.telefone || "").replace(/\D/g, "");
+      const waUrl = partnerPhone ? `https://wa.me/55${partnerPhone}` : "https://wa.me/5551989444818";
+      return [
+        { id: "central-atendimento", title: "Central de Atendimento", slug: "central-atendimento", type: "text" },
+        { id: "whatsapp", title: "WhatsApp", type: "external", externalUrl: waUrl },
+        { id: "como-comprar", title: "Como Comprar", slug: "como-comprar", type: "text" },
+        { id: "formas-pagamento", title: "Formas de Pagamento", slug: "formas-pagamento", type: "text" },
+        { id: "prazo-entrega", title: "Prazos e Entrega", slug: "prazo-entrega", type: "text" },
+        { id: "reembolso", title: "Política de Reembolso", slug: "cancelamento", type: "text" },
+        { id: "faq", title: "FAQ", to: `/${storeSlug}/faq` },
+      ];
+    }
+    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Atendimento");
+  }, [isParceiro, contentPages, activePharmacy?.whatsapp, activePharmacy?.telefone, storeSlug]);
+
+  const segurancaPages = useMemo(() => {
+    if (isParceiro) {
+      return [
+        { id: "protecao-dados", title: "Proteção de Dados", slug: "protecao-dados", type: "text" },
+        { id: "termos-de-uso", title: "Termos de Uso", slug: "termos-de-uso", type: "text" },
+      ];
+    }
+    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Segurança");
+  }, [isParceiro, contentPages]);
+
+  const renderPageItem = (p: any) => (
+    <li key={p.id}>
+      {p.to ? (
+        <Link to={p.to} className="hover:underline">
+          {p.title}
+        </Link>
+      ) : p.type === "external" ? (
+        <a href={p.externalUrl} target={p.externalUrl?.startsWith("/") ? "_self" : "_blank"} rel="noreferrer" className="hover:underline">
+          {p.title}
+        </a>
+      ) : (
+        <Link to={`/${storeSlug}/pagina/${p.slug}`} className="hover:underline">
+          {p.title}
+        </Link>
+      )}
+    </li>
+  );
+
   return (
     <>
       {/* Promo Banners */}
