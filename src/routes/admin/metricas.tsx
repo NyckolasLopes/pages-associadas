@@ -438,7 +438,7 @@ function Metricas() {
               </Badge>
             </div>
             <div className="text-xs text-slate-500 mt-1 font-medium">
-              Levados para WhatsApp e finalizados
+              Levados para WhatsApp
             </div>
           </div>
         </div>
