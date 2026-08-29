@@ -214,3 +214,15 @@
   --color-orange-800: #1f2937;
   --color-orange-900: #111827;
 }
+
+@keyframes scannerLaser {
+  0%, 100% {
+    top: 5%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+}
+

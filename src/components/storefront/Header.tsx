@@ -43,7 +43,8 @@ import { sanitizeHtml } from "@/lib/security";
 
 import categoriesData from "@/data/categories.json";
 import { useAdmin } from "@/stores/admin";
-import { useAdminProducts } from "@/stores/products";
+import { useAdminProducts, mapRowToProduto } from "@/stores/products";
+import { supabase } from "@/integrations/supabase/client";
 import { useAdminCategories } from "@/stores/categories";
 import { useMarcasStore } from "@/stores/marcas";
 import { useMarketing } from "@/stores/marketing";
@@ -324,35 +325,45 @@ export function Header() {
 
   const handleScan = async (rawCode: string) => {
     const code = rawCode.trim();
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(800, ctx.currentTime);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      setTimeout(() => {
-        osc.stop();
-        ctx.close();
-      }, 150);
-    } catch(e) {}
+    if (!code) return;
 
+    // 1. Try catalog search first
     const res = await catalog.search(code);
-    const p = res.find((x) => {
-      const eanStr = String(x.ean);
-      const idStr = String(x.id);
-      return eanStr === code || idStr === code || eanStr === '0' + code || '0' + eanStr === code;
+    let p = res.find((x) => {
+      const eanStr = String(x.ean || "");
+      const idStr = String(x.id || "");
+      const skuStr = String(x.sku || "");
+      return eanStr === code || idStr === code || skuStr === code || eanStr === '0' + code || '0' + eanStr === code;
     });
-    
+
+    // 2. Fallback to direct Supabase search if not in immediate catalog cache
+    if (!p) {
+      try {
+        const { data } = await supabase
+          .from('produtos')
+          .select('*')
+          .or(`ean.eq.${code},id.eq.${code},codigo_interno.eq.${code}`)
+          .limit(1)
+          .maybeSingle();
+
+        if (data) {
+          p = mapRowToProduto(data);
+        }
+      } catch (e) {}
+    }
+
     if (p) {
       toast.success("Produto escaneado com sucesso!");
       setScannerOpen(false);
-      navigate({ to: "/$storeSlug/produto/$slug", params: { storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url } as any });
+      navigate({ 
+        to: "/$storeSlug/produto/$slug", 
+        params: { 
+          storeSlug: activePharmacy?.slug || "loja-padrao", 
+          slug: p.url || p.slug || p.id 
+        } as any 
+      });
     } else {
-      setScanError(`Produto não cadastrado (EAN: ${code})`);
+      setScanError(`Produto não encontrado para o código: ${code}`);
     }
   };
 
