@@ -598,6 +598,13 @@ function StoreHome() {
     }
   };
 
+  if (storeSlug === "loja-padrao") {
+    if (typeof window !== "undefined") {
+      window.location.replace("/");
+      return null;
+    }
+  }
+
   if (!loja && pharmacies.length > 0) {
     return <NotFound type="page" />;
   }

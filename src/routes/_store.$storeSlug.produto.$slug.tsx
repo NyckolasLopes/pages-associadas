@@ -923,23 +923,41 @@ function PDP() {
   return (
     <div className="container-fa py-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
-      <div className="text-sm text-muted-foreground mb-4 flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 scrollbar-none">
-        <Link to="/$storeSlug" params={{ storeSlug: params?.storeSlug || "loja-padrao" }} className="hover:text-primary transition flex items-center gap-1"><FileText className="h-3 w-3"/> Início</Link>
-        <ChevronRight className="h-3 w-3" />
-        {cat && (
-          <>
-            <Link to="/$storeSlug/c/$slug" params={{ storeSlug: params?.storeSlug || "loja-padrao", slug: cat.slug }} className="hover:text-primary transition">{cat.nome}</Link>
+      {(() => {
+        const homeStoreSlug = (params?.storeSlug && params.storeSlug !== "loja-padrao" && !SYSTEM_PAGES.has(params.storeSlug))
+          ? safeSlugify(params.storeSlug)
+          : (activePharmacy?.slug && activePharmacy.slug !== "loja-padrao")
+          ? safeSlugify(activePharmacy.slug)
+          : null;
+
+        const catStoreSlug = homeStoreSlug || (pharmacies[0]?.slug ? safeSlugify(pharmacies[0].slug) : "poa");
+
+        return (
+          <div className="text-sm text-muted-foreground mb-4 flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 scrollbar-none">
+            <Link 
+              to={homeStoreSlug ? "/$storeSlug" : "/"} 
+              params={homeStoreSlug ? { storeSlug: homeStoreSlug } : undefined} 
+              className="hover:text-primary transition flex items-center gap-1"
+            >
+              <FileText className="h-3 w-3"/> Início
+            </Link>
             <ChevronRight className="h-3 w-3" />
-          </>
-        )}
-        {subcat && (
-          <>
-            <Link to="/$storeSlug/c/$slug" params={{ storeSlug: params?.storeSlug || "loja-padrao", slug: subcat.slug }} className="hover:text-primary transition">{subcat.nome}</Link>
-            <ChevronRight className="h-3 w-3" />
-          </>
-        )}
-        <span className="text-foreground font-medium truncate max-w-[200px]">{p.nome}</span>
-      </div>
+            {cat && (
+              <>
+                <Link to="/$storeSlug/c/$slug" params={{ storeSlug: catStoreSlug, slug: cat.slug }} className="hover:text-primary transition">{cat.nome}</Link>
+                <ChevronRight className="h-3 w-3" />
+              </>
+            )}
+            {subcat && (
+              <>
+                <Link to="/$storeSlug/c/$slug" params={{ storeSlug: catStoreSlug, slug: subcat.slug }} className="hover:text-primary transition">{subcat.nome}</Link>
+                <ChevronRight className="h-3 w-3" />
+              </>
+            )}
+            <span className="text-foreground font-medium truncate max-w-[200px]">{p.nome}</span>
+          </div>
+        );
+      })()}
 
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 mt-4 lg:mt-8 lg:items-start">
         <div className="contents lg:flex lg:flex-1 lg:flex-col lg:gap-8 lg:min-w-0">

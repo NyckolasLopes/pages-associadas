@@ -22,6 +22,7 @@ import { getCityFromCep, isCampanhaAtiva, calculateCepDistanceAsync, getDelivery
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
 import { PromoCardBadge } from "./PromoCountdown";
+import { safeSlugify, SYSTEM_PAGES } from "@/hooks/useActivePharmacy";
 
 // Removed isSameDayDeliveryWindow
 
@@ -291,7 +292,12 @@ function ProductCardComponent({
   const servicoSelo = allSelos.find(s => s.id === "servico");
   
   const normalizeForMatch = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-  const activeSeloNormalizedNames = activeSelos.map(s => normalizeForMatch(s.nome));
+  const currentUrlSlug = (params as any)?.storeSlug;
+  const targetStoreSlug = (currentUrlSlug && currentUrlSlug !== "loja-padrao" && !SYSTEM_PAGES.has(currentUrlSlug))
+    ? safeSlugify(currentUrlSlug)
+    : activePharm?.slug
+    ? safeSlugify(activePharm.slug)
+    : (pharmacies[0]?.slug ? safeSlugify(pharmacies[0].slug) : "poa");
 
   return (
     <article className="group bg-card rounded-xl border hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative h-full w-full">
@@ -312,7 +318,7 @@ function ProductCardComponent({
               toast.info("Por favor, faça login para adicionar aos favoritos.");
               navigate({ 
                 to: "/$storeSlug/login", 
-                params: { storeSlug: (params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao" },
+                params: { storeSlug: targetStoreSlug },
                 search: { redirect: window.location.pathname } as any 
               });
               return;
@@ -337,12 +343,10 @@ function ProductCardComponent({
         </button>
       </div>
 
-
-
       <Link
         to="/$storeSlug/produto/$slug"
         preload="intent"
-        params={{ storeSlug: (params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao", slug: p.url || p.id }}
+        params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
         className="relative aspect-square bg-white p-4 block"
       >
         <img
@@ -355,7 +359,6 @@ function ProductCardComponent({
           className={`w-full h-full object-contain transition-transform duration-500 md:group-hover:scale-110 ${maxStock === 0 && !isService ? 'grayscale opacity-75' : ''}`}
         />
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none items-start">
-
           {activeSelos.map(selo => (
             <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 w-max">
               {selo.id === 'servico' && <Stethoscope className="h-3 w-3" />}
@@ -380,7 +383,7 @@ function ProductCardComponent({
         <Link
           to="/$storeSlug/produto/$slug"
           preload="intent"
-          params={{ storeSlug: (params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao", slug: p.url || p.id }}
+          params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
           className="text-sm md:text-[15px] font-bold line-clamp-2 h-[2.5em] hover:text-primary-dark leading-tight overflow-hidden"
         >
           {p.nome}
