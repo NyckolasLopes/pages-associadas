@@ -739,13 +739,7 @@ export const useAdmin = create<AdminState>()(
       setCompreJuntoSettings: (settings) => set({ compreJuntoSettings: settings }),
 
       // Social Networks
-      socialNetworks: [
-        { id: "1", label: "Instagram", href: "#", iconName: "Instagram" },
-        { id: "2", label: "Facebook", href: "#", iconName: "Facebook" },
-        { id: "3", label: "TikTok", href: "#", iconName: "Music" },
-        { id: "4", label: "LinkedIn", href: "#", iconName: "Linkedin" },
-        { id: "5", label: "YouTube", href: "#", iconName: "Youtube" },
-      ],
+      socialNetworks: [],
       setSocialNetworks: (networks) => set({ socialNetworks: networks }),
 
       // Content Pages

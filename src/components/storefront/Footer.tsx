@@ -88,15 +88,41 @@ export function Footer() {
   const tituloCentralRelacionamento = activePharmacy?.footerTituloContato || "ENDEREÇO E INFORMAÇÕES";
 
   const storeSocials = useMemo(() => {
-    if (!activePharmacy?.socialLinks) return [];
-    const links = [];
-    if (activePharmacy.socialLinks.instagram) links.push({ id: 'ig', label: 'Instagram', href: activePharmacy.socialLinks.instagram, iconName: 'Instagram' });
-    if (activePharmacy.socialLinks.facebook) links.push({ id: 'fb', label: 'Facebook', href: activePharmacy.socialLinks.facebook, iconName: 'Facebook' });
-    if (activePharmacy.socialLinks.tiktok) links.push({ id: 'tk', label: 'TikTok', href: activePharmacy.socialLinks.tiktok, iconName: 'Music' });
-    if (activePharmacy.socialLinks.linkedin) links.push({ id: 'in', label: 'LinkedIn', href: activePharmacy.socialLinks.linkedin, iconName: 'Linkedin' });
-    if (activePharmacy.socialLinks.youtube) links.push({ id: 'yt', label: 'YouTube', href: activePharmacy.socialLinks.youtube, iconName: 'Youtube' });
-    return links;
-  }, [activePharmacy?.socialLinks]);
+    const isValidUrl = (url?: string) => {
+      if (!url) return false;
+      const trimmed = url.trim();
+      if (!trimmed || trimmed === "#" || trimmed === "http://" || trimmed === "https://" || trimmed === "/") return false;
+      return true;
+    };
+
+    const formatLink = (url: string) => {
+      const trimmed = url.trim();
+      if (!trimmed || trimmed === "#") return "";
+      if (!/^https?:\/\//i.test(trimmed)) {
+        return `https://${trimmed}`;
+      }
+      return trimmed;
+    };
+
+    if (activePharmacy) {
+      if (!activePharmacy.socialLinks) return [];
+      const links = [];
+      const sl = activePharmacy.socialLinks;
+      if (isValidUrl(sl.instagram)) links.push({ id: 'ig', label: 'Instagram', href: formatLink(sl.instagram), iconName: 'Instagram' });
+      if (isValidUrl(sl.facebook)) links.push({ id: 'fb', label: 'Facebook', href: formatLink(sl.facebook), iconName: 'Facebook' });
+      if (isValidUrl(sl.tiktok)) links.push({ id: 'tk', label: 'TikTok', href: formatLink(sl.tiktok), iconName: 'Music' });
+      if (isValidUrl(sl.linkedin)) links.push({ id: 'in', label: 'LinkedIn', href: formatLink(sl.linkedin), iconName: 'Linkedin' });
+      if (isValidUrl(sl.youtube)) links.push({ id: 'yt', label: 'YouTube', href: formatLink(sl.youtube), iconName: 'Youtube' });
+      return links;
+    }
+
+    return (socialNetworks || [])
+      .filter(net => isValidUrl(net.href))
+      .map(net => ({
+        ...net,
+        href: formatLink(net.href)
+      }));
+  }, [activePharmacy?.socialLinks, activePharmacy, socialNetworks]);
 
   const [topTerms, setTopTerms] = useState<string[]>(TOP_TERMS);
 
@@ -545,7 +571,10 @@ function Social({ label, href, children }: { label: string; href: string; childr
   return (
     <a
       href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       aria-label={label}
+      title={label}
       className="h-8 w-8 rounded-full bg-white text-secondary hover:bg-slate-100 flex items-center justify-center transition shadow-sm"
     >
       {children}
