@@ -199,23 +199,23 @@ function safeSlugify(text: string): string {
 }
 
 export const Route = createFileRoute("/_store/$storeSlug/")({
-  loader: async ({ params }) => {
+  loader: ({ params }) => {
     const adminState = useAdmin.getState();
-    let pharmacies = adminState.pharmacies;
-    if (!adminState.pharmaciesLoaded) {
-      await adminState.loadPharmacies();
-      pharmacies = useAdmin.getState().pharmacies;
-    }
+    const pharmacies = adminState.pharmacies;
     const storeSlug = params.storeSlug;
     const pharmacy = pharmacies.find(
       (p) => (p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id)) === storeSlug || p.id === storeSlug
     );
-    if (pharmacy?.id) {
-      await adminState.fetchBanners(pharmacy.id);
-    } else {
-      await adminState.fetchBanners();
+    // Inicia carregamentos em segundo plano sem travar a navegação
+    if (!adminState.pharmaciesLoaded) {
+      adminState.loadPharmacies();
     }
-    const allBanners = useAdmin.getState().banners || [];
+    if (pharmacy?.id) {
+      adminState.fetchBanners(pharmacy.id);
+    } else {
+      adminState.fetchBanners();
+    }
+    const allBanners = adminState.banners || [];
     const heroBanner = allBanners.find(b => 
       b.active && 
       b.posicao === "Full Banner" && 
@@ -640,7 +640,7 @@ function StoreHome() {
 
   const { storeSlug } = Route.useParams();
   const loaderData = Route.useLoaderData();
-  const { pharmacies, fetchBanners } = useAdmin();
+  const { pharmacies, pharmaciesLoaded, fetchBanners } = useAdmin();
   const loja = useMemo(() => loaderData?.pharmacy || pharmacies.find((p) => (p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id)) === storeSlug), [loaderData, pharmacies, storeSlug]);
   const lojaId = loja?.id;
 
@@ -762,7 +762,7 @@ function StoreHome() {
     }
   }
 
-  if (!loja && pharmacies.length > 0) {
+  if (!loja && pharmacies.length > 0 && pharmaciesLoaded) {
     return <NotFound type="page" />;
   }
 

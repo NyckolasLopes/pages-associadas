@@ -16,7 +16,6 @@ const GeoPopup = lazy(() => import("@/components/storefront/GeoPopup").then(m =>
 
 export const Route = createFileRoute("/_store")({
   component: StoreLayout,
-  pendingComponent: GlobalLoading,
 });
 
 /** CSS overrides for Parceiro stores – neutral grey/black instead of brand green/orange */
@@ -204,12 +203,6 @@ function StoreLayout() {
   }, [activePharmacy?.faviconUrl, activePharmacy?.isPleno, activePharmacy?.slug, activePharmacy?.nome, activePharmacy?.categoriaAssociado]);
 
   // ─── Early returns (APÓS todos os hooks) ───────────────────────────────────
-
-  // ⏳ Aguarda lojas carregarem do Supabase apenas se o cache estiver totalmente vazio
-  const hasPharmacies = pharmacies && pharmacies.length > 0;
-  if (!pharmaciesLoaded && !hasPharmacies) {
-    return <GlobalLoading />;
-  }
 
   if (activePharmacy?.virtualStoreStatus === "Inativa") {
     return (
