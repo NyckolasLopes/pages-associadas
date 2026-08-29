@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Navigation, Search, Store, ArrowRight, Loader2 } from "lucide-react";
+import { MapPin, Navigation, Search, Store, ArrowRight, Loader2, Building2, Compass, X, ChevronRight } from "lucide-react";
 import { getCepCoordsWithFallback, haversineKm } from "@/lib/distanceApis";
 import { toast } from "sonner";
 import AssociadasLogo from "@/assets/logo.png";
@@ -28,6 +28,15 @@ function slugify(text: string): string {
     .replace(/-+$/, "");
 }
 
+function normalizeText(text: string): string {
+  if (!text) return "";
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 function formatCep(value: string) {
   const v = value.replace(/\D/g, "");
   return v.replace(/^(\d{5})(\d)/, "$1-$2").slice(0, 9);
@@ -43,10 +52,14 @@ function IndexGateway() {
   const [foundStores, setFoundStores] = useState<any[]>([]);
   const [isSearchByLocation, setIsSearchByLocation] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedBairro, setSelectedBairro] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (window.innerWidth < 768) return; // Disable on mobile to save performance
+    if (window.innerWidth < 768) return;
     const x = (e.clientX / window.innerWidth - 0.5) * 40;
     const y = (e.clientY / window.innerHeight - 0.5) * 40;
     setMousePos({ x, y });
@@ -58,31 +71,185 @@ function IndexGateway() {
     }
   }, [pharmaciesLoaded, loadPharmacies]);
 
+  // Click outside to close search suggestions
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSearchSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const activeStores = useMemo(() => {
-    return pharmacies.filter(p => p.ativo !== false && p.virtualStoreStatus !== 'Inativa');
+    return (pharmacies || []).filter(p => p.ativo !== false && p.virtualStoreStatus !== 'Inativa');
   }, [pharmacies]);
 
-  const bairros = useMemo(() => {
-    const bairroSet = new Set<string>();
+  // Lista única de cidades com contagem de lojas
+  const cidades = useMemo(() => {
+    const cityMap = new Map<string, { nome: string; count: number; uf?: string }>();
     activeStores.forEach(store => {
-      const b = store.bairro || store.cidade;
-      if (b) {
-        bairroSet.add(b.trim());
+      const c = store.cidade?.trim();
+      if (c) {
+        const norm = normalizeText(c);
+        if (!cityMap.has(norm)) {
+          cityMap.set(norm, { nome: c, count: 1, uf: store.uf });
+        } else {
+          cityMap.get(norm)!.count += 1;
+        }
       }
     });
-    return Array.from(bairroSet).sort();
+    return Array.from(cityMap.values()).sort((a, b) => a.nome.localeCompare(b.nome));
   }, [activeStores]);
 
+  // Lista de bairros disponíveis para a cidade selecionada
+  const bairrosDaCidade = useMemo(() => {
+    if (!selectedCity) return [];
+    const normSelectedCity = normalizeText(selectedCity);
+    const bairroMap = new Map<string, { nome: string; count: number }>();
+    
+    activeStores.forEach(store => {
+      if (normalizeText(store.cidade || "") === normSelectedCity) {
+        const b = store.bairro?.trim();
+        if (b) {
+          const normB = normalizeText(b);
+          if (!bairroMap.has(normB)) {
+            bairroMap.set(normB, { nome: b, count: 1 });
+          } else {
+            bairroMap.get(normB)!.count += 1;
+          }
+        }
+      }
+    });
+    return Array.from(bairroMap.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [activeStores, selectedCity]);
+
+  // Sugestões de busca dinâmica (por cidade ou bairro)
+  const searchSuggestions = useMemo(() => {
+    const q = normalizeText(searchTerm);
+    if (!q || q.length < 2) return { cidades: [], bairros: [] };
+
+    // 1. Cidades correspondentes
+    const matchedCities = cidades.filter(c => normalizeText(c.nome).includes(q));
+
+    // 2. Bairros correspondentes em qualquer cidade
+    const bairroMap = new Map<string, { bairro: string; cidade: string; uf?: string; count: number }>();
+    activeStores.forEach(store => {
+      const b = store.bairro?.trim();
+      const c = store.cidade?.trim();
+      if (b && c) {
+        const normB = normalizeText(b);
+        const normC = normalizeText(c);
+        if (normB.includes(q) || `${normB} ${normC}`.includes(q)) {
+          const key = `${normB}_${normC}`;
+          if (!bairroMap.has(key)) {
+            bairroMap.set(key, { bairro: b, cidade: c, uf: store.uf, count: 1 });
+          } else {
+            bairroMap.get(key)!.count += 1;
+          }
+        }
+      }
+    });
+
+    const matchedBairros = Array.from(bairroMap.values()).sort((a, b) => a.bairro.localeCompare(b.bairro));
+
+    return {
+      cidades: matchedCities.slice(0, 5),
+      bairros: matchedBairros.slice(0, 8),
+    };
+  }, [searchTerm, cidades, activeStores]);
+
+  // Handler ao trocar de Cidade
   const handleCityChange = (cidade: string) => {
     setSelectedCity(cidade);
+    setSelectedBairro("");
     setIsSearchByLocation(false);
-    const cityStores = activeStores.filter(p => {
-      const b = p.bairro || p.cidade;
-      return b?.trim().toLowerCase() === cidade.toLowerCase();
-    });
+
+    const cityStores = activeStores.filter(p => normalizeText(p.cidade || "") === normalizeText(cidade));
     if (cityStores.length > 0) {
       setFoundStores(cityStores);
-      setIsSearchByLocation(false);
+    }
+  };
+
+  // Handler ao trocar de Bairro
+  const handleBairroChange = (bairro: string) => {
+    setSelectedBairro(bairro);
+    setIsSearchByLocation(false);
+
+    const normCity = normalizeText(selectedCity);
+    if (bairro === "ALL_BAIRROS" || !bairro) {
+      const cityStores = activeStores.filter(p => normalizeText(p.cidade || "") === normCity);
+      setFoundStores(cityStores);
+      return;
+    }
+
+    const normBairro = normalizeText(bairro);
+    const filtered = activeStores.filter(p => {
+      const isCity = normalizeText(p.cidade || "") === normCity;
+      const isBairro = normalizeText(p.bairro || "") === normBairro;
+      return isCity && isBairro;
+    });
+
+    if (filtered.length > 0) {
+      setFoundStores(filtered);
+    } else {
+      // Fallback para todas da cidade
+      const cityStores = activeStores.filter(p => normalizeText(p.cidade || "") === normCity);
+      setFoundStores(cityStores);
+    }
+  };
+
+  // Handler ao selecionar sugestão de busca (Cidade ou Bairro)
+  const handleSelectSearchCity = (cityName: string) => {
+    setSearchTerm("");
+    setShowSearchSuggestions(false);
+    handleCityChange(cityName);
+  };
+
+  const handleSelectSearchBairro = (bairroName: string, cityName: string) => {
+    setSearchTerm("");
+    setShowSearchSuggestions(false);
+    setSelectedCity(cityName);
+    handleBairroChange(bairroName);
+  };
+
+  // Busca livre ao pressionar Enter no campo de busca de cidade/bairro
+  const handleExecuteFreeSearch = () => {
+    const q = normalizeText(searchTerm);
+    if (!q) return;
+
+    setShowSearchSuggestions(false);
+    setIsSearchByLocation(false);
+
+    // 1. Verificar se coincide exatamente com uma cidade
+    const exactCity = cidades.find(c => normalizeText(c.nome) === q);
+    if (exactCity) {
+      handleCityChange(exactCity.nome);
+      return;
+    }
+
+    // 2. Buscar lojas onde cidade, bairro ou nome contenham o termo
+    const matched = activeStores.filter(store => {
+      const c = normalizeText(store.cidade || "");
+      const b = normalizeText(store.bairro || "");
+      const n = normalizeText(store.nome || "");
+      const end = normalizeText(store.endereco || "");
+      return c.includes(q) || b.includes(q) || n.includes(q) || end.includes(q);
+    });
+
+    if (matched.length > 0) {
+      setFoundStores(matched);
+      // Se todas forem da mesma cidade, preencher selectedCity
+      const firstCity = matched[0].cidade;
+      const allSameCity = matched.every(m => normalizeText(m.cidade || "") === normalizeText(firstCity || ""));
+      if (allSameCity && firstCity) {
+        setSelectedCity(firstCity);
+      } else {
+        setSelectedCity(searchTerm);
+      }
+    } else {
+      toast.error(`Nenhuma loja encontrada para "${searchTerm}". Tente selecionar a cidade na lista.`);
     }
   };
 
@@ -103,6 +270,7 @@ function IndexGateway() {
       storesWithDist.sort((a, b) => a.distanceKm - b.distanceKm);
       setFoundStores(storesWithDist);
       setSelectedCity("");
+      setSelectedBairro("");
       setIsSearchByLocation(true);
     } else {
       toast.error("Não encontramos lojas com coordenadas cadastradas.");
@@ -158,6 +326,14 @@ function IndexGateway() {
     navigate({ to: "/$storeSlug", params: { storeSlug: slug } as any, replace: true });
   };
 
+  const resetSelection = () => {
+    setFoundStores([]);
+    setSelectedCity("");
+    setSelectedBairro("");
+    setSearchTerm("");
+    setIsSearchByLocation(false);
+  };
+
   return (
     <div 
       className="min-h-screen bg-emerald-700 flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden font-sans group transition-all"
@@ -183,107 +359,263 @@ function IndexGateway() {
 
       <div className="w-full max-w-md bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white overflow-hidden relative z-10 flex flex-col transition-all duration-500">
         {/* Header */}
-        <div className="pt-10 pb-6 px-8 text-center relative">
+        <div className="pt-8 pb-4 px-8 text-center relative">
           <img 
             src={AssociadasLogo} 
             alt="Farmácias Associadas" 
-            className="h-14 w-auto mx-auto mb-6" 
+            className="h-12 sm:h-14 w-auto mx-auto mb-4" 
           />
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-800">
             Bem-vindo(a)!
           </h1>
-          <p className="text-slate-500 font-medium text-sm mt-2">
-            Encontre a loja mais próxima de você
+          <p className="text-slate-500 font-medium text-sm mt-1">
+            Encontre a farmácia mais próxima de você
           </p>
         </div>
 
-        <div className="p-8 pt-2 space-y-6 flex-1 flex flex-col min-h-[360px]">
+        <div className="p-6 sm:p-8 pt-2 space-y-6 flex-1 flex flex-col min-h-[380px]">
           {/* Location Gateway */}
           {foundStores.length === 0 ? (
-            <div className="space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1">
+              
+              {/* 1. BUSCA POR CIDADE OU BAIRRO (DIGITAÇÃO) */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 tracking-wide flex items-center gap-1.5">
+                  <Search className="h-3.5 w-3.5 text-emerald-600" />
+                  BUSCAR CIDADE OU BAIRRO
+                </label>
+                <div ref={searchContainerRef} className="relative">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input 
+                        placeholder="Ex: Porto Alegre, Centro, Pelotas..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          setShowSearchSuggestions(true);
+                        }}
+                        onFocus={() => setShowSearchSuggestions(true)}
+                        onKeyDown={(e) => e.key === "Enter" && handleExecuteFreeSearch()}
+                        className="h-12 text-sm font-medium pr-8 shadow-sm border-slate-200 focus-visible:ring-emerald-500/30 rounded-xl"
+                      />
+                      {searchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchTerm("");
+                            setShowSearchSuggestions(false);
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <Button 
+                      className="h-12 px-4 rounded-xl shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white shrink-0" 
+                      onClick={handleExecuteFreeSearch}
+                      disabled={!searchTerm.trim()}
+                    >
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Dropdown de sugestões dinâmicas da busca */}
+                  {showSearchSuggestions && searchTerm.trim().length >= 2 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 max-h-[260px] overflow-y-auto divide-y divide-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {searchSuggestions.cidades.length === 0 && searchSuggestions.bairros.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-slate-500">
+                          Nenhuma cidade ou bairro encontrado para "<span className="font-bold">{searchTerm}</span>"
+                        </div>
+                      ) : (
+                        <>
+                          {/* Sugestões de Cidades */}
+                          {searchSuggestions.cidades.length > 0 && (
+                            <div className="p-2">
+                              <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 py-1 flex items-center gap-1">
+                                <Building2 className="h-3 w-3 text-emerald-600" /> Cidades
+                              </div>
+                              {searchSuggestions.cidades.map(c => (
+                                <button
+                                  key={c.nome}
+                                  type="button"
+                                  onClick={() => handleSelectSearchCity(c.nome)}
+                                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-emerald-50 hover:text-emerald-800 rounded-lg flex items-center justify-between transition-colors"
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <span className="font-bold">{c.nome}</span>
+                                    {c.uf && <span className="text-[10px] text-slate-400">({c.uf})</span>}
+                                  </span>
+                                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+                                    {c.count} {c.count === 1 ? 'loja' : 'lojas'}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Sugestões de Bairros */}
+                          {searchSuggestions.bairros.length > 0 && (
+                            <div className="p-2">
+                              <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 py-1 flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-emerald-600" /> Bairros
+                              </div>
+                              {searchSuggestions.bairros.map((b, idx) => (
+                                <button
+                                  key={`${b.bairro}_${b.cidade}_${idx}`}
+                                  type="button"
+                                  onClick={() => handleSelectSearchBairro(b.bairro, b.cidade)}
+                                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-emerald-50 hover:text-emerald-800 rounded-lg flex items-center justify-between transition-colors"
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-slate-900">{b.bairro}</span>
+                                    <span className="text-[10px] text-slate-400">{b.cidade} - {b.uf}</span>
+                                  </div>
+                                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+                                    {b.count} {b.count === 1 ? 'loja' : 'lojas'}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. SELEÇÃO CASCATA: 1º CIDADE -> 2º BAIRRO */}
+              <div className="space-y-3 pt-1">
+                <div className="grid grid-cols-1 gap-2.5">
+                  {/* Dropdown Cidade */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase text-slate-600 tracking-wider flex items-center gap-1">
+                      <Building2 className="h-3.5 w-3.5 text-emerald-600" />
+                      1. Selecione a Cidade
+                    </label>
+                    <Select value={selectedCity} onValueChange={handleCityChange}>
+                      <SelectTrigger className="w-full h-12 bg-slate-50/70 hover:bg-slate-50 border-slate-200 rounded-xl font-medium text-slate-800 shadow-sm focus:ring-emerald-500/30">
+                        <SelectValue placeholder="Escolha a sua cidade..." />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-slate-100 shadow-xl max-h-[280px]">
+                        {cidades.map(c => (
+                          <SelectItem key={c.nome} value={c.nome} className="cursor-pointer py-2.5 text-xs font-medium">
+                            <div className="flex items-center justify-between w-full gap-4">
+                              <span>{c.nome} {c.uf ? `(${c.uf})` : ''}</span>
+                              <span className="text-[10px] text-slate-400 font-semibold">{c.count} {c.count === 1 ? 'loja' : 'lojas'}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Dropdown Bairro (Habilitado quando Cidade é escolhida) */}
+                  {selectedCity && (
+                    <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <label className="text-[11px] font-bold uppercase text-slate-600 tracking-wider flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 text-emerald-600" />
+                        2. Selecione o Bairro em {selectedCity}
+                      </label>
+                      <Select value={selectedBairro} onValueChange={handleBairroChange}>
+                        <SelectTrigger className="w-full h-12 bg-slate-50/70 hover:bg-slate-50 border-slate-200 rounded-xl font-medium text-slate-800 shadow-sm focus:ring-emerald-500/30">
+                          <SelectValue placeholder="Todos os bairros da cidade" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-100 shadow-xl max-h-[280px]">
+                          <SelectItem value="ALL_BAIRROS" className="cursor-pointer py-2.5 text-xs font-bold text-emerald-700">
+                            ★ Todos os bairros de {selectedCity}
+                          </SelectItem>
+                          {bairrosDaCidade.map(b => (
+                            <SelectItem key={b.nome} value={b.nome} className="cursor-pointer py-2.5 text-xs font-medium">
+                              <div className="flex items-center justify-between w-full gap-4">
+                                <span>{b.nome}</span>
+                                <span className="text-[10px] text-slate-400 font-semibold">{b.count} {b.count === 1 ? 'loja' : 'lojas'}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* DIVISOR OU */}
+              <div className="relative py-1">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-200/60" />
+                </div>
+                <div className="relative flex justify-center text-[10px] uppercase">
+                  <span className="bg-white px-3 text-slate-400 font-bold tracking-widest">ou busque por CEP / GPS</span>
+                </div>
+              </div>
+
+              {/* 3. BUSCA POR CEP E GPS */}
               <div className="space-y-3">
-                <label className="text-sm font-bold text-slate-700 tracking-wide">BUSCAR POR CEP</label>
                 <div className="flex gap-2">
                   <Input 
-                    placeholder="00000-000"
+                    placeholder="Digite seu CEP (00000-000)"
                     value={cep}
                     onChange={(e) => setCep(formatCep(e.target.value))}
-                    className="h-14 text-lg font-bold tracking-widest text-center shadow-sm border-slate-200 focus-visible:ring-emerald-500/30 rounded-xl"
+                    className="h-12 text-sm font-bold tracking-wider text-center shadow-sm border-slate-200 focus-visible:ring-emerald-500/30 rounded-xl"
                     maxLength={9}
                     onKeyDown={(e) => e.key === "Enter" && handleCepSearch()}
                   />
                   <Button 
-                    className="h-14 px-6 rounded-xl shadow-sm hover:scale-105 transition-transform active:scale-95 bg-emerald-600 hover:bg-emerald-700 text-white" 
+                    className="h-12 px-5 rounded-xl shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white shrink-0" 
                     onClick={handleCepSearch}
                     disabled={loadingLoc || cep.length < 9}
                   >
-                    {loadingLoc ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
+                    {loadingLoc ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                   </Button>
                 </div>
-              </div>
 
-              <div className="relative py-2">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-slate-200/60" />
-                </div>
-                <div className="relative flex justify-center text-[11px] uppercase">
-                  <span className="bg-transparent px-3 text-slate-400 font-bold tracking-widest backdrop-blur-md">ou</span>
-                </div>
-              </div>
-
-              <Button 
-                variant="outline" 
-                className="w-full h-14 border-emerald-600/20 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100/50 hover:border-emerald-600/30 font-bold rounded-xl transition-all shadow-sm group"
-                onClick={handleGeoLocation}
-                disabled={loadingLoc}
-              >
-                {loadingLoc ? (
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin text-emerald-600" />
-                ) : (
-                  <Navigation className="h-5 w-5 mr-2 text-emerald-600 group-hover:scale-110 transition-transform" />
-                )}
-                Utilizar minha localização
-              </Button>
-
-              <div className="relative py-2 mt-2">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-slate-200/60" />
-                </div>
-                <div className="relative flex justify-center text-[11px] uppercase">
-                  <span className="bg-transparent px-3 text-slate-400 font-bold tracking-widest backdrop-blur-md">selecione o bairro ou cidade</span>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-1">
-                <Select value={selectedCity} onValueChange={handleCityChange}>
-                  <SelectTrigger className="w-full h-14 bg-white/80 border-slate-200 rounded-xl font-medium text-slate-700 shadow-sm focus:ring-emerald-500/30">
-                    <SelectValue placeholder="Escolher..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-slate-100 shadow-xl max-h-[300px]">
-                    {bairros.map(b => (
-                      <SelectItem key={b} value={b} className="cursor-pointer py-3">{b}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Button 
+                  variant="outline" 
+                  className="w-full h-11 border-emerald-600/20 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100/50 hover:border-emerald-600/30 font-bold rounded-xl transition-all text-xs shadow-sm group"
+                  onClick={handleGeoLocation}
+                  disabled={loadingLoc}
+                >
+                  {loadingLoc ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin text-emerald-600" />
+                  ) : (
+                    <Navigation className="h-4 w-4 mr-2 text-emerald-600 group-hover:scale-110 transition-transform" />
+                  )}
+                  Utilizar minha localização atual
+                </Button>
               </div>
             </div>
           ) : (
             /* Search Results */
-            <div className="space-y-6 animate-in zoom-in-95 duration-500 flex-1 flex flex-col">
-              <div className="text-center space-y-2 mb-2">
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight">
-                  Lojas Encontradas
+            <div className="space-y-5 animate-in zoom-in-95 duration-300 flex-1 flex flex-col">
+              <div className="text-center space-y-1">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
+                  Lojas Encontradas ({foundStores.length})
                 </h2>
                 {isSearchByLocation ? (
-                  <p className="text-sm text-slate-500 font-medium">Lojas mais próximas de você</p>
+                  <p className="text-xs text-slate-500 font-medium">Lojas mais próximas da sua localização</p>
                 ) : (
-                  <p className="text-sm text-slate-500 font-medium">Lojas em <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md mx-1 font-bold">{selectedCity}</span></p>
+                  <p className="text-xs text-slate-500 font-medium flex items-center justify-center gap-1 flex-wrap">
+                    Lojas em 
+                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold">
+                      {selectedCity || "Sua Região"}
+                    </span>
+                    {selectedBairro && selectedBairro !== "ALL_BAIRROS" && (
+                      <>
+                        <span>•</span>
+                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold">
+                          {selectedBairro}
+                        </span>
+                      </>
+                    )}
+                  </p>
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-2 space-y-3 max-h-[300px] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+              <div className="flex-1 overflow-y-auto pr-1 space-y-3 max-h-[320px] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                 {foundStores.map((store, idx) => (
-                  <div key={store.id || idx} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden flex flex-col gap-4 group cursor-default">
+                  <div key={store.id || idx} className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_25px_rgb(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden flex flex-col gap-3 group cursor-default">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 rounded-l-2xl"></div>
                     {isSearchByLocation && idx === 0 && (
                       <div className="absolute top-0 right-0 bg-emerald-100 text-emerald-800 text-[9px] font-black tracking-widest uppercase px-3 py-1 rounded-bl-xl border-b border-l border-emerald-200 z-10 flex items-center gap-1">
@@ -291,7 +623,7 @@ function IndexGateway() {
                       </div>
                     )}
                     <div className="pt-1">
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-3 mb-2">
                         {(() => {
                           const isParceiro = store.categoriaAssociado === 'Parceiro' || store.isPleno === false;
                           const effectiveFavicon = store.faviconUrl || (!isParceiro ? globalFavicon : null);
@@ -303,54 +635,55 @@ function IndexGateway() {
                               <img 
                                 src={displaySrc} 
                                 alt="Logo da loja" 
-                                className="h-8 w-8 object-contain shrink-0" 
+                                className="h-7 w-7 object-contain shrink-0 rounded" 
                               />
                             );
                           }
                           
                           return (
-                            <div className="h-8 w-8 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-center text-[7px] font-bold text-slate-400 text-center leading-tight shrink-0 overflow-hidden shadow-inner">
-                              Sem<br/>Logo
+                            <div className="h-7 w-7 bg-slate-50 border border-slate-200 rounded flex items-center justify-center text-[6px] font-bold text-slate-400 text-center leading-tight shrink-0 overflow-hidden">
+                              Loja
                             </div>
                           );
                         })()}
-                        <h3 className="font-extrabold text-slate-800 text-lg group-hover:text-emerald-700 transition-colors leading-tight">{store.nome}</h3>
+                        <h3 className="font-extrabold text-slate-800 text-base group-hover:text-emerald-700 transition-colors leading-tight truncate">{store.nome}</h3>
                       </div>
                       
-                      <div className="space-y-2">
-                        <p className="text-sm text-slate-500 flex items-start gap-2 font-medium">
-                          <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-emerald-500" />
+                      <div className="space-y-1.5 text-xs text-slate-600 font-medium">
+                        <p className="flex items-start gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-emerald-600" />
                           <span className="line-clamp-2 leading-snug">
-                            {store.bairro ? `${store.bairro}, ${store.cidade} - ${store.uf}` : `${store.cidade} - ${store.uf}`}
+                            {store.bairro ? `${store.bairro}, ${store.cidade} - ${store.uf || 'RS'}` : `${store.cidade} - ${store.uf || 'RS'}`}
+                            {store.endereco ? ` (${store.endereco})` : ''}
                           </span>
                         </p>
                         
                         {store.distanceKm !== undefined && (
-                          <p className="text-sm text-emerald-700 flex items-center gap-2 font-bold bg-emerald-50 w-fit px-2.5 py-1 rounded-md border border-emerald-100">
-                            <Navigation className="h-3.5 w-3.5" />
+                          <p className="text-[11px] text-emerald-700 flex items-center gap-1 font-bold bg-emerald-50 w-fit px-2 py-0.5 rounded border border-emerald-100">
+                            <Navigation className="h-3 w-3" />
                             {store.distanceKm < 1 ? "Menos de 1 km de distância" : `${store.distanceKm.toFixed(1)} km de distância`}
                           </p>
                         )}
                       </div>
                     </div>
                     <Button 
-                      className="w-full h-12 font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-md hover:shadow-lg transition-all"
+                      className="w-full h-11 font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-sm hover:shadow-md transition-all text-xs"
                       onClick={() => goToStore(store)}
                     >
                       Acessar Loja
-                      <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="h-3.5 w-3.5 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </div>
                 ))}
               </div>
 
-              <div className="pt-4 mt-auto">
+              <div className="pt-2 mt-auto">
                 <Button 
                   variant="ghost" 
-                  className="w-full h-12 font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
-                  onClick={() => setFoundStores([])}
+                  className="w-full h-11 font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors text-xs"
+                  onClick={resetSelection}
                 >
-                  Voltar e buscar novamente
+                  Voltar e alterar localização
                 </Button>
               </div>
             </div>
