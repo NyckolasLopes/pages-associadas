@@ -19,6 +19,14 @@ export function LojaConfiguracoesTab({ lojaId }: { lojaId: string }) {
     if (loja) {
       let initialData = { ...loja };
       
+      if (!initialData.footerTituloContato) {
+        initialData.footerTituloContato = "ENDEREÇO E INFORMAÇÕES";
+      }
+
+      if (!initialData.footerDescricao) {
+        initialData.footerDescricao = "Somos a maior rede associativa do Brasil.";
+      }
+
       if (!initialData.footerPlataformaTexto && loja.categoriaAssociado !== 'Parceiro') {
         initialData.footerPlataformaTexto = `Plataforma Digital de Vendas da Rede: Farmacias Associadas - ${loja.nome || '(nome da sua loja)'} | CNPJ: ${loja.cnpj || '61.585.865/0240-93'} | I.E. 116.756.280.113 | ${loja.endereco || 'Av. Nsa. Sra. Assunção'}, ${loja.numero || '638'} - ${loja.bairro || 'Bairro'} - ${loja.cidade || 'CIDADE'}/${loja.uf || 'ESTADO SIGLA'} - CEP: ${loja.cep || '0000-001'} | Para dúvidas, elogios e reclamações acesse nossa Central de Atendimento no Whatsapp | Farmacêutico responsável: ${loja.respTecnico || 'NOME DO FARMACEUTICO'} | CRF: ${loja.inscricaoFarmaceutico || '000000'} | AFE: ${loja.afe || '0000'} | ALVARÁ: ${loja.alvara || 'XXXXXXXXXXXX'}
 
