@@ -562,11 +562,20 @@ export const catalog = {
 
     let results = activeProducts;
     if (categoryId === "300") {
-        const subCategorias = categorias.filter(c => c.parentId === "300");
-        const namesToMatch = subCategorias.map(c => removeAccents(c.nome.toLowerCase()));
+        const marcasProprias = useMarcasStore.getState().marcas.filter(m => m.ativo !== false && m.marcaPropria === true);
+        const marcasList = marcasProprias.length > 0 ? marcasProprias : [
+          { nome: "Revitart" },
+          { nome: "Santo Hábito" },
+          { nome: "Revigore" },
+          { nome: "Revimel" },
+          { nome: "Crescendo" },
+          { nome: "Vita Magna" },
+        ];
+        const namesToMatch = marcasList.map(m => removeAccents(m.nome.toLowerCase()));
         results = activeProducts.filter(p => {
-          const nome = removeAccents(String(p.nome).toLowerCase());
-          return namesToMatch.some(brand => nome.includes(brand));
+          const nome = removeAccents(String(p.nome || "").toLowerCase());
+          const marca = removeAccents(String(p.marca || "").toLowerCase());
+          return namesToMatch.some(b => nome.includes(b) || marca.includes(b));
         });
     }
     

@@ -16,6 +16,8 @@ import { zodValidator } from "@tanstack/zod-adapter";
 import { NotFound } from "@/components/storefront/NotFound";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
+import { useMarcasStore } from "@/stores/marcas";
+import { safeSlugify } from "@/hooks/useActivePharmacy";
 
 export const Route = createFileRoute("/_store/$storeSlug/c/$slug")({
   validateSearch: zodValidator(
@@ -81,6 +83,19 @@ function CategoryPage() {
   const lojaId = useCart((s) => s.selectedPharmacyId);
   const pharmacies = useAdmin((s) => s.pharmacies);
   
+  const isNossasMarcas = cat.id === "300" || cat.slug === "nossas-marcas";
+  const { marcas, loadMarcas } = useMarcasStore();
+
+  useEffect(() => {
+    if (isNossasMarcas) {
+      loadMarcas();
+    }
+  }, [isNossasMarcas, loadMarcas]);
+
+  const marcasProprias = useMemo(() => {
+    return marcas.filter(m => m.ativo !== false && m.marcaPropria === true);
+  }, [marcas]);
+
   const categoryBanners = allBanners.filter(b => 
     b.active && 
     b.posicao === "Banner por Categoria" && 
@@ -177,8 +192,8 @@ function CategoryPage() {
         </div>
       )}
 
-      {subs.length > 0 && (
-        <div className="mt-6 border rounded-xl p-4 bg-slate-50 mb-6">
+      {(isNossasMarcas ? (marcasProprias.length > 0) : (subs.length > 0)) && (
+        <div className="mt-6 border rounded-xl p-4 bg-slate-50 mb-6 shadow-sm">
            <button 
              onClick={() => setShowSubs(!showSubs)}
              className="w-full flex items-center justify-between font-bold text-sm text-slate-700 hover:text-primary transition"
@@ -191,28 +206,30 @@ function CategoryPage() {
            </button>
            
            {showSubs && (
-             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-200 items-center">
-               {subs.map((s: Categoria) => {
-                 const isMarcaPropria = cat.id === "300";
-                 return (
+             <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-slate-200 items-center">
+               {isNossasMarcas ? (
+                 marcasProprias.map((m) => (
+                   <Link
+                     key={m.id}
+                     to="/$storeSlug/m/$slug"
+                     params={{ storeSlug: storeSlug || "loja-padrao", slug: m.seoUrl || m.slug }}
+                     className="px-4 py-2.5 bg-white border border-slate-200 hover:border-primary hover:bg-primary hover:text-white rounded-xl font-bold text-xs md:text-sm text-slate-800 transition-all shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 duration-150"
+                   >
+                     {m.nome}
+                   </Link>
+                 ))
+               ) : (
+                 subs.map((s: Categoria) => (
                    <Link
                      key={s.id}
                      to="/$storeSlug/c/$slug"
                      params={{ storeSlug: storeSlug || "loja-padrao", slug: s.slug }}
-                     className={isMarcaPropria 
-                       ? "bg-white p-2 border rounded-xl hover:border-primary hover:shadow-md transition flex items-center justify-center shrink-0 h-12 min-w-[90px]" 
-                       : "text-[11px] md:text-xs px-3 py-1.5 bg-secondary text-white font-bold rounded-full hover:bg-primary transition shadow-sm"
-                     }
-                     title={isMarcaPropria ? s.nome : undefined}
+                     className="text-[11px] md:text-xs px-3.5 py-2 bg-white border border-slate-200 text-slate-800 font-bold rounded-xl hover:bg-primary hover:text-white hover:border-primary transition shadow-sm"
                    >
-                     {isMarcaPropria ? (
-                       <img src={`/marcas/${s.slug}.png`} alt={s.nome} className="max-h-full max-w-full object-contain mix-blend-multiply" />
-                     ) : (
-                       s.nome
-                     )}
+                     {s.nome}
                    </Link>
-                 );
-               })}
+                 ))
+               )}
              </div>
            )}
         </div>
