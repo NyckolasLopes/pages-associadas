@@ -529,6 +529,10 @@ function PainelLoja() {
                 Leads
               </TabsTrigger>
             )}
+            <TabsTrigger value="carrinhos" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-amber-700 data-[state=active]:text-amber-800">
+              <ShoppingCart className="w-4 h-4 mr-1.5 shrink-0 text-amber-600" />
+              Carrinhos Abandonados
+            </TabsTrigger>
             {can('loja_seo') && (
               <TabsTrigger value="seo" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
                 <Compass className="w-4 h-4 mr-1.5 shrink-0" />
@@ -595,6 +599,10 @@ function PainelLoja() {
               <LojaLeadsTab lojaId={lojaId} />
             </TabsContent>
           )}
+
+          <TabsContent value="carrinhos" className="space-y-6">
+            <AbandonedCartsWidget lojaId={lojaId} />
+          </TabsContent>
 
           {can('loja_configuracoes') && (
             <TabsContent value="configuracoes" className="space-y-6">

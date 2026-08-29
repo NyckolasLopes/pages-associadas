@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdmin } from "@/stores/admin";
 
 export interface AbandonedCart {
   id: string;
@@ -15,13 +16,13 @@ export interface AbandonedCart {
   notes?: string;
   lojaId?: string;
   lojaNome?: string;
-  items: { nome: string; qtd: number; valorUnitario: number; foto: string; ean?: string }[];
+  items: { nome: string; qtd: number; valorUnitario: number; foto?: string; imagem?: string; ean?: string }[];
 }
 
 interface AbandonedCartsState {
   carts: AbandonedCart[];
   isLoading: boolean;
-  loadCarts: () => Promise<void>;
+  loadCarts: (lojaId?: string) => Promise<void>;
   updateNotes: (id: string, notes: string) => Promise<void>;
   removeCart: (id: string) => Promise<void>;
 }
@@ -29,44 +30,50 @@ interface AbandonedCartsState {
 export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) => ({
   carts: [],
   isLoading: false,
-  loadCarts: async () => {
+  loadCarts: async (lojaId?: string) => {
     set({ isLoading: true });
     try {
-      // Busca carrinhos sem join com profiles (evita bloqueio de RLS)
-      // Os dados do cliente são salvos diretamente nas colunas nome_cliente, email_cliente, telefone_cliente
-      const { data, error } = await supabase
+      let query = supabase
         .from('carrinhos_abandonados' as any)
-        .select(`
-          *,
-          lojas ( nome_fantasia )
-        `)
+        .select('*')
         .eq('status', 'abandonado')
-        .not('user_id', 'is', null)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (lojaId) {
+        query = query.eq('loja_id', lojaId);
+      }
 
-      // Considera abandonado apenas se não houver atualização há mais de 15 minutos (900000 ms)
-      const fifteenMinutesAgo = new Date(Date.now() - 900000);
+      const { data, error } = await query;
 
-      const mapped: AbandonedCart[] = (data || [])
-        .filter((row: any) => new Date(row.updated_at) < fifteenMinutesAgo)
-        .map((row: any) => ({
-        id: row.id,
-        createdAt: new Date(row.created_at).toLocaleDateString('pt-BR') + ' ' + new Date(row.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        client: row.nome_cliente || "Cliente",
-        email: row.email_cliente || "",
-        phone: row.telefone_cliente || "",
-        address: "Não informado",
-        abandonedAt: new Date(row.updated_at).toLocaleDateString('pt-BR') + ' ' + new Date(row.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        recoveryStatus: row.notes ? "Em tratativa" : "Aguardando disparo autom.",
-        total: row.total || 0,
-        type: 'sem_transacao',
-        notes: row.notes || "",
-        lojaId: row.loja_id,
-        lojaNome: row.lojas?.nome_fantasia || row.nome_cliente || "",
-        items: row.items || []
-      }));
+      if (error) {
+        console.error("Error loading abandoned carts from Supabase:", error);
+        throw error;
+      }
+
+      const pharmacies = useAdmin.getState().pharmacies || [];
+
+      const mapped: AbandonedCart[] = (data || []).map((row: any) => {
+        const loja = pharmacies.find(p => p.id === row.loja_id);
+        const lojaNome = loja?.nome || (loja?.categoriaAssociado === 'Parceiro' ? 'Loja Parceira' : 'Farmácias Associadas');
+        const items = Array.isArray(row.items) ? row.items : [];
+
+        return {
+          id: String(row.id),
+          createdAt: new Date(row.created_at || row.updated_at || Date.now()).toLocaleDateString('pt-BR') + ' ' + new Date(row.created_at || row.updated_at || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          client: row.nome_cliente && row.nome_cliente.trim() ? row.nome_cliente : (row.email_cliente ? row.email_cliente.split('@')[0] : "Cliente Visitante"),
+          email: row.email_cliente || "",
+          phone: row.telefone_cliente || "",
+          address: "Não informado",
+          abandonedAt: new Date(row.updated_at || row.created_at || Date.now()).toLocaleDateString('pt-BR') + ' ' + new Date(row.updated_at || row.created_at || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          recoveryStatus: row.notes?.includes("Em tratativa") ? "Em tratativa" : "Aguardando contato",
+          total: Number(row.total) || 0,
+          type: 'sem_transacao',
+          notes: row.notes || "",
+          lojaId: row.loja_id || undefined,
+          lojaNome: lojaNome,
+          items: items
+        };
+      });
 
       set({ carts: mapped });
     } catch (err) {

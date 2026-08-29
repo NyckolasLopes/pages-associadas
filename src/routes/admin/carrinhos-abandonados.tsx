@@ -11,7 +11,8 @@ import {
   Trash2,
   ShoppingCart,
   Clock,
-  Send
+  Send,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,11 +58,13 @@ import { useEffect } from 'react';
 export function PedidosAdmin() {
   const { pharmacies, currentUser, grupos, activeStoreId } = useAdmin();
   
-  // Carrinhos abandonados / itens de clientes logados
-  const { carts: storeCarts, removeCart: removeStoreCart, loadCarts } = useAbandonedCartsStore();
+  // Carrinhos abandonados / itens de clientes logados e visitantes
+  const { carts: storeCarts, removeCart: removeStoreCart, loadCarts, isLoading } = useAbandonedCartsStore();
 
   useEffect(() => {
     loadCarts();
+    const interval = setInterval(() => loadCarts(), 15000);
+    return () => clearInterval(interval);
   }, [loadCarts]);
 
 
@@ -360,6 +363,14 @@ export function PedidosAdmin() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <StoreSelector />
+            <Button 
+              variant="outline" 
+              className="font-bold gap-2 bg-white" 
+              onClick={() => loadCarts()}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Atualizar
+            </Button>
             <Button variant="outline" className="font-bold gap-2 bg-white" onClick={exportToExcel}>
               <Download className="h-4 w-4" /> Exportar Planilha
             </Button>

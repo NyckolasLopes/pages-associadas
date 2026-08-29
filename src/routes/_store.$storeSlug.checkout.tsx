@@ -268,6 +268,14 @@ function Checkout() {
     }
   }, [mounted, geoCep]);
 
+  useEffect(() => {
+    if (nome || email || telefone) {
+      try {
+        localStorage.setItem("fa-customer-contact", JSON.stringify({ nome, email, telefone }));
+      } catch {}
+    }
+  }, [nome, email, telefone]);
+
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
     if (v.length > 11) v = v.slice(0, 11);
