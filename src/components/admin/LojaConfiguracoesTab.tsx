@@ -58,13 +58,15 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
       </div>
 
       <div className="space-y-6">
-        <h3 className="font-semibold text-slate-700 border-b pb-2">Informações Básicas</h3>
+        <h3 className="font-semibold text-slate-700 border-b pb-2">Informações Básicas e Contato</h3>
+        <p className="text-xs text-slate-500">Estes dados são compartilhados automaticamente em todo o site (cabeçalho, rodapé, checkout, botão flutuante de WhatsApp e notificações).</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nome Fantasia</Label>
             <Input 
               value={formData.nome || ""} 
               onChange={(e) => handleChange("nome", e.target.value)} 
+              placeholder="Ex: Farmácia Associadas Centro"
             />
           </div>
           <div className="space-y-2">
@@ -72,6 +74,7 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
             <Input 
               value={formData.razaoSocial || ""} 
               onChange={(e) => handleChange("razaoSocial", e.target.value)} 
+              placeholder="Ex: Farmácia e Drogaria Ltda"
             />
           </div>
           <div className="space-y-2">
@@ -79,45 +82,60 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
             <Input 
               value={formData.cnpj || ""} 
               onChange={(e) => handleChange("cnpj", e.target.value)} 
+              placeholder="00.000.000/0000-00"
             />
           </div>
           <div className="space-y-2">
-            <Label>Email de Contato</Label>
+            <Label>E-mail de Contato</Label>
             <Input 
+              type="email"
               value={formData.email || ""} 
               onChange={(e) => handleChange("email", e.target.value)} 
+              placeholder="contato@farmacia.com.br"
             />
           </div>
           <div className="space-y-2">
-            <Label>Telefone</Label>
+            <div className="flex items-center justify-between">
+              <Label>Telefone Fixo / Loja</Label>
+              <span className="text-[11px] text-slate-400">Exibido no topo e rodapé</span>
+            </div>
             <Input 
               value={formData.telefone || ""} 
               onChange={(e) => handleChange("telefone", e.target.value)} 
+              placeholder="(51) 3333-3333"
             />
           </div>
           <div className="space-y-2">
-            <Label>WhatsApp</Label>
+            <div className="flex items-center justify-between">
+              <Label className="font-bold text-emerald-800">WhatsApp da Loja</Label>
+              <span className="text-[11px] text-emerald-600 font-semibold">Balão flutuante, menu e checkout</span>
+            </div>
             <Input 
               value={formData.whatsapp || ""} 
               onChange={(e) => handleChange("whatsapp", e.target.value)} 
+              placeholder="(51) 99999-9999"
+              className="border-emerald-300 focus-visible:ring-emerald-500"
             />
           </div>
         </div>
 
-        <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">Endereço</h3>
+        <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">Endereço da Loja</h3>
+        <p className="text-xs text-slate-500">Endereço físico da unidade exibido no rodapé e utilizado para cálculo de rota/entrega.</p>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2 md:col-span-1">
             <Label>CEP</Label>
             <Input 
               value={formData.cep || ""} 
               onChange={(e) => handleChange("cep", e.target.value)} 
+              placeholder="00000-000"
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>Endereço</Label>
+            <Label>Logradouro (Rua / Av.)</Label>
             <Input 
               value={formData.endereco || ""} 
               onChange={(e) => handleChange("endereco", e.target.value)} 
+              placeholder="Av. Principal"
             />
           </div>
           <div className="space-y-2 md:col-span-1">
@@ -125,6 +143,7 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
             <Input 
               value={formData.numero || ""} 
               onChange={(e) => handleChange("numero", e.target.value)} 
+              placeholder="123"
             />
           </div>
           <div className="space-y-2 md:col-span-1">
@@ -132,6 +151,7 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
             <Input 
               value={formData.complemento || ""} 
               onChange={(e) => handleChange("complemento", e.target.value)} 
+              placeholder="Sala 101, Loja B"
             />
           </div>
           <div className="space-y-2 md:col-span-1">
@@ -139,6 +159,7 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
             <Input 
               value={formData.bairro || ""} 
               onChange={(e) => handleChange("bairro", e.target.value)} 
+              placeholder="Centro"
             />
           </div>
           <div className="space-y-2 md:col-span-1">
@@ -146,6 +167,7 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
             <Input 
               value={formData.cidade || ""} 
               onChange={(e) => handleChange("cidade", e.target.value)} 
+              placeholder="Porto Alegre"
             />
           </div>
           <div className="space-y-2 md:col-span-1">
@@ -153,6 +175,8 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
             <Input 
               value={formData.uf || ""} 
               onChange={(e) => handleChange("uf", e.target.value)} 
+              placeholder="RS"
+              maxLength={2}
             />
           </div>
         </div>
@@ -200,100 +224,41 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
               />
             </div>
           </div>
-          <div className="space-y-2 pt-2 border-t md:col-span-2 mt-2">
-            <Label className="text-muted-foreground text-xs">O Telefone e WhatsApp configurados abaixo também aparecerão no menu utilitário superior.</Label>
-          </div>
-          <div className="space-y-2">
-            <Label>Telefone (Topo/Rodapé)</Label>
-            <Input 
-              value={formData.telefone || ""} 
-              onChange={(e) => handleChange("telefone", e.target.value)} 
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>WhatsApp (Topo/Rodapé)</Label>
-            <Input 
-              value={formData.whatsapp || ""} 
-              onChange={(e) => handleChange("whatsapp", e.target.value)} 
-            />
-          </div>
         </div>
 
-        <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">Rodapé (Footer)</h3>
+        <h3 className="font-semibold text-slate-700 border-b pb-2 pt-4">Rodapé (Footer) e Redes Sociais</h3>
         <div className="grid grid-cols-1 gap-6">
-          <div className="space-y-2 mt-2">
-            <h4 className="font-bold text-sm">Informações da Marca</h4>
+          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Frase abaixo do Logo (rodape)</Label>
+                <Label>Frase abaixo do Logo no Rodapé</Label>
                 <Input 
                   value={formData.footerDescricao || ""} 
                   onChange={(e) => handleChange("footerDescricao", e.target.value)} 
                   placeholder="Ex: Somos a maior rede associativa do Brasil."
                 />
               </div>
-            </div>
-          </div>
-          
-          <div className="space-y-2 mt-2 border-t pt-4">
-            <h4 className="font-bold text-sm">Endereço e Informações</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-              <div className="space-y-2 md:col-span-2">
-                <Label>Título da Seção</Label>
+              <div className="space-y-2">
+                <Label>Título da Seção de Informações</Label>
                 <Input 
                   value={formData.footerTituloContato || ""} 
                   onChange={(e) => handleChange("footerTituloContato", e.target.value)} 
                   placeholder="Ex: ENDEREÇO E INFORMAÇÕES"
                 />
               </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label>CNPJ</Label>
-                <Input 
-                  value={formData.cnpj || ""} 
-                  onChange={(e) => handleChange("cnpj", e.target.value)} 
-                  placeholder="00.000.000/0000-00"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label>Endereço</Label>
-                <Input 
-                  value={formData.endereco || ""} 
-                  onChange={(e) => handleChange("endereco", e.target.value)} 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telefone</Label>
-                <Input 
-                  value={formData.telefone || ""} 
-                  onChange={(e) => handleChange("telefone", e.target.value)} 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>WhatsApp</Label>
-                <Input 
-                  value={formData.whatsapp || ""} 
-                  onChange={(e) => handleChange("whatsapp", e.target.value)} 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>E-mail de Contato</Label>
-                <Input 
-                  value={formData.email || ""} 
-                  onChange={(e) => handleChange("email", e.target.value)} 
-                />
-              </div>
             </div>
           </div>
 
-          <div className="space-y-2 mt-2 border-t pt-4">
-            <h4 className="font-bold text-sm">Redes Sociais</h4>
-            <p className="text-xs text-slate-500">Preencha com o link completo (ex: https://instagram.com/sua-loja). Deixe em branco para ocultar o ícone.</p>
+          <div className="space-y-2 border-t pt-4">
+            <h4 className="font-bold text-sm text-slate-800">Redes Sociais</h4>
+            <p className="text-xs text-slate-500">Preencha com o link completo (ex: https://instagram.com/sua-loja). Deixe em branco para ocultar o ícone correspondente.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
               <div className="space-y-2">
                 <Label>Instagram</Label>
                 <Input 
                   value={formData.socialLinks?.instagram || ""} 
                   onChange={(e) => setFormData(prev => ({ ...prev, socialLinks: { ...prev.socialLinks, instagram: e.target.value } }))} 
+                  placeholder="https://instagram.com/sua_loja"
                 />
               </div>
               <div className="space-y-2">
@@ -301,6 +266,7 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
                 <Input 
                   value={formData.socialLinks?.facebook || ""} 
                   onChange={(e) => setFormData(prev => ({ ...prev, socialLinks: { ...prev.socialLinks, facebook: e.target.value } }))} 
+                  placeholder="https://facebook.com/sua_loja"
                 />
               </div>
               <div className="space-y-2">
@@ -308,6 +274,7 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
                 <Input 
                   value={formData.socialLinks?.tiktok || ""} 
                   onChange={(e) => setFormData(prev => ({ ...prev, socialLinks: { ...prev.socialLinks, tiktok: e.target.value } }))} 
+                  placeholder="https://tiktok.com/@sua_loja"
                 />
               </div>
               <div className="space-y-2">
@@ -315,6 +282,7 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
                 <Input 
                   value={formData.socialLinks?.linkedin || ""} 
                   onChange={(e) => setFormData(prev => ({ ...prev, socialLinks: { ...prev.socialLinks, linkedin: e.target.value } }))} 
+                  placeholder="https://linkedin.com/company/sua_loja"
                 />
               </div>
               <div className="space-y-2">
@@ -322,19 +290,20 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
                 <Input 
                   value={formData.socialLinks?.youtube || ""} 
                   onChange={(e) => setFormData(prev => ({ ...prev, socialLinks: { ...prev.socialLinks, youtube: e.target.value } }))} 
+                  placeholder="https://youtube.com/@sua_loja"
                 />
               </div>
             </div>
           </div>
 
-          <div className="space-y-2 mt-2 border-t pt-4">
-            <h4 className="font-bold text-sm">Texto Legal (Aviso Sanitário)</h4>
-            <Label>Texto referente a legislação da sua loja</Label>
+          <div className="space-y-2 border-t pt-4">
+            <h4 className="font-bold text-sm text-slate-800">Texto Legal (Aviso Sanitário)</h4>
+            <p className="text-xs text-slate-500">Texto de rodapé referente a responsabilidade sanitária e dados regulatórios da farmácia.</p>
             <Textarea 
               value={formData.footerPlataformaTexto || ""} 
               onChange={(e) => handleChange("footerPlataformaTexto", e.target.value)} 
-              rows={12}
-              placeholder="Ex: Farmacias Associadas - Sua Farmácia | CNPJ: ..."
+              rows={8}
+              placeholder="Ex: Farmácias Associadas - Sua Farmácia | CNPJ: ..."
             />
           </div>
         </div>
