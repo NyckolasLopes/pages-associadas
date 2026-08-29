@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/stores/auth";
 import { toast } from "sonner";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 
 export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boolean, onOpenChange: (open: boolean) => void, onLoginSuccess: () => void }) {
   const login = useAuth(s => s.login);
+  const activePharmacy = useActivePharmacy();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [step, setStep] = useState<"credentials" | "reset">("credentials");
@@ -81,7 +83,15 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
                 {loading ? "Entrando..." : "Entrar"}
               </Button>
               <div className="text-center text-sm mt-4 text-muted-foreground">
-                Ainda não tem conta? <a href="/cadastro" className="text-primary hover:underline font-bold">Cadastre-se</a>
+                Ainda não tem conta?{" "}
+                <Link 
+                  to="/$storeSlug/cadastro" 
+                  params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} 
+                  onClick={() => onOpenChange(false)}
+                  className="text-primary hover:underline font-bold"
+                >
+                  Cadastre-se
+                </Link>
               </div>
             </>
           ) : (

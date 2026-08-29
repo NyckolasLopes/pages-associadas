@@ -40,11 +40,16 @@ function ResetPassword() {
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     
+    const lastSlug = typeof sessionStorage !== "undefined" ? sessionStorage.getItem('fa-last-store-slug') : null;
     if (error) {
       toast.error("Erro ao atualizar a senha: " + error.message);
     } else {
       toast.success("Senha atualizada com sucesso!");
-      navigate({ to: "/" });
+      if (lastSlug) {
+        navigate({ to: "/$storeSlug", params: { storeSlug: lastSlug } });
+      } else {
+        navigate({ to: "/" });
+      }
     }
     setLoading(false);
   };

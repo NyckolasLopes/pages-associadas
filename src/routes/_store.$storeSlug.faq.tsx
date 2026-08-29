@@ -125,7 +125,7 @@ function FAQPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <div className="container-fa py-8">
         <nav className="text-xs text-muted-foreground flex items-center gap-1 mb-4">
-          <Link to="/" className="hover:text-primary">Início</Link>
+          <Link to="/$storeSlug" params={{ storeSlug }} className="hover:text-primary">Início</Link>
           <ChevronRight className="h-3 w-3" />
           <span className="text-foreground font-bold">Perguntas Frequentes</span>
         </nav>

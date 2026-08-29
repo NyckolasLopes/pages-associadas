@@ -333,9 +333,14 @@ function Checkout() {
 
   useEffect(() => {
     if (mounted && !user) {
-      navigate({ to: "/", replace: true });
+      navigate({ 
+        to: "/$storeSlug/login", 
+        params: { storeSlug: storeSlug || "poa" }, 
+        search: { redirect: typeof window !== "undefined" ? window.location.pathname : undefined } as any,
+        replace: true 
+      });
     }
-  }, [mounted, user, navigate]);
+  }, [mounted, user, navigate, storeSlug]);
 
   useEffect(() => {
     if (forceStore && deliveryMethod === "home") {

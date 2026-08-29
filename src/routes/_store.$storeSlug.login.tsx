@@ -101,13 +101,15 @@ function LoginPage() {
       return;
     }
 
+    const targetRedirect = (!redirect || redirect === "/") ? `/${storeSlug}` : redirect;
+
     if (result === "otp_required") {
       localStorage.setItem("fa_login_attempts", "0");
       setIsOtpMode(true);
       toast.success("Código de segurança enviado para o seu e-mail!");
     } else if (result === true) {
       localStorage.setItem("fa_login_attempts", "0");
-      navigate({ to: redirect as any, search: restSearch });
+      navigate({ to: targetRedirect as any, search: restSearch });
     } else {
       const attempts = parseInt(localStorage.getItem("fa_login_attempts") || "0") + 1;
       localStorage.setItem("fa_login_attempts", attempts.toString());
@@ -127,9 +129,10 @@ function LoginPage() {
     e.preventDefault();
     if (token.length < 6) return toast.error("Código inválido.");
     const ok = await verifyOtp(email, token);
+    const targetRedirect = (!redirect || redirect === "/") ? `/${storeSlug}` : redirect;
     if (ok) {
       toast.success("Verificação concluída!");
-      navigate({ to: redirect as any, search: restSearch });
+      navigate({ to: targetRedirect as any, search: restSearch });
     } else {
       toast.error("Código incorreto ou expirado.");
     }

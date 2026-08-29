@@ -566,7 +566,7 @@ function PerfilPage() {
                             return;
                           }
                           toast.success("Sua conta foi excluída com sucesso.");
-                          navigate({ to: "/" });
+                          navigate({ to: "/$storeSlug", params: { storeSlug } });
                         } catch (e: any) {
                           toast.error("Erro ao excluir conta: " + e.message);
                         }
@@ -617,13 +617,13 @@ function PerfilPage() {
                   </div>
                   <h3 className="font-bold text-lg mb-1">Nenhum favorito ainda</h3>
                   <p className="text-muted-foreground text-sm max-w-sm">Você ainda não tem nenhum produto favoritado. Navegue pela loja e adicione os produtos que você mais gosta!</p>
-                  <Button variant="outline" className="mt-6" onClick={() => navigate({ to: "/" })}>Continuar Comprando</Button>
+                  <Button variant="outline" className="mt-6" onClick={() => navigate({ to: "/$storeSlug", params: { storeSlug } })}>Continuar Comprando</Button>
                 </div>
              ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {favoriteProducts.map(p => (
                      <div key={p.id} className="bg-card border rounded-xl p-4 flex flex-col gap-3 relative group hover:shadow-md transition-shadow">
-                        <Link to="/$storeSlug/produto/$slug" params={{ storeSlug: "loja-padrao", slug: p.url || p.id }} className="flex-1 flex flex-col items-center text-center gap-3">
+                        <Link to="/$storeSlug/produto/$slug" params={{ storeSlug, slug: p.url || p.id }} className="flex-1 flex flex-col items-center text-center gap-3">
                            <div className="w-full bg-white rounded-lg p-2 aspect-square flex items-center justify-center mb-2">
                              <img src={productImage(p)} alt={p.nome} className="w-full h-full object-contain mix-blend-multiply" />
                            </div>

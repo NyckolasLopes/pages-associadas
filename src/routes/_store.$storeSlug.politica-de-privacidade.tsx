@@ -8,6 +8,7 @@ export const Route = createFileRoute("/_store/$storeSlug/politica-de-privacidade
 });
 
 function PoliticaPrivacidadePage() {
+  const { storeSlug } = Route.useParams();
   return (
     <div className="container-fa py-12 max-w-4xl mx-auto min-h-screen">
       <div className="text-center mb-12">
@@ -38,12 +39,10 @@ function PoliticaPrivacidadePage() {
 
         <section>
           <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-primary" /> 2. Coleta e Compartilhamento Restrito de Dados
+            <ShieldCheck className="w-5 h-5 text-primary" /> 2. Coleta e Finalidade dos Dados
           </h2>
           <p className="mb-4">
-            Em estrita observância à Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD), a coleta de informações cadastrais (incluindo, 
-            mas não se limitando a: Nome Completo, CPF, Endereço de Entrega e Informações de Contato) é baseada nas hipóteses legais de 
-            execução de contrato (Art. 7º, V) e legítimo interesse (Art. 7º, IX).
+            Para viabilizar a prestação dos serviços de comércio eletrônico e entrega farmacêutica, a Plataforma coleta exclusivamente os dados essenciais para identificação, cobrança, emissão de documento fiscal e entrega (tais como Nome Completo, CPF, Telefone, E-mail e Endereço de Entrega).
           </p>
           <p className="font-semibold text-slate-900 bg-slate-50 p-4 rounded-xl border border-slate-100 my-4">
             Parágrafo Único: Os dados transacionais de um pedido são compartilhados única e exclusivamente com a Loja Associada específica 
@@ -86,8 +85,8 @@ function PoliticaPrivacidadePage() {
       </div>
       
       <div className="mt-8 text-center">
-        <Link to="/" className="text-primary font-bold hover:underline">
-          &larr; Voltar para a página inicial
+        <Link to="/$storeSlug" params={{ storeSlug }} className="text-primary font-bold hover:underline">
+          &larr; Voltar para a página da loja
         </Link>
       </div>
     </div>

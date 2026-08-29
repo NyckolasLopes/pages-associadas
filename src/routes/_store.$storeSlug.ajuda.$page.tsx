@@ -28,12 +28,13 @@ export const Route = createFileRoute("/_store/$storeSlug/ajuda/$page")({
 
 function PolicyPage() {
   const p = Route.useLoaderData() as any;
+  const { storeSlug } = Route.useParams();
   if (!p) return null;
   return (
     <div className="bg-background min-h-[60vh]">
       <div className="container-fa py-8">
         <nav className="text-xs text-muted-foreground flex items-center gap-1 mb-4">
-          <Link to="/" className="hover:text-primary">Início</Link>
+          <Link to="/$storeSlug" params={{ storeSlug }} className="hover:text-primary">Início</Link>
           <ChevronRight className="h-3 w-3" />
           <span>Ajuda</span>
           <ChevronRight className="h-3 w-3" />

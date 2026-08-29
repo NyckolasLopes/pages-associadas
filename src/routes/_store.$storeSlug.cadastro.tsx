@@ -111,7 +111,8 @@ function CadastroPage() {
       
       navigate({ to: "/admin" as any });
     } else {
-      navigate({ to: redirect as any });
+      const targetRedirect = (!redirect || redirect === "/") ? `/${storeSlug}` : redirect;
+      navigate({ to: targetRedirect as any });
     }
   };
 

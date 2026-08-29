@@ -24,6 +24,12 @@ export function NotFound({ type = "page", title, description }: NotFoundProps) {
       const lastSlug = sessionStorage.getItem('fa-last-store-slug');
       if (lastSlug) storeSlug = lastSlug;
     } catch {}
+    if (!storeSlug && typeof window !== "undefined") {
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      if (parts[0] && !["admin", "login", "cadastro", "reset-password"].includes(parts[0])) {
+        storeSlug = safeSlugify(parts[0]);
+      }
+    }
   }
 
   const getMascot = () => {

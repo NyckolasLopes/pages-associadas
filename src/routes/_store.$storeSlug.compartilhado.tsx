@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_store/$storeSlug/compartilhado")({
 
 function CompartilhadoPage() {
   const navigate = useNavigate();
+  const { storeSlug } = Route.useParams();
   const search = Route.useSearch() as { c?: string };
   const add = useCart((s) => s.add);
   const clear = useCart((s) => s.clear);
@@ -18,7 +19,7 @@ function CompartilhadoPage() {
   useEffect(() => {
     async function loadSharedCart() {
       if (!search.c) {
-        navigate({ to: "/" });
+        navigate({ to: "/$storeSlug", params: { storeSlug } });
         return;
       }
       try {
@@ -39,10 +40,10 @@ function CompartilhadoPage() {
       }
       
       // Redirect to cart and trigger the forced pharmacy selection modal
-      navigate({ to: "/$storeSlug/cart", params: { storeSlug: "loja-padrao" }, search: { shared: "true" } as any });
+      navigate({ to: "/$storeSlug/cart", params: { storeSlug }, search: { shared: "true" } as any });
     }
     loadSharedCart();
-  }, [search.c, navigate, add, clear]);
+  }, [search.c, navigate, add, clear, storeSlug]);
 
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#F9F9F8]">
