@@ -1,5 +1,5 @@
 import { getBrandNameForHead } from "@/utils/brand";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useRef, useEffect, useState, useMemo } from "react";
 import { Header } from "@/components/storefront/Header";
 import { Footer } from "@/components/storefront/Footer";
@@ -51,9 +51,11 @@ function getDeduplicatedBanners(bannersToFilter: any[]) {
   return Array.from(uniqueMap.values());
 }
 
-function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: VitrineLocal; page?: string; lojaId?: string }) {
+function DynamicVitrines({ local, page = "Página inicial", lojaId, storeSlug: propStoreSlug }: { local: VitrineLocal; page?: string; lojaId?: string; storeSlug?: string }) {
   const allVitrines = useAdminProducts((s) => s.getStoreVitrines(lojaId));
   const customProducts = useAdminProducts((s) => s.customProducts);
+  const params = useParams({ strict: false });
+  const storeSlug = propStoreSlug || (params as any)?.storeSlug || "loja-padrao";
   
   const vitrines = useMemo(() => 
     (allVitrines || [])
@@ -690,7 +692,7 @@ function StoreHome() {
         </LazySection>
 
         <LazySection height="400px">
-          <DynamicVitrines local="espaco_1" lojaId={lojaId} />
+          <DynamicVitrines local="espaco_1" lojaId={lojaId} storeSlug={storeSlug} />
         </LazySection>
         
         <LazySection height="250px">
@@ -705,7 +707,7 @@ function StoreHome() {
         )}
         
         <LazySection height="400px">
-          <DynamicVitrines local="espaco_2" lojaId={lojaId} />
+          <DynamicVitrines local="espaco_2" lojaId={lojaId} storeSlug={storeSlug} />
         </LazySection>
 
 
@@ -765,7 +767,7 @@ function StoreHome() {
         )}
         
         <LazySection height="400px">
-          <DynamicVitrines local="espaco_3" lojaId={lojaId} />
+          <DynamicVitrines local="espaco_3" lojaId={lojaId} storeSlug={storeSlug} />
         </LazySection>
 
         {/* Parceiros / Marcas */}
