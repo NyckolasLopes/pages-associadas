@@ -31,11 +31,12 @@ function AoVivo() {
     if (id === "admin-sede") return "Admin da Sede";
     if (id.startsWith('admin-loja-')) {
       const realId = id.replace('admin-loja-', '');
-      const storeName = pharmacies.find(l => String(l.id) === String(realId))?.nome || "Loja Desconhecida";
-      return `Admin (${storeName})`;
+      const store = pharmacies.find(l => String(l.id) === String(realId));
+      return store ? `Admin (${store.nome})` : "Admin da Unidade";
     }
     const realId = id.replace('admin-loja-', '');
-    return pharmacies.find(l => String(l.id) === String(realId))?.nome || "Loja Desconhecida";
+    const store = pharmacies.find(l => String(l.id) === String(realId));
+    return store?.nome || "Loja";
   };
   const pedidos = useOrders((state) => state.orders);
 

@@ -192,8 +192,16 @@ function Relatorios() {
       const status = o.status.toUpperCase();
       return status !== "AGUARDANDO PAGAMENTO" && status !== "CANCELADO";
     });
+
+    // Exclui e desconsidera dados de lojas removidas (que não existem em pharmacies)
+    // Lojas apenas desativadas temporariamente continuam existindo em pharmacies e são mantidas
+    filtered = filtered.filter(o => {
+      if (!o.lojaId) return false;
+      return pharmacies?.some(p => String(p.id) === String(o.lojaId));
+    });
+
     if (activeStoreId) {
-      filtered = filtered.filter(o => o.lojaId === activeStoreId);
+      filtered = filtered.filter(o => String(o.lojaId) === String(activeStoreId));
     }
     
     if (date?.from) {
@@ -220,7 +228,7 @@ function Relatorios() {
     }
 
     return filtered;
-  }, [rawOrders, activeStoreId, date]);
+  }, [rawOrders, activeStoreId, date, pharmacies]);
 
   // SLA Stats Calculation
   const slaStats = useMemo(() => {
@@ -232,12 +240,13 @@ function Relatorios() {
     const ordersByLoja: Record<string, typeof orders> = {};
     
     orders.forEach(pedido => {
-      // Conta pedido mesmo sem lojaId (fallback por lojaNome)
-      const lojaId = pedido.lojaId || (pedido as any).lojaNome || null;
-      if (lojaId) {
-        if (!ordersByLoja[lojaId]) ordersByLoja[lojaId] = [];
-        ordersByLoja[lojaId].push(pedido);
-      }
+      if (!pedido.lojaId) return;
+      const store = pharmacies?.find(p => String(p.id) === String(pedido.lojaId));
+      if (!store) return;
+      
+      const lojaId = store.id;
+      if (!ordersByLoja[lojaId]) ordersByLoja[lojaId] = [];
+      ordersByLoja[lojaId].push(pedido);
       
       const hist = [...(pedido.historico || [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
       const separacao = hist.find(h => {
@@ -363,16 +372,18 @@ function Relatorios() {
     
     if (!isOffline) {
       const repasseLiquido = total - taxa;
-
-      if (!lojasMap[o.lojaId || "unknown"]) lojasMap[o.lojaId || "unknown"] = { faturamento: 0, repasse: 0, qtdPedidos: 0 };
-      lojasMap[o.lojaId || "unknown"].faturamento += total;
-      lojasMap[o.lojaId || "unknown"].repasse += repasseLiquido > 0 ? repasseLiquido : 0;
-      lojasMap[o.lojaId || "unknown"].qtdPedidos += 1;
+      const store = pharmacies.find(p => String(p.id) === String(o.lojaId));
+      if (store) {
+        if (!lojasMap[store.id]) lojasMap[store.id] = { faturamento: 0, repasse: 0, qtdPedidos: 0 };
+        lojasMap[store.id].faturamento += total;
+        lojasMap[store.id].repasse += repasseLiquido > 0 ? repasseLiquido : 0;
+        lojasMap[store.id].qtdPedidos += 1;
+      }
     }
   });
   
   const barChartData = Object.entries(lojasMap).map(([id, data]) => {
-    const loja = pharmacies.find(p => p.id === id);
+    const loja = pharmacies.find(p => String(p.id) === String(id));
     const nome = loja?.nome || `Loja ${id}`;
     return {
       name: nome,
@@ -408,17 +419,19 @@ function Relatorios() {
     envioMap[label] = (envioMap[label] || 0) + 1;
 
     if (!effectiveStoreId) {
-      const lojaId = o.lojaId || "desconhecida";
-      if (!envioPorLojaMap[lojaId]) {
-        const store = pharmacies?.find(p => p.id === lojaId);
-        envioPorLojaMap[lojaId] = { name: store ? store.nome : "Desconhecida", retirada: 0, entrega: 0, total: 0 };
+      const store = pharmacies?.find(p => String(p.id) === String(o.lojaId));
+      if (store) {
+        const lojaId = store.id;
+        if (!envioPorLojaMap[lojaId]) {
+          envioPorLojaMap[lojaId] = { name: store.nome, retirada: 0, entrega: 0, total: 0 };
+        }
+        if (isRetirada) {
+          envioPorLojaMap[lojaId].retirada++;
+        } else {
+          envioPorLojaMap[lojaId].entrega++;
+        }
+        envioPorLojaMap[lojaId].total++;
       }
-      if (isRetirada) {
-        envioPorLojaMap[lojaId].retirada++;
-      } else {
-        envioPorLojaMap[lojaId].entrega++;
-      }
-      envioPorLojaMap[lojaId].total++;
     }
   });
   const pieEnvioData = Object.entries(envioMap).map(([name, value]) => ({ name, value }));
@@ -785,7 +798,9 @@ function Relatorios() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {Object.keys(lojaPromocoes || {}).length > 0 ? Object.entries(lojaPromocoes).flatMap(([lojaId, promocoes]) => {
-                    const lojaNome = pharmacies.find(p => p.id === lojaId)?.nome || "Loja Desconhecida";
+                    const store = pharmacies.find(p => String(p.id) === String(lojaId));
+                    if (!store) return []; // Desconsidera promoções de lojas removidas
+                    const lojaNome = store.nome;
                     return promocoes.map(promo => {
                       const mecanica = promo.tipoCampanha === 'leve_pague' ? `Leve ${promo.levePague_quantidade} Pague R$ ${promo.levePague_precoPorItem?.toFixed(2)}` : 'Padrão';
                       const produtosQtd = promo.alvosId.length;
