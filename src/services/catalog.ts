@@ -725,58 +725,59 @@ export const catalog = {
         .limit(60);
       candidates = await fetchFromSupabaseWithPrices(query, lojaId);
     } else {
-      // Multi-column and multi-token search clauses
+      // Multi-column and multi-token search clauses using ONLY existing Supabase columns
       const orClauses: string[] = [];
+      const cleanQ = profile.cleanQuery;
 
       // 1. Full query matches
-      orClauses.push(`nome.ilike.%${profile.cleanQuery}%`);
-      orClauses.push(`termos_pesquisa.ilike.%${profile.cleanQuery}%`);
-      orClauses.push(`marca.ilike.%${profile.cleanQuery}%`);
-      orClauses.push(`metadata->>classe_terapeutica.ilike.%${profile.cleanQuery}%`);
-      orClauses.push(`metadata->>indicacao_terapeutica.ilike.%${profile.cleanQuery}%`);
-      orClauses.push(`descricao_html.ilike.%${profile.cleanQuery}%`);
-      orClauses.push(`resumo_descricao.ilike.%${profile.cleanQuery}%`);
+      if (cleanQ) {
+        orClauses.push(`nome.ilike.%${cleanQ}%`);
+        orClauses.push(`marca.ilike.%${cleanQ}%`);
+        orClauses.push(`descricao.ilike.%${cleanQ}%`);
+        orClauses.push(`classe_terapeutica.ilike.%${cleanQ}%`);
+        orClauses.push(`indicacao_terapeutica.ilike.%${cleanQ}%`);
+        orClauses.push(`slug.ilike.%${cleanQ}%`);
+      }
 
       // 2. Individual tokens (e.g. "pomada" and "assadura")
       for (const token of profile.tokens) {
         if (token.length >= 3) {
           orClauses.push(`nome.ilike.%${token}%`);
-          orClauses.push(`termos_pesquisa.ilike.%${token}%`);
           orClauses.push(`marca.ilike.%${token}%`);
-          orClauses.push(`metadata->>classe_terapeutica.ilike.%${token}%`);
-          orClauses.push(`metadata->>indicacao_terapeutica.ilike.%${token}%`);
-          orClauses.push(`descricao_html.ilike.%${token}%`);
-          orClauses.push(`resumo_descricao.ilike.%${token}%`);
+          orClauses.push(`descricao.ilike.%${token}%`);
+          orClauses.push(`classe_terapeutica.ilike.%${token}%`);
+          orClauses.push(`indicacao_terapeutica.ilike.%${token}%`);
         }
       }
 
       // 3. Synonym / Indication expanded terms
       for (const exp of profile.expandedTerms.slice(0, 6)) {
-        if (exp !== profile.cleanQuery && exp.length >= 3) {
+        if (exp !== cleanQ && exp.length >= 3) {
           orClauses.push(`nome.ilike.%${exp}%`);
-          orClauses.push(`termos_pesquisa.ilike.%${exp}%`);
-          orClauses.push(`metadata->>indicacao_terapeutica.ilike.%${exp}%`);
-          orClauses.push(`descricao_html.ilike.%${exp}%`);
+          orClauses.push(`marca.ilike.%${exp}%`);
+          orClauses.push(`descricao.ilike.%${exp}%`);
+          orClauses.push(`indicacao_terapeutica.ilike.%${exp}%`);
         }
       }
 
       // 4. "Did you mean" typo correction term
       if (profile.didYouMean) {
         orClauses.push(`nome.ilike.%${profile.didYouMean}%`);
-        orClauses.push(`termos_pesquisa.ilike.%${profile.didYouMean}%`);
-        orClauses.push(`descricao_html.ilike.%${profile.didYouMean}%`);
+        orClauses.push(`descricao.ilike.%${profile.didYouMean}%`);
       }
 
       const uniqueClauses = Array.from(new Set(orClauses));
-      const query = supabase.from('produtos').select('*')
-        .or(uniqueClauses.join(','))
-        .limit(160);
+      if (uniqueClauses.length > 0) {
+        const query = supabase.from('produtos').select('*')
+          .or(uniqueClauses.join(','))
+          .limit(160);
 
-      candidates = await fetchFromSupabaseWithPrices(query, lojaId);
+        candidates = await fetchFromSupabaseWithPrices(query, lojaId);
+      }
 
       // Fallback if broad search found 0 candidates: try matching first 2 tokens
       if (candidates.length === 0 && profile.tokens.length > 0) {
-        const fallbackClauses = profile.tokens.slice(0, 2).map(t => `nome.ilike.%${t}%,descricao_html.ilike.%${t}%`).join(',');
+        const fallbackClauses = profile.tokens.slice(0, 2).map(t => `nome.ilike.%${t}%,descricao.ilike.%${t}%`).join(',');
         if (fallbackClauses) {
           const fallbackQuery = supabase.from('produtos').select('*').or(fallbackClauses).limit(80);
           candidates = await fetchFromSupabaseWithPrices(fallbackQuery, lojaId);
@@ -809,26 +810,25 @@ export const catalog = {
       } else {
         const clauses: string[] = [
           `nome.ilike.%${profile.cleanQuery}%`,
-          `termos_pesquisa.ilike.%${profile.cleanQuery}%`,
           `marca.ilike.%${profile.cleanQuery}%`,
-          `metadata->>classe_terapeutica.ilike.%${profile.cleanQuery}%`,
-          `metadata->>indicacao_terapeutica.ilike.%${profile.cleanQuery}%`,
-          `descricao_html.ilike.%${profile.cleanQuery}%`,
-          `resumo_descricao.ilike.%${profile.cleanQuery}%`
+          `descricao.ilike.%${profile.cleanQuery}%`,
+          `classe_terapeutica.ilike.%${profile.cleanQuery}%`,
+          `indicacao_terapeutica.ilike.%${profile.cleanQuery}%`,
+          `slug.ilike.%${profile.cleanQuery}%`
         ];
 
         for (const token of profile.tokens) {
           if (token.length >= 3) {
             clauses.push(`nome.ilike.%${token}%`);
-            clauses.push(`termos_pesquisa.ilike.%${token}%`);
-            clauses.push(`metadata->>indicacao_terapeutica.ilike.%${token}%`);
-            clauses.push(`descricao_html.ilike.%${token}%`);
+            clauses.push(`marca.ilike.%${token}%`);
+            clauses.push(`descricao.ilike.%${token}%`);
+            clauses.push(`indicacao_terapeutica.ilike.%${token}%`);
           }
         }
 
         if (profile.didYouMean) {
           clauses.push(`nome.ilike.%${profile.didYouMean}%`);
-          clauses.push(`termos_pesquisa.ilike.%${profile.didYouMean}%`);
+          clauses.push(`descricao.ilike.%${profile.didYouMean}%`);
         }
 
         query = query.or(Array.from(new Set(clauses)).join(','));

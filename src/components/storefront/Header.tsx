@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Search, MapPin, ShoppingBasket, Menu, Phone, User, X, Truck, Sparkles, Trash2,
   Pill, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Plus, Camera, Package, Home, Tag, ShieldCheck, ChevronDown, Flame, HeartPulse, Navigation,
-  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell
+  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScannerModal } from "./BarcodeScannerModal";
@@ -172,6 +172,7 @@ export function Header() {
   
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Produto[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -302,9 +303,24 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    if (q.length < 2) return setResults([]);
+    const trimmed = q.trim();
+    if (trimmed.length < 2) {
+      setResults([]);
+      setIsSearching(false);
+      return;
+    }
+    setIsSearching(true);
     const t = setTimeout(() => {
-      catalog.search(q, undefined, activePharmacy?.id || selectedPharmacyId).then(setResults);
+      catalog.search(trimmed, { pageSize: 6 }, activePharmacy?.id || selectedPharmacyId)
+        .then((res) => {
+          setResults(res || []);
+        })
+        .catch(() => {
+          setResults([]);
+        })
+        .finally(() => {
+          setIsSearching(false);
+        });
     }, 150);
     return () => clearTimeout(t);
   }, [q, activePharmacy?.id, selectedPharmacyId]);
@@ -322,7 +338,11 @@ export function Header() {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (q) navigate({ to: `/${storeSlug}/busca`, search: { q } } as any);
+    if (q.trim()) {
+      setSearchOpen(false);
+      setMobileSearchOpen(false);
+      navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
+    }
   };
 
   const handleScan = async (rawCode: string) => {
@@ -457,7 +477,7 @@ export function Header() {
 
         {/* Search */}
         <form onSubmit={onSubmit} className="flex-1 relative">
-          <Popover open={searchOpen && (results.length > 0 || q.length < 2)} onOpenChange={setSearchOpen}>
+          <Popover open={searchOpen} onOpenChange={setSearchOpen}>
             <PopoverTrigger asChild>
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -468,7 +488,7 @@ export function Header() {
                     setQ(e.target.value);
                     setSearchOpen(true);
                   }}
-                  placeholder="Escreva o que procura ou escaneie o codigo de barras"
+                  placeholder="Escreva o que procura ou escaneie o código de barras"
                   className="pl-10 h-11 rounded-full border-2 focus-visible:border-primary w-full pr-10"
                 />
                 <button
@@ -482,68 +502,88 @@ export function Header() {
               </div>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[var(--radix-popover-trigger-width)] p-0 max-h-[60vh] overflow-auto"
+              className="w-[var(--radix-popover-trigger-width)] p-0 max-h-[60vh] overflow-auto shadow-elevated border"
               align="start"
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
-              {q.length < 2 ? (
+              {q.trim().length < 2 ? (
                 <div className="p-3">
-                  <div className="text-xs font-bold text-muted-foreground mb-2 uppercase">Sugestões de busca</div>
+                  <div className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">Sugestões de busca</div>
                   {suggestions.map((sug, i) => (
                     <button
                       key={i}
                       type="button"
-                      className="flex items-center gap-2 w-full text-left p-2 hover:bg-muted rounded text-sm"
+                      className="flex items-center gap-2 w-full text-left p-2 hover:bg-muted rounded text-sm transition font-medium"
                       onClick={() => {
                         setQ(sug);
                         setSearchOpen(false);
-                        navigate({ to: `/${storeSlug}/busca`, search: { q: sug } } as any);
+                        navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: sug } } as any);
                       }}
                     >
-                      <Search className="h-4 w-4 text-muted-foreground" />
+                      <Search className="h-3.5 w-3.5 text-primary" />
                       {sug}
                     </button>
                   ))}
                 </div>
+              ) : isSearching ? (
+                <div className="p-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  Buscando produtos...
+                </div>
+              ) : results.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  <p>Nenhum produto encontrado para "<span className="font-semibold text-foreground">{q}</span>".</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchOpen(false);
+                      navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
+                    }}
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline bg-primary/10 px-3 py-1.5 rounded-full"
+                  >
+                    <Search className="h-3.5 w-3.5" /> Ver todos os produtos
+                  </button>
+                </div>
               ) : (
                 <>
-                  {results.map((p) => {
-                    const ep = getEffectivePrice(p, activePharmacy?.id || selectedPharmacyId);
-                    return (
-                    <Link
-                      key={p.id}
-                      to={"/$storeSlug/produto/$slug" as any}
-                      params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url } as any}
-                      onClick={() => setSearchOpen(false)}
-                      className="flex items-center gap-3 p-3 hover:bg-muted border-b last:border-0"
+                  <div className="divide-y">
+                    {results.map((p) => {
+                      const ep = getEffectivePrice(p, activePharmacy?.id || selectedPharmacyId);
+                      return (
+                        <Link
+                          key={p.id}
+                          to={"/$storeSlug/produto/$slug" as any}
+                          params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url || p.slug || p.id } as any}
+                          onClick={() => setSearchOpen(false)}
+                          className="flex items-center gap-3 p-3 hover:bg-muted/80 transition"
+                        >
+                          <img
+                            src={productImage(p)}
+                            alt=""
+                            loading="lazy"
+                            className="h-12 w-12 object-contain rounded bg-white border shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold truncate text-foreground">{p.nome}</div>
+                            <div className="text-xs text-muted-foreground truncate">{p.marca || "Associadas"}</div>
+                          </div>
+                          <div className="text-sm font-bold text-primary shrink-0">{brl(ep.precoPor)}</div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  <div className="p-2 border-t bg-muted/30">
+                    <button
+                      type="button"
+                      className="w-full text-center text-sm font-bold text-primary py-2 hover:underline flex items-center justify-center gap-1.5"
+                      onClick={() => {
+                        setSearchOpen(false);
+                        navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
+                      }}
                     >
-                      <img
-                        src={productImage(p)}
-                        alt=""
-                        loading="lazy"
-                        className="h-12 w-12 object-contain rounded bg-white border"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold truncate">{p.nome}</div>
-                        <div className="text-xs text-muted-foreground">{p.marca}</div>
-                      </div>
-                      <div className="text-sm font-bold text-foreground">{brl(ep.precoPor)}</div>
-                    </Link>
-                  )})}
-                  {results.length > 0 && (
-                    <div className="p-2 border-t">
-                      <button
-                        type="button"
-                        className="w-full text-center text-sm font-bold text-primary py-2 hover:underline"
-                        onClick={() => {
-                          setSearchOpen(false);
-                          navigate({ to: `/${storeSlug}/busca`, search: { q } } as any);
-                        }}
-                      >
-                        Ver todos os resultados
-                      </button>
-                    </div>
-                  )}
+                      Ver todos os resultados para "{q.trim()}" <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </>
               )}
             </PopoverContent>
@@ -646,7 +686,7 @@ export function Header() {
           {/* Linha 2: Busca 100% com lupa e câmera */}
           <div className="container-fa pb-2 pt-1">
             <form onSubmit={onSubmit} className="relative">
-              <Popover open={mobileSearchOpen && searchOpen && (results.length > 0 || q.length < 2)} onOpenChange={setSearchOpen}>
+              <Popover open={mobileSearchOpen && searchOpen} onOpenChange={setSearchOpen}>
                 <PopoverTrigger asChild>
                   <div className="relative w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -657,7 +697,7 @@ export function Header() {
                         setQ(e.target.value);
                         setSearchOpen(true);
                       }}
-                      placeholder="Escreva o que procura ou escaneie o codigo de barras"
+                      placeholder="Escreva o que procura ou escaneie o código de barras"
                       className="pl-10 h-11 rounded-full border-2 w-full pr-12"
                     />
                     <button
@@ -671,73 +711,94 @@ export function Header() {
                   </div>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[var(--radix-popover-trigger-width)] p-0 max-h-[60vh] overflow-auto"
+                  className="w-[var(--radix-popover-trigger-width)] p-0 max-h-[60vh] overflow-auto shadow-elevated border"
                   align="start"
                   onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                  {q.length < 2 ? (
+                  {q.trim().length < 2 ? (
                     <div className="p-3">
-                      <div className="text-xs font-bold text-muted-foreground mb-2 uppercase">Sugestões de busca</div>
+                      <div className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">Sugestões de busca</div>
                       {suggestions.map((sug, i) => (
                         <button
                           key={i}
                           type="button"
-                          className="flex items-center gap-2 w-full text-left p-2 hover:bg-muted rounded text-sm"
+                          className="flex items-center gap-2 w-full text-left p-2 hover:bg-muted rounded text-sm transition font-medium"
                           onClick={() => {
                             setQ(sug);
                             setSearchOpen(false);
                             setMobileSearchOpen(false);
-                            navigate({ to: `/${storeSlug}/busca`, search: { q: sug } } as any);
+                            navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: sug } } as any);
                           }}
                         >
-                          <Search className="h-4 w-4 text-muted-foreground" />
+                          <Search className="h-3.5 w-3.5 text-primary" />
                           {sug}
                         </button>
                       ))}
                     </div>
+                  ) : isSearching ? (
+                    <div className="p-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      Buscando produtos...
+                    </div>
+                  ) : results.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">
+                      <p>Nenhum produto encontrado para "<span className="font-semibold text-foreground">{q}</span>".</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchOpen(false);
+                          setMobileSearchOpen(false);
+                          navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
+                        }}
+                        className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline bg-primary/10 px-3 py-1.5 rounded-full"
+                      >
+                        <Search className="h-3.5 w-3.5" /> Ver todos os produtos
+                      </button>
+                    </div>
                   ) : (
                     <>
-                      {results.map((p) => {
-                        const ep = getEffectivePrice(p, activePharmacy?.id || selectedPharmacyId);
-                        return (
-                        <Link
-                          key={p.id}
-                          to={"/$storeSlug/produto/$slug" as any}
-                          params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url } as any}
+                      <div className="divide-y">
+                        {results.map((p) => {
+                          const ep = getEffectivePrice(p, activePharmacy?.id || selectedPharmacyId);
+                          return (
+                            <Link
+                              key={p.id}
+                              to={"/$storeSlug/produto/$slug" as any}
+                              params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url || p.slug || p.id } as any}
+                              onClick={() => {
+                                setSearchOpen(false);
+                                setMobileSearchOpen(false);
+                              }}
+                              className="flex items-center gap-3 p-3 hover:bg-muted/80 transition"
+                            >
+                              <img
+                                src={productImage(p)}
+                                alt=""
+                                loading="lazy"
+                                className="h-12 w-12 object-contain rounded bg-white border shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-bold truncate text-foreground">{p.nome}</div>
+                                <div className="text-xs text-muted-foreground truncate">{p.marca || "Associadas"}</div>
+                              </div>
+                              <div className="text-sm font-bold text-primary shrink-0">{brl(ep.precoPor)}</div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                      <div className="p-2 border-t bg-muted/30">
+                        <button
+                          type="button"
+                          className="w-full text-center text-sm font-bold text-primary py-2 hover:underline flex items-center justify-center gap-1.5"
                           onClick={() => {
                             setSearchOpen(false);
                             setMobileSearchOpen(false);
+                            navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
                           }}
-                          className="flex items-center gap-3 p-3 hover:bg-muted border-b last:border-0"
                         >
-                          <img
-                            src={productImage(p)}
-                            alt=""
-                            loading="lazy"
-                            className="h-12 w-12 object-contain rounded bg-white border"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-bold truncate">{p.nome}</div>
-                            <div className="text-xs text-muted-foreground">{p.marca}</div>
-                          </div>
-                          <div className="text-sm font-bold text-foreground">{brl(ep.precoPor)}</div>
-                        </Link>
-                      )})}
-                      {results.length > 0 && (
-                        <div className="p-2 border-t">
-                          <button
-                            type="button"
-                            className="w-full text-center text-sm font-bold text-primary py-2 hover:underline"
-                            onClick={() => {
-                              setSearchOpen(false);
-                              setMobileSearchOpen(false);
-                              navigate({ to: `/${storeSlug}/busca`, search: { q } } as any);
-                            }}
-                          >
-                            Ver todos os resultados
-                          </button>
-                        </div>
-                      )}
+                          Ver todos os resultados para "{q.trim()}" <ArrowRight className="h-4 w-4" />
+                        </button>
+                      </div>
                     </>
                   )}
                 </PopoverContent>
