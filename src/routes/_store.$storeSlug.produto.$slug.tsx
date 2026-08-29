@@ -727,11 +727,11 @@ function PDP() {
   }
 
   // 3. Store-specific & Global Promotions
-  const currentStoreId = String(activePharmacy?.id || currentLoja?.id || effectiveStoreId || loja?.id || "");
+  const currentStoreId = String(activePharmacy?.id || currentLoja?.id || effectiveStoreId || loja?.id || activePharmacyId || "");
   const storePromos = promocoes.filter((pr: any) => pr.lojaId && String(pr.lojaId) === currentStoreId);
   const lojaPromocoes = storePromos.length > 0 
     ? storePromos 
-    : (marketingState.lojaPromocoes[currentStoreId] || (promoStoreId ? marketingState.lojaPromocoes[String(promoStoreId)] : []) || []);
+    : (marketingState.lojaPromocoes[currentStoreId] || []);
   const globalPromocoes = promocoes.filter((p: any) => !p.lojaId || p.lojaId === "" || p.lojaId === "global" || p.lojaId === "all");
   const padraoPromo = getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes);
   const levePaguePromo = getLevePaguePromotion(p, globalPromocoes, lojaPromocoes);
