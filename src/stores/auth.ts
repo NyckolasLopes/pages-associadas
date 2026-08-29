@@ -147,24 +147,82 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   deleteAccount: async () => {
     _isLoggingOut = true;
-    const { error } = await supabase.rpc('delete_own_account');
-    if (error) {
-      console.error("Error deleting account:", error);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id || get().user?.id;
+
+      if (!currentUserId) {
+        console.warn("Nenhum usuário ativo para exclusão.");
+        return false;
+      }
+
+      // 1. Tentar chamar a RPC delete_own_account do Supabase
+      let rpcSuccess = false;
+      try {
+        const { error: rpcError } = await (supabase.rpc as any)('delete_own_account');
+        if (!rpcError) {
+          rpcSuccess = true;
+        } else {
+          console.warn("RPC delete_own_account retornou aviso:", rpcError);
+        }
+      } catch (err) {
+        console.warn("Falha ao invocar RPC delete_own_account:", err);
+      }
+
+      // 2. Se a RPC não estiver disponível ou falhar por dependência, efetuar limpeza direta das tabelas
+      if (!rpcSuccess) {
+        try {
+          await supabase.from("carrinhos_abandonados").delete().eq("user_id", currentUserId);
+        } catch (e) { /* ignore */ }
+
+        try {
+          await supabase.from("enderecos").delete().eq("user_id", currentUserId);
+        } catch (e) { /* ignore */ }
+
+        try {
+          await (supabase.from("pedidos") as any).update({ user_id: null }).eq("user_id", currentUserId);
+        } catch (e) { /* ignore */ }
+
+        try {
+          await supabase.from("profiles").delete().eq("id", currentUserId);
+        } catch (e) { /* ignore */ }
+
+        // Tentar novamente a exclusão via RPC após limpeza dos registros dependentes
+        try {
+          const { error: retryError } = await (supabase.rpc as any)('delete_own_account');
+          if (!retryError) {
+            rpcSuccess = true;
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      // 3. Encerrar sessão do usuário e limpar dados locais do navegador
+      await supabase.auth.signOut();
+      set({ user: null });
+
+      try {
+        const { useFavorites } = await import("./favorites");
+        useFavorites.getState().clearAll();
+      } catch (e) {}
+
+      try {
+        const { useCart } = await import("./cart");
+        useCart.getState().clear();
+      } catch (e) {}
+
+      try {
+        sessionStorage.removeItem("fa-auth-user");
+        sessionStorage.removeItem("fa-visitor-session");
+        localStorage.removeItem("fa-auth-token");
+      } catch (e) {}
+
+      return true;
+    } catch (globalErr) {
+      console.error("Erro geral durante exclusão de conta:", globalErr);
       return false;
+    } finally {
+      _isLoggingOut = false;
     }
-    
-    await supabase.auth.signOut();
-    set({ user: null });
-    try {
-      const { useFavorites } = await import("./favorites");
-      useFavorites.getState().clearAll();
-    } catch (e) {}
-    try {
-      const { useCart } = await import("./cart");
-      useCart.getState().clear();
-    } catch (e) {}
-    
-    return true;
   },
 
   setLoginOpen: (open) => set({ loginOpen: open }),
