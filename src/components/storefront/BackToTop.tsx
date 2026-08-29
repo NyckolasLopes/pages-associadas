@@ -6,6 +6,11 @@ export function FloatingElements() {
   const [show, setShow] = useState(false);
   const activePharmacy = useActivePharmacy();
 
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const isRootHomePage = pathname === "" || pathname === "/";
+  // O botão flutuante de WhatsApp deve aparecer APENAS nas páginas individuais das lojas
+  const isStoreContext = !!activePharmacy?.id && !isRootHomePage;
+
   // Obtém o número de WhatsApp da loja ativa ou telefone como fallback
   const rawNumber = (activePharmacy?.whatsapp || activePharmacy?.telefone || "").replace(/\D/g, "");
   
@@ -20,7 +25,7 @@ export function FloatingElements() {
 
   const storeName = activePharmacy?.nome || "Farmácias Associadas";
   const defaultText = `Olá! Estou navegando na vitrine da ${storeName} e gostaria de tirar uma dúvida.`;
-  const whatsappLink = formattedNumber 
+  const whatsappLink = (isStoreContext && formattedNumber) 
     ? `https://wa.me/${formattedNumber}?text=${encodeURIComponent(defaultText)}`
     : "";
 
@@ -31,7 +36,7 @@ export function FloatingElements() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Só exibe se houver número configurado para a loja
+  // Só exibe se houver número configurado para a loja ou botão de voltar ao topo
   if (!whatsappLink && !show) return null;
 
   return (
