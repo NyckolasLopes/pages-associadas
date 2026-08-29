@@ -449,8 +449,49 @@ const defaultBanners: AdminBanner[] = [
   { id: "bc-7", nome: "Desodorantes e Antitranspirantes", imageUrl: "icon:Wind", link: "/c/higiene", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-8", nome: "Sabonetes Íntimos", imageUrl: "icon:Heart", link: "/c/higiene", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-9", nome: "Remédios para Gripe e Resfriado", imageUrl: "icon:Thermometer", link: "/c/medicamentos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
-  { id: "bc-10", nome: "Suplementos para Imunidade", imageUrl: "icon:ShieldCheck", link: "/c/vitaminas", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
 ];
+
+const PHARMACIES_CACHE_KEY = 'fa-cached-pharmacies-v1';
+
+export function getInitialCachedPharmacies(): Pharmacy[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(PHARMACIES_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+export function saveCachedPharmacies(pharmacies: Pharmacy[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const minimal = pharmacies.map(p => ({
+      id: p.id,
+      slug: p.slug,
+      nome: p.nome,
+      razaoSocial: p.razaoSocial,
+      categoriaAssociado: p.categoriaAssociado,
+      isPleno: p.isPleno,
+      logoUrl: p.logoUrl,
+      faviconUrl: p.faviconUrl,
+      footerLogoUrl: p.footerLogoUrl,
+      topBarBgColor: p.topBarBgColor,
+      topBarTextColor: p.topBarTextColor,
+      themeColors: p.themeColors,
+      offersServices: p.offersServices,
+      virtualStoreStatus: p.virtualStoreStatus,
+      cidade: p.cidade,
+      uf: p.uf,
+      bairro: p.bairro,
+      telefone: p.telefone,
+      whatsapp: p.whatsapp,
+    }));
+    localStorage.setItem(PHARMACIES_CACHE_KEY, JSON.stringify(minimal));
+  } catch { /* ignore */ }
+}
 
 export const useAdmin = create<AdminState>()(
   persist(
@@ -906,8 +947,8 @@ export const useAdmin = create<AdminState>()(
       integrations: { webhookUrl: "", apiKey: "" },
       setIntegrations: (integrations) => set({ integrations }),
 
-      pharmacies: [],
-      pharmaciesLoaded: false,
+      pharmacies: getInitialCachedPharmacies(),
+      pharmaciesLoaded: getInitialCachedPharmacies().length > 0,
       pharmaciesFresh: false,
       loadPharmacies: async () => {
         // Throttle: ignora chamadas duplicadas dentro de 5s (evita duplo fetch no boot)
@@ -1009,6 +1050,7 @@ export const useAdmin = create<AdminState>()(
                 offersServices: parsedThemeColors?.offersServices ?? false,
               };
             }) as unknown as Pharmacy[];
+            saveCachedPharmacies(loadedPharmacies);
             set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
           } else {
             // Mesmo em caso de erro, desbloqueia a UI (mostra loja vazia ou fallback)

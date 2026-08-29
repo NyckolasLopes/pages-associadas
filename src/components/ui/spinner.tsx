@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import React from "react";
-import { useActivePharmacy, safeSlugify } from "@/hooks/useActivePharmacy";
-import { useAdmin } from "@/stores/admin";
+import { useActivePharmacy, safeSlugify, SYSTEM_PAGES } from "@/hooks/useActivePharmacy";
+import { useAdmin, getInitialCachedPharmacies } from "@/stores/admin";
 import { useLocation } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 
@@ -16,26 +16,30 @@ export function Spinner({ className, size = 32, style, forceGeneric, ...props }:
   const pharmacies = useAdmin((s) => s.pharmacies);
   const location = useLocation();
 
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : location.pathname;
+  const pathParts = currentPath.split('/').filter(Boolean);
+  const potentialSlug = pathParts[0] ?? "";
+  const isCustomStoreSlug = potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && potentialSlug !== 'loja-padrao';
+
   let currentPharmacy = activePharmacy;
-  if (!currentPharmacy && pharmacies && pharmacies.length > 0) {
-    const pathParts = location.pathname.split('/').filter(Boolean);
-    const potentialSlug = pathParts[0] ?? "";
-    if (potentialSlug) {
-      const normalizedSlug = safeSlugify(potentialSlug);
-      currentPharmacy = pharmacies.find((p) => {
-        const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
-        return slug === normalizedSlug || (p.slug || "").toLowerCase() === potentialSlug.toLowerCase();
-      }) || null;
-    }
+  const allPharmaciesList = (pharmacies && pharmacies.length > 0) ? pharmacies : getInitialCachedPharmacies();
+
+  if (!currentPharmacy && allPharmaciesList.length > 0 && potentialSlug) {
+    const normalizedSlug = safeSlugify(potentialSlug);
+    currentPharmacy = allPharmaciesList.find((p) => {
+      const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
+      return slug === normalizedSlug || (p.slug || "").toLowerCase() === potentialSlug.toLowerCase();
+    }) || null;
   }
 
   const isParceiro = currentPharmacy?.categoriaAssociado === 'Parceiro' || 
                      currentPharmacy?.categoriaAssociado === 'Associado' || 
-                     currentPharmacy?.isPleno === false;
+                     currentPharmacy?.isPleno === false ||
+                     (isCustomStoreSlug && (!currentPharmacy || currentPharmacy.categoriaAssociado === 'Parceiro'));
 
   // Lojas Parceiro/Associado usam o redondo comum carregando
   if (forceGeneric || isParceiro) {
-    return <Loader2 size={size} className={cn("animate-spin text-primary", className)} style={style} />;
+    return <Loader2 size={size} className={cn("animate-spin text-slate-800", className)} style={style} />;
   }
 
   // Lojas Pleno usam o spin da Associadas 100% do tempo
