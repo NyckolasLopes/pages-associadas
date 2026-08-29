@@ -185,9 +185,27 @@ function safeSlugify(text: string): string {
 }
 
 export const Route = createFileRoute("/_store/$storeSlug/")({
-  head: () => {
-    const title = `${getBrandNameForHead()} — Medicamentos, dermocosméticos e mais`;
-    const desc = "Compre online medicamentos, vitaminas, dermocosméticos e itens de higiene com entrega rápida. Aqui você tem amigos.";
+  loader: async ({ params }) => {
+    const adminState = useAdmin.getState();
+    let pharmacies = adminState.pharmacies;
+    if (!adminState.pharmaciesLoaded) {
+      await adminState.loadPharmacies();
+      pharmacies = useAdmin.getState().pharmacies;
+    }
+    const storeSlug = params.storeSlug;
+    const pharmacy = pharmacies.find(
+      (p) => (p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id)) === storeSlug || p.id === storeSlug
+    );
+    return { pharmacy, storeSlug };
+  },
+  head: ({ loaderData }) => {
+    const p = loaderData?.pharmacy;
+    const storeSlug = loaderData?.storeSlug || "loja-padrao";
+    const title = p?.pageTitle || (p ? `Farmácias Associadas - ${p.nome} - ${p.cidade}/${p.uf}` : `${getBrandNameForHead()} — Medicamentos, dermocosméticos e mais`);
+    const desc = p?.metaDescription || p?.seoDescricao || (p ? `Sua farmácia completa em ${p.cidade || "sua região"}. Medicamentos, perfumaria, dermocosméticos e ofertas exclusivas com entrega rápida.` : "Compre online medicamentos, vitaminas, dermocosméticos e itens de higiene com entrega rápida. Aqui você tem amigos.");
+    const storeUrl = `https://farmaciasassociadas.com.br/${storeSlug}`;
+    const logoUrl = p?.logoUrl || "https://farmaciasassociadas.com.br/icone-associadas.png";
+
     return {
       meta: [
         { title },
@@ -195,7 +213,12 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
         { property: "og:type", content: "website" },
-        { property: "og:url", content: "https://associadas.com.br" },
+        { property: "og:url", content: storeUrl },
+        { property: "og:image", content: logoUrl },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: desc },
+        { name: "twitter:image", content: logoUrl },
       ],
     };
   },
@@ -586,17 +609,46 @@ function StoreHome() {
   const { marcas } = useMarcasStore();
   const activeMarcas = marcas.filter(m => m.ativo && m.destaque);
 
-  const schemaOrg = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Farmácias Associadas",
-    "url": "https://associadas.com.br",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://associadas.com.br/busca?q={search_term_string}",
-      "query-input": "required name=search_term_string"
+  const schemaOrg = useMemo(() => {
+    if (loja) {
+      return {
+        "@context": "https://schema.org",
+        "@type": "Pharmacy",
+        "name": loja.nome || "Farmácias Associadas",
+        "description": loja.metaDescription || loja.seoDescricao || `Farmácias Associadas em ${loja.cidade || "sua região"}`,
+        "url": `https://farmaciasassociadas.com.br/${storeSlug}`,
+        "telephone": loja.telefone || loja.whatsapp || undefined,
+        "image": loja.logoUrl || undefined,
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": `${loja.endereco || ""}, ${loja.numero || ""}${loja.complemento ? ` - ${loja.complemento}` : ""}`.trim(),
+          "addressLocality": loja.cidade || "",
+          "addressRegion": loja.uf || "RS",
+          "postalCode": loja.cep || "",
+          "addressCountry": "BR"
+        },
+        ...(loja.latitude && loja.longitude ? {
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": loja.latitude,
+            "longitude": loja.longitude
+          }
+        } : {})
+      };
     }
-  };
+
+    return {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Farmácias Associadas",
+      "url": "https://farmaciasassociadas.com.br",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://farmaciasassociadas.com.br/busca?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    };
+  }, [loja, storeSlug]);
 
   if (storeSlug === "loja-padrao") {
     if (typeof window !== "undefined") {
