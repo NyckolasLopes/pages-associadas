@@ -46,6 +46,31 @@ function AdminSelos() {
   const [searchResults, setSearchResults] = useState<Produto[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
+
+  const fetchBadgeCounts = async () => {
+    try {
+      const counts: Record<string, number> = {};
+      for (const s of selos) {
+        const isGen = s.id === 'gen' || s.nome.toLowerCase().includes("genérico") || s.nome.toLowerCase().includes("generico");
+        let query = supabase.from('produtos').select('*', { count: 'exact', head: true });
+        if (isGen) {
+          query = query.or(`internal_tags.cs.["selo:${s.id}"],nome.ilike.%generico%,nome.ilike.%genérico%,generico.eq.true`);
+        } else {
+          query = query.contains('internal_tags', JSON.stringify([`selo:${s.id}`]));
+        }
+        const { count } = await query;
+        counts[s.id] = count || 0;
+      }
+      setBadgeCounts(counts);
+    } catch (e) {
+      console.error("Erro ao carregar contagem de selos", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchBadgeCounts();
+  }, [selos]);
 
   const filteredSelos = useMemo(() => {
     return selos.filter(s => s.nome.toLowerCase().includes(search.toLowerCase()));
@@ -112,6 +137,10 @@ function AdminSelos() {
       applyBadgeToProducts(newId, Array.from(selectedProductIds));
       toast.success("Selo criado com sucesso!");
     }
+    
+    setTimeout(() => {
+      fetchBadgeCounts();
+    }, 800);
     
     setIsModalOpen(false);
   };
@@ -204,9 +233,8 @@ function AdminSelos() {
             <div className="p-8 text-center text-slate-500">Nenhum selo encontrado.</div>
           ) : (
             filteredSelos.map((selo) => {
-              // Now we don't have accurate counts from customProducts since it's empty in pagination mode.
-              // We just show a placeholder or we can omit it.
-              const countText = selo.id === 'gen' || selo.id === 'servico' ? 'Automático' : 'Personalizado';
+              const count = badgeCounts[selo.id];
+              const countText = count !== undefined ? `${count} produto${count === 1 ? '' : 's'}` : (selo.id === 'gen' || selo.id === 'servico' ? 'Automático' : 'Carregando...');
               
               return (
                 <div 

@@ -13,7 +13,7 @@ import { Produto, Categoria } from "@/types";
 import { catalog } from "@/services/catalog";
 import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X, Loader2 } from "lucide-react";
 import { getDeterministicStock } from "@/lib/stock";
-import { brl, getInstallmentText } from "@/lib/format";
+import { brl, getInstallmentText, checkIsGenerico, productImage } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
@@ -28,7 +28,6 @@ import { useMarcasStore } from "@/stores/marcas";
 import { useVariacoesStore } from "@/stores/variacoes";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
 import { Spinner } from "@/components/ui/spinner";
-import { productImage } from "@/lib/format";
 
 interface ProductEditorFormProps {
   open: boolean;
@@ -277,6 +276,25 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       }
       finalFormData.selosIds = updatedSelosIds;
     }
+
+    const isGenericoProduct = checkIsGenerico(finalFormData) || !!finalFormData.generico;
+    const genericoSelo = allSelos.find(s => s.id === "gen" || s.nome.toLowerCase() === "genérico" || s.nome.toLowerCase() === "generico");
+    const genSeloId = genericoSelo?.id || "gen";
+
+    let updatedGenSelos = [...(finalFormData.selosIds || [])];
+    if (isGenericoProduct) {
+      finalFormData.generico = true;
+      if (!updatedGenSelos.includes(genSeloId)) {
+        updatedGenSelos.push(genSeloId);
+      }
+      if (!updatedGenSelos.includes("gen")) {
+        updatedGenSelos.push("gen");
+      }
+    } else {
+      updatedGenSelos = updatedGenSelos.filter(id => id !== genSeloId && id !== "gen");
+      finalFormData.generico = false;
+    }
+    finalFormData.selosIds = updatedGenSelos;
 
     setSaveStep("saving");
     
@@ -534,7 +552,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Informações básicas</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
                 <Switch disabled={!isGlobalAdmin} 
                   id="ativo" 
@@ -549,7 +567,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   checked={formData.buscavel} 
                   onCheckedChange={checked => setFormData({...formData, buscavel: checked})}
                 />
-                <Label htmlFor="buscavel" className="font-medium cursor-pointer">Buscável (Visível na busca)</Label>
+                <Label htmlFor="buscavel" className="font-medium cursor-pointer">Buscável (Busca)</Label>
               </div>
               <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
                 <Switch disabled={!isGlobalAdmin} 
@@ -557,7 +575,29 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   checked={formData.lancamento || false} 
                   onCheckedChange={checked => setFormData({...formData, lancamento: checked})}
                 />
-                <Label htmlFor="lancamento" className="font-medium cursor-pointer">Selo de Lançamento</Label>
+                <Label htmlFor="lancamento" className="font-medium cursor-pointer">Selo Lançamento</Label>
+              </div>
+              <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <Switch disabled={!isGlobalAdmin} 
+                  id="generico" 
+                  checked={!!formData.generico || checkIsGenerico(formData)} 
+                  onCheckedChange={checked => {
+                    const isGen = checked;
+                    let newSelos = [...(formData.selosIds || [])];
+                    if (isGen) {
+                      if (!newSelos.includes("gen")) newSelos.push("gen");
+                    } else {
+                      newSelos = newSelos.filter(id => id !== "gen");
+                    }
+                    setFormData({
+                      ...formData,
+                      generico: isGen,
+                      selosIds: newSelos,
+                      tipoMedicamento: isGen ? "generico" : (formData.tipoMedicamento === "generico" ? "referencia" : formData.tipoMedicamento)
+                    });
+                  }}
+                />
+                <Label htmlFor="generico" className="font-medium cursor-pointer text-amber-900 font-bold">Selo Genérico</Label>
               </div>
             </div>
 
@@ -596,7 +636,27 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
             <div className="space-y-2">
               <Label className="font-bold text-xs uppercase text-slate-500">Descrição Comercial / Nome do Produto*</Label>
-              <Input disabled={!isGlobalAdmin} maxLength={120} value={formData.nome || ""} onChange={e => setFormData({...formData, nome: e.target.value})} className="bg-white text-lg h-12" />
+              <Input 
+                disabled={!isGlobalAdmin} 
+                maxLength={120} 
+                value={formData.nome || ""} 
+                onChange={e => {
+                  const newName = e.target.value;
+                  const isNowGen = checkIsGenerico({ ...formData, nome: newName });
+                  let newSelos = [...(formData.selosIds || [])];
+                  if (isNowGen && !newSelos.includes("gen")) {
+                    newSelos.push("gen");
+                  }
+                  setFormData({
+                    ...formData,
+                    nome: newName,
+                    generico: isNowGen ? true : formData.generico,
+                    selosIds: newSelos,
+                    tipoMedicamento: isNowGen ? "generico" : formData.tipoMedicamento
+                  });
+                }} 
+                className="bg-white text-lg h-12" 
+              />
             </div>
 
             <div className="space-y-2">
@@ -909,6 +969,40 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">MS / Registro ANVISA</Label>
                   <Input disabled={!isGlobalAdmin} value={formData.registroAnvisa || ""} onChange={e => setFormData({...formData, registroAnvisa: e.target.value})} className="bg-white" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Classificação / Tipo do Medicamento</Label>
+                  <Select 
+                    disabled={!isGlobalAdmin} 
+                    value={formData.tipoMedicamento || (checkIsGenerico(formData) ? "generico" : "referencia")} 
+                    onValueChange={v => {
+                      const isGen = v === "generico";
+                      let newSelos = [...(formData.selosIds || [])];
+                      if (isGen) {
+                        if (!newSelos.includes("gen")) newSelos.push("gen");
+                      } else if (formData.tipoMedicamento === "generico") {
+                        newSelos = newSelos.filter(id => id !== "gen");
+                      }
+                      setFormData({
+                        ...formData,
+                        tipoMedicamento: v,
+                        generico: isGen,
+                        selosIds: newSelos
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="generico">Genérico</SelectItem>
+                      <SelectItem value="referencia">Medicamento de Referência</SelectItem>
+                      <SelectItem value="similar">Medicamento Similar</SelectItem>
+                      <SelectItem value="especifico">Medicamento Específico</SelectItem>
+                      <SelectItem value="fitoterapico">Fitoterápico</SelectItem>
+                      <SelectItem value="biologico">Biológico</SelectItem>
+                      <SelectItem value="outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

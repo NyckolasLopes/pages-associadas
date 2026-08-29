@@ -885,7 +885,7 @@ function PDP() {
     }
   };
 
-  const isGenerico = checkIsGenerico(p);
+  const isGenerico = isGenericoProd;
   const isMedication = String(cat?.nome || "").toLowerCase().includes("medicamento") || String(p.nome || "").toLowerCase().includes("medicamento") || p.categoriaId === "142" || (p.tarja && p.tarja.trim() !== "") || isGenerico;
   const showPrincipioAtivo = isMedication;
   const hideReviews = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142")) || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));

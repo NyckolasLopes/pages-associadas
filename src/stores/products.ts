@@ -169,7 +169,22 @@ export const useAdminProducts = create<ProductsState>()(
         // O Admin usará paginação local, então não há necessidade de preencher customProducts com todos os produtos.
       },
       addOrUpdateProduct: async (p, lojaId) => {
-        const formattedProduct = { ...p, nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "" };
+        const isGen = checkIsGenerico(p) || !!p.generico;
+        const selosIds = Array.isArray(p.selosIds) ? [...p.selosIds] : [];
+        if (isGen) {
+          if (!selosIds.includes("gen")) selosIds.push("gen");
+        } else {
+          const filtered = selosIds.filter(id => id !== "gen");
+          selosIds.length = 0;
+          selosIds.push(...filtered);
+        }
+
+        const formattedProduct = { 
+          ...p, 
+          generico: isGen,
+          selosIds,
+          nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "" 
+        };
         const globalPleno = true; // Por padrão Sede
         
         // Optimistic UI Update
@@ -180,6 +195,16 @@ export const useAdminProducts = create<ProductsState>()(
           }
           return { customProducts: [{ ...formattedProduct, lojaId: lojaId ?? undefined } as any, ...s.customProducts] };
         });
+
+        const allTags = new Set([
+          ...(formattedProduct.internalTags || []),
+          ...(formattedProduct.selosIds || []).map(id => `selo:${id}`)
+        ]);
+        if (isGen) {
+          allTags.add("selo:gen");
+        } else {
+          allTags.delete("selo:gen");
+        }
 
         // Supabase DB Update
         const { error } = await supabase.from('produtos').upsert({
@@ -195,12 +220,12 @@ export const useAdminProducts = create<ProductsState>()(
           registro_anvisa: formattedProduct.registroAnvisa || null,
           tarja: formattedProduct.tarja || null,
           retem_receita: formattedProduct.retemReceita || false,
-          generico: formattedProduct.generico || false,
+          generico: isGen,
           possui_imagem: formattedProduct.possuiImagem || false,
           categoria_id: formattedProduct.categoriaId || null,
           subcategoria_id: formattedProduct.subcategoriaId || null,
           categorias_adicionais: formattedProduct.categoriasAdicionais || [],
-          internal_tags: [...(formattedProduct.internalTags || []), ...(formattedProduct.selosIds || []).map(id => `selo:${id}`)],
+          internal_tags: Array.from(allTags),
           principios_ativos: formattedProduct.principiosAtivos || [],
           imagens: formattedProduct.imagens || [],
           video_url: formattedProduct.videoUrl || null,
@@ -214,7 +239,7 @@ export const useAdminProducts = create<ProductsState>()(
           ncm: formattedProduct.ncm || null,
           classe_terapeutica: formattedProduct.classeTerapeutica || null,
           indicacao_terapeutica: formattedProduct.indicacaoTerapeutica || null,
-          tipo_medicamento: formattedProduct.tipoMedicamento || null,
+          tipo_medicamento: formattedProduct.tipoMedicamento || (isGen ? "generico" : null),
           faixa_etaria: formattedProduct.faixaEtaria || null,
           titulo_seo: formattedProduct.seoTitulo || null,
           meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
@@ -365,27 +390,38 @@ export const useAdminProducts = create<ProductsState>()(
         const chunkSize = 100;
         for (let i = 0; i < uniqueMatchedProducts.length; i += chunkSize) {
           const chunk = uniqueMatchedProducts.slice(i, i + chunkSize);
-          const upsertData = chunk.map(p => ({
-            id: p.id,
-            ean: p.ean || null,
-            nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
-            descricao: p.descricao || null,
-            slug: p.slug || p.url || `${(p.nome || 'produto').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${p.id}`,
-            marca: p.marca || null,
-            preco_de: p.precoDe || 0,
-            preco_por: p.precoPor || 0,
-            estoque: p.estoque || 0,
-            registro_anvisa: p.registroAnvisa || null,
-            tarja: p.tarja || null,
-            retem_receita: p.retemReceita || false,
-            generico: p.generico || false,
-            possui_imagem: p.possuiImagem || false,
-            categoria_id: p.categoriaId || null,
-            subcategoria_id: p.subcategoriaId || null,
-            categorias_adicionais: p.categoriasAdicionais || [],
-            internal_tags: p.internalTags || [],
-            ativo: p.ativo ?? true,
-          }));
+          const upsertData = chunk.map(p => {
+            const isPGen = checkIsGenerico(p) || !!p.generico;
+            const pTags = new Set([
+              ...(p.internalTags || []),
+              ...(p.selosIds || []).map(id => `selo:${id}`)
+            ]);
+            if (isPGen) {
+              pTags.add("selo:gen");
+            }
+
+            return {
+              id: p.id,
+              ean: p.ean || null,
+              nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
+              descricao: p.descricao || null,
+              slug: p.slug || p.url || `${(p.nome || 'produto').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${p.id}`,
+              marca: p.marca || null,
+              preco_de: p.precoDe || 0,
+              preco_por: p.precoPor || 0,
+              estoque: p.estoque || 0,
+              registro_anvisa: p.registroAnvisa || null,
+              tarja: p.tarja || null,
+              retem_receita: p.retemReceita || false,
+              generico: isPGen,
+              possui_imagem: p.possuiImagem || false,
+              categoria_id: p.categoriaId || null,
+              subcategoria_id: p.subcategoriaId || null,
+              categorias_adicionais: p.categoriasAdicionais || [],
+              internal_tags: Array.from(pTags),
+              ativo: p.ativo ?? true,
+            };
+          });
           
           const { error } = await supabase.from('produtos').upsert(upsertData, { onConflict: 'id', ignoreDuplicates: false });
           if (error) {
@@ -404,10 +440,14 @@ export const useAdminProducts = create<ProductsState>()(
             const shouldHaveIt = idSet.has(String(p.id));
             
             if (hasIt && !shouldHaveIt) {
-              return { ...p, selosIds: p.selosIds?.filter(id => id !== badgeId) };
+              const updatedSelos = p.selosIds?.filter(id => id !== badgeId) || [];
+              const newP = { ...p, selosIds: updatedSelos };
+              if (badgeId === 'gen') newP.generico = false;
+              return newP;
             } else if (!hasIt && shouldHaveIt) {
               const newP = { ...p, selosIds: [...(p.selosIds || []), badgeId] };
               if (badgeId === 'servico') newP.tipoProduto = 'servico';
+              if (badgeId === 'gen') newP.generico = true;
               return newP;
             }
             return p;
@@ -416,10 +456,14 @@ export const useAdminProducts = create<ProductsState>()(
         });
 
         try {
-          const { data: currentWithBadge, error: queryError } = await supabase
-            .from('produtos')
-            .select('id, internal_tags')
-            .contains('internal_tags', JSON.stringify([`selo:${badgeId}`]));
+          let query = supabase.from('produtos').select('id, internal_tags');
+          if (badgeId === 'gen') {
+            query = query.or(`internal_tags.cs.["selo:${badgeId}"],generico.eq.true`);
+          } else {
+            query = query.contains('internal_tags', JSON.stringify([`selo:${badgeId}`]));
+          }
+
+          const { data: currentWithBadge, error: queryError } = await query;
             
           if (queryError) {
             console.error("Error querying products with badge:", queryError);
@@ -435,7 +479,9 @@ export const useAdminProducts = create<ProductsState>()(
             const rawTags = p.internal_tags;
             const parsedTags = typeof rawTags === 'string' ? JSON.parse(rawTags) : rawTags;
             const tags = (Array.isArray(parsedTags) ? parsedTags : []).filter((t: string) => t !== `selo:${badgeId}`);
-            const { error } = await supabase.from('produtos').update({ internal_tags: tags }).eq('id', p.id);
+            const updates: any = { internal_tags: tags };
+            if (badgeId === 'gen') updates.generico = false;
+            const { error } = await supabase.from('produtos').update(updates).eq('id', p.id);
             if (error) console.error("Error removing badge from product", p.id, error);
           }
           
@@ -458,6 +504,7 @@ export const useAdminProducts = create<ProductsState>()(
                   const newTags = [...tags, `selo:${badgeId}`];
                   const updates: any = { internal_tags: newTags };
                   if (badgeId === 'servico') updates.tipo_produto = 'servico';
+                  if (badgeId === 'gen') updates.generico = true;
                   
                   const { error } = await supabase.from('produtos').update(updates).eq('id', p.id);
                   if (error) console.error("Error adding badge to product", p.id, error);
