@@ -8,6 +8,7 @@ import { brl } from "@/lib/format";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Spinner } from "@/components/ui/spinner";
 import type { Pedido } from "@/stores/orders";
 
 export const Route = createFileRoute("/_store/$storeSlug/sucesso")({
@@ -18,12 +19,12 @@ function TimelineStep({ icon: Icon, label, active, isLast = false }: { icon: any
   return (
     <div className={`relative flex flex-col items-center flex-1 ${active ? 'opacity-100' : 'opacity-40'}`}>
       <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 z-10 transition-all duration-500
-        ${active ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'bg-slate-100 text-slate-400'}`}>
+        ${active ? 'bg-primary text-white shadow-md shadow-primary/20 scale-105' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
         <Icon className="w-5 h-5" />
       </div>
-      <span className={`text-xs font-bold text-center ${active ? 'text-primary' : 'text-slate-500'}`}>{label}</span>
+      <span className={`text-xs font-bold ${active ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span>
       {!isLast && (
-        <div className={`absolute top-5 left-[50%] w-full h-[2px] -z-0 transition-all duration-500
+        <div className={`absolute top-5 left-1/2 w-full h-[2px] -z-0 transition-colors duration-500
           ${active ? 'bg-primary' : 'bg-slate-200'}`} />
       )}
     </div>
@@ -31,45 +32,60 @@ function TimelineStep({ icon: Icon, label, active, isLast = false }: { icon: any
 }
 
 function SucessoPage() {
-  const search = Route.useSearch() as any;
+  const search = Route.useSearch() as { id?: string };
+  const params = useParams({ strict: false });
+  const storeSlug = (params as any)?.storeSlug;
   const navigate = useNavigate();
-  const params = useParams({ strict: false }) as any;
-  const allPharmacies = useAdmin((s) => s.pharmacies);
-  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
-  
-  const activeStore = allPharmacies.find((p) => 
-    p.slug === params?.storeSlug || 
-    p.id === params?.storeSlug || 
-    p.id === selectedPharmacyId
-  ) || allPharmacies[0];
+  const clearCart = useCart((s) => s.clear);
+  const pharmacies = useAdmin((s) => s.pharmacies);
+  const activePharmacy = pharmacies.find(p => p.slug === storeSlug) || pharmacies[0];
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+    clearCart();
+  }, [clearCart]);
 
-  const { data: order, isLoading } = useQuery({
-    queryKey: ['order-success', search.id],
+  // Fetch real order status directly from Supabase
+  const { data: order, isLoading } = useQuery<Pedido | null>({
+    queryKey: ['order-status', search.id],
     queryFn: async () => {
       if (!search.id) return null;
       
-      const lastOrder = useCart.getState().lastOrder;
-      if (lastOrder && (lastOrder.id === search.id || lastOrder.numero === search.id.replace('FA-', ''))) {
-        return lastOrder as Pedido;
-      }
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('*')
+        .eq('numero', search.id)
+        .maybeSingle();
 
-      const { data, error } = await supabase.from('pedidos').select('*').eq('id', search.id).single();
       if (error) {
-        console.error("Erro ao buscar pedido:", error);
+        console.error("Error fetching order status:", error);
         return null;
       }
-      return data as Pedido;
+      
+      if (!data) return null;
+
+      return {
+        id: data.id,
+        numero: data.numero,
+        data: data.data,
+        status: data.status,
+        cliente: data.cliente,
+        itens: data.itens || data.produtos || [],
+        produtos: data.produtos || data.itens || [],
+        valores: data.valores,
+        pagamento: data.pagamento,
+        envio: data.envio,
+        lojaId: data.loja_id,
+        lojaNome: data.loja_nome,
+        modalidade: data.modalidade,
+        historico: data.historico || []
+      } as Pedido;
     },
     enabled: !!search.id,
-    retry: false,
+    refetchInterval: 5000,
   });
 
   const goWhatsApp = () => {
-    const phone = (activeStore?.telefone || "51999999999").replace(/\D/g, "");
+    const phone = (activePharmacy?.telefone || "51999999999").replace(/\D/g, "");
     const waNumber = phone.startsWith("55") ? phone : `55${phone}`;
     let text = `Olá! Fiz um pedido no site e gostaria de acompanhar.\nPedido: *#${search.id}*`;
     if (order?.cliente?.nome) text += `\nNome: ${order.cliente.nome}`;
@@ -77,11 +93,11 @@ function SucessoPage() {
   };
 
   return (
-    <div className="container-fa py-8 md:py-12 min-h-[70vh] flex flex-col justify-center max-w-4xl mx-auto">
+    <div className="container-fa py-8 md:py-16 max-w-4xl min-h-[70vh]">
       
-      {/* Header Area */}
-      <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+      {/* Header com Ícone Animado */}
+      <div className="text-center mb-8 md:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 relative shadow-sm border border-green-200">
           <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
           <CheckCircle2 className="w-12 h-12 text-green-600" />
         </div>
@@ -93,7 +109,7 @@ function SucessoPage() {
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
-          <img src="/icone-associadas.png" alt="Processando..." className="w-12 h-12 animate-spin mb-4" />
+          <Spinner size={48} className="mb-4" />
           <h2 className="text-xl font-bold text-slate-800">Processando seu pedido...</h2>
         </div>
       ) : order ? (
