@@ -310,11 +310,13 @@ export function getLevePaguePromotion(produto: any, promocoes: any[] = [], store
     // Verificar se o produto ou categoria está no alvo
     const tipo = p.tipoAlvo || "produtos";
     if (tipo === "categorias") {
-      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.categoriaId))) {
+      const catsToCheck = [produto.categoriaId, ...(Array.isArray(produto.categoriasIds) ? produto.categoriasIds : [])].filter(Boolean).map(String);
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => catsToCheck.includes(String(id).trim()))) {
         return true;
       }
     } else {
-      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.id))) {
+      const idsToCheck = [produto.id, produto.codigoInterno, produto.sku, produto.ean, produto.url].filter(Boolean).map(String);
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => idsToCheck.includes(String(id).trim()))) {
         return true;
       }
     }
@@ -329,7 +331,11 @@ export function getLevePaguePromotion(produto: any, promocoes: any[] = [], store
 
   // Resolve per-product individual config if present
   const prodId = String(produto.id || '');
-  const pConfig = foundPromo.produtosConfig?.[prodId] || foundPromo.produtosConfig?.[produto.id];
+  const pConfig = foundPromo.produtosConfig?.[prodId] || 
+    foundPromo.produtosConfig?.[produto.id] || 
+    (produto.sku ? foundPromo.produtosConfig?.[produto.sku] : undefined) ||
+    (produto.codigoInterno ? foundPromo.produtosConfig?.[produto.codigoInterno] : undefined);
+
   if (pConfig) {
     return {
       ...foundPromo,
@@ -359,11 +365,13 @@ export function getPadraoPromotionWithTimer(produto: any, promocoes: any[] = [],
     // Verificar se o produto ou categoria está no alvo
     const tipo = p.tipoAlvo || "produtos";
     if (tipo === "categorias") {
-      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.categoriaId))) {
+      const catsToCheck = [produto.categoriaId, ...(Array.isArray(produto.categoriasIds) ? produto.categoriasIds : [])].filter(Boolean).map(String);
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => catsToCheck.includes(String(id).trim()))) {
         return true;
       }
     } else {
-      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => String(id) === String(produto.id))) {
+      const idsToCheck = [produto.id, produto.codigoInterno, produto.sku, produto.ean, produto.url].filter(Boolean).map(String);
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => idsToCheck.includes(String(id).trim()))) {
         return true;
       }
     }
@@ -379,7 +387,10 @@ export function getPadraoPromotionWithTimer(produto: any, promocoes: any[] = [],
 
   // Resolve per-product individual config if present
   const prodId = String(produto.id || '');
-  const pConfig = foundPromo.produtosConfig?.[prodId] || foundPromo.produtosConfig?.[produto.id];
+  const pConfig = foundPromo.produtosConfig?.[prodId] || 
+    foundPromo.produtosConfig?.[produto.id] ||
+    (produto.sku ? foundPromo.produtosConfig?.[produto.sku] : undefined) ||
+    (produto.codigoInterno ? foundPromo.produtosConfig?.[produto.codigoInterno] : undefined);
   
   if (pConfig) {
     const parseNum = (val: any) => {

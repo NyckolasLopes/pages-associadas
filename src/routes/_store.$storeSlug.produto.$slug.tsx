@@ -38,7 +38,7 @@ import { getCityFromCep, isCampanhaAtiva, getCepCoordinates, getDeliveryEstimati
 import { getRoadDistanceKm } from "@/lib/distanceApis";
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
-import { PromoProductPageBanner, PromoLevePagueOfferBox } from "@/components/storefront/PromoCountdown";
+import { PromoProductPageBanner, PromoLevePagueOfferBox, PromoCardBadge } from "@/components/storefront/PromoCountdown";
 import { getDeterministicStock } from "@/lib/stock";
 
 const PromoIcon = ({ id, className }: { id: string, className?: string }) => {
@@ -399,6 +399,7 @@ function PDP() {
 
   useEffect(() => {
     loadAvaliacoes();
+    useMarketing.getState().loadMarketing();
   }, [loadAvaliacoes]);
 
 
@@ -726,21 +727,24 @@ function PDP() {
   }
 
   // 3. Store-specific & Global Promotions
-  const promoStoreId = activePharmacyId || effectiveStoreId || String(loja?.id || "1");
-  const lojaPromocoes = marketingState.lojaPromocoes[promoStoreId] || [];
-  const globalPromocoes = promocoes.filter((p: any) => !p.lojaId);
+  const currentStoreId = String(activePharmacy?.id || currentLoja?.id || effectiveStoreId || loja?.id || "");
+  const storePromos = promocoes.filter((pr: any) => pr.lojaId && String(pr.lojaId) === currentStoreId);
+  const lojaPromocoes = storePromos.length > 0 
+    ? storePromos 
+    : (marketingState.lojaPromocoes[currentStoreId] || (promoStoreId ? marketingState.lojaPromocoes[String(promoStoreId)] : []) || []);
+  const globalPromocoes = promocoes.filter((p: any) => !p.lojaId || p.lojaId === "" || p.lojaId === "global" || p.lojaId === "all");
   const padraoPromo = getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes);
   const levePaguePromo = getLevePaguePromotion(p, globalPromocoes, lojaPromocoes);
 
   if (padraoPromo) {
     if (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0) {
-      finalPrecoDe = finalPrecoPor;
+      finalPrecoDe = Number(p.precoDe) > padraoPromo.precoPromocional ? Number(p.precoDe) : finalPrecoPor;
       finalPrecoPor = padraoPromo.precoPromocional;
     } else if (padraoPromo.descontoPercentual && padraoPromo.descontoPercentual > 0) {
-      finalPrecoDe = finalPrecoPor;
+      finalPrecoDe = Number(p.precoDe) > 0 ? Number(p.precoDe) : finalPrecoPor;
       finalPrecoPor = finalPrecoPor * (1 - padraoPromo.descontoPercentual / 100);
     } else if (padraoPromo.levePague_precoPorItem && padraoPromo.levePague_precoPorItem > 0) {
-      finalPrecoDe = finalPrecoPor;
+      finalPrecoDe = Number(p.precoDe) > 0 ? Number(p.precoDe) : finalPrecoPor;
       finalPrecoPor = padraoPromo.levePague_precoPorItem;
     }
   }
@@ -1228,6 +1232,11 @@ function PDP() {
 
 
           <div className="bg-card border rounded-xl p-5 shadow-elevated">
+            {activePromo && (
+              <div className="mb-3">
+                <PromoCardBadge promo={activePromo} precoOriginal={finalPrecoDe} />
+              </div>
+            )}
             {p.precoSobConsulta ? (
               <div className="flex items-center gap-3 mt-1 min-h-[60px]">
                 <div className="text-2xl font-bold text-slate-700">Preço sob consulta</div>
