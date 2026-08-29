@@ -261,7 +261,7 @@ function StoreLayout() {
       <Suspense fallback={null}>
         <FloatingElements />
         <GeoPopup />
-        {isHome && <CookieBanner />}
+        <CookieBanner />
       </Suspense>
       <CompleteProfileModal />
     </div>
