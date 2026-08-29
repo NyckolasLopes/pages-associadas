@@ -81,6 +81,14 @@ function slugify(text: string): string {
 }
 
 export const Route = createFileRoute("/admin")({
+  pendingComponent: () => (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <span className="text-xs text-slate-500 font-medium">Carregando...</span>
+      </div>
+    </div>
+  ),
   component: AdminLayout,
 });
 
@@ -192,10 +200,11 @@ function AdminLayout() {
 
   useEffect(() => {
     setMounted(true);
-    
+    useAdmin.getState().restoreAdminSession();
 
     // Hard logout failsafe
     if (window.location.search.includes("logout")) {
+      (window as any)._isLoggingOutAdmin = true;
       useAdmin.setState({ currentUser: null, activeStoreId: null });
       try {
         localStorage.removeItem("admin-storage-local");

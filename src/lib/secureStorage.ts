@@ -9,25 +9,8 @@
 
 const SENSITIVE_KEYS = ["auth_token", "user_token", "cpf", "email", "phone", "password", "celular"];
 
-// Registra ouvintes para limpeza imediata de dados voláteis ao fechar aba
-if (typeof window !== "undefined") {
-  const cleanupVolatileSession = () => {
-    try {
-      // Limpa chaves de autenticação transitórias do sessionStorage ao descarregar a página se configurado
-      const sessionKeys = Object.keys(sessionStorage);
-      sessionKeys.forEach((key) => {
-        if (key.startsWith("auth_") || key.startsWith("temp_") || key.includes("token")) {
-          sessionStorage.removeItem(key);
-        }
-      });
-    } catch {
-      // Ignore sessionStorage access errors
-    }
-  };
+// Funções de gerenciamento seguro de sessão
 
-  window.addEventListener("pagehide", cleanupVolatileSession);
-  window.addEventListener("beforeunload", cleanupVolatileSession);
-}
 
 export const secureSession = {
   /**

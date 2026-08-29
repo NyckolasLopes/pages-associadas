@@ -250,6 +250,7 @@ interface AdminState {
   currentUser: AdminUser | null;
   login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
+  restoreAdminSession: () => Promise<void>;
   register: (user: AdminUser) => void;
   setUsers: (users: AdminUser[]) => void;
   setGrupos: (grupos: AdminGroup[]) => void;
@@ -666,7 +667,66 @@ export const useAdmin = create<AdminState>()(
           return { success: false, message: e.message || "Erro desconhecido" };
         }
       },
+      restoreAdminSession: async () => {
+        try {
+          if (get().currentUser) return;
+
+          // 1. Tenta recuperar do localStorage['admin-storage-local']
+          if (typeof window !== 'undefined') {
+            const localData = localStorage.getItem('admin-storage-local');
+            if (localData) {
+              const parsed = JSON.parse(localData);
+              if (parsed.currentUser) {
+                set({
+                  currentUser: parsed.currentUser,
+                  activeStoreId: parsed.activeStoreId || get().activeStoreId,
+                });
+                return;
+              }
+            }
+          }
+
+          // 2. Fallback: Consulta o Supabase Auth Session
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData?.session?.user) {
+            const u = sessionData.session.user;
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", u.id)
+              .maybeSingle();
+
+            const isFallbackAdmin = u.email === "nyckolas.lopes@farmaciasassociadas.com.br" || u.email === "thiago.rocha@farmaciasassociadas.com.br";
+            const isProprietario = profile?.is_admin || isFallbackAdmin;
+            const grupoId = profile?.grupo_id;
+            const lojasVinculadas = profile?.lojas_vinculadas || [];
+
+            if (isProprietario || grupoId || lojasVinculadas.length > 0) {
+              const userObj = {
+                id: u.id,
+                name: profile?.nome || u.email?.split("@")[0] || "Administrador",
+                email: u.email || "",
+                grupoId: grupoId,
+                proprietario: isProprietario,
+                lojasVinculadas: lojasVinculadas,
+              };
+              set({ currentUser: userObj });
+              try {
+                localStorage.setItem('admin-storage-local', JSON.stringify({
+                  currentUser: userObj,
+                  activeStoreId: get().activeStoreId
+                }));
+              } catch {}
+            }
+          }
+        } catch (err) {
+          console.warn("Falha ao restaurar sessão admin:", err);
+        }
+      },
       logout: async () => {
+        if (typeof window !== 'undefined') {
+          (window as any)._isLoggingOutAdmin = true;
+        }
         try {
           await supabase.auth.signOut();
         } catch (e) {

@@ -53,6 +53,18 @@ function scheduleSupabaseWrite(name: string, parsedValue: any) {
 
 export const supabaseStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
+    // 1. Tenta recuperar sessão local imediatamente do localStorage
+    let cachedLocalUser: any = undefined;
+    let cachedActiveStoreId: any = undefined;
+    try {
+      const localData = localStorage.getItem(`${name}-local`);
+      if (localData) {
+        const localParsed = JSON.parse(localData);
+        if (localParsed.currentUser) cachedLocalUser = localParsed.currentUser;
+        if (localParsed.activeStoreId) cachedActiveStoreId = localParsed.activeStoreId;
+      }
+    } catch {}
+
     try {
       const { data, error } = await supabase
         .from('app_state')
@@ -74,64 +86,42 @@ export const supabaseStorage: StateStorage = {
           localStorage.setItem(`${name}-backup`, JSON.stringify(globalValue));
         } catch (e) {}
 
-        // Restaura a sessão local — prioridade: local > backup do Supabase > manter nulo
-        try {
-          const localData = localStorage.getItem(`${name}-local`);
-          if (localData && globalValue.state) {
-            const localParsed = JSON.parse(localData);
-            // Só sobrescreve se existir dado local salvo (evita derrubar sessão ativa)
-            if (localParsed.currentUser !== undefined) {
-              globalValue.state.currentUser = localParsed.currentUser;
-            }
-            if (localParsed.activeStoreId !== undefined) {
-              globalValue.state.activeStoreId = localParsed.activeStoreId;
-            }
+        // Restaura a sessão local no estado retornado
+        if (globalValue.state) {
+          if (cachedLocalUser !== undefined) {
+            globalValue.state.currentUser = cachedLocalUser;
           }
-          // Se não há local, mantém o que veio do Supabase (não força null)
-        } catch (e) {}
+          if (cachedActiveStoreId !== undefined) {
+            globalValue.state.activeStoreId = cachedActiveStoreId;
+          }
+        }
 
         return JSON.stringify(globalValue);
       }
 
-      // FALLBACK: Supabase não retornou dados — tenta backup local
-      console.warn(`Estado '${name}' não encontrado no Supabase. Usando backup local...`);
+      // FALLBACK: Supabase não retornou dados — usa backup local
       try {
         const backup = localStorage.getItem(`${name}-backup`);
         if (backup) {
           const globalValue = JSON.parse(backup);
-          const localData = localStorage.getItem(`${name}-local`);
-          if (localData && globalValue.state) {
-            const localParsed = JSON.parse(localData);
-            if (localParsed.currentUser !== undefined) {
-              globalValue.state.currentUser = localParsed.currentUser;
-            }
-            if (localParsed.activeStoreId !== undefined) {
-              globalValue.state.activeStoreId = localParsed.activeStoreId;
-            }
+          if (globalValue.state) {
+            if (cachedLocalUser !== undefined) globalValue.state.currentUser = cachedLocalUser;
+            if (cachedActiveStoreId !== undefined) globalValue.state.activeStoreId = cachedActiveStoreId;
           }
           return JSON.stringify(globalValue);
         }
-      } catch (e) {
-        console.error('Erro ao ler backup local:', e);
-      }
+      } catch (e) {}
 
       return null;
     } catch (err) {
       console.error(`Exceção ao ler '${name}' do Supabase:`, err);
-      // Tenta recuperar do backup local em caso de falha na rede
       try {
         const backup = localStorage.getItem(`${name}-backup`);
         if (backup) {
           const globalValue = JSON.parse(backup);
-          const localData = localStorage.getItem(`${name}-local`);
-          if (localData && globalValue.state) {
-            const localParsed = JSON.parse(localData);
-            if (localParsed.currentUser !== undefined) {
-              globalValue.state.currentUser = localParsed.currentUser;
-            }
-            if (localParsed.activeStoreId !== undefined) {
-              globalValue.state.activeStoreId = localParsed.activeStoreId;
-            }
+          if (globalValue.state) {
+            if (cachedLocalUser !== undefined) globalValue.state.currentUser = cachedLocalUser;
+            if (cachedActiveStoreId !== undefined) globalValue.state.activeStoreId = cachedActiveStoreId;
           }
           return JSON.stringify(globalValue);
         }
@@ -146,16 +136,39 @@ export const supabaseStorage: StateStorage = {
 
       // Salva sessão apenas localmente (instantâneo — sem debounce)
       if (parsedValue.state) {
+        let existingLocal: any = null;
+        try {
+          const currentLocal = localStorage.getItem(`${name}-local`);
+          if (currentLocal) existingLocal = JSON.parse(currentLocal);
+        } catch {}
+
+        // Se o novo estado tem um usuário autenticado, atualiza o cache local.
+        // Se for null/undefined, SÓ limpa o cache local se o logout explícito foi acionado!
+        // Isso evita que renderizações intermediárias ou requisições assíncronas derrubem a sessão.
+        const isExplicitLogout = typeof window !== 'undefined' && (window as any)._isLoggingOutAdmin;
+
+        let userToSave = parsedValue.state.currentUser;
+        if (!userToSave && !isExplicitLogout && existingLocal?.currentUser) {
+          userToSave = existingLocal.currentUser;
+          parsedValue.state.currentUser = userToSave;
+        }
+
+        let storeToSave = parsedValue.state.activeStoreId;
+        if (!storeToSave && !isExplicitLogout && existingLocal?.activeStoreId) {
+          storeToSave = existingLocal.activeStoreId;
+          parsedValue.state.activeStoreId = storeToSave;
+        }
+
         const localState = {
-          currentUser: parsedValue.state.currentUser,
-          activeStoreId: parsedValue.state.activeStoreId,
+          currentUser: userToSave || null,
+          activeStoreId: storeToSave || null,
         };
         localStorage.setItem(`${name}-local`, JSON.stringify(localState));
 
         // Mantém um backup completo do estado caso a rede caia
         localStorage.setItem(`${name}-backup`, value);
 
-        // Remove campos de sessão do payload global (não logar todo mundo)
+        // Remove campos de sessão do payload global (não logar todo mundo no banco)
         delete parsedValue.state.currentUser;
         delete parsedValue.state.activeStoreId;
       }

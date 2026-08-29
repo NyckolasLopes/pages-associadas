@@ -259,7 +259,7 @@ export const useAuth = create<AuthState>((set, get) => ({
 
     // Listen for auth state changes (login/logout from any tab)
     supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT" || !session) {
+      if (event === "SIGNED_OUT") {
         _hadSessionOnInit = false;
         _isLoggingOut = false; // Reset the flag
         set({ user: null });
