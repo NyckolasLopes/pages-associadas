@@ -1409,7 +1409,7 @@ function PDP() {
                   </li>
                   <li className="flex items-center gap-3">
                     <Store className="h-5 w-5 text-green-600 shrink-0" />
-                    <span>Retire na loja mais próxima hoje mesmo</span>
+                    <span>Retire na loja mais próxima</span>
                   </li>
                 </>
               )}
