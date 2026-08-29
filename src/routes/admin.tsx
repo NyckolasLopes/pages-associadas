@@ -643,42 +643,8 @@ function AdminLayout() {
                   Sede Administrativa
                 </span>
               )}
-
             </div>
           </div>
-          <div className="flex items-center gap-4">
-              {(isGlobalAdmin || userStores.length > 1) && (
-                <div className="flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 p-2 pr-3 rounded-xl shadow-lg border border-emerald-500/30">
-                  <span className="text-[11px] font-black text-emerald-50 uppercase tracking-wider ml-2 hidden lg:flex items-center gap-2">
-                    <Store className="h-4 w-4" />
-                    Visualizar dados de:
-                  </span>
-                  <div className="w-[280px] md:w-[320px]">
-                    <Select 
-                      value={activeStoreId || "all"} 
-                      onValueChange={(val) => setActiveStoreId(val === "all" ? null : val)}
-                    >
-                      <SelectTrigger className="h-10 bg-white/10 hover:bg-white/20 border-white/20 text-white font-bold shadow-none focus:ring-white/50 rounded-lg transition-colors">
-                        <SelectValue placeholder="Selecione a sua loja" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {isGlobalAdmin && (
-                          <SelectItem value="all">
-                            <span className="font-bold">Todas as Lojas (Visão Global)</span>
-                          </SelectItem>
-                        )}
-                        {userStores.map(loja => (
-                          <SelectItem key={loja.id} value={loja.id}>
-                            <span className="font-bold">{(loja as any).nomeFantasia || loja.nome}</span>
-                            {loja.cidade && <span className="opacity-70 text-xs ml-2 font-normal">({loja.cidade})</span>}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-            </div>
         </header>
 
         <div className="p-4 md:p-8 flex-1 overflow-y-auto bg-slate-50 relative">
