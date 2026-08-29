@@ -34,15 +34,6 @@ const PARCEIRO_THEME: Record<string, string> = {
 function StoreLayout() {
   const location = useLocation();
   const isHome = location.pathname === "/";
-  
-  const isNavigatingStore = useRouterState({
-    select: (s) => {
-      if (s.status !== 'pending') return false;
-      const currentSlug = s.location.pathname.split('/')[1];
-      const pendingSlug = s.pendingLocation?.pathname.split('/')[1];
-      return currentSlug !== pendingSlug && !!pendingSlug && !SYSTEM_PAGES.has(pendingSlug);
-    }
-  });
 
   // — Store state (todos os hooks ANTES de qualquer early return) —
   const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
@@ -218,7 +209,7 @@ function StoreLayout() {
 
   // ⏳ Aguarda lojas carregarem do Supabase apenas se o cache estiver totalmente vazio
   const hasPharmacies = pharmacies && pharmacies.length > 0;
-  if ((!pharmaciesLoaded && !hasPharmacies) || isNavigatingStore || !activePharmacy) {
+  if (!pharmaciesLoaded && !hasPharmacies) {
     return <GlobalLoading />;
   }
 
