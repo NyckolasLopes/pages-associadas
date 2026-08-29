@@ -303,9 +303,11 @@ export function Header() {
 
   useEffect(() => {
     if (q.length < 2) return setResults([]);
-    const t = setTimeout(() => catalog.search(q).then(setResults), 150);
+    const t = setTimeout(() => {
+      catalog.search(q, undefined, activePharmacy?.id || selectedPharmacyId).then(setResults);
+    }, 150);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, activePharmacy?.id, selectedPharmacyId]);
 
   useEffect(() => {
     if (drawerOpen) {

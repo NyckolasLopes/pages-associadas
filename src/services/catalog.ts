@@ -8,6 +8,7 @@ import { removeAccents, isCampanhaAtiva } from "@/lib/utils";
 import { checkIsGenerico } from "@/lib/format";
 import { useAdminProducts, mapRowToProduto } from "@/stores/products";
 import { supabase } from "@/integrations/supabase/client";
+import { analyzeSearchQuery, rankProductsBySearch } from "@/lib/searchEngine";
 
 async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | null, includeInactive = false): Promise<Produto[]> {
   const timeoutMs = 10000;
@@ -696,7 +697,7 @@ export const catalog = {
     const page = filters?.page || 0;
     const pageSize = filters?.pageSize || 24;
 
-    if (!q || q.length < 2) {
+    if (!q || !q.trim() || q.trim().length < 2) {
       if (filters && Object.keys(filters).length > 0) {
         let query = supabase.from('produtos').select('*').range(page * pageSize, (page + 1) * pageSize - 1);
         const products = await fetchFromSupabaseWithPrices(query, lojaId);
@@ -705,26 +706,123 @@ export const catalog = {
       return { results: [] };
     }
 
-    let query = supabase.from('produtos').select('*');
-    if (/^\d+$/.test(q)) {
-      query = query.eq('ean', q);
+    const profile = analyzeSearchQuery(q);
+    let candidates: Produto[] = [];
+
+    if (profile.isNumeric) {
+      // EAN / SKU / ID query
+      const query = supabase.from('produtos').select('*')
+        .or(`ean.eq.${profile.cleanQuery},codigo_interno.eq.${profile.cleanQuery},id.eq.${profile.cleanQuery}`)
+        .limit(60);
+      candidates = await fetchFromSupabaseWithPrices(query, lojaId);
     } else {
-      query = query.or(`nome.ilike.%${q}%,termos_pesquisa.ilike.%${q}%,metadata->>classe_terapeutica.ilike.%${q}%`);
+      // Multi-column and multi-token search clauses
+      const orClauses: string[] = [];
+
+      // 1. Full query matches
+      orClauses.push(`nome.ilike.%${profile.cleanQuery}%`);
+      orClauses.push(`termos_pesquisa.ilike.%${profile.cleanQuery}%`);
+      orClauses.push(`marca.ilike.%${profile.cleanQuery}%`);
+      orClauses.push(`metadata->>classe_terapeutica.ilike.%${profile.cleanQuery}%`);
+      orClauses.push(`metadata->>indicacao_terapeutica.ilike.%${profile.cleanQuery}%`);
+      orClauses.push(`descricao_html.ilike.%${profile.cleanQuery}%`);
+      orClauses.push(`resumo_descricao.ilike.%${profile.cleanQuery}%`);
+
+      // 2. Individual tokens (e.g. "pomada" and "assadura")
+      for (const token of profile.tokens) {
+        if (token.length >= 3) {
+          orClauses.push(`nome.ilike.%${token}%`);
+          orClauses.push(`termos_pesquisa.ilike.%${token}%`);
+          orClauses.push(`marca.ilike.%${token}%`);
+          orClauses.push(`metadata->>classe_terapeutica.ilike.%${token}%`);
+          orClauses.push(`metadata->>indicacao_terapeutica.ilike.%${token}%`);
+          orClauses.push(`descricao_html.ilike.%${token}%`);
+          orClauses.push(`resumo_descricao.ilike.%${token}%`);
+        }
+      }
+
+      // 3. Synonym / Indication expanded terms
+      for (const exp of profile.expandedTerms.slice(0, 6)) {
+        if (exp !== profile.cleanQuery && exp.length >= 3) {
+          orClauses.push(`nome.ilike.%${exp}%`);
+          orClauses.push(`termos_pesquisa.ilike.%${exp}%`);
+          orClauses.push(`metadata->>indicacao_terapeutica.ilike.%${exp}%`);
+          orClauses.push(`descricao_html.ilike.%${exp}%`);
+        }
+      }
+
+      // 4. "Did you mean" typo correction term
+      if (profile.didYouMean) {
+        orClauses.push(`nome.ilike.%${profile.didYouMean}%`);
+        orClauses.push(`termos_pesquisa.ilike.%${profile.didYouMean}%`);
+        orClauses.push(`descricao_html.ilike.%${profile.didYouMean}%`);
+      }
+
+      const uniqueClauses = Array.from(new Set(orClauses));
+      const query = supabase.from('produtos').select('*')
+        .or(uniqueClauses.join(','))
+        .limit(160);
+
+      candidates = await fetchFromSupabaseWithPrices(query, lojaId);
+
+      // Fallback if broad search found 0 candidates: try matching first 2 tokens
+      if (candidates.length === 0 && profile.tokens.length > 0) {
+        const fallbackClauses = profile.tokens.slice(0, 2).map(t => `nome.ilike.%${t}%,descricao_html.ilike.%${t}%`).join(',');
+        if (fallbackClauses) {
+          const fallbackQuery = supabase.from('produtos').select('*').or(fallbackClauses).limit(80);
+          candidates = await fetchFromSupabaseWithPrices(fallbackQuery, lojaId);
+        }
+      }
     }
-    
-    query = query.range(page * pageSize, (page + 1) * pageSize - 1);
-    
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    return { results: applyFilters(products, filters), didYouMean: undefined };
+
+    // Apply filters (categories, price, prescription, etc.)
+    const filteredCandidates = applyFilters(candidates, filters);
+
+    // Score and rank candidates by relevance & typo tolerance
+    const { ranked, didYouMean } = rankProductsBySearch(filteredCandidates, q);
+
+    // Apply pagination
+    const paginated = ranked.slice(page * pageSize, (page + 1) * pageSize);
+
+    return {
+      results: paginated,
+      didYouMean: didYouMean && didYouMean !== profile.cleanQuery ? didYouMean : undefined,
+    };
   },
   adminSearchProducts: async (params: { search: string, page: number, pageSize: number, listFilter: string, lojaId?: string | null }) => {
+    const rawSearch = (params.search || "").trim();
     let query = supabase.from('produtos').select('*', { count: 'exact' });
     
-    if (params.search) {
-      if (/^\d+$/.test(params.search)) {
-        query = query.eq('ean', params.search);
+    if (rawSearch) {
+      const profile = analyzeSearchQuery(rawSearch);
+      if (profile.isNumeric) {
+        query = query.or(`ean.eq.${profile.cleanQuery},codigo_interno.eq.${profile.cleanQuery},id.eq.${profile.cleanQuery}`);
       } else {
-        query = query.or(`nome.ilike.%${params.search}%,termos_pesquisa.ilike.%${params.search}%,metadata->>classe_terapeutica.ilike.%${params.search}%`);
+        const clauses: string[] = [
+          `nome.ilike.%${profile.cleanQuery}%`,
+          `termos_pesquisa.ilike.%${profile.cleanQuery}%`,
+          `marca.ilike.%${profile.cleanQuery}%`,
+          `metadata->>classe_terapeutica.ilike.%${profile.cleanQuery}%`,
+          `metadata->>indicacao_terapeutica.ilike.%${profile.cleanQuery}%`,
+          `descricao_html.ilike.%${profile.cleanQuery}%`,
+          `resumo_descricao.ilike.%${profile.cleanQuery}%`
+        ];
+
+        for (const token of profile.tokens) {
+          if (token.length >= 3) {
+            clauses.push(`nome.ilike.%${token}%`);
+            clauses.push(`termos_pesquisa.ilike.%${token}%`);
+            clauses.push(`metadata->>indicacao_terapeutica.ilike.%${token}%`);
+            clauses.push(`descricao_html.ilike.%${token}%`);
+          }
+        }
+
+        if (profile.didYouMean) {
+          clauses.push(`nome.ilike.%${profile.didYouMean}%`);
+          clauses.push(`termos_pesquisa.ilike.%${profile.didYouMean}%`);
+        }
+
+        query = query.or(Array.from(new Set(clauses)).join(','));
       }
     }
 
@@ -749,23 +847,18 @@ export const catalog = {
     const { data, error, count } = await query;
     if (error || !data || data.length === 0) return { results: [], count: 0 };
     
-    // Convert to Produto and inject prices without filtering out stock
+    // Convert to Produto and inject prices
     const products = await fetchFromSupabaseWithPrices(
-      // We pass a dummy query to fetchFromSupabaseWithPrices since we already fetched data.
-      // Wait, fetchFromSupabaseWithPrices takes a query builder.
-      // We can just create a new query with `.in('id', data.map(d => d.id))` to let it do the price joining.
       supabase.from('produtos').select('*').in('id', data.map(d => d.id)).order('id', { ascending: false }),
       params.lojaId,
       true // admin should see inactive products
     );
 
-    // Reorder products back to match `data` order (if needed, but id desc is fine)
-    
-    // For stock filtering, since it's hard to do purely via Supabase without RPC:
-    // If the user wants `out-of-stock`, we should ideally just do local filtering if we can't do it server side easily. 
-    // But since `loadProducts` is removed, we'll return what we have for now and handle `out-of-stock` locally by fetching more pages if needed, 
-    // or just say "stock filter requires full export" for now. The simplest is to return the paginated items.
-    
+    if (rawSearch) {
+      const { ranked } = rankProductsBySearch(products, rawSearch);
+      return { results: ranked, count: count || 0 };
+    }
+
     return { results: products, count: count || 0 };
   },
   search: async (q: string, filters?: FilterOptions, lojaId?: string | null) => {

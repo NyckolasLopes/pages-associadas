@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useSearchHistory } from "@/stores/searchHistory";
 import { useCart } from "@/stores/cart";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 
 export const Route = createFileRoute("/_store/$storeSlug/busca")({
   validateSearch: zodValidator(
@@ -36,13 +37,14 @@ function SearchPage() {
   const [page, setPage] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const { activePharmacy } = useActivePharmacy();
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId) || activePharmacy?.id;
   const logSearch = useSearchHistory((s) => s.logSearch);
 
   useEffect(() => {
     // Fetch unfiltered for sidebar options (limited subset just for filters logic)
     const fetchUnfiltered = async () => {
-      const res = q ? await catalog.search(q, { pageSize: 100 }, selectedPharmacyId) : await catalog.listProducts({ pageSize: 100 }, selectedPharmacyId);
+      const res = q ? await catalog.search(q, { pageSize: 120 }, selectedPharmacyId) : await catalog.listProducts({ pageSize: 120 }, selectedPharmacyId);
       setUnfilteredResults(res);
     };
     fetchUnfiltered();
