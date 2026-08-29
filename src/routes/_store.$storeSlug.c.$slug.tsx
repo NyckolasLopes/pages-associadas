@@ -67,6 +67,7 @@ export const Route = createFileRoute("/_store/$storeSlug/c/$slug")({
 function CategoryPage() {
   const { cat, unfilteredProducts, filteredProducts: initialProducts, subs } = Route.useLoaderData();
   const searchParams = Route.useSearch();
+  const { storeSlug } = Route.useParams();
   const navigate = useNavigate();
   const [showSubs, setShowSubs] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
@@ -196,8 +197,8 @@ function CategoryPage() {
                  return (
                    <Link
                      key={s.id}
-                     to="/c/$slug"
-                     params={{ slug: s.slug }}
+                     to="/$storeSlug/c/$slug"
+                     params={{ storeSlug: storeSlug || "loja-padrao", slug: s.slug }}
                      className={isMarcaPropria 
                        ? "bg-white p-2 border rounded-xl hover:border-primary hover:shadow-md transition flex items-center justify-center shrink-0 h-12 min-w-[90px]" 
                        : "text-[11px] md:text-xs px-3 py-1.5 bg-secondary text-white font-bold rounded-full hover:bg-primary transition shadow-sm"

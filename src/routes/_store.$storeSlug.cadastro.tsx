@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_store/$storeSlug/cadastro")({
 
 function CadastroPage() {
   const { redirect } = Route.useSearch();
+  const { storeSlug } = Route.useParams();
   const navigate = useNavigate();
   const login = useAuth((s) => s.login);
   const loginWithProvider = useAuth((s) => s.loginWithProvider);

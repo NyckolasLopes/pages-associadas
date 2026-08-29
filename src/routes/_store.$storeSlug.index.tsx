@@ -142,8 +142,8 @@ function DynamicVitrines({ local, page = "Página inicial", lojaId }: { local: V
                   {v.nome}
                 </h2>
                 <Link
-                  to="/v/$slug"
-                  params={{ slug: vitrineSlug }}
+                  to="/$storeSlug/v/$slug"
+                  params={{ storeSlug: storeSlug || "loja-padrao", slug: vitrineSlug }}
                   className="hidden sm:inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline"
                 >
                   Ver todos <ExternalLink className="h-3.5 w-3.5" />
@@ -794,8 +794,8 @@ function StoreHome() {
                       className="pl-4 md:pl-6 basis-auto flex"
                     >
                       <Link 
-                        to="/m/$slug"
-                        params={{ slug: marca.seoUrl || marca.slug }}
+                        to="/$storeSlug/m/$slug"
+                        params={{ storeSlug: storeSlug || "loja-padrao", slug: marca.seoUrl || marca.slug }}
                         className="shrink-0 w-[120px] h-[80px] md:w-[150px] md:h-[100px] bg-white border rounded-xl flex items-center justify-center shadow-sm hover:border-[#00AFA9] transition cursor-pointer p-4"
                         title={marca.nome}
                       >

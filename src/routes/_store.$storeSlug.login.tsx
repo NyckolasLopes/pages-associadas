@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_store/$storeSlug/login")({
 
 function LoginPage() {
   const { redirect, ...restSearch } = Route.useSearch() as any;
+  const { storeSlug } = Route.useParams();
   const navigate = useNavigate();
   const login = useAuth((s) => s.login);
   const verifyOtp = useAuth((s) => s.verifyOtp);
