@@ -217,7 +217,7 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
             <h4 className="font-bold text-sm">Informações da Marca</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Frase abaixo do Logo</Label>
+                <Label>Frase abaixo do Logo (rodape)</Label>
                 <Input 
                   value={formData.footerDescricao || ""} 
                   onChange={(e) => handleChange("footerDescricao", e.target.value)} 
