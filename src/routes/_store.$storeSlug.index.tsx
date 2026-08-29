@@ -215,15 +215,48 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
     } else {
       await adminState.fetchBanners();
     }
-    return { pharmacy, storeSlug };
+    const allBanners = useAdmin.getState().banners || [];
+    const heroBanner = allBanners.find(b => 
+      b.active && 
+      b.posicao === "Full Banner" && 
+      (!b.lojaId || b.lojaId === pharmacy?.id) &&
+      (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === "Página inicial")
+    );
+    return { pharmacy, storeSlug, banners: allBanners, heroBanner };
   },
   head: ({ loaderData }) => {
     const p = loaderData?.pharmacy;
     const storeSlug = loaderData?.storeSlug || "loja-padrao";
+    const heroBanner = loaderData?.heroBanner;
     const title = p?.pageTitle || (p ? `Farmácias Associadas - ${p.nome} - ${p.cidade}/${p.uf}` : `${getBrandNameForHead()} — Medicamentos, dermocosméticos e mais`);
     const desc = p?.metaDescription || p?.seoDescricao || (p ? `Sua farmácia completa em ${p.cidade || "sua região"}. Medicamentos, perfumaria, dermocosméticos e ofertas exclusivas com entrega rápida em ${p.bairro || p.cidade || "sua localidade"}.` : "Compre online medicamentos, vitaminas, dermocosméticos e itens de higiene com entrega rápida. Aqui você tem amigos.");
     const storeUrl = `https://farmaciasassociadas.com.br/${storeSlug}`;
     const logoUrl = p?.logoUrl || "https://farmaciasassociadas.com.br/icone-associadas.png";
+
+    const preloadLinks: any[] = [
+      { rel: "canonical", href: storeUrl },
+    ];
+
+    if (heroBanner?.mobileImageUrl) {
+      preloadLinks.push({
+        rel: "preload",
+        as: "image",
+        href: heroBanner.mobileImageUrl,
+        media: "(max-width: 767px)",
+        // @ts-ignore
+        fetchpriority: "high",
+      });
+    }
+    if (heroBanner?.imageUrl) {
+      preloadLinks.push({
+        rel: "preload",
+        as: "image",
+        href: heroBanner.imageUrl,
+        media: heroBanner.mobileImageUrl ? "(min-width: 768px)" : undefined,
+        // @ts-ignore
+        fetchpriority: "high",
+      });
+    }
 
     const geoRegion = p?.uf ? `BR-${p.uf.toUpperCase()}` : "BR-RS";
     const geoPlacename = [p?.bairro, p?.cidade, p?.uf].filter(Boolean).join(", ") || "Rio Grande do Sul, Brasil";
@@ -232,9 +265,7 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
     const icbm = hasGeo ? `${p.latitude}, ${p.longitude}` : undefined;
 
     return {
-      links: [
-        { rel: "canonical", href: storeUrl },
-      ],
+      links: preloadLinks,
       meta: [
         { title },
         { name: "description", content: desc },
@@ -300,15 +331,16 @@ function getSubcategoryIcon(name: string) {
   return Tag;
 }
 
-function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
+function DynamicTarja({ page = "Página inicial", lojaId, initialBanners }: { page?: string; lojaId?: string; initialBanners?: any[] }) {
   const allBanners = useAdmin((s) => s.banners);
+  const bannersToUse = (initialBanners && initialBanners.length > 0) ? initialBanners : allBanners;
   
-  const tarjasOld = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
+  const tarjasOld = useMemo(() => getDeduplicatedBanners((bannersToUse || []).filter(b => 
     b.active && 
     b.posicao === "Banner Tarja" &&
     (b.lojaId === lojaId || !b.lojaId) &&
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  )), [allBanners, page, lojaId]);
+  )), [bannersToUse, page, lojaId]);
   
   const tarjaItems = useMemo(() => {
     const bannerWithJson = tarjasOld.find(b => b.formatoExtra && b.formatoExtra.trim().startsWith('['));
@@ -606,15 +638,16 @@ function CampaignHighlight({ lojaId }: { lojaId?: string }) {
 function StoreHome() {
 
   const { storeSlug } = Route.useParams();
+  const loaderData = Route.useLoaderData();
   const { pharmacies, fetchBanners } = useAdmin();
-  const loja = useMemo(() => pharmacies.find((p) => (p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id)) === storeSlug), [pharmacies, storeSlug]);
+  const loja = useMemo(() => loaderData?.pharmacy || pharmacies.find((p) => (p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id)) === storeSlug), [loaderData, pharmacies, storeSlug]);
   const lojaId = loja?.id;
 
   useEffect(() => {
-    if (lojaId) {
+    if (lojaId && (!loaderData?.banners || loaderData.banners.length === 0)) {
       fetchBanners(lojaId);
     }
-  }, [lojaId, fetchBanners]);
+  }, [lojaId, fetchBanners, loaderData]);
 
   const { setSelectedPharmacyId } = useCart();
   const { recordLojaAccess, initPresence } = useLive();
@@ -754,10 +787,10 @@ function StoreHome() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       
       <main className="flex-1 pb-16 md:pb-0 overflow-x-hidden">
-        <HeroCarousel lojaId={lojaId} />
+        <HeroCarousel lojaId={lojaId} initialBanners={loaderData?.banners} />
 
         {/* Advantages Banner (Imagem 2) */}
-        <DynamicTarja lojaId={lojaId} />
+        <DynamicTarja lojaId={lojaId} initialBanners={loaderData?.banners} />
 
         <SquarePromoGrid lojaId={lojaId} />
 

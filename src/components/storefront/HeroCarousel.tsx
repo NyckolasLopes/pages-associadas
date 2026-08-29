@@ -1,28 +1,46 @@
 import { useEffect, useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useAdmin } from "@/stores/admin";
+import { useAdmin, AdminBanner } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 
-export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full Banner", categoriaId }: { page?: string; lojaId?: string; posicao?: string; categoriaId?: string }) {
+interface HeroCarouselProps {
+  page?: string;
+  lojaId?: string;
+  posicao?: string;
+  categoriaId?: string;
+  initialBanners?: AdminBanner[];
+}
+
+export function HeroCarousel({ 
+  page = "Página inicial", 
+  lojaId, 
+  posicao = "Full Banner", 
+  categoriaId,
+  initialBanners
+}: HeroCarouselProps) {
   const activePharmacy = useActivePharmacy();
   const storeSlug = activePharmacy?.slug || "loja-padrao";
-  const { banners: adminBanners, pharmacies, fetchBanners } = useAdmin();
+  const { banners: adminBanners, bannersLoaded, fetchBanners } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const effectiveLojaId = lojaId || selectedPharmacyId || activePharmacy?.id;
 
   const [i, setI] = useState(0);
 
   useEffect(() => {
-    if (effectiveLojaId) {
-      fetchBanners(effectiveLojaId);
-    } else {
-      fetchBanners();
+    if (!initialBanners || initialBanners.length === 0) {
+      if (effectiveLojaId) {
+        fetchBanners(effectiveLojaId);
+      } else {
+        fetchBanners();
+      }
     }
-  }, [effectiveLojaId, fetchBanners]);
+  }, [effectiveLojaId, fetchBanners, initialBanners]);
 
   const activeBanners = useMemo(() => {
-    const bannersList = adminBanners && adminBanners.length > 0 ? adminBanners : [];
+    const bannersList = (initialBanners && initialBanners.length > 0)
+      ? initialBanners
+      : (adminBanners && adminBanners.length > 0 ? adminBanners : []);
     
     const filtered = bannersList.filter(b => {
       // Both Full Banner and Banner por Categoria share this carousel component
@@ -69,7 +87,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
     });
 
     return filtered;
-  }, [adminBanners, page, categoriaId, effectiveLojaId]);
+  }, [adminBanners, initialBanners, page, categoriaId, effectiveLojaId]);
 
   const deduplicatedActiveBanners = useMemo(() => {
     const uniqueMap = new Map();
@@ -100,47 +118,31 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
   const prev = () => setI((prev) => (prev - 1 + totalSlides) % totalSlides);
   const next = () => setI((prev) => (prev + 1) % totalSlides);
 
-  const aspectRatioDesktop = page === "Página de Categoria" ? '1920 / 350' : '1920 / 600';
-  const aspectRatioMobile = page === "Página de Categoria" ? '800 / 400' : '800 / 800';
+  const isCategoryPage = page === "Página de Categoria";
+  const containerAspectClass = isCategoryPage
+    ? "aspect-[2/1] sm:aspect-[2.5/1] md:aspect-[1920/350]"
+    : "aspect-[2/1] sm:aspect-[2.5/1] md:aspect-[1920/600]";
 
+  // Enquanto banners estão carregando e não temos slides, renderizar o Skeleton com o aspect-ratio exato
+  // Isso impede que a DynamicTarja suba para o topo da tela do celular durante o carregamento!
+  const isStillLoading = !bannersLoaded && (!initialBanners || initialBanners.length === 0) && totalSlides === 0;
+  if (isStillLoading) {
+    return (
+      <section className={`relative w-full overflow-hidden bg-slate-100 animate-pulse ${containerAspectClass}`}>
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100" />
+      </section>
+    );
+  }
+
+  // Se já carregou tudo e não há slides configurados para este contexto, retornar null
   if (totalSlides === 0) {
     return null;
   }
 
-  const firstBanner = deduplicatedActiveBanners[0];
-
   return (
     <section 
-      className={`relative w-full overflow-hidden bg-[#f5f5f5] ${
-        page === "Página de Categoria" 
-          ? "aspect-[2/1] sm:aspect-[2.5/1] md:aspect-[1920/350]" 
-          : "aspect-[2/1] sm:aspect-[2.5/1] md:aspect-[1920/600]"
-      }`}
+      className={`relative w-full overflow-hidden bg-slate-100 ${containerAspectClass}`}
     >
-      {/* Preload imediato do primeiro banner crítico (Desktop e Mobile) */}
-      {firstBanner && (
-        <>
-          {firstBanner.mobileImageUrl && (
-            <link
-              rel="preload"
-              as="image"
-              href={firstBanner.mobileImageUrl}
-              media="(max-width: 767px)"
-              // @ts-ignore
-              fetchPriority="high"
-            />
-          )}
-          <link
-            rel="preload"
-            as="image"
-            href={firstBanner.imageUrl}
-            media={firstBanner.mobileImageUrl ? "(min-width: 768px)" : undefined}
-            // @ts-ignore
-            fetchPriority="high"
-          />
-        </>
-      )}
-
       <div 
         className="flex transition-transform duration-700 ease-out h-full w-full"
         style={{ transform: `translateX(-${i * 100}%)` }}
@@ -162,8 +164,7 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
                     <source
                       media="(max-width: 767px)"
                       srcSet={banner.mobileImageUrl}
-                      width={800}
-                      height={400}
+                      sizes="100vw"
                     />
                   )}
                   {/* Imagem principal com alta prioridade no primeiro slide e lazy no restante */}
@@ -173,7 +174,8 @@ export function HeroCarousel({ page = "Página inicial", lojaId, posicao = "Full
                     className="w-full h-full object-cover object-center"
                     fetchPriority={isFirstSlide ? "high" : "low"}
                     loading={isFirstSlide ? "eager" : "lazy"}
-                    decoding={isFirstSlide ? "sync" : "async"}
+                    decoding="async"
+                    sizes="100vw"
                     width={1920}
                     height={600}
                   />

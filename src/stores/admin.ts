@@ -272,6 +272,8 @@ interface AdminState {
 
   // Banners
   banners: AdminBanner[];
+  bannersLoaded: boolean;
+  bannersLoading: boolean;
   setBanners: (banners: AdminBanner[]) => void;
   addBanner: (banner: AdminBanner) => Promise<void>;
   updateBanner: (id: string, banner: Partial<AdminBanner>) => Promise<void>;
@@ -753,8 +755,19 @@ export const useAdmin = create<AdminState>()(
       setThemeColors: (themeColors) => set({ themeColors }),
 
       banners: defaultBanners,
-      setBanners: (banners) => set({ banners }),
+      bannersLoaded: false,
+      bannersLoading: false,
+      bannersByLoja: {} as Record<string, AdminBanner[]>,
+      setBanners: (banners) => set({ banners, bannersLoaded: true }),
       fetchBanners: async (lojaId?: string) => {
+        const key = lojaId || "global";
+        const state = get() as any;
+        if (state.bannersByLoja && state.bannersByLoja[key]) {
+          set({ banners: state.bannersByLoja[key], bannersLoaded: true, bannersLoading: false });
+          return;
+        }
+
+        set({ bannersLoading: true });
         let query = supabase.from('banners' as any).select('*');
         if (lojaId) {
           query = query.or(`loja_id.eq.${lojaId},loja_id.is.null`);
@@ -794,9 +807,22 @@ export const useAdmin = create<AdminState>()(
             link3: b.link3,
             ordem: b.ordem ?? 0,
           })) as AdminBanner[];
-          set({ banners: parsedBanners });
+
+          set((s: any) => ({
+            banners: parsedBanners,
+            bannersLoaded: true,
+            bannersLoading: false,
+            bannersByLoja: { ...s.bannersByLoja, [key]: parsedBanners }
+          }));
         } else if (!error && data && data.length === 0) {
-          set({ banners: defaultBanners });
+          set((s: any) => ({
+            banners: defaultBanners,
+            bannersLoaded: true,
+            bannersLoading: false,
+            bannersByLoja: { ...s.bannersByLoja, [key]: defaultBanners }
+          }));
+        } else {
+          set({ bannersLoaded: true, bannersLoading: false });
         }
       },
       addBanner: async (banner) => {
@@ -829,6 +855,7 @@ export const useAdmin = create<AdminState>()(
           throw error;
         }
         if (data) {
+          set((s: any) => ({ bannersByLoja: {} }));
           get().fetchBanners(cleanBanner.lojaId);
         }
       },
@@ -862,13 +889,17 @@ export const useAdmin = create<AdminState>()(
           throw error;
         }
         if (!error) {
+          set((s: any) => ({ bannersByLoja: {} }));
           get().fetchBanners(get().activeStoreId || undefined);
         }
       },
       removeBanner: async (id) => {
         const { error } = await supabase.from('banners' as any).delete().eq('id', id);
         if (!error) {
-          set((s) => ({ banners: s.banners.filter((b) => b.id !== id) }));
+          set((s: any) => ({ 
+            banners: s.banners.filter((b: any) => b.id !== id),
+            bannersByLoja: {}
+          }));
         }
       },
 
