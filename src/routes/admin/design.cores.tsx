@@ -53,6 +53,16 @@ const COLOR_GROUPS = [
     ]
   },
   {
+    title: "Balão de Instalar Aplicativo (PWA)",
+    description: "Personalize as cores do aviso flutuante de instalação do app.",
+    items: [
+      { id: "--pwa-banner-bg", label: "Fundo do Balão do App", description: "Cor de fundo do balão flutuante.", default: "#00b5ad" },
+      { id: "--pwa-banner-text", label: "Texto do Balão do App", description: "Cor do texto explicativo do balão.", default: "#ffffff" },
+      { id: "--pwa-banner-btn-bg", label: "Fundo do Botão de Instalar", description: "Cor do botão de ação de instalar.", default: "#ffffff" },
+      { id: "--pwa-banner-btn-text", label: "Texto do Botão de Instalar", description: "Cor do texto do botão de instalar.", default: "#00b5ad" },
+    ]
+  },
+  {
     title: "Feedback",
     description: "Status do sistema.",
     items: [

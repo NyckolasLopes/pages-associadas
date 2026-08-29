@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info, ArrowLeft, Copy } from "lucide-react";
+import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info, ArrowLeft, Copy, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -2016,6 +2016,62 @@ function StoreColorsConfig() {
               </div>
             </div>
           )}
+
+          {/* Seção Balão de Instalar Aplicativo (PWA) */}
+          <div className="pt-8 border-t border-slate-100">
+            <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <Smartphone className="w-5 h-5 text-slate-400" /> Balão de Instalar Aplicativo (PWA)
+            </h4>
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.pwaBannerBg || colors.primary || "#00B5AD" }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Fundo do Balão do App</Label>
+                  <p className="text-xs text-slate-500 mb-2">Cor de fundo do card flutuante de instalação do app.</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.pwaBannerBg || colors.primary || "#00B5AD"} onChange={e => updateColor("pwaBannerBg", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.pwaBannerBg || colors.primary || "#00B5AD"} onChange={e => updateColor("pwaBannerBg", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.pwaBannerText || "#ffffff" }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Texto do Balão do App</Label>
+                  <p className="text-xs text-slate-500 mb-2">Cor do texto explicativo do balão.</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.pwaBannerText || "#ffffff"} onChange={e => updateColor("pwaBannerText", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.pwaBannerText || "#ffffff"} onChange={e => updateColor("pwaBannerText", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.pwaBannerBtnBg || "#ffffff" }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Fundo do Botão de Instalar</Label>
+                  <p className="text-xs text-slate-500 mb-2">Cor de fundo do botão de ação do app.</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.pwaBannerBtnBg || "#ffffff"} onChange={e => updateColor("pwaBannerBtnBg", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.pwaBannerBtnBg || "#ffffff"} onChange={e => updateColor("pwaBannerBtnBg", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full shadow-inner border border-black/10 flex-shrink-0 mt-1" style={{ backgroundColor: colors.pwaBannerBtnText || colors.primary || "#00B5AD" }} />
+                <div className="flex-1">
+                  <Label className="font-bold text-sm text-slate-700">Texto do Botão de Instalar</Label>
+                  <p className="text-xs text-slate-500 mb-2">Cor do texto e ícone dentro do botão de instalar.</p>
+                  <div className="flex items-center gap-2">
+                    <Input type="color" className="w-10 h-10 p-1 cursor-pointer rounded-md border-slate-200" value={colors.pwaBannerBtnText || colors.primary || "#00B5AD"} onChange={e => updateColor("pwaBannerBtnText", e.target.value)} />
+                    <Input type="text" className="font-mono uppercase w-28 h-10 text-sm" value={colors.pwaBannerBtnText || colors.primary || "#00B5AD"} onChange={e => updateColor("pwaBannerBtnText", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Preview */}

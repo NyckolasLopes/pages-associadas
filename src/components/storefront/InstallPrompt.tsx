@@ -114,13 +114,42 @@ export function InstallPrompt() {
   const isParceiroOrAssociado = cat === 'parceiro' || cat === 'associado' || activePharmacy?.nome?.toLowerCase().includes('parceiro');
   const appTitle = isParceiroOrAssociado && activePharmacy?.nome ? activePharmacy.nome : (activePharmacy?.nome ? activePharmacy.nome : "Farmácias Associadas");
   const iconUrl = activePharmacy?.faviconUrl || activePharmacy?.logoUrl || "/favicon.png";
-  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
+
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const isRootHomePage = pathname === "" || pathname === "/";
+  // O balão de instalar app não deve aparecer na página inicial sem loja (/) e deve ser individual por loja
+  const isStoreContext = !!activePharmacy?.id && !isRootHomePage;
+
+  // Cores dinâmicas configuradas na aba 'Minhas Cores' da loja
+  const bannerBg = activePharmacy?.themeColors?.["pwaBannerBg"] || 
+                   activePharmacy?.themeColors?.["--pwa-banner-bg"] || 
+                   activePharmacy?.themeColors?.["primary"] || 
+                   activePharmacy?.themeColors?.["--primary"] || 
+                   activePharmacy?.topBarBgColor || 
+                   "#00b5ad";
+
+  const bannerTextColor = activePharmacy?.themeColors?.["pwaBannerText"] || 
+                          activePharmacy?.themeColors?.["--pwa-banner-text"] || 
+                          "#ffffff";
+
+  const btnBg = activePharmacy?.themeColors?.["pwaBannerBtnBg"] || 
+                activePharmacy?.themeColors?.["--pwa-banner-btn-bg"] || 
+                "#ffffff";
+
+  const btnTextColor = activePharmacy?.themeColors?.["pwaBannerBtnText"] || 
+                       activePharmacy?.themeColors?.["--pwa-banner-btn-text"] || 
+                       activePharmacy?.themeColors?.["primary"] || 
+                       activePharmacy?.themeColors?.["--primary"] || 
+                       "#00b5ad";
 
   return (
     <>
-      {/* Floating Mini Banner */}
-      {showFloatingBanner && !isOpen && (
-        <div className="fixed bottom-20 left-4 right-4 z-[99] md:left-auto md:right-6 md:bottom-6 md:w-96 bg-primary text-primary-foreground p-4 rounded-2xl shadow-2xl flex flex-col gap-3 border border-white/20 animate-in slide-in-from-bottom-5 duration-300">
+      {/* Floating Mini Banner (Apenas para lojas individuais) */}
+      {showFloatingBanner && !isOpen && isStoreContext && (
+        <div 
+          style={{ backgroundColor: bannerBg, color: bannerTextColor }}
+          className="fixed bottom-20 left-4 right-4 z-[99] md:left-auto md:right-6 md:bottom-6 md:w-96 p-4 rounded-2xl shadow-2xl flex flex-col gap-3 border border-white/20 animate-in slide-in-from-bottom-5 duration-300"
+        >
           <button 
             onClick={handleDismissBanner} 
             className="absolute top-2.5 right-2.5 p-1 text-white/80 hover:text-white transition-colors rounded-full hover:bg-black/20"
@@ -134,14 +163,8 @@ export function InstallPrompt() {
               <img src={iconUrl} alt="Logo App" className="w-9 h-9 object-contain" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">App Oficial</span>
-                <span className="flex items-center text-amber-300 text-[10px] font-bold">
-                  <Star className="h-3 w-3 fill-amber-300 mr-0.5" /> 4.9
-                </span>
-              </div>
               <p className="font-bold text-sm leading-tight truncate">{appTitle}</p>
-              <p className="text-[11px] text-white/90 leading-tight">Instale para ofertas exclusivas e entrega rápida!</p>
+              <p className="text-[11px] opacity-90 leading-tight mt-0.5">Instale o app para ofertas exclusivas e entrega rápida!</p>
             </div>
           </div>
           
@@ -155,8 +178,8 @@ export function InstallPrompt() {
                   open();
                 }
               }} 
-              variant="secondary" 
-              className="flex-1 h-9 font-bold text-xs bg-white text-primary hover:bg-white/90 shadow-sm"
+              style={{ backgroundColor: btnBg, color: btnTextColor }}
+              className="flex-1 h-9 font-bold text-xs shadow-sm hover:opacity-95 transition-all"
             >
               <Download className="h-4 w-4 mr-1.5" />
               {deferredPrompt ? "Instalar com 1 Clique" : "Baixar Aplicativo"}
@@ -179,20 +202,15 @@ export function InstallPrompt() {
       <Dialog open={isOpen} onOpenChange={(openState) => { if (!openState) close(); }}>
         <DialogContent className="max-w-md md:max-w-lg rounded-3xl p-0 overflow-hidden border bg-background shadow-2xl z-[200]">
           {/* Header Banner */}
-          <div className="bg-gradient-to-br from-primary via-primary/95 to-primary-dark text-white p-6 relative">
+          <div 
+            style={{ backgroundColor: bannerBg, color: bannerTextColor }}
+            className="p-6 relative"
+          >
             <div className="flex items-start gap-4">
               <div className="bg-white rounded-2xl p-2.5 shrink-0 shadow-lg flex items-center justify-center h-16 w-16 overflow-hidden border-2 border-white/20">
                 <img src={iconUrl} alt="App Icon" className="w-12 h-12 object-contain" />
               </div>
               <div className="flex-1 min-w-0 pr-6">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[11px] bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-amber-300" /> App Oficial
-                  </span>
-                  <span className="flex items-center text-amber-300 text-xs font-bold bg-black/20 px-2 py-0.5 rounded-full">
-                    <Star className="h-3 w-3 fill-amber-300 mr-1" /> 4.9
-                  </span>
-                </div>
                 <DialogTitle className="text-xl font-bold leading-tight text-white">{appTitle}</DialogTitle>
                 <p className="text-xs text-white/85 mt-1">Tenha a farmácia na palma da sua mão com benefícios exclusivos</p>
               </div>
@@ -203,7 +221,8 @@ export function InstallPrompt() {
               <div className="mt-5">
                 <Button 
                   onClick={handleNativeInstall} 
-                  className="w-full h-11 rounded-xl font-bold bg-white text-primary hover:bg-slate-100 shadow-md text-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ backgroundColor: btnBg, color: btnTextColor }}
+                  className="w-full h-11 rounded-xl font-bold shadow-md text-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <Download className="h-5 w-5 mr-2" />
                   Instalar Aplicativo com 1 Clique
