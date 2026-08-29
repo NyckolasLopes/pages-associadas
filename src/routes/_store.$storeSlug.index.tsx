@@ -199,11 +199,6 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
       ],
     };
   },
-  loader: async () => ({
-    featured: await catalog.featured(),
-    cats: await catalog.listMainCategories(true),
-    allCats: await catalog.listCategories(true),
-  }),
   component: StoreHome,
 });
 
@@ -588,46 +583,8 @@ function StoreHome() {
   }, [lojaId, setSelectedPharmacyId, recordLojaAccess, initPresence]);
 
 
-  const { featured, cats, allCats } = Route.useLoaderData();
-  const categoryIcons = useAdmin((s) => s.categoryIcons);
-  const featuredCategoriesIds = useAdmin((s) => s.featuredCategories);
-  const [featuredCategoriesData, setFeaturedCategoriesData] = useState<Array<{categoria: Categoria, produtos: Produto[]}>>([]);
-  
-  const [localFeatured, setLocalFeatured] = useState<Produto[]>(featured);
-  const grid = localFeatured.slice(0, 12);
-  const brandsRef = useRef<HTMLDivElement>(null);
-
-  const customProducts = useAdminProducts((s) => s.customProducts);
-  
-  // Re-fetch featured when lojaId is available
-  useEffect(() => {
-    if (lojaId) {
-      catalog.featured(lojaId).then(setLocalFeatured);
-    }
-  }, [lojaId, customProducts]);
-  
-  useEffect(() => {
-    async function loadFeatured() {
-      const data = await Promise.all(
-        featuredCategoriesIds.map(async (id) => {
-          const categoria = await catalog.getCategoryById(id);
-          const produtos = await catalog.productsByCategory(id, undefined, lojaId);
-          return categoria ? { categoria, produtos } : null;
-        })
-      );
-      setFeaturedCategoriesData(data.filter(Boolean) as any);
-    }
-    loadFeatured();
-  }, [featuredCategoriesIds, customProducts, lojaId]);
-
   const { marcas } = useMarcasStore();
   const activeMarcas = marcas.filter(m => m.ativo && m.destaque);
-
-  const scrollBrands = (dir: "left" | "right") => {
-    if (brandsRef.current) {
-      brandsRef.current.scrollBy({ left: dir === "left" ? -300 : 300, behavior: "smooth" });
-    }
-  };
 
   const schemaOrg = {
     "@context": "https://schema.org",
@@ -641,19 +598,11 @@ function StoreHome() {
     }
   };
 
-  if (pharmacies.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Spinner className="h-16 w-16" />
-      </div>
-    );
-  }
-
-  if (!loja) {
+  if (!loja && pharmacies.length > 0) {
     return <NotFound type="page" />;
   }
 
-  if (loja.virtualStoreStatus === 'Inativa') {
+  if (loja?.virtualStoreStatus === 'Inativa') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center p-8 bg-slate-50">
         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
