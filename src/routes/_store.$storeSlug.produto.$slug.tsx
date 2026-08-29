@@ -55,15 +55,15 @@ export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
     }
   },
   loader: async ({ params }) => {
-    const p = await catalog.getProductBySlug(params.slug);
-    if (!p) throw notFound();
     const storeSlug = params.storeSlug;
     const { useAdmin } = await import("@/stores/admin");
     const pharmacies = useAdmin.getState().pharmacies;
-    let loja = pharmacies.find((ph: any) => (ph.slug || "").toLowerCase() === storeSlug.toLowerCase());
+    let loja = pharmacies.find((ph: any) => (ph.slug || "").toLowerCase() === (storeSlug || "").toLowerCase());
     if (!loja) {
       loja = pharmacies.filter((ph: any) => ph.ativo !== false)[0] || pharmacies[0];
     }
+    const p = await catalog.getProductBySlug(params.slug, loja?.id);
+    if (!p) throw notFound();
     const [cat, subcat, crossSell, compreJuntoPartner] = await Promise.all([
       p.categoriaId ? catalog.getCategoryById(p.categoriaId) : Promise.resolve(null),
       p.subcategoriaId ? catalog.getCategoryById(p.subcategoriaId) : Promise.resolve(null),
@@ -562,6 +562,7 @@ function PDP() {
     const isSameCity = normalize(f.cidade).includes(currentCity) || normalize(f.endereco).includes(currentCity);
     
     // Check if pharmacy can deliver or pickup
+    const canPickup = f.aceitaRetirada !== false;
     let canDeliver = false;
     let deliveryPrice: number | null = null;
     
@@ -590,8 +591,7 @@ function PDP() {
         deliveryPrice = f.custoEntrega ?? null;
       }
     } else if (f.aceitaEntrega && distance === null) {
-      // If we don't have distance yet, assume can deliver if same city
-      canDeliver = isSameCity;
+      canDeliver = true;
       if (f.raiosEntrega && f.raiosEntrega.length > 0) {
         deliveryPrice = Math.min(...f.raiosEntrega.map(r => r.preco));
       } else if (f.meiosEntregaPersonalizados && f.meiosEntregaPersonalizados.length > 0) {
@@ -604,7 +604,6 @@ function PDP() {
         deliveryPrice = f.custoEntrega;
       }
     }
-    const canPickup = f.aceitaRetirada;
 
     return {
       ...f, 
@@ -649,26 +648,45 @@ function PDP() {
     availablePharmacies = availablePharmacies.filter(f => f._isSameCity);
   }
 
-  let maxStock = 0;
-  let activeFornecedor = null;
-  let isLocalStock = false;
-  let isLojaPromoActiva = false;
+  const { storeSlug } = Route.useParams();
+  const currentLoja = loja || allPharmacies.find(ph => (ph.slug || "").toLowerCase() === (storeSlug || "").toLowerCase()) || (selectedPharmacyId ? allPharmacies.find(ph => ph.id === selectedPharmacyId) : null) || allPharmacies[0];
+  const effectiveStoreId = selectedPharmacyId || currentLoja?.id;
 
-  if (availablePharmacies.length > 0) {
-    maxStock = Math.max(0, ...availablePharmacies.map(f => f._calculatedStock));
+  // Priority 1: Check active store stock
+  let maxStock = 0;
+  if (effectiveStoreId) {
+    const isAtivoLocal = p.precosPorLoja?.[effectiveStoreId]?.ativo !== false;
+    maxStock = isAtivoLocal ? getDeterministicStock(p, effectiveStoreId) : 0;
   }
 
-  isLocalStock = maxStock > 0;
+  // Priority 2: Check any available pharmacy with stock
+  if (maxStock === 0 && availablePharmacies.length > 0) {
+    const highestStock = Math.max(0, ...availablePharmacies.map(f => f._calculatedStock || 0));
+    if (highestStock > 0) {
+      maxStock = highestStock;
+    }
+  }
 
-  if (!isLocalStock && fornecedores && fornecedores.length > 0 && !isStoreContext) {
+  // Priority 3: Fallback to Suppliers / Infinite Shelf
+  let activeFornecedor = null;
+  if (maxStock === 0 && fornecedores && fornecedores.length > 0) {
     const citySuppliers = fornecedores.filter(f => normalize(f.cidade).includes(currentCity));
     activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
-    
     const supplierStock = getDeterministicStock(p, String(activeFornecedor.id) + "supp");
-    maxStock = supplierStock > 0 ? supplierStock : 0;
+    if (supplierStock > 0) {
+      maxStock = supplierStock;
+    }
   }
 
-  const activePharmacyId = selectedPharmacyId || (availablePharmacies.length > 0 ? availablePharmacies[0].id : null);
+  // Priority 4: Fallback to global product stock
+  if (maxStock === 0 && Number(p.estoque || 0) > 0) {
+    maxStock = Number(p.estoque);
+  }
+
+  let isLocalStock = maxStock > 0;
+  let isLojaPromoActiva = false;
+
+  const activePharmacyId = effectiveStoreId || selectedPharmacyId || (availablePharmacies.length > 0 ? availablePharmacies[0].id : null);
   let finalPrecoDe = Number(p.precoDe) || 0;
   let finalPrecoPor = Number(p.precoPor) || finalPrecoDe || 0;
 
@@ -676,7 +694,7 @@ function PDP() {
     finalPrecoPor = p.precoCampanha ? Number(p.precoCampanha) : finalPrecoPor;
   } else if (activePharmacyId) {
     // 1. Base table price
-    const activePharm = availablePharmacies.find(f => f.id === activePharmacyId);
+    const activePharm = allPharmacies.find(f => f.id === activePharmacyId);
     if (activePharm) {
       const activeTabela = activePharm.tabelaPrecoId || "poa";
       const regPrice = regionalPrices[`${activeTabela}-${p.id}`];
@@ -705,8 +723,8 @@ function PDP() {
   }
 
   // 3. Store-specific & Global Promotions
-  const effectiveStoreId = activePharmacyId || String(loja?.id || "1");
-  const lojaPromocoes = marketingState.lojaPromocoes[effectiveStoreId] || [];
+  const promoStoreId = activePharmacyId || effectiveStoreId || String(loja?.id || "1");
+  const lojaPromocoes = marketingState.lojaPromocoes[promoStoreId] || [];
   const globalPromocoes = promocoes.filter((p: any) => !p.lojaId);
   const padraoPromo = getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes);
   const levePaguePromo = getLevePaguePromotion(p, globalPromocoes, lojaPromocoes);
@@ -847,8 +865,8 @@ function PDP() {
   // Produto precisa ter estoque (ou ser serviço suportado pela loja) e estar ativo globalmente
   // Além disso, se uma farmácia foi selecionada, deve estar ativo nessa farmácia.
   const isGlobalActive = p.ativo !== false && p.aVenda !== false;
-  const isLocalActive = !selectedPharmacyId || p.precosPorLoja?.[selectedPharmacyId]?.ativo !== false;
-  const storeOffersServices = !loja || loja.offersServices !== false;
+  const isLocalActive = !activePharmacyId || p.precosPorLoja?.[activePharmacyId]?.ativo !== false;
+  const storeOffersServices = !currentLoja || currentLoja.offersServices !== false;
   const isAvailable = (maxStock > 0 || (isService && storeOffersServices)) && isGlobalActive && isLocalActive;
 
 

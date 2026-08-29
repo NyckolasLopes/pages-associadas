@@ -224,7 +224,7 @@ function Relatorios() {
 
   // SLA Stats Calculation
   const slaStats = useMemo(() => {
-    const stats: Record<string, { qtdPedidos: number, tempoMin: number | null }> = {};
+    const stats: Record<string, { qtdPedidos: number, totalPedidos: number, tempoMin: number | null }> = {};
     let totalSoma = 0;
     let totalCount = 0;
     let globalAtrasados = 0;
@@ -232,7 +232,8 @@ function Relatorios() {
     const ordersByLoja: Record<string, typeof orders> = {};
     
     orders.forEach(pedido => {
-      const lojaId = pedido.lojaId;
+      // Conta pedido mesmo sem lojaId (fallback por lojaNome)
+      const lojaId = pedido.lojaId || (pedido as any).lojaNome || null;
       if (lojaId) {
         if (!ordersByLoja[lojaId]) ordersByLoja[lojaId] = [];
         ordersByLoja[lojaId].push(pedido);
@@ -240,12 +241,12 @@ function Relatorios() {
       
       const hist = [...(pedido.historico || [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
       const separacao = hist.find(h => {
-        const s = h.situacao?.toLowerCase() || "";
-        return s === "em separação" || s === "separacao" || s === "em separacao" || s === "separando";
+        const s = (h.situacao || h.status || "").toLowerCase();
+        return s === "em separação" || s === "separacao" || s === "em separacao" || s === "separando" || s.includes("separ");
       });
       const conclusao = hist.find(h => {
-        const s = h.situacao?.toLowerCase() || "";
-        return ["pronto para retirada", "pronta para retirada", "pronto", "em rota de entrega", "em rota", "enviado", "entregue"].includes(s);
+        const s = (h.situacao || h.status || "").toLowerCase();
+        return ["pronto para retirada", "pronta para retirada", "pronto", "em rota de entrega", "em rota", "enviado", "entregue"].some(kw => s.includes(kw));
       });
       
       if (separacao && conclusao) {
@@ -259,16 +260,17 @@ function Relatorios() {
       const lojaOrders = ordersByLoja[loja.id] || [];
       let somaMin = 0;
       let count = 0;
+      const totalLojaOrders = lojaOrders.length;
 
       lojaOrders.forEach(pedido => {
         const hist = [...(pedido.historico || [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
         const separacao = hist.find(h => {
-          const s = h.situacao?.toLowerCase() || "";
-          return s === "em separação" || s === "separacao" || s === "em separacao" || s === "separando";
+          const s = (h.situacao || h.status || "").toLowerCase();
+          return s === "em separação" || s === "separacao" || s === "em separacao" || s === "separando" || s.includes("separ");
         });
         const conclusao = hist.find(h => {
-          const s = h.situacao?.toLowerCase() || "";
-          return ["pronto para retirada", "pronta para retirada", "pronto", "em rota de entrega", "em rota", "enviado", "entregue"].includes(s);
+          const s = (h.situacao || h.status || "").toLowerCase();
+          return ["pronto para retirada", "pronta para retirada", "pronto", "em rota de entrega", "em rota", "enviado", "entregue"].some(kw => s.includes(kw));
         });
         
         if (separacao && conclusao) {
@@ -281,6 +283,7 @@ function Relatorios() {
 
       stats[loja.id] = {
         qtdPedidos: count,
+        totalPedidos: totalLojaOrders,
         tempoMin: count > 0 ? Math.round(somaMin / count) : null
       };
 
@@ -1178,18 +1181,20 @@ function Relatorios() {
                      <thead>
                        <tr className="border-b text-slate-500 text-[11px] font-black uppercase tracking-wider bg-slate-50">
                          <th className="p-4">Loja</th>
-                         <th className="p-4 text-center">Pedidos Avaliados</th>
+                         <th className="p-4 text-center">Total de Pedidos</th>
+                         <th className="p-4 text-center">Pedidos com SLA</th>
                          <th className="p-4 text-center">Tempo Médio de Separação</th>
                          <th className="p-4 text-center">Status SLA</th>
                        </tr>
                      </thead>
                      <tbody className="divide-y divide-slate-100">
                        {pharmacies
-                         .filter(loja => (slaStats.stats[loja.id]?.qtdPedidos || 0) > 0)
-                         .sort((a, b) => (slaStats.stats[b.id]?.qtdPedidos || 0) - (slaStats.stats[a.id]?.qtdPedidos || 0))
+                         .filter(loja => (slaStats.stats[loja.id]?.totalPedidos || 0) > 0)
+                         .sort((a, b) => (slaStats.stats[b.id]?.totalPedidos || 0) - (slaStats.stats[a.id]?.totalPedidos || 0))
                          .map((loja) => {
                          const s = slaStats.stats[loja.id];
-                         const qtdPedidos = s?.qtdPedidos || 0;
+                         const totalPedidos = s?.totalPedidos || 0;
+                         const qtdSla = s?.qtdPedidos || 0;
                          const tempoMin = s?.tempoMin;
                          const noPrazo = tempoMin !== null ? tempoMin <= 20 : true;
                          return (
@@ -1199,7 +1204,14 @@ function Relatorios() {
                                 <div className="text-[11px] text-slate-500">Filial #{loja.id}</div>
                              </td>
                              <td className="p-4 text-center font-bold text-slate-600">
-                               <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-md text-sm">{qtdPedidos}</span>
+                               <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-md text-sm">{totalPedidos}</span>
+                             </td>
+                             <td className="p-4 text-center">
+                               {qtdSla > 0 ? (
+                                 <span className="bg-teal-50 text-teal-700 px-2 py-1 rounded-md text-sm font-bold">{qtdSla}</span>
+                               ) : (
+                                 <span className="text-slate-400 text-xs font-medium">Sem histórico</span>
+                               )}
                              </td>
                              <td className="p-4 text-center">
                                {tempoMin !== null ? (
@@ -1210,7 +1222,7 @@ function Relatorios() {
                                    </span>
                                  </div>
                                ) : (
-                                 <span className="text-slate-400">-</span>
+                                 <span className="text-slate-400 text-xs">-</span>
                                )}
                              </td>
                              <td className="p-4 text-center">
@@ -1230,16 +1242,16 @@ function Relatorios() {
                                    </span>
                                  )
                                ) : (
-                                 <span className="text-slate-400 text-xs">-</span>
+                                 <span className="text-slate-400 text-xs font-medium">Sem dados</span>
                                )}
                              </td>
                            </tr>
                          );
                        })}
-                       {pharmacies.filter(loja => (slaStats.stats[loja.id]?.qtdPedidos || 0) > 0).length === 0 && (
+                       {pharmacies.filter(loja => (slaStats.stats[loja.id]?.totalPedidos || 0) > 0).length === 0 && (
                          <tr>
-                           <td colSpan={4} className="p-8 text-center text-slate-500 font-medium">
-                             Nenhum pedido avaliado no momento.
+                           <td colSpan={5} className="p-8 text-center text-slate-500 font-medium">
+                             Nenhum pedido encontrado no período selecionado.
                            </td>
                          </tr>
                        )}
