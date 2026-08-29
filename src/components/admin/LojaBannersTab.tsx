@@ -173,7 +173,15 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs font-bold">URL da Imagem</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold">URL da Imagem</Label>
+                    <span className="text-[10px] font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                      {posicao === "principal" && "1920x600px (16:5)"}
+                      {posicao === "secundario" && "900x450px ou 600x600px"}
+                      {posicao === "Banner Extra" && "1440x320px (4:1)"}
+                      {posicao === "rodape" && "600x400px (3:2)"}
+                    </span>
+                  </div>
                   <Input
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
@@ -181,6 +189,12 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
                     className="text-sm"
                     required
                   />
+                  <p className="text-[11px] text-slate-500">
+                    {posicao === "principal" && "Resolução recomendada: 1920x600px (Desktop) e 800x800px (Mobile)."}
+                    {posicao === "secundario" && "Resolução recomendada: 900x450px (Duplo) ou 600x600px (Quadrado)."}
+                    {posicao === "Banner Extra" && "Resolução recomendada: 1440x320px ou 1200x300px."}
+                    {posicao === "rodape" && "Resolução recomendada: 600x400px ou 400x400px."}
+                  </p>
                 </div>
 
                 <div className="space-y-1">
@@ -200,10 +214,10 @@ export function LojaBannersTab({ lojaId }: { lojaId: string }) {
                     onChange={(e: any) => setPosicao(e.target.value)}
                     className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
                   >
-                    <option value="principal">Carrossel Principal (Topo)</option>
-                    <option value="secundario">Banner Secundário (Meio)</option>
-                    <option value="Banner Extra">Banner Extra (Abaixo de Tópico)</option>
-                    <option value="rodape">Banner de Rodapé</option>
+                    <option value="principal">Carrossel Principal (Topo - 1920x600px)</option>
+                    <option value="secundario">Banner Secundário (Meio - 900x450px)</option>
+                    <option value="Banner Extra">Banner Extra (1440x320px)</option>
+                    <option value="rodape">Banner de Rodapé (600x400px)</option>
                   </select>
                 </div>
 

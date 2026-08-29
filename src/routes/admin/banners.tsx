@@ -61,14 +61,54 @@ function getIcon(url: string) {
 
 function getDimensionsForPosition(pos: string) {
   switch (pos) {
-    case "Full Banner": return { desktop: "1800x600px", mobile: "800x800px" };
-    case "Mini Banner": return { desktop: "600x600px", mobile: "600x600px" };
-    case "Banner Tarja": return { desktop: "Auto (Max 4 itens)", mobile: "Auto (Carrossel)" };
-    case "Banner Compre por categoria": return { desktop: "200x200px", mobile: "200x200px" };
-    case "Banner por Categoria": return { desktop: "1920x400px", mobile: "800x400px" };
-    case "Banner Extra": return { desktop: "1200x300px", mobile: "800x400px" };
-    case "Banner Diferenciais": return { desktop: "400x400px", mobile: "400x400px" };
-    default: return { desktop: "Auto", mobile: "Auto" };
+    case "Full Banner": 
+      return { 
+        desktop: "1920x600px (16:5)", 
+        mobile: "800x800px (1:1)",
+        descricao: "Carrossel principal no topo da loja. Resolução: 1920x600px Desktop e 800x800px Mobile."
+      };
+    case "Mini Banner": 
+      return { 
+        desktop: "900x450px (2:1) ou 600x600px (1:1)", 
+        mobile: "600x600px (1:1)",
+        descricao: "Banners promocionais em grade (duplo ou trio). Resolução: 900x450px ou 600x600px."
+      };
+    case "Banner Tarja": 
+      return { 
+        desktop: "128x128px (Ícones) / 1920x90px (Faixa)", 
+        mobile: "128x128px (Ícones) / 800x140px (Faixa)",
+        descricao: "Tarja de vantagens (Frete Grátis, Parcelamento). Ícones: 128x128px (PNG transparente)."
+      };
+    case "Banner Compre por categoria": 
+      return { 
+        desktop: "200x200px a 300x300px (1:1)", 
+        mobile: "200x200px (1:1)",
+        descricao: "Ícones circulares para o carrossel de categorias. Resolução: 200x200px (PNG transparente)."
+      };
+    case "Banner por Categoria": 
+      return { 
+        desktop: "1920x350px (5.5:1)", 
+        mobile: "800x400px (2:1)",
+        descricao: "Banner de topo nas páginas de categoria (/c/medicamentos). Resolução: 1920x350px."
+      };
+    case "Banner Extra": 
+      return { 
+        desktop: "1440x320px ou 1200x300px (4:1)", 
+        mobile: "800x400px (2:1)",
+        descricao: "Banner intermediário no meio da página. Resolução: 1440x320px Desktop e 800x400px Mobile."
+      };
+    case "Banner Diferenciais": 
+      return { 
+        desktop: "600x400px ou 400x400px (3:2)", 
+        mobile: "600x400px ou 400x400px (3:2)",
+        descricao: "Cards de diferenciais institucionais e atendimento farmacêutico no rodapé."
+      };
+    default: 
+      return { 
+        desktop: "1920x600px", 
+        mobile: "800x800px",
+        descricao: "Resolução recomendada em alta definição."
+      };
   }
 }
 
@@ -108,7 +148,7 @@ function BannerTarjaBuilder({ editingBanner, setEditingBanner }: any) {
     if (!file) return;
     const toastId = toast.loading("Enviando ícone...");
     try {
-      const compressedBlob = await compressImageToBlob(file, 200, 200, 0.9);
+      const compressedBlob = await compressImageToBlob(file, 256, 256, 0.95);
       const publicUrl = await uploadToStorage(compressedBlob, "banners", "tarja_icon");
       updateItem(index, 'icon', publicUrl);
       toast.success("Ícone enviado com sucesso!", { id: toastId });
@@ -119,17 +159,27 @@ function BannerTarjaBuilder({ editingBanner, setEditingBanner }: any) {
   };
 
   return (
-    <div className="bg-orange-50 border border-orange-200 rounded p-6 space-y-4">
-      <div>
-        <h3 className="font-bold text-orange-800 text-lg">Construtor de Banner Tarja (Até 4 Itens)</h3>
-        <p className="text-sm text-orange-700">
-          Adicione até 4 itens que serão exibidos lado a lado na tarja de vantagens.
-        </p>
+    <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 space-y-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 pb-3">
+        <div>
+          <h3 className="font-bold text-orange-950 text-lg">Construtor de Banner Tarja (Até 4 Itens)</h3>
+          <p className="text-xs text-orange-800">
+            Adicione até 4 diferenciais/vantagens exibidos lado a lado na tarja superior.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="text-[11px] bg-orange-200/80 text-orange-900 font-bold px-2.5 py-1 rounded-full border border-orange-300">
+            Ícone Ideal: 128x128px (1:1 PNG)
+          </span>
+          <span className="text-[11px] bg-white text-slate-700 font-semibold px-2.5 py-1 rounded-full border border-orange-200">
+            Faixa Desktop: 1920x90px
+          </span>
+        </div>
       </div>
       
       <div className="space-y-4">
         {items.map((item: any, index: number) => (
-          <div key={index} className="bg-white p-4 rounded-lg border border-slate-200 relative">
+          <div key={index} className="bg-white p-4 rounded-lg border border-slate-200 relative shadow-sm">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -140,9 +190,12 @@ function BannerTarjaBuilder({ editingBanner, setEditingBanner }: any) {
             </Button>
             
             <div className="flex gap-4">
-              <div className="w-20 shrink-0">
-                <Label className="text-xs font-bold text-slate-700 mb-2 block">Ícone</Label>
-                <label className="border border-slate-200 rounded-lg w-16 h-16 flex items-center justify-center cursor-pointer hover:bg-slate-50 relative overflow-hidden bg-slate-50">
+              <div className="w-24 shrink-0">
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs font-bold text-slate-800">Ícone</Label>
+                  <span className="text-[10px] text-orange-700 font-semibold">128x128</span>
+                </div>
+                <label className="border-2 border-dashed border-orange-200 rounded-lg w-20 h-20 flex flex-col items-center justify-center cursor-pointer hover:bg-orange-50/50 relative overflow-hidden bg-slate-50 transition group">
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -153,13 +206,16 @@ function BannerTarjaBuilder({ editingBanner, setEditingBanner }: any) {
                     item.icon.startsWith('icon:') ? (
                        (() => {
                           const Icon = getIcon(item.icon);
-                          return Icon ? <Icon className="w-6 h-6 text-[#00B5AD]" /> : <ImageIcon className="w-6 h-6 text-slate-400" />;
+                          return Icon ? <Icon className="w-8 h-8 text-[#00B5AD]" /> : <ImageIcon className="w-8 h-8 text-slate-400" />;
                        })()
                     ) : (
                       <img src={item.icon} alt="Icon" className="w-full h-full object-contain p-1" />
                     )
                   ) : (
-                    <UploadCloud className="w-6 h-6 text-slate-400" />
+                    <div className="flex flex-col items-center justify-center text-center p-1">
+                      <UploadCloud className="w-6 h-6 text-orange-500 group-hover:scale-110 transition" />
+                      <span className="text-[9px] text-slate-500 mt-1 font-medium leading-tight">PNG/SVG<br/>128x128</span>
+                    </div>
                   )}
                 </label>
               </div>
@@ -1196,13 +1252,35 @@ function AdminBanners() {
                   </div>
                 ) : (
                   <>
+                    {dimensions && (
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <Info className="w-4 h-4 text-blue-600 shrink-0" />
+                            <span className="font-bold text-sm text-blue-900">Dimensões Recomendadas ({editingBanner.posicao})</span>
+                          </div>
+                          <p className="text-xs text-blue-700 pl-6">{dimensions.descricao}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">
+                          <div className="bg-white px-2.5 py-1 rounded-lg border border-blue-200 text-xs font-mono font-bold text-blue-900 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-sans block leading-none">Desktop:</span>
+                            {dimensions.desktop}
+                          </div>
+                          <div className="bg-white px-2.5 py-1 rounded-lg border border-blue-200 text-xs font-mono font-bold text-blue-900 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-sans block leading-none">Mobile:</span>
+                            {dimensions.mobile}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-4">
                       <div className="flex items-center justify-between border-b pb-2">
                         <div>
-                          <h3 className="font-bold text-slate-800 text-lg">Imagem do banner</h3>
-                          <p className="text-xs text-slate-500">Essa é a imagem principal que será exibida para quem acessar pelo computador.</p>
+                          <h3 className="font-bold text-slate-800 text-lg">Imagem do banner (Desktop)</h3>
+                          <p className="text-xs text-slate-500">Essa é a imagem principal exibida em computadores e notebooks.</p>
                         </div>
-                        {dimensions && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 font-bold font-mono border border-slate-200 shadow-sm">{dimensions.desktop}</span>}
+                        {dimensions && <span className="text-xs bg-blue-100 text-blue-900 px-2.5 py-1 rounded-md font-bold font-mono border border-blue-200 shadow-sm">{dimensions.desktop}</span>}
                       </div>
                       <div 
                         className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
@@ -1232,7 +1310,7 @@ function AdminBanners() {
                              </div>
                              <h4 className="font-bold text-slate-700 mb-1">Arraste e solte a imagem do banner aqui</h4>
                              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                               Tamanho máximo 2MB. Para maior qualidade envie a imagem no formato JPG ou PNG.
+                               Resolução ideal: <strong className="text-blue-700">{dimensions?.desktop || "1920x600px"}</strong>. Formato JPG, PNG ou WebP até 2MB.
                              </p>
                              <Input 
                                 type="text" 
@@ -1250,10 +1328,10 @@ function AdminBanners() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between border-b pb-2">
                         <div>
-                          <h3 className="font-bold text-slate-800 text-lg">Imagem do banner para celular</h3>
-                          <p className="text-xs text-slate-500">Opcional. Caso adicionado, será exibida esta imagem em dispositivos móveis.</p>
+                          <h3 className="font-bold text-slate-800 text-lg">Imagem do banner para celular (Mobile)</h3>
+                          <p className="text-xs text-slate-500">Exibida em smartphones para garantir legibilidade e carregamento ultra-rápido.</p>
                         </div>
-                        {dimensions && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 font-bold font-mono border border-slate-200 shadow-sm">{dimensions.mobile}</span>}
+                        {dimensions && <span className="text-xs bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded-md font-bold font-mono border border-emerald-200 shadow-sm">{dimensions.mobile}</span>}
                       </div>
                       <div 
                         className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
