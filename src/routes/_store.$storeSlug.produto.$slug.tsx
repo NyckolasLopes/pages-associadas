@@ -920,7 +920,7 @@ function PDP() {
     <div className="container-fa py-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       <div className="text-sm text-muted-foreground mb-4 flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 scrollbar-none">
-        <Link to="/" className="hover:text-primary transition flex items-center gap-1"><FileText className="h-3 w-3"/> Início</Link>
+        <Link to="/$storeSlug" params={{ storeSlug: params?.storeSlug || "loja-padrao" }} className="hover:text-primary transition flex items-center gap-1"><FileText className="h-3 w-3"/> Início</Link>
         <ChevronRight className="h-3 w-3" />
         {cat && (
           <>

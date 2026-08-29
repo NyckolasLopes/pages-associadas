@@ -1,4 +1,4 @@
-import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { useActivePharmacy, safeSlugify } from "@/hooks/useActivePharmacy";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, SearchX, FileQuestion, PackageX, LayoutGrid } from "lucide-react";
 import mascot404 from "@/assets/404-mascot.png";
@@ -13,6 +13,18 @@ interface NotFoundProps {
 export function NotFound({ type = "page", title, description }: NotFoundProps) {
   const activePharmacy = useActivePharmacy();
   const isPartner = activePharmacy?.categoriaAssociado === "Parceiro";
+
+  let storeSlug = "";
+  if (activePharmacy?.slug) {
+    storeSlug = safeSlugify(activePharmacy.slug);
+  } else if (activePharmacy?.nome) {
+    storeSlug = safeSlugify(activePharmacy.nome);
+  } else {
+    try {
+      const lastSlug = sessionStorage.getItem('fa-last-store-slug');
+      if (lastSlug) storeSlug = lastSlug;
+    } catch {}
+  }
 
   const getMascot = () => {
     return type === "product" ? mascotNotFound : mascot404;
@@ -60,13 +72,24 @@ export function NotFound({ type = "page", title, description }: NotFoundProps) {
         <h1 className="text-2xl font-bold text-slate-800 mb-2">{finalTitle}</h1>
         <p className="text-sm text-slate-500 mb-8">{finalDescription}</p>
         
-        <Link 
-          to="/" 
-          className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium flex items-center justify-center gap-2 px-6 py-3 rounded-md transition-all hover:scale-105 shadow-sm w-full sm:w-auto"
-        >
-          <ChevronLeft className="w-5 h-5" /> Voltar para o início
-        </Link>
+        {storeSlug ? (
+          <Link 
+            to="/$storeSlug" 
+            params={{ storeSlug }}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium flex items-center justify-center gap-2 px-6 py-3 rounded-md transition-all hover:scale-105 shadow-sm w-full sm:w-auto"
+          >
+            <ChevronLeft className="w-5 h-5" /> Voltar para a loja
+          </Link>
+        ) : (
+          <Link 
+            to="/" 
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium flex items-center justify-center gap-2 px-6 py-3 rounded-md transition-all hover:scale-105 shadow-sm w-full sm:w-auto"
+          >
+            <ChevronLeft className="w-5 h-5" /> Voltar para o início
+          </Link>
+        )}
       </div>
     </div>
   );
 }
+

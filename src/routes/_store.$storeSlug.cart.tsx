@@ -958,7 +958,7 @@ function CartPage() {
       <div className="container-fa py-16 text-center">
         <h1 className="text-2xl font-bold">Seu carrinho está vazio</h1>
         <p className="text-muted-foreground mt-2">Que tal começar pelas categorias?</p>
-        <Link to="/"><Button className="mt-6">Voltar à loja</Button></Link>
+        <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }}><Button className="mt-6">Voltar à loja</Button></Link>
       </div>
     );
   }
@@ -966,7 +966,7 @@ function CartPage() {
   return (
     <div className="container-fa py-8">
       <nav className="text-xs text-muted-foreground mb-3">
-        <Link to="/" className="hover:underline">Início</Link> /{" "}
+        <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }} className="hover:underline">Início</Link> /{" "}
         <span className="text-foreground">Carrinho</span>
       </nav>
       <h1 className="text-2xl font-bold mb-6">Meu carrinho</h1>

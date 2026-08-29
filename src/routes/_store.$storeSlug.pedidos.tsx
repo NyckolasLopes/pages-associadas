@@ -147,7 +147,7 @@ function PedidosPage() {
               </p>
             </div>
           </div>
-          <Link to="/">
+          <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }}>
             <Button variant="outline" className="border-emerald-600 text-emerald-800 hover:bg-emerald-600 hover:text-white font-bold">
               Continuar Navegando
             </Button>
@@ -233,7 +233,7 @@ function PedidosPage() {
               <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
                 Digite o número do seu pedido ou telefone na barra lateral para consultar o status em tempo real.
               </p>
-              <Link to="/">
+              <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }}>
                 <Button className="mt-6 font-bold">Explorar Produtos</Button>
               </Link>
             </div>

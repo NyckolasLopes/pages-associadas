@@ -74,6 +74,7 @@ export const Route = createFileRoute("/_store/$storeSlug/v/$slug")({
 
 function VitrinePage() {
   const { vitrine, unfilteredProducts, filteredProducts } = Route.useLoaderData();
+  const { storeSlug } = Route.useParams();
   const searchParams = Route.useSearch();
   const navigate = useNavigate();
   const [visibleCount, setVisibleCount] = useState(24);
@@ -107,7 +108,7 @@ function VitrinePage() {
     <div className="container-fa py-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       <nav className="text-xs text-muted-foreground mb-3">
-        <Link to="/" className="hover:underline">Início</Link> /{" "}
+        <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }} className="hover:underline">Início</Link> /{" "}
         <span className="text-foreground">{vitrine.nome}</span>
       </nav>
       <h1 className="text-3xl font-bold flex items-center gap-2">

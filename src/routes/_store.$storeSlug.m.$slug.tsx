@@ -44,6 +44,7 @@ export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
 
 function BrandPage() {
   const { slug, produtos, fallbackBrandName } = Route.useLoaderData();
+  const { storeSlug } = Route.useParams();
   
   // Get reactive store data
   const { marcas } = useMarcasStore();
@@ -83,7 +84,7 @@ function BrandPage() {
   return (
     <div className="container-fa py-8">
       <nav className="text-xs text-muted-foreground mb-4 flex items-center flex-wrap gap-1">
-        <Link to="/" className="hover:underline">Início</Link> /{" "}
+        <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }} className="hover:underline">Início</Link> /{" "}
         <span className="text-foreground font-bold">{brand}</span>
       </nav>
       

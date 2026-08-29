@@ -134,7 +134,7 @@ function CategoryPage() {
     <div className="container-fa py-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       <nav className="text-xs text-muted-foreground mb-3">
-        <Link to="/" className="hover:underline">Início</Link> /{" "}
+        <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }} className="hover:underline">Início</Link> /{" "}
         <span className="text-foreground">{cat.nome}</span>
       </nav>
       <h1 className="text-3xl font-bold mb-4">{cat.nome}</h1>

@@ -224,7 +224,7 @@ function SucessoPage() {
       )}
 
       <div className="mt-12 text-center">
-        <Link to={`/${activeStore?.slug || ''}`}>
+        <Link to="/$storeSlug" params={{ storeSlug: params?.storeSlug || activeStore?.slug || 'loja-padrao' }}>
           <Button variant="ghost" className="text-slate-500 font-medium hover:text-slate-900">
             &larr; Voltar para a loja
           </Button>
