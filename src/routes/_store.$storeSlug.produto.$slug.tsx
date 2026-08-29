@@ -38,7 +38,7 @@ import { getCityFromCep, isCampanhaAtiva, getCepCoordinates, getDeliveryEstimati
 import { getRoadDistanceKm } from "@/lib/distanceApis";
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
-import { PromoProductPageBanner, PromoLevePagueOfferBox, PromoCardBadge } from "@/components/storefront/PromoCountdown";
+import { PromoProductPageBanner, PromoLevePagueOfferBox } from "@/components/storefront/PromoCountdown";
 import { getDeterministicStock } from "@/lib/stock";
 
 const PromoIcon = ({ id, className }: { id: string, className?: string }) => {
@@ -1232,11 +1232,6 @@ function PDP() {
 
 
           <div className="bg-card border rounded-xl p-5 shadow-elevated">
-            {activePromo && (
-              <div className="mb-3">
-                <PromoCardBadge promo={activePromo} precoOriginal={finalPrecoDe} />
-              </div>
-            )}
             {p.precoSobConsulta ? (
               <div className="flex items-center gap-3 mt-1 min-h-[60px]">
                 <div className="text-2xl font-bold text-slate-700">Preço sob consulta</div>
