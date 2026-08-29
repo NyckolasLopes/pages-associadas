@@ -1,16 +1,28 @@
 import { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
-import { useAdmin } from "@/stores/admin";
-import { useCart } from "@/stores/cart";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 
 export function FloatingElements() {
   const [show, setShow] = useState(false);
-  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
-  const pharmacies = useAdmin((s) => s.pharmacies);
+  const activePharmacy = useActivePharmacy();
+
+  // Obtém o número de WhatsApp da loja ativa ou telefone como fallback
+  const rawNumber = (activePharmacy?.whatsapp || activePharmacy?.telefone || "").replace(/\D/g, "");
   
-  const activePharmacy = pharmacies.find((p) => p.id === selectedPharmacyId) || pharmacies[0] || null;
-  const whatsappNumber = activePharmacy?.whatsapp ? activePharmacy.whatsapp.replace(/\D/g, "") : "5508000000000";
-  const whatsappLink = whatsappNumber.startsWith("55") ? `https://wa.me/${whatsappNumber}` : `https://wa.me/55${whatsappNumber}`;
+  let formattedNumber = "";
+  if (rawNumber) {
+    if (rawNumber.startsWith("55") && rawNumber.length >= 12) {
+      formattedNumber = rawNumber;
+    } else if (rawNumber.length >= 10) {
+      formattedNumber = `55${rawNumber}`;
+    }
+  }
+
+  const storeName = activePharmacy?.nome || "Farmácias Associadas";
+  const defaultText = `Olá! Estou navegando na vitrine da ${storeName} e gostaria de tirar uma dúvida.`;
+  const whatsappLink = formattedNumber 
+    ? `https://wa.me/${formattedNumber}?text=${encodeURIComponent(defaultText)}`
+    : "";
 
   useEffect(() => {
     const onScroll = () => setShow(window.scrollY > 300);
@@ -18,6 +30,9 @@ export function FloatingElements() {
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Só exibe se houver número configurado para a loja
+  if (!whatsappLink && !show) return null;
 
   return (
     <>
@@ -33,12 +48,12 @@ export function FloatingElements() {
       )}
 
       {/* Balão Flutuante de WhatsApp da Loja */}
-      {whatsappNumber && whatsappNumber !== "5508000000000" && (
+      {whatsappLink && (
         <a
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Atendimento via WhatsApp"
+          aria-label={`Atendimento via WhatsApp - ${storeName}`}
           className="fixed bottom-[4.5rem] md:bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-[#25D366] text-white shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 group hover:shadow-[#25D366]/40"
         >
           <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
