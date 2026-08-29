@@ -41,6 +41,8 @@ export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: s
     return true;
   });
 
+  if (miniBanners.length === 0) return null;
+
   return (
     <section className="container-fa py-6">
       <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 snap-x scrollbar-none md:flex-wrap md:justify-center md:gap-4 md:overflow-visible md:px-0 md:mx-0">

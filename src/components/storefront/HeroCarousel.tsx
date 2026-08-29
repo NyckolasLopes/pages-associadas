@@ -21,26 +21,24 @@ export function HeroCarousel({
 }: HeroCarouselProps) {
   const activePharmacy = useActivePharmacy();
   const storeSlug = activePharmacy?.slug || "loja-padrao";
-  const { banners: adminBanners, bannersLoaded, fetchBanners } = useAdmin();
+  const { banners: adminBanners, bannersLoaded, bannersLoading, fetchBanners } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const effectiveLojaId = lojaId || selectedPharmacyId || activePharmacy?.id;
 
   const [i, setI] = useState(0);
 
   useEffect(() => {
-    if (!initialBanners || initialBanners.length === 0) {
-      if (effectiveLojaId) {
-        fetchBanners(effectiveLojaId);
-      } else {
-        fetchBanners();
-      }
+    if (effectiveLojaId) {
+      fetchBanners(effectiveLojaId);
+    } else {
+      fetchBanners();
     }
-  }, [effectiveLojaId, fetchBanners, initialBanners]);
+  }, [effectiveLojaId, fetchBanners]);
 
   const activeBanners = useMemo(() => {
-    const bannersList = (initialBanners && initialBanners.length > 0)
-      ? initialBanners
-      : (adminBanners && adminBanners.length > 0 ? adminBanners : []);
+    const bannersList = (adminBanners && adminBanners.length > 0)
+      ? adminBanners
+      : (initialBanners && initialBanners.length > 0 ? initialBanners : []);
     
     const filtered = bannersList.filter(b => {
       // Both Full Banner and Banner por Categoria share this carousel component
@@ -124,8 +122,8 @@ export function HeroCarousel({
     : "aspect-[2/1] sm:aspect-[2.5/1] md:aspect-[1920/600]";
 
   // Enquanto banners estão carregando e não temos slides, renderizar o Skeleton com o aspect-ratio exato
-  // Isso impede que a DynamicTarja suba para o topo da tela do celular durante o carregamento!
-  const isStillLoading = !bannersLoaded && (!initialBanners || initialBanners.length === 0) && totalSlides === 0;
+  // Isso garante que o espaço no topo do mobile fique sempre reservado e carregue primeiro!
+  const isStillLoading = (!bannersLoaded || bannersLoading) && totalSlides === 0;
   if (isStillLoading) {
     return (
       <section className={`relative w-full overflow-hidden bg-slate-100 animate-pulse ${containerAspectClass}`}>
