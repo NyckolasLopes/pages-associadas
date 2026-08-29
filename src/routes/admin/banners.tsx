@@ -26,6 +26,7 @@ import { useAdminCategories } from "@/stores/categories";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { uploadToStorage, compressImageToBlob } from "@/utils/storageUpload";
 
 import { StoreVitrinesConfig } from "@/components/admin/StoreVitrinesConfig";
 
@@ -102,39 +103,19 @@ function BannerTarjaBuilder({ editingBanner, setEditingBanner }: any) {
     setEditingBanner({ ...editingBanner, formatoExtra: JSON.stringify(newItems) });
   };
 
-  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const MAX_SIZE = 120;
-        let width = img.width;
-        let height = img.height;
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height = Math.round((height * MAX_SIZE) / width);
-            width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width = Math.round((width * MAX_SIZE) / height);
-            height = MAX_SIZE;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, width, height);
-        const base64 = canvas.toDataURL("image/webp", 0.9);
-        updateItem(index, 'icon', base64);
-      };
-      img.src = result;
-    };
-    reader.readAsDataURL(file);
+    const toastId = toast.loading("Enviando ícone...");
+    try {
+      const compressedBlob = await compressImageToBlob(file, 200, 200, 0.9);
+      const publicUrl = await uploadToStorage(compressedBlob, "banners", "tarja_icon");
+      updateItem(index, 'icon', publicUrl);
+      toast.success("Ícone enviado com sucesso!", { id: toastId });
+    } catch (err: any) {
+      console.error("Erro ao enviar ícone:", err);
+      toast.error(`Erro ao enviar ícone: ${err.message || "Erro desconhecido"}`, { id: toastId });
+    }
   };
 
   return (
@@ -265,55 +246,33 @@ function AdminBanners() {
   const desktopInputRef3 = useRef<HTMLInputElement>(null);
   const mobileInputRef3 = useRef<HTMLInputElement>(null);
 
-  const processFile = (file: File | undefined, isMobile: boolean, imageIndex: number = 1) => {
+  const processFile = async (file: File | undefined, isMobile: boolean, imageIndex: number = 1) => {
     if (!file) return;
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
-        
-        const MAX_WIDTH = 1920;
-        const MAX_HEIGHT = 1080;
-        
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height = Math.round((height * MAX_WIDTH) / width);
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width = Math.round((width * MAX_HEIGHT) / height);
-            height = MAX_HEIGHT;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        const compressedBase64 = canvas.toDataURL("image/webp", 0.6);
-        
-        const fieldName = imageIndex === 1 
-          ? (isMobile ? 'mobileImageUrl' : 'imageUrl')
-          : imageIndex === 2
-          ? (isMobile ? 'mobileImageUrl2' : 'imageUrl2')
-          : (isMobile ? 'mobileImageUrl3' : 'imageUrl3');
+    const fieldName = imageIndex === 1 
+      ? (isMobile ? 'mobileImageUrl' : 'imageUrl')
+      : imageIndex === 2
+      ? (isMobile ? 'mobileImageUrl2' : 'imageUrl2')
+      : (isMobile ? 'mobileImageUrl3' : 'imageUrl3');
 
-        setEditingBanner(prev => prev ? { 
-          ...prev, 
-          [fieldName]: compressedBase64 
-        } : null);
-      };
-      img.src = result;
-    };
-    reader.readAsDataURL(file);
+    const toastId = toast.loading("Enviando e otimizando imagem do banner...");
+
+    try {
+      const maxWidth = isMobile ? 900 : 1920;
+      const maxHeight = isMobile ? 1200 : 1080;
+      const compressedBlob = await compressImageToBlob(file, maxWidth, maxHeight, 0.85);
+      const publicUrl = await uploadToStorage(compressedBlob, "banners", isMobile ? "banner_mobile" : "banner_desktop");
+
+      setEditingBanner(prev => prev ? { 
+        ...prev, 
+        [fieldName]: publicUrl 
+      } : null);
+
+      toast.success("Imagem enviada com sucesso!", { id: toastId });
+    } catch (err: any) {
+      console.error("Erro ao enviar imagem:", err);
+      toast.error(`Falha no upload da imagem: ${err.message || "Erro desconhecido"}`, { id: toastId });
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isMobile: boolean, imageIndex: number = 1) => {
@@ -1708,28 +1667,19 @@ function StoreLogoConfig() {
     toast.success("Logotipo salvo com sucesso!");
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(img, 0, 0);
-            const webpDataUrl = canvas.toDataURL("image/webp", 0.9);
-            setLogoUrl(webpDataUrl);
-          } else {
-            setLogoUrl(reader.result as string);
-          }
-        };
-        img.src = reader.result as string;
-      };
-      reader.readAsDataURL(file);
+      const toastId = toast.loading("Enviando logo...");
+      try {
+        const compressedBlob = await compressImageToBlob(file, 600, 300, 0.9);
+        const publicUrl = await uploadToStorage(compressedBlob, "logos", "logo");
+        setLogoUrl(publicUrl);
+        toast.success("Logo enviada com sucesso!", { id: toastId });
+      } catch (err: any) {
+        console.error("Erro ao enviar logo:", err);
+        toast.error(`Falha no upload do logo: ${err.message || "Erro desconhecido"}`, { id: toastId });
+      }
     }
   };
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { supabase } from "@/integrations/supabase/client";
 import { Marca } from "@/types";
+import { ensureUrlNotBase64 } from "@/utils/storageUpload";
 
 interface MarcasState {
   marcas: Marca[];
@@ -84,12 +85,13 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
   },
 
   addMarca: async (m) => {
+    const cleanLogo = await ensureUrlNotBase64(m.logo, 'logos', 'marca');
     const { error } = await supabase.from('marcas' as any).upsert({
       id: m.id,
       nome: m.nome,
       slug: m.slug,
       descricao: m.descricao || null,
-      logo: m.logo || null,
+      logo: cleanLogo || null,
       ativo: m.ativo !== false,
       destaque: m.destaque || false,
       seo_url: m.seoUrl || null,
@@ -105,11 +107,12 @@ export const useMarcasStore = create<MarcasState>((set, get) => ({
   },
 
   updateMarca: async (m) => {
+    const cleanLogo = await ensureUrlNotBase64(m.logo, 'logos', 'marca');
     const { error } = await supabase.from('marcas' as any).update({
       nome: m.nome,
       slug: m.slug,
       descricao: m.descricao || null,
-      logo: m.logo || null,
+      logo: cleanLogo || null,
       ativo: m.ativo !== false,
       destaque: m.destaque || false,
       seo_url: m.seoUrl || null,

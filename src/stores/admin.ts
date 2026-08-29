@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorage } from "@/lib/supabaseStorage";
+import { sanitizeBannerImages } from "@/utils/storageUpload";
 
 // Throttle para evitar chamadas duplicadas de loadPharmacies ao inicializar
 // (__root.tsx e admin.tsx chamam ao mesmo tempo no boot)
@@ -853,27 +854,28 @@ export const useAdmin = create<AdminState>()(
         }
       },
       addBanner: async (banner) => {
+        const cleanBanner = await sanitizeBannerImages(banner);
         const payload = {
-          nome: banner.nome,
-          image_url: banner.imageUrl,
-          mobile_image_url: banner.mobileImageUrl,
-          link: banner.link,
-          posicao: banner.posicao,
-          pagina_publicacao: banner.paginaPublicacao,
-          titulo: banner.titulo,
-          ativo: banner.active,
-          start_date: (banner.startDate && banner.startDate.trim() !== "") ? new Date(banner.startDate).toISOString() : null,
-          end_date: (banner.endDate && banner.endDate.trim() !== "") ? new Date(banner.endDate).toISOString() : null,
-          loja_id: banner.lojaId || null,
-          vitrine_vinculada: banner.vitrineVinculada,
-          formato_extra: banner.formatoExtra,
-          image_url2: banner.imageUrl2,
-          mobile_image_url2: banner.mobileImageUrl2,
-          link2: banner.link2,
-          image_url3: banner.imageUrl3,
-          mobile_image_url3: banner.mobileImageUrl3,
-          link3: banner.link3,
-          // ordem: banner.ordem ?? 0,
+          nome: cleanBanner.nome,
+          image_url: cleanBanner.imageUrl,
+          mobile_image_url: cleanBanner.mobileImageUrl,
+          link: cleanBanner.link,
+          posicao: cleanBanner.posicao,
+          pagina_publicacao: cleanBanner.paginaPublicacao,
+          titulo: cleanBanner.titulo,
+          ativo: cleanBanner.active,
+          start_date: (cleanBanner.startDate && cleanBanner.startDate.trim() !== "") ? new Date(cleanBanner.startDate).toISOString() : null,
+          end_date: (cleanBanner.endDate && cleanBanner.endDate.trim() !== "") ? new Date(cleanBanner.endDate).toISOString() : null,
+          loja_id: cleanBanner.lojaId || null,
+          vitrine_vinculada: cleanBanner.vitrineVinculada,
+          formato_extra: cleanBanner.formatoExtra,
+          image_url2: cleanBanner.imageUrl2,
+          mobile_image_url2: cleanBanner.mobileImageUrl2,
+          link2: cleanBanner.link2,
+          image_url3: cleanBanner.imageUrl3,
+          mobile_image_url3: cleanBanner.mobileImageUrl3,
+          link3: cleanBanner.link3,
+          // ordem: cleanBanner.ordem ?? 0,
         };
         const { data, error } = await supabase.from('banners' as any).insert(payload).select().single();
         if (error) {
@@ -881,31 +883,32 @@ export const useAdmin = create<AdminState>()(
           throw error;
         }
         if (data) {
-          get().fetchBanners(banner.lojaId);
+          get().fetchBanners(cleanBanner.lojaId);
         }
       },
       updateBanner: async (id, banner) => {
+        const cleanBanner = await sanitizeBannerImages(banner);
         const payload: any = {};
-        if (banner.nome !== undefined) payload.nome = banner.nome;
-        if (banner.imageUrl !== undefined) payload.image_url = banner.imageUrl;
-        if (banner.mobileImageUrl !== undefined) payload.mobile_image_url = banner.mobileImageUrl;
-        if (banner.link !== undefined) payload.link = banner.link;
-        if (banner.posicao !== undefined) payload.posicao = banner.posicao;
-        if (banner.paginaPublicacao !== undefined) payload.pagina_publicacao = banner.paginaPublicacao;
-        if (banner.titulo !== undefined) payload.titulo = banner.titulo;
-        if (banner.active !== undefined) payload.ativo = banner.active;
-        if (banner.startDate !== undefined) payload.start_date = (banner.startDate && banner.startDate.trim() !== "") ? new Date(banner.startDate).toISOString() : null;
-        if (banner.endDate !== undefined) payload.end_date = (banner.endDate && banner.endDate.trim() !== "") ? new Date(banner.endDate).toISOString() : null;
-        if (banner.lojaId !== undefined) payload.loja_id = banner.lojaId;
-        if (banner.vitrineVinculada !== undefined) payload.vitrine_vinculada = banner.vitrineVinculada;
-        if (banner.formatoExtra !== undefined) payload.formato_extra = banner.formatoExtra;
-        if (banner.imageUrl2 !== undefined) payload.image_url2 = banner.imageUrl2;
-        if (banner.mobileImageUrl2 !== undefined) payload.mobile_image_url2 = banner.mobileImageUrl2;
-        if (banner.link2 !== undefined) payload.link2 = banner.link2;
-        if (banner.imageUrl3 !== undefined) payload.image_url3 = banner.imageUrl3;
-        if (banner.mobileImageUrl3 !== undefined) payload.mobile_image_url3 = banner.mobileImageUrl3;
-        if (banner.link3 !== undefined) payload.link3 = banner.link3;
-        // if (banner.ordem !== undefined) payload.ordem = banner.ordem;
+        if (cleanBanner.nome !== undefined) payload.nome = cleanBanner.nome;
+        if (cleanBanner.imageUrl !== undefined) payload.image_url = cleanBanner.imageUrl;
+        if (cleanBanner.mobileImageUrl !== undefined) payload.mobile_image_url = cleanBanner.mobileImageUrl;
+        if (cleanBanner.link !== undefined) payload.link = cleanBanner.link;
+        if (cleanBanner.posicao !== undefined) payload.posicao = cleanBanner.posicao;
+        if (cleanBanner.paginaPublicacao !== undefined) payload.pagina_publicacao = cleanBanner.paginaPublicacao;
+        if (cleanBanner.titulo !== undefined) payload.titulo = cleanBanner.titulo;
+        if (cleanBanner.active !== undefined) payload.ativo = cleanBanner.active;
+        if (cleanBanner.startDate !== undefined) payload.start_date = (cleanBanner.startDate && cleanBanner.startDate.trim() !== "") ? new Date(cleanBanner.startDate).toISOString() : null;
+        if (cleanBanner.endDate !== undefined) payload.end_date = (cleanBanner.endDate && cleanBanner.endDate.trim() !== "") ? new Date(cleanBanner.endDate).toISOString() : null;
+        if (cleanBanner.lojaId !== undefined) payload.loja_id = cleanBanner.lojaId;
+        if (cleanBanner.vitrineVinculada !== undefined) payload.vitrine_vinculada = cleanBanner.vitrineVinculada;
+        if (cleanBanner.formatoExtra !== undefined) payload.formato_extra = cleanBanner.formatoExtra;
+        if (cleanBanner.imageUrl2 !== undefined) payload.image_url2 = cleanBanner.imageUrl2;
+        if (cleanBanner.mobileImageUrl2 !== undefined) payload.mobile_image_url2 = cleanBanner.mobileImageUrl2;
+        if (cleanBanner.link2 !== undefined) payload.link2 = cleanBanner.link2;
+        if (cleanBanner.imageUrl3 !== undefined) payload.image_url3 = cleanBanner.imageUrl3;
+        if (cleanBanner.mobileImageUrl3 !== undefined) payload.mobile_image_url3 = cleanBanner.mobileImageUrl3;
+        if (cleanBanner.link3 !== undefined) payload.link3 = cleanBanner.link3;
+        // if (cleanBanner.ordem !== undefined) payload.ordem = cleanBanner.ordem;
         
         const { error } = await supabase.from('banners' as any).update(payload).eq('id', id);
         if (error) {
