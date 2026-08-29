@@ -37,7 +37,7 @@ function SearchPage() {
   const [page, setPage] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-  const { activePharmacy } = useActivePharmacy();
+  const activePharmacy = useActivePharmacy();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId) || activePharmacy?.id;
   const logSearch = useSearchHistory((s) => s.logSearch);
 

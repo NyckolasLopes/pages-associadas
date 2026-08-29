@@ -1,8 +1,23 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Download, Share, Info } from "lucide-react";
-import { toast } from "sonner";
+import { 
+  X, 
+  Download, 
+  Share, 
+  Smartphone, 
+  Apple, 
+  Monitor, 
+  CheckCircle2, 
+  Star, 
+  Sparkles, 
+  Zap, 
+  ShieldCheck, 
+  Tag, 
+  QrCode,
+  ArrowUpRight
+} from "lucide-react";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { useAppInstallStore } from "@/stores/appInstall";
 import {
   Dialog,
   DialogContent,
@@ -11,179 +26,350 @@ import {
 } from "@/components/ui/dialog";
 
 export function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [manualPromptOpen, setManualPromptOpen] = useState(false);
-  const [isIos, setIsIos] = useState(false);
+  const { isOpen, open, close, deferredPrompt, setDeferredPrompt, triggerInstall } = useAppInstallStore();
+  const [showFloatingBanner, setShowFloatingBanner] = useState(false);
+  const [activeTab, setActiveTab] = useState<"android" | "ios" | "desktop">("android");
+  const [isIosDevice, setIsIosDevice] = useState(false);
+  const [isAndroidDevice, setIsAndroidDevice] = useState(false);
   const activePharmacy = useActivePharmacy();
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
-    if ((navigator as any).standalone) return;
+    // Detect environment
+    if (typeof window === "undefined") return;
 
-    // Detect iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-    setIsIos(isIOSDevice);
+    const isIos = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    setIsIosDevice(isIos);
+    setIsAndroidDevice(isAndroid);
 
-    const handler = (e: any) => {
+    if (isIos) {
+      setActiveTab("ios");
+    } else if (isAndroid) {
+      setActiveTab("android");
+    } else {
+      setActiveTab("desktop");
+    }
+
+    // Check if already installed as standalone PWA
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+    if (isStandalone) return;
+
+    // Capture beforeinstallprompt event
+    const handleBeforeInstall = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      if (!localStorage.getItem('pwa_dismissed')) {
-        setShowPrompt(true);
+      (window as any).deferredPWAInstallPrompt = e;
+      if (!localStorage.getItem('pwa_banner_dismissed')) {
+        setShowFloatingBanner(true);
       }
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
-    // Se o evento disparou antes do React montar, pegamos da window global
+    // If caught before React mount
     if ((window as any).deferredPWAInstallPrompt) {
-      handler((window as any).deferredPWAInstallPrompt);
-      (window as any).deferredPWAInstallPrompt = null;
+      setDeferredPrompt((window as any).deferredPWAInstallPrompt);
+      if (!localStorage.getItem('pwa_banner_dismissed')) {
+        setShowFloatingBanner(true);
+      }
     }
 
-    if (isIOSDevice && !localStorage.getItem('pwa_dismissed')) {
-      const timer = setTimeout(() => setShowPrompt(true), 3000);
+    // Custom global event listener
+    const handleTriggerPwa = () => {
+      open();
+    };
+
+    window.addEventListener('trigger-pwa-install', handleTriggerPwa);
+
+    // Show floating banner on iOS after 3s if not dismissed
+    if (isIos && !localStorage.getItem('pwa_banner_dismissed')) {
+      const timer = setTimeout(() => setShowFloatingBanner(true), 3500);
       return () => {
         clearTimeout(timer);
-        window.removeEventListener('beforeinstallprompt', handler);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+        window.removeEventListener('trigger-pwa-install', handleTriggerPwa);
       };
     }
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  useEffect(() => {
-    const customTriggerHandler = async () => {
-      if (deferredPrompt) {
-        try {
-          deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          if (outcome === 'accepted') {
-            setShowPrompt(false);
-          }
-          setDeferredPrompt(null);
-        } catch (err) {
-          console.error("Install prompt error", err);
-          setManualPromptOpen(true);
-          setShowPrompt(false);
-          setDeferredPrompt(null);
-        }
-      } else {
-        // Se for iOS ou Desktop sem prompt, mostra o Dialog com instruções
-        setManualPromptOpen(true);
-        setShowPrompt(false);
-      }
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('trigger-pwa-install', handleTriggerPwa);
     };
+  }, [open, setDeferredPrompt]);
 
-    window.addEventListener('trigger-pwa-install', customTriggerHandler);
-    return () => window.removeEventListener('trigger-pwa-install', customTriggerHandler);
-  }, [deferredPrompt]);
-
-  const handleInstall = async () => {
-    if (deferredPrompt) {
-      try {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          setShowPrompt(false);
-        }
-        setDeferredPrompt(null);
-      } catch (err) {
-        console.error("Install prompt error", err);
-        setManualPromptOpen(true);
-        setShowPrompt(false);
-        setDeferredPrompt(null);
-      }
-    } else {
-      setManualPromptOpen(true);
-      setShowPrompt(false);
-    }
+  const handleDismissBanner = () => {
+    setShowFloatingBanner(false);
+    localStorage.setItem('pwa_banner_dismissed', 'true');
   };
 
-  const handleDismiss = () => {
-    setShowPrompt(false);
-    localStorage.setItem('pwa_dismissed', 'true');
+  const handleNativeInstall = async () => {
+    const success = await triggerInstall();
+    if (success) {
+      setShowFloatingBanner(false);
+    }
   };
 
   const cat = activePharmacy?.categoriaAssociado?.toString().toLowerCase() || '';
   const isParceiroOrAssociado = cat === 'parceiro' || cat === 'associado' || activePharmacy?.nome?.toLowerCase().includes('parceiro');
-  const appName = isParceiroOrAssociado && activePharmacy?.nome ? `App ${activePharmacy.nome}` : (activePharmacy?.nome ? `App ${activePharmacy.nome}` : "App Farmácias Associadas");
-  // @ts-ignore
-  const iconUrl = activePharmacy?.faviconUrl || activePharmacy?.logoUrl || (isParceiroOrAssociado ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'%3E%3C/path%3E%3Cpolyline points='9 22 9 12 15 12 15 22'%3E%3C/polyline%3E%3C/svg%3E" : "/favicon.png");
+  const appTitle = isParceiroOrAssociado && activePharmacy?.nome ? activePharmacy.nome : (activePharmacy?.nome ? activePharmacy.nome : "Farmácias Associadas");
+  const iconUrl = activePharmacy?.faviconUrl || activePharmacy?.logoUrl || "/favicon.png";
+  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
   return (
     <>
-      {showPrompt && (
-        <div className="fixed bottom-24 left-4 right-4 z-[200] md:left-auto md:right-6 md:bottom-6 md:w-80 bg-primary text-primary-foreground p-4 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col gap-3 border border-primary-dark animate-in slide-in-from-bottom-5 duration-500 fade-in">
-          <button onClick={handleDismiss} className="absolute top-2 right-2 p-1 text-primary-foreground/70 hover:text-white transition-colors rounded-full hover:bg-black/10">
+      {/* Floating Mini Banner */}
+      {showFloatingBanner && !isOpen && (
+        <div className="fixed bottom-20 left-4 right-4 z-[99] md:left-auto md:right-6 md:bottom-6 md:w-96 bg-primary text-primary-foreground p-4 rounded-2xl shadow-2xl flex flex-col gap-3 border border-white/20 animate-in slide-in-from-bottom-5 duration-300">
+          <button 
+            onClick={handleDismissBanner} 
+            className="absolute top-2.5 right-2.5 p-1 text-white/80 hover:text-white transition-colors rounded-full hover:bg-black/20"
+            aria-label="Fechar"
+          >
             <X className="h-4 w-4" />
           </button>
           
-          <div className="flex items-center gap-3">
-            <div className="bg-white rounded-lg p-2 shrink-0 shadow-sm">
-              <img src={iconUrl} alt="Icon" className="w-8 h-8 rounded object-contain" />
+          <div className="flex items-center gap-3 pr-6">
+            <div className="bg-white rounded-xl p-2 shrink-0 shadow-md flex items-center justify-center h-12 w-12 overflow-hidden">
+              <img src={iconUrl} alt="Logo App" className="w-9 h-9 object-contain" />
             </div>
-            <div className="pr-4">
-              <p className="font-bold text-[13px] leading-tight mb-1">{appName}</p>
-              <p className="text-[11px] text-primary-foreground/90 leading-tight">Instale nosso app para acesso mais rápido e ofertas exclusivas!</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">App Oficial</span>
+                <span className="flex items-center text-amber-300 text-[10px] font-bold">
+                  <Star className="h-3 w-3 fill-amber-300 mr-0.5" /> 4.9
+                </span>
+              </div>
+              <p className="font-bold text-sm leading-tight truncate">{appTitle}</p>
+              <p className="text-[11px] text-white/90 leading-tight">Instale para ofertas exclusivas e entrega rápida!</p>
             </div>
           </div>
           
-          <Button onClick={handleInstall} variant="secondary" className="w-full h-9 font-bold text-xs bg-white text-primary hover:bg-slate-50 mt-1 shadow-sm">
-            <Download className="h-4 w-4 mr-2" />
-            Instalar Aplicativo
-          </Button>
+          <div className="flex items-center gap-2 mt-1">
+            <Button 
+              onClick={() => {
+                setShowFloatingBanner(false);
+                if (deferredPrompt) {
+                  handleNativeInstall();
+                } else {
+                  open();
+                }
+              }} 
+              variant="secondary" 
+              className="flex-1 h-9 font-bold text-xs bg-white text-primary hover:bg-white/90 shadow-sm"
+            >
+              <Download className="h-4 w-4 mr-1.5" />
+              {deferredPrompt ? "Instalar com 1 Clique" : "Baixar Aplicativo"}
+            </Button>
+            <Button
+              onClick={() => {
+                setShowFloatingBanner(false);
+                open();
+              }}
+              variant="outline"
+              className="h-9 px-3 text-xs font-semibold bg-transparent text-white border-white/40 hover:bg-white/10"
+            >
+              Como Instalar
+            </Button>
+          </div>
         </div>
       )}
 
-      <Dialog open={manualPromptOpen} onOpenChange={setManualPromptOpen}>
-        <DialogContent className="max-w-sm rounded-2xl p-6 text-center">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold">Instalar Aplicativo</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-6 py-4">
-            <div className="h-20 w-20 bg-slate-100 rounded-2xl flex items-center justify-center shadow-inner border">
-              <img src={iconUrl} alt="App Icon" className="h-12 w-12 object-contain rounded-lg" />
-            </div>
-            <h3 className="font-bold text-lg">{appName}</h3>
-            
-            <div className="bg-slate-50 rounded-xl p-4 border w-full space-y-4 max-h-[300px] overflow-y-auto">
-              <div className="space-y-4">
-                <p className="text-sm font-medium text-slate-800">No iPhone ou iPad (Safari):</p>
-                <ol className="text-sm text-slate-600 text-left space-y-3">
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
-                    <span>Toque no botão Compartilhar <Share className="inline h-4 w-4 mx-1" /> na barra inferior.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
-                    <span>Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong>.</span>
-                  </li>
-                </ol>
+      {/* Complete Interactive Install Modal */}
+      <Dialog open={isOpen} onOpenChange={(openState) => { if (!openState) close(); }}>
+        <DialogContent className="max-w-md md:max-w-lg rounded-3xl p-0 overflow-hidden border bg-background shadow-2xl z-[200]">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-br from-primary via-primary/95 to-primary-dark text-white p-6 relative">
+            <div className="flex items-start gap-4">
+              <div className="bg-white rounded-2xl p-2.5 shrink-0 shadow-lg flex items-center justify-center h-16 w-16 overflow-hidden border-2 border-white/20">
+                <img src={iconUrl} alt="App Icon" className="w-12 h-12 object-contain" />
               </div>
-
-              <div className="h-px bg-slate-200 w-full my-2"></div>
-
-              <div className="space-y-4">
-                <p className="text-sm font-medium text-slate-800">No Android ou Computador:</p>
-                <ol className="text-sm text-slate-600 text-left space-y-3">
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
-                    <span>Abra o menu do seu navegador (geralmente três pontinhos ⋮ no canto superior direito).</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
-                    <span>Selecione a opção <strong>"Instalar Aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.</span>
-                  </li>
-                </ol>
+              <div className="flex-1 min-w-0 pr-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-amber-300" /> App Oficial
+                  </span>
+                  <span className="flex items-center text-amber-300 text-xs font-bold bg-black/20 px-2 py-0.5 rounded-full">
+                    <Star className="h-3 w-3 fill-amber-300 mr-1" /> 4.9
+                  </span>
+                </div>
+                <DialogTitle className="text-xl font-bold leading-tight text-white">{appTitle}</DialogTitle>
+                <p className="text-xs text-white/85 mt-1">Tenha a farmácia na palma da sua mão com benefícios exclusivos</p>
               </div>
             </div>
-            
-            <Button onClick={() => setManualPromptOpen(false)} className="w-full font-bold h-12 rounded-xl">
-              Entendi
-            </Button>
+
+            {/* Direct 1-Click Install Button if supported */}
+            {deferredPrompt && (
+              <div className="mt-5">
+                <Button 
+                  onClick={handleNativeInstall} 
+                  className="w-full h-11 rounded-xl font-bold bg-white text-primary hover:bg-slate-100 shadow-md text-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Download className="h-5 w-5 mr-2" />
+                  Instalar Aplicativo com 1 Clique
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Value Props Grid */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="bg-muted/50 p-2.5 rounded-xl border flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                  <Zap className="h-4 w-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-xs font-bold text-foreground truncate">100% Gratuito</p>
+                  <p className="text-[10px] text-muted-foreground truncate">Não ocupa memória</p>
+                </div>
+              </div>
+              <div className="bg-muted/50 p-2.5 rounded-xl border flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                  <Tag className="h-4 w-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-xs font-bold text-foreground truncate">Ofertas Exclusivas</p>
+                  <p className="text-[10px] text-muted-foreground truncate">Cupons e descontos</p>
+                </div>
+              </div>
+              <div className="bg-muted/50 p-2.5 rounded-xl border flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-xs font-bold text-foreground truncate">Compra Segura</p>
+                  <p className="text-[10px] text-muted-foreground truncate">Rastreio em tempo real</p>
+                </div>
+              </div>
+              <div className="bg-muted/50 p-2.5 rounded-xl border flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-xs font-bold text-foreground truncate">Acesso Rápido</p>
+                  <p className="text-[10px] text-muted-foreground truncate">1 toque na tela</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Platform Instructions Selector */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Como instalar no seu dispositivo:</p>
+              </div>
+
+              {/* Tabs */}
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-muted rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("android")}
+                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                    activeTab === "android" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Smartphone className="h-3.5 w-3.5" />
+                  Android
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("ios")}
+                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                    activeTab === "ios" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Apple className="h-3.5 w-3.5" />
+                  iPhone (iOS)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("desktop")}
+                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                    activeTab === "desktop" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Monitor className="h-3.5 w-3.5" />
+                  Computador
+                </button>
+              </div>
+
+              {/* Tab Content: Android */}
+              {activeTab === "android" && (
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-start gap-3">
+                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
+                    <p className="text-xs text-foreground leading-relaxed">
+                      Toque nos <strong>três pontinhos ⋮</strong> no canto superior direito do seu navegador Chrome.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
+                    <p className="text-xs text-foreground leading-relaxed">
+                      Toque na opção <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">3</span>
+                    <p className="text-xs text-foreground leading-relaxed">
+                      Confirme em <strong>"Instalar"</strong>. O ícone aparecerá instantaneamente nos seus aplicativos!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Content: iOS Safari */}
+              {activeTab === "ios" && (
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-start gap-3">
+                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
+                    <p className="text-xs text-foreground leading-relaxed">
+                      No navegador Safari, toque no botão <strong>Compartilhar</strong> <Share className="inline h-3.5 w-3.5 mx-1 text-primary align-baseline" /> na barra inferior.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
+                    <p className="text-xs text-foreground leading-relaxed">
+                      Role a lista para baixo e selecione <strong>"Adicionar à Tela de Início"</strong>.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">3</span>
+                    <p className="text-xs text-foreground leading-relaxed">
+                      Toque em <strong>"Adicionar"</strong> no canto superior direito. Pronto!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Content: Desktop */}
+              {activeTab === "desktop" && (
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-start gap-3">
+                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
+                    <p className="text-xs text-foreground leading-relaxed">
+                      No Google Chrome ou Edge, clique no ícone de <strong>instalar (computador com seta ⬇️)</strong> na barra de endereços (ao lado da estrela de favoritos).
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
+                    <p className="text-xs text-foreground leading-relaxed">
+                      Clique em <strong>"Instalar"</strong> para abrir a loja em uma janela dedicada e rápida!
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Close / Action Button */}
+            <div className="pt-1">
+              <Button 
+                onClick={close} 
+                variant="default" 
+                className="w-full h-11 font-bold rounded-xl text-sm"
+              >
+                Entendi, fechar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

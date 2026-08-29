@@ -31,6 +31,7 @@ import { useCart } from "@/stores/cart";
 import { useSearchHistory } from "@/stores/searchHistory";
 import { useMemo, useEffect, useState } from "react";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { useAppInstallStore } from "@/stores/appInstall";
 
 const TOP_TERMS = [
   "Dipirona", "Vitamina D", "Paracetamol", "Protetor solar", "Whey protein",
@@ -281,13 +282,13 @@ export function Footer() {
         {/* Pre-Footer Cards */}
         <div className="bg-secondary text-white border-b border-white/15">
         <div className="container-fa py-6 grid md:grid-cols-2 gap-4">
-          <a 
-            href="#" 
-            onClick={(e) => {
-              e.preventDefault();
+          <button 
+            type="button" 
+            onClick={() => {
+              useAppInstallStore.getState().open();
               window.dispatchEvent(new CustomEvent('trigger-pwa-install'));
             }}
-            className="flex items-center gap-4 bg-white text-primary p-4 rounded-lg border border-transparent hover:border-primary transition shadow-sm group cursor-pointer"
+            className="flex items-center text-left gap-4 bg-white text-primary p-4 rounded-lg border border-transparent hover:border-primary transition shadow-sm group cursor-pointer w-full"
           >
             <div className="h-12 w-12 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition overflow-hidden">
               {activePharmacy?.faviconUrl ? (
@@ -302,7 +303,7 @@ export function Footer() {
               </h4>
               <p className="text-xs opacity-90">Tenha a farmácia na palma da sua mão e ofertas exclusivas.</p>
             </div>
-          </a>
+          </button>
           <a href={`https://wa.me/55${(activePharmacy?.whatsapp || dadosLoja.whatsapp || activePharmacy?.telefone || dadosLoja.telefone)?.replace(/\D/g, "") || "5133633900"}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 bg-white text-primary p-4 rounded-lg border border-transparent hover:border-primary transition shadow-sm group">
             <div className="h-12 w-12 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition">
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
