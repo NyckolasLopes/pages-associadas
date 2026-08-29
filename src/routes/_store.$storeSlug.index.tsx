@@ -378,7 +378,7 @@ function DynamicTarja({ page = "Página inicial", lojaId, initialBanners }: { pa
   };
 
   return (
-    <section className="hidden md:block bg-white border-y py-3 md:py-4 mt-4">
+    <section className="bg-white border-y py-3 md:py-4 mt-2 md:mt-4 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
       <div className="container-fa">
         <div className="flex overflow-x-auto pb-2 px-4 -mx-4 md:px-0 md:mx-0 snap-x scrollbar-none lg:justify-between lg:items-stretch divide-x divide-slate-200">
           {tarjaItems.map((item, index) => {
@@ -788,13 +788,11 @@ function StoreHome() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       
       <main className="flex-1 pb-16 md:pb-0 overflow-x-hidden">
-        {/* Full Banner Hero Carousel (Topo prioritário no mobile e desktop) */}
+        {/* Full Banner Hero Carousel (Topo prioritário absoluto no mobile e desktop) */}
         <HeroCarousel lojaId={lojaId} />
 
-        {/* Advantages Banner (Exclusivo para desktop - Excluído no mobile) */}
-        <div className="hidden md:block">
-          <DynamicTarja lojaId={lojaId} />
-        </div>
+        {/* Banner de Tarja (Vantagens) - Abaixo do Full Banner em mobile e desktop */}
+        <DynamicTarja lojaId={lojaId} />
 
         <SquarePromoGrid lojaId={lojaId} />
 
