@@ -288,7 +288,16 @@ function ProductCardComponent({
   );
   
   const allSelos = useSelos((s) => s.selos);
-  const activeSelos = allSelos.filter(s => s.ativo && p.selosIds?.includes(s.id));
+  const productSelosIds = new Set(p.selosIds || []);
+  if (isGenerico) {
+    productSelosIds.add("gen");
+  }
+  const activeSelos = allSelos.filter(s => 
+    s.ativo && (
+      productSelosIds.has(s.id) || 
+      (isGenerico && (s.id === "gen" || s.nome.toLowerCase().includes("genérico") || s.nome.toLowerCase().includes("generico")))
+    )
+  );
   const servicoSelo = allSelos.find(s => s.id === "servico");
   
   const normalizeForMatch = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();

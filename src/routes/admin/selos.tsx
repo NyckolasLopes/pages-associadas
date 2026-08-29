@@ -74,7 +74,16 @@ function AdminSelos() {
     setIsLoadingProducts(true);
     
     try {
-      const { data } = await supabase.from('produtos').select('*').contains('internal_tags', JSON.stringify([`selo:${selo.id}`]));
+      let query = supabase.from('produtos').select('*');
+      const isGenSelo = selo.id === 'gen' || selo.nome.toLowerCase().includes("genérico") || selo.nome.toLowerCase().includes("generico");
+      
+      if (isGenSelo) {
+        query = query.or(`internal_tags.cs.["selo:${selo.id}"],nome.ilike.%generico%,nome.ilike.%genérico%,generico.eq.true`);
+      } else {
+        query = query.contains('internal_tags', JSON.stringify([`selo:${selo.id}`]));
+      }
+
+      const { data } = await query;
       const matchedProducts = data ? data.map(mapRowToProduto) : [];
       setSelectedProductIds(new Set(matchedProducts.map(p => String(p.id))));
       setSelectedProductsData(matchedProducts);

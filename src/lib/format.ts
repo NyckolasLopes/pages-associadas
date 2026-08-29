@@ -17,13 +17,18 @@ export const formatPbmName = (selo: string | undefined | null) => {
 };
 
 export const checkIsGenerico = (p: any) => {
-  const name = String(p?.nome || "").toLowerCase();
+  if (!p) return false;
+  const name = String(p?.nome || p?.titulo || p?.descricao || p?.name || "").toLowerCase();
+  const normalized = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const hasGenericoInTitle = /\bgenerico(s)?\b/i.test(normalized) || normalized.includes("generico");
+
   return !!p?.generico || 
          p?.tipoMedicamento === "generico" || 
          p?.classificacaoRegistro === "generico" || 
          String(p?.classeTerapeutica || "").toLowerCase().includes("generico") ||
-         name.includes("genérico") || 
-         name.includes("generico");
+         (Array.isArray(p?.selosIds) && (p.selosIds.includes("gen") || p.selosIds.includes("generico"))) ||
+         (Array.isArray(p?.internal_tags) && p.internal_tags.some((t: string) => t.includes("gen") || t.includes("generico"))) ||
+         hasGenericoInTitle;
 };
 
 export const productImage = (p: any) => {

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { supabaseStorage } from "@/lib/supabaseStorage";
 import { toTitleCase } from "@/lib/utils";
+import { checkIsGenerico } from "@/lib/format";
 
 export interface Fornecedor {
   id: number;
@@ -61,6 +62,16 @@ interface ProductsState {
 
 // Helper: map Supabase row to Produto type
 export function mapRowToProduto(d: any): Produto {
+  const isGen = checkIsGenerico(d);
+  const rawInternalTags = Array.isArray(d.internal_tags) ? d.internal_tags : [];
+  const rawSelosIds = rawInternalTags
+    .filter((t: string) => t.startsWith("selo:"))
+    .map((t: string) => t.replace("selo:", ""));
+
+  if (isGen && !rawSelosIds.includes("gen")) {
+    rawSelosIds.push("gen");
+  }
+
   return {
     id: d.id,
     ean: d.ean,
@@ -75,13 +86,13 @@ export function mapRowToProduto(d: any): Produto {
     registroAnvisa: d.registro_anvisa,
     tarja: d.tarja,
     retemReceita: d.retem_receita || false,
-    generico: d.generico || false,
+    generico: isGen || d.generico || false,
     possuiImagem: d.possui_imagem || false,
     categoriaId: d.categoria_id,
     subcategoriaId: d.subcategoria_id,
     categoriasAdicionais: d.categorias_adicionais || [],
-    internalTags: Array.isArray(d.internal_tags) ? d.internal_tags.filter((t: string) => !t.startsWith("selo:")) : [],
-    selosIds: Array.isArray(d.internal_tags) ? d.internal_tags.filter((t: string) => t.startsWith("selo:")).map((t: string) => t.replace("selo:", "")) : [],
+    internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:")),
+    selosIds: rawSelosIds,
     principiosAtivos: d.principios_ativos || [],
     imagens: d.imagens || [],
     videoUrl: d.video_url,

@@ -366,7 +366,17 @@ function PDP() {
   const user = useAuth((s) => s.user);
   const setLoginOpen = useAuth((s) => s.setLoginOpen);
   const allSelos = useSelos((s) => s.selos);
-  const activeSelos = allSelos.filter(s => s.ativo && p.selosIds?.includes(s.id));
+  const isGenericoProd = checkIsGenerico(p);
+  const productSelosIds = new Set(p.selosIds || []);
+  if (isGenericoProd) {
+    productSelosIds.add("gen");
+  }
+  const activeSelos = allSelos.filter(s => 
+    s.ativo && (
+      productSelosIds.has(s.id) || 
+      (isGenericoProd && (s.id === "gen" || s.nome.toLowerCase().includes("genérico") || s.nome.toLowerCase().includes("generico")))
+    )
+  );
   const normalizeForMatch = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
   const activeSeloNormalizedNames = activeSelos.map(s => normalizeForMatch(s.nome));
   const fav = useFavorites((s) => s.ids.includes(p.id));
