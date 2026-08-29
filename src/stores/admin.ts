@@ -386,117 +386,12 @@ const defaultPharmacies: Pharmacy[] = lojas.map((l, idx) => {
     aceitaMotoboy: true,
     custoMotoboy: 10.0,
     vendeIfood: idx % 2 === 0,
-    tabelaPrecoId: "poa",
     diasEntrega: [1, 2, 3, 4, 5, 6], // Seg a Sáb por padrão
   };
 });
 
 const defaultBanners: AdminBanner[] = [
-  // Full Banners (formerly HeroCarousel slides)
-  {
-    id: "fb-1",
-    nome: "Sua farmácia online de confiança",
-    imageUrl: "https://images.unsplash.com/photo-1585435557343-3b092031a831?q=60&w=2000&auto=format&fit=crop",
-    mobileImageUrl: "https://images.unsplash.com/photo-1585435557343-3b092031a831?q=60&w=800&auto=format&fit=crop",
-    link: "/c/medicamentos",
-    posicao: "Full Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "fb-2",
-    nome: "Até 70% de desconto em medicamentos",
-    imageUrl: "https://images.unsplash.com/photo-1576602976047-174e57a47881?q=60&w=2000&auto=format&fit=crop",
-    mobileImageUrl: "https://images.unsplash.com/photo-1576602976047-174e57a47881?q=60&w=800&auto=format&fit=crop",
-    link: "/pbm",
-    posicao: "Full Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "fb-3",
-    nome: "Saúde sem sair de casa",
-    imageUrl: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=60&w=2000&auto=format&fit=crop",
-    mobileImageUrl: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=60&w=800&auto=format&fit=crop",
-    link: "/c/servicos-de-saude",
-    posicao: "Full Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  // Mini Banners (formerly SquarePromoGrid fallbackPromos)
-  {
-    id: "mb-1",
-    nome: "Cupom 15% - 1ª Compra",
-    imageUrl: "https://placehold.co/400x400/e2e8f0/64748b?text=Cupom+15%25",
-    link: "/ofertas",
-    posicao: "Mini Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "mb-2",
-    nome: "Medicamentos - Até 70% OFF",
-    imageUrl: "https://placehold.co/400x400/e2e8f0/64748b?text=Medicamentos",
-    link: "/c/medicamentos",
-    posicao: "Mini Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "mb-3",
-    nome: "Dermocosméticos - Skincare",
-    imageUrl: "https://placehold.co/400x400/e2e8f0/64748b?text=Dermocosmeticos",
-    link: "/c/dermocosm-ticos-e-beleza",
-    posicao: "Mini Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "mb-4",
-    nome: "Vitaminas - Compre 2, leve 3",
-    imageUrl: "https://placehold.co/400x400/e2e8f0/64748b?text=Vitaminas",
-    link: "/c/vitaminas-e-suplementos",
-    posicao: "Mini Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "mb-5",
-    nome: "Higiene Pessoal - Frete grátis",
-    imageUrl: "https://placehold.co/400x400/e2e8f0/64748b?text=Higiene",
-    link: "/c/higiene-e-cuidados",
-    posicao: "Mini Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "mb-6",
-    nome: "Mamãe & Bebê - Novidades",
-    imageUrl: "https://placehold.co/400x400/e2e8f0/64748b?text=Mamae+e+Bebe",
-    link: "/c/mam-e-e-beb",
-    posicao: "Mini Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "mb-7",
-    nome: "Convênio PBM - Conecte e economize",
-    imageUrl: "https://placehold.co/400x400/e2e8f0/64748b?text=PBM",
-    link: "/pbm",
-    posicao: "Mini Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "mb-8",
-    nome: "Genéricos - Mesma fórmula",
-    imageUrl: "https://placehold.co/400x400/e2e8f0/64748b?text=Genericos",
-    link: "/c/medicamentos",
-    posicao: "Mini Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  // Banner Tarja
+  // Banner Tarja Padrão
   {
     id: "bt-1",
     nome: "Compre pelo site e **receba em casa.**",
@@ -542,7 +437,7 @@ const defaultBanners: AdminBanner[] = [
     paginaPublicacao: "Página inicial",
     active: true,
   },
-  // Banner Categoria
+  // Banner Categoria Padrão
   { id: "bc-1", nome: "Remédios para Dor e Febre", imageUrl: "icon:Thermometer", link: "/c/medicamentos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-2", nome: "Remédios para Sistema Nervoso", imageUrl: "icon:Leaf", link: "/c/medicamentos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-3", nome: "Pastas de Dente e Higiene Bucal", imageUrl: "icon:Smile", link: "/c/higiene", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
@@ -553,17 +448,6 @@ const defaultBanners: AdminBanner[] = [
   { id: "bc-8", nome: "Sabonetes Íntimos", imageUrl: "icon:Heart", link: "/c/higiene", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-9", nome: "Remédios para Gripe e Resfriado", imageUrl: "icon:Thermometer", link: "/c/medicamentos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-10", nome: "Suplementos para Imunidade", imageUrl: "icon:ShieldCheck", link: "/c/vitaminas", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
-  // Banner Extra
-  {
-    id: "bx-1",
-    nome: "Promoção Mês do Cliente",
-    imageUrl: "https://placehold.co/1200x300/e2e8f0/64748b?text=Banner+Livre+-+1200x300",
-    mobileImageUrl: "https://placehold.co/800x300/e2e8f0/64748b?text=Mobile+Banner+-+800x300",
-    link: "/ofertas",
-    posicao: "Banner Extra",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  }
 ];
 
 export const useAdmin = create<AdminState>()(
