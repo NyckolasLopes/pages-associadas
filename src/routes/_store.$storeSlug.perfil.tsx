@@ -144,7 +144,7 @@ function PerfilPage() {
 
   const handleLogout = () => {
     logout();
-    navigate({ to: "/" });
+    navigate({ to: "/$storeSlug", params: { storeSlug } });
   };
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {

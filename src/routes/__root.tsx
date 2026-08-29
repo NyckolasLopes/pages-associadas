@@ -185,34 +185,41 @@ function RootComponent() {
 
   // Injeção de Cores Customizadas (Design System Dinâmico)
   useEffect(() => {
-    // Apenas injeta cores customizadas se for Preview do Admin ou se a loja for Parceiro
-    let colorsToInject = null;
+    let colorsToInject: any = null;
     
     if (isAdmin) {
       colorsToInject = themeColors;
-    } else if (activePharmacy?.categoriaAssociado === 'Parceiro') {
+    } else if (activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.categoriaAssociado === 'Associado') {
       colorsToInject = activePharmacy.themeColors;
     }
 
+    const styleId = 'fa-dynamic-theme-style';
+    let style = document.getElementById(styleId) as HTMLStyleElement | null;
+
     if (!colorsToInject || Object.keys(colorsToInject).length === 0) {
+      if (style) style.remove();
       return;
     }
 
-    const style = document.createElement('style');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      document.head.appendChild(style);
+    }
+
     let cssString = ':root {\n';
     Object.entries(colorsToInject).forEach(([key, value]) => {
       if (value) {
-        cssString += `  ${key}: ${value};\n`;
+        const cssKey = key.startsWith('--') ? key : `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+        cssString += `  ${cssKey}: ${value};\n`;
       }
     });
     cssString += '}\n';
-    style.innerHTML = cssString;
-    document.head.appendChild(style);
 
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, [isAdmin, themeColors, activePharmacy?.themeColors]);
+    if (style.textContent !== cssString) {
+      style.textContent = cssString;
+    }
+  }, [isAdmin, themeColors, activePharmacy?.categoriaAssociado, activePharmacy?.themeColors]);
 
   useEffect(() => {
     // Check for 301 redirects

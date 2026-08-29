@@ -96,8 +96,13 @@ function ProductCardComponent({
   const pharmacies = useAdmin((s) => s.pharmacies);
   const fornecedores = useAdminProducts((s) => s.fornecedores);
 
+  const params = useParams({ strict: false });
+  const storeSlug = (params as any)?.storeSlug;
+  const isStoreContext = !!storeSlug || !!selectedStoreId;
+
   useEffect(() => {
-    if (!cep || pharmacies.length === 0) return;
+    // Quando já está dentro de uma loja específica, o estoque e preços são diretos da loja — não precisa calcular distâncias de CEP em cada card
+    if (isStoreContext || !cep || pharmacies.length === 0) return;
     let mounted = true;
     Promise.all(pharmacies.map(async (ph) => {
       const d = await calculateCepDistanceAsync(cep, ph.cep);
@@ -109,17 +114,13 @@ function ProductCardComponent({
       setDistances(dists);
     });
     return () => { mounted = false; };
-  }, [cep, pharmacies]);
+  }, [cep, pharmacies, isStoreContext]);
   
   let maxStock = 0;
   let activeStoreId: string | null = null;
   let activeFornecedor = null;
   let isLocalStock = false;
-  // isStoreContext: true when rendered inside a specific store route (has storeSlug param)
-  const params = useParams({ strict: false });
-  const storeSlug = (params as any)?.storeSlug;
   const storeFromSlug = storeSlug ? pharmacies.find(ph => ph.slug === storeSlug) : null;
-  const isStoreContext = !!storeSlug;
 
   if (selectedStoreId || storeFromSlug) {
     activeStoreId = selectedStoreId || storeFromSlug!.id;

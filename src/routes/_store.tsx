@@ -131,9 +131,7 @@ function StoreLayout() {
     // Sincroniza selectedPharmacyId → cupons e carrinho reconhecem a loja correta
     if (activePharmacy.id !== selectedPharmacyId) {
       if (selectedPharmacyId) {
-        logout();
         clearCart();
-        clearFavorites();
       }
       setSelectedPharmacyId(activePharmacy.id);
     }

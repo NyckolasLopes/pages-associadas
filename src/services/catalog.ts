@@ -422,6 +422,9 @@ function applyFilters(produtos: Produto[], filters?: FilterOptions): Produto[] {
   });
 }
 
+const vitrineCacheMap = new Map<string, { data: Produto[]; timestamp: number }>();
+const VITRINE_CACHE_TTL = 45_000; // 45 segundos
+
 export const catalog = {
   listProducts: async (filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
@@ -587,6 +590,12 @@ export const catalog = {
     const page = filters?.page || 0;
     const pageSize = filters?.pageSize || 24;
 
+    const cacheKey = `v:${vitrineId}:${categoriaId}:${(produtoIds || []).join(',')}:${lojaId || 'all'}:${page}:${pageSize}`;
+    const cachedEntry = vitrineCacheMap.get(cacheKey);
+    if (cachedEntry && (Date.now() - cachedEntry.timestamp < VITRINE_CACHE_TTL)) {
+      return applyFilters(cachedEntry.data, filters);
+    }
+
     let query = supabase.from('produtos').select('*');
 
     if (produtoIds && produtoIds.length > 0) {
@@ -621,6 +630,8 @@ export const catalog = {
       if (stockB > 0 && stockA <= 0) return 1;
       return 0;
     });
+
+    vitrineCacheMap.set(cacheKey, { data: activeProducts, timestamp: Date.now() });
 
     return applyFilters(activeProducts, filters);
   },

@@ -126,7 +126,7 @@ function PedidosPage() {
 
   const handleLogout = () => {
     logout();
-    navigate({ to: "/" });
+    navigate({ to: "/$storeSlug", params: { storeSlug } });
   };
 
   if (!mounted) return null;
