@@ -49,7 +49,30 @@ import { useAdminCategories } from "@/stores/categories";
 import { useMarcasStore } from "@/stores/marcas";
 import { useMarketing } from "@/stores/marketing";
 import { useSearchHistory } from "@/stores/searchHistory";
-import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
+
+export function getEffectiveStoreSlug(paramsSlug?: string, activePharmacy?: any): string {
+  if (paramsSlug && paramsSlug !== "loja-padrao" && !SYSTEM_PAGES.has(paramsSlug)) {
+    return safeSlugify(paramsSlug);
+  }
+  if (activePharmacy?.slug && activePharmacy.slug !== "loja-padrao") {
+    return safeSlugify(activePharmacy.slug);
+  }
+  if (activePharmacy?.nome) {
+    return safeSlugify(activePharmacy.nome);
+  }
+  if (typeof window !== "undefined") {
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    if (parts[0] && !["admin", "login", "cadastro", "reset-password", "loja-padrao"].includes(parts[0])) {
+      return safeSlugify(parts[0]);
+    }
+    try {
+      const last = sessionStorage.getItem("fa-last-store-slug");
+      if (last && last !== "loja-padrao") return safeSlugify(last);
+    } catch {}
+  }
+  return "loja-padrao";
+}
 
 const FALLBACK_CATS_IDS = ["142", "143", "147", "144", "148", "200", "300"];
 const getSafeCategories = () => Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
@@ -129,15 +152,15 @@ function getSubcategoryIcon(name: string) {
 }
 
 export function Header() {
-    const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
-    const pharmacies = useAdmin(s => s.pharmacies);
+  const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
+  const pharmacies = useAdmin(s => s.pharmacies);
   const params = useParams({ strict: false });
   const isStoreContext = !!(params && (params as any).storeSlug);
   const urlSlug = (params as any)?.storeSlug as string | undefined;
   
   const activePharmacy = useActivePharmacy();
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
-  const storeSlug = urlSlug || activePharmacy?.slug || "poa";
+  const storeSlug = getEffectiveStoreSlug(urlSlug, activePharmacy);
   const customProducts = useAdminProducts(s => s.customProducts);
   const { featuredCategories, storeFeaturedCategories } = useAdmin();
   const contentPages = useAdmin(s => s.contentPages);
@@ -191,10 +214,10 @@ export function Header() {
   const handleCheckoutClick = () => {
     if (!useAuth.getState().user) {
       setDrawer(false);
-      navigate({ to: "/$storeSlug/login", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { redirect: `/${activePharmacy?.slug || "loja-padrao"}/cart` } as any });
+      navigate({ to: "/$storeSlug/login", params: { storeSlug }, search: { redirect: `/${storeSlug}/cart` } as any });
     } else {
       setDrawer(false);
-      navigate({ to: "/$storeSlug/cart", params: { storeSlug: activePharmacy?.slug || "loja-padrao" } as any });
+      navigate({ to: "/$storeSlug/cart", params: { storeSlug } as any });
     }
   };
 
@@ -341,7 +364,7 @@ export function Header() {
     if (q.trim()) {
       setSearchOpen(false);
       setMobileSearchOpen(false);
-      navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
+      navigate({ to: "/$storeSlug/busca", params: { storeSlug }, search: { q: q.trim() } } as any);
     }
   };
 
@@ -380,7 +403,7 @@ export function Header() {
       navigate({ 
         to: "/$storeSlug/produto/$slug", 
         params: { 
-          storeSlug: activePharmacy?.slug || "loja-padrao", 
+          storeSlug, 
           slug: p.url || p.slug || p.id 
         } as any 
       });
@@ -517,7 +540,7 @@ export function Header() {
                       onClick={() => {
                         setQ(sug);
                         setSearchOpen(false);
-                        navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: sug } } as any);
+                        navigate({ to: "/$storeSlug/busca", params: { storeSlug }, search: { q: sug } } as any);
                       }}
                     >
                       <Search className="h-3.5 w-3.5 text-primary" />
@@ -537,7 +560,7 @@ export function Header() {
                     type="button"
                     onClick={() => {
                       setSearchOpen(false);
-                      navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
+                      navigate({ to: "/$storeSlug/busca", params: { storeSlug }, search: { q: q.trim() } } as any);
                     }}
                     className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline bg-primary/10 px-3 py-1.5 rounded-full"
                   >
@@ -553,7 +576,7 @@ export function Header() {
                         <Link
                           key={p.id}
                           to={"/$storeSlug/produto/$slug" as any}
-                          params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url || p.slug || p.id } as any}
+                          params={{ storeSlug, slug: p.url || p.slug || p.id } as any}
                           onClick={() => setSearchOpen(false)}
                           className="flex items-center gap-3 p-3 hover:bg-muted/80 transition"
                         >
@@ -578,7 +601,7 @@ export function Header() {
                       className="w-full text-center text-sm font-bold text-primary py-2 hover:underline flex items-center justify-center gap-1.5"
                       onClick={() => {
                         setSearchOpen(false);
-                        navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
+                        navigate({ to: "/$storeSlug/busca", params: { storeSlug }, search: { q: q.trim() } } as any);
                       }}
                     >
                       Ver todos os resultados para "{q.trim()}" <ArrowRight className="h-4 w-4" />
@@ -592,7 +615,7 @@ export function Header() {
 
         {/* Account & Pedidos */}
         <div className="hidden lg:flex items-center gap-4 ml-4">
-          <Link to={user ? "/$storeSlug/pedidos" : "/$storeSlug/login"} params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={user ? undefined : { redirect: `/${activePharmacy?.slug || "loja-padrao"}/pedidos` } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
+          <Link to={user ? "/$storeSlug/pedidos" : "/$storeSlug/login"} params={{ storeSlug }} search={user ? undefined : { redirect: `/${storeSlug}/pedidos` } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
             <div className={`p-2 rounded-full transition group-hover:bg-primary/20 ${!isParceiro ? 'bg-primary/10' : ''}`} style={isParceiro ? { backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' } : undefined}>
               <Package className={`h-5 w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
             </div>
@@ -602,7 +625,7 @@ export function Header() {
             </div>
           </Link>
 
-          <Link to={user ? "/$storeSlug/perfil" : "/$storeSlug/login"} params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={user ? { tab: "favoritos" } : { redirect: `/${activePharmacy?.slug || "loja-padrao"}/perfil`, tab: "favoritos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
+          <Link to={user ? "/$storeSlug/perfil" : "/$storeSlug/login"} params={{ storeSlug }} search={user ? { tab: "favoritos" } : { redirect: `/${storeSlug}/perfil`, tab: "favoritos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
             <div className={`p-2 rounded-full transition group-hover:bg-primary/20 ${!isParceiro ? 'bg-primary/10' : ''}`} style={isParceiro ? { backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' } : undefined}>
               <Heart className={`h-5 w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
             </div>
@@ -615,14 +638,14 @@ export function Header() {
           <div className="w-px h-8 bg-border"></div>
 
           {mounted && user ? (
-            <Link to="/$storeSlug/perfil" params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} className="flex flex-col items-start text-sm max-w-[120px] hover:opacity-80 transition cursor-pointer">
+            <Link to="/$storeSlug/perfil" params={{ storeSlug }} className="flex flex-col items-start text-sm max-w-[120px] hover:opacity-80 transition cursor-pointer">
               <span className="text-[10px] font-bold text-muted-foreground leading-tight truncate w-full">
                 {getGreeting()}
               </span>
               <span className="font-bold text-primary truncate w-full leading-tight">{user?.name?.split(" ")[0]}</span>
             </Link>
           ) : (
-            <Button variant="ghost" onClick={() => navigate({ to: "/$storeSlug/login", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { redirect: window.location.pathname } as any })} style={isParceiro ? { color: 'var(--header-icons, var(--foreground))' } : undefined}>
+            <Button variant="ghost" onClick={() => navigate({ to: "/$storeSlug/login", params: { storeSlug }, search: { redirect: window.location.pathname } as any })} style={isParceiro ? { color: 'var(--header-icons, var(--foreground))' } : undefined}>
               <User className="h-4 w-4 mr-1" /> Entrar
             </Button>
           )}
@@ -727,7 +750,7 @@ export function Header() {
                             setQ(sug);
                             setSearchOpen(false);
                             setMobileSearchOpen(false);
-                            navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: sug } } as any);
+                            navigate({ to: "/$storeSlug/busca", params: { storeSlug }, search: { q: sug } } as any);
                           }}
                         >
                           <Search className="h-3.5 w-3.5 text-primary" />
@@ -748,7 +771,7 @@ export function Header() {
                         onClick={() => {
                           setSearchOpen(false);
                           setMobileSearchOpen(false);
-                          navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
+                          navigate({ to: "/$storeSlug/busca", params: { storeSlug }, search: { q: q.trim() } } as any);
                         }}
                         className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline bg-primary/10 px-3 py-1.5 rounded-full"
                       >
@@ -764,7 +787,7 @@ export function Header() {
                             <Link
                               key={p.id}
                               to={"/$storeSlug/produto/$slug" as any}
-                              params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url || p.slug || p.id } as any}
+                              params={{ storeSlug, slug: p.url || p.slug || p.id } as any}
                               onClick={() => {
                                 setSearchOpen(false);
                                 setMobileSearchOpen(false);
@@ -793,7 +816,7 @@ export function Header() {
                           onClick={() => {
                             setSearchOpen(false);
                             setMobileSearchOpen(false);
-                            navigate({ to: "/$storeSlug/busca", params: { storeSlug: activePharmacy?.slug || "loja-padrao" }, search: { q: q.trim() } } as any);
+                            navigate({ to: "/$storeSlug/busca", params: { storeSlug }, search: { q: q.trim() } } as any);
                           }}
                         >
                           Ver todos os resultados para "{q.trim()}" <ArrowRight className="h-4 w-4" />
@@ -908,7 +931,6 @@ export function Header() {
 
 function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.ReactNode }) {
   const params = useParams({ strict: false });
-  const isStoreContext = !!(params && (params as any).storeSlug);
   const [open, setOpen] = useState(false);
   const { cep, setCep } = useGeoCep();
   const [cepInput, setCepInput] = useState(cep);
@@ -920,6 +942,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   const activePharmacy = useActivePharmacy();
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
   const allCategories = useAdminCategories(s => s.categories);
+  const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
   
   const detectCep = (closeFn: () => void) => {
     if (!navigator.geolocation) return;
@@ -1002,7 +1025,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               </div>
               <div className="flex-1 overflow-hidden">
                 <SheetTitle className="truncate text-base leading-tight text-primary">{getGreeting()} {user?.name?.split(" ")[0]}</SheetTitle>
-                <Link to="/$storeSlug/perfil" params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} className="text-muted-foreground text-xs font-bold hover:underline" onClick={() => setOpen(false)}>Meus Dados</Link>
+                <Link to="/$storeSlug/perfil" params={{ storeSlug }} className="text-muted-foreground text-xs font-bold hover:underline" onClick={() => setOpen(false)}>Meus Dados</Link>
               </div>
             </div>
           ) : (
@@ -1013,7 +1036,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               <div className="flex-1 overflow-hidden">
                 <SheetTitle className="text-base leading-tight">{getGreeting()} visitante</SheetTitle>
                 <div className="text-xs text-muted-foreground">
-                  <Link to="/$storeSlug/login" params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={{ redirect: window.location.pathname } as any} className="text-primary font-bold hover:underline" onClick={() => setOpen(false)}>Entre</Link> ou cadastre-se
+                  <Link to="/$storeSlug/login" params={{ storeSlug }} search={{ redirect: typeof window !== "undefined" ? window.location.pathname : undefined } as any} className="text-primary font-bold hover:underline" onClick={() => setOpen(false)}>Entre</Link> ou cadastre-se
                 </div>
               </div>
             </div>
@@ -1023,12 +1046,12 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
           {/* Links rápidos no Menu (Mobile) */}
           <div className="mb-4 space-y-2">
 
-            <Link to={user ? "/$storeSlug/pedidos" : "/$storeSlug/login"} params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={user ? undefined : { redirect: `/${activePharmacy?.slug || "loja-padrao"}/pedidos` } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
+            <Link to={user ? "/$storeSlug/pedidos" : "/$storeSlug/login"} params={{ storeSlug }} search={user ? undefined : { redirect: `/${storeSlug}/pedidos` } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
               <Package className="h-5 w-5 text-primary shrink-0" />
               <span className="text-sm font-bold flex-1">Acompanhe seus pedidos</span>
             </Link>
 
-            <Link to={user ? "/$storeSlug/perfil" : "/$storeSlug/login"} params={{ storeSlug: activePharmacy?.slug || "loja-padrao" }} search={user ? { tab: "favoritos" } : { redirect: `/${activePharmacy?.slug || "loja-padrao"}/perfil`, tab: "favoritos" } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
+            <Link to={user ? "/$storeSlug/perfil" : "/$storeSlug/login"} params={{ storeSlug }} search={user ? { tab: "favoritos" } : { redirect: `/${storeSlug}/perfil`, tab: "favoritos" } as any} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted hover:bg-muted/70 transition">
               <Heart className="h-5 w-5 text-primary shrink-0" />
               <span className="text-sm font-bold flex-1">Meus Favoritos</span>
             </Link>
@@ -1037,7 +1060,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
 
           {cats.map((c) => {
             const Icon = c.icone ? LUCIDE_ICONS[c.icone] : CAT_ICONS[c.id];
-            const isNossasMarcas = c.id === "300";
+            const isNossasMarcas = c.id === "300" || c.slug === "nossas-marcas";
             const isOfertas = String(c.nome || "").toLowerCase().includes("oferta") || String(c.nome || "").toLowerCase().includes("promoç");
             
             let renderItems: any[] = [];
@@ -1052,8 +1075,8 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               return (
                 <Link
                   key={c.id}
-                  to={(isNossasMarcas ? "/nossas-marcas" : "/$storeSlug/c/$slug") as any}
-                  params={(isNossasMarcas ? undefined : { slug: c.slug }) as any}
+                  to="/$storeSlug/c/$slug"
+                  params={{ storeSlug, slug: isNossasMarcas ? "nossas-marcas" : c.slug }}
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold transition ${isOfertas ? 'bg-red-600 text-white hover:bg-red-700' : 'hover:bg-muted'}`}
                 >
@@ -1088,8 +1111,8 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                 </summary>
                 <div className="pl-11 pr-3 pb-2 flex flex-col">
                   <Link
-                    to={(isNossasMarcas ? "/nossas-marcas" : "/$storeSlug/c/$slug") as any}
-                    params={(isNossasMarcas ? undefined : { slug: c.slug }) as any}
+                    to="/$storeSlug/c/$slug"
+                    params={{ storeSlug, slug: isNossasMarcas ? "nossas-marcas" : c.slug }}
                     onClick={() => setOpen(false)}
                     className="text-sm py-2 hover:text-primary text-muted-foreground font-medium border-b border-muted/30 last:border-0"
                   >
@@ -1098,8 +1121,8 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                   {renderItems.map((item: any) => (
                     <Link
                       key={item.id}
-                      to={isNossasMarcas ? ("/$storeSlug/m/$slug" as any) : ("/$storeSlug/c/$slug" as any)}
-                      params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: item.slug  } as any}
+                      to={isNossasMarcas ? "/$storeSlug/m/$slug" : "/$storeSlug/c/$slug"}
+                      params={{ storeSlug, slug: item.seoUrl || item.slug }}
                       onClick={() => setOpen(false)}
                       className="text-sm py-2 hover:text-primary text-muted-foreground font-medium border-b border-muted/30 last:border-0 flex items-center gap-2"
                     >
@@ -1115,9 +1138,9 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
             );
           })}
           <div className="border-t my-2" />
-          <Link to="/faq" onClick={() => setOpen(false)} className="block px-3 py-2 text-sm hover:bg-muted rounded">FAQ</Link>
-          <Link to="/mapa-site" onClick={() => setOpen(false)} className="block px-3 py-2 text-sm hover:bg-muted rounded">Mapa do site</Link>
-          <Link to="/ajuda/$page" params={{ page: "como-comprar" }} onClick={() => setOpen(false)} className="block px-3 py-2 text-sm hover:bg-muted rounded">Como comprar</Link>
+          <Link to="/$storeSlug/faq" params={{ storeSlug }} onClick={() => setOpen(false)} className="block px-3 py-2 text-sm hover:bg-muted rounded">FAQ</Link>
+          <Link to="/$storeSlug/mapa-site" params={{ storeSlug }} onClick={() => setOpen(false)} className="block px-3 py-2 text-sm hover:bg-muted rounded">Mapa do site</Link>
+          <Link to="/$storeSlug/ajuda/$page" params={{ storeSlug, page: "como-comprar" }} onClick={() => setOpen(false)} className="block px-3 py-2 text-sm hover:bg-muted rounded">Como comprar</Link>
         </nav>
       </SheetContent>
     </Sheet>
@@ -1135,6 +1158,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
   const params = useParams({ strict: false });
   const activePharmacy = useActivePharmacy();
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
 
   const allSubs = useMemo(() => {
     const subs: Record<string, Categoria[]> = {};
@@ -1209,7 +1233,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
         <ul className="flex items-stretch justify-start lg:justify-between w-full gap-1 lg:gap-2 xl:gap-8 overflow-x-auto scrollbar-none">
           <li onMouseEnter={() => handleMouseEnter("all")} className="shrink-0 flex items-center">
             <Link
-              to={"/$storeSlug/busca" as any}
+              to="/$storeSlug/busca"
+              params={{ storeSlug }}
               className={`inline-flex items-center gap-1 xl:gap-2 px-1 lg:px-2 py-3 text-[11px] lg:text-[12px] xl:text-[13px] font-bold transition border-b-2 whitespace-nowrap ${
                 open === "all"
                   ? "border-accent"
@@ -1224,11 +1249,12 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
           {cats.map((c) => {
             const Icon = c.icone ? LUCIDE_ICONS[c.icone] : CAT_ICONS[c.id];
             const isOfertas = c.nome.toLowerCase().includes("oferta") || c.nome.toLowerCase().includes("promoç");
+            const isNossasMarcas = c.id === "300" || c.slug === "nossas-marcas";
             return (
               <li key={c.id} onMouseEnter={() => handleMouseEnter(c.id)} className="shrink-0 flex items-center">
                 <Link
-                  to={"/$storeSlug/c/$slug" as any}
-                  params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: c.slug  } as any}
+                  to="/$storeSlug/c/$slug"
+                  params={{ storeSlug, slug: isNossasMarcas ? "nossas-marcas" : c.slug }}
                   className={`inline-flex items-center gap-1 xl:gap-2 text-[11px] lg:text-[12px] xl:text-[13px] font-bold transition whitespace-nowrap ${
                     isOfertas 
                       ? "bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-full"
@@ -1237,7 +1263,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                           : "border-b-2 border-transparent text-white/95 hover:text-white py-3 px-1 lg:px-2")
                   }`}
                 >
-                  {c.id === "300" ? (
+                  {isNossasMarcas ? (
                     !isParceiro && <img src="/icone-associadas.png" alt="" className="h-4 w-4 object-contain brightness-0 invert" />
                   ) : Icon ? (
                     <Icon className="h-4 w-4" />
@@ -1258,11 +1284,11 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
           >
             <div className="container-fa py-8 flex flex-col gap-10 pointer-events-auto">
               <div className="columns-2 md:columns-4 lg:columns-5 gap-8">
-                {allRootCats.filter(c => c.id !== "300").map((c) => (
+                {allRootCats.filter(c => c.id !== "300" && c.slug !== "nossas-marcas").map((c) => (
                   <div key={c.id} className="flex flex-col break-inside-avoid mb-10">
                     <Link
-                      to={"/$storeSlug/c/$slug" as any}
-                      params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: c.slug  } as any}
+                      to="/$storeSlug/c/$slug"
+                      params={{ storeSlug, slug: c.slug }}
                       onClick={() => setOpen(null)}
                       className="font-bold text-primary-dark hover:underline text-sm mb-3 border-b border-muted pb-1.5 flex items-center gap-2"
                     >
@@ -1276,8 +1302,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                       {(allSubs[c.id] || []).slice(0, 10).map(s => (
                         <Link
                           key={s.id}
-                          to={"/$storeSlug/c/$slug" as any}
-                          params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: s.slug  } as any}
+                          to="/$storeSlug/c/$slug"
+                          params={{ storeSlug, slug: s.slug }}
                           onClick={() => setOpen(null)}
                           className="text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/5 transition bg-muted/30 px-2.5 py-1.5 rounded-md leading-tight line-clamp-2 block"
                         >
@@ -1285,7 +1311,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                         </Link>
                       ))}
                       {(allSubs[c.id] || []).length > 10 && (
-                        <Link to={"/$storeSlug/c/$slug" as any} params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: c.slug  } as any} onClick={() => setOpen(null)} className="text-[11px] font-bold text-primary uppercase hover:underline flex items-center px-2 py-1.5">
+                        <Link to="/$storeSlug/c/$slug" params={{ storeSlug, slug: c.slug }} onClick={() => setOpen(null)} className="text-[11px] font-bold text-primary uppercase hover:underline flex items-center px-2 py-1.5">
                           Ver mais...
                         </Link>
                       )}
@@ -1295,12 +1321,13 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
               </div>
               
               {/* Nossas Marcas outside of columns layout */}
-              {allRootCats.find(c => c.id === "300") && (() => {
-                const brandsCat = allRootCats.find(c => c.id === "300")!;
+              {(allRootCats.find(c => c.id === "300" || c.slug === "nossas-marcas") || true) && (() => {
+                const brandsCat = allRootCats.find(c => c.id === "300" || c.slug === "nossas-marcas") || { nome: "Nossas Marcas" };
                 return (
                   <div className="pt-6 mt-4 border-t border-slate-100/50">
                     <Link
-                      to={"/nossas-marcas" as any}
+                      to="/$storeSlug/c/$slug"
+                      params={{ storeSlug, slug: "nossas-marcas" }}
                       onClick={() => setOpen(null)}
                       className="font-bold text-primary-dark hover:underline text-base mb-6 flex items-center gap-2"
                     >
@@ -1311,8 +1338,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                       {marcas.filter(m => m.marcaPropria).map(m => (
                         <Link
                           key={m.id}
-                          to={"/$storeSlug/m/$slug" as any}
-                          params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: m.slug  } as any}
+                          to="/$storeSlug/m/$slug"
+                          params={{ storeSlug, slug: m.seoUrl || m.slug }}
                           onClick={() => setOpen(null)}
                           className="aspect-[4/3] flex items-center justify-center p-4 bg-white border border-slate-200 rounded-xl hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
                         >
@@ -1325,7 +1352,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
               })()}
             </div>
           </div>
-        ) : open && active && (subs.length > 0 || catProducts.length > 0 || active.id === "300") ? (
+        ) : open && active && (subs.length > 0 || catProducts.length > 0 || active.id === "300" || active.slug === "nossas-marcas") ? (
           <div
             key="cat"
             className="absolute left-0 right-0 top-full z-50 bg-popover text-foreground border-b shadow-elevated pointer-events-none animate-in slide-in-from-top-2 fade-in duration-200"
@@ -1336,8 +1363,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   Categoria
                 </div>
                 <Link
-                  to={"/$storeSlug/c/$slug" as any}
-                  params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: active.slug  } as any}
+                  to="/$storeSlug/c/$slug"
+                  params={{ storeSlug, slug: active.slug }}
                   onClick={() => setOpen(null)}
                   className="block mt-2 text-xl font-bold text-primary-dark hover:underline leading-tight"
                 >
@@ -1348,27 +1375,27 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(active.descricaoHtml) }}
                 />
                 <Link
-                  to={"/$storeSlug/c/$slug" as any}
-                  params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: active.slug  } as any}
+                  to="/$storeSlug/c/$slug"
+                  params={{ storeSlug, slug: active.slug }}
                   onClick={() => setOpen(null)}
                   className="inline-flex items-center gap-1 mt-4 text-xs font-bold text-white bg-accent hover:bg-accent/90 px-3 py-1.5 rounded transition shadow-sm"
                 >
                   <Plus className="h-3 w-3" /> Ver todos
                 </Link>
               </div>
-              <div className={active.id === "300" ? "col-span-9 grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[60vh] overflow-auto content-start" : "col-span-4 grid grid-cols-2 gap-x-6 gap-y-1 max-h-[60vh] overflow-auto"}>
-                {(active.id === "300" ? marcas.filter(m => m.marcaPropria) : subs).map((s) => (
+              <div className={(active.id === "300" || active.slug === "nossas-marcas") ? "col-span-9 grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[60vh] overflow-auto content-start" : "col-span-4 grid grid-cols-2 gap-x-6 gap-y-1 max-h-[60vh] overflow-auto"}>
+                {((active.id === "300" || active.slug === "nossas-marcas") ? marcas.filter(m => m.marcaPropria) : subs).map((s) => (
                   <Link
                     key={s.id}
-                    to={active.id === "300" ? ("/$storeSlug/m/$slug" as any) : ("/$storeSlug/c/$slug" as any)}
-                    params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: s.slug  } as any}
+                    to={(active.id === "300" || active.slug === "nossas-marcas") ? "/$storeSlug/m/$slug" : "/$storeSlug/c/$slug"}
+                    params={{ storeSlug, slug: (s as any).seoUrl || s.slug }}
                     onClick={() => setOpen(null)}
-                    className={active.id === "300" 
+                    className={(active.id === "300" || active.slug === "nossas-marcas")
                       ? "aspect-square flex items-center justify-center p-4 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:shadow-lg hover:-translate-y-0.5 transition-all" 
                       : "text-sm py-1.5 px-2 rounded hover:bg-secondary/10 hover:text-primary-dark transition leading-snug flex items-center gap-2"
                     }
                   >
-                    {active.id === "300" ? (
+                    {(active.id === "300" || active.slug === "nossas-marcas") ? (
                       <img src={(s as any).logo} alt={s.nome} title={s.nome} className="max-h-full max-w-full object-contain mix-blend-multiply" />
                     ) : (
                       <span>{s.nome}</span>
@@ -1376,7 +1403,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   </Link>
                 ))}
               </div>
-              {active.id !== "300" && (
+              {(active.id !== "300" && active.slug !== "nossas-marcas") && (
                 <div className="col-span-5 border-l pl-6 flex flex-col">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold mb-4">
                   Destaques da categoria
@@ -1387,8 +1414,8 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                     return (
                     <Link
                       key={p.id}
-                      to={"/$storeSlug/produto/$slug" as any}
-                      params={{ storeSlug: activePharmacy?.slug || "loja-padrao", slug: p.url } as any}
+                      to="/$storeSlug/produto/$slug"
+                      params={{ storeSlug, slug: p.url || p.slug || p.id }}
                       onClick={() => setOpen(null)}
                       className="group flex flex-col bg-white rounded border hover:border-primary transition p-3"
                     >

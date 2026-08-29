@@ -1,6 +1,6 @@
 import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ChevronDown, ChevronUp, Search as SearchIcon, ChevronRight } from "lucide-react";
 import { catalog } from "@/services/catalog";
 import { ProductCard } from "@/components/storefront/ProductCard";
@@ -141,7 +141,7 @@ function CategoryPage() {
     navigate({
       search: newFilters,
       replace: true,
-      params: { slug: cat.slug } as any
+      params: { storeSlug, slug: cat.slug } as any
     });
   };
 
