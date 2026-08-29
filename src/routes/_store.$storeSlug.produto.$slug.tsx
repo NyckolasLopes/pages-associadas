@@ -20,6 +20,7 @@ import { sanitizeHtml } from "@/lib/security";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState, useRef } from "react";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 import { ProductStory } from "@/components/storefront/ProductStory";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { Flame, Gift, ShoppingBag, Stethoscope } from "lucide-react";
@@ -334,7 +335,9 @@ function extractCharacteristics(htmlDesc: string): string[] {
 function PDP() {
   const params = useParams({ strict: false });
   const isStoreContext = !!(params && (params as any).storeSlug);
+  const activePharmacy = useActivePharmacy();
   const { p: initialProduct, loja, cat, subcat, crossSell, variations, compreJuntoPartner } = Route.useLoaderData();
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.categoriaAssociado === 'Associado' || loja?.categoriaAssociado === 'Parceiro' || loja?.categoriaAssociado === 'Associado';
   const customProducts = useAdminProducts(s => s.customProducts);
   const p = customProducts?.find(c => c.id === initialProduct.id) || initialProduct;
   const { prices: regionalPrices } = useRegionsStore();
@@ -1403,10 +1406,12 @@ function PDP() {
                     <Handshake className="h-5 w-5 text-green-600 shrink-0" />
                     <span>Receba o que comprou ou seu dinheiro de volta</span>
                   </li>
-                  <li className="flex items-center gap-3">
-                    <ShieldCheck className="h-5 w-5 text-green-600 shrink-0" />
-                    <span>Compre na maior rede associativa do pais</span>
-                  </li>
+                  {!isParceiro && (
+                    <li className="flex items-center gap-3">
+                      <ShieldCheck className="h-5 w-5 text-green-600 shrink-0" />
+                      <span>Compre na maior rede associativa do pais</span>
+                    </li>
+                  )}
                   <li className="flex items-center gap-3">
                     <Store className="h-5 w-5 text-green-600 shrink-0" />
                     <span>Retire na loja mais próxima</span>
