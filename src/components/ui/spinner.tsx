@@ -11,28 +11,13 @@ export interface SpinnerProps extends React.ImgHTMLAttributes<HTMLImageElement> 
 
 export function Spinner({ className, size = 32, style, forceGeneric, ...props }: SpinnerProps) {
   const activePharmacy = useActivePharmacy();
-  const isAdmin = typeof window !== "undefined" && window.location.pathname.startsWith('/admin');
   const isParceiroOrAssociado = activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.categoriaAssociado === 'Associado';
 
-  const isGlobalIndex = typeof window !== "undefined" && window.location.pathname === '/';
-
-  if (forceGeneric) {
+  if (forceGeneric || isParceiroOrAssociado) {
     return <Loader2 size={size} className={cn("animate-spin text-primary", className)} style={style} />;
   }
 
-  let spinIcon = "/favicon.png";
-
-  if (!isAdmin && !isGlobalIndex) {
-    if (!activePharmacy) {
-      return <Loader2 size={size} className={cn("animate-spin text-primary", className)} style={style} />;
-    }
-    if (isParceiroOrAssociado) {
-      return <Loader2 size={size} className={cn("animate-spin text-primary", className)} style={style} />;
-    }
-    if (activePharmacy.faviconUrl) {
-      spinIcon = activePharmacy.faviconUrl;
-    }
-  }
+  const spinIcon = activePharmacy?.faviconUrl || "/favicon.png";
 
   return (
     <img
