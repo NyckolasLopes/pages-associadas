@@ -47,6 +47,7 @@ function StoreLayout() {
   // — Store state (todos os hooks ANTES de qualquer early return) —
   const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
   const clearCart = useCart((s) => s.clear);
+  const pharmacies = useAdmin((s) => s.pharmacies);
   const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const logout = useAuth((s) => s.logout);
@@ -215,9 +216,9 @@ function StoreLayout() {
 
   // ─── Early returns (APÓS todos os hooks) ───────────────────────────────────
 
-  // ⏳ Aguarda lojas carregarem do Supabase antes de renderizar qualquer coisa.
-  // Evita o flash de outra loja enquanto os dados chegam ou ao navegar entre lojas.
-  if (!pharmaciesLoaded || isNavigatingStore || !activePharmacy) {
+  // ⏳ Aguarda lojas carregarem do Supabase apenas se o cache estiver totalmente vazio
+  const hasPharmacies = pharmacies && pharmacies.length > 0;
+  if ((!pharmaciesLoaded && !hasPharmacies) || isNavigatingStore || !activePharmacy) {
     return <GlobalLoading />;
   }
 

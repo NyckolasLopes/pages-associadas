@@ -26,8 +26,8 @@ export const getRouter = () => {
     defaultPreloadStaleTime: 30 * 1000,
     defaultPendingComponent: GlobalLoading,
     defaultNotFoundComponent: NotFoundComponent,
-    defaultPendingMinMs: 500, // Tempo mínimo para mostrar o loader (evita piscar rápido)
-    defaultPendingMs: 300, // Só mostra o loader se demorar mais que 300ms
+    defaultPendingMinMs: 0, // Sem retenção artificial de loader
+    defaultPendingMs: 500, // Só mostra o loader se a requisição demorar mais de 500ms
   });
 
   return router;
