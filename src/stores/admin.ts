@@ -113,6 +113,7 @@ export interface Pharmacy {
   virtualStoreStatus?: 'Ativa' | 'Inativa';
   offersServices?: boolean;
   entregaExpressa?: boolean;
+  customPages?: ContentPage[];
   // Dados da Loja
   cnpj: string;
   api_key?: string;
@@ -1000,6 +1001,7 @@ export const useAdmin = create<AdminState>()(
                 footerLogoUrl: parsedThemeColors?.footerLogoUrl || '',
                 anvisaLogoUrl: parsedThemeColors?.anvisaLogoUrl || '',
                 categoriaAssociado: l.categoria_associado || parsedThemeColors?.categoria_associado,
+                customPages: parsedThemeColors?.customPages || [],
                 trabalhaComEncarte: l.trabalha_com_encarte || parsedThemeColors?.trabalha_com_encarte,
                 entregaExpressa: l.entrega_expressa || parsedThemeColors?.entrega_expressa,
                 virtualStoreStatus: l.status_loja_virtual || parsedThemeColors?.status_loja_virtual,
@@ -1152,6 +1154,7 @@ export const useAdmin = create<AdminState>()(
           offersServices: p.offersServices,
           footer_plataforma_texto: p.footerPlataformaTexto,
           footer_descricao: p.footerDescricao,
+          customPages: p.customPages,
           footer_titulo_contato: p.footerTituloContato,
           social_links: p.socialLinks,
           topBarText: p.topBarText,

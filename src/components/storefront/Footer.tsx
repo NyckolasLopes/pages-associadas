@@ -259,24 +259,24 @@ export function Footer() {
             <h3 className="text-xs font-bold uppercase tracking-wider opacity-80 mb-3">
               Receba ofertas exclusivas
             </h3>
-            <form
-              onSubmit={(e) => { 
-                e.preventDefault(); 
-                const formData = new FormData(e.currentTarget);
-                const email = formData.get("email") as string;
-                if (email) {
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const emailInput = form.elements.namedItem("email") as HTMLInputElement;
+                if (emailInput && emailInput.value) {
                   addLead({
-                    email,
+                    email: emailInput.value,
                     dataCadastro: new Date().toLocaleString('pt-BR'),
                     origem: "Newsletter",
                     status: "Ativo",
                     lojaId: activePharmacy?.id,
                     lojaNome: activePharmacy?.pageTitle || dadosLoja.nomeDaLoja
                   });
-                  toast.success("Inscrição realizada — obrigado!"); 
-                  e.currentTarget.reset();
+                  toast.success("Inscrição realizada com sucesso!");
+                  form.reset();
                 }
-              }}
+              }} 
               className="flex gap-2"
             >
               <Input
@@ -292,7 +292,7 @@ export function Footer() {
             </form>
             <p className="text-[11px] opacity-75 mt-2">
               Ao inscrever-se, você concorda com nossa{" "}
-              <Link to="/ajuda/$page" params={{ page: "privacidade" }} className="underline">
+              <Link to="/$storeSlug/politica-de-privacidade" params={{ storeSlug }} className="underline">
                 Política de Privacidade
               </Link>.
             </p>
@@ -303,99 +303,29 @@ export function Footer() {
       {/* Columns */}
       <div className="container-fa py-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-sm">
         <Col title="Institucional">
-          {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Institucional").map(p => (
-            <li key={p.id}>
-              {p.type === "external" ? (
-                <a href={p.externalUrl} target="_blank" rel="noreferrer" className="hover:underline">
-                  {p.title}
-                </a>
-              ) : (
-                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
-                  {p.title}
-                </Link>
-              )}
-            </li>
-          ))}
+          {institucionalPages.map(renderPageItem)}
         </Col>
 
         <Col title="Navegação">
-          {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Navegação").map(p => (
-            <li key={p.id}>
-              {p.type === "external" ? (
-                <a href={p.externalUrl} target={p.externalUrl?.startsWith("/") ? "_self" : "_blank"} rel="noreferrer" className="hover:underline">
-                  {p.title}
-                </a>
-              ) : (
-                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
-                  {p.title}
-                </Link>
-              )}
-            </li>
-          ))}
+          {navegacaoPages.map(renderPageItem)}
         </Col>
 
-        <Col title="Serviços">
-          {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Serviços").map(p => (
-            <li key={p.id}>
-              {p.type === "external" ? (
-                <a href={p.externalUrl} target={p.externalUrl?.startsWith("/") ? "_self" : "_blank"} rel="noreferrer" className="hover:underline">
-                  {p.title}
-                </a>
-              ) : (
-                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
-                  {p.title}
-                </Link>
-              )}
-            </li>
-          ))}
-        </Col>
+        {(!isParceiro || activePharmacy?.offersServices) && (
+          <Col title="Serviços">
+            {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Serviços").map(renderPageItem)}
+          </Col>
+        )}
 
         <Col title="Perfil">
-          {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Perfil").map(p => (
-            <li key={p.id}>
-              {p.type === "external" ? (
-                <a href={p.externalUrl} target={p.externalUrl?.startsWith("/") ? "_self" : "_blank"} rel="noreferrer" className="hover:underline">
-                  {p.title}
-                </a>
-              ) : (
-                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
-                  {p.title}
-                </Link>
-              )}
-            </li>
-          ))}
+          {perfilPages.map(renderPageItem)}
         </Col>
 
         <Col title="Atendimento">
-          {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Atendimento").map(p => (
-            <li key={p.id}>
-              {p.type === "external" ? (
-                <a href={p.externalUrl} target="_blank" rel="noreferrer" className="hover:underline">
-                  {p.title}
-                </a>
-              ) : (
-                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
-                  {p.title}
-                </Link>
-              )}
-            </li>
-          ))}
+          {atendimentoPages.map(renderPageItem)}
         </Col>
 
         <Col title="Segurança">
-          {contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Segurança").map(p => (
-            <li key={p.id}>
-              {p.type === "external" ? (
-                <a href={p.externalUrl} target="_blank" rel="noreferrer" className="hover:underline">
-                  {p.title}
-                </a>
-              ) : (
-                <Link to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hover:underline">
-                  {p.title}
-                </Link>
-              )}
-            </li>
-          ))}
+          {segurancaPages.map(renderPageItem)}
         </Col>
       </div>
 
@@ -403,7 +333,7 @@ export function Footer() {
       <div className="border-t border-white/15">
         <div className="container-fa py-8 grid lg:grid-cols-2 gap-8 items-start">
           <div>
-            <Link to="/" className="inline-flex items-center">
+            <Link to="/$storeSlug" params={{ storeSlug }} className="inline-flex items-center">
               {isParceiro && !activePharmacy?.footerLogoUrl && !activePharmacy?.logoUrl ? (
                 <span className="font-bold text-xl text-white">{activePharmacy?.nome}</span>
               ) : (

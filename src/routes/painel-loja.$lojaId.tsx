@@ -34,8 +34,9 @@ import { LojaCuponsTab } from "@/components/admin/LojaCuponsTab";
 import { LojaLeadsTab } from "@/components/admin/LojaLeadsTab";
 import { LojaSeoTab } from "@/components/admin/LojaSeoTab";
 import { LojaConfiguracoesTab } from "@/components/admin/LojaConfiguracoesTab";
+import { LojaPaginasInformativasTab } from "@/components/admin/LojaPaginasInformativasTab";
 import { AbandonedCartsWidget } from "@/components/admin/AbandonedCartsWidget";
-import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, Settings, Users } from "lucide-react";
+import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, Settings, Users, FileText } from "lucide-react";
 
 // Status sincronizados com o que o cliente vê em Meus Pedidos
 export const PEDIDO_STATUS_OPTIONS = [
@@ -552,6 +553,10 @@ function PainelLoja() {
                 Personalizar Loja
               </TabsTrigger>
             )}
+            <TabsTrigger value="paginas" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-slate-800">
+              <FileText className="w-4 h-4 mr-1.5 shrink-0 text-emerald-600" />
+              Páginas Informativas
+            </TabsTrigger>
             {can('loja_configuracoes') && (
               <TabsTrigger value="configuracoes" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-slate-700">
                 <Settings className="w-4 h-4 mr-1.5 shrink-0" />
@@ -574,6 +579,10 @@ function PainelLoja() {
               <LojaBannersTab lojaId={lojaId} />
             </TabsContent>
           )}
+
+          <TabsContent value="paginas" className="space-y-6">
+            <LojaPaginasInformativasTab lojaId={lojaId} />
+          </TabsContent>
 
           {can('loja_cupons') && (
             <TabsContent value="cupons" className="space-y-6">
