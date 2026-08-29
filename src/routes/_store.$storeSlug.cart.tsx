@@ -925,10 +925,12 @@ function CartPage() {
       // Limpa carrinho
       clear();
       setWhatsAppModalOpen(false);
-      toast.success("Pedido gerado com sucesso! Redirecionando...");
-
-      // Redireciona para página de sucesso
-      navigate({ to: "/sucesso", search: { id: orderId } });
+      // Redireciona para página de sucesso da loja
+      navigate({
+        to: "/$storeSlug/sucesso",
+        params: { storeSlug: storeSlug || "loja-padrao" },
+        search: { id: orderId }
+      });
     } catch (err: any) {
       toast.error(err.message || "Erro ao processar pedido.");
     } finally {

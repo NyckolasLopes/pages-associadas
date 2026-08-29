@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SucessoRouteImport } from './routes/sucesso'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as StoreRouteImport } from './routes/_store'
@@ -102,6 +103,11 @@ import { Route as StoreStoreSlugMSlugRouteImport } from './routes/_store.$storeS
 import { Route as StoreStoreSlugCSlugRouteImport } from './routes/_store.$storeSlug.c.$slug'
 import { Route as StoreStoreSlugAjudaPageRouteImport } from './routes/_store.$storeSlug.ajuda.$page'
 
+const SucessoRoute = SucessoRouteImport.update({
+  id: '/sucesso',
+  path: '/sucesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -585,6 +591,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/sucesso': typeof SucessoRoute
   '/admin/ao-vivo': typeof AdminAoVivoRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/banners': typeof AdminBannersRoute
@@ -677,6 +684,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sucesso': typeof SucessoRoute
   '/admin/ao-vivo': typeof AdminAoVivoRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/banners': typeof AdminBannersRoute
@@ -772,6 +780,7 @@ export interface FileRoutesById {
   '/_store': typeof StoreRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/sucesso': typeof SucessoRoute
   '/admin/ao-vivo': typeof AdminAoVivoRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/banners': typeof AdminBannersRoute
@@ -867,6 +876,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/reset-password'
+    | '/sucesso'
     | '/admin/ao-vivo'
     | '/admin/avaliacoes'
     | '/admin/banners'
@@ -959,6 +969,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/reset-password'
+    | '/sucesso'
     | '/admin/ao-vivo'
     | '/admin/avaliacoes'
     | '/admin/banners'
@@ -1053,6 +1064,7 @@ export interface FileRouteTypes {
     | '/_store'
     | '/admin'
     | '/reset-password'
+    | '/sucesso'
     | '/admin/ao-vivo'
     | '/admin/avaliacoes'
     | '/admin/banners'
@@ -1148,6 +1160,7 @@ export interface RootRouteChildren {
   StoreRoute: typeof StoreRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SucessoRoute: typeof SucessoRoute
   InscricaoTokenRoute: typeof InscricaoTokenRoute
   PainelLojaLojaIdRoute: typeof PainelLojaLojaIdRoute
   PainelLojaOldRoute: typeof PainelLojaOldRoute
@@ -1155,6 +1168,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sucesso': {
+      id: '/sucesso'
+      path: '/sucesso'
+      fullPath: '/sucesso'
+      preLoaderRoute: typeof SucessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -2043,6 +2063,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoreRoute: StoreRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
+  SucessoRoute: SucessoRoute,
   InscricaoTokenRoute: InscricaoTokenRoute,
   PainelLojaLojaIdRoute: PainelLojaLojaIdRoute,
   PainelLojaOldRoute: PainelLojaOldRoute,
