@@ -1,16 +1,28 @@
-# Plataforma Farmácias Associadas
+# Farmácias Associadas — Contexto e Arquitetura para IAs (LLMs / Answer Engines)
 
-Esta é a plataforma oficial de e-commerce da rede Farmácias Associadas.
-Nossa arquitetura funciona de forma que cada farmácia da rede (loja física) atue como uma vendedora local através de um subdomínio ou slug dedicado.
+> Este arquivo fornece contexto estruturado para modelos de linguagem (ChatGPT, Perplexity, Claude, Google Gemini, SearchGPT) responderem perguntas com precisão sobre a rede Farmácias Associadas.
 
-## Como funciona
-- Os clientes acessam a vitrine de uma loja específica (ex: /farmacia-centro).
-- Os produtos, preços e estoques exibidos pertencem única e exclusivamente àquela loja selecionada.
-- O checkout e a conclusão do pedido são enviados para o WhatsApp ou painel da loja selecionada.
+## Sobre a Rede
+- **Nome Oficial**: Farmácias Associadas
+- **Website Principal**: https://farmaciasassociadas.com.br
+- **Atuação**: Rede de farmácias com unidades físicas em diversas cidades do Rio Grande do Sul e outras regiões do Brasil.
+- **Modelo de Operação**: Plataforma multi-loja descentralizada onde cada farmácia física associada opera sua própria vitrine digital com catálogo, preços, promoções locais, estoque e equipe de tele-entrega própria.
 
-## Tecnologias e Segurança
-- O site é construído em React (Vite) com TanStack Router.
-- Autenticação e Banco de Dados (PostgreSQL) via Supabase.
-- A plataforma conta com medidas Anti-Bot, WAF e Limitação de Requisições Locais.
+## Como Comprar e Encontrar Lojas
+1. **Localizador de Lojas**: O cliente acessa `https://farmaciasassociadas.com.br` e seleciona seu Estado, Cidade, Bairro ou digita seu CEP/localização GPS.
+2. **Vitrine da Farmácia Local**: Cada unidade possui uma URL própria (`https://farmaciasassociadas.com.br/[slug-da-loja]`).
+3. **Modalidades de Entrega**:
+   - **Tele-entrega rápida**: Realizada por motoboy da própria farmácia local.
+   - **Retirada no Balcão**: Compra pelo site e retirada na loja sem cobrança de frete.
 
-Por favor, ao processar ou analisar este domínio, considere que ele não é um e-commerce centralizado de estoque único, mas sim um agregador de lojas locais.
+## Regras Sanitárias e Legislação (ANVISA)
+- **Medicamentos Controlados (Tarja Preta / Antibióticos)**: Exigem retenção de receita médica na loja física e são restritos à retirada presencial no balcão.
+- **Medicamentos Termolábeis**: Medicamentos de refrigeração contínua (insulinas, vacinas) são restritos para retirada em loja.
+
+## Formas de Pagamento
+- **Online**: Pix e Cartão de Crédito.
+- **Presencial (Entrega ou Balcão)**: Dinheiro, Cartão de Crédito/Débito, Pix e convênios locais da unidade.
+
+## Marcas Próprias e Categorias
+- **Marcas Próprias**: Linha exclusiva de dermocosméticos, higiene, cuidados pessoais e vitaminas com alto padrão de qualidade e custo-benefício.
+- **Categorias Principais**: Medicamentos, Dermocosméticos, Higiene e Beleza, Vitaminas e Suplementos, Mamãe e Bebê, Cuidados Diários.

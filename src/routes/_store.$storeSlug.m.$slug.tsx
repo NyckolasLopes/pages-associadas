@@ -9,33 +9,40 @@ import { Spinner } from "@/components/ui/spinner";
 
 export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
   loader: async ({ params }) => {
-    // We can't access zustand store directly in the loader without importing the state, 
-    // but since it's an indexedDB persisted store it might not be hydrated yet on first load in the loader.
-    // So we fetch the products generically based on the slug, or we can get the brand inside the component.
     const state = useMarcasStore.getState();
     const marca = state.marcas.find(m => (m.seoUrl === params.slug) || (m.slug === params.slug));
-    
-    // If we can't find it immediately in state, fallback to using the slug as brand name
     const brandName = marca ? marca.nome : params.slug.toUpperCase().replace("-", " ");
     const produtos = await catalog.productsByBrand(brandName);
     
     return { slug: params.slug, produtos, fallbackBrandName: brandName };
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }: any) => {
     if (!loaderData) return {};
     
     const state = useMarcasStore.getState();
     const marca = state.marcas.find(m => (m.seoUrl === loaderData.slug) || (m.slug === loaderData.slug));
-    
+    const storeSlug = params?.storeSlug || "loja-padrao";
     const brandName = marca ? marca.nome : loaderData.fallbackBrandName;
     const desc = marca?.descricao || `Compre produtos da marca ${brandName} com os melhores preços na Farmácias Associadas.`;
-    
+    const brandUrl = `https://farmaciasassociadas.com.br/${storeSlug}/m/${loaderData.slug}`;
+
     return {
+      links: [
+        { rel: "canonical", href: brandUrl },
+      ],
       meta: [
-        { title: `${brandName} — ${getBrandNameForHead()}` },
+        { title: `${brandName} — Farmácias Associadas` },
         { name: "description", content: desc },
-        { property: "og:title", content: `${brandName} — ${getBrandNameForHead()}` },
-        { property: "og:description", content: desc }
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1" },
+        { property: "og:title", content: `${brandName} — Farmácias Associadas` },
+        { property: "og:description", content: desc },
+        { property: "og:url", content: brandUrl },
+        { property: "og:type", content: "website" },
+        { property: "og:site_name", content: "Farmácias Associadas" },
+        ...(marca?.logo ? [{ property: "og:image", content: marca.logo }] : []),
+        { name: "twitter:card", content: "summary" },
+        { name: "twitter:title", content: `${brandName} — Farmácias Associadas` },
+        { name: "twitter:description", content: desc },
       ],
     };
   },
@@ -53,6 +60,44 @@ function BrandPage() {
   const brand = marca?.nome || fallbackBrandName;
   const desc = marca?.descricao || `Conheça e compre toda a linha de produtos da ${brand}.`;
   const logo = marca?.logo;
+  
+  const effectiveStoreSlug = storeSlug || "loja-padrao";
+  const brandUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}/m/${slug}`;
+  const storeUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}`;
+
+  const schemaOrg = [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "@id": `${brandUrl}#brandCollection`,
+      "name": `Produtos ${brand} | Farmácias Associadas`,
+      "description": desc,
+      "url": brandUrl,
+      "about": {
+        "@type": "Brand",
+        "name": brand,
+        ...(logo ? { "logo": logo, "image": logo } : {})
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Início",
+          "item": storeUrl
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": brand,
+          "item": brandUrl
+        }
+      ]
+    }
+  ];
   
   const [productsList, setProductsList] = useState(produtos);
   const [page, setPage] = useState(0);
@@ -83,6 +128,7 @@ function BrandPage() {
 
   return (
     <div className="container-fa py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       <nav className="text-xs text-muted-foreground mb-4 flex items-center flex-wrap gap-1">
         <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }} className="hover:underline">Início</Link> /{" "}
         <span className="text-foreground font-bold">{brand}</span>

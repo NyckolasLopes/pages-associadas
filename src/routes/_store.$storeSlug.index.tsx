@@ -202,23 +202,39 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
     const p = loaderData?.pharmacy;
     const storeSlug = loaderData?.storeSlug || "loja-padrao";
     const title = p?.pageTitle || (p ? `Farmácias Associadas - ${p.nome} - ${p.cidade}/${p.uf}` : `${getBrandNameForHead()} — Medicamentos, dermocosméticos e mais`);
-    const desc = p?.metaDescription || p?.seoDescricao || (p ? `Sua farmácia completa em ${p.cidade || "sua região"}. Medicamentos, perfumaria, dermocosméticos e ofertas exclusivas com entrega rápida.` : "Compre online medicamentos, vitaminas, dermocosméticos e itens de higiene com entrega rápida. Aqui você tem amigos.");
+    const desc = p?.metaDescription || p?.seoDescricao || (p ? `Sua farmácia completa em ${p.cidade || "sua região"}. Medicamentos, perfumaria, dermocosméticos e ofertas exclusivas com entrega rápida em ${p.bairro || p.cidade || "sua localidade"}.` : "Compre online medicamentos, vitaminas, dermocosméticos e itens de higiene com entrega rápida. Aqui você tem amigos.");
     const storeUrl = `https://farmaciasassociadas.com.br/${storeSlug}`;
     const logoUrl = p?.logoUrl || "https://farmaciasassociadas.com.br/icone-associadas.png";
 
+    const geoRegion = p?.uf ? `BR-${p.uf.toUpperCase()}` : "BR-RS";
+    const geoPlacename = [p?.bairro, p?.cidade, p?.uf].filter(Boolean).join(", ") || "Rio Grande do Sul, Brasil";
+    const hasGeo = p?.latitude && p?.longitude;
+    const geoPosition = hasGeo ? `${p.latitude};${p.longitude}` : undefined;
+    const icbm = hasGeo ? `${p.latitude}, ${p.longitude}` : undefined;
+
     return {
+      links: [
+        { rel: "canonical", href: storeUrl },
+      ],
       meta: [
         { title },
         { name: "description", content: desc },
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
         { property: "og:type", content: "website" },
         { property: "og:url", content: storeUrl },
         { property: "og:image", content: logoUrl },
+        { property: "og:locale", content: "pt_BR" },
+        { property: "og:site_name", content: "Farmácias Associadas" },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: desc },
         { name: "twitter:image", content: logoUrl },
+        { name: "geo.region", content: geoRegion },
+        { name: "geo.placename", content: geoPlacename },
+        ...(geoPosition ? [{ name: "geo.position", content: geoPosition }] : []),
+        ...(icbm ? [{ name: "ICBM", content: icbm }] : []),
       ],
     };
   },
@@ -611,14 +627,51 @@ function StoreHome() {
 
   const schemaOrg = useMemo(() => {
     if (loja) {
+      const socialSameAs: string[] = [];
+      if (loja.socialLinks?.instagram) socialSameAs.push(loja.socialLinks.instagram);
+      if (loja.socialLinks?.facebook) socialSameAs.push(loja.socialLinks.facebook);
+      if (loja.whatsapp) {
+        const cleanZap = loja.whatsapp.replace(/\D/g, "");
+        if (cleanZap) socialSameAs.push(`https://wa.me/55${cleanZap}`);
+      }
+
+      const areaServedList: any[] = [];
+      if (loja.cidade) {
+        areaServedList.push({
+          "@type": "City",
+          "name": loja.cidade
+        });
+      }
+      if (loja.bairro) {
+        areaServedList.push({
+          "@type": "AdministrativeArea",
+          "name": loja.bairro
+        });
+      }
+
+      const openingHoursSpec: any[] = [];
+      if (loja.horarioFuncionamento) {
+        openingHoursSpec.push({
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "description": loja.horarioFuncionamento
+        });
+      }
+
       return {
         "@context": "https://schema.org",
-        "@type": "Pharmacy",
+        "@type": ["Pharmacy", "MedicalBusiness", "LocalBusiness"],
+        "@id": `https://farmaciasassociadas.com.br/${storeSlug}#pharmacy`,
         "name": loja.nome || "Farmácias Associadas",
-        "description": loja.metaDescription || loja.seoDescricao || `Farmácias Associadas em ${loja.cidade || "sua região"}`,
+        "alternateName": `Farmácias Associadas - ${loja.nome}`,
+        "description": loja.metaDescription || loja.seoDescricao || `Sua farmácia completa em ${loja.cidade || "sua região"}. Medicamentos, perfumaria e ofertas com tele-entrega.`,
         "url": `https://farmaciasassociadas.com.br/${storeSlug}`,
         "telephone": loja.telefone || loja.whatsapp || undefined,
-        "image": loja.logoUrl || undefined,
+        "image": loja.logoUrl || "https://farmaciasassociadas.com.br/icone-associadas.png",
+        "logo": loja.logoUrl || "https://farmaciasassociadas.com.br/icone-associadas.png",
+        "priceRange": "$$",
+        "currenciesAccepted": "BRL",
+        "paymentAccepted": "Cartão de Crédito, Cartão de Débito, PIX, Dinheiro",
         "address": {
           "@type": "PostalAddress",
           "streetAddress": `${loja.endereco || ""}, ${loja.numero || ""}${loja.complemento ? ` - ${loja.complemento}` : ""}`.trim(),
@@ -633,7 +686,15 @@ function StoreHome() {
             "latitude": loja.latitude,
             "longitude": loja.longitude
           }
-        } : {})
+        } : {}),
+        ...(areaServedList.length > 0 ? { "areaServed": areaServedList } : {}),
+        ...(openingHoursSpec.length > 0 ? { "openingHoursSpecification": openingHoursSpec } : {}),
+        ...(socialSameAs.length > 0 ? { "sameAs": socialSameAs } : {}),
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": `https://farmaciasassociadas.com.br/${storeSlug}/busca?q={search_term_string}`,
+          "query-input": "required name=search_term_string"
+        }
       };
     }
 

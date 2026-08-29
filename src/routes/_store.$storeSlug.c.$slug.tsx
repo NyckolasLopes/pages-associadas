@@ -41,18 +41,26 @@ export const Route = createFileRoute("/_store/$storeSlug/c/$slug")({
     
     return { cat, unfilteredProducts, filteredProducts, subs };
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }: any) => {
     if (!loaderData) return {};
     const cat = loaderData.cat;
-    const title = cat.metaTitle || `${cat.nome} | Farmácias Associadas`;
-    const desc = cat.metaDescription || `Compre ${cat.nome} online nas Farmácias Associadas com os melhores preços. Entrega rápida e segura para toda a família.`;
+    const storeSlug = params?.storeSlug || "loja-padrao";
+    const catUrl = `https://farmaciasassociadas.com.br/${storeSlug}/c/${cat.slug}`;
+    const title = cat.metaTitle || `${cat.nome} — Farmácias Associadas`;
+    const desc = cat.metaDescription || `Compre produtos de ${cat.nome} online nas Farmácias Associadas com os melhores preços e entrega rápida.`;
     return {
+      links: [
+        { rel: "canonical", href: catUrl },
+      ],
       meta: [
         { title },
         { name: "description", content: desc },
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1" },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
+        { property: "og:url", content: catUrl },
         { property: "og:type", content: "website" },
+        { property: "og:site_name", content: "Farmácias Associadas" },
         { name: "twitter:card", content: "summary" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: desc },
@@ -137,13 +145,43 @@ function CategoryPage() {
     });
   };
 
-  const schemaOrg = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": cat.nome,
-    "description": cat.descricaoBreve || `Categoria de produtos: ${cat.nome}`,
-    "url": `https://associadas.com.br/c/${cat.slug}`
-  };
+  const effectiveStoreSlug = storeSlug || "loja-padrao";
+  const catUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}/c/${cat.slug}`;
+  const storeUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}`;
+
+  const schemaOrg = [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "@id": `${catUrl}#collection`,
+      "name": `${cat.nome} | Farmácias Associadas`,
+      "description": cat.metaDescription || cat.descricaoBreve || `Produtos da categoria ${cat.nome}`,
+      "url": catUrl,
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Farmácias Associadas",
+        "url": "https://farmaciasassociadas.com.br"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Início",
+          "item": storeUrl
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": cat.nome,
+          "item": catUrl
+        }
+      ]
+    }
+  ];
 
   return (
     <div className="container-fa py-8">

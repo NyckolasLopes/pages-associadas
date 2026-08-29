@@ -89,22 +89,34 @@ export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
 
     return { p, loja, cat, subcat, crossSell, variations, compreJuntoPartner };
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }: any) => {
     if (!loaderData) return {};
     const p = loaderData.p;
+    const loja = loaderData.loja;
+    const storeSlug = params?.storeSlug || "loja-padrao";
     if (!p) return {};
-    const title = `${p.nome} — ${getBrandNameForHead()}`;
-    const desc = (p.descricao || `Compre ${p.nome} com o melhor preço nas Farmácias Associadas. Entrega rápida e segura.`).slice(0, 160);
+    const title = `${p.nome} — Farmácias Associadas`;
+    const desc = (p.descricao || `Compre ${p.nome} com o melhor preço nas Farmácias Associadas${loja?.cidade ? ` em ${loja.cidade}` : ''}. Entrega rápida e segura.`).slice(0, 160);
     const img = productImage(p);
-    
+    const prodUrl = `https://farmaciasassociadas.com.br/${storeSlug}/produto/${p.url || p.slug || p.id}`;
+    const priceAmount = (p.precoPor || p.precoDe || 0).toString();
+
     return {
+      links: [
+        { rel: "canonical", href: prodUrl },
+      ],
       meta: [
         { title },
         { name: "description", content: desc },
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1" },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
         { property: "og:image", content: img },
+        { property: "og:url", content: prodUrl },
         { property: "og:type", content: "product" },
+        { property: "og:site_name", content: "Farmácias Associadas" },
+        { property: "product:price:amount", content: priceAmount },
+        { property: "product:price:currency", content: "BRL" },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: desc },
@@ -891,34 +903,84 @@ function PDP() {
     ? [4.8, 4.9][hash % 2]
     : [4.5, 4.7, 4.9, 5.0][hash % 4];
   
-  const reviewsCount = 12 + (hash % 150);
+  const effectiveStoreSlug = (params?.storeSlug && params.storeSlug !== "loja-padrao" && !SYSTEM_PAGES.has(params.storeSlug))
+    ? safeSlugify(params.storeSlug)
+    : (activePharmacy?.slug && activePharmacy.slug !== "loja-padrao")
+    ? safeSlugify(activePharmacy.slug)
+    : "loja-padrao";
 
-  const schemaOrg = {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": p.nome,
-    "image": [productImage(p)],
-    "description": (p.descricao || `Compre ${p.nome} nas Farmácias Associadas.`).slice(0, 160),
-    "sku": p.id,
-    "brand": {
-      "@type": "Brand",
-      "name": p.marca || "Associadas"
+  const productUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}/produto/${p.url || p.slug || p.id}`;
+  const storeUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}`;
+
+  const schemaOrg = [
+    {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      "@id": `${productUrl}#product`,
+      "name": p.nome,
+      "image": [productImage(p)],
+      "description": (p.descricao || `Compre ${p.nome} nas Farmácias Associadas.`).slice(0, 200),
+      "sku": String(p.id),
+      ...(p.ean ? { "gtin13": p.ean, "gtin": p.ean } : {}),
+      "brand": {
+        "@type": "Brand",
+        "name": p.marca || "Farmácias Associadas"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": productUrl,
+        "priceCurrency": "BRL",
+        "price": (finalPrecoPor || 0).toFixed(2),
+        "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        "itemCondition": "https://schema.org/NewCondition",
+        "availability": maxStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "seller": {
+          "@type": "Pharmacy",
+          "name": activePharmacy?.nome || "Farmácias Associadas",
+          "url": storeUrl
+        }
+      },
+      ...(hasReviews ? {
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": calculatedRating.toFixed(1),
+          "reviewCount": avaliacoes.length,
+          "bestRating": "5",
+          "worstRating": "1"
+        }
+      } : {})
     },
-    "offers": {
-      "@type": "Offer",
-      "url": `https://associadas.com.br/loja-padrao/produto/${p.url || p.slug || p.id}`,
-      "priceCurrency": "BRL",
-      "price": (finalPrecoPor || 0).toString(),
-      "availability": maxStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-    },
-    ...(hasReviews ? {
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": calculatedRating.toFixed(1),
-        "reviewCount": avaliacoes.length
-      }
-    } : {})
-  };
+    {
+      "@context": "https://schema.org/",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Início",
+          "item": storeUrl
+        },
+        ...(cat ? [{
+          "@type": "ListItem",
+          "position": 2,
+          "name": cat.nome,
+          "item": `${storeUrl}/c/${cat.slug}`
+        }] : []),
+        ...(subcat ? [{
+          "@type": "ListItem",
+          "position": 3,
+          "name": subcat.nome,
+          "item": `${storeUrl}/c/${cat?.slug || 'categoria'}?sub=${subcat.id}`
+        }] : []),
+        {
+          "@type": "ListItem",
+          "position": (cat ? (subcat ? 4 : 3) : 2),
+          "name": p.nome,
+          "item": productUrl
+        }
+      ]
+    }
+  ];
 
   return (
     <div className="container-fa py-6">

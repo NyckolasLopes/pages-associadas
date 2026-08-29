@@ -11,6 +11,26 @@ import { toast } from "sonner";
 import AssociadasLogo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    links: [
+      { rel: "canonical", href: "https://farmaciasassociadas.com.br" },
+    ],
+    meta: [
+      { title: "Farmácias Associadas — Encontre a Farmácia Mais Próxima | Compre Online" },
+      { name: "description", content: "Encontre a unidade das Farmácias Associadas mais próxima de você em sua cidade. Compre medicamentos, dermocosméticos e perfumaria com entrega rápida ou retire na loja." },
+      { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1" },
+      { property: "og:title", content: "Farmácias Associadas — Encontre a Farmácia Mais Próxima" },
+      { property: "og:description", content: "Encontre a farmácia mais próxima da sua casa. Peça online e receba rápido com a tradição e confiança das Farmácias Associadas." },
+      { property: "og:url", content: "https://farmaciasassociadas.com.br" },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://farmaciasassociadas.com.br/logo.png" },
+      { property: "og:site_name", content: "Farmácias Associadas" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Farmácias Associadas — Encontre a Farmácia Mais Próxima" },
+      { name: "twitter:description", content: "Compre online medicamentos e perfumaria na unidade mais próxima de você." },
+      { name: "twitter:image", content: "https://farmaciasassociadas.com.br/logo.png" },
+    ],
+  }),
   component: IndexGateway,
 });
 
@@ -334,11 +354,41 @@ function IndexGateway() {
     setIsSearchByLocation(false);
   };
 
+  const portalSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://farmaciasassociadas.com.br/#organization",
+        "name": "Farmácias Associadas",
+        "url": "https://farmaciasassociadas.com.br",
+        "logo": "https://farmaciasassociadas.com.br/logo.png",
+        "image": "https://farmaciasassociadas.com.br/logo.png",
+        "description": "Rede de farmácias associadas presente no Rio Grande do Sul e outras regiões, oferecendo medicamentos, perfumaria e tele-entrega rápida."
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://farmaciasassociadas.com.br/#website",
+        "url": "https://farmaciasassociadas.com.br",
+        "name": "Farmácias Associadas",
+        "publisher": {
+          "@id": "https://farmaciasassociadas.com.br/#organization"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://farmaciasassociadas.com.br/busca?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ]
+  };
+
   return (
     <div 
       className="min-h-screen bg-emerald-700 flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden font-sans group transition-all"
       onMouseMove={handleMouseMove}
     >
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(portalSchema) }} />
       {/* Animated Background Image - Parallax on Mouse Move */}
       <div 
         className="absolute -inset-10 bg-cover bg-center transition-transform duration-[400ms] ease-out opacity-90" 

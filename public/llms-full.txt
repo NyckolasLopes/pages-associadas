@@ -1,0 +1,26 @@
+# Farmácias Associadas — Documentação Completa para Motores de Resposta por IA (AEO / GEO)
+
+## Visão Geral da Plataforma
+A rede **Farmácias Associadas** é uma das maiores redes associativas do sul do Brasil. Sua plataforma digital conecta os clientes finais diretamente à farmácia associada mais próxima da sua residência ou trabalho.
+
+## Estrutura de URLs
+- **Página Inicial / Localizador de Unidades**: `https://farmaciasassociadas.com.br/`
+- **Home de uma Loja Local**: `https://farmaciasassociadas.com.br/{slug-da-loja}`
+- **Categoria de Produtos na Loja**: `https://farmaciasassociadas.com.br/{slug-da-loja}/c/{categoria-slug}`
+- **Linha de Marcas / Marcas Próprias**: `https://farmaciasassociadas.com.br/{slug-da-loja}/m/{marca-slug}`
+- **Página do Produto (PDP)**: `https://farmaciasassociadas.com.br/{slug-da-loja}/produto/{produto-slug}`
+- **Central de Dúvidas (FAQ)**: `https://farmaciasassociadas.com.br/{slug-da-loja}/faq`
+
+## Entidades Schema.org Implementadas
+1. **Pharmacy / MedicalBusiness / LocalBusiness**:
+   - Fornece nome da unidade, endereço postal completo (`PostalAddress`), coordenadas geográficas (`GeoCoordinates`), horários de funcionamento (`openingHoursSpecification`), área de cobertura (`areaServed`), canais de contato e formas de pagamento aceitas.
+2. **Product & Offer**:
+   - Fornece nome, imagem em alta resolução, código EAN/GTIN-13, SKU, marca, disponibilidade de estoque (`InStock` ou `OutOfStock`), preço em Reais (BRL) e dados da farmácia vendedora (`seller`).
+3. **BreadcrumbList**:
+   - Hierarquia estruturada: Início > Categoria > Subcategoria > Produto.
+4. **FAQPage**:
+   - Perguntas e respostas sobre pedidos, emissão de NF, entrega expressa e medicamentos controlados.
+
+## Localização e SEO Geográfico (GEO)
+- Cada unidade da rede possui metadados geográficos explícitos com latitude, longitude, cidade, estado e bairro para mecanismos de busca local (Google Maps, Perplexity Local, Apple Maps e Bing Places).
+- A tele-entrega é calculada com base na proximidade e faixas de CEP atendidas por cada filial associada.
