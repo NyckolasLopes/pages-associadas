@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { useAdmin } from "@/stores/admin";
+import { useAdmin, getInitialCachedPharmacies } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 
 export const SYSTEM_PAGES = new Set([
@@ -28,7 +28,8 @@ export function useActivePharmacy() {
   const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
 
   const search = location.search as any;
-  const pathParts = location.pathname.split('/').filter(Boolean);
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : location.pathname;
+  const pathParts = currentPath.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
   
   let redirectSlug = "";
@@ -40,9 +41,7 @@ export function useActivePharmacy() {
   }
 
   const activePharmacy = useMemo(() => {
-    if (!pharmacies || pharmacies.length === 0) {
-      return null;
-    }
+    const allPharmacies = (pharmacies && pharmacies.length > 0) ? pharmacies : getInitialCachedPharmacies();
 
     // 1. Slug da URL ou Redirect
     const slugToSearch = (potentialSlug && !SYSTEM_PAGES.has(potentialSlug)) ? potentialSlug : redirectSlug;
@@ -51,23 +50,45 @@ export function useActivePharmacy() {
       const normalizedSearch = safeSlugify(slugToSearch);
       const lowerRaw = slugToSearch.toLowerCase();
 
-      const bySlug = pharmacies.find((p) => {
-        const slugFormatted = p.slug ? safeSlugify(p.slug) : "";
-        const nameFormatted = p.nome ? safeSlugify(p.nome) : "";
-        const idStr = String(p.id);
-        const rawSlugLower = (p.slug || "").toLowerCase();
+      if (allPharmacies && allPharmacies.length > 0) {
+        const bySlug = allPharmacies.find((p) => {
+          const slugFormatted = p.slug ? safeSlugify(p.slug) : "";
+          const nameFormatted = p.nome ? safeSlugify(p.nome) : "";
+          const idStr = String(p.id);
+          const rawSlugLower = (p.slug || "").toLowerCase();
 
-        return (
-          slugFormatted === normalizedSearch ||
-          rawSlugLower === lowerRaw ||
-          nameFormatted === normalizedSearch ||
-          idStr === slugToSearch
-        );
-      });
-      if (bySlug) return bySlug;
+          return (
+            slugFormatted === normalizedSearch ||
+            rawSlugLower === lowerRaw ||
+            nameFormatted === normalizedSearch ||
+            idStr === slugToSearch
+          );
+        });
+        if (bySlug) return bySlug;
+      }
 
-      // Se a lista ainda não foi carregada do Supabase e não achou no cache, aguarda
-      if (!pharmaciesLoaded) return null;
+      // Se a URL aponta para uma loja específica (ex: /zona-sul), NUNCA fazer fallback para loja-padrao
+      // Retorna imediatamente o design individual da loja
+      if (normalizedSearch !== "loja-padrao") {
+        const formattedName = slugToSearch
+          .split('-')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+
+        return {
+          id: slugToSearch,
+          slug: slugToSearch,
+          nome: formattedName,
+          categoriaAssociado: 'Parceiro',
+          isPleno: false,
+          ativo: true,
+          virtualStoreStatus: 'Ativa',
+        } as any;
+      }
+    }
+
+    if (!allPharmacies || allPharmacies.length === 0) {
+      return null;
     }
 
     // 2. Última loja visitada
@@ -76,7 +97,7 @@ export function useActivePharmacy() {
       if (lastSlug) {
         const normalizedLast = safeSlugify(lastSlug);
         const lowerLast = lastSlug.toLowerCase();
-        const byLastSlug = pharmacies.find((p) => {
+        const byLastSlug = allPharmacies.find((p) => {
           const slugFormatted = p.slug ? safeSlugify(p.slug) : "";
           const nameFormatted = p.nome ? safeSlugify(p.nome) : "";
           const idStr = String(p.id);
@@ -95,15 +116,15 @@ export function useActivePharmacy() {
 
     // 3. Farmácia selecionada no carrinho
     if (selectedPharmacyId) {
-      const byCart = pharmacies.find((p) => String(p.id) === String(selectedPharmacyId));
+      const byCart = allPharmacies.find((p) => String(p.id) === String(selectedPharmacyId));
       if (byCart) return byCart;
     }
 
-    // 4. Fallback padrão seguro (garante que nunca trave em tela branca/spinner infinito)
+    // 4. Fallback padrão seguro apenas para raiz da rede ou rota padrão
     return (
-      pharmacies.find((p) => (p.slug || "").toLowerCase() === "loja-padrao") ||
-      pharmacies.find((p) => p.ativo !== false) ||
-      pharmacies[0] ||
+      allPharmacies.find((p) => (p.slug || "").toLowerCase() === "loja-padrao") ||
+      allPharmacies.find((p) => p.ativo !== false) ||
+      allPharmacies[0] ||
       null
     );
   }, [selectedPharmacyId, pharmacies, potentialSlug, redirectSlug, pharmaciesLoaded]);

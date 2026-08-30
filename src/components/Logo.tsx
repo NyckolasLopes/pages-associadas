@@ -1,59 +1,65 @@
 import { Link, useParams } from "@tanstack/react-router";
 import logoUrlDefault from "@/assets/logo.png";
 import { useAdmin } from "@/stores/admin";
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
 
 export function Logo({ className = "h-10" }: { className?: string }) {
   const { logoUrl: globalLogoUrl, pharmacies } = useAdmin();
-  const [mounted, setMounted] = useState(false);
   const params = useParams({ strict: false });
   const rawStoreSlug = params && (params as any).storeSlug;
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const pathParts = currentPath.split('/').filter(Boolean);
+  const pathSlug = pathParts[0] ?? "";
+  const effectiveSlug = rawStoreSlug || (pathSlug && !SYSTEM_PAGES.has(pathSlug) ? pathSlug : "");
 
   const activePharmacy = useActivePharmacy();
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.isPleno === false;
+  const isCustomStore = !!effectiveSlug && effectiveSlug !== "loja-padrao";
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
+                     activePharmacy?.categoriaAssociado === 'Associado' || 
+                     activePharmacy?.isPleno === false || 
+                     isCustomStore;
 
   // Resolve target store slug safely
   const targetStoreSlug = useMemo(() => {
-    // 1. If active pharmacy is a valid store with slug
     if (activePharmacy?.slug && activePharmacy.slug !== "loja-padrao") {
       return safeSlugify(activePharmacy.slug);
     }
-    // 2. If URL has a valid non-default storeSlug
-    if (rawStoreSlug && rawStoreSlug !== "loja-padrao" && !SYSTEM_PAGES.has(rawStoreSlug)) {
-      const found = (pharmacies || []).find(p => safeSlugify(p.slug || p.nome || "") === safeSlugify(rawStoreSlug));
-      if (found?.slug) return safeSlugify(found.slug);
-      if (found?.nome) return safeSlugify(found.nome);
+    if (effectiveSlug && effectiveSlug !== "loja-padrao") {
+      return safeSlugify(effectiveSlug);
     }
-    // 3. If partner pharmacy with name
-    if (isParceiro && activePharmacy?.nome) {
-      return safeSlugify(activePharmacy.nome);
-    }
-    // 4. Default: return null to link directly to "/"
     return null;
-  }, [activePharmacy, rawStoreSlug, pharmacies, isParceiro]);
+  }, [activePharmacy, effectiveSlug]);
 
-  // If we have a storeSlug, assume it might be a partner until proven otherwise during SSR
-  const isPotentiallyParceiro = isParceiro || (!mounted && rawStoreSlug && rawStoreSlug !== "loja-padrao");
-  const displayLogo = activePharmacy?.logoUrl || (!isPotentiallyParceiro ? (globalLogoUrl || logoUrlDefault) : "");
+  const partnerLogo = activePharmacy?.logoUrl || activePharmacy?.footerLogoUrl;
+  const storeDisplayName = activePharmacy?.nome || (effectiveSlug ? effectiveSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : "");
 
   return (
     <Link 
       to={targetStoreSlug ? "/$storeSlug" : "/"} 
       params={targetStoreSlug ? { storeSlug: targetStoreSlug } : undefined} 
       className="inline-flex items-center" 
-      aria-label={activePharmacy?.nome || "Início"}
+      aria-label={storeDisplayName || "Início"}
     >
-      {(!displayLogo && isPotentiallyParceiro) ? (
-        <span className="font-bold text-lg text-primary">{activePharmacy?.nome || ""}</span>
+      {isParceiro ? (
+        partnerLogo ? (
+          <img
+            src={partnerLogo}
+            alt={storeDisplayName || "Logo"}
+            className={`${className} w-auto object-contain`}
+            loading="eager"
+            decoding="async"
+          />
+        ) : (
+          <span className="font-extrabold text-xl tracking-tight text-slate-800 truncate max-w-[190px] sm:max-w-[260px]">
+            {storeDisplayName || "Loja Parceira"}
+          </span>
+        )
       ) : (
         <img
-          src={displayLogo ? displayLogo : logoUrlDefault}
-          alt={activePharmacy?.nome || "Logo"}
+          src={globalLogoUrl || logoUrlDefault}
+          alt={storeDisplayName || "Farmácias Associadas"}
           className={`${className} w-auto object-contain`}
           loading="eager"
           decoding="async"

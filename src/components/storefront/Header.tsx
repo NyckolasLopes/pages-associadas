@@ -159,7 +159,10 @@ export function Header() {
   const urlSlug = (params as any)?.storeSlug as string | undefined;
   
   const activePharmacy = useActivePharmacy();
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
+                     activePharmacy?.categoriaAssociado === 'Associado' || 
+                     activePharmacy?.isPleno === false || 
+                     (isStoreContext && urlSlug !== 'loja-padrao');
   const storeSlug = getEffectiveStoreSlug(urlSlug, activePharmacy);
   const customProducts = useAdminProducts(s => s.customProducts);
   const { featuredCategories, storeFeaturedCategories } = useAdmin();
@@ -940,7 +943,10 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   const user = useAuth((s) => s.user);
   const marcas = useMarcasStore((s) => s.marcas);
   const activePharmacy = useActivePharmacy();
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
+                     activePharmacy?.categoriaAssociado === 'Associado' || 
+                     activePharmacy?.isPleno === false || 
+                     ((params as any)?.storeSlug && (params as any)?.storeSlug !== 'loja-padrao');
   const allCategories = useAdminCategories(s => s.categories);
   const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
   
@@ -1157,7 +1163,10 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
   const allCategories = useAdminCategories(s => s.categories);
   const params = useParams({ strict: false });
   const activePharmacy = useActivePharmacy();
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
+                     activePharmacy?.categoriaAssociado === 'Associado' || 
+                     activePharmacy?.isPleno === false || 
+                     ((params as any)?.storeSlug && (params as any)?.storeSlug !== 'loja-padrao');
   const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
 
   const allSubs = useMemo(() => {

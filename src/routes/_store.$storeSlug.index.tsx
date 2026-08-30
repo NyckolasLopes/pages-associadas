@@ -823,7 +823,7 @@ function StoreHome() {
 
 
         {/* Diferenciais da Rede */}
-        {loja?.categoriaAssociado !== 'Parceiro' && (
+        {!(loja?.categoriaAssociado === 'Parceiro' || loja?.categoriaAssociado === 'Associado' || loja?.isPleno === false || storeSlug !== 'loja-padrao') && (
           <LazySection height="400px">
             <section className="container-fa my-12">
               <div className="bg-orange-500 text-white rounded-2xl p-6 md:p-8">
