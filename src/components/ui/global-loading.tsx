@@ -43,11 +43,9 @@ export function GlobalLoading() {
   }
 
   // Identificação: Loja Parceira vs Loja Pleno
-  // Se for Parceiro, Associado ou isPleno === false, OU se estamos em uma rota de loja específica (ex: /zona-sul)
-  const isParceiro = currentPharmacy?.categoriaAssociado === 'Parceiro' || 
-                     currentPharmacy?.categoriaAssociado === 'Associado' || 
-                     currentPharmacy?.isPleno === false ||
-                     (isCustomStoreSlug && (!currentPharmacy || currentPharmacy.categoriaAssociado === 'Parceiro'));
+  const isParceiro = currentPharmacy 
+    ? (currentPharmacy.categoriaAssociado === 'Parceiro' || currentPharmacy.categoriaAssociado === 'Associado' || currentPharmacy.isPleno === false)
+    : false;
 
   const partnerLogo = currentPharmacy?.logoUrl || currentPharmacy?.footerLogoUrl;
   const partnerName = currentPharmacy?.nome || (potentialSlug ? potentialSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : "Loja Parceira");

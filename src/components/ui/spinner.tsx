@@ -32,10 +32,9 @@ export function Spinner({ className, size = 32, style, forceGeneric, ...props }:
     }) || null;
   }
 
-  const isParceiro = currentPharmacy?.categoriaAssociado === 'Parceiro' || 
-                     currentPharmacy?.categoriaAssociado === 'Associado' || 
-                     currentPharmacy?.isPleno === false ||
-                     (isCustomStoreSlug && (!currentPharmacy || currentPharmacy.categoriaAssociado === 'Parceiro'));
+  const isParceiro = currentPharmacy 
+    ? (currentPharmacy.categoriaAssociado === 'Parceiro' || currentPharmacy.categoriaAssociado === 'Associado' || currentPharmacy.isPleno === false)
+    : false;
 
   // Lojas Parceiro/Associado usam o redondo comum carregando
   if (forceGeneric || isParceiro) {

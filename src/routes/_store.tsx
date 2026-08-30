@@ -52,11 +52,9 @@ function StoreLayout() {
   const storeTheme = useMemo(() => {
     if (!activePharmacy) return undefined;
 
-    const isCustomStoreSlug = potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && potentialSlug !== 'loja-padrao';
     const isParceiro = activePharmacy?.categoriaAssociado === "Parceiro" || 
                        activePharmacy?.categoriaAssociado === "Associado" || 
-                       activePharmacy?.isPleno === false ||
-                       isCustomStoreSlug;
+                       activePharmacy?.isPleno === false;
 
     let themeToApply: Record<string, string | undefined> = {};
 

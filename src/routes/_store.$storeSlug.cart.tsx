@@ -19,10 +19,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
-  Flame, Store, Truck, X, MapPin, AlertTriangle, Bike, Bell,
+  Flame, Store, Truck, X, MapPin, AlertTriangle, Bell,
   MessageCircle, Send, CheckCircle2, Tag, Sparkles, DollarSign, CreditCard, ShoppingBag,
   Building2, Clock, Edit2
 } from "lucide-react";
+import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
 import { toast } from "sonner";
 import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
 import { sanitizeText, validatePhone, validateCPF, validateEmail, sanitizeCouponCode } from "@/lib/security";
@@ -588,7 +589,7 @@ function CartPage() {
 
         if (isEligible && deliveryPrice !== null) {
           opts.push(
-            { id: "standard", label: "Entrega Padrão", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: Bike }
+            { id: "standard", label: "Receber em casa", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: MotorcycleIcon }
           );
         }
 
@@ -599,7 +600,7 @@ function CartPage() {
           opts.push({ id: "99", label: "99 Entregas", price: Number(p.custo99), eta: "Em até 1 hora", icon: Truck });
         }
         if (p.aceitaMotoboy && p.custoMotoboy) {
-          opts.push({ id: "motoboy", label: "Motoboy Expresso", price: Number(p.custoMotoboy), eta: "Em até 2 horas", icon: Bike });
+          opts.push({ id: "motoboy", label: "Motoboy Expresso", price: Number(p.custoMotoboy), eta: "Em até 2 horas", icon: MotorcycleIcon });
         }
       }
     }
@@ -891,7 +892,7 @@ function CartPage() {
       }).join("\n");
 
       const deliveryInfoText = deliveryMethod === "entrega"
-        ? `\u{1F6F5} *ENTREGA EM DOMICÍLIO:*\n${cleanAddress}, Nº ${cleanNumber} ${cleanComplement ? `(${cleanComplement})` : ""}\nBairro: ${cleanBairro} - ${deliveryCity || selectedPharmacy.cidade}/${selectedPharmacy.uf}\nCEP: ${deliveryCep || cep}`
+        ? `\u{1F6F5} *RECEBER EM CASA:*\n${cleanAddress}, Nº ${cleanNumber} ${cleanComplement ? `(${cleanComplement})` : ""}\nBairro: ${cleanBairro} - ${deliveryCity || selectedPharmacy.cidade}/${selectedPharmacy.uf}\nCEP: ${deliveryCep || cep}`
         : `\u{1F3EC} *RETIRADA NO BALCÃO:*\nFarmácia: ${selectedPharmacy.nome}\nEndereço: ${selectedPharmacy.endereco}, ${selectedPharmacy.bairro} - ${selectedPharmacy.cidade}`;
 
       const whatsappText = `\u{1F3E5} *NOVO PEDIDO - FARMÁCIAS ASSOCIADAS*\n` +
@@ -1479,9 +1480,9 @@ function CartPage() {
                           const firstDeliveryOption = freight?.find(f => f.id !== "pickup");
                           setSelected(firstDeliveryOption ? firstDeliveryOption.id : "delivery_placeholder");
                       }} />
-                      <Bike className="h-4 w-4 text-primary" />
+                      <MotorcycleIcon className="h-4 w-4 text-primary" />
                       <div className="flex-1">
-                        <div className="text-sm font-bold">Entrega em domicílio</div>
+                        <div className="text-sm font-bold">Receber em casa</div>
                         <div className="text-xs text-muted-foreground">Receba no seu endereço</div>
                       </div>
                     </label>
@@ -1731,8 +1732,8 @@ function CartPage() {
                   disabled={items.some(i => i.retemReceita)}
                   className={`border rounded-lg p-2.5 text-xs font-bold flex flex-col items-center gap-1 transition-all ${deliveryMethod === "entrega" ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20" : "bg-white text-slate-700 hover:bg-slate-100"}`}
                 >
-                  <Bike className="h-4 w-4 text-emerald-600" />
-                  <span>Entrega em Domicílio</span>
+                  <MotorcycleIcon className="h-4 w-4 text-emerald-600" />
+                  <span>Receber em casa</span>
                 </button>
                 <button
                   type="button"

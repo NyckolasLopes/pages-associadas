@@ -15,11 +15,9 @@ export function Logo({ className = "h-10" }: { className?: string }) {
   const effectiveSlug = rawStoreSlug || (pathSlug && !SYSTEM_PAGES.has(pathSlug) ? pathSlug : "");
 
   const activePharmacy = useActivePharmacy();
-  const isCustomStore = !!effectiveSlug && effectiveSlug !== "loja-padrao";
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
                      activePharmacy?.categoriaAssociado === 'Associado' || 
-                     activePharmacy?.isPleno === false || 
-                     isCustomStore;
+                     activePharmacy?.isPleno === false;
 
   // Resolve target store slug safely
   const targetStoreSlug = useMemo(() => {
@@ -58,7 +56,7 @@ export function Logo({ className = "h-10" }: { className?: string }) {
         )
       ) : (
         <img
-          src={globalLogoUrl || logoUrlDefault}
+          src={activePharmacy?.logoUrl || globalLogoUrl || logoUrlDefault}
           alt={storeDisplayName || "Farmácias Associadas"}
           className={`${className} w-auto object-contain`}
           loading="eager"

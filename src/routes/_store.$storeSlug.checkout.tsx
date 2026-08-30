@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState, useMemo } from "react";
-import { Lock, Store, Home, User, Truck, CreditCard, Users, QrCode, Clock, CheckCircle2, Banknote, Tag, X, AlertCircle, MapPin, Plus, Bike, Star } from "lucide-react";
+import { Lock, Store, Home, User, Truck, CreditCard, Users, QrCode, Clock, CheckCircle2, Banknote, Tag, X, AlertCircle, MapPin, Plus, Star } from "lucide-react";
+import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import { toast } from "sonner";
@@ -556,7 +557,7 @@ function Checkout() {
       const phone = (activeStore?.telefone || "51999999999").replace(/\D/g, "");
       const waNumber = phone.startsWith("55") ? phone : `55${phone}`;
       const itemsText = visibleItems.map(i => `- ${i.qty}x ${i.nome}`).join("%0A");
-      const deliveryText = deliveryMethod === "store" ? "Retirada na Loja" : "Entrega em Domicílio";
+      const deliveryText = deliveryMethod === "store" ? "Retirada na Loja" : "Receber em casa";
       const totalText = brl(finalTotal);
       
       const text = `Olá! Acabei de fazer um pedido na loja virtual.%0A%0A*Pedido:* #${newOrder.id}%0A*Cliente:* ${nome}%0A*Entrega:* ${deliveryText}%0A%0A*Itens:*%0A${itemsText}%0A%0A*Total:* ${totalText}%0A%0AGostaria de prosseguir com o pedido.`;
@@ -716,7 +717,7 @@ function Checkout() {
                     }}
                     className="h-4 w-4 text-primary accent-primary" 
                   />
-                  <Home className="h-5 w-5 text-primary" />
+                  <MotorcycleIcon className="h-5 w-5 text-primary" />
                   <span className="font-bold text-sm">Receber em casa</span>
                 </div>
                 <p className="text-xs text-muted-foreground ml-7">A <strong>{activeStore?.razaoSocial || activeStore?.nome}</strong> fará a entrega no endereço cadastrado.</p>
@@ -726,8 +727,8 @@ function Checkout() {
             {forceStore && (
               <div className="col-span-full bg-red-50 text-red-800 p-3 rounded-lg text-xs border border-red-100 font-bold h-fit">
                 {hasPrescription
-                  ? "⚠️ Seu pedido contém medicamentos controlados ou serviços de saúde. A entrega em domicílio não está disponível, por favor escolha a opção de atendimento na Loja."
-                  : "⚠️ A unidade selecionada não realiza entregas em domicílio. Por favor, escolha a opção de Retirar na Loja."}
+                  ? "⚠️ Seu pedido contém medicamentos controlados ou serviços de saúde. A opção Receber em Casa não está disponível, por favor escolha a opção de atendimento na Loja."
+                  : "⚠️ A unidade selecionada não realiza entregas para Receber em Casa. Por favor, escolha a opção de Retirar na Loja."}
               </div>
             )}
           </div>

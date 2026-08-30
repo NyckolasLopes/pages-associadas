@@ -414,7 +414,7 @@ function Relatorios() {
   orders.forEach(o => {
     const met = o.envio?.metodo || "Desconhecido";
     const isRetirada = met.toLowerCase().includes("retirada");
-    const label = isRetirada ? "Retirada na Loja" : "Entrega em Domicílio";
+    const label = isRetirada ? "Retirada na Loja" : "Receber em Casa";
     
     envioMap[label] = (envioMap[label] || 0) + 1;
 
@@ -992,8 +992,8 @@ function Relatorios() {
                   <p className="text-4xl font-black text-emerald-700">{envioMap["Retirada na Loja"] || 0}</p>
                 </div>
                 <div className="bg-sky-50 p-6 rounded-2xl border border-sky-100 shadow-sm text-center">
-                  <p className="text-xs font-black text-sky-600 uppercase tracking-widest mb-1">Entrega em Domicílio</p>
-                  <p className="text-4xl font-black text-sky-700">{envioMap["Entrega em Domicílio"] || (orders.length - (envioMap["Retirada na Loja"] || 0))}</p>
+                  <p className="text-xs font-black text-sky-600 uppercase tracking-widest mb-1">Receber em Casa</p>
+                  <p className="text-4xl font-black text-sky-700">{envioMap["Receber em Casa"] || (orders.length - (envioMap["Retirada na Loja"] || 0))}</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -1071,7 +1071,7 @@ function Relatorios() {
                       <thead>
                         <tr className="border-b bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-wider">
                           <th className="p-4">Farmácia</th>
-                          <th className="p-4 text-center">Entrega em Domicílio</th>
+                          <th className="p-4 text-center">Receber em Casa</th>
                           <th className="p-4 text-center">Retirada na Loja</th>
                           <th className="p-4 text-center">Total</th>
                         </tr>
