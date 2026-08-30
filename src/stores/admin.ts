@@ -581,15 +581,25 @@ export const useAdmin = create<AdminState>()(
               return { success: false, message: "Acesso negado. Sua conta não possui permissões administrativas." };
             }
 
+            const adminUserObj = {
+              id: p.id,
+              name: p.nome || localUser?.name || email.split("@")[0],
+              email: p.email || email,
+              grupoId: grupoId,
+              proprietario: isProprietario,
+              lojasVinculadas: lojasVinculadas,
+            };
+
+            if (typeof window !== 'undefined') {
+              try {
+                sessionStorage.setItem('fa-admin-session', JSON.stringify(adminUserObj));
+                localStorage.removeItem('admin-storage-local');
+                localStorage.removeItem('fa-admin-store-v4-local');
+              } catch {}
+            }
+
             set({
-              currentUser: {
-                id: p.id,
-                name: p.nome || localUser?.name || email.split("@")[0],
-                email: p.email || email,
-                grupoId: grupoId,
-                proprietario: isProprietario,
-                lojasVinculadas: lojasVinculadas,
-              },
+              currentUser: adminUserObj,
             });
             return { success: true };
           }
@@ -606,15 +616,25 @@ export const useAdmin = create<AdminState>()(
             return { success: false, message: "Acesso negado. Sua conta não possui permissões administrativas." };
           }
 
+          const fallbackAdminObj = {
+            id: data.user.id,
+            name: localUser?.name || email.split("@")[0],
+            email: email,
+            grupoId: grupoIdFallback,
+            lojasVinculadas: lojasVinculadasFallback,
+            proprietario: isProprietarioFallback,
+          };
+
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem('fa-admin-session', JSON.stringify(fallbackAdminObj));
+              localStorage.removeItem('admin-storage-local');
+              localStorage.removeItem('fa-admin-store-v4-local');
+            } catch {}
+          }
+
           set({
-            currentUser: {
-              id: data.user.id,
-              name: localUser?.name || email.split("@")[0],
-              email: email,
-              grupoId: grupoIdFallback,
-              lojasVinculadas: lojasVinculadasFallback,
-              proprietario: isProprietarioFallback,
-            },
+            currentUser: fallbackAdminObj,
           });
           return { success: true };
         } catch (e: any) {
@@ -626,53 +646,21 @@ export const useAdmin = create<AdminState>()(
         try {
           if (get().currentUser) return;
 
-          // 1. Tenta recuperar do localStorage['admin-storage-local']
+          // Restaura a sessão do admin APENAS da sessionStorage da aba ativa (nunca de clientes na loja nem do Supabase geral)
           if (typeof window !== 'undefined') {
-            const localData = localStorage.getItem('admin-storage-local');
-            if (localData) {
-              const parsed = JSON.parse(localData);
-              if (parsed.currentUser) {
+            const sessionData = sessionStorage.getItem('fa-admin-session');
+            if (sessionData) {
+              const parsed = JSON.parse(sessionData);
+              if (parsed && parsed.id && parsed.email) {
                 set({
-                  currentUser: parsed.currentUser,
-                  activeStoreId: parsed.activeStoreId || get().activeStoreId,
+                  currentUser: parsed,
                 });
                 return;
               }
             }
-          }
-
-          // 2. Fallback: Consulta o Supabase Auth Session
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (sessionData?.session?.user) {
-            const u = sessionData.session.user;
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("id", u.id)
-              .maybeSingle();
-
-            const isFallbackAdmin = u.email === "nyckolas.lopes@farmaciasassociadas.com.br" || u.email === "thiago.rocha@farmaciasassociadas.com.br";
-            const isProprietario = profile?.is_admin || isFallbackAdmin;
-            const grupoId = profile?.grupo_id;
-            const lojasVinculadas = profile?.lojas_vinculadas || [];
-
-            if (isProprietario || grupoId || lojasVinculadas.length > 0) {
-              const userObj = {
-                id: u.id,
-                name: profile?.nome || u.email?.split("@")[0] || "Administrador",
-                email: u.email || "",
-                grupoId: grupoId,
-                proprietario: isProprietario,
-                lojasVinculadas: lojasVinculadas,
-              };
-              set({ currentUser: userObj });
-              try {
-                localStorage.setItem('admin-storage-local', JSON.stringify({
-                  currentUser: userObj,
-                  activeStoreId: get().activeStoreId
-                }));
-              } catch {}
-            }
+            // Limpa resíduos antigos de localStorage para garantir que não auto-logue
+            localStorage.removeItem('admin-storage-local');
+            localStorage.removeItem('fa-admin-store-v4-local');
           }
         } catch (err) {
           console.warn("Falha ao restaurar sessão admin:", err);
@@ -681,6 +669,11 @@ export const useAdmin = create<AdminState>()(
       logout: async () => {
         if (typeof window !== 'undefined') {
           (window as any)._isLoggingOutAdmin = true;
+          try {
+            sessionStorage.removeItem('fa-admin-session');
+            localStorage.removeItem('admin-storage-local');
+            localStorage.removeItem('fa-admin-store-v4-local');
+          } catch {}
         }
         try {
           await supabase.auth.signOut();
@@ -689,12 +682,10 @@ export const useAdmin = create<AdminState>()(
         }
         
         set({ currentUser: null, activeStoreId: null });
-        
-        try {
-          localStorage.removeItem("admin-storage-local");
-        } catch (e) {}
 
-        window.location.href = '/admin?logout=1';
+        if (typeof window !== 'undefined') {
+          window.location.href = '/admin?logout=1';
+        }
       },
       register: (user) => set((s) => ({ users: [...s.users, user] })),
       setUsers: (users) => set({ users }),

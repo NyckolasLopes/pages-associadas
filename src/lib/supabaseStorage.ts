@@ -53,18 +53,6 @@ function scheduleSupabaseWrite(name: string, parsedValue: any) {
 
 export const supabaseStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
-    // 1. Tenta recuperar sessão local imediatamente do localStorage
-    let cachedLocalUser: any = undefined;
-    let cachedActiveStoreId: any = undefined;
-    try {
-      const localData = localStorage.getItem(`${name}-local`);
-      if (localData) {
-        const localParsed = JSON.parse(localData);
-        if (localParsed.currentUser) cachedLocalUser = localParsed.currentUser;
-        if (localParsed.activeStoreId) cachedActiveStoreId = localParsed.activeStoreId;
-      }
-    } catch {}
-
     try {
       const { data, error } = await supabase
         .from('app_state')
@@ -86,14 +74,9 @@ export const supabaseStorage: StateStorage = {
           localStorage.setItem(`${name}-backup`, JSON.stringify(globalValue));
         } catch (e) {}
 
-        // Restaura a sessão local no estado retornado
+        // Sessões de usuário nunca devem ser restauradas via app_state compartilhado
         if (globalValue.state) {
-          if (cachedLocalUser !== undefined) {
-            globalValue.state.currentUser = cachedLocalUser;
-          }
-          if (cachedActiveStoreId !== undefined) {
-            globalValue.state.activeStoreId = cachedActiveStoreId;
-          }
+          delete globalValue.state.currentUser;
         }
 
         return JSON.stringify(globalValue);
@@ -105,8 +88,7 @@ export const supabaseStorage: StateStorage = {
         if (backup) {
           const globalValue = JSON.parse(backup);
           if (globalValue.state) {
-            if (cachedLocalUser !== undefined) globalValue.state.currentUser = cachedLocalUser;
-            if (cachedActiveStoreId !== undefined) globalValue.state.activeStoreId = cachedActiveStoreId;
+            delete globalValue.state.currentUser;
           }
           return JSON.stringify(globalValue);
         }
@@ -120,8 +102,7 @@ export const supabaseStorage: StateStorage = {
         if (backup) {
           const globalValue = JSON.parse(backup);
           if (globalValue.state) {
-            if (cachedLocalUser !== undefined) globalValue.state.currentUser = cachedLocalUser;
-            if (cachedActiveStoreId !== undefined) globalValue.state.activeStoreId = cachedActiveStoreId;
+            delete globalValue.state.currentUser;
           }
           return JSON.stringify(globalValue);
         }
@@ -134,37 +115,7 @@ export const supabaseStorage: StateStorage = {
     try {
       const parsedValue = JSON.parse(value);
 
-      // Salva sessão apenas localmente (instantâneo — sem debounce)
       if (parsedValue.state) {
-        let existingLocal: any = null;
-        try {
-          const currentLocal = localStorage.getItem(`${name}-local`);
-          if (currentLocal) existingLocal = JSON.parse(currentLocal);
-        } catch {}
-
-        // Se o novo estado tem um usuário autenticado, atualiza o cache local.
-        // Se for null/undefined, SÓ limpa o cache local se o logout explícito foi acionado!
-        // Isso evita que renderizações intermediárias ou requisições assíncronas derrubem a sessão.
-        const isExplicitLogout = typeof window !== 'undefined' && (window as any)._isLoggingOutAdmin;
-
-        let userToSave = parsedValue.state.currentUser;
-        if (!userToSave && !isExplicitLogout && existingLocal?.currentUser) {
-          userToSave = existingLocal.currentUser;
-          parsedValue.state.currentUser = userToSave;
-        }
-
-        let storeToSave = parsedValue.state.activeStoreId;
-        if (!storeToSave && !isExplicitLogout && existingLocal?.activeStoreId) {
-          storeToSave = existingLocal.activeStoreId;
-          parsedValue.state.activeStoreId = storeToSave;
-        }
-
-        const localState = {
-          currentUser: userToSave || null,
-          activeStoreId: storeToSave || null,
-        };
-        localStorage.setItem(`${name}-local`, JSON.stringify(localState));
-
         // Mantém um backup completo do estado caso a rede caia
         localStorage.setItem(`${name}-backup`, value);
 
