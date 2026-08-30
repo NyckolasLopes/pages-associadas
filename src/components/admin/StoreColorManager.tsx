@@ -20,7 +20,22 @@ import {
   Smartphone,
   LayoutTemplate,
   SlidersHorizontal,
-  Share2
+  Share2,
+  Menu,
+  MapPin,
+  User,
+  Heart,
+  ShieldCheck,
+  Pill,
+  Truck,
+  Phone,
+  Percent,
+  Stethoscope,
+  Baby,
+  Tag,
+  Clock,
+  ArrowRight,
+  CreditCard,
 } from "lucide-react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import {
@@ -1228,56 +1243,137 @@ export function StoreColorManager({
 
         {/* Right Column: Live Mockup Preview (5 Cols) */}
         <div className="xl:col-span-5 sticky top-6 space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-emerald-600" /> Demonstração na Loja em Tempo Real
-              </h3>
-              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                Ao Vivo
-              </span>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-emerald-600" /> Demonstração na Loja em Tempo Real
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Visualização fiel e interativa com a identidade visual da loja.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice("desktop")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition-all ${
+                    previewDevice === "desktop"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <Monitor className="w-3.5 h-3.5" /> Desktop
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice("mobile")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition-all ${
+                    previewDevice === "mobile"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" /> Mobile
+                </button>
+              </div>
             </div>
 
-            {/* Mobile / Web Storefront Mockup */}
-            <div className="bg-slate-100 rounded-2xl p-3 border border-slate-200 shadow-inner">
+            {/* Storefront Mockup Container */}
+            <div className="bg-slate-900/5 rounded-2xl p-2.5 md:p-3 border border-slate-200/80 shadow-inner">
+              
+              {/* Browser Window Chrome */}
+              <div className="bg-slate-200/80 rounded-t-xl px-3 py-1.5 flex items-center gap-2 border-b border-slate-300/60">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+                </div>
+                <div className="bg-white rounded-md px-3 py-0.5 text-[10px] text-slate-500 font-mono flex-1 text-center truncate shadow-2xs">
+                  https://farmaciasassociadas.com.br/{safeSlugify(currentPharmacy?.nome || "loja")}
+                </div>
+              </div>
+
+              {/* Scrollable Store Canvas */}
               <div
-                className="rounded-xl overflow-hidden shadow-lg border border-slate-200 flex flex-col transition-all duration-300"
+                className={`overflow-hidden shadow-lg border border-slate-200 flex flex-col transition-all duration-300 max-h-[640px] overflow-y-auto scrollbar-thin ${
+                  previewDevice === "mobile" ? "max-w-[360px] mx-auto rounded-b-xl" : "w-full rounded-b-xl"
+                }`}
                 style={{ backgroundColor: getColor("--background", "#FFFFFF") }}
               >
-                {/* Top Announcement Bar */}
+                {/* 1. TOP ANNOUNCEMENT BAR */}
                 <div
-                  className="py-1.5 px-3 text-center text-[10px] font-bold transition-colors"
+                  className="py-1 px-3 text-center text-[10px] font-bold transition-colors flex items-center justify-between gap-2 shadow-2xs"
                   style={{
-                    backgroundColor: getColor("--topbar-bg", "#FE509C"),
+                    backgroundColor: getColor("--topbar-bg", "#F37021"),
                     color: getColor("--topbar-text", "#FFFFFF")
                   }}
                 >
-                  Cupom de primeira compra: use 10OFF em compras acima de R$ 100,00
+                  <span className="truncate flex items-center gap-1.5 mx-auto">
+                    <Truck className="w-3 h-3 shrink-0" />
+                    <span>RECEBER EM CASA: Entrega Expressa | WhatsApp: (51) 99999-9999</span>
+                  </span>
                 </div>
 
-                {/* Header */}
+                {/* 2. MAIN HEADER */}
                 <div
-                  className="p-3.5 flex flex-col gap-2.5 transition-colors"
-                  style={{ backgroundColor: getColor("--header-bg", "#705BC2") }}
+                  className="px-3.5 py-2.5 flex flex-col gap-2 transition-colors border-b border-black/5"
+                  style={{ backgroundColor: getColor("--header-bg", "#00B5AD") }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div
-                      className="font-black text-sm tracking-tight flex items-center gap-1.5"
-                      style={{ color: getColor("--header-icons", "#FFFFFF") }}
-                    >
+                  <div className="flex items-center justify-between gap-3">
+                    {/* Brand / Store Logo */}
+                    <div className="flex items-center gap-2 shrink-0">
                       {currentPharmacy?.logoUrl ? (
-                        <img src={currentPharmacy.logoUrl} alt="Logo" className="h-5 w-auto object-contain" />
+                        <img src={currentPharmacy.logoUrl} alt="Logo" className="h-6 max-w-[120px] object-contain" />
                       ) : (
-                        <><Store className="w-4 h-4" /> {currentPharmacy?.nome || "LOJA PARCEIRA"}</>
+                        <div
+                          className="font-black text-xs tracking-tight flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-black/10"
+                          style={{ color: getColor("--header-icons", "#FFFFFF") }}
+                        >
+                          <Store className="w-3.5 h-3.5" />
+                          <span className="uppercase truncate max-w-[140px]">{currentPharmacy?.nome || "FARMÁCIAS ASSOCIADAS"}</span>
+                        </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Search className="w-4 h-4" style={{ color: getColor("--header-icons", "#FFFFFF") }} />
-                      <div className="relative">
+
+                    {/* Desktop Search Bar */}
+                    {previewDevice === "desktop" && (
+                      <div
+                        className="h-8 flex-1 max-w-sm rounded-full flex items-center px-3 text-xs shadow-xs transition-colors"
+                        style={{ backgroundColor: getColor("--search-bg", "#FFFFFF") }}
+                      >
+                        <Search className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                        <span className="text-[11px] text-slate-400 truncate">Buscar medicamentos e cosméticos...</span>
+                      </div>
+                    )}
+
+                    {/* Store Header Actions */}
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      {previewDevice === "desktop" && (
+                        <div
+                          className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-white/15"
+                          style={{ color: getColor("--header-icons", "#FFFFFF") }}
+                        >
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate max-w-[90px]">Filial Matriz</span>
+                        </div>
+                      )}
+                      
+                      <div
+                        className="p-1 rounded-full hover:bg-white/10 cursor-pointer"
+                        style={{ color: getColor("--header-icons", "#FFFFFF") }}
+                      >
+                        <User className="w-4 h-4" />
+                      </div>
+
+                      <div className="relative p-1 rounded-full hover:bg-white/10 cursor-pointer">
                         <ShoppingCart className="w-4 h-4" style={{ color: getColor("--header-icons", "#FFFFFF") }} />
                         <span
-                          className="absolute -top-1.5 -right-2 text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold text-white"
-                          style={{ backgroundColor: getColor("--accent", "#FE509C") }}
+                          className="absolute -top-0.5 -right-0.5 text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold"
+                          style={{
+                            backgroundColor: getColor("--badge-accent-bg", getColor("--accent", "#F43F5E")),
+                            color: getColor("--badge-accent-text", "#FFFFFF")
+                          }}
                         >
                           2
                         </span>
@@ -1285,103 +1381,264 @@ export function StoreColorManager({
                     </div>
                   </div>
 
-                  {/* Search Bar */}
-                  <div
-                    className="h-8 rounded-full flex items-center px-3 text-xs shadow-sm transition-colors"
-                    style={{ backgroundColor: getColor("--search-bg", "#FFFFFF") }}
-                  >
-                    <Search className="w-3.5 h-3.5 text-slate-400 mr-2" />
-                    <span className="text-[11px] text-slate-400">Buscar medicamentos e cosméticos...</span>
-                  </div>
+                  {/* Mobile Search Bar */}
+                  {previewDevice === "mobile" && (
+                    <div
+                      className="h-7 rounded-full flex items-center px-3 text-xs shadow-xs transition-colors"
+                      style={{ backgroundColor: getColor("--search-bg", "#FFFFFF") }}
+                    >
+                      <Search className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                      <span className="text-[10px] text-slate-400 truncate">Buscar medicamentos, genéricos...</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Navigation Menu */}
+                {/* 3. CATEGORY NAVIGATION MENU */}
                 <div
-                  className="px-3 py-2 flex items-center gap-3 overflow-x-auto text-[10px] font-bold whitespace-nowrap scrollbar-none transition-colors border-t border-black/5"
+                  className="px-3 py-1.5 flex items-center gap-4 overflow-x-auto text-[10px] font-bold whitespace-nowrap scrollbar-none transition-colors shadow-xs"
                   style={{
-                    backgroundColor: getColor("--menu-bg", "#5F4BB6"),
+                    backgroundColor: getColor("--menu-bg", "#008E88"),
                     color: getColor("--menu-text", "#FFFFFF")
                   }}
                 >
-                  <span className="opacity-100 border-b-2 border-white pb-0.5">Medicamentos</span>
-                  <span className="opacity-80">Beleza & Higiene</span>
-                  <span className="opacity-80">Vitaminas</span>
-                  <span className="opacity-80">Ofertas</span>
+                  <span className="flex items-center gap-1 opacity-100 font-extrabold border-b-2 border-white pb-0.5">
+                    <Menu className="w-3 h-3" /> Todas as Categorias
+                  </span>
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer">Medicamentos</span>
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer">Beleza & Higiene</span>
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer">Vitaminas</span>
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer">Mamãe & Bebê</span>
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-0.5">
+                    <Sparkles className="w-2.5 h-2.5" /> Ofertas
+                  </span>
                 </div>
 
-                {/* Store Body Mock */}
-                <div className="p-3.5 space-y-3">
+                {/* 4. MAIN STORE BODY */}
+                <div className="p-3 space-y-3.5">
                   
-                  {/* Hero Banner Mock */}
+                  {/* Hero Banner Slide */}
                   <div
-                    className="h-20 rounded-xl flex items-center justify-center p-3 text-center shadow-sm relative overflow-hidden transition-colors"
-                    style={{ backgroundColor: (getColor("--secondary", "#FE509C")) + "20" }}
+                    className="rounded-xl p-4 text-white relative overflow-hidden shadow-xs flex flex-col justify-between min-h-[90px] transition-all"
+                    style={{
+                      background: `linear-gradient(135deg, ${getColor("--primary", "#00B5AD")} 0%, ${getColor("--secondary", "#F37021")} 100%)`
+                    }}
                   >
-                    <div className="space-y-0.5 z-10">
+                    <div className="space-y-1 relative z-10">
                       <span
-                        className="inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase text-white shadow-sm"
-                        style={{ backgroundColor: getColor("--secondary", "#FE509C") }}
+                        className="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wide shadow-xs"
+                        style={{
+                          backgroundColor: getColor("--badge-secondary-bg", "#F37021"),
+                          color: getColor("--badge-secondary-text", "#FFFFFF")
+                        }}
                       >
-                        Super Oferta
+                        Encarte da Semana
                       </span>
-                      <div className="text-xs font-bold" style={{ color: getColor("--foreground", "#1E293B") }}>
-                        Cuidados Diários e Dermocosméticos
+                      <div className="text-sm font-black leading-tight drop-shadow-xs">
+                        Descontos Especiais em Medicamentos
+                      </div>
+                      <div className="text-[10px] opacity-90">
+                        Economize até 50% em genéricos e similares
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/20 relative z-10">
+                      <button
+                        type="button"
+                        className="px-2.5 py-1 rounded text-[9px] font-extrabold uppercase shadow-xs transition hover:scale-105 active:scale-95"
+                        style={{
+                          backgroundColor: getColor("--btn-secondary-bg", "#F37021"),
+                          color: getColor("--btn-secondary-text", "#FFFFFF")
+                        }}
+                      >
+                        Aproveitar Ofertas
+                      </button>
+                      <div className="flex gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Product Cards Grid */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {[1, 2].map((i) => (
-                      <div key={i} className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm flex flex-col justify-between">
-                        <div className="w-full h-16 bg-slate-50 rounded-lg flex items-center justify-center relative mb-2">
-                          <span
-                            className="absolute top-1 left-1 text-[8px] font-bold px-1.5 py-0.5 rounded text-white"
-                            style={{ backgroundColor: getColor("--accent", "#FE509C") }}
-                          >
-                            -30%
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-bold">Produto {i}</span>
-                        </div>
-                        <div className="text-[10px] font-bold truncate" style={{ color: getColor("--foreground", "#1E293B") }}>
-                          {i === 1 ? "Vitamina C 1000mg" : "Protetor Solar FPS 50"}
-                        </div>
-                        <div className="text-[9px] text-slate-400 line-through mt-0.5">R$ 49,90</div>
-                        <div className="text-xs font-extrabold mb-2" style={{ color: getColor("--accent", "#FE509C") }}>
-                          R$ 34,90
-                        </div>
-                        <button
-                          type="button"
-                          className="w-full py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition hover:opacity-90 flex items-center justify-center gap-1"
-                          style={{
-                            backgroundColor: getColor("--primary", "#199965"),
-                            color: getColor("--primary-foreground", "#FFFFFF")
-                          }}
-                        >
-                          Comprar
-                        </button>
+                  {/* Banner Tarja (Diferenciais) */}
+                  <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 shadow-xs text-left">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <Truck className="w-3.5 h-3.5" />
                       </div>
-                    ))}
+                      <div>
+                        <div className="text-[9px] font-extrabold text-slate-800 leading-tight">Receber em casa</div>
+                        <div className="text-[8px] text-slate-500">Entrega rápida</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <Store className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-extrabold text-slate-800 leading-tight">Retirar na Loja</div>
+                        <div className="text-[8px] text-slate-500">Grátis em 1h</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                        <Percent className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-extrabold text-slate-800 leading-tight">Melhores Ofertas</div>
+                        <div className="text-[8px] text-slate-500">Encarte do mês</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-extrabold text-slate-800 leading-tight">Procedência</div>
+                        <div className="text-[8px] text-slate-500">100% Garantida</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Compre por Categoria (Carrossel Circular) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-900">Compre por categoria</span>
+                      <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">Ver todas <ChevronRight className="w-3 h-3" /></span>
+                    </div>
+                    <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+                      {[
+                        { name: "Medicamentos", icon: Pill, color: "text-blue-500" },
+                        { name: "Beleza", icon: Sparkles, color: "text-pink-500" },
+                        { name: "Higiene", icon: Heart, color: "text-emerald-500" },
+                        { name: "Vitaminas", icon: Percent, color: "text-amber-500" },
+                        { name: "Bebê", icon: Baby, color: "text-purple-500" },
+                      ].map((cat, idx) => {
+                        const IconComponent = cat.icon;
+                        return (
+                          <div key={idx} className="flex flex-col items-center gap-1 shrink-0 w-14">
+                            <div className="w-11 h-11 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center shadow-2xs hover:border-emerald-500 transition-colors">
+                              <IconComponent className={`w-4 h-4 ${cat.color}`} />
+                            </div>
+                            <span className="text-[9px] font-bold text-slate-700 text-center truncate w-full">{cat.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Product Cards Showcase Grid */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-900">Super Ofertas da Loja</span>
+                      <span className="text-[10px] font-bold text-emerald-600">Ver mais</span>
+                    </div>
+
+                    <div className={`grid gap-2.5 ${previewDevice === "desktop" ? "grid-cols-3" : "grid-cols-2"}`}>
+                      {[
+                        {
+                          name: "Dipirona Monoidratada 500mg 10 Comprimidos",
+                          tag: "Tarja Vermelha",
+                          oldPrice: "R$ 14,90",
+                          price: "R$ 8,94",
+                          discount: "-40%",
+                          colorTag: "bg-red-500"
+                        },
+                        {
+                          name: "Protetor Solar Facial FPS 60 Toque Seco 50g",
+                          tag: "Dermocosmético",
+                          oldPrice: "R$ 64,90",
+                          price: "R$ 45,43",
+                          discount: "-30%",
+                          colorTag: "bg-amber-500"
+                        },
+                        {
+                          name: "Vitamina C 1000mg + Zinco 30 Comprimidos",
+                          tag: "Suplemento",
+                          oldPrice: "R$ 49,90",
+                          price: "R$ 37,42",
+                          discount: "-25%",
+                          colorTag: "bg-blue-500"
+                        },
+                      ].slice(0, previewDevice === "desktop" ? 3 : 2).map((prod, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs flex flex-col justify-between relative hover:border-slate-300 transition-all group"
+                        >
+                          {/* Discount Badge */}
+                          <span
+                            className="absolute top-2 left-2 text-[8px] font-extrabold px-1.5 py-0.5 rounded shadow-2xs"
+                            style={{
+                              backgroundColor: getColor("--badge-accent-bg", getColor("--accent", "#F43F5E")),
+                              color: getColor("--badge-accent-text", "#FFFFFF")
+                            }}
+                          >
+                            {prod.discount}
+                          </span>
+
+                          {/* Product Image Placeholder */}
+                          <div className="w-full h-20 bg-slate-50 rounded-lg flex flex-col items-center justify-center relative mb-2 p-1 border border-slate-100">
+                            <Pill className="w-7 h-7 text-slate-300 mb-1" />
+                            <span className={`text-[7px] text-white font-extrabold px-1 py-0.2 rounded uppercase ${prod.colorTag}`}>
+                              {prod.tag}
+                            </span>
+                          </div>
+
+                          {/* Product Info */}
+                          <div className="space-y-0.5">
+                            <div className="text-[10px] font-bold line-clamp-2 leading-tight text-slate-800 min-h-[26px]">
+                              {prod.name}
+                            </div>
+                            <div className="text-[9px] text-slate-400 line-through">
+                              {prod.oldPrice}
+                            </div>
+                            <div
+                              className="text-xs font-black"
+                              style={{ color: getColor("--accent", "#F43F5E") }}
+                            >
+                              {prod.price}
+                            </div>
+                          </div>
+
+                          {/* Buy Button */}
+                          <button
+                            type="button"
+                            className="w-full mt-2 py-1.5 rounded-lg text-[10px] font-extrabold uppercase shadow-xs transition hover:opacity-90 active:scale-98 flex items-center justify-center gap-1"
+                            style={{
+                              backgroundColor: getColor("--btn-primary-bg", getColor("--primary", "#00B5AD")),
+                              color: getColor("--btn-primary-text", getColor("--primary-foreground", "#FFFFFF"))
+                            }}
+                          >
+                            <ShoppingCart className="w-3 h-3" />
+                            Comprar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* PWA App Banner Mock */}
                   <div
-                    className="p-3 rounded-xl shadow-sm flex items-center justify-between gap-2 border border-white/20 transition-colors"
+                    className="p-3 rounded-xl shadow-xs flex items-center justify-between gap-3 border border-white/20 transition-colors"
                     style={{
-                      backgroundColor: getColor("--pwa-banner-bg", "#705BC2"),
+                      backgroundColor: getColor("--pwa-banner-bg", "#00B5AD"),
                       color: getColor("--pwa-banner-text", "#FFFFFF")
                     }}
                   >
-                    <div className="text-[10px] leading-tight">
-                      <div className="font-bold">Baixe nosso App</div>
-                      <div className="text-[9px] opacity-90">Ofertas exclusivas na palma da mão</div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                      <div className="text-[10px] leading-tight min-w-0">
+                        <div className="font-extrabold truncate">Baixe o App Associadas</div>
+                        <div className="text-[9px] opacity-90 truncate">Ofertas e cupons na palma da mão</div>
+                      </div>
                     </div>
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0 shadow-sm"
+                      className="px-3 py-1.5 rounded-lg text-[9px] font-extrabold uppercase shrink-0 shadow-xs hover:scale-105 transition"
                       style={{
                         backgroundColor: getColor("--pwa-banner-btn-bg", "#FFFFFF"),
-                        color: getColor("--pwa-banner-btn-text", "#705BC2")
+                        color: getColor("--pwa-banner-btn-text", "#00B5AD")
                       }}
                     >
                       Instalar
@@ -1389,30 +1646,38 @@ export function StoreColorManager({
                   </div>
                 </div>
 
-                {/* Footer Mock */}
+                {/* 5. FOOTER */}
                 <div
-                  className="p-3.5 border-t border-black/10 flex flex-col gap-2 transition-colors mt-auto text-center"
+                  className="p-4 border-t border-black/10 flex flex-col gap-3 transition-colors mt-auto text-center"
                   style={{
-                    backgroundColor: getColor("--footer-bg", "#1E1B4B"),
+                    backgroundColor: getColor("--footer-bg", "#00B5AD"),
                     color: getColor("--footer-text", "#FFFFFF")
                   }}
                 >
+                  {/* Social Icons */}
                   <div className="flex items-center justify-center gap-2">
                     {["Instagram", "Facebook", "WhatsApp"].map((social, idx) => (
                       <span
                         key={idx}
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shadow-sm"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shadow-xs hover:scale-110 transition cursor-pointer"
                         style={{
                           backgroundColor: getColor("--social-icons-bg", "#FFFFFF"),
-                          color: getColor("--social-icons", "#705BC2")
+                          color: getColor("--social-icons", "#00B5AD")
                         }}
                       >
                         {social.charAt(0)}
                       </span>
                     ))}
                   </div>
-                  <div className="text-[9px] opacity-80">
-                    © {new Date().getFullYear()} {currentPharmacy?.nome || "Loja Parceira"}
+
+                  <div className="text-[9px] opacity-90 leading-tight space-y-0.5">
+                    <div className="font-bold">{currentPharmacy?.razaoSocial || currentPharmacy?.nome || "Farmácias Associadas"}</div>
+                    <div>CNPJ: {currentPharmacy?.cnpj || "00.000.000/0001-00"} • CRF: {currentPharmacy?.inscricaoFarmaceutico || "12345/RS"}</div>
+                    <div>{currentPharmacy?.endereco || "Av. Principal"}, Nº {currentPharmacy?.numero || "100"} - {currentPharmacy?.cidade || "Porto Alegre"}/{currentPharmacy?.uf || "RS"}</div>
+                  </div>
+
+                  <div className="text-[8px] opacity-75 pt-2 border-t border-white/10">
+                    © {new Date().getFullYear()} Farmácias Associadas. Todos os direitos reservados.
                   </div>
                 </div>
 
