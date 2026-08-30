@@ -1,13 +1,9 @@
-import { createFileRoute, Outlet, useLocation, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
-import { useCart } from "@/stores/cart";
-import { useAuth } from "@/stores/auth";
-import { useFavorites } from "@/stores/favorites";
 import { Header } from "@/components/storefront/Header";
 import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
-import { GlobalLoading } from "@/components/ui/global-loading";
 
 const Footer = lazy(() => import("@/components/storefront/Footer").then(m => ({ default: m.Footer })));
 const FloatingElements = lazy(() => import("@/components/storefront/BackToTop").then(m => ({ default: m.FloatingElements })));
@@ -35,13 +31,8 @@ function StoreLayout() {
   const isHome = location.pathname === "/";
 
   // — Store state (todos os hooks ANTES de qualquer early return) —
-  const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
-  const clearCart = useCart((s) => s.clear);
   const pharmacies = useAdmin((s) => s.pharmacies);
   const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
-  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
-  const logout = useAuth((s) => s.logout);
-  const clearFavorites = useFavorites((s) => s.clearAll);
 
   const pathParts = location.pathname.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
@@ -165,15 +156,7 @@ function StoreLayout() {
         sessionStorage.setItem('fa-last-store-slug', slug);
       } catch { /* sessionStorage indisponível */ }
     }
-
-    // Sincroniza selectedPharmacyId → cupons e carrinho reconhecem a loja correta
-    if (activePharmacy?.id && String(activePharmacy.id) !== String(selectedPharmacyId)) {
-      if (selectedPharmacyId) {
-        clearCart();
-      }
-      setSelectedPharmacyId(activePharmacy.id);
-    }
-  }, [activePharmacy?.id, selectedPharmacyId, potentialSlug, setSelectedPharmacyId, clearCart]);
+  }, [activePharmacy?.id, potentialSlug]);
 
   useEffect(() => {
     if (!activePharmacy) return;

@@ -350,44 +350,11 @@ function Checkout() {
     }
   }, [forceStore, deliveryMethod, setSelectedFreight]);
 
-
-  const forcePickup = hasPrescription;
-  
-  const cartFreightOpts = useCart((s) => s.freightOptions) || [];
-  const deliveryOpts = cartFreightOpts.filter(f => f.id !== "pickup");
-  
-  const selectedFreightObj = deliveryOpts.find(f => f.id === selectedFreight) || deliveryOpts[0];
-  let fretePrice: number | null = deliveryMethod === "home" 
-    ? (selectedFreightObj ? selectedFreightObj.price : null) 
-    : 0;
-
-  if (couponApplied?.cupomData?.aplicarFreteGratis) {
-    fretePrice = 0;
-  }
-
-  const visibleItems = mounted ? items : [];
-  const orderBumpDiscount = visibleItems.reduce((acc, i) => {
-    if (i.isOrderBump) {
-      return acc + ((i.precoDe - i.preco) * i.qty);
-    }
-    return acc;
-  }, 0);
-  const visibleSubtotal = mounted ? subtotal : 0;
-  const visibleStoreDisc = mounted ? storeDisc : 0;
-  const visiblePbmDisc = mounted ? pbmDisc : 0;
-  const visibleTotal = mounted ? total : 0;
-  const visiblePbm = mounted ? pbm : null;
-  const baseFinalTotal = Math.max(0, visibleTotal + (fretePrice ?? 0) - (couponApplied?.discount || 0));
-  const installmentCount = paymentCategory === "online" && paymentMethod === "credit" ? (Number(installments) || 1) : 1;
-  const finalTotal = installmentCount > 6 
-    ? baseFinalTotal * Math.pow(1.0199, installmentCount)
-    : baseFinalTotal;
-  
   useEffect(() => {
-    if (deliveryMethod === "home" && (!selectedFreight || selectedFreight === "pickup")) {
+    if (!forceStore && deliveryMethod === "home" && (!selectedFreight || selectedFreight === "pickup")) {
       setSelectedFreight("standard");
     }
-  }, [deliveryMethod, selectedFreight, setSelectedFreight]);
+  }, [forceStore, deliveryMethod, selectedFreight, setSelectedFreight]);
 
   useEffect(() => {
     if (mounted && deliveryMethod === "store" && !pickupPersonType && !hasPromptedPickup) {
@@ -434,6 +401,38 @@ function Checkout() {
       </div>
     );
   }
+
+  const forcePickup = hasPrescription;
+  
+  const cartFreightOpts = useCart((s) => s.freightOptions) || [];
+  const deliveryOpts = cartFreightOpts.filter(f => f.id !== "pickup");
+  
+  const selectedFreightObj = deliveryOpts.find(f => f.id === selectedFreight) || deliveryOpts[0];
+  let fretePrice: number | null = deliveryMethod === "home" 
+    ? (selectedFreightObj ? selectedFreightObj.price : null) 
+    : 0;
+
+  if (couponApplied?.cupomData?.aplicarFreteGratis) {
+    fretePrice = 0;
+  }
+
+  const visibleItems = mounted ? items : [];
+  const orderBumpDiscount = visibleItems.reduce((acc, i) => {
+    if (i.isOrderBump) {
+      return acc + ((i.precoDe - i.preco) * i.qty);
+    }
+    return acc;
+  }, 0);
+  const visibleSubtotal = mounted ? subtotal : 0;
+  const visibleStoreDisc = mounted ? storeDisc : 0;
+  const visiblePbmDisc = mounted ? pbmDisc : 0;
+  const visibleTotal = mounted ? total : 0;
+  const visiblePbm = mounted ? pbm : null;
+  const baseFinalTotal = Math.max(0, visibleTotal + (fretePrice ?? 0) - (couponApplied?.discount || 0));
+  const installmentCount = paymentCategory === "online" && paymentMethod === "credit" ? (Number(installments) || 1) : 1;
+  const finalTotal = installmentCount > 6 
+    ? baseFinalTotal * Math.pow(1.0199, installmentCount)
+    : baseFinalTotal;
 
   const missingRequirements = (() => {
     const missing: string[] = [];
