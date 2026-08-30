@@ -188,13 +188,19 @@ export function Footer() {
         { id: "central-atendimento", title: "Central de Atendimento", slug: "central-atendimento", type: "text" },
         { id: "whatsapp", title: "WhatsApp", type: "external", externalUrl: waUrl },
         { id: "como-comprar", title: "Como Comprar", slug: "como-comprar", type: "text" },
-        { id: "formas-pagamento", title: "Formas de Pagamento", slug: "formas-pagamento", type: "text" },
         { id: "prazo-entrega", title: "Prazos e Entrega", slug: "prazo-entrega", type: "text" },
         { id: "reembolso", title: "Política de Reembolso", slug: "cancelamento", type: "text" },
         { id: "faq", title: "FAQ", to: `/${storeSlug}/faq` },
       ];
     }
-    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Atendimento");
+    return contentPages.filter(p => 
+      (p.location === "footer" || p.location === "both") && 
+      p.footerColumn === "Atendimento" &&
+      p.slug !== "formas-pagamento" &&
+      p.slug !== "formas-de-pagamento" &&
+      p.title?.toLowerCase() !== "formas de pagamento" &&
+      p.title?.toLowerCase() !== "pagamento"
+    );
   }, [isParceiro, contentPages, activePharmacy?.whatsapp, activePharmacy?.telefone, storeSlug]);
 
   const segurancaPages = useMemo(() => {
