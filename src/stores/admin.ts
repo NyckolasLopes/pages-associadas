@@ -1192,8 +1192,10 @@ export const useAdmin = create<AdminState>()(
       updatePharmacy: async (id, p) => {
         const s = get();
         const currentPharmacy = s.pharmacies.find(x => x.id === id);
+        const updatedColors = p.themeColors !== undefined ? p.themeColors : (currentPharmacy?.themeColors || {});
         const theme_colors_payload = {
           ...(currentPharmacy?.themeColors || {}),
+          ...(updatedColors || {}),
           slug: p.slug,
           complemento: p.complemento,
           sistemaUtilizado: p.sistemaUtilizado,

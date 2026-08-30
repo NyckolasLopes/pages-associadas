@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAdmin } from "@/stores/admin";
+import { useConfig } from "@/stores/config";
 import {
   Palette,
   RotateCcw,
@@ -702,6 +703,7 @@ export function StoreColorManager({
   description?: string;
 }) {
   const admin = useAdmin();
+  const { saveConfig } = useConfig();
   const effectiveStoreId = storeId || admin.activeStoreId;
   const currentPharmacy = admin.pharmacies.find((p) => p.id === effectiveStoreId);
 
@@ -730,41 +732,38 @@ export function StoreColorManager({
     "--pwa-banner-text": "#FFFFFF",
     "--pwa-banner-btn-bg": "#FFFFFF",
     "--pwa-banner-btn-text": "#00B5AD",
-    "primary": "#00B5AD",
-    "secondary": "#F37021",
-    "accent": "#F43F5E",
-    "headerBg": "#00B5AD",
-    "headerIcons": "#FFFFFF",
-    "searchBg": "#FFFFFF",
-    "topbarBg": "#F37021",
-    "topbarText": "#FFFFFF",
-    "menuBg": "#008E88",
-    "menuText": "#FFFFFF",
-    "footerBg": "#00B5AD",
-    "footerText": "#FFFFFF",
-    "socialIcons": "#00B5AD",
-    "socialIconsBg": "#FFFFFF",
-    "institutionalBg": "#F97316",
-    "pwaBannerBg": "#00B5AD",
-    "pwaBannerText": "#FFFFFF",
-    "pwaBannerBtnBg": "#FFFFFF",
-    "pwaBannerBtnText": "#00B5AD"
+    "--badge-primary-bg": "#00B5AD",
+    "--badge-primary-text": "#FFFFFF",
+    "--badge-secondary-bg": "#F37021",
+    "--badge-secondary-text": "#FFFFFF",
+    "--badge-accent-bg": "#F43F5E",
+    "--badge-accent-text": "#FFFFFF",
+    "--btn-primary-bg": "#00B5AD",
+    "--btn-primary-text": "#FFFFFF",
+    "--btn-secondary-bg": "#F37021",
+    "--btn-secondary-text": "#FFFFFF",
+    "--btn-accent-bg": "#F43F5E",
+    "--btn-accent-text": "#FFFFFF",
   }), []);
 
-  const [colors, setColors] = useState<Record<string, string>>({
-    ...defaultTheme,
-    ...(currentPharmacy?.themeColors || {})
+  const [colors, setColors] = useState<Record<string, string>>(() => {
+    const savedColors = currentPharmacy?.themeColors;
+    if (savedColors && typeof savedColors === 'object' && Object.keys(savedColors).length > 0) {
+      return { ...defaultTheme, ...savedColors };
+    }
+    return defaultTheme;
   });
 
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [showPresets, setShowPresets] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeCategoryTab, setActiveCategoryTab] = useState<string>("principais");
 
   useEffect(() => {
-    if (currentPharmacy) {
-      setColors({
-        ...defaultTheme,
-        ...(currentPharmacy.themeColors || {})
-      });
+    if (currentPharmacy?.themeColors && Object.keys(currentPharmacy.themeColors).length > 0) {
+      setColors({ ...defaultTheme, ...currentPharmacy.themeColors });
+    } else {
+      setColors(defaultTheme);
     }
   }, [currentPharmacy, defaultTheme]);
 
@@ -808,7 +807,7 @@ export function StoreColorManager({
         themeColors: colors
       } as any);
 
-      await admin.saveConfig("cores", colors, effectiveStoreId);
+      await saveConfig("cores", colors, effectiveStoreId);
       toast.success("Cores atualizadas e aplicadas na loja com sucesso!", { id: toastId });
     } catch (e) {
       console.error("Erro ao salvar cores:", e);
@@ -826,7 +825,7 @@ export function StoreColorManager({
           ...currentPharmacy,
           themeColors: {}
         } as any);
-        await admin.saveConfig("cores", {}, effectiveStoreId);
+        await saveConfig("cores", {}, effectiveStoreId);
         toast.success("Cores restauradas para o padrão com sucesso!");
       } catch (e) {
         toast.error("Erro ao resetar cores.");
@@ -834,7 +833,6 @@ export function StoreColorManager({
     }
   };
 
-  // Cores ativas para a barra de listras da paleta atual
   const currentStripes: [string, string, string, string, string, string] = useMemo(() => [
     getColor("--primary", "#705BC2"),
     getColor("--secondary", "#FE509C"),
