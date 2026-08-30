@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Link, useLocation, useParams } from "@tanstack/react-router";
 import {
   Instagram, Facebook, Linkedin, Youtube, CreditCard, Banknote, Wallet,
@@ -55,7 +54,7 @@ export function Footer() {
   const activePharmacy = useActivePharmacy();
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.isPleno === false;
   const storeSlug = activePharmacy?.slug || "poa";
-  const effectiveLojaId = selectedPharmacyId || activePharmacy?.id;
+  const effectiveLojaId = activePharmacy?.id;
   const banners = getStoreBanners(effectiveLojaId);
 
   const diferenciaisBanners = banners.filter((b) => {
@@ -65,9 +64,9 @@ export function Footer() {
       local => local.lojaId === effectiveLojaId && local.posicao === b.posicao
     );
 
-    if (selectedPharmacyId) {
+    if (effectiveLojaId) {
       if (b.lojaId) {
-        if (b.lojaId !== selectedPharmacyId) return false;
+        if (b.lojaId !== effectiveLojaId) return false;
       } else {
         if (isParceiro) return false;
         if (hasLocalBannerForPosition) return false;
@@ -226,7 +225,7 @@ export function Footer() {
           {p.title}
         </a>
       ) : (
-        <Link to={`/${storeSlug}/pagina/${p.slug}`} className="hover:underline">
+        <Link to={`/${storeSlug}/pagina/${p.slug}` as any} className="hover:underline">
           {p.title}
         </Link>
       )}
@@ -294,8 +293,9 @@ export function Footer() {
               {RELATED_LINKS.map((link) => (
                 <Link
                   key={link}
-                  to={`/${storeSlug}/busca` as any}
-                  search={{ q: link }}
+                  to="/$storeSlug/busca"
+                  params={{ storeSlug } as any}
+                  search={{ q: link } as any}
                   className="bg-primary/10 text-primary hover:bg-primary hover:text-white border border-primary/20 transition px-3 py-1.5 rounded text-[13px] md:text-sm font-medium"
                 >
                   {link}
@@ -363,8 +363,9 @@ export function Footer() {
               {topTerms.map((t) => (
                 <Link
                   key={t}
-                  to={`/${storeSlug}/busca` as any}
-                  search={{ q: t }}
+                  to="/$storeSlug/busca"
+                  params={{ storeSlug } as any}
+                  search={{ q: t } as any}
                   className="inline-block"
                 >
                   <Badge variant="outline" className="border-white/40 text-white hover:bg-white hover:text-primary-dark transition cursor-pointer">
@@ -390,7 +391,7 @@ export function Footer() {
                     origem: "Newsletter",
                     status: "Ativo",
                     lojaId: activePharmacy?.id,
-                    lojaNome: activePharmacy?.pageTitle || dadosLoja.nomeDaLoja
+                    lojaNome: activePharmacy?.pageTitle || dadosLoja.nomeLoja
                   });
                   toast.success("Inscrição realizada com sucesso!");
                   form.reset();
@@ -457,7 +458,7 @@ export function Footer() {
                 <span className="font-bold text-xl text-white">{activePharmacy?.nome}</span>
               ) : (
                 <img
-                  src={activePharmacy?.footerLogoUrl || activePharmacy?.logoUrl || (isParceiro ? "" : (dadosLoja?.logoUrl || logoUrlDefault))}
+                  src={activePharmacy?.footerLogoUrl || activePharmacy?.logoUrl || (isParceiro ? "" : ((dadosLoja as any)?.logoUrl || (dadosLoja as any)?.logo || logoUrlDefault))}
                   alt="Logo Rodapé"
                   className="h-12 bg-white rounded-md p-2 w-auto object-contain"
                   loading="lazy"
