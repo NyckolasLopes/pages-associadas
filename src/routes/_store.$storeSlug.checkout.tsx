@@ -548,7 +548,7 @@ function Checkout() {
     if (paymentCategory !== "online" || paymentMethod !== "credit" || localCardStatus !== "refused") {
         const appliedCode = couponApplied?.code || useCart.getState().appliedCoupon;
         if (appliedCode) {
-          useMarketing.getState().incrementCouponUsage(appliedCode);
+          useMarketing.getState().incrementCouponUsage(appliedCode, activeStore?.id);
         }
         addOrder(newOrder);
         clear();

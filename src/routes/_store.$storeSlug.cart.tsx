@@ -881,6 +881,11 @@ function CartPage() {
 
       // Adiciona pedido
       await useOrders.getState().addOrder(newOrder);
+
+      // Incrementa uso do cupom se houver cupom aplicado
+      if (appliedCoupon) {
+        useMarketing.getState().incrementCouponUsage(appliedCoupon, selectedPharmacy?.id);
+      }
       
       // Salva o pedido localmente para mostrar na página de sucesso imediatamente
       useCart.getState().setLastOrder(newOrder);

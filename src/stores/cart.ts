@@ -306,7 +306,8 @@ export const useCart = create<CartState>()(
         const pid = get().selectedPharmacyId;
         const coupon = cupons.find(c => c.codigo.toUpperCase() === code.toUpperCase() && c.ativo);
         if (!coupon) return 0;
-        if (coupon.lojaId && coupon.lojaId !== pid) return 0;
+        if (coupon.lojaId && pid && coupon.lojaId !== pid) return 0;
+        if (coupon.totalDisponiveis > 0 && (coupon.numeroUtilizacoes || 0) >= coupon.totalDisponiveis) return 0;
         
         const rawSubtotal = get().subtotal();
         const subAfterDiscounts = rawSubtotal - get().storeDiscount() - get().pbmDiscount();
@@ -326,10 +327,25 @@ export const useCart = create<CartState>()(
         const pid = get().selectedPharmacyId;
         const coupon = cupons.find(c => c.codigo.toUpperCase() === clean);
         if (!coupon || !coupon.ativo) {
-          return { success: false, message: "Cupom inválido ou expirado." };
+          return { success: false, message: "Cupom inválido ou inativo." };
         }
-        if (coupon.lojaId && coupon.lojaId !== pid) {
+        if (coupon.lojaId && pid && coupon.lojaId !== pid) {
           return { success: false, message: "Este cupom é exclusivo de outra unidade." };
+        }
+        if (coupon.totalDisponiveis > 0 && (coupon.numeroUtilizacoes || 0) >= coupon.totalDisponiveis) {
+          return { success: false, message: "Este cupom atingiu o limite máximo de utilizações." };
+        }
+        if (coupon.dataInicio) {
+          const start = new Date(coupon.dataInicio);
+          if (!isNaN(start.getTime()) && new Date() < start) {
+            return { success: false, message: "Este cupom ainda não é válido." };
+          }
+        }
+        if (coupon.dataTermino) {
+          const end = new Date(coupon.dataTermino);
+          if (!isNaN(end.getTime()) && new Date() > end) {
+            return { success: false, message: "Este cupom expirou." };
+          }
         }
         const rawSubtotal = get().subtotal();
         if (coupon.valorMinimo && rawSubtotal < coupon.valorMinimo) {

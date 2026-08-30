@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Coupon {
   id: string;
@@ -18,7 +18,7 @@ export interface Coupon {
   permiteAcumular: boolean;
   usoUnico: boolean;
   cupomPrimeiraCompra: boolean;
-  numeroUtilizacoes: number; // for display
+  numeroUtilizacoes: number; // for display & tracking
   lojaId?: string; // Se preenchido, cupom exclusivo da loja
 }
 
@@ -52,12 +52,11 @@ export interface Promocao {
   lojaId?: string; // empty/undefined for global network, or store ID
 }
 
-import { supabase } from '@/integrations/supabase/client';
-
 export interface MarketingStore {
   cupons: Coupon[];
   promocoes: Promocao[];
   lojaPromocoes: Record<string, Promocao[]>;
+  marketingLoaded: boolean;
   loadMarketing: () => Promise<void>;
   addCoupon: (coupon: Omit<Coupon, "id" | "numeroUtilizacoes">) => Promise<void>;
   updateCoupon: (id: string, coupon: Partial<Coupon>) => Promise<void>;
@@ -67,183 +66,346 @@ export interface MarketingStore {
   removePromocao: (id: string) => Promise<void>;
   addLojaPromocao: (lojaId: string, promocao: Omit<Promocao, "id">) => Promise<void>;
   removeLojaPromocao: (lojaId: string, id: string) => Promise<void>;
-  incrementCouponUsage: (codigo: string) => Promise<void>;
+  incrementCouponUsage: (codigo: string, lojaId?: string) => Promise<void>;
 }
 
+const CACHE_KEY = "fa-cached-marketing-v3";
+
+const defaultCupons: Coupon[] = [
+  {
+    id: "cupom-bemvindo-10",
+    codigo: "BEMVINDO10",
+    descricao: "10% de desconto na primeira compra",
+    ativo: true,
+    totalDisponiveis: 1000,
+    valorMinimo: 50,
+    dataInicio: "",
+    dataTermino: "",
+    exigirMinItens: false,
+    tipoDesconto: "percentual",
+    valorDesconto: 10,
+    aplicarFreteGratis: false,
+    aplicacaoAutomatica: false,
+    permiteAcumular: false,
+    usoUnico: true,
+    cupomPrimeiraCompra: true,
+    numeroUtilizacoes: 0,
+  },
+  {
+    id: "cupom-associadas-15",
+    codigo: "ASSOCIADAS15",
+    descricao: "R$ 15 de desconto em compras acima de R$ 100",
+    ativo: true,
+    totalDisponiveis: 500,
+    valorMinimo: 100,
+    dataInicio: "",
+    dataTermino: "",
+    exigirMinItens: false,
+    tipoDesconto: "fixo",
+    valorDesconto: 15,
+    aplicarFreteGratis: false,
+    aplicacaoAutomatica: false,
+    permiteAcumular: false,
+    usoUnico: false,
+    cupomPrimeiraCompra: false,
+    numeroUtilizacoes: 0,
+  }
+];
+
+function getInitialMarketing(): { cupons: Coupon[]; promocoes: Promocao[]; lojaPromocoes: Record<string, Promocao[]> } {
+  if (typeof window === "undefined") {
+    return { cupons: defaultCupons, promocoes: [], lojaPromocoes: {} };
+  }
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.cupons)) {
+        return {
+          cupons: parsed.cupons.length > 0 ? parsed.cupons : defaultCupons,
+          promocoes: Array.isArray(parsed.promocoes) ? parsed.promocoes : [],
+          lojaPromocoes: parsed.lojaPromocoes || {}
+        };
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao ler cache de marketing:", e);
+  }
+  return { cupons: defaultCupons, promocoes: [], lojaPromocoes: {} };
+}
+
+function saveMarketingCache(cupons: Coupon[], promocoes: Promocao[], lojaPromocoes: Record<string, Promocao[]>) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ cupons, promocoes, lojaPromocoes }));
+  } catch (e) {
+    console.error("Erro ao salvar cache de marketing:", e);
+  }
+}
+
+const initial = getInitialMarketing();
+
 export const useMarketing = create<MarketingStore>((set, get) => ({
-  cupons: [],
-  promocoes: [],
-  lojaPromocoes: {},
+  cupons: initial.cupons,
+  promocoes: initial.promocoes,
+  lojaPromocoes: initial.lojaPromocoes,
+  marketingLoaded: false,
   
   loadMarketing: async () => {
-    const [ { data: cuponsData }, { data: promocoesData } ] = await Promise.all([
-      supabase.from('cupons' as any).select('*').order('created_at', { ascending: false }),
-      supabase.from('promocoes' as any).select('*').order('created_at', { ascending: false })
-    ]);
+    try {
+      const [ { data: cuponsData, error: cuponsErr }, { data: promocoesData, error: promosErr } ] = await Promise.all([
+        supabase.from('cupons' as any).select('*').order('created_at', { ascending: false }),
+        supabase.from('promocoes' as any).select('*').order('created_at', { ascending: false })
+      ]);
 
-    let parsedCupons: Coupon[] = [];
-    if (cuponsData) {
-      parsedCupons = cuponsData.map((c: any) => ({
-        id: c.id,
-        codigo: c.codigo,
-        descricao: c.descricao,
-        ativo: c.ativo,
-        totalDisponiveis: c.total_disponiveis,
-        valorMinimo: parseFloat(c.valor_minimo) || 0,
-        dataInicio: c.data_inicio || '',
-        dataTermino: c.data_termino || '',
-        exigirMinItens: c.exigir_min_itens,
-        tipoDesconto: c.tipo_desconto,
-        valorDesconto: parseFloat(c.valor_desconto) || 0,
-        aplicarFreteGratis: c.aplicar_frete_gratis,
-        aplicacaoAutomatica: c.aplicacao_automatica,
-        permiteAcumular: c.permite_acumular,
-        usoUnico: c.uso_unico,
-        cupomPrimeiraCompra: c.cupom_primeira_compra,
-        numeroUtilizacoes: c.numero_utilizacoes,
-        lojaId: c.loja_id || undefined
-      }));
+      let parsedCupons: Coupon[] = [];
+      if (cuponsData && !cuponsErr && cuponsData.length > 0) {
+        parsedCupons = cuponsData.map((c: any) => ({
+          id: String(c.id),
+          codigo: String(c.codigo || '').toUpperCase(),
+          descricao: c.descricao || '',
+          ativo: c.ativo !== false,
+          totalDisponiveis: Number(c.total_disponiveis) || 0,
+          valorMinimo: parseFloat(c.valor_minimo) || 0,
+          dataInicio: c.data_inicio || '',
+          dataTermino: c.data_termino || '',
+          exigirMinItens: Boolean(c.exigir_min_itens),
+          tipoDesconto: c.tipo_desconto === "fixo" ? "fixo" : "percentual",
+          valorDesconto: parseFloat(c.valor_desconto) || 0,
+          aplicarFreteGratis: Boolean(c.aplicar_frete_gratis),
+          aplicacaoAutomatica: Boolean(c.aplicacao_automatica),
+          permiteAcumular: Boolean(c.permite_acumular),
+          usoUnico: Boolean(c.uso_unico),
+          cupomPrimeiraCompra: Boolean(c.cupom_primeira_compra),
+          numeroUtilizacoes: Number(c.numero_utilizacoes) || 0,
+          lojaId: c.loja_id || undefined
+        }));
+      } else if (get().cupons.length > 0) {
+        parsedCupons = get().cupons;
+      } else {
+        parsedCupons = defaultCupons;
+      }
+
+      let parsedPromos: Promocao[] = [];
+      let lojaPromos: Record<string, Promocao[]> = {};
+      
+      if (promocoesData && !promosErr && promocoesData.length > 0) {
+        parsedPromos = promocoesData.map((p: any) => {
+          const promo: Promocao = {
+            id: String(p.id),
+            titulo: p.titulo || '',
+            subtitulo: p.subtitulo,
+            tipoAlvo: p.tipo_alvo || 'produtos',
+            alvosId: p.alvos_id || [],
+            dataFim: p.data_fim || '',
+            horaFim: p.hora_fim || '',
+            icone: p.icone || 'flame',
+            ativa: p.ativa !== false,
+            tipoCampanha: p.tipo_campanha,
+            descontoPercentual: p.desconto_percentual ? parseFloat(p.desconto_percentual) : undefined,
+            precoPromocional: p.preco_promocional ? parseFloat(p.preco_promocional) : undefined,
+            levePague_quantidade: p.leve_pague_quantidade,
+            levePague_precoPorItem: p.leve_pague_preco_por_item ? parseFloat(p.leve_pague_preco_por_item) : undefined,
+            produtosConfig: p.produtos_config,
+            corSelo: p.cor_selo,
+            corIcone: p.cor_icone,
+            corTextoBotao: p.cor_texto_botao,
+            corBotao: p.cor_botao,
+            corTimer: p.produtos_config?.__corTimer || p.cor_botao || "#0f172a",
+            textoBotao: p.texto_botao,
+            lojaId: p.loja_id || undefined
+          };
+          
+          if (promo.lojaId) {
+            if (!lojaPromos[promo.lojaId]) lojaPromos[promo.lojaId] = [];
+            lojaPromos[promo.lojaId].push(promo);
+          }
+          return promo;
+        });
+      } else if (get().promocoes.length > 0) {
+        parsedPromos = get().promocoes;
+        lojaPromos = get().lojaPromocoes;
+      }
+
+      set({ cupons: parsedCupons, promocoes: parsedPromos, lojaPromocoes: lojaPromos, marketingLoaded: true });
+      saveMarketingCache(parsedCupons, parsedPromos, lojaPromos);
+    } catch (e) {
+      console.error("Erro ao carregar marketing:", e);
+      set({ marketingLoaded: true });
     }
-
-    let parsedPromos: Promocao[] = [];
-    let lojaPromos: Record<string, Promocao[]> = {};
-    
-    if (promocoesData) {
-      parsedPromos = promocoesData.map((p: any) => {
-        const promo: Promocao = {
-          id: p.id,
-          titulo: p.titulo,
-          subtitulo: p.subtitulo,
-          tipoAlvo: p.tipo_alvo || 'produtos',
-          alvosId: p.alvos_id || [],
-          dataFim: p.data_fim || '',
-          horaFim: p.hora_fim || '',
-          icone: p.icone,
-          ativa: p.ativa,
-          tipoCampanha: p.tipo_campanha,
-          descontoPercentual: p.desconto_percentual ? parseFloat(p.desconto_percentual) : undefined,
-          precoPromocional: p.preco_promocional ? parseFloat(p.preco_promocional) : undefined,
-          levePague_quantidade: p.leve_pague_quantidade,
-          levePague_precoPorItem: p.leve_pague_preco_por_item ? parseFloat(p.leve_pague_preco_por_item) : undefined,
-          produtosConfig: p.produtos_config,
-          corSelo: p.cor_selo,
-          corIcone: p.cor_icone,
-          corTextoBotao: p.cor_texto_botao,
-          corBotao: p.cor_botao,
-          corTimer: p.produtos_config?.__corTimer || p.cor_botao || "#0f172a",
-          textoBotao: p.texto_botao,
-          lojaId: p.loja_id || undefined
-        };
-        
-        if (promo.lojaId) {
-          if (!lojaPromos[promo.lojaId]) lojaPromos[promo.lojaId] = [];
-          lojaPromos[promo.lojaId].push(promo);
-        }
-        return promo;
-      });
-    }
-
-    set({ cupons: parsedCupons, promocoes: parsedPromos, lojaPromocoes: lojaPromos });
   },
 
   addCoupon: async (coupon) => {
-    const dbCoupon = {
-      codigo: coupon.codigo,
+    const newCoupon: Coupon = {
+      id: "cupom-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6),
+      codigo: coupon.codigo.trim().toUpperCase(),
       descricao: coupon.descricao,
       ativo: coupon.ativo,
-      total_disponiveis: coupon.totalDisponiveis,
-      valor_minimo: coupon.valorMinimo,
-      data_inicio: coupon.dataInicio || null,
-      data_termino: coupon.dataTermino || null,
-      exigir_min_itens: coupon.exigirMinItens,
-      tipo_desconto: coupon.tipoDesconto,
-      valor_desconto: coupon.valorDesconto,
-      aplicar_frete_gratis: coupon.aplicarFreteGratis,
-      aplicacao_automatica: coupon.aplicacaoAutomatica,
-      permite_acumular: coupon.permiteAcumular,
-      uso_unico: coupon.usoUnico,
-      cupom_primeira_compra: coupon.cupomPrimeiraCompra,
-      loja_id: coupon.lojaId || null
+      totalDisponiveis: Number(coupon.totalDisponiveis) || 0,
+      valorMinimo: Number(coupon.valorMinimo) || 0,
+      dataInicio: coupon.dataInicio || "",
+      dataTermino: coupon.dataTermino || "",
+      exigirMinItens: Boolean(coupon.exigirMinItens),
+      tipoDesconto: coupon.tipoDesconto,
+      valorDesconto: Number(coupon.valorDesconto) || 0,
+      aplicarFreteGratis: Boolean(coupon.aplicarFreteGratis),
+      aplicacaoAutomatica: Boolean(coupon.aplicacaoAutomatica),
+      permiteAcumular: Boolean(coupon.permiteAcumular),
+      usoUnico: Boolean(coupon.usoUnico),
+      cupomPrimeiraCompra: Boolean(coupon.cupomPrimeiraCompra),
+      numeroUtilizacoes: 0,
+      lojaId: coupon.lojaId || undefined
     };
 
-    const { data, error } = await supabase.from('cupons' as any).insert(dbCoupon).select().single();
-    if (data && !error) {
-      await get().loadMarketing();
+    // 1. Atualiza memória e localStorage imediatamente
+    const updatedCupons = [newCoupon, ...get().cupons.filter(c => c.codigo !== newCoupon.codigo || c.lojaId !== newCoupon.lojaId)];
+    set({ cupons: updatedCupons });
+    saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
+
+    // 2. Persiste no Supabase
+    try {
+      const dbCoupon = {
+        codigo: newCoupon.codigo,
+        descricao: newCoupon.descricao,
+        ativo: newCoupon.ativo,
+        total_disponiveis: newCoupon.totalDisponiveis,
+        valor_minimo: newCoupon.valorMinimo,
+        data_inicio: newCoupon.dataInicio || null,
+        data_termino: newCoupon.dataTermino || null,
+        exigir_min_itens: newCoupon.exigirMinItens,
+        tipo_desconto: newCoupon.tipoDesconto,
+        valor_desconto: newCoupon.valorDesconto,
+        aplicar_frete_gratis: newCoupon.aplicarFreteGratis,
+        aplicacao_automatica: newCoupon.aplicacaoAutomatica,
+        permite_acumular: newCoupon.permiteAcumular,
+        uso_unico: newCoupon.usoUnico,
+        cupom_primeira_compra: newCoupon.cupomPrimeiraCompra,
+        numero_utilizacoes: 0,
+        loja_id: newCoupon.lojaId || null
+      };
+      await supabase.from('cupons' as any).insert(dbCoupon);
+    } catch (e) {
+      console.error("Erro ao inserir cupom no Supabase:", e);
     }
   },
 
   updateCoupon: async (id, updatedFields) => {
-    const dbUpdate: any = {};
-    if (updatedFields.codigo !== undefined) dbUpdate.codigo = updatedFields.codigo;
-    if (updatedFields.descricao !== undefined) dbUpdate.descricao = updatedFields.descricao;
-    if (updatedFields.ativo !== undefined) dbUpdate.ativo = updatedFields.ativo;
-    if (updatedFields.totalDisponiveis !== undefined) dbUpdate.total_disponiveis = updatedFields.totalDisponiveis;
-    if (updatedFields.valorMinimo !== undefined) dbUpdate.valor_minimo = updatedFields.valorMinimo;
-    if (updatedFields.dataInicio !== undefined) dbUpdate.data_inicio = updatedFields.dataInicio || null;
-    if (updatedFields.dataTermino !== undefined) dbUpdate.data_termino = updatedFields.dataTermino || null;
-    if (updatedFields.exigirMinItens !== undefined) dbUpdate.exigir_min_itens = updatedFields.exigirMinItens;
-    if (updatedFields.tipoDesconto !== undefined) dbUpdate.tipo_desconto = updatedFields.tipoDesconto;
-    if (updatedFields.valorDesconto !== undefined) dbUpdate.valor_desconto = updatedFields.valorDesconto;
-    if (updatedFields.aplicarFreteGratis !== undefined) dbUpdate.aplicar_frete_gratis = updatedFields.aplicarFreteGratis;
-    if (updatedFields.aplicacaoAutomatica !== undefined) dbUpdate.aplicacao_automatica = updatedFields.aplicacaoAutomatica;
-    if (updatedFields.permiteAcumular !== undefined) dbUpdate.permite_acumular = updatedFields.permiteAcumular;
-    if (updatedFields.usoUnico !== undefined) dbUpdate.uso_unico = updatedFields.usoUnico;
-    if (updatedFields.cupomPrimeiraCompra !== undefined) dbUpdate.cupom_primeira_compra = updatedFields.cupomPrimeiraCompra;
-    
-    const { error } = await supabase.from('cupons' as any).update(dbUpdate).eq('id', id);
-    if (!error) {
-      await get().loadMarketing();
+    const updatedCupons = get().cupons.map(c => {
+      if (c.id === id) {
+        return {
+          ...c,
+          ...updatedFields,
+          codigo: updatedFields.codigo ? updatedFields.codigo.trim().toUpperCase() : c.codigo,
+          numeroUtilizacoes: updatedFields.numeroUtilizacoes !== undefined ? Number(updatedFields.numeroUtilizacoes) : c.numeroUtilizacoes
+        };
+      }
+      return c;
+    });
+
+    set({ cupons: updatedCupons });
+    saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
+
+    try {
+      const dbUpdate: any = {};
+      if (updatedFields.codigo !== undefined) dbUpdate.codigo = updatedFields.codigo.trim().toUpperCase();
+      if (updatedFields.descricao !== undefined) dbUpdate.descricao = updatedFields.descricao;
+      if (updatedFields.ativo !== undefined) dbUpdate.ativo = updatedFields.ativo;
+      if (updatedFields.totalDisponiveis !== undefined) dbUpdate.total_disponiveis = updatedFields.totalDisponiveis;
+      if (updatedFields.valorMinimo !== undefined) dbUpdate.valor_minimo = updatedFields.valorMinimo;
+      if (updatedFields.dataInicio !== undefined) dbUpdate.data_inicio = updatedFields.dataInicio || null;
+      if (updatedFields.dataTermino !== undefined) dbUpdate.data_termino = updatedFields.dataTermino || null;
+      if (updatedFields.exigirMinItens !== undefined) dbUpdate.exigir_min_itens = updatedFields.exigirMinItens;
+      if (updatedFields.tipoDesconto !== undefined) dbUpdate.tipo_desconto = updatedFields.tipoDesconto;
+      if (updatedFields.valorDesconto !== undefined) dbUpdate.valor_desconto = updatedFields.valorDesconto;
+      if (updatedFields.aplicarFreteGratis !== undefined) dbUpdate.aplicar_frete_gratis = updatedFields.aplicarFreteGratis;
+      if (updatedFields.aplicacaoAutomatica !== undefined) dbUpdate.aplicacao_automatica = updatedFields.aplicacaoAutomatica;
+      if (updatedFields.permiteAcumular !== undefined) dbUpdate.permite_acumular = updatedFields.permiteAcumular;
+      if (updatedFields.usoUnico !== undefined) dbUpdate.uso_unico = updatedFields.usoUnico;
+      if (updatedFields.cupomPrimeiraCompra !== undefined) dbUpdate.cupom_primeira_compra = updatedFields.cupomPrimeiraCompra;
+      if (updatedFields.numeroUtilizacoes !== undefined) dbUpdate.numero_utilizacoes = updatedFields.numeroUtilizacoes;
+      
+      await supabase.from('cupons' as any).update(dbUpdate).eq('id', id);
+    } catch (e) {
+      console.error("Erro ao atualizar cupom no Supabase:", e);
     }
   },
 
   removeCoupon: async (id) => {
-    const { error } = await supabase.from('cupons' as any).delete().eq('id', id);
-    if (!error) {
-      await get().loadMarketing();
+    const updatedCupons = get().cupons.filter(c => c.id !== id);
+    set({ cupons: updatedCupons });
+    saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
+
+    try {
+      await supabase.from('cupons' as any).delete().eq('id', id);
+    } catch (e) {
+      console.error("Erro ao remover cupom do Supabase:", e);
     }
   },
 
-  incrementCouponUsage: async (codigo: string) => {
-    // 1. Tentar encontrar o cupom exato na memória (que respeita a loja atual)
-    const { useCart } = await import('@/stores/cart');
-    const pid = useCart.getState().selectedPharmacyId;
-    
-    const cupons = get().cupons;
-    const cupomMem = cupons.find(c => 
-      c.codigo.toUpperCase() === codigo.toUpperCase() && 
-      (!c.lojaId || c.lojaId === pid)
-    );
+  incrementCouponUsage: async (codigo: string, lojaId?: string) => {
+    if (!codigo) return;
+    const cleanCode = codigo.trim().toUpperCase();
 
-    let cupomId = null;
-    let usosAtuais = 0;
-
-    if (cupomMem) {
-      cupomId = cupomMem.id;
-      usosAtuais = cupomMem.numeroUtilizacoes || 0;
-    } else {
-      // Fallback: se não achar na memória, tenta pelo banco
-      const { data: cupomBanco } = await supabase
-        .from('cupons' as any)
-        .select('id, numero_utilizacoes')
-        .ilike('codigo', codigo)
-        .limit(1)
-        .maybeSingle();
-        
-      if (cupomBanco) {
-        cupomId = cupomBanco.id;
-        usosAtuais = cupomBanco.numero_utilizacoes || 0;
-      }
+    // 1. Encontra a loja atual se não passada
+    let effectiveLojaId = lojaId;
+    if (!effectiveLojaId) {
+      try {
+        const { useCart } = await import('@/stores/cart');
+        effectiveLojaId = useCart.getState().selectedPharmacyId || undefined;
+      } catch {}
     }
-      
-    if (cupomId) {
-      const { error } = await supabase
-        .from('cupons' as any)
-        .update({ numero_utilizacoes: usosAtuais + 1 })
-        .eq('id', cupomId);
-        
-      if (!error) {
-        await get().loadMarketing();
+
+    // 2. Incremento OTIMISTA IMEDIATO na memória e localStorage
+    let updatedCupomId: string | null = null;
+    let newUsos = 0;
+
+    const updatedCupons = get().cupons.map(c => {
+      const matchCode = c.codigo.toUpperCase() === cleanCode;
+      const matchLoja = !c.lojaId || !effectiveLojaId || c.lojaId === effectiveLojaId;
+      if (matchCode && matchLoja) {
+        updatedCupomId = c.id;
+        newUsos = (c.numeroUtilizacoes || 0) + 1;
+        return {
+          ...c,
+          numeroUtilizacoes: newUsos
+        };
       }
+      return c;
+    });
+
+    if (updatedCupomId) {
+      set({ cupons: updatedCupons });
+      saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
+    }
+
+    // 3. Sincroniza com Supabase em segundo plano
+    try {
+      if (updatedCupomId) {
+        await supabase
+          .from('cupons' as any)
+          .update({ numero_utilizacoes: newUsos })
+          .eq('id', updatedCupomId);
+      } else {
+        // Se o cupom não estava em memória, tenta localizar e atualizar no banco
+        const { data: cupomBanco } = await supabase
+          .from('cupons' as any)
+          .select('id, numero_utilizacoes')
+          .ilike('codigo', cleanCode)
+          .limit(1)
+          .maybeSingle();
+
+        if (cupomBanco) {
+          const u = (cupomBanco.numero_utilizacoes || 0) + 1;
+          await supabase
+            .from('cupons' as any)
+            .update({ numero_utilizacoes: u })
+            .eq('id', cupomBanco.id);
+          
+          await get().loadMarketing();
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao sincronizar contagem de uso do cupom no Supabase:", e);
     }
   },
 
@@ -267,15 +429,19 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       leve_pague_preco_por_item: promocao.levePague_precoPorItem,
       produtos_config: conf,
       cor_selo: promocao.corSelo,
-      cor_icone: promocao.corIcone,
-      cor_texto_botao: promocao.corTextoBotao,
-      cor_botao: promocao.corBotao,
+      corIcone: promocao.corIcone,
+      corTextoBotao: promocao.corTextoBotao,
+      corBotao: promocao.corBotao,
       texto_botao: promocao.textoBotao,
       loja_id: promocao.lojaId || null
     };
 
-    const { error } = await supabase.from('promocoes' as any).insert(dbPromo);
-    if (!error) await get().loadMarketing();
+    try {
+      await supabase.from('promocoes' as any).insert(dbPromo);
+      await get().loadMarketing();
+    } catch (e) {
+      console.error("Erro ao adicionar promoção:", e);
+    }
   },
 
   updatePromocao: async (id, updatedFields) => {
@@ -306,13 +472,21 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
     if (updatedFields.textoBotao !== undefined) dbUpdate.texto_botao = updatedFields.textoBotao;
     if (updatedFields.lojaId !== undefined) dbUpdate.loja_id = updatedFields.lojaId;
 
-    const { error } = await supabase.from('promocoes' as any).update(dbUpdate).eq('id', id);
-    if (!error) await get().loadMarketing();
+    try {
+      await supabase.from('promocoes' as any).update(dbUpdate).eq('id', id);
+      await get().loadMarketing();
+    } catch (e) {
+      console.error("Erro ao atualizar promoção:", e);
+    }
   },
 
   removePromocao: async (id) => {
-    const { error } = await supabase.from('promocoes' as any).delete().eq('id', id);
-    if (!error) await get().loadMarketing();
+    try {
+      await supabase.from('promocoes' as any).delete().eq('id', id);
+      await get().loadMarketing();
+    } catch (e) {
+      console.error("Erro ao remover promoção:", e);
+    }
   },
 
   addLojaPromocao: async (lojaId, promocao) => {
