@@ -53,6 +53,7 @@ import {
   Sparkles,
   HeartPulse,
   Monitor,
+  AlertTriangle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
