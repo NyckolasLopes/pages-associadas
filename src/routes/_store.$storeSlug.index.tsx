@@ -13,6 +13,7 @@ import { Clock, Store, Percent, Activity, ScanBarcode, Pill, Sparkles, Leaf, Ste
 import { isCampanhaAtiva } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { LazySection } from "@/components/ui/LazySection";
+import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
 
 import { GeoPopup } from "@/components/storefront/GeoPopup";
 // InstallPrompt are rendered globally in __root.tsx
@@ -371,12 +372,12 @@ function DynamicTarja({ page = "Página inicial", lojaId, initialBanners }: { pa
 
   const getIcon = (url: string) => {
     if (!url || !url.startsWith("icon:")) return null;
-    if (url === "icon:Truck") return Truck;
+    if (url === "icon:Truck" || url === "icon:Motorcycle" || url === "icon:Moto") return MotorcycleIcon;
     if (url === "icon:Store") return Store;
     if (url === "icon:Percent") return Percent;
     if (url === "icon:ShieldCheck") return ShieldCheck;
     if (url === "icon:Stethoscope") return Stethoscope;
-    return Truck;
+    return MotorcycleIcon;
   };
 
   return (

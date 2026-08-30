@@ -38,6 +38,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
+import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
 import {
   Accordion,
   AccordionContent,
@@ -1310,7 +1311,7 @@ export function StoreColorManager({
                   }}
                 >
                   <span className="truncate flex items-center gap-1.5 mx-auto">
-                    <Truck className="w-3 h-3 shrink-0" />
+                    <MotorcycleIcon className="w-3.5 h-3.5 shrink-0" />
                     <span>RECEBER EM CASA: Entrega Expressa | WhatsApp: (51) 99999-9999</span>
                   </span>
                 </div>
@@ -1463,7 +1464,7 @@ export function StoreColorManager({
                   <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 shadow-xs text-left">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <Truck className="w-3.5 h-3.5" />
+                        <MotorcycleIcon className="w-3.5 h-3.5" />
                       </div>
                       <div>
                         <div className="text-[9px] font-extrabold text-slate-800 leading-tight">Receber em casa</div>
