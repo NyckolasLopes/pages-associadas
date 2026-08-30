@@ -67,22 +67,56 @@ function StoreLayout() {
     if (activePharmacy.themeColors) {
       const t = activePharmacy.themeColors as Record<string, any>;
       const primary = t['--primary'] || t.primary;
+      const primaryFg = t['--primary-foreground'] || t.primaryForeground || "#ffffff";
       const secondary = t['--secondary'] || t.secondary;
+      const secondaryFg = t['--secondary-foreground'] || t.secondaryForeground || "#ffffff";
       const accent = t['--accent'] || t.accent;
+      const accentFg = t['--accent-foreground'] || t.accentForeground || "#ffffff";
+      const bg = t['--background'] || t.background;
+      const fg = t['--foreground'] || t.foreground;
       const headerBg = t['--header-bg'] || t.headerBg;
+      const headerIcons = t['--header-icons'] || t.headerIcons;
+      const searchBg = t['--search-bg'] || t.searchBg;
+      const topbarBg = t['--topbar-bg'] || t.topbarBg;
+      const topbarText = t['--topbar-text'] || t.topbarText;
+      const menuBg = t['--menu-bg'] || t.menuBg;
+      const menuText = t['--menu-text'] || t.menuText;
+      const footerBg = t['--footer-bg'] || t.footerBg;
+      const footerText = t['--footer-text'] || t.footerText;
+      const socialIcons = t['--social-icons'] || t.socialIcons;
+      const socialIconsBg = t['--social-icons-bg'] || t.socialIconsBg;
+      const institutionalBg = t['--institutional-bg'] || t.institutionalBg;
+      const pwaBannerBg = t['--pwa-banner-bg'] || t.pwaBannerBg;
+      const pwaBannerText = t['--pwa-banner-text'] || t.pwaBannerText;
+      const pwaBannerBtnBg = t['--pwa-banner-btn-bg'] || t.pwaBannerBtnBg;
+      const pwaBannerBtnText = t['--pwa-banner-btn-text'] || t.pwaBannerBtnText;
 
       const legacyTheme: Record<string, string | undefined> = {
         "--primary": primary,
-        "--primary-foreground": "#ffffff",
+        "--primary-foreground": primaryFg,
         "--primary-dark": primary,
         "--secondary": secondary,
-        "--secondary-foreground": "#ffffff",
+        "--secondary-foreground": secondaryFg,
         "--accent": accent,
-        "--accent-foreground": "#ffffff",
+        "--accent-foreground": accentFg,
+        "--background": bg,
+        "--foreground": fg,
         "--header-bg": headerBg || primary,
-        "--header-icons": t['--header-icons'] || t.headerIcons || "#ffffff",
-        "--search-bg": t['--search-bg'] || t.searchBg || "#ffffff",
-        "--institutional-bg": t['--institutional-bg'] || t.institutionalBg || "#f97316",
+        "--header-icons": headerIcons || "#ffffff",
+        "--search-bg": searchBg || "#ffffff",
+        "--topbar-bg": topbarBg,
+        "--topbar-text": topbarText,
+        "--menu-bg": menuBg || primary,
+        "--menu-text": menuText || "#ffffff",
+        "--footer-bg": footerBg || primary,
+        "--footer-text": footerText || "#ffffff",
+        "--social-icons": socialIcons || primary,
+        "--social-icons-bg": socialIconsBg || "#ffffff",
+        "--institutional-bg": institutionalBg || "#f97316",
+        "--pwa-banner-bg": pwaBannerBg || primary,
+        "--pwa-banner-text": pwaBannerText || "#ffffff",
+        "--pwa-banner-btn-bg": pwaBannerBtnBg || "#ffffff",
+        "--pwa-banner-btn-text": pwaBannerBtnText || primary,
       };
 
       const cleanLegacyTheme = Object.fromEntries(

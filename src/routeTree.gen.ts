@@ -58,6 +58,7 @@ import { Route as AdminProdutosApiConexoesRouteImport } from './routes/admin/pro
 import { Route as AdminPedidosNovoRouteImport } from './routes/admin/pedidos/novo'
 import { Route as AdminMarketingOrderBumpsRouteImport } from './routes/admin/marketing.order-bumps'
 import { Route as AdminMarketingLeadsRouteImport } from './routes/admin/marketing.leads'
+import { Route as AdminMarketingCoresRouteImport } from './routes/admin/marketing.cores'
 import { Route as AdminMarketingCompreJuntoRouteImport } from './routes/admin/marketing.compre-junto'
 import { Route as AdminMarcasNovaRouteImport } from './routes/admin/marcas.nova'
 import { Route as AdminLojasTabelasPrecosRouteImport } from './routes/admin/lojas.tabelas-precos'
@@ -350,6 +351,11 @@ const AdminMarketingOrderBumpsRoute =
 const AdminMarketingLeadsRoute = AdminMarketingLeadsRouteImport.update({
   id: '/marketing/leads',
   path: '/marketing/leads',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMarketingCoresRoute = AdminMarketingCoresRouteImport.update({
+  id: '/marketing/cores',
+  path: '/marketing/cores',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminMarketingCompreJuntoRoute =
@@ -654,6 +660,7 @@ export interface FileRoutesByFullPath {
   '/admin/lojas/tabelas-precos': typeof AdminLojasTabelasPrecosRoute
   '/admin/marcas/nova': typeof AdminMarcasNovaRoute
   '/admin/marketing/compre-junto': typeof AdminMarketingCompreJuntoRoute
+  '/admin/marketing/cores': typeof AdminMarketingCoresRoute
   '/admin/marketing/leads': typeof AdminMarketingLeadsRoute
   '/admin/marketing/order-bumps': typeof AdminMarketingOrderBumpsRoute
   '/admin/pedidos/novo': typeof AdminPedidosNovoRoute
@@ -747,6 +754,7 @@ export interface FileRoutesByTo {
   '/admin/lojas/tabelas-precos': typeof AdminLojasTabelasPrecosRoute
   '/admin/marcas/nova': typeof AdminMarcasNovaRoute
   '/admin/marketing/compre-junto': typeof AdminMarketingCompreJuntoRoute
+  '/admin/marketing/cores': typeof AdminMarketingCoresRoute
   '/admin/marketing/leads': typeof AdminMarketingLeadsRoute
   '/admin/marketing/order-bumps': typeof AdminMarketingOrderBumpsRoute
   '/admin/pedidos/novo': typeof AdminPedidosNovoRoute
@@ -843,6 +851,7 @@ export interface FileRoutesById {
   '/admin/lojas/tabelas-precos': typeof AdminLojasTabelasPrecosRoute
   '/admin/marcas/nova': typeof AdminMarcasNovaRoute
   '/admin/marketing/compre-junto': typeof AdminMarketingCompreJuntoRoute
+  '/admin/marketing/cores': typeof AdminMarketingCoresRoute
   '/admin/marketing/leads': typeof AdminMarketingLeadsRoute
   '/admin/marketing/order-bumps': typeof AdminMarketingOrderBumpsRoute
   '/admin/pedidos/novo': typeof AdminPedidosNovoRoute
@@ -939,6 +948,7 @@ export interface FileRouteTypes {
     | '/admin/lojas/tabelas-precos'
     | '/admin/marcas/nova'
     | '/admin/marketing/compre-junto'
+    | '/admin/marketing/cores'
     | '/admin/marketing/leads'
     | '/admin/marketing/order-bumps'
     | '/admin/pedidos/novo'
@@ -1032,6 +1042,7 @@ export interface FileRouteTypes {
     | '/admin/lojas/tabelas-precos'
     | '/admin/marcas/nova'
     | '/admin/marketing/compre-junto'
+    | '/admin/marketing/cores'
     | '/admin/marketing/leads'
     | '/admin/marketing/order-bumps'
     | '/admin/pedidos/novo'
@@ -1127,6 +1138,7 @@ export interface FileRouteTypes {
     | '/admin/lojas/tabelas-precos'
     | '/admin/marcas/nova'
     | '/admin/marketing/compre-junto'
+    | '/admin/marketing/cores'
     | '/admin/marketing/leads'
     | '/admin/marketing/order-bumps'
     | '/admin/pedidos/novo'
@@ -1509,6 +1521,13 @@ declare module '@tanstack/react-router' {
       path: '/marketing/leads'
       fullPath: '/admin/marketing/leads'
       preLoaderRoute: typeof AdminMarketingLeadsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/marketing/cores': {
+      id: '/admin/marketing/cores'
+      path: '/marketing/cores'
+      fullPath: '/admin/marketing/cores'
+      preLoaderRoute: typeof AdminMarketingCoresRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/marketing/compre-junto': {
@@ -1982,6 +2001,7 @@ interface AdminRouteChildren {
   AdminLojasPaineisRoute: typeof AdminLojasPaineisRoute
   AdminLojasTabelasPrecosRoute: typeof AdminLojasTabelasPrecosRoute
   AdminMarketingCompreJuntoRoute: typeof AdminMarketingCompreJuntoRoute
+  AdminMarketingCoresRoute: typeof AdminMarketingCoresRoute
   AdminMarketingLeadsRoute: typeof AdminMarketingLeadsRoute
   AdminMarketingOrderBumpsRoute: typeof AdminMarketingOrderBumpsRoute
   AdminPedidosNovoRoute: typeof AdminPedidosNovoRoute
@@ -2041,6 +2061,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLojasPaineisRoute: AdminLojasPaineisRoute,
   AdminLojasTabelasPrecosRoute: AdminLojasTabelasPrecosRoute,
   AdminMarketingCompreJuntoRoute: AdminMarketingCompreJuntoRoute,
+  AdminMarketingCoresRoute: AdminMarketingCoresRoute,
   AdminMarketingLeadsRoute: AdminMarketingLeadsRoute,
   AdminMarketingOrderBumpsRoute: AdminMarketingOrderBumpsRoute,
   AdminPedidosNovoRoute: AdminPedidosNovoRoute,

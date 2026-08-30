@@ -537,6 +537,7 @@ function AdminLayout() {
               {(can('mkt_cupons') || !isGlobalAdmin) && <Link to="/admin/marketing/cupons" className={subLinkClass} activeOptions={{ exact: true }}>{isGlobalAdmin ? "Cupons das lojas" : "Meus cupons"}</Link>}
               {!isGlobalAdmin && <Link to="/admin/marketing/promocoes" className={subLinkClass} activeOptions={{ exact: true }}>Promoções</Link>}
               <Link to="/admin/marketing/leads" className={subLinkClass} activeOptions={{ exact: true }}>Leads</Link>
+              {isGlobalAdmin && <Link to={"/admin/marketing/cores" as any} className={subLinkClass} activeOptions={{ exact: true }}>Cores das Lojas</Link>}
               {isGlobalAdmin && <Link to="/admin/produtos/precos" className={subLinkClass} activeOptions={{ exact: true }}>Campanha Encarte</Link>}
               {isGlobalAdmin && <Link to="/admin/selos" className={subLinkClass} activeOptions={{ exact: true }}>Selos</Link>}
               {isGlobalAdmin && <Link to="/admin/banners" search={{ tab: "banners" } as any} className={subLinkClass} activeOptions={{ exact: true }}>Banners das Lojas</Link>}
@@ -563,8 +564,8 @@ function AdminLayout() {
                 </Link>
               )}
 
-              {(isParceiro || can('pers_cores')) && (
-                <Link to="/admin/banners" search={{ tab: "cores" } as any} className={subLinkClass}>
+              {(isParceiro || isPleno || can('pers_cores') || !isGlobalAdmin) && (
+                <Link to="/admin/design/cores" className={subLinkClass} activeOptions={{ exact: true }}>
                   Minhas Cores
                 </Link>
               )}

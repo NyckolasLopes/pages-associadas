@@ -575,7 +575,11 @@ function Social({ label, href, children }: { label: string; href: string; childr
       rel="noopener noreferrer"
       aria-label={label}
       title={label}
-      className="h-8 w-8 rounded-full bg-white text-secondary hover:bg-slate-100 flex items-center justify-center transition shadow-sm"
+      style={{
+        backgroundColor: 'var(--social-icons-bg, #ffffff)',
+        color: 'var(--social-icons, var(--secondary, #00B5AD))'
+      }}
+      className="h-8 w-8 rounded-full hover:opacity-90 flex items-center justify-center transition shadow-sm"
     >
       {children}
     </a>
