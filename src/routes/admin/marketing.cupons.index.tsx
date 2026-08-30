@@ -78,11 +78,10 @@ function CuponsIndexPage() {
               <div className="grid gap-4 py-4">
                 {isGlobalAdmin && (
                   <div className="grid gap-2">
-                    <label className="text-sm font-medium">Loja Vinculada (Opcional)</label>
+                    <label className="text-sm font-medium">Loja Vinculada <span className="text-red-500">*</span></label>
                     <Select value={novoCupom.lojaId} onValueChange={(v: any) => setNovoCupom({...novoCupom, lojaId: v})}>
-                      <SelectTrigger><SelectValue placeholder="Todas as Lojas (Global)" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecione a Farmácia" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todas as Lojas (Global)</SelectItem>
                         {pharmacies.map(loja => (
                           <SelectItem key={loja.id} value={loja.id}>{loja.nome}</SelectItem>
                         ))}
@@ -157,6 +156,8 @@ function CuponsIndexPage() {
                 <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
                 <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold" onClick={async () => {
                   if (!novoCupom.codigo.trim()) return toast.error("Preencha o código do cupom");
+                  const targetLojaId = isGlobalAdmin ? novoCupom.lojaId : effectiveStoreId;
+                  if (!targetLojaId) return toast.error("Selecione a farmácia vinculada ao cupom.");
                   await addCoupon({
                     codigo: novoCupom.codigo.trim().toUpperCase(),
                     descricao: novoCupom.descricao,
@@ -173,9 +174,9 @@ function CuponsIndexPage() {
                     permiteAcumular: false,
                     usoUnico: false,
                     cupomPrimeiraCompra: false,
-                    lojaId: isGlobalAdmin ? (novoCupom.lojaId || undefined) : (effectiveStoreId || undefined),
+                    lojaId: targetLojaId,
                   });
-                  toast.success("Cupom criado com sucesso!");
+                  toast.success("Cupom criado com sucesso para a farmácia!");
                   setIsModalOpen(false);
                   setNovoCupom({
                     codigo: "", descricao: "", valorDesconto: 0, tipoDesconto: "percentual", valorMinimo: 0, totalDisponiveis: 100, lojaId: ""

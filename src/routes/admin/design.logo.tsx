@@ -141,8 +141,13 @@ function AdminDesignLogo() {
         
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="font-bold text-sm">Logo</span>
+              {isPleno && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-200/80 text-slate-700 border border-slate-300/80 flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-slate-500" /> Padrão da Rede (Bloqueado)
+                </span>
+              )}
             </div>
             {!isPleno && (
               <Button variant="outline" size="sm" disabled={uploadingField === 'logoUrl'} onClick={() => triggerUpload('logoUrl', 'logo')}>
@@ -168,9 +173,9 @@ function AdminDesignLogo() {
                 </button>
               )}
             </div>
-            {!currentPharmacy?.logoUrl && !isParceiro && (
-              <p className="text-xs font-medium text-slate-400 mt-4">
-                Exibindo logo padrão do tema (Farmácias Associadas).
+            {isPleno && (
+              <p className="text-xs font-medium text-slate-500 mt-4 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 max-w-[380px]">
+                Nas lojas Pleno, o logotipo do cabeçalho é automaticamente o oficial da rede Farmácias Associadas (não editável).
               </p>
             )}
             {!currentPharmacy?.logoUrl && isParceiro && (
@@ -187,8 +192,13 @@ function AdminDesignLogo() {
 
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="font-bold text-sm">Ícone da página (Favicon)</span>
+              {isPleno && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-200/80 text-slate-700 border border-slate-300/80 flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-slate-500" /> Padrão da Rede (Bloqueado)
+                </span>
+              )}
             </div>
             {!isPleno && (
               <Button variant="outline" size="sm" disabled={uploadingField === 'faviconUrl'} onClick={() => triggerUpload('faviconUrl', 'favicon', 0.5)}>
@@ -214,9 +224,9 @@ function AdminDesignLogo() {
                 </button>
               )}
             </div>
-            {!currentPharmacy?.faviconUrl && !isParceiro && (
-              <p className="text-xs font-medium text-slate-400 mt-4">
-                Exibindo favicon padrão do tema.
+            {isPleno && (
+              <p className="text-xs font-medium text-slate-500 mt-4 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 max-w-[380px]">
+                Nas lojas Pleno, o favicon da página é automaticamente o oficial da rede Farmácias Associadas (não editável).
               </p>
             )}
             {!currentPharmacy?.faviconUrl && isParceiro && (
@@ -289,12 +299,19 @@ function AdminDesignLogo() {
 
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="font-bold text-sm">Logo do Rodapé</span>
+              {isPleno && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-200/80 text-slate-700 border border-slate-300/80 flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-slate-500" /> Padrão da Rede (Bloqueado)
+                </span>
+              )}
             </div>
-            <Button variant="outline" size="sm" disabled={uploadingField === 'footerLogoUrl'} onClick={() => triggerUpload('footerLogoUrl', 'footer-logo')}>
-              {uploadingField === 'footerLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
-            </Button>
+            {!isPleno && (
+              <Button variant="outline" size="sm" disabled={uploadingField === 'footerLogoUrl'} onClick={() => triggerUpload('footerLogoUrl', 'footer-logo')}>
+                {uploadingField === 'footerLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
+              </Button>
+            )}
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
@@ -305,7 +322,7 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy?.footerLogoUrl && (
+              {currentPharmacy?.footerLogoUrl && !isPleno && (
                 <button onClick={() => {
                   if (currentPharmacy?.id) updatePharmacy(currentPharmacy.id, { ...currentPharmacy, footerLogoUrl: "" } as any);
                   toast.success("Logo do rodapé removido!");
@@ -314,10 +331,16 @@ function AdminDesignLogo() {
                 </button>
               )}
             </div>
-            {!currentPharmacy?.footerLogoUrl && (
-              <p className="text-xs font-medium text-slate-400 mt-4">
-                Exibindo logo padrão do tema no rodapé. alterar.
+            {isPleno ? (
+              <p className="text-xs font-medium text-slate-500 mt-4 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 max-w-[380px]">
+                Nas lojas Pleno, o logotipo do rodapé é automaticamente o oficial da rede Farmácias Associadas (não editável).
               </p>
+            ) : (
+              !currentPharmacy?.footerLogoUrl && (
+                <p className="text-xs font-medium text-slate-400 mt-4">
+                  Exibindo logo padrão do tema no rodapé.
+                </p>
+              )
             )}
             <p className="text-xs text-muted-foreground max-w-[300px] mt-4">
               Tamanho recomendado: <strong>300 x 100px</strong> (formato retangular horizontal). Tamanho máximo <strong>1MB</strong>.
@@ -325,15 +348,21 @@ function AdminDesignLogo() {
           </div>
         </div>
 
-
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="font-bold text-sm">Selo da Anvisa</span>
+              {isPleno && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-200/80 text-slate-700 border border-slate-300/80 flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-slate-500" /> Padrão da Rede (Bloqueado)
+                </span>
+              )}
             </div>
-            <Button variant="outline" size="sm" disabled={uploadingField === 'anvisaLogoUrl'} onClick={() => triggerUpload('anvisaLogoUrl', 'anvisa-logo')}>
-              {uploadingField === 'anvisaLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
-            </Button>
+            {!isPleno && (
+              <Button variant="outline" size="sm" disabled={uploadingField === 'anvisaLogoUrl'} onClick={() => triggerUpload('anvisaLogoUrl', 'anvisa-logo')}>
+                {uploadingField === 'anvisaLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
+              </Button>
+            )}
           </div>
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="relative group inline-block">
@@ -344,7 +373,7 @@ function AdminDesignLogo() {
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
-              {currentPharmacy?.anvisaLogoUrl && (
+              {currentPharmacy?.anvisaLogoUrl && !isPleno && (
                 <button onClick={() => {
                   if (currentPharmacy?.id) updatePharmacy(currentPharmacy.id, { ...currentPharmacy, anvisaLogoUrl: "" } as any);
                   toast.success("Logo da Anvisa removido!");
@@ -353,10 +382,16 @@ function AdminDesignLogo() {
                 </button>
               )}
             </div>
-            {!currentPharmacy?.anvisaLogoUrl && (
-              <p className="text-xs font-medium text-slate-400 mt-4">
-                Nenhum logo da Anvisa configurado.
+            {isPleno ? (
+              <p className="text-xs font-medium text-slate-500 mt-4 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 max-w-[380px]">
+                Nas lojas Pleno, o selo da Anvisa utiliza automaticamente o padrão oficial da rede Farmácias Associadas (não editável).
               </p>
+            ) : (
+              !currentPharmacy?.anvisaLogoUrl && (
+                <p className="text-xs font-medium text-slate-400 mt-4">
+                  Nenhum logo da Anvisa configurado.
+                </p>
+              )
             )}
             <p className="text-xs text-muted-foreground max-w-[300px] mt-4">
               Tamanho ideal: <strong>240 x 136px</strong>. Tamanho máximo <strong>1MB</strong>.

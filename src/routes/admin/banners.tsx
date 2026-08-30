@@ -421,9 +421,12 @@ function AdminBanners() {
            (pPos === "banner tarja" && (bPos.includes("tarja") || bPos === "banner tarja"));
   };
 
+  const deletedDefaultBannerIds = useAdmin(s => (s as any).deletedDefaultBannerIds) || [];
+  const deletedIds = new Set(deletedDefaultBannerIds);
+
   const groupedBanners = BANNER_POSITIONS.map(pos => {
     if (activeStoreId) {
-      const storeItems = allBanners.filter(b => b.lojaId === activeStoreId && matchBannerPos(b, pos));
+      const storeItems = allBanners.filter(b => b.lojaId === activeStoreId && matchBannerPos(b, pos) && !deletedIds.has(b.id));
       if (storeItems.length > 0) {
         return {
           position: pos,
@@ -432,21 +435,43 @@ function AdminBanners() {
         };
       }
       // Se a loja não tem banners próprios nesta posição, exibe os banners da rede herdados que estão ativos na loja
-      const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos));
-      const fallbackItems = globalItems.length > 0 ? globalItems : defaultBanners.filter(b => matchBannerPos(b, pos));
+      const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos) && !deletedIds.has(b.id));
+      const fallbackItems = (globalItems.length > 0 ? globalItems : defaultBanners.filter(b => matchBannerPos(b, pos))).filter(b => !deletedIds.has(b.id));
+      
+      const uniqueMap = new Map();
+      for (const item of fallbackItems) {
+        const key = `${item.posicao}|${item.nome}|${item.imageUrl}|${item.lojaId || 'global'}`;
+        if (!uniqueMap.has(item.id) && !uniqueMap.has(key)) {
+          uniqueMap.set(item.id, item);
+          uniqueMap.set(key, item);
+        }
+      }
+      const uniqueItems = Array.from(new Set(uniqueMap.values()));
+
       return {
         position: pos,
-        isInherited: fallbackItems.length > 0,
-        items: fallbackItems.filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
+        isInherited: uniqueItems.length > 0,
+        items: uniqueItems.filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
       };
     }
 
-    const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos));
-    const fallbackItems = globalItems.length > 0 ? globalItems : defaultBanners.filter(b => matchBannerPos(b, pos));
+    const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos) && !deletedIds.has(b.id));
+    const fallbackItems = (globalItems.length > 0 ? globalItems : defaultBanners.filter(b => matchBannerPos(b, pos))).filter(b => !deletedIds.has(b.id));
+    
+    const uniqueMap = new Map();
+    for (const item of fallbackItems) {
+      const key = `${item.posicao}|${item.nome}|${item.imageUrl}|${item.lojaId || 'global'}`;
+      if (!uniqueMap.has(item.id) && !uniqueMap.has(key)) {
+        uniqueMap.set(item.id, item);
+        uniqueMap.set(key, item);
+      }
+    }
+    const uniqueItems = Array.from(new Set(uniqueMap.values()));
+
     return {
       position: pos,
       isInherited: false,
-      items: fallbackItems.filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
+      items: uniqueItems.filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
     };
   });
 
@@ -560,25 +585,8 @@ function AdminBanners() {
 
   const handleDeleteBanner = async (id: string) => {
     try {
-      if (isDefaultBanner(id)) {
-        const defaultItem = defaultBanners.find(b => b.id === id);
-        if (defaultItem) {
-          const pos = defaultItem.posicao;
-          const remainingDefaults = defaultBanners.filter(b => (b.posicao === pos || (pos.includes("categoria") && b.posicao.includes("categoria"))) && b.id !== id);
-          const targetLojaId = managingGlobal ? undefined : (activeStoreId || undefined);
-          for (const rem of remainingDefaults) {
-            await addBanner({
-              ...rem,
-              id: `banner_${Date.now()}_${rem.id}`,
-              lojaId: targetLojaId,
-            } as AdminBanner);
-          }
-        }
-        toast.success("Banner excluído com sucesso!");
-      } else {
-        await removeBanner(id);
-        toast.success("Banner excluído com sucesso!");
-      }
+      await removeBanner(id);
+      toast.success("Banner excluído com sucesso!");
     } catch (e: any) {
       toast.error("Erro ao excluir banner: " + (e.message || "Erro desconhecido"));
     } finally {
@@ -1394,11 +1402,47 @@ function AdminBanners() {
 
                     {/* Link de Destino */}
                     <div className="space-y-2 pt-3 border-t border-orange-200/80">
-                      <Label className="font-bold text-slate-800 text-sm">Link de Redirecionamento</Label>
+                      <Label className="font-bold text-slate-800 text-sm flex items-center justify-between">
+                        <span>Link de Redirecionamento</span>
+                        <span className="text-xs text-slate-500 font-normal">Selecione uma categoria ou digite</span>
+                      </Label>
+
+                      {(editingBanner.posicao === "Banner Compre por categoria" || editingBanner.posicao === "Banner Categoria") && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {[
+                            { nome: "Medicamentos", slug: "medicamentos" },
+                            { nome: "Higiene e Cuidados", slug: "higiene-e-cuidados" },
+                            { nome: "Vitaminas e Suplementos", slug: "vitaminas-e-suplementos" },
+                            { nome: "Dermocosméticos e Beleza", slug: "dermocosm-ticos-e-beleza" },
+                            { nome: "Mamãe e Bebê", slug: "mam-e-e-beb" },
+                            { nome: "Saúde e Aparelhos", slug: "sa-de-e-aparelhos" },
+                            { nome: "Conveniência", slug: "conveni-ncia" },
+                            { nome: "Nossas Marcas", slug: "nossas-marcas" },
+                          ].map(cat => (
+                            <button
+                              key={cat.slug}
+                              type="button"
+                              onClick={() => setEditingBanner({
+                                ...editingBanner,
+                                link: `/c/${cat.slug}`,
+                                nome: editingBanner.nome || cat.nome
+                              })}
+                              className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                                editingBanner.link === `/c/${cat.slug}`
+                                  ? "bg-[#00B5AD] text-white border-[#00B5AD] font-bold shadow-xs"
+                                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                              }`}
+                            >
+                              {cat.nome}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       <Input 
                         value={editingBanner.link || ""} 
                         onChange={e => setEditingBanner({...editingBanner, link: e.target.value})}
-                        placeholder="Ex: /c/medicamentos, /c/higiene ou /"
+                        placeholder="Ex: /c/medicamentos, /c/higiene-e-cuidados ou /"
                         className="bg-white h-11 border-slate-200"
                       />
                     </div>

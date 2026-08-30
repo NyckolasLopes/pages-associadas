@@ -469,7 +469,59 @@ export const catalog = {
   async getCategoryBySlug(slug: string): Promise<Categoria | null> {
     await ensureHydrated();
     const categorias = getCategorias();
-    return wait(categorias.find((c) => c && c.slug === slug) ?? null);
+    if (!slug) return wait(null);
+
+    const cleanSlug = removeAccents(slug).toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    // 1. Match exato de slug
+    let found = categorias.find((c) => c && c.slug === slug);
+    if (found) return wait(found);
+
+    // 2. Match por ID
+    found = categorias.find((c) => c && String(c.id) === slug);
+    if (found) return wait(found);
+
+    // 3. Match de slug normalizado sem acentos ou traços
+    found = categorias.find((c) => c && c.slug && removeAccents(c.slug).toLowerCase().replace(/[^a-z0-9]/g, "") === cleanSlug);
+    if (found) return wait(found);
+
+    // 4. Match pelo nome da categoria normalizado
+    found = categorias.find((c) => c && c.nome && removeAccents(c.nome).toLowerCase().replace(/[^a-z0-9]/g, "") === cleanSlug);
+    if (found) return wait(found);
+
+    // 5. Mapeamento de sinônimos / atalhos comuns
+    const aliases: Record<string, string[]> = {
+      "medicamentos": ["medicamento", "remedio", "remedios", "farmacia", "dor-e-febre", "sistema-nervoso", "gripe-e-resfriado"],
+      "higiene-e-cuidados": ["higiene", "cuidados", "higiene-bucal", "sabonetes", "corpo-e-banho", "desodorantes", "sabonetes-intimos"],
+      "vitaminas-e-suplementos": ["vitaminas", "suplementos", "vitamina", "suplemento", "minerais", "multivitaminicos"],
+      "dermocosm-ticos-e-beleza": ["dermocosmeticos-e-beleza", "dermocosmeticos", "beleza", "cosmeticos", "shampoos", "cabelos", "maquiagem"],
+      "mam-e-e-beb": ["mamae-e-bebe", "bebe", "mamae", "fraldas", "infantil"],
+      "sa-de-e-aparelhos": ["saude-e-aparelhos", "saude", "aparelhos", "ortopedia"],
+      "conveni-ncia": ["conveniencia", "alimentos", "bebidas", "doces"],
+      "nossas-marcas": ["marcas", "marcas-proprias", "nossasmarcas"]
+    };
+
+    for (const [canonicalSlug, aliasList] of Object.entries(aliases)) {
+      const isAliasMatch = aliasList.some(a => {
+        const cleanA = removeAccents(a).toLowerCase().replace(/[^a-z0-9]/g, "");
+        return cleanSlug.includes(cleanA) || cleanA.includes(cleanSlug);
+      });
+
+      if (isAliasMatch) {
+        found = categorias.find(c => c && (c.slug === canonicalSlug || removeAccents(c.slug || "").toLowerCase().replace(/[^a-z0-9]/g, "") === removeAccents(canonicalSlug).toLowerCase().replace(/[^a-z0-9]/g, "")));
+        if (found) return wait(found);
+      }
+    }
+
+    // 6. Match parcial em slug ou nome
+    found = categorias.find((c) => c && (
+      (c.slug && removeAccents(c.slug).toLowerCase().replace(/[^a-z0-9]/g, "").includes(cleanSlug)) ||
+      (c.nome && removeAccents(c.nome).toLowerCase().replace(/[^a-z0-9]/g, "").includes(cleanSlug)) ||
+      (c.slug && cleanSlug.includes(removeAccents(c.slug).toLowerCase().replace(/[^a-z0-9]/g, "")))
+    ));
+    if (found) return wait(found);
+
+    return wait(null);
   },
   async getCategoryById(id: string): Promise<Categoria | null> {
     await ensureHydrated();

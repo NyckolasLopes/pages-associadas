@@ -7,7 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Info, AlertTriangle, ChevronRight, Ticket, Percent, DollarSign, Truck, FileText } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Info, AlertTriangle, ChevronRight, Ticket, Percent, DollarSign, Truck, FileText, Store } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/marketing/cupons/novo")({
@@ -17,6 +24,11 @@ export const Route = createFileRoute("/admin/marketing/cupons/novo")({
 function NovoCupomPage() {
   const navigate = useNavigate();
   const { addCoupon } = useMarketing();
+  const { currentUser, activeStoreId, grupos, pharmacies } = useAdmin();
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
+  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : activeStoreId;
+
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(effectiveStoreId || "");
   
   const [formData, setFormData] = useState<Omit<Coupon, "id" | "numeroUtilizacoes">>({
     codigo: "",
@@ -51,23 +63,26 @@ function NovoCupomPage() {
     setFormData((prev) => ({ ...prev, codigo: code }));
   };
 
-  const { currentUser, activeStoreId, grupos } = useAdmin();
-  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
-  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : activeStoreId;
-
-  const handleSave = () => {
-    if (!formData.codigo) {
+  const handleSave = async () => {
+    if (!formData.codigo.trim()) {
       toast.error("Preencha o código do cupom!");
+      return;
+    }
+
+    const targetLojaId = isGlobalAdmin ? selectedStoreId : effectiveStoreId;
+    if (!targetLojaId) {
+      toast.error("Selecione a farmácia vinculada a este cupom!");
       return;
     }
     
     const payload = {
       ...formData,
-      lojaId: isGlobalAdmin ? undefined : effectiveStoreId || undefined
+      codigo: formData.codigo.trim().toUpperCase(),
+      lojaId: targetLojaId
     };
     
-    addCoupon(payload);
-    toast.success("Cupom criado com sucesso!");
+    await addCoupon(payload);
+    toast.success("Cupom criado com sucesso para a farmácia!");
     navigate({ to: "/admin/marketing/cupons" });
   };
 
@@ -100,6 +115,22 @@ function NovoCupomPage() {
               />
               <Label className="font-bold text-emerald-600">ATIVO</Label>
             </div>
+
+            {isGlobalAdmin && (
+              <div className="space-y-2">
+                <Label className="font-bold">Loja Vinculada <span className="text-red-500">*</span></Label>
+                <div className="max-w-sm">
+                  <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
+                    <SelectTrigger className="bg-white border-slate-200"><SelectValue placeholder="Selecione a Farmácia" /></SelectTrigger>
+                    <SelectContent>
+                      {pharmacies.map(loja => (
+                        <SelectItem key={loja.id} value={loja.id}>{loja.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label className="font-bold">Código <span className="text-red-500">*</span></Label>

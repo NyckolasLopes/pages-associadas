@@ -145,11 +145,12 @@ function Checkout() {
       return;
     }
     
-    const cupom = cupons.find(c => c.codigo === code);
+    const targetStoreId = activeStore?.id || selectedPharmacyId;
+    const cupom = cupons.find(c => c.codigo.toUpperCase() === code && c.lojaId === targetStoreId);
     
     if (!cupom) {
       setCouponApplied(null);
-      setCouponError("O cupom informado não existe.");
+      setCouponError("O cupom informado não é válido para esta farmácia.");
       return;
     }
 

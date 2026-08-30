@@ -29,6 +29,8 @@ function AdminMarketingCores() {
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(activeStoreId || null);
 
   const filteredPharmacies = pharmacies.filter((p) => {
+    // Apenas lojas parceiras possuem personalização de cores
+    if (p.categoriaAssociado === 'Pleno' || p.isPleno === true) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     const nome = (p.nome || "").toLowerCase();

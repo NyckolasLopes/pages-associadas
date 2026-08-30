@@ -565,9 +565,9 @@ function AdminLayout() {
                 </Link>
               )}
 
-              {(isParceiro || isPleno || can('pers_cores') || !isGlobalAdmin) && (
+              {(isParceiro || (isGlobalAdmin && can('pers_cores'))) && (
                 <Link to="/admin/design/cores" className={subLinkClass} activeOptions={{ exact: true }}>
-                  Minhas Cores
+                  {isGlobalAdmin ? "Cores da Rede" : "Minhas Cores"}
                 </Link>
               )}
             </NavSection>

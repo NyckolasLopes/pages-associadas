@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Save,
   Eye,
+  Info,
   Sparkles,
   ChevronDown,
   ChevronRight,
@@ -909,6 +910,15 @@ export function StoreColorManager({
           </Button>
         </div>
       </div>
+
+      {currentPharmacy && (currentPharmacy.categoriaAssociado === 'Pleno' || currentPharmacy.isPleno === true) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 text-amber-900 text-sm shadow-sm">
+          <Info className="w-5 h-5 text-amber-600 shrink-0" />
+          <span>
+            <strong>Atenção:</strong> Esta farmácia é uma <strong>Loja Plena</strong>. Lojas plenas utilizam a identidade visual oficial da rede. Cores personalizadas são aplicadas somente para farmácias da categoria Parceiro.
+          </span>
+        </div>
+      )}
 
       {/* Main Grid: Controls + Live Preview */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">

@@ -71,50 +71,11 @@ export interface MarketingStore {
 
 const CACHE_KEY = "fa-cached-marketing-v3";
 
-const defaultCupons: Coupon[] = [
-  {
-    id: "cupom-bemvindo-10",
-    codigo: "BEMVINDO10",
-    descricao: "10% de desconto na primeira compra",
-    ativo: true,
-    totalDisponiveis: 1000,
-    valorMinimo: 50,
-    dataInicio: "",
-    dataTermino: "",
-    exigirMinItens: false,
-    tipoDesconto: "percentual",
-    valorDesconto: 10,
-    aplicarFreteGratis: false,
-    aplicacaoAutomatica: false,
-    permiteAcumular: false,
-    usoUnico: true,
-    cupomPrimeiraCompra: true,
-    numeroUtilizacoes: 0,
-  },
-  {
-    id: "cupom-associadas-15",
-    codigo: "ASSOCIADAS15",
-    descricao: "R$ 15 de desconto em compras acima de R$ 100",
-    ativo: true,
-    totalDisponiveis: 500,
-    valorMinimo: 100,
-    dataInicio: "",
-    dataTermino: "",
-    exigirMinItens: false,
-    tipoDesconto: "fixo",
-    valorDesconto: 15,
-    aplicarFreteGratis: false,
-    aplicacaoAutomatica: false,
-    permiteAcumular: false,
-    usoUnico: false,
-    cupomPrimeiraCompra: false,
-    numeroUtilizacoes: 0,
-  }
-];
+const defaultCupons: Coupon[] = [];
 
 function getInitialMarketing(): { cupons: Coupon[]; promocoes: Promocao[]; lojaPromocoes: Record<string, Promocao[]> } {
   if (typeof window === "undefined") {
-    return { cupons: defaultCupons, promocoes: [], lojaPromocoes: {} };
+    return { cupons: [], promocoes: [], lojaPromocoes: {} };
   }
   try {
     const raw = localStorage.getItem(CACHE_KEY);

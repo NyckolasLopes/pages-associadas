@@ -399,6 +399,25 @@ const defaultPharmacies: Pharmacy[] = lojas.map((l, idx) => {
 });
 
 export const defaultBanners: AdminBanner[] = [
+  // Full Banner Padrão
+  {
+    id: "fb-1",
+    nome: "Farmácias Associadas - Cuidando de Você e sua Família",
+    imageUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1920&q=80",
+    link: "/",
+    posicao: "Full Banner",
+    paginaPublicacao: "Página inicial",
+    active: true,
+  },
+  {
+    id: "fb-2",
+    nome: "Medicamentos e Ofertas com Entrega Rápida",
+    imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=1920&q=80",
+    link: "/c/medicamentos",
+    posicao: "Full Banner",
+    paginaPublicacao: "Página inicial",
+    active: true,
+  },
   // Banner Tarja Padrão
   {
     id: "bt-1",
@@ -448,17 +467,37 @@ export const defaultBanners: AdminBanner[] = [
   // Banner Categoria Padrão
   { id: "bc-1", nome: "Remédios para Dor e Febre", imageUrl: "icon:Thermometer", link: "/c/medicamentos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-2", nome: "Remédios para Sistema Nervoso", imageUrl: "icon:Leaf", link: "/c/medicamentos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
-  { id: "bc-3", nome: "Pastas de Dente e Higiene Bucal", imageUrl: "icon:Smile", link: "/c/higiene", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
-  { id: "bc-4", nome: "Sabonetes e Produtos para Corpo", imageUrl: "icon:Droplets", link: "/c/higiene", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
-  { id: "bc-5", nome: "Multivitamínicos e Minerais", imageUrl: "icon:Battery", link: "/c/vitaminas", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
-  { id: "bc-6", nome: "Shampoos e Tratamentos", imageUrl: "icon:Wind", link: "/c/beleza", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
-  { id: "bc-7", nome: "Desodorantes e Antitranspirantes", imageUrl: "icon:Wind", link: "/c/higiene", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
-  { id: "bc-8", nome: "Sabonetes Íntimos", imageUrl: "icon:Heart", link: "/c/higiene", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
+  { id: "bc-3", nome: "Pastas de Dente e Higiene Bucal", imageUrl: "icon:Smile", link: "/c/higiene-e-cuidados", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
+  { id: "bc-4", nome: "Sabonetes e Produtos para Corpo", imageUrl: "icon:Droplets", link: "/c/higiene-e-cuidados", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
+  { id: "bc-5", nome: "Multivitamínicos e Minerais", imageUrl: "icon:Battery", link: "/c/vitaminas-e-suplementos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
+  { id: "bc-6", nome: "Shampoos e Tratamentos", imageUrl: "icon:Wind", link: "/c/dermocosm-ticos-e-beleza", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
+  { id: "bc-7", nome: "Desodorantes e Antitranspirantes", imageUrl: "icon:Wind", link: "/c/higiene-e-cuidados", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
+  { id: "bc-8", nome: "Sabonetes Íntimos", imageUrl: "icon:Heart", link: "/c/higiene-e-cuidados", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-9", nome: "Remédios para Gripe e Resfriado", imageUrl: "icon:Thermometer", link: "/c/medicamentos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
 ];
 
 const PHARMACIES_CACHE_KEY = 'fa-cached-pharmacies-v1';
 const BANNERS_CACHE_KEY = 'fa-cached-banners-v2';
+const DELETED_DEFAULT_BANNERS_KEY = 'fa-deleted-default-banners-v1';
+
+export function getInitialDeletedDefaultBanners(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DELETED_DEFAULT_BANNERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+export function saveDeletedDefaultBanners(ids: string[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(DELETED_DEFAULT_BANNERS_KEY, JSON.stringify(ids));
+  } catch { /* ignore */ }
+}
 
 export function getInitialCachedBanners(): { banners: AdminBanner[]; bannersByLoja: Record<string, AdminBanner[]> } {
   if (typeof window === 'undefined') return { banners: defaultBanners, bannersByLoja: {} };
@@ -823,11 +862,13 @@ export const useAdmin = create<AdminState>()(
       bannersLoaded: initialCachedBanners.banners.length > 0,
       bannersLoading: false,
       bannersByLoja: initialCachedBanners.bannersByLoja,
+      deletedDefaultBannerIds: getInitialDeletedDefaultBanners(),
       getStoreBanners: (lojaId?: string) => {
         const state = get() as any;
         const key = lojaId || "global";
         const lojaBanners = state.bannersByLoja?.[key];
         const baseBanners = (lojaBanners && lojaBanners.length > 0) ? lojaBanners : (state.banners || []);
+        const deletedIds = new Set(state.deletedDefaultBannerIds || getInitialDeletedDefaultBanners());
 
         const cached = storeBannersCache.get(key);
         if (cached && cached.baseBanners === baseBanners) {
@@ -844,7 +885,7 @@ export const useAdmin = create<AdminState>()(
           return false;
         };
 
-        const activeBanners = baseBanners.filter((b: AdminBanner) => !b.lojaId || (lojaId && b.lojaId === lojaId));
+        const activeBanners = baseBanners.filter((b: AdminBanner) => (!b.lojaId || (lojaId && b.lojaId === lojaId)) && !deletedIds.has(b.id));
         
         const ALL_POSITIONS = [
           "Full Banner",
@@ -856,39 +897,53 @@ export const useAdmin = create<AdminState>()(
           "Banner Diferenciais"
         ];
 
-        const resolved: AdminBanner[] = [];
+        const rawResolved: AdminBanner[] = [];
 
         ALL_POSITIONS.forEach(pos => {
           // 1. Banners customizados da loja
           const storeSpecific = activeBanners.filter((b: AdminBanner) => b.lojaId === lojaId && matchPos(b, pos));
           if (storeSpecific.length > 0) {
-            resolved.push(...storeSpecific);
+            rawResolved.push(...storeSpecific);
             return;
           }
 
           // 2. Banners globais salvos no banco de dados
           const globalFromDb = activeBanners.filter((b: AdminBanner) => !b.lojaId && matchPos(b, pos));
           if (globalFromDb.length > 0) {
-            resolved.push(...globalFromDb);
+            rawResolved.push(...globalFromDb);
             return;
           }
 
-          // 3. Fallback para defaultBanners da respectiva posição
-          const defaultsForPos = defaultBanners.filter(b => matchPos(b, pos));
+          // 3. Fallback para defaultBanners da respectiva posição (exceto os excluídos)
+          const defaultsForPos = defaultBanners.filter(b => matchPos(b, pos) && !deletedIds.has(b.id));
           if (defaultsForPos.length > 0) {
-            resolved.push(...defaultsForPos);
+            rawResolved.push(...defaultsForPos);
           }
         });
 
         // Adiciona quaisquer outros banners customizados
         activeBanners.forEach((b: AdminBanner) => {
-          if (!ALL_POSITIONS.some(pos => matchPos(b, pos)) && !resolved.some(r => r.id === b.id)) {
-            resolved.push(b);
+          if (!ALL_POSITIONS.some(pos => matchPos(b, pos)) && !rawResolved.some(r => r.id === b.id)) {
+            rawResolved.push(b);
           }
         });
 
-        storeBannersCache.set(key, { baseBanners, resolved });
-        return resolved;
+        // Desduplicação estrita por ID e assinatura de conteúdo
+        const uniqueResolved: AdminBanner[] = [];
+        const seenKeys = new Set<string>();
+
+        for (const b of rawResolved) {
+          if (deletedIds.has(b.id)) continue;
+          const signature = `${b.posicao}|${b.nome || ''}|${b.imageUrl || ''}|${b.lojaId || 'global'}`;
+          if (!seenKeys.has(b.id) && !seenKeys.has(signature)) {
+            seenKeys.add(b.id);
+            seenKeys.add(signature);
+            uniqueResolved.push(b);
+          }
+        }
+
+        storeBannersCache.set(key, { baseBanners, resolved: uniqueResolved });
+        return uniqueResolved;
       },
       setBanners: (banners) => {
         saveCachedBanners(banners, {});
@@ -900,7 +955,7 @@ export const useAdmin = create<AdminState>()(
         if (state.bannersByLoja && state.bannersByLoja[key] && state.bannersByLoja[key].length > 0) {
           // Atualiza banners com os dados específicos desta loja se for a loja ativa
           set({ banners: state.bannersByLoja[key], bannersLoaded: true, bannersLoading: false });
-        } else {
+        } else if (!state.banners || state.banners.length === 0) {
           set({ bannersLoading: true });
         }
 
@@ -1033,14 +1088,41 @@ export const useAdmin = create<AdminState>()(
           get().fetchBanners(get().activeStoreId || undefined);
         }
       },
-      removeBanner: async (id) => {
-        const { error } = await supabase.from('banners' as any).delete().eq('id', id);
-        if (!error) {
-          set((s: any) => ({ 
-            banners: s.banners.filter((b: any) => b.id !== id),
-            bannersByLoja: {}
-          }));
-        }
+      removeBanner: async (id: string) => {
+        const isDefault = defaultBanners.some(b => b.id === id) || id.startsWith("bt-") || id.startsWith("bc-") || id.startsWith("fb-");
+        
+        set((s: any) => {
+          const nextDeleted = isDefault 
+            ? Array.from(new Set([...(s.deletedDefaultBannerIds || []), id]))
+            : (s.deletedDefaultBannerIds || []);
+          
+          if (isDefault) {
+            saveDeletedDefaultBanners(nextDeleted);
+          }
+
+          const filteredBanners = (s.banners || []).filter((b: any) => b.id !== id);
+          const nextByLoja: Record<string, AdminBanner[]> = {};
+          if (s.bannersByLoja) {
+            Object.entries(s.bannersByLoja).forEach(([k, list]: [string, any]) => {
+              if (Array.isArray(list)) {
+                nextByLoja[k] = list.filter((b: any) => b.id !== id);
+              }
+            });
+          }
+
+          saveCachedBanners(filteredBanners, nextByLoja);
+          storeBannersCache.clear();
+
+          return {
+            deletedDefaultBannerIds: nextDeleted,
+            banners: filteredBanners,
+            bannersByLoja: nextByLoja,
+          };
+        });
+
+        try {
+          await supabase.from('banners' as any).delete().eq('id', id);
+        } catch { /* ignore if not in db */ }
       },
 
       integrations: { webhookUrl: "", apiKey: "" },

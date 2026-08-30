@@ -304,9 +304,9 @@ export const useCart = create<CartState>()(
         if (!code) return 0;
         const cupons = useMarketing.getState().cupons;
         const pid = get().selectedPharmacyId;
-        const coupon = cupons.find(c => c.codigo.toUpperCase() === code.toUpperCase() && c.ativo);
+        if (!pid) return 0;
+        const coupon = cupons.find(c => c.codigo.toUpperCase() === code.toUpperCase() && c.ativo && c.lojaId === pid);
         if (!coupon) return 0;
-        if (coupon.lojaId && pid && coupon.lojaId !== pid) return 0;
         if (coupon.totalDisponiveis > 0 && (coupon.numeroUtilizacoes || 0) >= coupon.totalDisponiveis) return 0;
         
         const rawSubtotal = get().subtotal();
@@ -325,12 +325,12 @@ export const useCart = create<CartState>()(
         if (!clean) return { success: false, message: "Digite um código de cupom válido." };
         const cupons = useMarketing.getState().cupons;
         const pid = get().selectedPharmacyId;
-        const coupon = cupons.find(c => c.codigo.toUpperCase() === clean);
-        if (!coupon || !coupon.ativo) {
-          return { success: false, message: "Cupom inválido ou inativo." };
+        if (!pid) {
+          return { success: false, message: "Selecione uma farmácia antes de aplicar o cupom." };
         }
-        if (coupon.lojaId && pid && coupon.lojaId !== pid) {
-          return { success: false, message: "Este cupom é exclusivo de outra unidade." };
+        const coupon = cupons.find(c => c.codigo.toUpperCase() === clean);
+        if (!coupon || !coupon.ativo || !coupon.lojaId || coupon.lojaId !== pid) {
+          return { success: false, message: "Cupom inválido ou não disponível para esta loja." };
         }
         if (coupon.totalDisponiveis > 0 && (coupon.numeroUtilizacoes || 0) >= coupon.totalDisponiveis) {
           return { success: false, message: "Este cupom atingiu o limite máximo de utilizações." };

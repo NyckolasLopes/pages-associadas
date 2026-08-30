@@ -18,8 +18,9 @@ import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
 import { GeoPopup } from "@/components/storefront/GeoPopup";
 // InstallPrompt are rendered globally in __root.tsx
 import type { Produto, Categoria, VitrineLocal } from "@/types";
-import { useAdmin } from "@/stores/admin";
+import { useAdmin, defaultBanners } from "@/stores/admin";
 import { useCart, useGeoCep } from "@/stores/cart";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 import { NotFound } from "@/components/storefront/NotFound";
 import { useLive } from "@/stores/live";
 import { useAdminProducts } from "@/stores/products";
@@ -335,19 +336,32 @@ function getSubcategoryIcon(name: string) {
   return Tag;
 }
 
-function DynamicTarja({ page = "Página inicial", lojaId, initialBanners }: { page?: string; lojaId?: string; initialBanners?: any[] }) {
+function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string; initialBanners?: any[] }) {
+  const adminBanners = useAdmin((s) => s.banners);
+  const bannersByLoja = useAdmin((s) => s.bannersByLoja);
   const getStoreBanners = useAdmin((s) => s.getStoreBanners);
-  const bannersToUse = (initialBanners && initialBanners.length > 0) ? initialBanners : getStoreBanners(lojaId);
-  
-  const tarjasOld = useMemo(() => getDeduplicatedBanners((bannersToUse || []).filter(b => 
-    b.active && 
-    b.posicao === "Banner Tarja" &&
-    (b.lojaId === lojaId || !b.lojaId) &&
-    (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  )), [bannersToUse, page, lojaId]);
   
   const tarjaItems = useMemo(() => {
-    const bannerWithJson = tarjasOld.find(b => b.formatoExtra && b.formatoExtra.trim().startsWith('['));
+    const bannersToUse = (lojaId && bannersByLoja[lojaId] && bannersByLoja[lojaId].length > 0)
+      ? bannersByLoja[lojaId]
+      : getStoreBanners(lojaId);
+
+    const matchTarja = (b: any) => {
+      const pos = (b.posicao || "").toLowerCase().trim();
+      return pos === "banner tarja" || pos.includes("tarja");
+    };
+
+    const filtered = (bannersToUse || []).filter(b => 
+      b.active && 
+      matchTarja(b) &&
+      (b.lojaId === lojaId || !b.lojaId) &&
+      (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
+    );
+
+    const deduped = getDeduplicatedBanners(filtered);
+    const tarjasToUse = deduped.length > 0 ? deduped : defaultBanners.filter(b => matchTarja(b));
+
+    const bannerWithJson = tarjasToUse.find(b => b.formatoExtra && b.formatoExtra.trim().startsWith('['));
     if (bannerWithJson) {
       try {
         const parsed = JSON.parse(bannerWithJson.formatoExtra!);
@@ -355,9 +369,8 @@ function DynamicTarja({ page = "Página inicial", lojaId, initialBanners }: { pa
       } catch(e) {}
     }
     
-    // Legacy fallback
-    if (tarjasOld.length > 0) {
-      return tarjasOld.map(b => ({
+    if (tarjasToUse.length > 0) {
+      return tarjasToUse.map(b => ({
         icon: b.imageUrl,
         title: "",
         subtitle: b.nome,
@@ -366,7 +379,7 @@ function DynamicTarja({ page = "Página inicial", lojaId, initialBanners }: { pa
     }
     
     return [];
-  }, [tarjasOld]);
+  }, [adminBanners, bannersByLoja, getStoreBanners, lojaId, page]);
   
   if (tarjaItems.length === 0) return null;
 
@@ -432,15 +445,83 @@ function DynamicTarja({ page = "Página inicial", lojaId, initialBanners }: { pa
   );
 }
 
-function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
-  const allBanners = useAdmin((s) => s.getStoreBanners(lojaId));
+export function getStoreBannerUrl(link?: string, storeSlug?: string): string {
+  if (!link || link === "#" || link.trim() === "") return `/${storeSlug || "poa"}`;
+  const effectiveSlug = storeSlug || "poa";
+  const trimmed = link.trim();
   
-  const categorias = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
-    b.active && 
-    (b.posicao === "Banner Categoria" || b.posicao === "Banner Compre por categoria") &&
-    (b.lojaId === lojaId || !b.lojaId) &&
-    (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
-  )), [allBanners, page, lojaId]);
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("tel:") || trimmed.startsWith("mailto:") || trimmed.startsWith("//")) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith(`/${effectiveSlug}/`)) {
+    return trimmed;
+  }
+
+  if (trimmed === "/") {
+    return `/${effectiveSlug}`;
+  }
+
+  if (trimmed.startsWith("/c/")) {
+    return `/${effectiveSlug}/c/${trimmed.replace("/c/", "")}`;
+  }
+
+  if (trimmed.startsWith("c/")) {
+    return `/${effectiveSlug}/${trimmed}`;
+  }
+
+  if (trimmed.startsWith("/produto/")) {
+    return `/${effectiveSlug}/produto/${trimmed.replace("/produto/", "")}`;
+  }
+  if (trimmed.startsWith("/p/")) {
+    return `/${effectiveSlug}/produto/${trimmed.replace("/p/", "")}`;
+  }
+
+  if (trimmed.startsWith("/busca")) {
+    return `/${effectiveSlug}${trimmed}`;
+  }
+
+  if (trimmed.startsWith("/cart") || trimmed.startsWith("/checkout") || trimmed.startsWith("/login") || trimmed.startsWith("/pagina/")) {
+    return `/${effectiveSlug}${trimmed}`;
+  }
+
+  if (trimmed.startsWith("/")) {
+    return `/${effectiveSlug}${trimmed}`;
+  }
+
+  return `/${effectiveSlug}/${trimmed}`;
+}
+
+function DynamicCategoriaBanners({ page = "Página inicial", lojaId, storeSlug: propStoreSlug }: { page?: string; lojaId?: string; storeSlug?: string }) {
+  const adminBanners = useAdmin((s) => s.banners);
+  const bannersByLoja = useAdmin((s) => s.bannersByLoja);
+  const getStoreBanners = useAdmin((s) => s.getStoreBanners);
+  const params = useParams({ strict: false });
+  const activePharmacy = useActivePharmacy();
+  const storeSlug = propStoreSlug || (params as any)?.storeSlug || activePharmacy?.slug || "loja-padrao";
+  
+  const categorias = useMemo(() => {
+    const allBanners = (lojaId && bannersByLoja[lojaId] && bannersByLoja[lojaId].length > 0)
+      ? bannersByLoja[lojaId]
+      : getStoreBanners(lojaId);
+
+    const matchCat = (b: any) => {
+      const pos = (b.posicao || "").toLowerCase().trim();
+      return pos === "banner categoria" || pos === "banner compre por categoria" || pos.includes("categoria");
+    };
+
+    const filtered = (allBanners || []).filter(b => 
+      b.active && 
+      matchCat(b) &&
+      (b.lojaId === lojaId || !b.lojaId) &&
+      (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
+    );
+
+    const deduped = getDeduplicatedBanners(filtered);
+    if (deduped.length > 0) return deduped;
+
+    return defaultBanners.filter(b => matchCat(b));
+  }, [adminBanners, bannersByLoja, getStoreBanners, lojaId, page]);
   
   if (categorias.length === 0) return null;
 
@@ -475,23 +556,46 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: 
         <CarouselContent className="-ml-4 md:-ml-6 pb-4">
           {categorias.map(cat => {
             const Icon = getIcon(cat.imageUrl);
+            const targetUrl = getStoreBannerUrl(cat.link, storeSlug);
+            const isExternal = targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("//");
+
             return (
               <CarouselItem key={cat.id} className="pl-4 md:pl-6 basis-auto flex">
-                <Link
-                  to={cat.link || "/"}
-                  className="flex flex-col items-center gap-2 text-center group shrink-0 w-[80px] md:w-[100px]"
-                >
-                  <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-3 border-4 border-transparent group-hover:border-primary/20">
-                    {Icon ? (
-                      <Icon className="h-8 w-8 md:h-10 md:w-10 text-primary" />
-                    ) : cat.imageUrl ? (
-                      <img src={cat.imageUrl} alt={cat.nome} className="w-full h-full object-cover rounded-2xl" />
-                    ) : null}
-                  </div>
-                  <span className="text-[10px] md:text-xs font-bold leading-tight line-clamp-2">
-                    {cat.nome}
-                  </span>
-                </Link>
+                {isExternal ? (
+                  <a
+                    href={targetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-2 text-center group shrink-0 w-[80px] md:w-[100px]"
+                  >
+                    <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-3 border-4 border-transparent group-hover:border-primary/20">
+                      {Icon ? (
+                        <Icon className="h-8 w-8 md:h-10 md:w-10 text-primary" />
+                      ) : cat.imageUrl ? (
+                        <img src={cat.imageUrl} alt={cat.nome} className="w-full h-full object-cover rounded-2xl" />
+                      ) : null}
+                    </div>
+                    <span className="text-[10px] md:text-xs font-bold leading-tight line-clamp-2">
+                      {cat.nome}
+                    </span>
+                  </a>
+                ) : (
+                  <Link
+                    to={targetUrl as any}
+                    className="flex flex-col items-center gap-2 text-center group shrink-0 w-[80px] md:w-[100px]"
+                  >
+                    <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-3 border-4 border-transparent group-hover:border-primary/20">
+                      {Icon ? (
+                        <Icon className="h-8 w-8 md:h-10 md:w-10 text-primary" />
+                      ) : cat.imageUrl ? (
+                        <img src={cat.imageUrl} alt={cat.nome} className="w-full h-full object-cover rounded-2xl" />
+                      ) : null}
+                    </div>
+                    <span className="text-[10px] md:text-xs font-bold leading-tight line-clamp-2">
+                      {cat.nome}
+                    </span>
+                  </Link>
+                )}
               </CarouselItem>
             );
           })}
@@ -503,22 +607,28 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: 
   );
 }
 
-function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[] }) {
+function RecursiveBanner({ banner, allBanners, storeSlug: propStoreSlug }: { banner: any; allBanners: any[]; storeSlug?: string }) {
+  const params = useParams({ strict: false });
+  const activePharmacy = useActivePharmacy();
+  const storeSlug = propStoreSlug || (params as any)?.storeSlug || activePharmacy?.slug || "loja-padrao";
   const children = (allBanners || []).filter(b => b.active && b.posicao === "Banner Extra" && b.bannerVinculado === banner.id);
   
+  const link1 = getStoreBannerUrl(banner.link, storeSlug);
+  const link2 = getStoreBannerUrl(banner.link2, storeSlug);
+
   return (
     <>
       <div key={banner.id}>
         {banner.formatoExtra === "2_banners" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <Link to={banner.link || "/"} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            <Link to={link1 as any} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
               <picture className="w-full block">
                 {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
                 <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
               </picture>
             </Link>
             {banner.imageUrl2 && (
-              <Link to={banner.link2 || "/"} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
+              <Link to={link2 as any} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <picture className="w-full block">
                   {banner.mobileImageUrl2 && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl2} />}
                   <img src={banner.imageUrl2} alt={banner.nome || "Banner promocional 2"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
@@ -527,7 +637,7 @@ function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[
             )}
           </div>
         ) : (
-          <Link to={banner.link || "/"} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
+          <Link to={link1 as any} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <picture className="w-full block">
               {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
               <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
@@ -536,7 +646,7 @@ function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[
         )}
       </div>
       {children.map(child => (
-        <RecursiveBanner key={child.id} banner={child} allBanners={allBanners} />
+        <RecursiveBanner key={child.id} banner={child} allBanners={allBanners} storeSlug={storeSlug} />
       ))}
     </>
   );

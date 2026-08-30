@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useParams } from "@tanstack/react-router";
 import { useAdmin, AdminBanner } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
@@ -19,11 +20,13 @@ export function HeroCarousel({
   categoriaId,
   initialBanners
 }: HeroCarouselProps) {
+  const params = useParams({ strict: false });
   const activePharmacy = useActivePharmacy();
-  const storeSlug = activePharmacy?.slug || "loja-padrao";
-  const { banners: adminBanners, bannersLoaded, bannersLoading, bannersByLoja, getStoreBanners, fetchBanners } = useAdmin();
+  const storeSlug = activePharmacy?.slug || (params as any)?.storeSlug || "loja-padrao";
+  const { banners: adminBanners, bannersLoaded, bannersLoading, bannersByLoja, getStoreBanners, fetchBanners, pharmacies } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
-  const effectiveLojaId = lojaId || selectedPharmacyId || activePharmacy?.id;
+  const matchedPharm = pharmacies?.find(p => p.slug === storeSlug || p.id === storeSlug);
+  const effectiveLojaId = lojaId || selectedPharmacyId || activePharmacy?.id || matchedPharm?.id;
 
   const [i, setI] = useState(0);
 
