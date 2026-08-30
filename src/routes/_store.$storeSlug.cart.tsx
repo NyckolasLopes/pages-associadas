@@ -323,8 +323,6 @@ function CartPage() {
   }, [mounted, isShared, selectedPharmacyId, items.length]);
 
   // Calcula distâncias reais das farmácias via AwesomeAPI quando o CEP mudar
-  // NOTE: pharmDistances is intentionally NOT in deps to avoid infinite re-render loops.
-  // We use a callback form of setPharmDistances to read current state safely.
   useEffect(() => {
     const activeCep = geoCep || cep;
     if (!activeCep) return;
@@ -333,52 +331,34 @@ function CartPage() {
 
     let isSubscribed = true;
 
-    setPharmDistances(currentDistances => {
-      const pharmaciesNeedingGeo = availablePharmacies.filter(p => 
-        !(geoLat && geoLng && p.lat && p.lng) && currentDistances[p.id] === undefined
-      );
-      if (pharmaciesNeedingGeo.length === 0) return currentDistances;
+    (async () => {
+      const userCoords = (geoLat && geoLng)
+        ? { lat: geoLat, lng: geoLng }
+        : await getCepCoordinates(userCepClean);
 
-      // Fire-and-forget async work
-      (async () => {
-        const userCoords = (geoLat && geoLng)
-          ? { lat: geoLat, lng: geoLng }
-          : await getCepCoordinates(userCepClean);
+      if (!userCoords || !isSubscribed) return;
 
-        if (!userCoords) {
-          if (isSubscribed) {
-            const updates: Record<string, number | null> = {};
-            pharmaciesNeedingGeo.forEach(p => { updates[p.id] = null; });
-            setPharmDistances(prev => ({ ...prev, ...updates }));
+      const updates: Record<string, number | null> = {};
+      await Promise.all(
+        availablePharmacies.map(async (p) => {
+          const pharmCoords = (p.lat && p.lng)
+            ? { lat: p.lat, lng: p.lng }
+            : await getCepCoordinates(p.cep);
+          if (pharmCoords) {
+            updates[p.id] = await getRoadDistanceKm(userCoords.lat, userCoords.lng, pharmCoords.lat, pharmCoords.lng);
+          } else {
+            updates[p.id] = -1;
           }
-          return;
-        }
-
-        const updates: Record<string, number | null> = {};
-        await Promise.all(
-          pharmaciesNeedingGeo.map(async (p) => {
-            const pharmCoords = (p.lat && p.lng)
-              ? { lat: p.lat, lng: p.lng }
-              : await getCepCoordinates(p.cep);
-            if (pharmCoords) {
-              updates[p.id] = await getRoadDistanceKm(userCoords.lat, userCoords.lng, pharmCoords.lat, pharmCoords.lng);
-            } else {
-              updates[p.id] = -1;
-            }
-          })
-        );
-        if (isSubscribed && Object.keys(updates).length > 0) {
-          setPharmDistances(prev => ({ ...prev, ...updates }));
-        }
-      })();
-
-      return currentDistances; // Return unchanged for now; async updates come later
-    });
+        })
+      );
+      if (isSubscribed && Object.keys(updates).length > 0) {
+        setPharmDistances(prev => ({ ...prev, ...updates }));
+      }
+    })();
     
     return () => {
       isSubscribed = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geoCep, cep, geoLat, geoLng, availablePharmacies]);
 
   const calcFreight = async () => {

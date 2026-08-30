@@ -525,6 +525,8 @@ export function saveCachedPharmacies(pharmacies: Pharmacy[]) {
   } catch { /* ignore */ }
 }
 
+const storeBannersCache = new Map<string, { baseBanners: any[]; resolved: AdminBanner[] }>();
+
 export const useAdmin = create<AdminState>()(
   persist(
     (set, get) => ({
@@ -827,6 +829,11 @@ export const useAdmin = create<AdminState>()(
         const lojaBanners = state.bannersByLoja?.[key];
         const baseBanners = (lojaBanners && lojaBanners.length > 0) ? lojaBanners : (state.banners || []);
 
+        const cached = storeBannersCache.get(key);
+        if (cached && cached.baseBanners === baseBanners) {
+          return cached.resolved;
+        }
+
         const matchPos = (b: AdminBanner, pos: string) => {
           const pPos = pos.toLowerCase().trim();
           const bPos = (b.posicao || "").toLowerCase().trim();
@@ -880,6 +887,7 @@ export const useAdmin = create<AdminState>()(
           }
         });
 
+        storeBannersCache.set(key, { baseBanners, resolved });
         return resolved;
       },
       setBanners: (banners) => {
