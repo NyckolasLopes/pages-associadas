@@ -274,6 +274,8 @@ interface AdminState {
   banners: AdminBanner[];
   bannersLoaded: boolean;
   bannersLoading: boolean;
+  bannersByLoja: Record<string, AdminBanner[]>;
+  getStoreBanners: (lojaId?: string) => AdminBanner[];
   setBanners: (banners: AdminBanner[]) => void;
   addBanner: (banner: AdminBanner) => Promise<void>;
   updateBanner: (id: string, banner: Partial<AdminBanner>) => Promise<void>;
@@ -824,6 +826,23 @@ export const useAdmin = create<AdminState>()(
       bannersLoaded: initialCachedBanners.banners.length > 0,
       bannersLoading: false,
       bannersByLoja: initialCachedBanners.bannersByLoja,
+      getStoreBanners: (lojaId?: string) => {
+        const state = get() as any;
+        const key = lojaId || "global";
+        const lojaBanners = state.bannersByLoja?.[key];
+        if (lojaBanners && lojaBanners.length > 0) {
+          return lojaBanners;
+        }
+
+        // Fallback seguro: somente banners globais (!b.lojaId), NUNCA banners pertencentes a outra loja!
+        const baseBanners = state.banners || [];
+        const filtered = baseBanners.filter((b: AdminBanner) => !b.lojaId || (lojaId && b.lojaId === lojaId));
+        if (filtered.length > 0) {
+          return filtered;
+        }
+
+        return defaultBanners.filter((b: AdminBanner) => !b.lojaId);
+      },
       setBanners: (banners) => {
         saveCachedBanners(banners, {});
         set({ banners, bannersLoaded: true });
@@ -832,6 +851,7 @@ export const useAdmin = create<AdminState>()(
         const key = lojaId || "global";
         const state = get() as any;
         if (state.bannersByLoja && state.bannersByLoja[key] && state.bannersByLoja[key].length > 0) {
+          // Atualiza banners com os dados específicos desta loja se for a loja ativa
           set({ banners: state.bannersByLoja[key], bannersLoaded: true, bannersLoading: false });
         } else {
           set({ bannersLoading: true });
@@ -841,6 +861,8 @@ export const useAdmin = create<AdminState>()(
           let query = supabase.from('banners' as any).select('*');
           if (lojaId) {
             query = query.or(`loja_id.eq.${lojaId},loja_id.is.null`);
+          } else {
+            query = query.is('loja_id', null);
           }
           const { data, error } = await query;
           if (!error && data) {
@@ -878,7 +900,7 @@ export const useAdmin = create<AdminState>()(
               ordem: b.ordem ?? 0,
             })) as AdminBanner[];
 
-            const finalBanners = parsedBanners.length > 0 ? parsedBanners : defaultBanners;
+            const finalBanners = parsedBanners.length > 0 ? parsedBanners : defaultBanners.filter(b => !b.lojaId || b.lojaId === lojaId);
             set((s: any) => {
               const nextByLoja = { ...s.bannersByLoja, [key]: finalBanners };
               saveCachedBanners(finalBanners, nextByLoja);

@@ -7,11 +7,12 @@ import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
   const activePharmacy = useActivePharmacy();
   const storeSlug = activePharmacy?.slug || "loja-padrao";
-  const { banners, pharmacies } = useAdmin();
+  const { getStoreBanners, pharmacies } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
-  const effectiveLojaId = lojaId || selectedPharmacyId;
+  const effectiveLojaId = lojaId || selectedPharmacyId || activePharmacy?.id;
   const isParceiro = pharmacies?.find(p => p.id === effectiveLojaId)?.categoriaAssociado === 'Parceiro';
 
+  const banners = getStoreBanners(effectiveLojaId);
   const miniBanners = banners.filter(b => {
     if (b.posicao !== "Mini Banner" || !b.active) return false;
     

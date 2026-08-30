@@ -51,16 +51,18 @@ export function Footer() {
   const { dadosLoja } = useConfig();
   const location = useLocation();
   const isHome = location.pathname === "/";
-  const { banners, pharmacies } = useAdmin();
+  const { getStoreBanners, pharmacies } = useAdmin();
   const activePharmacy = useActivePharmacy();
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.isPleno === false;
   const storeSlug = activePharmacy?.slug || "poa";
+  const effectiveLojaId = selectedPharmacyId || activePharmacy?.id;
+  const banners = getStoreBanners(effectiveLojaId);
 
   const diferenciaisBanners = banners.filter((b) => {
     if (b.posicao !== "Banner Diferenciais" || !b.active) return false;
     
     const hasLocalBannerForPosition = banners.some(
-      local => local.lojaId === selectedPharmacyId && local.posicao === b.posicao
+      local => local.lojaId === effectiveLojaId && local.posicao === b.posicao
     );
 
     if (selectedPharmacyId) {

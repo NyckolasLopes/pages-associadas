@@ -161,7 +161,7 @@ function DynamicVitrines({ local, page = "Página inicial", lojaId, storeSlug: p
   const allVitrines = useAdminProducts((s) => s.getStoreVitrines(lojaId));
   const params = useParams({ strict: false });
   const storeSlug = propStoreSlug || (params as any)?.storeSlug || "loja-padrao";
-  const allBanners = useAdmin((s) => s.banners);
+  const allBanners = useAdmin((s) => s.getStoreBanners(lojaId));
 
   const vitrines = useMemo(() => 
     (allVitrines || [])
@@ -218,7 +218,7 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
     }
     const storeBanners = pharmacy?.id && adminState.bannersByLoja && adminState.bannersByLoja[pharmacy.id]?.length
       ? adminState.bannersByLoja[pharmacy.id]
-      : (adminState.banners || []);
+      : adminState.getStoreBanners(pharmacy?.id);
     const heroBanner = storeBanners.find(b => 
       b.active && 
       b.posicao === "Full Banner" && 
@@ -336,8 +336,8 @@ function getSubcategoryIcon(name: string) {
 }
 
 function DynamicTarja({ page = "Página inicial", lojaId, initialBanners }: { page?: string; lojaId?: string; initialBanners?: any[] }) {
-  const allBanners = useAdmin((s) => s.banners);
-  const bannersToUse = (initialBanners && initialBanners.length > 0) ? initialBanners : allBanners;
+  const getStoreBanners = useAdmin((s) => s.getStoreBanners);
+  const bannersToUse = (initialBanners && initialBanners.length > 0) ? initialBanners : getStoreBanners(lojaId);
   
   const tarjasOld = useMemo(() => getDeduplicatedBanners((bannersToUse || []).filter(b => 
     b.active && 
@@ -433,7 +433,7 @@ function DynamicTarja({ page = "Página inicial", lojaId, initialBanners }: { pa
 }
 
 function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
-  const allBanners = useAdmin((s) => s.banners);
+  const allBanners = useAdmin((s) => s.getStoreBanners(lojaId));
   
   const categorias = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
@@ -540,7 +540,7 @@ function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[
 }
 
 function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: string; lojaId?: string }) {
-  const allBanners = useAdmin((s) => s.banners);
+  const allBanners = useAdmin((s) => s.getStoreBanners(lojaId));
   
   const extras = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => 
     b.active && 
@@ -564,7 +564,7 @@ function DynamicExtraBanners({ page = "Página inicial", lojaId }: { page?: stri
 }
 
 function DynamicTopicBanners({ topicId, page = "Página inicial", lojaId }: { topicId: string; page?: string; lojaId?: string }) {
-  const allBanners = useAdmin((s) => s.banners);
+  const allBanners = useAdmin((s) => s.getStoreBanners(lojaId));
   
   const extras = useMemo(() => getDeduplicatedBanners((allBanners || []).filter(b => {
     if (!b.active) return false;
