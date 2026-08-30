@@ -394,7 +394,7 @@ const defaultPharmacies: Pharmacy[] = lojas.map((l, idx) => {
   };
 });
 
-const defaultBanners: AdminBanner[] = [
+export const defaultBanners: AdminBanner[] = [
   // Banner Tarja Padrão
   {
     id: "bt-1",

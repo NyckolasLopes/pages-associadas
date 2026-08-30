@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useAdmin, AdminBanner } from "@/stores/admin";
+import { useAdmin, AdminBanner, defaultBanners } from "@/stores/admin";
 import { useConfig } from "@/stores/config";
 import { useAdminProducts } from "@/stores/products";
 import { useAdminCategories } from "@/stores/categories";
