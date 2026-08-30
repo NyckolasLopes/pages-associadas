@@ -128,8 +128,11 @@ export function HeroCarousel({
   const next = () => setI((prev) => (prev + 1) % totalSlides);
 
   const isCategoryPage = page === "Página de Categoria";
+  const hasAnyMobileBanner = deduplicatedActiveBanners.some(b => Boolean(b.mobileImageUrl));
   const containerAspectClass = isCategoryPage
     ? "aspect-[2/1] sm:aspect-[2.5/1] md:aspect-[1920/350]"
+    : hasAnyMobileBanner
+    ? "aspect-square sm:aspect-[2/1] md:aspect-[1920/600]"
     : "aspect-[2/1] sm:aspect-[2.5/1] md:aspect-[1920/600]";
 
   // Enquanto banners estão carregando e não temos slides, renderizar o Skeleton com o aspect-ratio exato

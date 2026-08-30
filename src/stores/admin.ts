@@ -825,18 +825,62 @@ export const useAdmin = create<AdminState>()(
         const state = get() as any;
         const key = lojaId || "global";
         const lojaBanners = state.bannersByLoja?.[key];
-        if (lojaBanners && lojaBanners.length > 0) {
-          return lojaBanners;
-        }
+        const baseBanners = (lojaBanners && lojaBanners.length > 0) ? lojaBanners : (state.banners || []);
 
-        // Fallback seguro: somente banners globais (!b.lojaId), NUNCA banners pertencentes a outra loja!
-        const baseBanners = state.banners || [];
-        const filtered = baseBanners.filter((b: AdminBanner) => !b.lojaId || (lojaId && b.lojaId === lojaId));
-        if (filtered.length > 0) {
-          return filtered;
-        }
+        const matchPos = (b: AdminBanner, pos: string) => {
+          const pPos = pos.toLowerCase().trim();
+          const bPos = (b.posicao || "").toLowerCase().trim();
+          if (pPos === bPos) return true;
+          if (pPos === "banner compre por categoria" && (bPos === "banner categoria" || bPos.includes("categoria"))) return true;
+          if (pPos === "banner categoria" && (bPos === "banner compre por categoria" || bPos.includes("categoria"))) return true;
+          if (pPos === "banner tarja" && (bPos.includes("tarja") || bPos === "banner tarja")) return true;
+          return false;
+        };
 
-        return defaultBanners.filter((b: AdminBanner) => !b.lojaId);
+        const activeBanners = baseBanners.filter((b: AdminBanner) => !b.lojaId || (lojaId && b.lojaId === lojaId));
+        
+        const ALL_POSITIONS = [
+          "Full Banner",
+          "Mini Banner",
+          "Banner Tarja",
+          "Banner Compre por categoria",
+          "Banner por Categoria",
+          "Banner Extra",
+          "Banner Diferenciais"
+        ];
+
+        const resolved: AdminBanner[] = [];
+
+        ALL_POSITIONS.forEach(pos => {
+          // 1. Banners customizados da loja
+          const storeSpecific = activeBanners.filter((b: AdminBanner) => b.lojaId === lojaId && matchPos(b, pos));
+          if (storeSpecific.length > 0) {
+            resolved.push(...storeSpecific);
+            return;
+          }
+
+          // 2. Banners globais salvos no banco de dados
+          const globalFromDb = activeBanners.filter((b: AdminBanner) => !b.lojaId && matchPos(b, pos));
+          if (globalFromDb.length > 0) {
+            resolved.push(...globalFromDb);
+            return;
+          }
+
+          // 3. Fallback para defaultBanners da respectiva posição
+          const defaultsForPos = defaultBanners.filter(b => matchPos(b, pos));
+          if (defaultsForPos.length > 0) {
+            resolved.push(...defaultsForPos);
+          }
+        });
+
+        // Adiciona quaisquer outros banners customizados
+        activeBanners.forEach((b: AdminBanner) => {
+          if (!ALL_POSITIONS.some(pos => matchPos(b, pos)) && !resolved.some(r => r.id === b.id)) {
+            resolved.push(b);
+          }
+        });
+
+        return resolved;
       },
       setBanners: (banners) => {
         saveCachedBanners(banners, {});

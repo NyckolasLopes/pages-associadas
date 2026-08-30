@@ -245,9 +245,9 @@ export function Footer() {
               target={diferenciaisBanners[0].target || "_self"}
               className="shrink-0 snap-start w-[75vw] sm:w-[280px] md:w-auto lg:flex-1 block rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
             >
-              <picture>
+              <picture className="w-full block">
                 {diferenciaisBanners[0].mobileImageUrl && <source media="(max-width: 768px)" srcSet={diferenciaisBanners[0].mobileImageUrl} />}
-                <img src={diferenciaisBanners[0].imageUrl} alt="Banner 1" className="w-full h-auto object-cover aspect-[3/4]" width={300} height={400} loading="lazy" decoding="async" />
+                <img src={diferenciaisBanners[0].imageUrl} alt="Banner 1" className="w-full h-auto object-cover aspect-[4/3] md:aspect-[3/2]" width={600} height={400} loading="lazy" decoding="async" />
               </picture>
             </a>
             
@@ -258,9 +258,9 @@ export function Footer() {
                 target="_self"
                 className="shrink-0 snap-start w-[75vw] sm:w-[280px] md:w-auto lg:flex-1 block rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
               >
-                <picture>
+                <picture className="w-full block">
                   {diferenciaisBanners[0].mobileImageUrl2 && <source media="(max-width: 768px)" srcSet={diferenciaisBanners[0].mobileImageUrl2} />}
-                  <img src={diferenciaisBanners[0].imageUrl2} alt="Banner 2" className="w-full h-auto object-cover aspect-[3/4]" width={300} height={400} loading="lazy" decoding="async" />
+                  <img src={diferenciaisBanners[0].imageUrl2} alt="Banner 2" className="w-full h-auto object-cover aspect-[4/3] md:aspect-[3/2]" width={600} height={400} loading="lazy" decoding="async" />
                 </picture>
               </a>
             )}
@@ -272,9 +272,9 @@ export function Footer() {
                 target="_self"
                 className="shrink-0 snap-start w-[75vw] sm:w-[280px] md:w-auto lg:flex-1 block rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
               >
-                <picture>
+                <picture className="w-full block">
                   {diferenciaisBanners[0].mobileImageUrl3 && <source media="(max-width: 768px)" srcSet={diferenciaisBanners[0].mobileImageUrl3} />}
-                  <img src={diferenciaisBanners[0].imageUrl3} alt="Banner 3" className="w-full h-auto object-cover aspect-[3/4]" width={300} height={400} loading="lazy" decoding="async" />
+                  <img src={diferenciaisBanners[0].imageUrl3} alt="Banner 3" className="w-full h-auto object-cover aspect-[4/3] md:aspect-[3/2]" width={600} height={400} loading="lazy" decoding="async" />
                 </picture>
               </a>
             )}

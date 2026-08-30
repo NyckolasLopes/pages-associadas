@@ -523,17 +523,31 @@ function AdminBanners() {
     }
   };
 
+  const isDefaultBanner = (id?: string) => Boolean(id && (id.startsWith("bt-") || id.startsWith("bc-")));
+
   const openNewModal = (posicao?: string) => {
+    let initialPos = posicao || "Full Banner";
+    let defaultImg = "";
+    let defaultLink = "";
+
+    if (initialPos === "Banner Tarja") {
+      defaultImg = "icon:Truck";
+      defaultLink = "/";
+    } else if (initialPos === "Banner Compre por categoria" || initialPos === "Banner Categoria") {
+      defaultImg = "icon:Thermometer";
+      defaultLink = "/c/medicamentos";
+    }
+
     setEditingBanner({
       active: true,
       nome: "",
-      posicao: posicao || "Full Banner",
+      posicao: initialPos,
       paginaPublicacao: "Página inicial",
-      link: "",
+      link: defaultLink,
       titulo: "",
       startDate: "",
       endDate: "",
-      imageUrl: "",
+      imageUrl: defaultImg,
       mobileImageUrl: "",
     });
     setModalOpen(true);
@@ -542,6 +556,34 @@ function AdminBanners() {
   const openEditModal = (banner: AdminBanner) => {
     setEditingBanner({ ...banner });
     setModalOpen(true);
+  };
+
+  const handleDeleteBanner = async (id: string) => {
+    try {
+      if (isDefaultBanner(id)) {
+        const defaultItem = defaultBanners.find(b => b.id === id);
+        if (defaultItem) {
+          const pos = defaultItem.posicao;
+          const remainingDefaults = defaultBanners.filter(b => (b.posicao === pos || (pos.includes("categoria") && b.posicao.includes("categoria"))) && b.id !== id);
+          const targetLojaId = managingGlobal ? undefined : (activeStoreId || undefined);
+          for (const rem of remainingDefaults) {
+            await addBanner({
+              ...rem,
+              id: `banner_${Date.now()}_${rem.id}`,
+              lojaId: targetLojaId,
+            } as AdminBanner);
+          }
+        }
+        toast.success("Banner excluído com sucesso!");
+      } else {
+        await removeBanner(id);
+        toast.success("Banner excluído com sucesso!");
+      }
+    } catch (e: any) {
+      toast.error("Erro ao excluir banner: " + (e.message || "Erro desconhecido"));
+    } finally {
+      setBannerToDelete(null);
+    }
   };
 
   const saveBanner = async () => {
@@ -556,9 +598,7 @@ function AdminBanners() {
 
     if (editingBanner.startDate) {
       const start = new Date(editingBanner.startDate);
-      // Remove 5 minutes from now to allow slight delays when selecting current time
       if (start.getTime() < Date.now() - 5 * 60000) {
-        // Se for um novo banner, não permite data passada
         if (!editingBanner.id) {
           toast.error("A data de início não pode estar no passado.");
           return;
@@ -581,8 +621,10 @@ function AdminBanners() {
     }
 
     try {
+      const isDefault = isDefaultBanner(editingBanner.id);
       const isCustomizingInherited = activeStoreId && editingBanner.id && (!editingBanner.lojaId || editingBanner.lojaId !== activeStoreId);
-      if (editingBanner.id && !isCustomizingInherited) {
+
+      if (editingBanner.id && !isCustomizingInherited && !isDefault) {
         await updateBanner(editingBanner.id, editingBanner);
         toast.success("Banner atualizado com sucesso!");
       } else {
@@ -591,7 +633,7 @@ function AdminBanners() {
           id: `banner_${Date.now()}`,
           lojaId: managingGlobal ? undefined : (activeStoreId || (!currentUser?.proprietario ? currentUser?.lojasVinculadas?.[0] : undefined) || undefined),
         } as AdminBanner);
-        toast.success(isCustomizingInherited ? "Banner personalizado para esta loja com sucesso!" : "Banner criado com sucesso!");
+        toast.success(isCustomizingInherited || isDefault ? "Banner salvo com sucesso!" : "Banner criado com sucesso!");
       }
       setModalOpen(false);
     } catch (e: any) {
@@ -1216,49 +1258,114 @@ function AdminBanners() {
                 </div>
               </div>
 
-              {/* IMAGENS */}
+              {/* IMAGENS E CONFIGURAÇÕES VISUAIS */}
               <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-8">
-                {editingBanner.posicao === "Banner Tarja" ? (
-                  <BannerTarjaBuilder editingBanner={editingBanner} setEditingBanner={setEditingBanner} />
-                ) : editingBanner.posicao === "Banner Compre por categoria" ? (
-                  <div className="bg-orange-50 border border-orange-200 rounded p-6 space-y-4">
-                    <div className="flex items-center justify-between">
+                {(editingBanner.posicao === "Banner Tarja" || editingBanner.posicao === "Banner Compre por categoria" || editingBanner.posicao === "Banner Categoria") ? (
+                  <div className="bg-orange-50/70 border border-orange-200 rounded-xl p-6 space-y-6 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200/80 pb-3">
                       <div>
-                        <h3 className="font-bold text-orange-800 text-lg">Configuração de Cartão ({editingBanner.posicao})</h3>
-                        <p className="text-sm text-orange-700">
-                          Os Banners Compre por categoria são os ícones redondos que aparecem na seção "Compre por categoria".
+                        <h3 className="font-bold text-orange-950 text-lg">
+                          Configuração de {editingBanner.posicao === "Banner Tarja" ? "Banner Tarja (Diferencial)" : "Compre por Categoria"}
+                        </h3>
+                        <p className="text-xs text-orange-800">
+                          {editingBanner.posicao === "Banner Tarja"
+                            ? "Configure o texto e o ícone exibidos na barra de vantagens (abaixo do Full Banner)."
+                            : "Configure o ícone e o título da categoria exibidos na seção redonda de categorias."}
                         </p>
                       </div>
-                      {dimensions && <span className="text-xs bg-orange-100 px-2 py-1 rounded text-orange-800 font-bold font-mono border border-orange-200 shadow-sm">{dimensions.desktop}</span>}
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="font-bold text-slate-700">Ícone, URL ou Upload de Imagem</Label>
-                      
-                      {/* Preview da imagem atual */}
-                      {editingBanner.imageUrl && (
-                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200">
-                          {editingBanner.imageUrl.startsWith("icon:") ? (() => {
-                            const Icon = getIcon(editingBanner.imageUrl);
-                            return (
-                              <div className="w-14 h-14 bg-slate-100 flex items-center justify-center text-[#00B5AD] rounded border">
-                                {Icon ? <Icon className="w-6 h-6" /> : <ImageIcon className="w-6 h-6" />}
-                              </div>
-                            );
-                          })() : (
-                            <img src={editingBanner.imageUrl} alt="Preview" className="w-14 h-14 object-contain rounded border" />
-                          )}
-                          <div className="flex-1 text-sm text-slate-600 truncate">
-                            {editingBanner.imageUrl.startsWith("icon:") ? `Ícone selecionado: ${editingBanner.imageUrl}` : "Imagem carregada"}
-                          </div>
-                          <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => setEditingBanner({...editingBanner, imageUrl: ""})}>
-                            Remover
-                          </Button>
-                        </div>
+                      {dimensions && (
+                        <span className="text-xs bg-orange-200/80 text-orange-900 font-bold px-2.5 py-1 rounded-full border border-orange-300 font-mono">
+                          {dimensions.desktop}
+                        </span>
                       )}
+                    </div>
 
-                      {/* Upload de arquivo */}
+                    {/* Preview em Tempo Real */}
+                    <div className="bg-white rounded-xl p-4 border border-orange-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Pré-visualização</span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-[#00B5AD] shrink-0 border border-slate-200 p-2.5 shadow-xs">
+                            {editingBanner.imageUrl && editingBanner.imageUrl.startsWith("icon:") ? (() => {
+                              const Icon = getIcon(editingBanner.imageUrl);
+                              return Icon ? <Icon className="w-8 h-8 text-[#00B5AD]" /> : <ImageIcon className="w-8 h-8 text-slate-400" />;
+                            })() : editingBanner.imageUrl ? (
+                              <img src={editingBanner.imageUrl} alt="Preview" className="w-full h-full object-contain rounded-lg" />
+                            ) : (
+                              <ImageIcon className="w-8 h-8 text-slate-300" />
+                            )}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[14px] font-bold text-slate-800 max-w-[280px]">
+                              {editingBanner.nome || "Título do item"}
+                            </span>
+                            <span className="text-[12px] text-slate-400 max-w-[280px] truncate">
+                              {editingBanner.link || "Sem link informado"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {editingBanner.imageUrl && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-500 border-red-200 hover:bg-red-50 shrink-0 text-xs" 
+                          onClick={() => setEditingBanner({...editingBanner, imageUrl: ""})}
+                        >
+                          Limpar Ícone/Imagem
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Seleção Rápida de Ícones */}
+                    <div className="space-y-2">
+                      <Label className="font-bold text-slate-800 text-sm flex items-center justify-between">
+                        <span>Escolha um Ícone com 1 Clique:</span>
+                        <span className="text-xs text-slate-500 font-normal">Biblioteca de Ícones Oficiais</span>
+                      </Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                        {[
+                          { label: "Entrega / Caminhão", iconName: "icon:Truck", Icon: Truck },
+                          { label: "Farmácia / Loja", iconName: "icon:Store", Icon: Store },
+                          { label: "Ofertas / Desconto", iconName: "icon:Percent", Icon: Percent },
+                          { label: "Garantia / Procedência", iconName: "icon:ShieldCheck", Icon: ShieldCheck },
+                          { label: "Atendimento Especial", iconName: "icon:Stethoscope", Icon: Stethoscope },
+                          { label: "Dor e Febre / Remédio", iconName: "icon:Thermometer", Icon: Thermometer },
+                          { label: "Ervas e Natural", iconName: "icon:Leaf", Icon: Leaf },
+                          { label: "Higiene Bucal", iconName: "icon:Smile", Icon: Smile },
+                          { label: "Corpo e Banho", iconName: "icon:Droplets", Icon: Droplets },
+                          { label: "Vitaminas / Energia", iconName: "icon:Battery", Icon: Battery },
+                          { label: "Shampoos / Beleza", iconName: "icon:Wind", Icon: Wind },
+                          { label: "Saúde / Íntimo", iconName: "icon:Heart", Icon: Heart },
+                          { label: "Cuidados Especiais", iconName: "icon:Sparkles", Icon: Sparkles },
+                        ].map((preset) => {
+                          const isSelected = editingBanner.imageUrl === preset.iconName;
+                          const PIcon = preset.Icon;
+                          return (
+                            <button
+                              key={preset.iconName}
+                              type="button"
+                              onClick={() => setEditingBanner({ ...editingBanner, imageUrl: preset.iconName })}
+                              className={`p-2 rounded-xl border text-center flex flex-col items-center justify-center gap-1.5 transition-all ${
+                                isSelected
+                                  ? "border-[#00B5AD] bg-teal-50 text-[#00B5AD] ring-2 ring-[#00B5AD]/30 font-bold shadow-xs scale-102"
+                                  : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:border-slate-300"
+                              }`}
+                            >
+                              <PIcon className="w-5 h-5 shrink-0" />
+                              <span className="text-[10px] leading-tight line-clamp-1">{preset.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Upload de Imagem ou Ícone Customizado */}
+                    <div className="space-y-3 pt-3 border-t border-orange-200/80">
+                      <Label className="font-bold text-slate-800 text-sm">Ou faça upload de imagem / digite URL</Label>
                       <div 
-                        className="border-2 border-dashed border-slate-200 rounded-lg p-4 bg-white flex items-center justify-center gap-3 cursor-pointer hover:bg-slate-50 transition-colors"
+                        className="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-white flex items-center justify-center gap-3 cursor-pointer hover:bg-slate-50 transition-colors"
                         onClick={() => desktopInputRef.current?.click()}
                       >
                         <input 
@@ -1269,17 +1376,31 @@ function AdminBanners() {
                           onChange={(e) => handleFileChange(e, false)}
                         />
                         <UploadCloud className="w-5 h-5 text-slate-400" />
-                        <span className="text-sm text-slate-500 font-medium">Clique para enviar uma imagem</span>
+                        <span className="text-sm text-slate-600 font-medium">Clique para enviar uma imagem (PNG, SVG ou WebP)</span>
                       </div>
                       
-                      {/* Input de texto para ícone ou URL */}
                       <Input 
                         value={editingBanner.imageUrl || ""} 
                         onChange={e => setEditingBanner({...editingBanner, imageUrl: e.target.value})}
-                        placeholder="Ou use: icon:Thermometer ou URL da imagem (200x200)"
-                        className="bg-white"
+                        placeholder="Ou digite: icon:Thermometer ou URL da imagem"
+                        className="bg-white h-11 border-slate-200"
                       />
-                      <p className="text-xs text-slate-500">O texto abaixo do ícone será o "Nome do banner". Você pode fazer upload de uma imagem, colar uma URL ou usar ícones (ex: icon:Truck).</p>
+                      <p className="text-xs text-slate-500">
+                        {editingBanner.posicao === "Banner Tarja" 
+                          ? 'Dica: Para destacar palavras em negrito no texto, use **duplo asterisco**, ex: Compre pelo site e **receba em casa.**' 
+                          : 'O nome do banner será exibido abaixo do ícone da categoria no site.'}
+                      </p>
+                    </div>
+
+                    {/* Link de Destino */}
+                    <div className="space-y-2 pt-3 border-t border-orange-200/80">
+                      <Label className="font-bold text-slate-800 text-sm">Link de Redirecionamento</Label>
+                      <Input 
+                        value={editingBanner.link || ""} 
+                        onChange={e => setEditingBanner({...editingBanner, link: e.target.value})}
+                        placeholder="Ex: /c/medicamentos, /c/higiene ou /"
+                        className="bg-white h-11 border-slate-200"
+                      />
                     </div>
                   </div>
                 ) : (
@@ -1724,11 +1845,10 @@ function AdminBanners() {
               <Button
                 variant="outline"
                 className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                onClick={() => {
+                onClick={async () => {
                   if (confirm("Deseja realmente excluir este banner?")) {
-                    removeBanner(editingBanner.id!);
+                    await handleDeleteBanner(editingBanner.id!);
                     setModalOpen(false);
-                    toast.success("Banner excluído.");
                   }
                 }}
               >
@@ -1742,6 +1862,20 @@ function AdminBanners() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog 
+        isOpen={Boolean(bannerToDelete)}
+        onClose={() => setBannerToDelete(null)}
+        onConfirm={async () => {
+          if (bannerToDelete) {
+            await handleDeleteBanner(bannerToDelete);
+          }
+        }}
+        title="Excluir Banner"
+        description="Deseja realmente excluir este banner? Esta ação removerá o banner da exibição no site e no painel."
+        confirmText="Excluir"
+        cancelText="Cancelar"
+      />
 
       <ConfirmDialog 
         isOpen={confirmCopyOpen}

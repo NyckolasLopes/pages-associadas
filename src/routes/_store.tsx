@@ -49,6 +49,7 @@ function StoreLayout() {
   const activePharmacy = useActivePharmacy();
 
   // — Tema CSS da loja (todos os hooks antes do early return) —
+  const themeColorsKey = JSON.stringify(activePharmacy?.themeColors || {});
   const storeTheme = useMemo(() => {
     if (!activePharmacy) return undefined;
 
@@ -129,7 +130,7 @@ function StoreLayout() {
     }
 
     return Object.keys(themeToApply).length > 0 ? (themeToApply as CSSProperties) : undefined;
-  }, [activePharmacy]);
+  }, [activePharmacy?.id, activePharmacy?.categoriaAssociado, activePharmacy?.isPleno, themeColorsKey]);
 
   useEffect(() => {
     if (storeTheme) {
@@ -166,13 +167,13 @@ function StoreLayout() {
     }
 
     // Sincroniza selectedPharmacyId → cupons e carrinho reconhecem a loja correta
-    if (activePharmacy.id !== selectedPharmacyId) {
+    if (activePharmacy?.id && String(activePharmacy.id) !== String(selectedPharmacyId)) {
       if (selectedPharmacyId) {
         clearCart();
       }
       setSelectedPharmacyId(activePharmacy.id);
     }
-  }, [activePharmacy?.id]);
+  }, [activePharmacy?.id, selectedPharmacyId, potentialSlug, setSelectedPharmacyId, clearCart]);
 
   useEffect(() => {
     if (!activePharmacy) return;

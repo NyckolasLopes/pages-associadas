@@ -195,11 +195,14 @@ function CategoryPage() {
       {/* Banner por Categoria renderizado logo abaixo do título */}
       {categoryBanners.length > 0 && (
         <div className="mb-6 rounded-xl overflow-hidden shadow-sm border border-slate-100">
-          <img 
-            src={categoryBanners[0].imageUrl} 
-            alt={categoryBanners[0].nome || cat.nome} 
-            className="w-full h-auto object-cover max-h-[300px]"
-          />
+          <picture className="w-full block">
+            {categoryBanners[0].mobileImageUrl && <source media="(max-width: 768px)" srcSet={categoryBanners[0].mobileImageUrl} />}
+            <img 
+              src={categoryBanners[0].imageUrl} 
+              alt={categoryBanners[0].nome || cat.nome} 
+              className="w-full h-auto object-cover max-h-[350px]"
+            />
+          </picture>
         </div>
       )}
 

@@ -447,7 +447,11 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: 
   const getIcon = (url: string) => {
     if (!url || !url.startsWith("icon:")) return null;
     const iconName = url.replace("icon:", "");
-    // Fallback simple mapping for category icons
+    if (iconName === "Truck" || iconName === "Motorcycle" || iconName === "Moto") return MotorcycleIcon || Truck;
+    if (iconName === "Store") return Store;
+    if (iconName === "Percent") return Percent;
+    if (iconName === "ShieldCheck") return ShieldCheck;
+    if (iconName === "Stethoscope") return Stethoscope;
     if (iconName === "Thermometer") return Thermometer;
     if (iconName === "Leaf") return Leaf;
     if (iconName === "Smile") return Smile;
@@ -455,8 +459,7 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId }: { page?: 
     if (iconName === "Battery") return Battery;
     if (iconName === "Wind") return Wind;
     if (iconName === "Heart") return Heart;
-    if (iconName === "ShieldCheck") return ShieldCheck;
-    return Sparkles; // default
+    return Sparkles;
   };
 
   return (
@@ -509,25 +512,25 @@ function RecursiveBanner({ banner, allBanners }: { banner: any; allBanners: any[
         {banner.formatoExtra === "2_banners" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <Link to={banner.link || "/"} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
-              <picture>
+              <picture className="w-full block">
                 {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
-                <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto aspect-[2/1] md:aspect-[2/1] object-cover object-center" />
+                <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
               </picture>
             </Link>
             {banner.imageUrl2 && (
               <Link to={banner.link2 || "/"} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <picture>
+                <picture className="w-full block">
                   {banner.mobileImageUrl2 && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl2} />}
-                  <img src={banner.imageUrl2} alt={banner.nome || "Banner promocional 2"} loading="lazy" decoding="async" className="w-full h-auto aspect-[2/1] md:aspect-[2/1] object-cover object-center" />
+                  <img src={banner.imageUrl2} alt={banner.nome || "Banner promocional 2"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
                 </picture>
               </Link>
             )}
           </div>
         ) : (
           <Link to={banner.link || "/"} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
-            <picture>
+            <picture className="w-full block">
               {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
-              <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto aspect-[2/1] md:aspect-[4/1] object-cover object-center" />
+              <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
             </picture>
           </Link>
         )}

@@ -21,6 +21,8 @@ export function safeSlugify(text: string): string {
     .replace(/^-|-$/g, "");
 }
 
+const virtualStoresCache = new Map<string, any>();
+
 export function useActivePharmacy() {
   const location = useLocation();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
@@ -68,22 +70,25 @@ export function useActivePharmacy() {
       }
 
       // Se a URL aponta para uma loja específica (ex: /zona-sul), NUNCA fazer fallback para loja-padrao
-      // Retorna imediatamente o design individual da loja
+      // Retorna imediatamente o design individual da loja (com cache estável)
       if (normalizedSearch !== "loja-padrao") {
-        const formattedName = slugToSearch
-          .split('-')
-          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(' ');
+        if (!virtualStoresCache.has(slugToSearch)) {
+          const formattedName = slugToSearch
+            .split('-')
+            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ');
 
-        return {
-          id: slugToSearch,
-          slug: slugToSearch,
-          nome: formattedName,
-          categoriaAssociado: 'Parceiro',
-          isPleno: false,
-          ativo: true,
-          virtualStoreStatus: 'Ativa',
-        } as any;
+          virtualStoresCache.set(slugToSearch, {
+            id: slugToSearch,
+            slug: slugToSearch,
+            nome: formattedName,
+            categoriaAssociado: 'Parceiro',
+            isPleno: false,
+            ativo: true,
+            virtualStoreStatus: 'Ativa',
+          });
+        }
+        return virtualStoresCache.get(slugToSearch);
       }
     }
 

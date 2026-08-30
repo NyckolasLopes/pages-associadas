@@ -219,7 +219,7 @@ function RootComponent() {
     if (style.textContent !== cssString) {
       style.textContent = cssString;
     }
-  }, [isAdmin, themeColors, activePharmacy?.categoriaAssociado, activePharmacy?.themeColors]);
+  }, [isAdmin, themeColors, activePharmacy?.categoriaAssociado, JSON.stringify(activePharmacy?.themeColors || {})]);
 
   useEffect(() => {
     // Check for 301 redirects

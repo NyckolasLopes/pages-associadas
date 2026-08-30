@@ -54,15 +54,18 @@ export function SquarePromoGrid({ page = "Página inicial", lojaId }: { page?: s
             target={b.target || "_self"}
             className="shrink-0 snap-start w-[160px] md:w-[200px] aspect-square rounded-2xl overflow-hidden shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition block relative"
           >
-            <img 
-              src={b.imageUrl} 
-              alt={b.titulo || b.nome || "Mini Banner"} 
-              className="w-full h-full object-cover" 
-              loading="lazy" 
-              decoding="async" 
-              width={200} 
-              height={200} 
-            />
+            <picture className="w-full h-full block">
+              {b.mobileImageUrl && <source media="(max-width: 768px)" srcSet={b.mobileImageUrl} />}
+              <img 
+                src={b.imageUrl} 
+                alt={b.titulo || b.nome || "Mini Banner"} 
+                className="w-full h-full object-cover" 
+                loading="lazy" 
+                decoding="async" 
+                width={200} 
+                height={200} 
+              />
+            </picture>
           </a>
         ))}
       </div>

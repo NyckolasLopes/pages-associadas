@@ -188,7 +188,7 @@ export const useCart = create<CartState>()(
       selectedFreight: "pickup",
       freightOptions: [],
       setLastOrder: (order) => set({ lastOrder: order }),
-      setSelectedPharmacyId: (id) => set({ selectedPharmacyId: id }),
+      setSelectedPharmacyId: (id) => set((s) => (s.selectedPharmacyId === id ? s : { selectedPharmacyId: id })),
       setSelectedFreight: (freightId) => set({ selectedFreight: freightId }),
       setFreightOptions: (opts) => set({ freightOptions: opts }),
       add: (p, qty = 1, silent = false) =>
