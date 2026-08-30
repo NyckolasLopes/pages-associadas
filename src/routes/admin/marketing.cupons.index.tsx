@@ -173,7 +173,7 @@ function CuponsIndexPage() {
                     permiteAcumular: false,
                     usoUnico: false,
                     cupomPrimeiraCompra: false,
-                    lojaId: isGlobalAdmin ? (novoCupom.lojaId || undefined) : effectiveStoreId,
+                    lojaId: isGlobalAdmin ? (novoCupom.lojaId || undefined) : (effectiveStoreId || undefined),
                   });
                   toast.success("Cupom criado com sucesso!");
                   setIsModalOpen(false);

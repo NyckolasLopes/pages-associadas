@@ -12,6 +12,7 @@ import {
   Eye,
   Sparkles,
   ChevronDown,
+  ChevronRight,
   Monitor,
   Store,
   Search,

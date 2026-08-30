@@ -80,7 +80,7 @@ export function useOrdersQuery({
       
       if (search) {
         if (!isNaN(Number(search))) {
-           query = query.eq('numero', Number(search));
+           query = query.eq('numero', String(search).trim());
         } else {
            query = query.ilike('nome_cliente', `%${search}%`);
         }

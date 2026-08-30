@@ -8,21 +8,21 @@ export function useCartSync() {
   const total = useCart(s => s.total());
   const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
   const { user } = useAuth();
-  const syncTimeout = useRef<NodeJS.Timeout>();
+  const syncTimeout = useRef<any>(undefined);
   const initialRestoreDone = useRef(false);
 
   // 1. Restaura carrinho ao fazer login caso o carrinho local esteja vazio
   useEffect(() => {
     if (user?.id && !initialRestoreDone.current) {
       initialRestoreDone.current = true;
-      supabase
-        .from('carrinhos_abandonados' as any)
+      (supabase
+        .from('carrinhos_abandonados' as any) as any)
         .select('items, id')
         .eq('user_id', user.id)
         .eq('status', 'abandonado')
         .order('updated_at', { ascending: false })
         .limit(1)
-        .then(({ data, error }) => {
+        .then(({ data, error }: any) => {
           if (error) {
             console.error("Erro ao verificar carrinho anterior:", error);
             return;
@@ -51,7 +51,7 @@ export function useCartSync() {
       try {
         let safeItems: any[] = [];
         if (Array.isArray(items)) {
-          safeItems = items.map(item => ({
+          safeItems = items.map((item: any) => ({
             id: item.id,
             nome: item.nome || item.name || "Produto",
             qtd: item.qtd || item.quantidade || 1,
@@ -115,8 +115,8 @@ export function useCartSync() {
         };
 
         // Verifica se já existe um carrinho aberto para este usuário ou sessão
-        let query = supabase
-          .from('carrinhos_abandonados' as any)
+        let query = (supabase
+          .from('carrinhos_abandonados' as any) as any)
           .select('id')
           .eq('status', 'abandonado');
 
@@ -137,8 +137,8 @@ export function useCartSync() {
 
         if (existingCart) {
           // Atualiza carrinho existente
-          const { error: updateErr } = await supabase
-            .from('carrinhos_abandonados' as any)
+          const { error: updateErr } = await (supabase
+            .from('carrinhos_abandonados' as any) as any)
             .update(cartData)
             .eq('id', existingCart.id);
           
@@ -147,8 +147,8 @@ export function useCartSync() {
           }
         } else {
           // Insere novo carrinho abandonado
-          const { error: insertErr } = await supabase
-            .from('carrinhos_abandonados' as any)
+          const { error: insertErr } = await (supabase
+            .from('carrinhos_abandonados' as any) as any)
             .insert(cartData);
             
           if (insertErr) {

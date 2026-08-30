@@ -252,7 +252,7 @@ export const useAdminProducts = create<ProductsState>()(
         }
 
         if (lojaId) {
-          const localOverrides = formattedProduct.precosPorLoja?.[lojaId] || {};
+          const localOverrides = (formattedProduct.precosPorLoja?.[lojaId] || {}) as any;
           const pDe = localOverrides.precoDe ?? formattedProduct.precoDe ?? 0;
           const pPor = localOverrides.precoPor ?? formattedProduct.precoPor ?? 0;
           const pEst = localOverrides.estoque ?? formattedProduct.estoque ?? 0;
@@ -880,12 +880,12 @@ export const useAdminProducts = create<ProductsState>()(
 
           let error;
           if (existing) {
-            const res = await supabase.from('produto_precos_loja').update({
+            const res = await (supabase.from('produto_precos_loja') as any).update({
               destaque: destaque
             }).eq('id', existing.id);
             error = res.error;
           } else {
-            const res = await supabase.from('produto_precos_loja').insert({
+            const res = await (supabase.from('produto_precos_loja') as any).insert({
               loja_id: lojaId,
               produto_id: productId,
               destaque: destaque

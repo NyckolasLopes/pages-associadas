@@ -88,7 +88,7 @@ function CategoryPage() {
   const [hasMore, setHasMore] = useState(initialProducts.length >= 24);
 
   const lojaId = useCart((s) => s.selectedPharmacyId);
-  const allBanners = useAdmin((s) => s.getStoreBanners(lojaId));
+  const allBanners = useAdmin((s) => s.getStoreBanners(lojaId || undefined));
   const pharmacies = useAdmin((s) => s.pharmacies);
   
   const isNossasMarcas = cat.id === "300" || cat.slug === "nossas-marcas";

@@ -589,7 +589,7 @@ function CartPage() {
 
         if (isEligible && deliveryPrice !== null) {
           opts.push(
-            { id: "standard", label: "Receber em casa", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: MotorcycleIcon }
+            { id: "standard", label: "Receber em casa", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: MotorcycleIcon as any }
           );
         }
 
@@ -600,7 +600,7 @@ function CartPage() {
           opts.push({ id: "99", label: "99 Entregas", price: Number(p.custo99), eta: "Em até 1 hora", icon: Truck });
         }
         if (p.aceitaMotoboy && p.custoMotoboy) {
-          opts.push({ id: "motoboy", label: "Motoboy Expresso", price: Number(p.custoMotoboy), eta: "Em até 2 horas", icon: MotorcycleIcon });
+          opts.push({ id: "motoboy", label: "Motoboy Expresso", price: Number(p.custoMotoboy), eta: "Em até 2 horas", icon: MotorcycleIcon as any });
         }
       }
     }
@@ -1097,7 +1097,7 @@ function CartPage() {
                           const totalStockQty = itemsAvailability.reduce((sum, i) => sum + i.stock, 0);
 
                           const missingItems = itemsAvailability.filter(i => !i.available).map(i => i.item);
-                          const isServiceCart = items.some(i => i.tipoProduto === "servico" || (i.tipoProduto !== "fisico" && (i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")))));
+                          const isServiceCart = items.some(i => (i as any).tipoProduto === "servico" || ((i as any).tipoProduto !== "fisico" && (i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")))));
                           
                           const totalPrice = items.reduce((acc, item) => {
                             const anyItem = item as any;
@@ -1760,10 +1760,10 @@ function CartPage() {
               {deliveryMethod === "retirada" ? (
                 <div className="text-xs text-muted-foreground bg-white p-2.5 rounded border space-y-1.5">
                   <div>📍 <strong>Endereço de retirada:</strong> {selectedPharmacy?.endereco}, {selectedPharmacy?.numero ? selectedPharmacy.numero + ', ' : ''}{selectedPharmacy?.bairro} - {selectedPharmacy?.cidade}/{selectedPharmacy?.uf}</div>
-                  {selectedPharmacy?.horario_funcionamento && (
+                  {selectedPharmacy?.horarioFuncionamento && (
                     <div className="flex items-center gap-1.5 text-slate-600 mt-1">
                       <Clock className="w-3.5 h-3.5 shrink-0" />
-                      <span>{selectedPharmacy.horario_funcionamento}</span>
+                      <span>{selectedPharmacy.horarioFuncionamento}</span>
                     </div>
                   )}
                 </div>

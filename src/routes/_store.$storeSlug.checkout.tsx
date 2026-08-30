@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState, useMemo } from "react";
-import { Lock, Store, Home, User, Truck, CreditCard, Users, QrCode, Clock, CheckCircle2, Banknote, Tag, X, AlertCircle, MapPin, Plus, Star } from "lucide-react";
+import { Lock, Store, Home, User, Truck, CreditCard, Users, QrCode, Clock, CheckCircle2, Banknote, Tag, X, AlertCircle, AlertTriangle, MapPin, Plus, Star, MessageCircle } from "lucide-react";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
@@ -80,6 +80,7 @@ function Checkout() {
   const clear = useCart((s) => s.clear);
   const user = useAuth((s) => s.user);
   const navigate = useNavigate();
+  const { storeSlug } = Route.useParams();
   const geoCep = useGeoCep((s) => s.cep);
   const geoLat = useGeoCep((s) => s.lat);
   const geoLng = useGeoCep((s) => s.lng);
@@ -376,7 +377,7 @@ function Checkout() {
   const visiblePbmDisc = mounted ? pbmDisc : 0;
   const visibleTotal = mounted ? total : 0;
   const visiblePbm = mounted ? pbm : null;
-  const baseFinalTotal = Math.max(0, visibleTotal + fretePrice - (couponApplied?.discount || 0));
+  const baseFinalTotal = Math.max(0, visibleTotal + (fretePrice ?? 0) - (couponApplied?.discount || 0));
   const installmentCount = paymentCategory === "online" && paymentMethod === "credit" ? (Number(installments) || 1) : 1;
   const finalTotal = installmentCount > 6 
     ? baseFinalTotal * Math.pow(1.0199, installmentCount)
@@ -427,7 +428,7 @@ function Checkout() {
           </Button>
         </div>
 
-        <Link to={`/${activeStore?.slug || ''}`}>
+        <Link to={"/$storeSlug" as any} params={{ storeSlug: activeStore?.slug || 'loja-padrao' } as any}>
           <Button variant="outline" className="w-full h-12">Voltar para a página inicial</Button>
         </Link>
       </div>
@@ -529,7 +530,7 @@ function Checkout() {
         produtos: visibleSubtotal,
         subtotal: visibleSubtotal,
         desconto: visibleStoreDisc + visiblePbmDisc + (couponApplied?.discount || 0),
-        frete: fretePrice,
+        frete: fretePrice ?? 0,
         total: finalTotal
       },
       historico: [

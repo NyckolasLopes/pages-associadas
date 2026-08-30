@@ -15,10 +15,12 @@ export interface PedidoItem {
   precoRegular?: number;
   foto?: string;
   imagem?: string;
+  imagens?: string[];
 }
 
 export interface Pedido {
   id: string;
+  rawId?: string;
   numero?: string;
   lojaId?: string;
   lojaNome?: string;
@@ -254,19 +256,17 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
   addOrder: async (order) => {
     const { data: userAuth } = await supabase.auth.getUser();
-    const userId = userAuth?.user?.id || null;
+    const user = userAuth?.user;
 
-    const { data: insertedOrder, error: orderError } = await supabase.from('pedidos').insert({
-      numero: order.id.replace('FA-', ''),
-      user_id: userId as string,
+    const { data: insertedOrder, error: orderError } = await (supabase.from('pedidos') as any).insert({
       loja_id: order.lojaId,
+      user_id: user?.id || null,
       status: order.status || 'novo',
-      subtotal: order.valores?.subtotal || order.valores?.produtos || 0,
-      desconto: order.valores?.desconto || 0,
-      frete: order.valores?.frete || 0,
       total: order.valores?.total || 0,
-      cep_entrega: order.cliente?.endereco?.cep || order.envio?.cep || null,
-      endereco_entrega: order.cliente?.endereco || order.envio || {},
+      subtotal: order.valores?.subtotal || order.valores?.produtos || 0,
+      frete: order.valores?.frete || 0,
+      desconto: order.valores?.desconto || order.valores?.descontos || 0,
+      endereco_entrega: order.cliente?.endereco || null,
       metodo_entrega: order.modalidade || order.envio?.metodo,
       metodo_pagamento: order.pagamento?.metodo,
       observacoes: order.anotacoes || order.observacoes || '',
@@ -286,7 +286,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
       const itens = order.produtos || order.itens || [];
       if (itens.length > 0) {
         // Verifica quais produtos existem no banco para evitar erro de Foreign Key
-        const productIds = itens.map(i => i.id || i.sku).filter(Boolean);
+        const productIds = itens.map(i => i.id || i.sku).filter((id): id is string => Boolean(id));
         const { data: existingProducts } = await supabase
           .from('produtos')
           .select('id')
@@ -298,7 +298,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
             const potentialId = i.id || i.sku;
             return {
               pedido_id: insertedOrder.id,
-              produto_id: existingProductIds.has(potentialId) ? potentialId : null,
+              produto_id: (potentialId && existingProductIds.has(potentialId)) ? potentialId : null,
               nome: i.nome,
               qty: i.qtd || i.quantidade || 1,
               preco_unit: i.valorUnitario || i.preco || 0
@@ -313,11 +313,11 @@ export const useOrders = create<OrdersState>((set, get) => ({
     }
 
     // Remove ou converte o carrinho abandonado, pois o pedido foi finalizado e não é mais pendente/abandonado
-    if (userId) {
+    if (user?.id) {
       await supabase
         .from('carrinhos_abandonados' as any)
         .update({ status: 'convertido', updated_at: new Date().toISOString() })
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .eq('status', 'abandonado');
     }
 

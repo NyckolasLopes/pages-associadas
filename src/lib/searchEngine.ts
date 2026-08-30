@@ -241,7 +241,7 @@ export function extractProductSearchFields(p: Produto) {
   const termsClean = normalizeSearchTerm(p.termosPesquisa);
   
   const descClean = normalizeSearchTerm(
-    (p.descricao || "") + " " + (p.descricaoHtml || "") + " " + (p.resumoDescricao || "") + " " + ((p as any).metadata?.resumo_descricao || "")
+    (p.descricao || "") + " " + ((p as any).descricaoHtml || "") + " " + (p.resumoDescricao || "") + " " + ((p as any).metadata?.resumo_descricao || "")
   );
 
   const tagsClean = normalizeSearchTerm(

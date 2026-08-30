@@ -31,7 +31,7 @@ export function Logo({ className = "h-10" }: { className?: string }) {
   }, [activePharmacy, effectiveSlug]);
 
   const partnerLogo = activePharmacy?.logoUrl || activePharmacy?.footerLogoUrl;
-  const storeDisplayName = activePharmacy?.nome || (effectiveSlug ? effectiveSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : "");
+  const storeDisplayName = activePharmacy?.nome || (effectiveSlug ? effectiveSlug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : "");
 
   return (
     <Link 

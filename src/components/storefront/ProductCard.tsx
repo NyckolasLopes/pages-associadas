@@ -301,7 +301,8 @@ function ProductCardComponent({
   );
   const servicoSelo = allSelos.find(s => s.id === "servico");
   
-  const normalizeForMatch = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+  const normalizeForMatch = (text: string) => (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+  const activeSeloNormalizedNames = activeSelos.map(s => normalizeForMatch(s.nome));
   const currentUrlSlug = (params as any)?.storeSlug;
   const targetStoreSlug = (currentUrlSlug && currentUrlSlug !== "loja-padrao" && !SYSTEM_PAGES.has(currentUrlSlug))
     ? safeSlugify(currentUrlSlug)

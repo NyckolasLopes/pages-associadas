@@ -231,7 +231,7 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
     const p = loaderData?.pharmacy;
     const storeSlug = loaderData?.storeSlug || "loja-padrao";
     const heroBanner = loaderData?.heroBanner;
-    const isParceiro = p?.categoriaAssociado === 'Parceiro' || p?.categoriaAssociado === 'Associado' || p?.isPleno === false;
+    const isParceiro = p?.categoriaAssociado === 'Parceiro' || p?.isPleno === false;
     const title = p?.pageTitle || (p ? (isParceiro ? `${p.nome} - ${p.cidade}/${p.uf}` : `Farmácias Associadas - ${p.nome} - ${p.cidade}/${p.uf}`) : `${getBrandNameForHead()} — Medicamentos, dermocosméticos e mais`);
     const desc = p?.metaDescription || p?.seoDescricao || (p ? `Sua farmácia completa em ${p.cidade || "sua região"}. Medicamentos, perfumaria, dermocosméticos e ofertas exclusivas com entrega rápida em ${p.bairro || p.cidade || "sua localidade"}.` : "Compre online medicamentos, vitaminas, dermocosméticos e itens de higiene com entrega rápida.");
     const storeUrl = `https://farmaciasassociadas.com.br/${storeSlug}`;
@@ -828,7 +828,7 @@ function StoreHome() {
 
 
         {/* Diferenciais da Rede */}
-        {!(loja?.categoriaAssociado === 'Parceiro' || loja?.categoriaAssociado === 'Associado' || loja?.isPleno === false || storeSlug !== 'loja-padrao') && (
+        {!(loja?.categoriaAssociado === 'Parceiro' || loja?.isPleno === false || storeSlug !== 'loja-padrao') && (
           <LazySection height="400px">
             <section className="container-fa my-12">
               <div className="bg-orange-500 text-white rounded-2xl p-6 md:p-8">

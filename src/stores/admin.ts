@@ -109,7 +109,8 @@ export interface Pharmacy {
   id: string;
   slug?: string;
   ativo?: boolean;
-  categoriaAssociado?: 'Pleno' | 'Parceiro';
+  categoriaAssociado?: 'Pleno' | 'Parceiro' | 'Associado';
+  isPleno?: boolean;
   isVirtualStoreGenerated?: boolean;
   virtualStoreStatus?: 'Ativa' | 'Inativa';
   offersServices?: boolean;
@@ -147,6 +148,8 @@ export interface Pharmacy {
   complemento: string;
   lat?: number;
   lng?: number;
+  latitude?: number;
+  longitude?: number;
   // SEO Local e AEO / GEO
   bairrosAtendidos?: string[];
   descricaoSeo?: string; // Legacy

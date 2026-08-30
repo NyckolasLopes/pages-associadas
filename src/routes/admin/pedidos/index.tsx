@@ -79,6 +79,7 @@ export const Route = createFileRoute("/admin/pedidos/")({
 
 interface UnifiedOrderItem {
   id: string;
+  rawId?: string;
   data: string;
   dataOriginal: string;
   clienteNome: string;
@@ -579,7 +580,6 @@ export function PedidosAdmin() {
                     {PEDIDO_STATUS_OPTIONS.map((s) => (
                       <SelectItem key={s.value} value={s.value}>
                         <span className="flex items-center gap-2">
-                          <span>{s.icon}</span>
                           <span>{s.label}</span>
                         </span>
                       </SelectItem>
@@ -795,7 +795,7 @@ export function PedidosAdmin() {
                   >
                     <div className="w-16 h-16 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                       <img
-                        src={productImage(p.foto || p.imagem || p.imagens)}
+                        src={productImage(p.foto || p.imagem || (p as any).imagens)}
                         alt={p.nome}
                         className="w-full h-full object-cover"
                       />

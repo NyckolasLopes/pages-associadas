@@ -36,6 +36,7 @@ interface AbandonedCartItem {
   clienteNome: string;
   clienteTelefone: string;
   clienteEmail?: string;
+  clienteEndereco?: string;
   lojaId?: string;
   lojaNome: string;
   itensQtd: number;
@@ -96,7 +97,7 @@ export function PedidosAdmin() {
 
   const getLojaName = (id?: string, fallbackName?: string) => {
     const p = id ? pharmacies.find(ph => ph.id === id) : null;
-    return p ? (p.nome) : (fallbackName || (p?.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas"));
+    return p ? p.nome : (fallbackName || "Farmácias Associadas");
   };
 
   const handleDelete = (id: string) => {

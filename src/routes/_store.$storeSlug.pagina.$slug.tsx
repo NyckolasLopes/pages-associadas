@@ -20,7 +20,7 @@ function PaginaConteudo() {
   const storeSlug = (params && (params as any).storeSlug) || (activePharmacy?.slug ? safeSlugify(activePharmacy.slug) : "loja-padrao");
   
   // Prioridade: Conteúdo individual customizado da loja -> Conteúdo padrão da rede
-  const customPage = activePharmacy?.customPages?.find(p => p.slug === slug);
+  const customPage = (activePharmacy?.customPages || []).find((p: any) => p.slug === slug);
   const globalPage = contentPages.find(p => p.slug === slug);
   const page = customPage || globalPage;
 

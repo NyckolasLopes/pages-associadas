@@ -96,11 +96,11 @@ export const useAuth = create<AuthState>((set, get) => ({
     if (error || !data.user) return false;
 
     const u = data.user;
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: profile } = await (supabase
+      .from("profiles") as any)
       .select("nome, cpf, telefone, enderecos")
       .eq("id", u.id)
-      .single();
+      .maybeSingle();
 
     set({
       user: {
@@ -172,11 +172,11 @@ export const useAuth = create<AuthState>((set, get) => ({
       // 2. Se a RPC não estiver disponível ou falhar por dependência, efetuar limpeza direta das tabelas
       if (!rpcSuccess) {
         try {
-          await supabase.from("carrinhos_abandonados").delete().eq("user_id", currentUserId);
+          await (supabase.from("carrinhos_abandonados" as any) as any).delete().eq("user_id", currentUserId);
         } catch (e) { /* ignore */ }
 
         try {
-          await supabase.from("enderecos").delete().eq("user_id", currentUserId);
+          await (supabase.from("enderecos" as any) as any).delete().eq("user_id", currentUserId);
         } catch (e) { /* ignore */ }
 
         try {

@@ -85,17 +85,19 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
       loadOptions();
 
       if (vitrine && vitrine.produtoIds && vitrine.produtoIds.length > 0) {
-        import("@/integrations/supabase/client").then(({ supabase }) => {
-          supabase.from('produtos').select('*').in('id', vitrine.produtoIds)
-            .then(({ data }) => {
-              if (data) {
-                setSelectedProductsCache(prev => {
-                  const next = { ...prev };
-                  data.forEach(p => { next[String(p.id)] = { ...p, id: String(p.id) }; });
-                  return next;
-                });
-              }
-            }).catch(console.error);
+        import("@/integrations/supabase/client").then(async ({ supabase }) => {
+          try {
+            const { data } = await supabase.from('produtos').select('*').in('id', vitrine.produtoIds || []);
+            if (data) {
+              setSelectedProductsCache(prev => {
+                const next = { ...prev };
+                data.forEach(p => { next[String(p.id)] = { ...p, id: String(p.id) }; });
+                return next;
+              });
+            }
+          } catch (err) {
+            console.error(err);
+          }
         });
       }
     }
@@ -109,20 +111,12 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
         page: 0,
         pageSize: 50,
         listFilter: 'all',
-        lojaId
-      }).then(({ results }) => {
-        if (results && results.length > 0) {
-          setSearchResults(results as any);
-          setSelectedProductsCache(prev => {
-            const next = { ...prev };
-            results.forEach(p => { next[String(p.id)] = { ...p, id: String(p.id) }; });
-            return next;
-          });
-        } else {
-          setSearchResults([]);
-        }
-      }).catch(console.error).finally(() => setIsSearching(false));
-    }, 400);
+        lojaId: lojaId || undefined,
+      }).then(res => {
+        setSearchResults(res.results || []);
+        setIsSearching(false);
+      }).catch(() => setIsSearching(false));
+    }, 300);
     return () => clearTimeout(timer);
   }, [searchProduto, lojaId]);
 
@@ -195,7 +189,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
                   <SelectContent>
                     <SelectItem value="global_all">Todas as lojas (Global)</SelectItem>
                     {pharmacies?.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.nomeFantasia || p.razaoSocial}</SelectItem>
+                      <SelectItem key={p.id} value={p.id}>{p.nome || p.razaoSocial}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

@@ -63,21 +63,22 @@ function SucessoPage() {
       
       if (!data) return null;
 
+      const d = data as any;
       return {
-        id: data.id,
-        numero: data.numero,
-        data: data.data,
-        status: data.status,
-        cliente: data.cliente,
-        itens: data.itens || data.produtos || [],
-        produtos: data.produtos || data.itens || [],
-        valores: data.valores,
-        pagamento: data.pagamento,
-        envio: data.envio,
-        lojaId: data.loja_id,
-        lojaNome: data.loja_nome,
-        modalidade: data.modalidade,
-        historico: data.historico || []
+        id: d.id,
+        numero: d.numero,
+        data: d.data || d.created_at,
+        status: d.status,
+        cliente: d.cliente || { nome: d.nome_cliente, telefone: d.telefone_cliente, email: d.email_cliente },
+        itens: d.itens || d.produtos || [],
+        produtos: d.produtos || d.itens || [],
+        valores: d.valores || { total: d.total, frete: d.frete, subtotal: d.subtotal, desconto: d.desconto },
+        pagamento: d.pagamento || { metodo: d.metodo_pagamento },
+        envio: d.envio || { metodo: d.metodo_entrega, endereco: d.endereco_entrega },
+        lojaId: d.loja_id,
+        lojaNome: d.loja_nome || activePharmacy?.nome,
+        modalidade: d.modalidade || d.metodo_entrega,
+        historico: d.historico || []
       } as Pedido;
     },
     enabled: !!search.id,
@@ -194,10 +195,10 @@ function SucessoPage() {
                   <span>Subtotal</span>
                   <span className="font-medium">{brl(order.valores?.produtos || order.valores?.subtotal || 0)}</span>
                 </div>
-                {order.valores?.descontos > 0 && (
+                {(order.valores?.desconto || order.valores?.descontos || 0) > 0 && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Desconto</span>
-                    <span className="font-medium">-{brl(order.valores.descontos)}</span>
+                    <span className="font-medium">-{brl(order.valores.desconto || order.valores.descontos || 0)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm text-slate-600">
@@ -220,7 +221,7 @@ function SucessoPage() {
                     </span>
                     <span className="text-slate-600 leading-relaxed">
                       {order.modalidade?.toLowerCase() === 'retirada' 
-                        ? `${activeStore?.nome || 'Loja'} - ${activeStore?.endereco?.rua || ''}`
+                        ? `${activePharmacy?.nome || 'Loja'} - ${activePharmacy?.endereco || ''}`
                         : `${order.cliente?.endereco?.rua || order.envio?.endereco || ''}, ${order.cliente?.endereco?.numero || order.envio?.numero || ''}`
                       }
                     </span>
@@ -240,7 +241,7 @@ function SucessoPage() {
       )}
 
       <div className="mt-12 text-center">
-        <Link to="/$storeSlug" params={{ storeSlug: params?.storeSlug || activeStore?.slug || 'loja-padrao' }}>
+        <Link to="/$storeSlug" params={{ storeSlug: params?.storeSlug || activePharmacy?.slug || 'loja-padrao' }}>
           <Button variant="ghost" className="text-slate-500 font-medium hover:text-slate-900">
             &larr; Voltar para a loja
           </Button>

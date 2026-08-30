@@ -387,8 +387,8 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
           .eq('id', updatedCupomId);
       } else {
         // Se o cupom não estava em memória, tenta localizar e atualizar no banco
-        const { data: cupomBanco } = await supabase
-          .from('cupons' as any)
+        const { data: cupomBanco } = await (supabase
+          .from('cupons' as any) as any)
           .select('id, numero_utilizacoes')
           .ilike('codigo', cleanCode)
           .limit(1)
@@ -396,8 +396,8 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
 
         if (cupomBanco) {
           const u = (cupomBanco.numero_utilizacoes || 0) + 1;
-          await supabase
-            .from('cupons' as any)
+          await (supabase
+            .from('cupons' as any) as any)
             .update({ numero_utilizacoes: u })
             .eq('id', cupomBanco.id);
           

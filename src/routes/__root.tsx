@@ -89,8 +89,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => {
     const dadosLoja = useConfig.getState().dadosLoja;
     const fallbackTitle = dadosLoja?.nomeLoja || "Farmácias Associadas | Muito mais farmácia";
-    const isParceiro = dadosLoja?.categoriaAssociado === 'Parceiro';
-    const title = isParceiro ? (dadosLoja?.nomeDaLoja || dadosLoja?.razaoSocial || "Loja Parceira") : fallbackTitle;
+    const isParceiro = (dadosLoja as any)?.categoriaAssociado === 'Parceiro';
+    const title = isParceiro ? (dadosLoja?.nomeLoja || dadosLoja?.razaoSocial || "Loja Parceira") : fallbackTitle;
     const description = dadosLoja?.descricao || "Medicamentos, dermocosméticos, vitaminas e cuidado para toda a família, com entrega rápida e farmacêutico responsável. Aqui você tem amigos.";
     const bairro = dadosLoja?.bairro || "Matriz";
 

@@ -250,11 +250,11 @@ function Relatorios() {
       
       const hist = [...(pedido.historico || [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
       const separacao = hist.find(h => {
-        const s = (h.situacao || h.status || "").toLowerCase();
+        const s = (h.situacao || (h as any).status || "").toLowerCase();
         return s === "em separação" || s === "separacao" || s === "em separacao" || s === "separando" || s.includes("separ");
       });
       const conclusao = hist.find(h => {
-        const s = (h.situacao || h.status || "").toLowerCase();
+        const s = (h.situacao || (h as any).status || "").toLowerCase();
         return ["pronto para retirada", "pronta para retirada", "pronto", "em rota de entrega", "em rota", "enviado", "entregue"].some(kw => s.includes(kw));
       });
       
@@ -274,11 +274,11 @@ function Relatorios() {
       lojaOrders.forEach(pedido => {
         const hist = [...(pedido.historico || [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
         const separacao = hist.find(h => {
-          const s = (h.situacao || h.status || "").toLowerCase();
+          const s = (h.situacao || (h as any).status || "").toLowerCase();
           return s === "em separação" || s === "separacao" || s === "em separacao" || s === "separando" || s.includes("separ");
         });
         const conclusao = hist.find(h => {
-          const s = (h.situacao || h.status || "").toLowerCase();
+          const s = (h.situacao || (h as any).status || "").toLowerCase();
           return ["pronto para retirada", "pronta para retirada", "pronto", "em rota de entrega", "em rota", "enviado", "entregue"].some(kw => s.includes(kw));
         });
         

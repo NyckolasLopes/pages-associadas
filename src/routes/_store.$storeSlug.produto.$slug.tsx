@@ -349,7 +349,7 @@ function PDP() {
   const isStoreContext = !!(params && (params as any).storeSlug);
   const activePharmacy = useActivePharmacy();
   const { p: initialProduct, loja, cat, subcat, crossSell, variations, compreJuntoPartner } = Route.useLoaderData();
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.categoriaAssociado === 'Associado' || loja?.categoriaAssociado === 'Parceiro' || loja?.categoriaAssociado === 'Associado';
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || loja?.categoriaAssociado === 'Parceiro';
   const customProducts = useAdminProducts(s => s.customProducts);
   const p = customProducts?.find(c => c.id === initialProduct.id) || initialProduct;
   const { prices: regionalPrices } = useRegionsStore();
@@ -1002,7 +1002,7 @@ function PDP() {
           ? safeSlugify(activePharmacy.slug)
           : null;
 
-        const catStoreSlug = homeStoreSlug || (pharmacies[0]?.slug ? safeSlugify(pharmacies[0].slug) : "poa");
+        const catStoreSlug = homeStoreSlug || (activePharmacy?.slug ? safeSlugify(activePharmacy.slug) : "poa");
 
         return (
           <div className="text-sm text-muted-foreground mb-4 flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 scrollbar-none">

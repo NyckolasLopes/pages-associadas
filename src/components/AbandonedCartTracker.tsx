@@ -22,8 +22,7 @@ export function AbandonedCartTracker() {
         if (items.length === 0) {
           // Se o carrinho foi esvaziado (compra concluída ou esvaziado manualmente), 
           // marca como recuperado se existir um abandonado.
-          await supabase
-            .from("carrinhos_abandonados")
+          await (supabase.from("carrinhos_abandonados" as any) as any)
             .update({ status: "recuperado", updated_at: new Date().toISOString() })
             .eq("user_id", user.id)
             .eq("status", "abandonado");
@@ -31,8 +30,7 @@ export function AbandonedCartTracker() {
         }
 
         // Verifica se já existe um carrinho abandonado para o usuário
-        const { data: existing } = await supabase
-          .from("carrinhos_abandonados")
+        const { data: existing } = await (supabase.from("carrinhos_abandonados" as any) as any)
           .select("id")
           .eq("user_id", user.id)
           .eq("status", "abandonado")
@@ -40,8 +38,7 @@ export function AbandonedCartTracker() {
 
         if (existing) {
           // Atualiza carrinho existente
-          await supabase
-            .from("carrinhos_abandonados")
+          await (supabase.from("carrinhos_abandonados" as any) as any)
             .update({
               loja_id: selectedPharmacyId || null,
               items: items as any, // jsonb
@@ -51,7 +48,7 @@ export function AbandonedCartTracker() {
             .eq("id", existing.id);
         } else {
           // Cria novo carrinho abandonado
-          await supabase.from("carrinhos_abandonados").insert({
+          await (supabase.from("carrinhos_abandonados" as any) as any).insert({
             user_id: user.id,
             loja_id: selectedPharmacyId || null,
             nome_cliente: user.nome || user.name || user.email,
