@@ -3,7 +3,7 @@ import { StoreSelector } from "@/components/admin/StoreSelector";
 import { useAdmin } from "@/stores/admin";
 import { useConfig } from "@/stores/config";
 import { Button } from "@/components/ui/button";
-import { Upload, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Upload, Trash2, Image as ImageIcon, Loader2, Lock } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import logoUrlDefault from "@/assets/logo.png";
@@ -52,15 +52,17 @@ function AdminDesignLogo() {
 
   const currentPharmacy = storeId ? pharmacies.find((p) => p.id === storeId) : null;
   const isParceiro = currentPharmacy?.categoriaAssociado === 'Parceiro';
-  const isPleno = currentPharmacy?.categoriaAssociado === 'Pleno';
+  const isPleno = !isParceiro;
 
   const defaultLogo = isParceiro ? "" : logoUrlDefault;
   const defaultFavicon = isParceiro ? "" : "/favicon.png";
   const defaultFooterLogo = isParceiro ? "" : logoUrlDefault;
   const defaultAnvisaLogo = isParceiro ? "" : logoAnvisaDefault;
+  const defaultLoadingLogo = "/favicon.png";
 
   const currentLogo = currentPharmacy ? (currentPharmacy.logoUrl || defaultLogo) : (globalLogo || defaultLogo);
   const currentFavicon = currentPharmacy ? (currentPharmacy.faviconUrl || defaultFavicon) : defaultFavicon;
+  const currentLoadingLogo = isParceiro ? (currentPharmacy?.loadingLogoUrl || "") : defaultLoadingLogo;
   const currentFooterLogo = currentPharmacy ? (currentPharmacy.footerLogoUrl || defaultFooterLogo) : defaultFooterLogo;
   const currentAnvisaLogo = currentPharmacy ? (currentPharmacy.anvisaLogoUrl || defaultAnvisaLogo) : defaultAnvisaLogo;
 
@@ -225,6 +227,62 @@ function AdminDesignLogo() {
             <p className="text-xs text-muted-foreground max-w-[250px] mt-4">
               Máximo de 1 imagem. Tamanho máximo <strong>100KB</strong>.
               Todos os ícones são redimensionados para o tamanho máximo de 128 x 128px.
+            </p>
+          </div>
+        </div>
+
+        {/* Logo de Loading da Loja */}
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm">Logo de loading da loja</span>
+              {isPleno && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-200/80 text-slate-700 border border-slate-300/80 flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-slate-500" /> Padrão da Rede (Bloqueado)
+                </span>
+              )}
+            </div>
+            {isParceiro && (
+              <Button variant="outline" size="sm" disabled={uploadingField === 'loadingLogoUrl'} onClick={() => triggerUpload('loadingLogoUrl', 'loading-logo', 1)}>
+                {uploadingField === 'loadingLogoUrl' ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-2" />} Escolher imagem
+              </Button>
+            )}
+          </div>
+          <div className="p-12 flex flex-col items-center justify-center text-center">
+            <div className="relative group inline-block">
+              {currentLoadingLogo ? (
+                <img src={currentLoadingLogo} alt="Logo de Loading" className="h-16 w-16 object-contain border rounded-lg bg-slate-50 p-2 shadow-xs" />
+              ) : (
+                <div className="h-16 w-16 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400">
+                  <ImageIcon className="w-6 h-6" />
+                </div>
+              )}
+              {currentPharmacy?.loadingLogoUrl && isParceiro && (
+                <button onClick={() => {
+                  if (currentPharmacy?.id) updatePharmacy(currentPharmacy.id, { ...currentPharmacy, loadingLogoUrl: "" } as any);
+                  toast.success("Logo de loading removido!");
+                }} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            {isPleno && (
+              <p className="text-xs font-medium text-slate-500 mt-4 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 max-w-[380px]">
+                Nas lojas Pleno, o logo de loading é automaticamente o favicon oficial da rede Farmácias Associadas (não editável).
+              </p>
+            )}
+            {!currentPharmacy?.loadingLogoUrl && isParceiro && (
+              <p className="text-xs font-medium text-amber-600 mt-4 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200">
+                Lojas parceiras podem enviar seu próprio logo/ícone de loading personalizado. Caso não envie, será utilizado o ícone da loja.
+              </p>
+            )}
+            {currentPharmacy?.loadingLogoUrl && isParceiro && (
+              <p className="text-xs font-medium text-emerald-600 mt-4 bg-emerald-50 px-3 py-1.5 rounded-md border border-emerald-200">
+                Logo de loading personalizado ativo para esta loja parceira.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground max-w-[300px] mt-4">
+              Formato quadrado recomendado: <strong>128 x 128px</strong> ou <strong>200 x 200px</strong> em PNG transparente ou SVG. Tamanho máximo <strong>1MB</strong>.
             </p>
           </div>
         </div>

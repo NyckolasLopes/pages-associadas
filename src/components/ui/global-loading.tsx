@@ -47,7 +47,7 @@ export function GlobalLoading() {
     ? (currentPharmacy.categoriaAssociado === 'Parceiro' || currentPharmacy.categoriaAssociado === 'Associado' || currentPharmacy.isPleno === false)
     : false;
 
-  const partnerLogo = currentPharmacy?.logoUrl || currentPharmacy?.footerLogoUrl;
+  const partnerLogo = currentPharmacy?.loadingLogoUrl || currentPharmacy?.logoUrl || currentPharmacy?.footerLogoUrl;
   const partnerName = currentPharmacy?.nome || (potentialSlug ? potentialSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : "Loja Parceira");
 
   return (

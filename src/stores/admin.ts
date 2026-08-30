@@ -121,6 +121,7 @@ export interface Pharmacy {
   apiKeyTemp?: string;
   logoUrl?: string;
   faviconUrl?: string;
+  loadingLogoUrl?: string;
   themeColors?: Record<string, string>;
   razaoSocial: string;
   nome: string; // Nome Fantasia
@@ -1056,6 +1057,7 @@ export const useAdmin = create<AdminState>()(
                 longitude: l.longitude,
                 logoUrl: parsedThemeColors?.logoUrl || '',
                 faviconUrl: parsedThemeColors?.faviconUrl || '',
+                loadingLogoUrl: parsedThemeColors?.loadingLogoUrl || '',
                 footerLogoUrl: parsedThemeColors?.footerLogoUrl || '',
                 anvisaLogoUrl: parsedThemeColors?.anvisaLogoUrl || '',
                 categoriaAssociado: l.categoria_associado || parsedThemeColors?.categoria_associado,
@@ -1127,6 +1129,7 @@ export const useAdmin = create<AdminState>()(
           whatsapp: p.whatsapp,
           logoUrl: p.logoUrl,
           faviconUrl: p.faviconUrl,
+          loadingLogoUrl: p.loadingLogoUrl,
           footerLogoUrl: p.footerLogoUrl,
           anvisaLogoUrl: p.anvisaLogoUrl,
           horario_funcionamento: p.horarioFuncionamento,
@@ -1230,6 +1233,7 @@ export const useAdmin = create<AdminState>()(
           whatsapp: p.whatsapp,
           logoUrl: p.logoUrl,
           faviconUrl: p.faviconUrl,
+          loadingLogoUrl: p.loadingLogoUrl,
           footerLogoUrl: p.footerLogoUrl,
           anvisaLogoUrl: p.anvisaLogoUrl,
           horario_funcionamento: p.horarioFuncionamento,
