@@ -411,19 +411,42 @@ function AdminBanners() {
     navigate({ search: (prev: any) => ({ ...prev, tab }) });
   };
 
-  const totalBannersCount = banners.length;
+  const matchBannerPos = (b: AdminBanner, pos: string) => {
+    const bPos = (b.posicao || "").toLowerCase().trim();
+    const pPos = pos.toLowerCase().trim();
+    return bPos === pPos || 
+           bPos === pPos.replace(/\s+/g, "") || 
+           (pPos === "mini banner" && bPos.includes("mini banner")) ||
+           (pPos === "banner compre por categoria" && (bPos === "banner categoria" || bPos.includes("categoria"))) ||
+           (pPos === "banner tarja" && (bPos.includes("tarja") || bPos === "banner tarja"));
+  };
 
   const groupedBanners = BANNER_POSITIONS.map(pos => {
+    if (activeStoreId) {
+      const storeItems = allBanners.filter(b => b.lojaId === activeStoreId && matchBannerPos(b, pos));
+      if (storeItems.length > 0) {
+        return {
+          position: pos,
+          isInherited: false,
+          items: storeItems.filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
+        };
+      }
+      // Se a loja não tem banners próprios nesta posição, exibe os banners da rede herdados que estão ativos na loja
+      const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos));
+      const fallbackItems = globalItems.length > 0 ? globalItems : defaultBanners.filter(b => matchBannerPos(b, pos));
+      return {
+        position: pos,
+        isInherited: fallbackItems.length > 0,
+        items: fallbackItems.filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
+      };
+    }
+
+    const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos));
+    const fallbackItems = globalItems.length > 0 ? globalItems : defaultBanners.filter(b => matchBannerPos(b, pos));
     return {
       position: pos,
-      items: banners.filter(b => {
-        const bPos = (b.posicao || "").toLowerCase().trim();
-        const pPos = pos.toLowerCase();
-        return bPos === pPos || 
-               bPos === pPos.replace(" ", "") || 
-               (pPos === "mini banner" && bPos.includes("mini banner")) ||
-               (pPos === "banner compre por categoria" && bPos === "banner categoria");
-      }).filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
+      isInherited: false,
+      items: fallbackItems.filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
     };
   });
 
@@ -437,15 +460,9 @@ function AdminBanners() {
   // Sync localOrder when banners change (on mount / after fetch)
   useEffect(() => {
     const next: Record<string, string[]> = {};
-    BANNER_POSITIONS.forEach(pos => {
-      const items = banners.filter(b => {
-        const bPos = (b.posicao || "").toLowerCase().trim();
-        const pPos = pos.toLowerCase();
-        return bPos === pPos || bPos === pPos.replace(" ", "") ||
-          (pPos === "mini banner" && bPos.includes("mini banner")) ||
-          (pPos === "banner compre por categoria" && bPos === "banner categoria");
-      }).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
-      next[pos] = items.map(b => b.id);
+    groupedBanners.forEach(group => {
+      const sorted = [...group.items].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+      next[group.position] = sorted.map(b => b.id);
     });
     setLocalOrder(next);
     setDirtyGroups(new Set());
@@ -564,7 +581,8 @@ function AdminBanners() {
     }
 
     try {
-      if (editingBanner.id) {
+      const isCustomizingInherited = activeStoreId && editingBanner.id && (!editingBanner.lojaId || editingBanner.lojaId !== activeStoreId);
+      if (editingBanner.id && !isCustomizingInherited) {
         await updateBanner(editingBanner.id, editingBanner);
         toast.success("Banner atualizado com sucesso!");
       } else {
@@ -573,8 +591,7 @@ function AdminBanners() {
           id: `banner_${Date.now()}`,
           lojaId: managingGlobal ? undefined : (activeStoreId || (!currentUser?.proprietario ? currentUser?.lojasVinculadas?.[0] : undefined) || undefined),
         } as AdminBanner);
-        toast.success("Banner criado com sucesso!");
-
+        toast.success(isCustomizingInherited ? "Banner personalizado para esta loja com sucesso!" : "Banner criado com sucesso!");
       }
       setModalOpen(false);
     } catch (e: any) {
@@ -718,8 +735,15 @@ function AdminBanners() {
         <div className="p-6 space-y-10">
           {groupedBanners.map((group, groupIdx) => (
             <div key={groupIdx} className="bg-white border border-slate-200 rounded-md overflow-hidden mb-6">
-              <div className="flex items-center justify-between p-4 border-b border-slate-200">
-                <h3 className="font-bold text-[#3a4454] text-[17px]">{group.position}</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-slate-200 gap-2">
+                <div className="flex items-center gap-2.5">
+                  <h3 className="font-bold text-[#3a4454] text-[17px]">{group.position}</h3>
+                  {group.isInherited && (
+                    <span className="text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                      🌐 Padrão da Rede (Ativo na Loja)
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-3">
                   {group.items.some(b => selectedBanners.includes(b.id)) && (
                     <button 
@@ -813,7 +837,14 @@ function AdminBanners() {
                                )}
                             </div>
                             <div className="flex flex-col">
-                              <span className="text-[15px] font-medium text-[#3a4454] hover:text-[#00B5AD]">{banner.nome}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[15px] font-medium text-[#3a4454] hover:text-[#00B5AD]">{banner.nome}</span>
+                                {group.isInherited && (
+                                  <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded border border-slate-200">
+                                    Herdado da Rede
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[12px] text-slate-500">Posição: {banner.posicao || group.position}</span>
                             </div>
                           </div>
@@ -832,10 +863,10 @@ function AdminBanners() {
                         </td>
                         <td className="p-3">
                            <div className="flex gap-2">
-                             <Button onClick={() => openEditModal(banner)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[#00B5AD] hover:bg-slate-100 hover:text-slate-800 transition-colors">
+                             <Button onClick={() => openEditModal(banner)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[#00B5AD] hover:bg-slate-100 hover:text-slate-800 transition-colors" title={group.isInherited ? "Personalizar para esta loja" : "Editar banner"}>
                                <Edit2 className="w-4 h-4" />
                              </Button>
-                             <Button onClick={() => setBannerToDelete(banner.id)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                             <Button onClick={() => setBannerToDelete(banner.id)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Excluir banner">
                                <Trash2 className="w-4 h-4" />
                              </Button>
                            </div>
