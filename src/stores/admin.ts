@@ -452,6 +452,32 @@ const defaultBanners: AdminBanner[] = [
 ];
 
 const PHARMACIES_CACHE_KEY = 'fa-cached-pharmacies-v1';
+const BANNERS_CACHE_KEY = 'fa-cached-banners-v2';
+
+export function getInitialCachedBanners(): { banners: AdminBanner[]; bannersByLoja: Record<string, AdminBanner[]> } {
+  if (typeof window === 'undefined') return { banners: defaultBanners, bannersByLoja: {} };
+  try {
+    const raw = localStorage.getItem(BANNERS_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        const banners = Array.isArray(parsed.banners) && parsed.banners.length > 0 ? parsed.banners : defaultBanners;
+        const bannersByLoja = parsed.bannersByLoja && typeof parsed.bannersByLoja === 'object' ? parsed.bannersByLoja : {};
+        return { banners, bannersByLoja };
+      }
+    }
+  } catch { /* ignore */ }
+  return { banners: defaultBanners, bannersByLoja: {} };
+}
+
+export function saveCachedBanners(banners: AdminBanner[], bannersByLoja: Record<string, AdminBanner[]>) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(BANNERS_CACHE_KEY, JSON.stringify({ banners, bannersByLoja }));
+  } catch { /* ignore */ }
+}
+
+const initialCachedBanners = getInitialCachedBanners();
 
 export function getInitialCachedPharmacies(): Pharmacy[] {
   if (typeof window === 'undefined') return [];
@@ -794,74 +820,79 @@ export const useAdmin = create<AdminState>()(
       themeColors: {},
       setThemeColors: (themeColors) => set({ themeColors }),
 
-      banners: defaultBanners,
-      bannersLoaded: false,
+      banners: initialCachedBanners.banners,
+      bannersLoaded: initialCachedBanners.banners.length > 0,
       bannersLoading: false,
-      bannersByLoja: {} as Record<string, AdminBanner[]>,
-      setBanners: (banners) => set({ banners, bannersLoaded: true }),
+      bannersByLoja: initialCachedBanners.bannersByLoja,
+      setBanners: (banners) => {
+        saveCachedBanners(banners, {});
+        set({ banners, bannersLoaded: true });
+      },
       fetchBanners: async (lojaId?: string) => {
         const key = lojaId || "global";
         const state = get() as any;
-        if (state.bannersByLoja && state.bannersByLoja[key]) {
+        if (state.bannersByLoja && state.bannersByLoja[key] && state.bannersByLoja[key].length > 0) {
           set({ banners: state.bannersByLoja[key], bannersLoaded: true, bannersLoading: false });
-          return;
-        }
-
-        set({ bannersLoading: true });
-        let query = supabase.from('banners' as any).select('*');
-        if (lojaId) {
-          query = query.or(`loja_id.eq.${lojaId},loja_id.is.null`);
-        }
-        const { data, error } = await query;
-        if (!error && data && data.length > 0) {
-          const formatToLocalDatetime = (isoString: string) => {
-            if (!isoString) return "";
-            const d = new Date(isoString);
-            if (isNaN(d.getTime())) return "";
-            const pad = (n: number) => n.toString().padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-          };
-
-          const parsedBanners = data.map((b: any) => ({
-            id: b.id,
-            nome: b.nome,
-            imageUrl: b.image_url,
-            mobileImageUrl: b.mobile_image_url,
-            link: b.link,
-            posicao: b.posicao,
-            paginaPublicacao: b.pagina_publicacao,
-            titulo: b.titulo,
-            active: b.ativo,
-            startDate: b.start_date ? formatToLocalDatetime(b.start_date) : "",
-            endDate: b.end_date ? formatToLocalDatetime(b.end_date) : "",
-            lojaId: b.loja_id,
-            vitrineVinculada: b.vitrine_vinculada,
-            bannerVinculado: b.banner_vinculado,
-            topicoVinculado: b.topico_vinculado,
-            formatoExtra: b.formato_extra,
-            imageUrl2: b.image_url2,
-            mobileImageUrl2: b.mobile_image_url2,
-            link2: b.link2,
-            imageUrl3: b.image_url3,
-            mobileImageUrl3: b.mobile_image_url3,
-            link3: b.link3,
-            ordem: b.ordem ?? 0,
-          })) as AdminBanner[];
-
-          set((s: any) => ({
-            banners: parsedBanners,
-            bannersLoaded: true,
-            bannersLoading: false,
-            bannersByLoja: { ...s.bannersByLoja, [key]: parsedBanners }
-          }));
-        } else if (!error && data && data.length === 0) {
-          set((s: any) => ({
-            banners: defaultBanners,
-            bannersLoaded: true,
-            bannersLoading: false,
-            bannersByLoja: { ...s.bannersByLoja, [key]: defaultBanners }
-          }));
         } else {
+          set({ bannersLoading: true });
+        }
+
+        try {
+          let query = supabase.from('banners' as any).select('*');
+          if (lojaId) {
+            query = query.or(`loja_id.eq.${lojaId},loja_id.is.null`);
+          }
+          const { data, error } = await query;
+          if (!error && data) {
+            const formatToLocalDatetime = (isoString: string) => {
+              if (!isoString) return "";
+              const d = new Date(isoString);
+              if (isNaN(d.getTime())) return "";
+              const pad = (n: number) => n.toString().padStart(2, '0');
+              return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+
+            const parsedBanners = data.map((b: any) => ({
+              id: b.id,
+              nome: b.nome,
+              imageUrl: b.image_url,
+              mobileImageUrl: b.mobile_image_url,
+              link: b.link,
+              posicao: b.posicao,
+              paginaPublicacao: b.pagina_publicacao,
+              titulo: b.titulo,
+              active: b.ativo,
+              startDate: b.start_date ? formatToLocalDatetime(b.start_date) : "",
+              endDate: b.end_date ? formatToLocalDatetime(b.end_date) : "",
+              lojaId: b.loja_id,
+              vitrineVinculada: b.vitrine_vinculada,
+              bannerVinculado: b.banner_vinculado,
+              topicoVinculado: b.topico_vinculado,
+              formatoExtra: b.formato_extra,
+              imageUrl2: b.image_url2,
+              mobileImageUrl2: b.mobile_image_url2,
+              link2: b.link2,
+              imageUrl3: b.image_url3,
+              mobileImageUrl3: b.mobile_image_url3,
+              link3: b.link3,
+              ordem: b.ordem ?? 0,
+            })) as AdminBanner[];
+
+            const finalBanners = parsedBanners.length > 0 ? parsedBanners : defaultBanners;
+            set((s: any) => {
+              const nextByLoja = { ...s.bannersByLoja, [key]: finalBanners };
+              saveCachedBanners(finalBanners, nextByLoja);
+              return {
+                banners: finalBanners,
+                bannersLoaded: true,
+                bannersLoading: false,
+                bannersByLoja: nextByLoja,
+              };
+            });
+          } else {
+            set({ bannersLoaded: true, bannersLoading: false });
+          }
+        } catch {
           set({ bannersLoaded: true, bannersLoading: false });
         }
       },

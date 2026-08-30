@@ -215,14 +215,16 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
     } else {
       adminState.fetchBanners();
     }
-    const allBanners = adminState.banners || [];
-    const heroBanner = allBanners.find(b => 
+    const storeBanners = pharmacy?.id && adminState.bannersByLoja && adminState.bannersByLoja[pharmacy.id]?.length
+      ? adminState.bannersByLoja[pharmacy.id]
+      : (adminState.banners || []);
+    const heroBanner = storeBanners.find(b => 
       b.active && 
       b.posicao === "Full Banner" && 
       (!b.lojaId || b.lojaId === pharmacy?.id) &&
       (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === "Página inicial")
     );
-    return { pharmacy, storeSlug, banners: allBanners, heroBanner };
+    return { pharmacy, storeSlug, banners: storeBanners, heroBanner };
   },
   head: ({ loaderData }) => {
     const p = loaderData?.pharmacy;
@@ -645,10 +647,12 @@ function StoreHome() {
   const lojaId = loja?.id;
 
   useEffect(() => {
-    if (lojaId && (!loaderData?.banners || loaderData.banners.length === 0)) {
+    if (lojaId) {
       fetchBanners(lojaId);
+    } else {
+      fetchBanners();
     }
-  }, [lojaId, fetchBanners, loaderData]);
+  }, [lojaId, fetchBanners]);
 
   const { setSelectedPharmacyId } = useCart();
   const { recordLojaAccess, initPresence } = useLive();
@@ -789,10 +793,10 @@ function StoreHome() {
       
       <main className="flex-1 pb-16 md:pb-0 overflow-x-hidden">
         {/* Full Banner Hero Carousel (Topo prioritário absoluto no mobile e desktop) */}
-        <HeroCarousel lojaId={lojaId} />
+        <HeroCarousel lojaId={lojaId} initialBanners={loaderData?.banners} />
 
         {/* Banner de Tarja (Vantagens) - Abaixo do Full Banner em mobile e desktop */}
-        <DynamicTarja lojaId={lojaId} />
+        <DynamicTarja lojaId={lojaId} initialBanners={loaderData?.banners} />
 
         <SquarePromoGrid lojaId={lojaId} />
 

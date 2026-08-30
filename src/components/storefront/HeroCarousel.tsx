@@ -21,7 +21,7 @@ export function HeroCarousel({
 }: HeroCarouselProps) {
   const activePharmacy = useActivePharmacy();
   const storeSlug = activePharmacy?.slug || "loja-padrao";
-  const { banners: adminBanners, bannersLoaded, bannersLoading, fetchBanners } = useAdmin();
+  const { banners: adminBanners, bannersLoaded, bannersLoading, bannersByLoja, fetchBanners } = useAdmin();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
   const effectiveLojaId = lojaId || selectedPharmacyId || activePharmacy?.id;
 
@@ -36,9 +36,11 @@ export function HeroCarousel({
   }, [effectiveLojaId, fetchBanners]);
 
   const activeBanners = useMemo(() => {
-    const bannersList = (adminBanners && adminBanners.length > 0)
-      ? adminBanners
-      : (initialBanners && initialBanners.length > 0 ? initialBanners : []);
+    const bannersList = (effectiveLojaId && bannersByLoja[effectiveLojaId] && bannersByLoja[effectiveLojaId].length > 0)
+      ? bannersByLoja[effectiveLojaId]
+      : ((adminBanners && adminBanners.length > 0)
+        ? adminBanners
+        : (initialBanners && initialBanners.length > 0 ? initialBanners : []));
     
     const filtered = bannersList.filter(b => {
       // Both Full Banner and Banner por Categoria share this carousel component
@@ -56,7 +58,7 @@ export function HeroCarousel({
       // Check if there are ANY local banners for this position in this store
       const hasLocalBannerForPosition = bannersList.some(
         local => {
-          if (local.lojaId !== effectiveLojaId || local.posicao !== b.posicao) return false;
+          if (!local.active || local.lojaId !== effectiveLojaId || local.posicao !== b.posicao) return false;
           if (b.posicao === "Banner por Categoria") {
             return local.topicoVinculado === b.topicoVinculado;
           }
@@ -85,7 +87,7 @@ export function HeroCarousel({
     });
 
     return filtered;
-  }, [adminBanners, initialBanners, page, categoriaId, effectiveLojaId]);
+  }, [adminBanners, bannersByLoja, initialBanners, page, categoriaId, effectiveLojaId]);
 
   const deduplicatedActiveBanners = useMemo(() => {
     const uniqueMap = new Map();
