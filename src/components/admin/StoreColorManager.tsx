@@ -48,6 +48,7 @@ import {
   ShoppingBag,
   Flame,
   Zap,
+  LayoutTemplate,
 } from "lucide-react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";

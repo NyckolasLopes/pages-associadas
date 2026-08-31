@@ -43,14 +43,17 @@ function AdminMarketingCores() {
 
   const getStoreStripes = (p: any): [string, string, string, string, string, string] => {
     const t = p.themeColors || {};
-    return [
-      t["--primary"] || t.primary || "#705BC2",
-      t["--secondary"] || t.secondary || "#FE509C",
-      t["--background"] || t.background || "#FFFFFF",
-      t["--accent"] || t.accent || "#199965",
-      t["--foreground"] || t.foreground || "#666666",
-      t["--topbar-bg"] || t.topbarBg || "#C92A42",
-    ];
+    const isParceiro = p.categoriaAssociado === "Parceiro" || p.isPleno === false;
+    
+    // Cores da loja ou oficiais da rede
+    const primary = t["--primary"] || t.primary || (isParceiro ? "#705BC2" : "#00B5AD");
+    const secondary = t["--secondary"] || t.secondary || (isParceiro ? "#FE509C" : "#F37021");
+    const background = t["--background"] || t.background || "#FFFFFF";
+    const headerOrMenu = t["--header-bg"] || t.headerBg || t["--menu-bg"] || p.headerBgColor || (isParceiro ? "#199965" : "#008E88");
+    const textOrDark = t["--foreground"] || t.foreground || t["--headings"] || "#0F172A";
+    const accentOrPromo = t["--accent"] || t.accent || t["--topbar-bg"] || t["--price-discount-badge-bg"] || p.topBarBgColor || (isParceiro ? "#C92A42" : "#F43F5E");
+
+    return [primary, secondary, background, headerOrMenu, textOrDark, accentOrPromo];
   };
 
   return (
