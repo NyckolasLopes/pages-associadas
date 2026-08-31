@@ -43,6 +43,11 @@ export function useActivePharmacy() {
   }
 
   const activePharmacy = useMemo(() => {
+    const isAdminArea = currentPath.startsWith('/admin') || potentialSlug === 'admin' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
+    if (isAdminArea) {
+      return null;
+    }
+
     const allPharmacies = (pharmacies && pharmacies.length > 0) ? pharmacies : getInitialCachedPharmacies();
 
     // 1. Slug da URL ou Redirect

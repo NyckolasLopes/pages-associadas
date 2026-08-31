@@ -83,10 +83,22 @@ function slugify(text: string): string {
 
 export const Route = createFileRoute("/admin")({
   pendingComponent: () => (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-xs text-slate-500 font-medium">Carregando...</span>
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center animate-in fade-in duration-150">
+      <div className="bg-white shadow-2xl border border-slate-200 rounded-3xl p-8 flex flex-col items-center max-w-sm w-full mx-4 text-center">
+        <img
+          src="/logo.png"
+          alt="Farmácias Associadas"
+          className="max-h-14 max-w-[210px] w-auto h-auto mb-5 object-contain"
+        />
+        <img
+          src="/icone-associadas.png"
+          alt="Carregando..."
+          className="w-14 h-14 animate-spin object-contain"
+        />
+        <h3 className="text-base font-bold text-slate-800 mt-3">Carregando painel...</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Aguarde um momento enquanto carregamos o sistema administrativo.
+        </p>
       </div>
     </div>
   ),

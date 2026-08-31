@@ -12,15 +12,16 @@ export function GlobalLoading() {
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : location.pathname;
   const pathParts = currentPath.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
-  const isCustomStoreSlug = potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && potentialSlug !== 'loja-padrao';
+  const isAdminArea = currentPath.startsWith('/admin') || potentialSlug === 'admin' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
+  const isCustomStoreSlug = !isAdminArea && potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && potentialSlug !== 'loja-padrao';
 
-  // 1. Tentar farmácia ativa
-  let currentPharmacy = activePharmacy;
+  // 1. Tentar farmácia ativa (apenas fora do painel administrativo)
+  let currentPharmacy = !isAdminArea ? activePharmacy : null;
 
   // 2. Tentar farmácias em memória da store ou cache local
   const allPharmaciesList = (pharmacies && pharmacies.length > 0) ? pharmacies : getInitialCachedPharmacies();
 
-  if (!currentPharmacy && allPharmaciesList.length > 0 && potentialSlug) {
+  if (!isAdminArea && !currentPharmacy && allPharmaciesList.length > 0 && potentialSlug) {
     const normalizedSlug = safeSlugify(potentialSlug);
     currentPharmacy = allPharmaciesList.find((p) => {
       const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
@@ -28,8 +29,8 @@ export function GlobalLoading() {
     }) || null;
   }
 
-  // 3. Tentar última loja visitada no sessionStorage
-  if (!currentPharmacy && allPharmaciesList.length > 0) {
+  // 3. Tentar última loja visitada no sessionStorage (apenas se estiver navegando na loja)
+  if (!isAdminArea && !currentPharmacy && allPharmaciesList.length > 0) {
     try {
       const lastSlug = sessionStorage.getItem('fa-last-store-slug');
       if (lastSlug) {
@@ -42,8 +43,8 @@ export function GlobalLoading() {
     } catch { /* ignore */ }
   }
 
-  // Identificação: Loja Parceira vs Loja Pleno
-  const isParceiro = currentPharmacy 
+  // Identificação: Loja Parceira vs Loja Pleno (No admin, NUNCA é parceiro)
+  const isParceiro = !isAdminArea && currentPharmacy 
     ? (currentPharmacy.categoriaAssociado === 'Parceiro' || currentPharmacy.categoriaAssociado === 'Associado' || currentPharmacy.isPleno === false)
     : false;
 
@@ -97,9 +98,13 @@ export function GlobalLoading() {
               className="w-14 h-14 animate-spin object-contain"
             />
             
-            <h3 className="text-base font-bold text-slate-800 mt-3">Carregando...</h3>
+            <h3 className="text-base font-bold text-slate-800 mt-3">
+              {isAdminArea ? "Carregando painel..." : "Carregando..."}
+            </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Aguarde um momento enquanto preparamos tudo para você.
+              {isAdminArea 
+                ? "Aguarde um momento enquanto carregamos o sistema administrativo." 
+                : "Aguarde um momento enquanto preparamos tudo para você."}
             </p>
           </div>
         )}

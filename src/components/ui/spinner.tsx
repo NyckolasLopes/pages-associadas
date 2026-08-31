@@ -19,12 +19,13 @@ export function Spinner({ className, size = 32, style, forceGeneric, ...props }:
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : location.pathname;
   const pathParts = currentPath.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
-  const isCustomStoreSlug = potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && potentialSlug !== 'loja-padrao';
+  const isAdminArea = currentPath.startsWith('/admin') || potentialSlug === 'admin' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
+  const isCustomStoreSlug = !isAdminArea && potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && potentialSlug !== 'loja-padrao';
 
-  let currentPharmacy = activePharmacy;
+  let currentPharmacy = !isAdminArea ? activePharmacy : null;
   const allPharmaciesList = (pharmacies && pharmacies.length > 0) ? pharmacies : getInitialCachedPharmacies();
 
-  if (!currentPharmacy && allPharmaciesList.length > 0 && potentialSlug) {
+  if (!isAdminArea && !currentPharmacy && allPharmaciesList.length > 0 && potentialSlug) {
     const normalizedSlug = safeSlugify(potentialSlug);
     currentPharmacy = allPharmaciesList.find((p) => {
       const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
@@ -32,12 +33,12 @@ export function Spinner({ className, size = 32, style, forceGeneric, ...props }:
     }) || null;
   }
 
-  const isParceiro = currentPharmacy 
+  const isParceiro = !isAdminArea && currentPharmacy 
     ? (currentPharmacy.categoriaAssociado === 'Parceiro' || currentPharmacy.categoriaAssociado === 'Associado' || currentPharmacy.isPleno === false)
     : false;
 
   // Lojas Parceiro/Associado usam o redondo comum carregando
-  if (forceGeneric || isParceiro) {
+  if (!isAdminArea && (forceGeneric || isParceiro)) {
     return <Loader2 size={size} className={cn("animate-spin text-slate-800", className)} style={style} />;
   }
 
