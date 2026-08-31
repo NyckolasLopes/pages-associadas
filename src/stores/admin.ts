@@ -284,6 +284,7 @@ interface AdminState {
   addBanner: (banner: AdminBanner) => Promise<void>;
   updateBanner: (id: string, banner: Partial<AdminBanner>) => Promise<void>;
   removeBanner: (id: string) => Promise<void>;
+  clearStoreBanners: (lojaId?: string | null) => Promise<void>;
   fetchBanners: (lojaId?: string) => Promise<void>;
 
   // Social Networks
@@ -1123,6 +1124,39 @@ export const useAdmin = create<AdminState>()(
         try {
           await supabase.from('banners' as any).delete().eq('id', id);
         } catch { /* ignore if not in db */ }
+      },
+      clearStoreBanners: async (lojaId?: string | null) => {
+        const key = lojaId || "global";
+        
+        try {
+          if (lojaId) {
+            await supabase.from('banners' as any).delete().eq('loja_id', lojaId);
+          } else {
+            await supabase.from('banners' as any).delete().is('loja_id', null);
+          }
+        } catch (e) {
+          console.error("Erro ao excluir banners no banco:", e);
+        }
+
+        set((s: any) => {
+          const nextByLoja = { ...(s.bannersByLoja || {}) };
+          delete nextByLoja[key];
+
+          const filteredBanners = (s.banners || []).filter((b: AdminBanner) => {
+            if (lojaId) return b.lojaId !== lojaId;
+            return !!b.lojaId;
+          });
+
+          saveCachedBanners(filteredBanners, nextByLoja);
+          storeBannersCache.clear();
+
+          return {
+            banners: filteredBanners,
+            bannersByLoja: nextByLoja,
+          };
+        });
+
+        await get().fetchBanners(lojaId || undefined);
       },
 
       integrations: { webhookUrl: "", apiKey: "" },

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info, ArrowLeft, Copy, Smartphone } from "lucide-react";
+import { Search, ChevronDown, Trash2, Edit2, Plus, Image as ImageIcon, LayoutTemplate, Layers, Grid, Zap, PlusCircle, GripVertical, UploadCloud, Truck, Store, Percent, ShieldCheck, Stethoscope, Thermometer, Leaf, Smile, Droplets, Battery, Wind, Heart, Sparkles, Sliders, ShoppingBag, Eye, Save, Palette, Monitor, ShoppingCart, Package, Info, ArrowLeft, Copy, Smartphone, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -18,6 +18,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useAdmin, AdminBanner, defaultBanners } from "@/stores/admin";
 import { useConfig } from "@/stores/config";
@@ -284,10 +286,30 @@ function AdminBanners() {
   const banners = activeStoreId ? allBanners.filter(b => b.lojaId === activeStoreId) : allBanners.filter(b => !b.lojaId);
   const setBanners = useAdmin(s => s.setBanners);
   const removeBanner = useAdmin(s => s.removeBanner);
+  const clearStoreBanners = useAdmin(s => s.clearStoreBanners);
   const fetchBanners = useAdmin(s => s.fetchBanners);
   const vitrines = useAdminProducts(s => s.vitrines);
   const pharmacies = useAdmin(s => s.pharmacies);
   const { categories, loadCategories } = useAdminCategories();
+
+  const [lojaToClearBanners, setLojaToClearBanners] = useState<any>(null);
+  const [isClearStoreBannersModalOpen, setIsClearStoreBannersModalOpen] = useState(false);
+  const [isClearingStoreBanners, setIsClearingStoreBanners] = useState(false);
+
+  const handleConfirmClearStoreBanners = async () => {
+    if (!lojaToClearBanners) return;
+    setIsClearingStoreBanners(true);
+    try {
+      await clearStoreBanners(lojaToClearBanners.id);
+      toast.success(`Área de banners da filial "${lojaToClearBanners.nome || lojaToClearBanners.nomeFantasia || 'Loja'}" limpa com sucesso!`);
+      setIsClearStoreBannersModalOpen(false);
+      setLojaToClearBanners(null);
+    } catch (e: any) {
+      toast.error("Erro ao limpar banners: " + (e.message || "Erro desconhecido"));
+    } finally {
+      setIsClearingStoreBanners(false);
+    }
+  };
 
   useEffect(() => {
     fetchBanners(activeStoreId || undefined);
@@ -691,6 +713,22 @@ function AdminBanners() {
               <Copy className="w-4 h-4 mr-2" /> Puxar Banners da Rede
             </Button>
           )}
+          {activeStoreId && isGlobalAdmin() && activeTab === "banners" && (
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                const currentLoja = pharmacies.find(p => p.id === activeStoreId);
+                if (currentLoja) {
+                  setLojaToClearBanners(currentLoja);
+                  setIsClearStoreBannersModalOpen(true);
+                }
+              }}
+              className="font-bold text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 shadow-sm"
+              title="Limpar todos os banners desta loja"
+            >
+              <Trash2 className="w-4 h-4 mr-2" /> Limpar área de banners
+            </Button>
+          )}
           <StoreSelector className="mb-0" />
           {activeTab === "banners" && (activeStoreId || managingGlobal || !isGlobalAdmin()) && (
             <Button onClick={() => openNewModal()} className="bg-[#00B5AD] hover:bg-[#009c95] text-white font-bold h-10 px-6 rounded-lg shadow-sm">
@@ -744,9 +782,23 @@ function AdminBanners() {
                       <span className="text-sm font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">{bannerCount}</span>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200" onClick={(e) => { e.stopPropagation(); setActiveStoreId(loja.id); }}>
-                    <Layers className="w-4 h-4 mr-2" /> Gerenciar Banners
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                    <Button variant="outline" className="flex-1 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 font-bold" onClick={(e) => { e.stopPropagation(); setActiveStoreId(loja.id); }}>
+                      <Layers className="w-4 h-4 mr-2" /> Gerenciar Banners
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold text-xs shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLojaToClearBanners(loja);
+                        setIsClearStoreBannersModalOpen(true);
+                      }}
+                      title="Limpar todos os banners desta loja"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Limpar área de banners
+                    </Button>
+                  </div>
                 </div>
               );
             })}
@@ -1930,6 +1982,74 @@ function AdminBanners() {
         confirmText="OK"
         cancelText="Cancelar"
       />
+
+      {/* Modal de Confirmação para Limpar Área de Banners */}
+      <Dialog open={isClearStoreBannersModalOpen} onOpenChange={setIsClearStoreBannersModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-black text-slate-900">
+                  Limpar Área de Banners?
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 mt-0.5">
+                  Remover banners personalizados da loja.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Tem certeza que deseja limpar todos os banners personalizados da filial <strong className="text-slate-900 font-bold">{lojaToClearBanners?.nome || lojaToClearBanners?.nomeFantasia || 'Loja'}</strong>?
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800 space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-red-900">
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                Atenção: esta ação não pode ser desfeita!
+              </p>
+              <p className="text-red-700 leading-relaxed">
+                Todos os banners cadastrados para esta filial serão excluídos do sistema. A loja voltará a exibir os banners padrão da rede.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsClearStoreBannersModalOpen(false);
+                setLojaToClearBanners(null);
+              }}
+              disabled={isClearingStoreBanners}
+              className="font-bold border-slate-200"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmClearStoreBanners}
+              disabled={isClearingStoreBanners}
+              className="font-bold bg-red-600 hover:bg-red-700 text-white gap-2 shadow-sm"
+            >
+              {isClearingStoreBanners ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Limpando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Sim, Limpar Banners
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
