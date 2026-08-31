@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Produto, Categoria } from "@/types";
 import { catalog } from "@/services/catalog";
-import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X, Loader2 } from "lucide-react";
+import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X, Loader2, SlidersHorizontal, DollarSign, Image as ImageIcon } from "lucide-react";
 import { getDeterministicStock } from "@/lib/stock";
 import { brl, getInstallmentText, checkIsGenerico, productImage } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -50,9 +50,13 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const currentLoja = lojaId ? pharmacies.find(l => l.id === lojaId) : null;
   const canOfferServices = (isGlobalAdmin && !lojaId) ? true : currentLoja?.offersServices !== false;
   const { vitrines, customProducts } = useAdminProducts();
-  const { filtros } = useAdminFiltros();
+  const { getStoreFiltros, filtros: globalFiltros } = useAdminFiltros();
+  const storeFiltros = getStoreFiltros ? getStoreFiltros(lojaId) : globalFiltros;
+  const availableFiltros = (storeFiltros && storeFiltros.length > 0) ? storeFiltros : (globalFiltros || []);
   const { marcas } = useMarcasStore();
   const { variacoes } = useVariacoesStore();
+  const [activeTab, setActiveTab] = useState<"geral" | "precos" | "filtros" | "imagens" | "seo" | "todos">("geral");
+  const [filterSearch, setFilterSearch] = useState<Record<string, string>>({});
   const [comboOpen, setComboOpen] = useState(false);
   const [draggedImgIdx, setDraggedImgIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -124,6 +128,54 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+  };
+
+  const toggleFiltroOpcao = (filtroId: string, opcaoId: string) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      const current = Array.isArray(prev.filtrosValores) ? [...prev.filtrosValores] : [];
+      const exists = current.some(f => f.filtroId === filtroId && f.opcaoId === opcaoId);
+      
+      let nextFiltros: Array<{ filtroId: string; opcaoId: string }>;
+      if (exists) {
+        nextFiltros = current.filter(f => !(f.filtroId === filtroId && f.opcaoId === opcaoId));
+      } else {
+        nextFiltros = [...current, { filtroId, opcaoId }];
+      }
+
+      // Sincroniza campos nativos se for filtro especial
+      let updatedFields: Partial<Produto> = {};
+      if (filtroId === 'gen') {
+        if (opcaoId === 'gen-sim') {
+          const isGen = !exists;
+          updatedFields.generico = isGen;
+          let newSelos = [...(prev.selosIds || [])];
+          if (isGen && !newSelos.includes('gen')) newSelos.push('gen');
+          else if (!isGen) newSelos = newSelos.filter(id => id !== 'gen');
+          updatedFields.selosIds = newSelos;
+        }
+      } else if (filtroId === 'rec') {
+        if (opcaoId === 'rec-retem') {
+          updatedFields.retemReceita = !exists;
+        }
+      } else if (filtroId === 'tarja') {
+        const tarjaMap: Record<string, string> = {
+          'tarja-sem': 'Sem Tarja',
+          'tarja-verm': 'Vermelha',
+          'tarja-preta': 'Preta',
+          'tarja-amar': 'Amarela',
+        };
+        if (tarjaMap[opcaoId]) {
+          updatedFields.tarja = !exists ? tarjaMap[opcaoId] : 'Sem Tarja';
+        }
+      }
+
+      return {
+        ...prev,
+        ...updatedFields,
+        filtrosValores: nextFiltros
+      };
+    });
   };
 
   useEffect(() => {
@@ -545,12 +597,108 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           </div>
         </div>
 
+        {/* Navigation Tabs */}
+        <div className={`bg-slate-100/90 backdrop-blur-xs border-b px-8 py-2.5 sticky z-40 flex items-center gap-2 overflow-x-auto ${asPage ? "top-10 md:top-8" : "top-[65px]"}`}>
+          <button
+            type="button"
+            onClick={() => setActiveTab("geral")}
+            className={cn(
+              "px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer",
+              activeTab === "geral" 
+                ? "bg-white text-emerald-800 shadow-xs border border-slate-200" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+            )}
+          >
+            <Package className="w-4 h-4" />
+            Informações Gerais
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("precos")}
+            className={cn(
+              "px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer",
+              activeTab === "precos" 
+                ? "bg-white text-emerald-800 shadow-xs border border-slate-200" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+            )}
+          >
+            <DollarSign className="w-4 h-4" />
+            Precificação
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("filtros")}
+            className={cn(
+              "px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer",
+              activeTab === "filtros" 
+                ? "bg-white text-emerald-800 shadow-xs border border-slate-200" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+            )}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Filtros
+            {(formData.filtrosValores || []).length > 0 && (
+              <span className="bg-emerald-100 text-emerald-800 text-[11px] px-2 py-0.5 rounded-full font-black">
+                {(formData.filtrosValores || []).length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("imagens")}
+            className={cn(
+              "px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer",
+              activeTab === "imagens" 
+                ? "bg-white text-emerald-800 shadow-xs border border-slate-200" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+            )}
+          >
+            <ImageIcon className="w-4 h-4" />
+            Imagens
+            {((formData.imagens || []) as any[]).length > 0 && (
+              <span className="bg-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-black">
+                {((formData.imagens || []) as any[]).length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("seo")}
+            className={cn(
+              "px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer",
+              activeTab === "seo" 
+                ? "bg-white text-emerald-800 shadow-xs border border-slate-200" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+            )}
+          >
+            <Search className="w-4 h-4" />
+            Google / SEO
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("todos")}
+            className={cn(
+              "ml-auto px-3 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500 hover:text-slate-800 shrink-0 cursor-pointer",
+              activeTab === "todos" ? "bg-slate-200 text-slate-800" : ""
+            )}
+          >
+            Ver tudo
+          </button>
+        </div>
+
         {/* Content */}
         <div className="p-8 space-y-8 max-w-6xl mx-auto w-full">
           
           {/* Card: Informações Básicas */}
-          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
-            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Informações básicas</h3>
+          {(activeTab === "geral" || activeTab === "todos") && (
+            <>
+            <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8 animate-in fade-in">
+              <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Informações básicas</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
@@ -1044,64 +1192,33 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
             </div>
           </div>
-          
-          {/* Card: Imagens */}
-          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-6">
-            <div className="flex justify-between items-center pb-4 border-b">
-              <h3 className="font-bold text-2xl text-slate-800">Imagens do produto</h3>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-4">
-                {((formData.imagens || []) as any[]).filter(i => i !== '/placeholder.svg').map((img: any, idx: number) => (
-                  <div 
-                    key={idx} 
-                    className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group cursor-grab active:cursor-grabbing"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, idx)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, idx)}
-                  >
-                    <img src={img.caminhoImagem || img} alt={`Imagem ${idx + 1}`} className="w-full h-full object-cover" />
-                    <button 
-                      onClick={() => handleRemoveImage(idx)}
-                      className="absolute top-1 right-1 bg-white hover:bg-red-50 text-red-500 rounded-md p-1.5 shadow-sm transition-colors z-10"
-                      title="Remover imagem"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    {idx === 0 && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/90 text-white text-[10px] text-center py-1 font-bold z-10 pointer-events-none">
-                        Capa
-                      </div>
-                    )}
-                  </div>
-                ))}
-                
-                {((formData.imagens || []) as any[]).filter(i => i !== '/placeholder.svg').length === 0 && (
-                  <div className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group opacity-80" title="Imagem gerada automaticamente. Faça upload de uma imagem para substituir.">
-                    <img src={productImage(formData)} alt="Imagem Padrão" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity text-center px-2">
-                      Imagem Automática (Mockup)
-                    </div>
-                  </div>
-                )}
-                
-                {isGlobalAdmin && ((formData.imagens || []) as any[]).length < 5 && (
-                  <div className="w-32 h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer transition-colors relative overflow-hidden group">
-                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleImageUpload} />
-                    <Upload className="h-6 w-6 mb-2" />
-                    <span className="text-xs font-medium text-center px-2">Upload Imagem</span>
-                    <span className="text-[10px] text-slate-400 mt-1">{5 - ((formData.imagens || []) as any[]).length} restantes</span>
-                  </div>
-                )}
+
+          {/* Card: Tributário e Relevância */}
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8 animate-in fade-in">
+            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Tributário e Relevância</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">NCM</Label>
+                <Input disabled={!isGlobalAdmin} value={formData.ncm || ""} onChange={e => setFormData({...formData, ncm: e.target.value})} className="bg-white" placeholder="Nomenclatura Comum do Mercosul" />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase text-slate-500">Nível de Relevância (Prioridade)</Label>
+                <NumericInput disabled={!isGlobalAdmin} 
+                  allowDecimals={false}
+                  value={formData.nivelRelevancia} 
+                  onChange={val => setFormData({...formData, nivelRelevancia: val || 0})} 
+                  className="bg-white" 
+                />
               </div>
             </div>
           </div>
+          </>
+          )}
 
-          
           {/* Precificação da Loja (Associado/Global) */}
-          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
+          {(activeTab === "precos" || activeTab === "todos") && (
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8 animate-in fade-in">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">
               {isGlobalAdmin ? "Precificação" : "Minha Precificação"}
             </h3>
@@ -1179,30 +1296,200 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
             </div>
           </div>
+          )}
 
-          {/* Card: Detalhes e Precificação */}
-          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
-            <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">Tributário e Relevância</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">NCM</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.ncm || ""} onChange={e => setFormData({...formData, ncm: e.target.value})} className="bg-white" placeholder="Nomenclatura Comum do Mercosul" />
+          {/* Card: Filtros do Produto */}
+          {(activeTab === "filtros" || activeTab === "todos") && (
+            <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8 animate-in fade-in">
+              <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-2xl text-slate-800">Filtros do Produto</h3>
+                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-bold">
+                      {(formData.filtrosValores || []).length} opção(ões) vinculada(s)
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Vincule as opções de filtros a este produto para permitir busca refinada, navegação por atributos e filtros dinâmicos na loja.
+                  </p>
+                </div>
+
+                {(formData.filtrosValores || []).length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, filtrosValores: [] })}
+                    className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 self-start md:self-auto font-bold cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" />
+                    Desvincular todos os filtros
+                  </Button>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Nível de Relevância (Prioridade)</Label>
-                <NumericInput disabled={!isGlobalAdmin} 
-                  allowDecimals={false}
-                  value={formData.nivelRelevancia} 
-                  onChange={val => setFormData({...formData, nivelRelevancia: val || 0})} 
-                  className="bg-white" 
-                />
+              {availableFiltros.length === 0 ? (
+                <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <SlidersHorizontal className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <h4 className="font-bold text-slate-700">Nenhum filtro cadastrado no sistema</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                    Acesse a seção de <strong>Filtros</strong> no menu lateral para cadastrar grupos e opções de filtros (ex: Marca, Linha, Tipo de Pele, etc.).
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {availableFiltros.map(filtro => {
+                    const selectedForThisFilter = (formData.filtrosValores || []).filter(fv => fv.filtroId === filtro.id);
+                    const filterSearchQuery = (filterSearch[filtro.id] || "").toLowerCase().trim();
+                    const displayedOpcoes = (filtro.opcoes || []).filter(opc => 
+                      !filterSearchQuery || opc.nome.toLowerCase().includes(filterSearchQuery)
+                    );
+
+                    return (
+                      <div key={filtro.id} className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 space-y-4 hover:border-slate-300 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-base text-slate-800">{filtro.nome}</span>
+                            {selectedForThisFilter.length > 0 ? (
+                              <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                                {selectedForThisFilter.length} vinculada(s)
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-slate-400 border-slate-200 text-[11px] font-medium">
+                                Nenhuma
+                              </Badge>
+                            )}
+                          </div>
+
+                          {selectedForThisFilter.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = (formData.filtrosValores || []).filter(fv => fv.filtroId !== filtro.id);
+                                setFormData({ ...formData, filtrosValores: next });
+                              }}
+                              className="text-[11px] text-slate-400 hover:text-red-600 font-medium transition-colors cursor-pointer"
+                            >
+                              Limpar
+                            </button>
+                          )}
+                        </div>
+
+                        {(filtro.opcoes || []).length > 6 && (
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                            <Input
+                              placeholder={`Buscar em ${filtro.nome}...`}
+                              value={filterSearch[filtro.id] || ""}
+                              onChange={e => setFilterSearch({ ...filterSearch, [filtro.id]: e.target.value })}
+                              className="pl-8 h-8 text-xs bg-white border-slate-200"
+                            />
+                          </div>
+                        )}
+
+                        {/* Opções */}
+                        {(filtro.opcoes || []).length === 0 ? (
+                          <div className="p-4 bg-white rounded-lg border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                            Nenhuma opção cadastrada para este filtro. Cadastre em <strong>Produtos &gt; Filtros</strong>.
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 pr-2 custom-scrollbar">
+                            {displayedOpcoes.map(opcao => {
+                              const isSelected = (formData.filtrosValores || []).some(
+                                fv => fv.filtroId === filtro.id && fv.opcaoId === opcao.id
+                              );
+
+                              return (
+                                <button
+                                  key={opcao.id}
+                                  type="button"
+                                  onClick={() => toggleFiltroOpcao(filtro.id, opcao.id)}
+                                  className={cn(
+                                    "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer",
+                                    isSelected
+                                      ? "bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                                      : "bg-white text-slate-700 border-slate-200 hover:border-slate-400 hover:bg-slate-50"
+                                  )}
+                                >
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                  <span>{opcao.nome}</span>
+                                </button>
+                              );
+                            })}
+                            {displayedOpcoes.length === 0 && filterSearchQuery && (
+                              <div className="w-full text-center text-xs text-slate-400 py-2">
+                                Nenhuma opção encontrada para "{filterSearchQuery}"
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Card: Imagens */}
+          {(activeTab === "imagens" || activeTab === "todos") && (
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-6 animate-in fade-in">
+            <div className="flex justify-between items-center pb-4 border-b">
+              <h3 className="font-bold text-2xl text-slate-800">Imagens do produto</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-4">
+                {((formData.imagens || []) as any[]).filter(i => i !== '/placeholder.svg').map((img: any, idx: number) => (
+                  <div 
+                    key={idx} 
+                    className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group cursor-grab active:cursor-grabbing"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, idx)}
+                  >
+                    <img src={img.caminhoImagem || img} alt={`Imagem ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => handleRemoveImage(idx)}
+                      className="absolute top-1 right-1 bg-white hover:bg-red-50 text-red-500 rounded-md p-1.5 shadow-sm transition-colors z-10"
+                      title="Remover imagem"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    {idx === 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/90 text-white text-[10px] text-center py-1 font-bold z-10 pointer-events-none">
+                        Capa
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {((formData.imagens || []) as any[]).filter(i => i !== '/placeholder.svg').length === 0 && (
+                  <div className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group opacity-80" title="Imagem gerada automaticamente. Faça upload de uma imagem para substituir.">
+                    <img src={productImage(formData)} alt="Imagem Padrão" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity text-center px-2">
+                      Imagem Automática (Mockup)
+                    </div>
+                  </div>
+                )}
+                
+                {isGlobalAdmin && ((formData.imagens || []) as any[]).length < 5 && (
+                  <div className="w-32 h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer transition-colors relative overflow-hidden group">
+                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleImageUpload} />
+                    <Upload className="h-6 w-6 mb-2" />
+                    <span className="text-xs font-medium text-center px-2">Upload Imagem</span>
+                    <span className="text-[10px] text-slate-400 mt-1">{5 - ((formData.imagens || []) as any[]).length} restantes</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
+          )}
 
           {/* Card: Google / SEO */}
-          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
+          {(activeTab === "seo" || activeTab === "todos") && (
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8 animate-in fade-in">
             <div className="pb-4 border-b">
               <h3 className="font-bold text-2xl text-slate-800">Google / SEO / AEO / GEO</h3>
             </div>
@@ -1299,6 +1586,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
             </div>
           </div>
+          )}
 
         </div>
 

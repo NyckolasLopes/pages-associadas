@@ -54,6 +54,13 @@ function AdminFiltros() {
     setModalOpen(false);
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const filteredFiltros = filtros.filter(f => 
+    f.nome.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    f.opcoes.some(o => o.nome.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <div className="max-w-6xl space-y-6">
       <div className="flex items-center justify-between">
@@ -75,7 +82,9 @@ function AdminFiltros() {
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input 
-              placeholder="buscar filtro" 
+              placeholder="buscar filtro..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-9 h-10 bg-white border-slate-200"
             />
           </div>
@@ -91,12 +100,14 @@ function AdminFiltros() {
             </tr>
           </thead>
           <tbody>
-            {filtros.length === 0 && (
+            {filteredFiltros.length === 0 && (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-slate-500">Nenhum filtro cadastrado.</td>
+                <td colSpan={4} className="p-8 text-center text-slate-500">
+                  {searchQuery ? `Nenhum filtro encontrado para "${searchQuery}".` : "Nenhum filtro cadastrado."}
+                </td>
               </tr>
             )}
-            {filtros.map((filtro) => (
+            {filteredFiltros.map((filtro) => (
               <tr key={filtro.id} className="border-b last:border-0 hover:bg-slate-50 transition-colors text-sm">
                 <td className="p-4 font-bold text-slate-800">{filtro.nome}</td>
                 <td className="p-4 text-slate-600">

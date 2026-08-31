@@ -80,28 +80,32 @@ export const useAdminFiltros = create<FiltroStore>()(
       storeFiltros: {},
       getStoreFiltros: (lojaId) => {
         const state = get();
-        if (!lojaId) return state.filtros;
-        return state.storeFiltros[lojaId] || [];
+        if (!lojaId) return state.filtros || [];
+        const storeSpecific = state.storeFiltros[lojaId];
+        if (storeSpecific && storeSpecific.length > 0) {
+          return storeSpecific;
+        }
+        return state.filtros || [];
       },
       addFiltro: (filtro, lojaId) => set((state) => {
-        if (!lojaId) return { filtros: [...state.filtros, filtro] };
-        const current = state.storeFiltros[lojaId] || [];
+        if (!lojaId) return { filtros: [...(state.filtros || []), filtro] };
+        const current = state.storeFiltros[lojaId] || state.filtros || [];
         return { storeFiltros: { ...state.storeFiltros, [lojaId]: [...current, filtro] } };
       }),
       updateFiltro: (id, updated, lojaId) =>
         set((state) => {
           if (!lojaId) {
-            return { filtros: state.filtros.map((f) => (f.id === id ? { ...f, ...updated } : f)) };
+            return { filtros: (state.filtros || []).map((f) => (f.id === id ? { ...f, ...updated } : f)) };
           }
-          const current = state.storeFiltros[lojaId] || [];
+          const current = state.storeFiltros[lojaId] || state.filtros || [];
           return { storeFiltros: { ...state.storeFiltros, [lojaId]: current.map((f) => (f.id === id ? { ...f, ...updated } : f)) } };
         }),
       removeFiltro: (id, lojaId) =>
         set((state) => {
           if (!lojaId) {
-            return { filtros: state.filtros.filter((f) => f.id !== id) };
+            return { filtros: (state.filtros || []).filter((f) => f.id !== id) };
           }
-          const current = state.storeFiltros[lojaId] || [];
+          const current = state.storeFiltros[lojaId] || state.filtros || [];
           return { storeFiltros: { ...state.storeFiltros, [lojaId]: current.filter((f) => f.id !== id) } };
         }),
     }),
