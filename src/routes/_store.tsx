@@ -101,7 +101,7 @@ function StoreLayout() {
         "--background": bg,
         "--foreground": fg,
         "--header-bg": headerBg || primary,
-        "--header-icons": headerIcons || "#ffffff",
+        "--header-icons": headerIcons || (isParceiro ? "#ffffff" : "#f37021"),
         "--search-bg": searchBg || "#ffffff",
         "--topbar-bg": topbarBg,
         "--topbar-text": topbarText,
