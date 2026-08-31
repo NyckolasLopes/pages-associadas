@@ -493,31 +493,74 @@ function AdminProdutosPrecos() {
         const wb = XLSX.read(bstr, { type: "binary" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        const rawJson = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: "" });
 
-        if (data.length > 0) {
-          const rawHeaders = data[0] as string[];
-          setEncarteHeaders(rawHeaders.map((h, i) => h ? String(h) : `Coluna ${i + 1}`));
-          setEncarteRows(data.slice(1));
-          setIsImportEncarteOpen(true);
+        if (rawJson.length === 0) {
+          toast.error("A planilha de encarte está vazia.");
+          return;
         }
 
-        const rawJson = XLSX.utils.sheet_to_json(ws);
         const headerNames = Object.keys(rawJson[0] || {});
+        setEncarteHeaders(headerNames);
+        setEncarteRows(rawJson);
+
         let idCol = "";
         let priceCol = "";
 
-        const commonIdNames = ["ean", "codigo_barras", "código de barras", "cod", "código"];
-        const commonPriceNames = ["preco", "preço", "valor", "preço_encarte", "preco_promocional"];
+        const commonIdNames = [
+          "ean", 
+          "código de barras", 
+          "codigo de barras", 
+          "codigo_barras", 
+          "cod barras", 
+          "cod. barras", 
+          "gtin", 
+          "código", 
+          "codigo", 
+          "cod", 
+          "sku", 
+          "identificador",
+          "barcode"
+        ];
+        const commonPriceNames = [
+          "preço encarte", 
+          "preco encarte", 
+          "preço de encarte", 
+          "preco de encarte", 
+          "preço encarte (r$)", 
+          "preco_encarte", 
+          "preço oferta", 
+          "preco oferta", 
+          "preço tabloide", 
+          "preco tabloide", 
+          "preço jornal", 
+          "preço promocional", 
+          "preco promocional", 
+          "preço por", 
+          "preco por", 
+          "preço", 
+          "preco", 
+          "valor",
+          "valor encarte"
+        ];
 
-        headerNames.forEach(h => {
-          const hl = h.toLowerCase();
+        // 1. Match exato/prioritário
+        for (const h of headerNames) {
+          const hl = h.toLowerCase().trim();
           if (!idCol && commonIdNames.some(c => hl.includes(c))) idCol = h;
           if (!priceCol && commonPriceNames.some(c => hl.includes(c))) priceCol = h;
-        });
+        }
 
-        if (idCol) setSelectedEncarteIdentifierCol(idCol);
-        if (priceCol) setSelectedEncartePriceCol(priceCol);
+        // 2. Fallbacks automáticos se não detectou
+        if (!idCol && headerNames.length > 0) idCol = headerNames[0];
+        if (!priceCol) {
+          if (headerNames.length > 1) priceCol = headerNames[1];
+          else if (headerNames.length > 0) priceCol = headerNames[0];
+        }
+
+        setSelectedEncarteIdentifierCol(idCol);
+        setSelectedEncartePriceCol(priceCol);
+        setIsImportEncarteOpen(true);
 
         toast.success(`Planilha Encarte "${file.name}" carregada com ${rawJson.length} itens!`);
       } catch (err) {
@@ -563,9 +606,11 @@ function AdminProdutosPrecos() {
         return;
       }
 
-      if (/^\d{7,14}$/.test(idRaw)) {
-        encarteMap.set(idRaw, priceNum);
+      const cleanDigits = idRaw.replace(/\D/g, "");
+      if (cleanDigits.length >= 6) {
+        encarteMap.set(cleanDigits, priceNum);
       }
+      encarteMap.set(idRaw, priceNum);
     });
 
     if (encarteMap.size === 0) {
@@ -573,16 +618,51 @@ function AdminProdutosPrecos() {
       return;
     }
 
+    // Calcula datas da campanha
+    let finalStartDate = "";
+    let finalEndDate = "";
+
+    if (!importManualDates) {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      finalStartDate = `${firstDay.getFullYear()}-${pad(firstDay.getMonth() + 1)}-${pad(firstDay.getDate())}`;
+      finalEndDate = `${lastDay.getFullYear()}-${pad(lastDay.getMonth() + 1)}-${pad(lastDay.getDate())}`;
+    } else {
+      finalStartDate = importStartDate;
+      finalEndDate = importEndDate;
+    }
+
     let updatedCount = 0;
 
     allVisibleProducts.forEach(p => {
-      if (p.ean) {
-        const encartePrice = encarteMap.get(p.ean);
-        if (encartePrice !== undefined) {
-          const newProduct = { ...p, precoEncarte: encartePrice };
-          addOrUpdateProduct(newProduct, null);
-          updatedCount++;
+      const pEan = p.ean ? String(p.ean).replace(/\D/g, "") : "";
+      const pSku = p.sku ? String(p.sku).trim() : "";
+      const pCod = p.codigoInterno ? String(p.codigoInterno).trim() : "";
+
+      const encartePrice = encarteMap.get(pEan) ?? (p.ean ? encarteMap.get(p.ean) : undefined) ?? (pSku ? encarteMap.get(pSku) : undefined) ?? (pCod ? encarteMap.get(pCod) : undefined);
+
+      if (encartePrice !== undefined) {
+        const newProduct = { ...p };
+        newProduct.precoEncarte = encartePrice;
+        newProduct.emCampanha = true;
+        if (finalStartDate) newProduct.campanhaInicio = finalStartDate;
+        if (finalEndDate) newProduct.campanhaFim = finalEndDate;
+
+        if (selectedPharmacyId && selectedPharmacyId !== "global") {
+          if (!newProduct.precosPorLoja) newProduct.precosPorLoja = {};
+          newProduct.precosPorLoja[selectedPharmacyId] = {
+            ...newProduct.precosPorLoja[selectedPharmacyId],
+            precoEncarte: encartePrice,
+            emCampanha: true,
+            campanhaInicio: finalStartDate,
+            campanhaFim: finalEndDate,
+          };
         }
+
+        addOrUpdateProduct(newProduct, null);
+        updatedCount++;
       }
     });
 
@@ -684,30 +764,10 @@ function AdminProdutosPrecos() {
               </Button>
               <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                  try {
-                    const bstr = evt.target?.result;
-                    const wb = XLSX.read(bstr, { type: "binary" });
-                    const wsname = wb.SheetNames[0];
-                    const ws = wb.Sheets[wsname];
-                    const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
-                    setPendingImportData(data);
-                    setImportManualDates(false);
-                    setImportStartDate("");
-                    setImportEndDate("");
-                    setIsImportEncarteOpen(true);
-                  } catch (err) {
-                    console.error(err);
-                    toast.error("Erro ao processar a planilha.");
-                  }
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = "";
-                  }
-                };
-                reader.readAsBinaryString(file);
+                if (file) handleEncarteFileUpload(file);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
               }} />
               <input type="file" ref={pmcFileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -1008,53 +1068,194 @@ function AdminProdutosPrecos() {
         </div>
       </div>
       <Dialog open={isImportEncarteOpen} onOpenChange={setIsImportEncarteOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-6">
           <DialogHeader>
-            <DialogTitle>Importar Encarte</DialogTitle>
-            <DialogDescription className="text-slate-600">
-              Você está importando um encarte para a loja <strong className="text-emerald-700">{pharmacies.find(p => p.id === selectedPharmacyId)?.nome || "Selecionada"}</strong>.<br/><br/>
-              As promoções do encarte devem ser aplicadas no mês de {currentMonthName}?
+            <DialogTitle className="text-xl font-black text-slate-800 flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+              Importar Encarte Promocional
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Importe a planilha do encarte para atualizar automaticamente os <strong>Preços de Encarte</strong> e ativar a campanha promocional para a filial selecionada.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="py-4 space-y-4">
-            <div className="flex flex-col gap-3">
-              <Button 
-                variant={!importManualDates ? "default" : "outline"}
-                className="w-full justify-start"
-                onClick={() => setImportManualDates(false)}
-              >
-                Sim
-              </Button>
-              <Button 
-                variant={importManualDates ? "default" : "outline"}
-                className="w-full justify-start"
-                onClick={() => setImportManualDates(true)}
-              >
-                Não
-              </Button>
+
+          <div className="flex-1 overflow-y-auto pr-1 py-4 space-y-4">
+            {/* Informações da Loja e Arquivo */}
+            <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-emerald-800 tracking-wider block">Loja de Destino</span>
+                <span className="text-sm font-black text-slate-800">
+                  {pharmacies.find(p => p.id === selectedPharmacyId)?.nome || "Loja Selecionada"}
+                </span>
+              </div>
+              {importEncarteFileName && (
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Arquivo</span>
+                  <span className="text-xs font-mono font-bold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                    {importEncarteFileName} ({encarteRows.length} itens)
+                  </span>
+                </div>
+              )}
             </div>
 
-            {importManualDates && (
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                <div className="col-span-2 space-y-1.5 mb-2 text-sm text-slate-600 text-center font-medium">
-                  Em qual periodo voce gostaria de aplicar a campanha do encarte?
+            {/* Período da Campanha */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+              <span className="text-xs font-bold text-slate-700 block">
+                As promoções do encarte devem ser aplicadas no mês de <span className="capitalize font-black text-emerald-700">{currentMonthName}</span>?
+              </span>
+              <div className="flex gap-2">
+                <Button 
+                  type="button"
+                  variant={!importManualDates ? "default" : "outline"}
+                  size="sm"
+                  className={`flex-1 font-bold text-xs ${!importManualDates ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-slate-300"}`}
+                  onClick={() => setImportManualDates(false)}
+                >
+                  Sim (Mês Atual)
+                </Button>
+                <Button 
+                  type="button"
+                  variant={importManualDates ? "default" : "outline"}
+                  size="sm"
+                  className={`flex-1 font-bold text-xs ${importManualDates ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-slate-300"}`}
+                  onClick={() => setImportManualDates(true)}
+                >
+                  Não (Definir Período)
+                </Button>
+              </div>
+
+              {importManualDates && (
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700">Data de Início</label>
+                    <Input 
+                      type="date" 
+                      value={importStartDate} 
+                      onChange={e => setImportStartDate(e.target.value)} 
+                      className="h-8 text-xs bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700">Data de Fim</label>
+                    <Input 
+                      type="date" 
+                      value={importEndDate} 
+                      onChange={e => setImportEndDate(e.target.value)} 
+                      className="h-8 text-xs bg-white"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Data de Início</label>
-                  <Input type="date" value={importStartDate} onChange={e => setImportStartDate(e.target.value)} />
+              )}
+            </div>
+
+            {/* Mapeamento de Colunas */}
+            {encarteHeaders.length > 0 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                      <span>Coluna EAN (Código de Barras)</span>
+                      <span className="text-[10px] text-red-500 font-semibold">*Obrigatório</span>
+                    </label>
+                    <Select value={selectedEncarteIdentifierCol} onValueChange={setSelectedEncarteIdentifierCol}>
+                      <SelectTrigger className="h-9 bg-white text-xs border-slate-300">
+                        <SelectValue placeholder="Selecione a coluna..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {encarteHeaders.map(h => (
+                          <SelectItem key={h} value={h} className="text-xs font-medium">{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                      <span>Coluna Preço Encarte (R$)</span>
+                      <span className="text-[10px] text-red-500 font-semibold">*Obrigatório</span>
+                    </label>
+                    <Select value={selectedEncartePriceCol} onValueChange={setSelectedEncartePriceCol}>
+                      <SelectTrigger className="h-9 bg-white text-xs border-slate-300">
+                        <SelectValue placeholder="Selecione a coluna..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {encarteHeaders.map(h => (
+                          <SelectItem key={h} value={h} className="text-xs font-medium">{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Data de Fim</label>
-                  <Input type="date" value={importEndDate} onChange={e => setImportEndDate(e.target.value)} />
+
+                {/* Prévia dos Dados */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                  <div className="bg-slate-100/80 px-3.5 py-2 border-b border-slate-200 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700">Prévia do Encarte (Primeiros 5 itens)</span>
+                    <Badge variant="outline" className="text-[10px] bg-white font-semibold">
+                      {encarteRows.length} linhas
+                    </Badge>
+                  </div>
+                  <div className="max-h-44 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 border-b text-slate-500 font-medium">
+                        <tr>
+                          <th className="p-2 pl-3">#</th>
+                          <th className="p-2">EAN / Código ({selectedEncarteIdentifierCol || "—"})</th>
+                          <th className="p-2 text-right pr-3">Preço Encarte ({selectedEncartePriceCol || "—"})</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {encarteRows.slice(0, 5).map((row, idx) => {
+                          const idVal = row[selectedEncarteIdentifierCol] ?? "—";
+                          const priceVal = row[selectedEncartePriceCol];
+                          let formattedPrice = "—";
+                          if (priceVal !== undefined && priceVal !== null && priceVal !== "") {
+                            if (typeof priceVal === "number") {
+                              formattedPrice = priceVal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+                            } else {
+                              const cleanStr = String(priceVal).replace("R$", "").trim().replace(/\./g, "").replace(",", ".");
+                              const n = parseFloat(cleanStr);
+                              formattedPrice = !isNaN(n) ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : String(priceVal);
+                            }
+                          }
+
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50/60">
+                              <td className="p-2 pl-3 font-mono text-slate-400">{idx + 1}</td>
+                              <td className="p-2 font-medium text-slate-800">{String(idVal)}</td>
+                              <td className="p-2 pr-3 text-right font-bold text-emerald-700">{formattedPrice}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsImportEncarteOpen(false)}>Cancelar</Button>
-            <Button onClick={handleConfirmImportEncarte}>Confirmar Importação</Button>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-2 pt-3 border-t border-slate-100">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsImportEncarteOpen(false);
+                setEncarteRows([]);
+                setEncarteHeaders([]);
+                setImportEncarteFileName("");
+              }}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleConfirmImportEncarte}
+              disabled={!importEncarteFileName || encarteRows.length === 0 || !selectedEncarteIdentifierCol || !selectedEncartePriceCol}
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+            >
+              <Check className="h-4 w-4 mr-1.5" />
+              Confirmar Importação
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
