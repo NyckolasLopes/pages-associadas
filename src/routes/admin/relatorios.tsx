@@ -26,8 +26,11 @@ import {
   HeartPulse,
   AlertTriangle,
   Printer,
-  Activity
+  Activity,
+  Trash2,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useAdmin } from "@/stores/admin";
 import { useOrders } from "@/stores/orders";
 import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
@@ -61,6 +64,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/admin/relatorios")({
   component: Relatorios,
@@ -75,6 +86,10 @@ function Relatorios() {
     to: new Date()
   });
 
+  const [lojaToDeleteSla, setLojaToDeleteSla] = useState<{ id: string; nome: string; totalPedidos: number } | null>(null);
+  const [isSlaDeleteModalOpen, setIsSlaDeleteModalOpen] = useState(false);
+  const [isDeletingLojaSla, setIsDeletingLojaSla] = useState(false);
+
   const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
   
   const isGlobalAdmin = () => {
@@ -84,6 +99,22 @@ function Relatorios() {
   };
   
   const effectiveStoreId = activeStoreId || (!isGlobalAdmin() && currentUser?.lojasVinculadas?.[0]) || null;
+
+  const handleDeleteLojaSla = async () => {
+    if (!lojaToDeleteSla) return;
+    setIsDeletingLojaSla(true);
+    try {
+      await useOrders.getState().clearAllOrders(lojaToDeleteSla.id);
+      await useOrders.getState().loadOrders();
+      toast.success(`Histórico e pedidos da loja "${lojaToDeleteSla.nome}" foram excluídos com sucesso!`);
+      setIsSlaDeleteModalOpen(false);
+      setLojaToDeleteSla(null);
+    } catch (err: any) {
+      toast.error("Erro ao excluir histórico da loja: " + (err.message || "Tente novamente"));
+    } finally {
+      setIsDeletingLojaSla(false);
+    }
+  };
 
   
 
@@ -1229,16 +1260,56 @@ function Relatorios() {
                                )}
                              </td>
                              <td className="p-4 text-center">
-                               {tempoMin !== null ? (
-                                 <div className="flex items-center justify-center gap-1.5">
-                                   <Clock className={`w-4 h-4 ${noPrazo ? 'text-sky-500' : 'text-rose-500'}`} />
-                                   <span className={`font-black text-base ${noPrazo ? 'text-sky-600' : 'text-rose-600'}`}>
-                                     {tempoMin} min
-                                   </span>
-                                 </div>
-                               ) : (
-                                 <span className="text-slate-400 text-xs">-</span>
-                               )}
+                                {tempoMin !== null ? (
+                                  <div className="flex items-center justify-center gap-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <Clock className={`w-4 h-4 ${noPrazo ? 'text-sky-500' : 'text-rose-500'}`} />
+                                      <span className={`font-black text-base ${noPrazo ? 'text-sky-600' : 'text-rose-600'}`}>
+                                        {tempoMin} min
+                                      </span>
+                                    </div>
+                                    {isGlobalAdmin() && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setLojaToDeleteSla({
+                                            id: loja.id,
+                                            nome: (loja as any).nomeFantasia || loja.nome,
+                                            totalPedidos,
+                                          });
+                                          setIsSlaDeleteModalOpen(true);
+                                        }}
+                                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                        title="Excluir pedidos e histórico de SLA desta loja"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-center gap-2">
+                                    <span className="text-slate-400 text-xs">-</span>
+                                    {isGlobalAdmin() && totalPedidos > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setLojaToDeleteSla({
+                                            id: loja.id,
+                                            nome: (loja as any).nomeFantasia || loja.nome,
+                                            totalPedidos,
+                                          });
+                                          setIsSlaDeleteModalOpen(true);
+                                        }}
+                                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                        title="Excluir pedidos desta loja"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
                              </td>
                              <td className="p-4 text-center">
                                {tempoMin !== null ? (
@@ -1353,7 +1424,73 @@ function Relatorios() {
           )}
         </div>
 
+        {/* Modal de Confirmação para Excluir Histórico de SLA / Pedidos da Loja */}
+        <Dialog open={isSlaDeleteModalOpen} onOpenChange={setIsSlaDeleteModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-black text-slate-900">
+                    Excluir SLA da Loja?
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-slate-500 mt-0.5">
+                    Zerar métricas de separação e pedidos desta filial.
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
 
+            <div className="space-y-3 py-2">
+              <p className="text-sm text-slate-600">
+                Tem certeza que deseja excluir os dados e histórico de separação da filial <strong className="text-slate-900 font-bold">{lojaToDeleteSla?.nome}</strong> ({lojaToDeleteSla?.totalPedidos} {lojaToDeleteSla?.totalPedidos === 1 ? 'pedido registrado' : 'pedidos registrados'})?
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800 space-y-1">
+                <p className="font-bold flex items-center gap-1.5 text-red-900">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                  Atenção: esta ação é definitiva!
+                </p>
+                <p className="text-red-700 leading-relaxed">
+                  Os registros de pedidos e histórico de situações desta loja serão removidos permanentemente, zerando seu tempo médio no painel.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsSlaDeleteModalOpen(false);
+                  setLojaToDeleteSla(null);
+                }}
+                disabled={isDeletingLojaSla}
+                className="font-bold border-slate-200"
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteLojaSla}
+                disabled={isDeletingLojaSla}
+                className="font-bold bg-red-600 hover:bg-red-700 text-white gap-2 shadow-sm"
+              >
+                {isDeletingLojaSla ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Sim, Excluir da Lista
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
