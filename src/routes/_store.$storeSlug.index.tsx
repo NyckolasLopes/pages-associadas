@@ -317,22 +317,30 @@ function getSubcategoryIcon(name: string) {
   if (n.includes("emagrecer") || n.includes("peso") || n.includes("termogênico")) return Scale;
   if (n.includes("diabetes") || n.includes("glicose")) return Activity;
   if (n.includes("aparelho") || n.includes("medidor") || n.includes("médico") || n.includes("hospitalar") || n.includes("oxímetro")) return BriefcaseMedical;
+  return Tag;
+}
+
+function getCategoryFallbackIcon(name: string) {
+  const n = (name || "").toLowerCase().trim();
   if (n.includes("alimento") || n.includes("bebida") || n.includes("papinha") || n.includes("fórmula")) return Coffee;
-  if (n.includes("nervoso") || n.includes("calmante") || n.includes("fitoterápico")) return Leaf;
+  if (n.includes("nervoso") || n.includes("calmante") || n.includes("fitoterápico")) return Activity;
   if (n.includes("osso") || n.includes("articulaç")) return Activity;
   if (n.includes("socorro") || n.includes("curativo")) return BriefcaseMedical;
   if (n.includes("vacina") || n.includes("teste")) return Stethoscope;
   if (n.includes("desodorante") || n.includes("antitranspirante")) return Wind;
-  if (n.includes("shampoo") || n.includes("condicionador") || n.includes("capilar")) return Wind;
-  if (n.includes("íntim")) return Heart;
-  if ((n.includes("dor") && !n.includes("desodor")) || n.includes("febre") || n.includes("term") || n.includes("gripe") || n.includes("resfriado") || n.includes("alergia") || n.includes("infecç") || n.includes("estômago") || n.includes("digestão")) return Thermometer;
+  if (n.includes("shampoo") || n.includes("condicionador") || n.includes("capilar") || n.includes("cabelo")) return Sparkles;
+  if (n.includes("bucal") || n.includes("dente") || n.includes("dental") || n.includes("escova") || n.includes("fio")) return Smile;
+  if (n.includes("íntim")) return ShieldCheck;
+  if ((n.includes("dor") && !n.includes("desodor")) || n.includes("febre") || n.includes("term")) return Thermometer;
+  if (n.includes("gripe") || n.includes("resfriado") || n.includes("tosse") || n.includes("alergia") || n.includes("infecç") || n.includes("estômago") || n.includes("digestão")) return Pill;
   if (n.includes("imunidade")) return ShieldCheck;
   if (n.includes("beb") || n.includes("infantil") || n.includes("mamadeira") || n.includes("chupeta") || n.includes("fralda")) return Baby;
   if (n.includes("multivitam") || n.includes("mineral") || n.includes("vitamina")) return Battery;
   if (n.includes("suplemento") || n.includes("whey") || n.includes("colágeno")) return Dumbbell;
   if (n.includes("beleza") || n.includes("maquiagem") || n.includes("cosmético") || n.includes("creme") || n.includes("pele") || n.includes("rosto") || n.includes("solar") || n.includes("acne") || n.includes("idade") || n.includes("loç")) return Sparkles;
-  if (n.includes("banho") || n.includes("sabonete") || n.includes("higiene") || n.includes("cabelo") || n.includes("tintura")) return Droplets;
+  if (n.includes("banho") || n.includes("sabonete") || n.includes("higiene")) return Droplets;
   if (n.includes("repelente") || n.includes("inseto")) return Leaf;
+  if (n.includes("remédio") || n.includes("medicamento") || n.includes("farmácia") || n.includes("saúde")) return Pill;
   return Tag;
 }
 
@@ -525,26 +533,34 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId, storeSlug: 
   
   if (categorias.length === 0) return null;
 
-  const getIcon = (url: string) => {
-    if (!url || !url.startsWith("icon:")) return null;
-    const iconName = url.replace("icon:", "");
-    if (iconName === "Truck" || iconName === "Motorcycle" || iconName === "Moto") return MotorcycleIcon || Truck;
-    if (iconName === "Store") return Store;
-    if (iconName === "Percent") return Percent;
-    if (iconName === "ShieldCheck") return ShieldCheck;
-    if (iconName === "Stethoscope") return Stethoscope;
-    if (iconName === "Thermometer") return Thermometer;
-    if (iconName === "Leaf") return Leaf;
-    if (iconName === "Smile") return Smile;
-    if (iconName === "Droplets") return Droplets;
-    if (iconName === "Battery") return Battery;
-    if (iconName === "Wind") return Wind;
-    if (iconName === "Heart") return Heart;
-    return Sparkles;
+  const getIcon = (url?: string, catName?: string) => {
+    if (url && url.startsWith("icon:")) {
+      const iconName = url.replace("icon:", "");
+      if (iconName === "Truck" || iconName === "Motorcycle" || iconName === "Moto") return MotorcycleIcon || Truck;
+      if (iconName === "Store") return Store;
+      if (iconName === "Percent") return Percent;
+      if (iconName === "ShieldCheck") return ShieldCheck;
+      if (iconName === "Stethoscope") return Stethoscope;
+      if (iconName === "Thermometer") return Thermometer;
+      if (iconName === "Leaf") return Leaf;
+      if (iconName === "Smile") return Smile;
+      if (iconName === "Droplets") return Droplets;
+      if (iconName === "Battery") return Battery;
+      if (iconName === "Wind") return Wind;
+      if (iconName === "Heart") return Heart;
+      if (iconName === "Pill") return Pill;
+      if (iconName === "Baby") return Baby;
+      if (iconName === "Sparkles") return Sparkles;
+      if (iconName === "Dumbbell") return Dumbbell;
+    }
+    if (catName) {
+      return getCategoryFallbackIcon(catName);
+    }
+    return Tag;
   };
 
   return (
-    <div className="relative group w-full">
+    <div className="relative group w-full px-1">
       <Carousel
         opts={{
           align: "start",
@@ -553,55 +569,54 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId, storeSlug: 
         }}
         className="w-full"
       >
-        <CarouselContent className="-ml-4 md:-ml-6 pb-4">
+        <CarouselContent className="-ml-3 md:-ml-4 pb-2">
           {categorias.map(cat => {
-            const Icon = getIcon(cat.imageUrl);
+            const Icon = getIcon(cat.imageUrl, cat.nome);
             const targetUrl = getStoreBannerUrl(cat.link, storeSlug);
             const isExternal = targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("//");
 
+            const content = (
+              <div className="flex flex-col items-center gap-2 group cursor-pointer text-center w-full">
+                <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-50 border border-slate-200/80 group-hover:border-primary/40 group-hover:bg-primary/5 flex items-center justify-center shadow-xs group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-200 p-3.5">
+                  {cat.imageUrl && !cat.imageUrl.startsWith("icon:") ? (
+                    <img src={cat.imageUrl} alt={cat.nome} className="w-full h-full object-contain rounded-xl" />
+                  ) : Icon ? (
+                    <Icon className="h-7 w-7 md:h-9 md:w-9 text-primary group-hover:scale-110 transition-transform stroke-[1.75]" />
+                  ) : (
+                    <Tag className="h-7 w-7 md:h-9 md:w-9 text-primary group-hover:scale-110 transition-transform stroke-[1.75]" />
+                  )}
+                </div>
+                <span className="text-[11px] md:text-xs font-semibold text-slate-700 group-hover:text-primary transition-colors leading-snug line-clamp-2 min-h-[2.2rem] flex items-start justify-center px-1">
+                  {cat.nome}
+                </span>
+              </div>
+            );
+
             return (
-              <CarouselItem key={cat.id} className="pl-4 md:pl-6 basis-auto flex">
+              <CarouselItem key={cat.id} className="pl-3 md:pl-4 basis-[95px] sm:basis-[110px] md:basis-[120px] lg:basis-[130px] flex justify-center shrink-0">
                 {isExternal ? (
                   <a
                     href={targetUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-col items-center gap-2 text-center group shrink-0 w-[80px] md:w-[100px]"
+                    className="w-full flex justify-center"
                   >
-                    <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-3 border-4 border-transparent group-hover:border-primary/20">
-                      {Icon ? (
-                        <Icon className="h-8 w-8 md:h-10 md:w-10 text-primary" />
-                      ) : cat.imageUrl ? (
-                        <img src={cat.imageUrl} alt={cat.nome} className="w-full h-full object-cover rounded-2xl" />
-                      ) : null}
-                    </div>
-                    <span className="text-[10px] md:text-xs font-bold leading-tight line-clamp-2">
-                      {cat.nome}
-                    </span>
+                    {content}
                   </a>
                 ) : (
                   <Link
                     to={targetUrl as any}
-                    className="flex flex-col items-center gap-2 text-center group shrink-0 w-[80px] md:w-[100px]"
+                    className="w-full flex justify-center"
                   >
-                    <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-3 border-4 border-transparent group-hover:border-primary/20">
-                      {Icon ? (
-                        <Icon className="h-8 w-8 md:h-10 md:w-10 text-primary" />
-                      ) : cat.imageUrl ? (
-                        <img src={cat.imageUrl} alt={cat.nome} className="w-full h-full object-cover rounded-2xl" />
-                      ) : null}
-                    </div>
-                    <span className="text-[10px] md:text-xs font-bold leading-tight line-clamp-2">
-                      {cat.nome}
-                    </span>
+                    {content}
                   </Link>
                 )}
               </CarouselItem>
             );
           })}
         </CarouselContent>
-        <CarouselPrevious className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" />
-        <CarouselNext className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" />
+        <CarouselPrevious className="hidden md:flex absolute -left-3 md:-left-4 top-[36px] md:top-[40px] -translate-y-1/2 z-10 h-8 w-8 md:h-9 md:w-9 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all opacity-0 group-hover:opacity-100 disabled:hidden" />
+        <CarouselNext className="hidden md:flex absolute -right-3 md:-right-4 top-[36px] md:top-[40px] -translate-y-1/2 z-10 h-8 w-8 md:h-9 md:w-9 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all opacity-0 group-hover:opacity-100 disabled:hidden" />
       </Carousel>
     </div>
   );
