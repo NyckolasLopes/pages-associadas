@@ -31,9 +31,9 @@ import {
   Download,
   Check,
 } from "lucide-react";
-import type { Produto, Tarja } from "@/types";
 import { cn } from "@/lib/utils";
 import categoriesData from "@/data/categories.json";
+import { waitForDomRepaint } from "@/lib/massActionUtils";
 
 // ---- Column Mapping Config ----
 interface FieldMapping {
@@ -1367,39 +1367,39 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
     setStep("preview");
   }, [rows, mapping]);
 
-  const handleConfirmImport = useCallback(() => {
+  const handleConfirmImport = useCallback(async () => {
     setStep("processing");
+    await waitForDomRepaint(80);
     
     // Simula erro APENAS se o nome do arquivo contiver a palavra "erro" (para fins de teste do usuário)
     const simulateError = fileName.toLowerCase().includes("erro");
 
-    setTimeout(async () => {
-      try {
-        if (simulateError) {
-          setImportError("Não foi possível subir seus produtos. O motivo do erro foi: Falha de conexão com o banco de dados (ERR_TIMEOUT_504)");
-          setStep("error");
-        } else {
-          const enrichedProducts = parsedProducts.map(p => ({
-            ...p,
-            origem: "Planilha",
-            dataImportacao: new Date().toISOString()
-          }));
-          
-          await onImport(enrichedProducts);
-          
-          setStep("done");
-          toast.success(`${parsedProducts.length} produtos importados com sucesso!`);
-          
-          setTimeout(() => {
-            handleClose();
-          }, 2000);
-        }
-      } catch (err) {
-        console.error("Erro ao importar produtos:", err);
-        setImportError(err instanceof Error ? err.message : String(err));
+    try {
+      if (simulateError) {
+        setImportError("Não foi possível subir seus produtos. O motivo do erro foi: Falha de conexão com o banco de dados (ERR_TIMEOUT_504)");
         setStep("error");
+      } else {
+        const enrichedProducts = parsedProducts.map(p => ({
+          ...p,
+          origem: "Planilha",
+          dataImportacao: new Date().toISOString()
+        }));
+        
+        await onImport(enrichedProducts);
+        await waitForDomRepaint(350);
+        
+        setStep("done");
+        toast.success(`${parsedProducts.length} produtos importados com sucesso!`);
+        
+        setTimeout(() => {
+          handleClose();
+        }, 1500);
       }
-    }, 1500); 
+    } catch (err) {
+      console.error("Erro ao importar produtos:", err);
+      setImportError(err instanceof Error ? err.message : String(err));
+      setStep("error");
+    }
   }, [parsedProducts, onImport, handleClose, fileName]);
 
   // Mapping quality metrics
@@ -1683,15 +1683,18 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
 
           {/* ---- PROCESSING STEP ---- */}
           {step === "processing" && (
-            <div className="flex flex-col items-center justify-center gap-4 py-20">
+            <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
               <div className="h-16 w-16 relative">
                 <div className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
                 <div className="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
               </div>
-              <p className="text-lg font-bold text-slate-700 mt-4">Processando...</p>
-              <p className="text-sm text-muted-foreground text-center max-w-sm">
-                Estamos processando os produtos. Por favor, aguarde. Isso pode levar alguns segundos.
+              <p className="text-lg font-bold text-slate-800 mt-4">Processando Importação...</p>
+              <p className="text-sm font-medium text-slate-600 max-w-sm">
+                Salvando produtos no catálogo e renderizando atualizações no HTML da tabela...
               </p>
+              <span className="text-xs text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                Por favor, aguarde a renderização completa.
+              </span>
             </div>
           )}
 

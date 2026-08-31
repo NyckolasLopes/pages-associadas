@@ -22,6 +22,8 @@ import {
   ArrowRight
 } from "lucide-react";
 
+import { waitForDomRepaint } from "@/lib/massActionUtils";
+
 type Step = "upload" | "preview" | "processing" | "done" | "error";
 
 interface DescriptionImporterProps {
@@ -141,9 +143,11 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
 
   const handleConfirmImport = useCallback(async () => {
     setStep("processing");
+    await waitForDomRepaint(80);
     
     try {
       const result = await onImport(updates);
+      await waitForDomRepaint(300);
       setImportResult(result);
       setStep("done");
       toast.success(`Foram atualizadas ${result.successCount} descrições!`);

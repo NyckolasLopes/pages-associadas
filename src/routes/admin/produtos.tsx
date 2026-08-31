@@ -72,6 +72,8 @@ import {
 } from "@/components/ui/dialog";
 import { SubirDadosLojaModal } from "@/components/admin/SubirDadosLojaModal";
 import { Spinner } from "@/components/ui/spinner";
+import { MassActionLoadingOverlay, type MassLoadingState } from "@/components/admin/MassActionLoadingOverlay";
+import { waitForDomRepaint } from "@/lib/massActionUtils";
 
 export const Route = createFileRoute("/admin/produtos")({
   component: AdminProdutos,
@@ -139,6 +141,26 @@ function AdminProdutos() {
   const [deleteAllModalOpen, setDeleteAllModalOpen] = useState(false);
   const [subirDadosOpen, setSubirDadosOpen] = useState(false);
   const [isSyncingApi, setIsSyncingApi] = useState(false);
+  const [massLoading, setMassLoading] = useState<MassLoadingState>({ active: false });
+
+  const runWithMassLoading = async <T,>(
+    options: { title: string; message: string; submessage?: string; icon?: "spinner" | "spreadsheet" | "download" | "upload" | "sparkles"; progress?: number },
+    task: () => Promise<T> | T
+  ): Promise<T> => {
+    setMassLoading({ active: true, ...options });
+    await waitForDomRepaint(80);
+    try {
+      const result = await task();
+      await waitForDomRepaint(350);
+      return result;
+    } catch (err) {
+      console.error("Erro na ação em massa:", err);
+      throw err;
+    } finally {
+      await waitForDomRepaint(150);
+      setMassLoading({ active: false });
+    }
+  };
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const estoque = params.get("estoque");
@@ -290,20 +312,48 @@ function AdminProdutos() {
   };
 
   const handleExportJson = async () => {
-    setIsLoading(true);
-    try {
+    await runWithMassLoading({
+      title: "Exportando JSON em Massa",
+      message: `Estruturando ${serverProducts.length} produtos em formato JSON...`,
+      submessage: "O download iniciará automaticamente após a renderização dos dados.",
+      icon: "download"
+    }, async () => {
       exportProductsAsJson(serverProducts);
       toast.success(`${serverProducts.length} produtos exportados em JSON com sucesso!`);
-    } catch (e) {
-      toast.error("Erro ao exportar JSON");
-    } finally {
-      setIsLoading(false);
-    }
+    });
+  };
+
+  const handleExportCsv = async () => {
+    await runWithMassLoading({
+      title: "Exportando Planilha CSV em Massa",
+      message: `Exportando todos os ${serverProducts.length} produtos com os 72 campos oficiais para CSV...`,
+      submessage: "Aguarde a serialização e renderização do arquivo.",
+      icon: "spreadsheet"
+    }, async () => {
+      exportProductsAsCsv(serverProducts);
+      toast.success(`${serverProducts.length} produtos exportados em CSV com sucesso!`);
+    });
+  };
+
+  const handleExportExcel = async () => {
+    await runWithMassLoading({
+      title: "Exportando Planilha Excel em Massa",
+      message: `Formatando ${serverProducts.length} produtos em planilha Excel (.xlsx)...`,
+      submessage: "Aguarde o processamento dos dados.",
+      icon: "spreadsheet"
+    }, async () => {
+      exportProductsAsExcel(serverProducts);
+      toast.success(`${serverProducts.length} produtos exportados em Excel com sucesso!`);
+    });
   };
 
   const handleExportGoogleShopping = async () => {
-    setIsLoading(true);
-    try {
+    await runWithMassLoading({
+      title: "Exportando Feed Google Shopping (XML)",
+      message: "Gerando feed oficial em XML para o Google Merchant Center...",
+      submessage: "Processando itens ativos e elegíveis...",
+      icon: "download"
+    }, async () => {
       const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase.from('produtos').select('*').eq('ativo', true);
       
@@ -364,28 +414,77 @@ function AdminProdutos() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (e) {
-      toast.error("Erro ao exportar XML");
-    } finally {
-      setIsLoading(false);
-    }
+      toast.success("Feed XML do Google Shopping exportado com sucesso!");
+    });
+  };
+
+  const handleDownloadCsvTemplate = async () => {
+    await runWithMassLoading({
+      title: "Gerando Modelo de Planilha (.csv)",
+      message: "Estruturando planilha modelo com todos os 72 campos oficiais...",
+      icon: "spreadsheet"
+    }, async () => {
+      generateCsvTemplate();
+    });
+  };
+
+  const handleDownloadExcelTemplate = async () => {
+    await runWithMassLoading({
+      title: "Gerando Modelo de Planilha (.xlsx)",
+      message: "Gerando arquivo Excel (.xlsx) com cabeçalhos oficiais e exemplos...",
+      icon: "spreadsheet"
+    }, async () => {
+      generateTemplate();
+    });
+  };
+
+  const handleDownloadJsonTemplate = async () => {
+    await runWithMassLoading({
+      title: "Gerando Modelo JSON (.json)",
+      message: "Gerando modelo estruturado JSON de produtos...",
+      icon: "download"
+    }, async () => {
+      generateJsonTemplate();
+    });
   };
 
   const handleSpreadsheetImport = async (products: Produto[]) => {
-    // Forçar salvamento no catálogo geral (para refletir em todas as lojas) se for admin global
-    const targetLojaId = isGlobalAdmin ? null : currentLojaId;
-    
-    try {
+    await runWithMassLoading({
+      title: "Gravando Produtos no Catálogo",
+      message: `Salvando ${products.length} produtos e renderizando atualizações no HTML da tabela...`,
+      submessage: "Aguarde a atualização completa do layout.",
+      icon: "upload"
+    }, async () => {
+      const targetLojaId = isGlobalAdmin ? null : currentLojaId;
       await importProducts(products, targetLojaId);
       toast.success(
         targetLojaId
           ? `Planilha importada com sucesso exclusivamente para a loja ${currentLoja?.nome || ""}!`
           : `Planilha importada no Catálogo Geral da Rede e refletirá em todas as lojas!`
       );
-    } catch (err) {
-      console.error(err);
-      throw err; // Repassa o erro para o SpreadsheetImporter exibir o erro
-    }
+    });
+  };
+
+  const handleDescriptionImport = async (updates: { ean: string; nome: string; descricao: string }[]) => {
+    return await runWithMassLoading({
+      title: "Importando Descrições em Massa",
+      message: `Atualizando ${updates.length} descrições no catálogo e renderizando HTML...`,
+      submessage: "Aguarde a atualização completa na tela.",
+      icon: "upload"
+    }, async () => {
+      return await updateProductDescriptions(updates, currentLojaId || undefined);
+    });
+  };
+
+  const handleBulkUpdate = async (productIds: string[], updates: Partial<Produto>) => {
+    await runWithMassLoading({
+      title: "Aplicando Alterações em Massa",
+      message: `Atualizando ${productIds.length} produtos e renderizando alterações no catálogo...`,
+      submessage: "Aguarde o processamento.",
+      icon: "spinner"
+    }, async () => {
+      await bulkUpdateProducts(productIds, updates, currentLojaId || undefined);
+    });
   };
 
   const simulateApiSync = () => {
@@ -396,14 +495,20 @@ function AdminProdutos() {
     setDeleteAllModalOpen(true);
   };
 
-  const confirmDeleteAll = () => {
-    clearProducts(currentLojaId || undefined);
-    setDeleteAllModalOpen(false);
-    toast.success(
-      currentLojaId
-        ? `Catálogo exclusivo da loja ${currentLoja?.nome || ""} foi limpo.`
-        : `Todos os produtos da rede foram excluídos.`
-    );
+  const confirmDeleteAll = async () => {
+    await runWithMassLoading({
+      title: "Excluindo Produtos em Massa",
+      message: "Limpando o catálogo de produtos e renderizando a interface vazia...",
+      icon: "spinner"
+    }, async () => {
+      clearProducts(currentLojaId || undefined);
+      setDeleteAllModalOpen(false);
+      toast.success(
+        currentLojaId
+          ? `Catálogo exclusivo da loja ${currentLoja?.nome || ""} foi limpo.`
+          : `Todos os produtos da rede foram excluídos.`
+      );
+    });
   };
 
   const handleConfirmSync = async () => {
@@ -663,7 +768,7 @@ function AdminProdutos() {
                   variant="outline"
                   size="sm"
                   onClick={handleExportJson}
-                  disabled={isLoading}
+                  disabled={isLoading || massLoading.active}
                   className="font-bold text-xs"
                 >
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
@@ -672,7 +777,8 @@ function AdminProdutos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => exportProductsAsCsv(serverProducts)}
+                  onClick={handleExportCsv}
+                  disabled={isLoading || massLoading.active}
                   className="font-bold text-xs"
                 >
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
@@ -691,6 +797,7 @@ function AdminProdutos() {
                   variant="destructive"
                   size="sm"
                   onClick={() => setDeleteAllModalOpen(true)}
+                  disabled={massLoading.active}
                   className="font-bold text-xs bg-red-600 hover:bg-red-700 text-white"
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />
@@ -699,6 +806,7 @@ function AdminProdutos() {
                 <Button
                   size="sm"
                   onClick={() => setDescImporterOpen(true)}
+                  disabled={massLoading.active}
                   className="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   <FileText className="h-3.5 w-3.5 mr-1.5" />
@@ -732,6 +840,7 @@ function AdminProdutos() {
                 <Button
                   size="sm"
                   onClick={() => setImporterOpen(true)}
+                  disabled={massLoading.active}
                   className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700"
                 >
                   <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
@@ -740,7 +849,8 @@ function AdminProdutos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={generateCsvTemplate}
+                  onClick={handleDownloadCsvTemplate}
+                  disabled={massLoading.active}
                   className="font-bold text-xs border-teal-600 text-teal-700 hover:bg-teal-50"
                 >
                   <Download className="h-3.5 w-3.5 mr-1.5" />
@@ -749,7 +859,8 @@ function AdminProdutos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={generateTemplate}
+                  onClick={handleDownloadExcelTemplate}
+                  disabled={massLoading.active}
                   className="font-bold text-xs border-emerald-600 text-emerald-700 hover:bg-emerald-50"
                 >
                   <Download className="h-3.5 w-3.5 mr-1.5" />
@@ -758,7 +869,8 @@ function AdminProdutos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={generateJsonTemplate}
+                  onClick={handleDownloadJsonTemplate}
+                  disabled={massLoading.active}
                   className="font-bold text-xs border-indigo-600 text-indigo-700 hover:bg-indigo-50"
                 >
                   <Download className="h-3.5 w-3.5 mr-1.5" />
@@ -1174,7 +1286,7 @@ function AdminProdutos() {
       <DescriptionImporter
         open={descImporterOpen}
         onOpenChange={setDescImporterOpen}
-        onImport={(updates) => updateProductDescriptions(updates, currentLojaId || undefined)}
+        onImport={handleDescriptionImport}
       />
 
       {/* Bulk Edit Dialog */}
@@ -1182,7 +1294,7 @@ function AdminProdutos() {
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
         filteredProducts={serverProducts}
-        onBulkUpdate={(productIds, updates) => bulkUpdateProducts(productIds, updates, currentLojaId || undefined)}
+        onBulkUpdate={handleBulkUpdate}
       />
 
       {/* Product Editor Dialog */}
@@ -1331,6 +1443,9 @@ function AdminProdutos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mass Action Persistent Overlay */}
+      <MassActionLoadingOverlay loading={massLoading} />
 
     </div>
   );

@@ -24,9 +24,10 @@ import { toast } from "sonner";
 import type { Produto } from "@/types";
 import { isCampanhaAtiva } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { MassActionLoadingOverlay, type MassLoadingState } from "@/components/admin/MassActionLoadingOverlay";
+import { waitForDomRepaint } from "@/lib/massActionUtils";
 
 export const Route = createFileRoute("/admin/produtos/precos")({
   component: AdminProdutosPrecos,
@@ -36,6 +37,7 @@ function AdminProdutosPrecos() {
   const { customProducts, addOrUpdateProduct, importStoreSpreadsheet, updateStoreProductStatus, updateStoreProductDestaque } = useAdminProducts();
   const { pharmacies, currentUser, grupos } = useAdmin();
   const { selos, addSelo } = useSelos();
+  const [massLoading, setMassLoading] = useState<MassLoadingState>({ active: false });
 
   const isGlobalAdmin = () => {
     if (currentUser?.proprietario) return true;
@@ -237,69 +239,88 @@ function AdminProdutosPrecos() {
     reader.readAsBinaryString(file);
   };
 
-  const handleConfirmImportPmc = () => {
+  const handleConfirmImportPmc = async () => {
     if (!selectedPmcIdentifierCol || !selectedPmcPriceCol) {
       toast.error("Selecione as colunas de EAN e de Preço Líquido.");
       return;
     }
 
-    const pmcMap = new Map<string, number>();
-    let invalidCount = 0;
-
-    pmcRows.forEach(row => {
-      const idRaw = String(row[selectedPmcIdentifierCol] ?? "").trim();
-      const priceRaw = row[selectedPmcPriceCol];
-
-      if (!idRaw || priceRaw === undefined || priceRaw === null || priceRaw === "") {
-        invalidCount++;
-        return;
-      }
-
-      let priceNum = 0;
-      if (typeof priceRaw === "number") {
-        priceNum = priceRaw;
-      } else {
-        const cleanStr = String(priceRaw)
-          .replace("R$", "")
-          .replace(/\s/g, "")
-          .replace(/\./g, "")
-          .replace(",", ".");
-        priceNum = parseFloat(cleanStr);
-      }
-
-      if (isNaN(priceNum) || priceNum <= 0) {
-        invalidCount++;
-        return;
-      }
-
-      if (/^\d{7,14}$/.test(idRaw)) {
-        pmcMap.set(idRaw, priceNum);
-      }
+    setMassLoading({
+      active: true,
+      title: "Atualizando Preços PMC em Massa",
+      message: `Processando ${pmcRows.length} linhas da planilha PMC e atualizando medicamentos...`,
+      submessage: "Aguarde a gravação e a renderização do catálogo.",
+      icon: "spreadsheet"
     });
+    await waitForDomRepaint(80);
 
-    if (pmcMap.size === 0) {
-      toast.error("Nenhum EAN/Preço válido foi identificado.");
-      return;
-    }
+    try {
+      const pmcMap = new Map<string, number>();
+      let invalidCount = 0;
 
-    let updatedCount = 0;
+      pmcRows.forEach(row => {
+        const idRaw = String(row[selectedPmcIdentifierCol] ?? "").trim();
+        const priceRaw = row[selectedPmcPriceCol];
 
-    allVisibleProducts.forEach(p => {
-      const isMedicamento = p.categoriaId === "142" || p.categoriasAdicionais?.includes("142");
-      if (isMedicamento && p.ean) {
-        const pmcPrice = pmcMap.get(p.ean);
-        if (pmcPrice !== undefined) {
-          const newProduct = { ...p, precoDe: pmcPrice, precoPor: pmcPrice };
-          addOrUpdateProduct(newProduct);
-          updatedCount++;
+        if (!idRaw || priceRaw === undefined || priceRaw === null || priceRaw === "") {
+          invalidCount++;
+          return;
         }
-      }
-    });
 
-    toast.success(`🎉 ${updatedCount} medicamentos atualizados com base na tabela PMC!`);
-    setIsImportPmcOpen(false);
-    setPmcRows([]);
-    setImportPmcFileName("");
+        let priceNum = 0;
+        if (typeof priceRaw === "number") {
+          priceNum = priceRaw;
+        } else {
+          const cleanStr = String(priceRaw)
+            .replace("R$", "")
+            .replace(/\s/g, "")
+            .replace(/\./g, "")
+            .replace(",", ".");
+          priceNum = parseFloat(cleanStr);
+        }
+
+        if (isNaN(priceNum) || priceNum <= 0) {
+          invalidCount++;
+          return;
+        }
+
+        if (/^\d{7,14}$/.test(idRaw)) {
+          pmcMap.set(idRaw, priceNum);
+        }
+      });
+
+      if (pmcMap.size === 0) {
+        toast.error("Nenhum EAN/Preço válido foi identificado.");
+        return;
+      }
+
+      let updatedCount = 0;
+
+      allVisibleProducts.forEach(p => {
+        const isMedicamento = p.categoriaId === "142" || p.categoriasAdicionais?.includes("142");
+        if (isMedicamento && p.ean) {
+          const pmcPrice = pmcMap.get(p.ean);
+          if (pmcPrice !== undefined) {
+            const newProduct = { ...p, precoDe: pmcPrice, precoPor: pmcPrice };
+            addOrUpdateProduct(newProduct);
+            updatedCount++;
+          }
+        }
+      });
+
+      await waitForDomRepaint(350);
+
+      toast.success(`🎉 ${updatedCount} medicamentos atualizados com base na tabela PMC!`);
+      setIsImportPmcOpen(false);
+      setPmcRows([]);
+      setImportPmcFileName("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao aplicar a tabela PMC.");
+    } finally {
+      await waitForDomRepaint(150);
+      setMassLoading({ active: false });
+    }
   };
 
   const handleConfirmImportMeusPrecos = async () => {
@@ -314,66 +335,85 @@ function AdminProdutosPrecos() {
       return;
     }
 
-    const itemsToImport: any[] = [];
-    let invalidCount = 0;
-
-    spreadsheetRows.forEach(row => {
-      const idRaw = String(row[selectedIdentifierCol] ?? "").trim();
-      const priceRaw = row[selectedPriceCol];
-
-      if (!idRaw || priceRaw === undefined || priceRaw === null || priceRaw === "") {
-        invalidCount++;
-        return;
-      }
-
-      let priceNum = 0;
-      if (typeof priceRaw === "number") {
-        priceNum = priceRaw;
-      } else {
-        const cleanStr = String(priceRaw)
-          .replace("R$", "")
-          .replace(/\s/g, "")
-          .replace(/\./g, "")
-          .replace(",", ".");
-        priceNum = parseFloat(cleanStr);
-      }
-
-      if (isNaN(priceNum) || priceNum <= 0) {
-        invalidCount++;
-        return;
-      }
-
-      const item: any = {
-        precoDe: priceNum,
-        precoPor: priceNum,
-        ativo: true
-      };
-
-      if (/^\d{7,14}$/.test(idRaw)) {
-        item.ean = idRaw;
-      } else {
-        item.sku = idRaw;
-        item.id = idRaw;
-        item.nome = idRaw;
-      }
-
-      itemsToImport.push(item);
+    setMassLoading({
+      active: true,
+      title: "Importando Preços da Loja em Massa",
+      message: `Processando planilha com ${spreadsheetRows.length} linhas e recalculando tabela de preços...`,
+      submessage: "Aguarde a renderização dos novos preços no HTML.",
+      icon: "upload"
     });
+    await waitForDomRepaint(80);
 
-    if (itemsToImport.length === 0) {
-      toast.error("Nenhum preço válido foi identificado na coluna selecionada.");
-      return;
+    try {
+      const itemsToImport: any[] = [];
+      let invalidCount = 0;
+
+      spreadsheetRows.forEach(row => {
+        const idRaw = String(row[selectedIdentifierCol] ?? "").trim();
+        const priceRaw = row[selectedPriceCol];
+
+        if (!idRaw || priceRaw === undefined || priceRaw === null || priceRaw === "") {
+          invalidCount++;
+          return;
+        }
+
+        let priceNum = 0;
+        if (typeof priceRaw === "number") {
+          priceNum = priceRaw;
+        } else {
+          const cleanStr = String(priceRaw)
+            .replace("R$", "")
+            .replace(/\s/g, "")
+            .replace(/\./g, "")
+            .replace(",", ".");
+          priceNum = parseFloat(cleanStr);
+        }
+
+        if (isNaN(priceNum) || priceNum <= 0) {
+          invalidCount++;
+          return;
+        }
+
+        const item: any = {
+          precoDe: priceNum,
+          precoPor: priceNum,
+          ativo: true
+        };
+
+        if (/^\d{7,14}$/.test(idRaw)) {
+          item.ean = idRaw;
+        } else {
+          item.sku = idRaw;
+          item.id = idRaw;
+          item.nome = idRaw;
+        }
+
+        itemsToImport.push(item);
+      });
+
+      if (itemsToImport.length === 0) {
+        toast.error("Nenhum preço válido foi identificado na coluna selecionada.");
+        return;
+      }
+
+      const result = await importStoreSpreadsheet(targetStore, itemsToImport);
+      const storeObj = pharmacies.find(p => p.id === targetStore);
+      const storeName = storeObj?.nome || targetStore;
+
+      await waitForDomRepaint(350);
+
+      toast.success(`🎉 ${result.updated} preços de produtos atualizados com sucesso para "${storeName}"!`);
+      setIsImportMeusPrecosOpen(false);
+      setSpreadsheetRows([]);
+      setSpreadsheetHeaders([]);
+      setImportFileName("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao importar preços.");
+    } finally {
+      await waitForDomRepaint(150);
+      setMassLoading({ active: false });
     }
-
-    const result = await importStoreSpreadsheet(targetStore, itemsToImport);
-    const storeObj = pharmacies.find(p => p.id === targetStore);
-    const storeName = storeObj?.nome || targetStore;
-
-    toast.success(`🎉 ${result.updated} preços de produtos atualizados com sucesso para "${storeName}"!`);
-    setIsImportMeusPrecosOpen(false);
-    setSpreadsheetRows([]);
-    setSpreadsheetHeaders([]);
-    setImportFileName("");
   };
 
   const filtered = useMemo(() => {
@@ -1825,6 +1865,9 @@ function AdminProdutosPrecos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mass Action Persistent Overlay */}
+      <MassActionLoadingOverlay loading={massLoading} />
     </div>
   );
 }

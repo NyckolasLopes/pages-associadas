@@ -17,16 +17,16 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Layers, Check } from "lucide-react";
+import { Layers, Check, Loader2 } from "lucide-react";
 import type { Produto, Tarja } from "@/types";
 import categoriesData from "@/data/categories.json";
-import { Spinner } from "@/components/ui/spinner";
+import { waitForDomRepaint } from "@/lib/massActionUtils";
 
 interface BulkEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   filteredProducts: Produto[];
-  onBulkUpdate: (productIds: string[], updates: Partial<Produto>) => void;
+  onBulkUpdate: (productIds: string[], updates: Partial<Produto>) => Promise<void> | void;
 }
 
 export function BulkEditModal({ open, onOpenChange, filteredProducts, onBulkUpdate }: BulkEditModalProps) {
@@ -50,7 +50,7 @@ export function BulkEditModal({ open, onOpenChange, filteredProducts, onBulkUpda
     onOpenChange(false);
   }, [reset, onOpenChange]);
 
-  const handleApplyChanges = () => {
+  const handleApplyChanges = async () => {
     if (filteredProducts.length === 0) {
       toast.error("Nenhum produto filtrado para aplicar as alterações.");
       return;
@@ -85,14 +85,20 @@ export function BulkEditModal({ open, onOpenChange, filteredProducts, onBulkUpda
     }
 
     setIsProcessing(true);
+    await waitForDomRepaint(80);
 
-    setTimeout(() => {
+    try {
       const productIds = filteredProducts.map(p => p.id);
-      onBulkUpdate(productIds, updates);
+      await onBulkUpdate(productIds, updates);
+      await waitForDomRepaint(300);
       toast.success(`Alterações aplicadas a ${productIds.length} produtos com sucesso!`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao aplicar alterações em massa.");
+    } finally {
       setIsProcessing(false);
       handleClose();
-    }, 1000);
+    }
   };
 
   const topCats = (categoriesData as any[]).filter(c => !c.parentId);
@@ -112,8 +118,9 @@ export function BulkEditModal({ open, onOpenChange, filteredProducts, onBulkUpda
 
         {isProcessing ? (
           <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <Spinner className="h-10 w-10 text-indigo-600 animate-spin" />
-            <p className="font-medium text-slate-600">Aplicando alterações...</p>
+            <Loader2 className="h-10 w-10 text-indigo-600 animate-spin" />
+            <p className="font-bold text-slate-700">Aplicando alterações e renderizando no catálogo...</p>
+            <p className="text-xs text-slate-500">Aguarde a atualização do layout HTML.</p>
           </div>
         ) : (
           <div className="space-y-6 py-4">
@@ -171,10 +178,10 @@ export function BulkEditModal({ open, onOpenChange, filteredProducts, onBulkUpda
                   <SelectContent>
                     <SelectItem value="__none__">Manter atual</SelectItem>
                     <SelectItem value="Sem Tarja">Sem Tarja</SelectItem>
-                    <SelectItem value="Amarela">Amarela</SelectItem>
                     <SelectItem value="Vermelha">Vermelha</SelectItem>
                     <SelectItem value="Vermelha Retém Receita">Vermelha Retém Receita</SelectItem>
                     <SelectItem value="Preta">Preta</SelectItem>
+                    <SelectItem value="Amarela">Amarela (Genérico)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -184,17 +191,13 @@ export function BulkEditModal({ open, onOpenChange, filteredProducts, onBulkUpda
         )}
 
         {!isProcessing && (
-          <DialogFooter>
-            <Button variant="outline" onClick={handleClose}>
+          <DialogFooter className="flex-row justify-between gap-2">
+            <Button variant="ghost" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button 
-              onClick={handleApplyChanges} 
-              className="bg-indigo-600 hover:bg-indigo-700 font-bold"
-              disabled={filteredProducts.length === 0}
-            >
-              <Check className="w-4 h-4 mr-2" />
-              Aplicar a {filteredProducts.length} produtos
+            <Button onClick={handleApplyChanges} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+              <Check className="h-4 w-4 mr-2" />
+              Aplicar a {filteredProducts.length} Produtos
             </Button>
           </DialogFooter>
         )}

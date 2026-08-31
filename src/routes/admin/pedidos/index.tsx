@@ -62,6 +62,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { productImage } from "@/lib/format";
+import { MassActionLoadingOverlay, type MassLoadingState } from "@/components/admin/MassActionLoadingOverlay";
+import { waitForDomRepaint } from "@/lib/massActionUtils";
 
 import { Spinner } from "@/components/ui/spinner";
 
@@ -163,6 +165,7 @@ export function PedidosAdmin() {
   const [clearOrdersModalOpen, setClearOrdersModalOpen] = useState(false);
   const [isClearingOrders, setIsClearingOrders] = useState(false);
   const [clearConfirmationText, setClearConfirmationText] = useState("");
+  const [massLoading, setMassLoading] = useState<MassLoadingState>({ active: false });
 
   // Fetch orders with React Query (Server-side)
   const { data: ordersResponse, isLoading, refetch } = useOrdersQuery({
@@ -467,102 +470,137 @@ export function PedidosAdmin() {
     });
   }, [allUnifiedOrders, mainView, searchTerm, dateStartFilter, dateEndFilter]);
 
-  const exportToExcel = () => {
-    const headers = [
-      "ID",
-      "Data",
-      "Cliente",
-      "Email",
-      "CPF",
-      "Telefone",
-      "Loja Faturamento",
-      "Status",
-      "Itens",
-      "Total",
-    ];
-    const rows = filteredUnifiedOrders.map((o) => [
-      o.id,
-      o.data,
-      o.clienteNome,
-      o.clienteEmail || "",
-      o.clienteCpf || "",
-      o.clienteTelefone,
-      o.lojaNome,
-      o.statusDesc,
-      o.itensDesc,
-      o.total.toString().replace(".", ","),
-    ]);
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
+  const exportToExcel = async () => {
+    setMassLoading({
+      active: true,
+      title: "Exportando Planilha de Pedidos",
+      message: `Formatando dados de ${filteredUnifiedOrders.length} pedidos para arquivo CSV...`,
+      submessage: "O download iniciará automaticamente.",
+      icon: "spreadsheet"
+    });
+    await waitForDomRepaint(80);
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "pedidos_associadas.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const headers = [
+        "ID",
+        "Data",
+        "Cliente",
+        "Email",
+        "CPF",
+        "Telefone",
+        "Loja Faturamento",
+        "Status",
+        "Itens",
+        "Total",
+      ];
+      const rows = filteredUnifiedOrders.map((o) => [
+        o.id,
+        o.data,
+        o.clienteNome,
+        o.clienteEmail || "",
+        o.clienteCpf || "",
+        o.clienteTelefone,
+        o.lojaNome,
+        o.statusDesc,
+        o.itensDesc,
+        o.total.toString().replace(".", ","),
+      ]);
+      const csvContent =
+        "data:text/csv;charset=utf-8," +
+        [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
 
-    toast.success("Planilha exportada com sucesso!");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "pedidos_associadas.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      await waitForDomRepaint(300);
+      toast.success("Planilha exportada com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao exportar planilha.");
+    } finally {
+      await waitForDomRepaint(150);
+      setMassLoading({ active: false });
+    }
   };
 
-  const exportToJson = () => {
-    // Exporta apenas a estrutura (exemplo) do JSON
-    const sampleStructure = [
-      {
-        id: "FA-260821-1234",
-        data: "2026-08-21T10:00:00.000Z",
-        status: "novo",
-        lojaId: "loja-exemplo",
-        cliente: {
-          nome: "João da Silva",
-          email: "joao@exemplo.com",
-          telefone: "11999999999",
-          cpf: "11122233344",
-          endereco: {
-            rua: "Rua Exemplo",
-            numero: "123",
-            bairro: "Centro",
-            cidade: "São Paulo",
-            cep: "01000-000",
+  const exportToJson = async () => {
+    setMassLoading({
+      active: true,
+      title: "Exportando Estrutura JSON",
+      message: "Gerando arquivo modelo de pedidos em JSON...",
+      submessage: "Aguarde o download.",
+      icon: "download"
+    });
+    await waitForDomRepaint(80);
+
+    try {
+      const sampleStructure = [
+        {
+          id: "FA-260821-1234",
+          data: "2026-08-21T10:00:00.000Z",
+          status: "novo",
+          lojaId: "loja-exemplo",
+          cliente: {
+            nome: "João da Silva",
+            email: "joao@exemplo.com",
+            telefone: "11999999999",
+            cpf: "11122233344",
+            endereco: {
+              rua: "Rua Exemplo",
+              numero: "123",
+              bairro: "Centro",
+              cidade: "São Paulo",
+              cep: "01000-000",
+            },
+          },
+          envio: {
+            metodo: "Entrega Expressa",
+            rastreio: "BR123456789",
+          },
+          pagamento: {
+            metodo: "Cartão de Crédito",
+          },
+          produtos: [
+            {
+              nome: "Produto Exemplo",
+              sku: "12345",
+              ean: "7890000000000",
+              qtd: 1,
+              valorUnitario: 50.0,
+            },
+          ],
+          valores: {
+            subtotal: 50.0,
+            frete: 10.0,
+            desconto: 0,
+            total: 60.0,
           },
         },
-        envio: {
-          metodo: "Entrega Expressa",
-          rastreio: "BR123456789",
-        },
-        pagamento: {
-          metodo: "Cartão de Crédito",
-        },
-        produtos: [
-          {
-            nome: "Produto Exemplo",
-            sku: "12345",
-            ean: "7890000000000",
-            qtd: 1,
-            valorUnitario: 50.0,
-          },
-        ],
-        valores: {
-          subtotal: 50.0,
-          frete: 10.0,
-          desconto: 0,
-          total: 60.0,
-        },
-      },
-    ];
+      ];
 
-    const dataStr = JSON.stringify(sampleStructure, null, 2);
-    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-    const exportFileDefaultName = "estrutura_pedido_exemplo.json";
+      const dataStr = JSON.stringify(sampleStructure, null, 2);
+      const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+      const exportFileDefaultName = "estrutura_pedido_exemplo.json";
 
-    const linkElement = document.createElement("a");
-    linkElement.setAttribute("href", dataUri);
-    linkElement.setAttribute("download", exportFileDefaultName);
-    linkElement.click();
+      const linkElement = document.createElement("a");
+      linkElement.setAttribute("href", dataUri);
+      linkElement.setAttribute("download", exportFileDefaultName);
+      linkElement.click();
 
-    toast.success("JSON exportado com sucesso!");
+      await waitForDomRepaint(300);
+      toast.success("JSON exportado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao exportar JSON.");
+    } finally {
+      await waitForDomRepaint(150);
+      setMassLoading({ active: false });
+    }
   };
 
   // --- DETAILS VIEW FOR ORDER ---
@@ -1634,6 +1672,9 @@ export function PedidosAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mass Action Persistent Overlay */}
+      <MassActionLoadingOverlay loading={massLoading} />
     </div>
   );
 }
