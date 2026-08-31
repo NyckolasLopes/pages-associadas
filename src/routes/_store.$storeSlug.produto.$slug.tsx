@@ -1146,12 +1146,14 @@ function PDP() {
             />
 
             {p.alertaRegulatorio && (
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8 shadow-sm">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-8 shadow-sm">
                 <div className="flex items-start gap-3">
-                  <Info className="h-6 w-6 text-blue-600 shrink-0 mt-0.5" />
+                  <Info className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[13px] font-bold text-slate-700 uppercase tracking-tight mb-1">O MINISTÉRIO DA SAÚDE INFORMA:</p>
-                    <p className="text-[13px] text-slate-600 leading-relaxed font-medium">O ALEITAMENTO MATERNO EVITA INFECÇÕES E ALERGIAS E É RECOMENDADO ATÉ OS 2 (DOIS) ANOS DE IDADE OU MAIS.</p>
+                    <p className="text-[13px] font-bold text-amber-800 uppercase tracking-tight mb-1">ALERTA REGULATÓRIO:</p>
+                    <p className="text-[13px] text-amber-900 leading-relaxed font-semibold">
+                      {p.alertaTexto || "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1166,17 +1168,20 @@ function PDP() {
                   <table className="w-full text-sm text-left">
                     <tbody>
                       {[
-                        { label: "Ref.", value: p.codigoInterno || p.id },
+                        { label: "Ref.", value: p.codigoInterno || p.sku || p.id },
                         { label: "SKU", value: p.sku || 'Não informado' },
                         { label: "Código de barras", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
+                        ...(p.eansSecundarios && p.eansSecundarios.length > 0 ? [{ label: "EANs Secundários", value: p.eansSecundarios.join(', ') }] : []),
                         { label: "Marca", value: p.marca || 'Não informada' },
+                        ...(p.classeTerapeutica && p.classeTerapeutica !== 'none' ? [{ label: "Classe Terapêutica", value: p.classeTerapeutica }] : []),
+                        ...(p.indicacaoTerapeutica && p.indicacaoTerapeutica !== 'none' ? [{ label: "Indicação Terapêutica", value: p.indicacaoTerapeutica }] : []),
                         ...(p.ncm ? [{ label: "NCM", value: p.ncm }] : []),
-                        ...(p.registroAnvisa ? [{ label: "Registro Anvisa", value: p.registroAnvisa }] : []),
-                        ...(p.tarja && p.tarja !== "Sem Tarja" ? [{ label: "Tarja", value: p.tarja }] : []),
-                        ...(isMedication ? [
-                          { label: "Retém receita", value: p.retemReceita ? 'Sim' : 'Não' },
-                          { label: "Tipo de medicamento", value: p.tipoMedicamento && p.tipoMedicamento !== 'none' ? p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) : 'Referência' }
-                        ] : []),
+                        ...(p.registroAnvisa ? [{ label: "Registro ANVISA", value: p.registroAnvisa }] : []),
+                        ...(p.tarja && p.tarja !== "Sem Tarja" && p.tarja !== "none" ? [{ label: "Tarja", value: p.tarja }] : []),
+                        ...(p.tipoReceita ? [{ label: "Tipo de Receita", value: p.tipoReceita }] : []),
+                        ...(p.retemReceita !== undefined ? [{ label: "Retém receita", value: p.retemReceita ? 'Sim' : 'Não' }] : []),
+                        ...(p.tipoMedicamento && p.tipoMedicamento !== 'none' ? [{ label: "Tipo de medicamento", value: p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) }] : (checkIsGenerico(p) ? [{ label: "Tipo de medicamento", value: "Genérico" }] : [])),
+                        ...(p.produtoNatureza ? [{ label: "Natureza", value: p.produtoNatureza === 'servico' ? 'Serviço' : 'Produto Físico' }] : []),
                         ...(p.categoriasIds && p.categoriasIds.length > 0 ? [
                           { 
                             label: "Categorias Adicionais", 
@@ -1192,7 +1197,7 @@ function PDP() {
                         ] : []),
                         { label: "É kit", value: String(p.tipoProduto || '').toLowerCase() === 'kit' ? 'Sim' : 'Não' },
                         ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo, value: c.descricao })) : [])
-                      ].filter(row => row.value !== null && row.value !== '').map((row, idx) => (
+                      ].filter(row => row.value !== null && row.value !== '' && row.value !== undefined).map((row, idx) => (
                         <tr key={idx} className={`${idx % 2 === 0 ? 'bg-slate-50 ' : ''}border-b last:border-b-0`}>
                           <td className="py-3 px-4 text-slate-500 w-1/3">{row.label}</td>
                           <td className="py-3 px-4 font-bold text-slate-900">{row.value}</td>
@@ -1202,26 +1207,31 @@ function PDP() {
                   </table>
                 </div>
 
-                {p.principiosAtivos && p.principiosAtivos.some((pa: any) => typeof pa === 'object' && pa !== null) && (
+                {p.principiosAtivos && Array.isArray(p.principiosAtivos) && p.principiosAtivos.length > 0 && (
                   <div className="pt-4 border-t">
                     <h3 className="text-lg font-bold text-slate-900 mb-4">Princípios ativos</h3>
-                    <div className="overflow-hidden rounded-lg">
+                    <div className="overflow-hidden rounded-lg border border-slate-200">
                       <table className="w-full text-sm text-left">
                         <thead>
-                          <tr className="text-slate-500 border-b">
-                            <th className="py-3 px-4 font-medium w-1/3">Nome</th>
-                            <th className="py-3 px-4 font-medium w-1/3">Concentração</th>
-                            <th className="py-3 px-4 font-medium w-1/3">Unidade</th>
+                          <tr className="bg-slate-100 text-slate-700 border-b">
+                            <th className="py-3 px-4 font-bold w-1/3">Nome</th>
+                            <th className="py-3 px-4 font-bold w-1/3">Concentração</th>
+                            <th className="py-3 px-4 font-bold w-1/3">Unidade</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {p.principiosAtivos.filter((pa: any) => typeof pa === 'object' && pa !== null).map((pa: any, i: number) => (
-                            <tr key={i} className={i % 2 === 0 ? "bg-slate-50" : ""}>
-                              <td className="py-3 px-4 font-bold text-slate-900">{pa.nome}</td>
-                              <td className="py-3 px-4 text-slate-700">{pa.concentracao || '-'}</td>
-                              <td className="py-3 px-4 text-slate-700">{pa.unidadeMedida || '-'}</td>
-                            </tr>
-                          ))}
+                          {p.principiosAtivos.map((pa: any, i: number) => {
+                            const nome = typeof pa === 'string' ? pa : (pa?.nome || '-');
+                            const conc = typeof pa === 'object' ? (pa?.concentracao || '-') : '-';
+                            const unid = typeof pa === 'object' ? (pa?.unidadeMedida || '-') : '-';
+                            return (
+                              <tr key={i} className={i % 2 === 0 ? "bg-slate-50" : "bg-white"}>
+                                <td className="py-3 px-4 font-bold text-slate-900">{nome}</td>
+                                <td className="py-3 px-4 text-slate-700 font-medium">{conc}</td>
+                                <td className="py-3 px-4 text-slate-700 font-medium">{unid}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -1595,9 +1605,9 @@ function PDP() {
                 )}
               </div>
               
-              {isMedication && (
-                <div className="mt-6 p-3 bg-red-50 text-red-800 rounded-lg text-xs font-bold text-center border border-red-100">
-                  "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."
+              {p.alertaRegulatorio && (
+                <div className="mt-6 p-3.5 bg-amber-50 text-amber-900 rounded-xl text-xs font-bold text-center border border-amber-200 uppercase tracking-tight shadow-xs">
+                  {p.alertaTexto || '"AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."'}
                 </div>
               )}
             </div>
