@@ -52,6 +52,15 @@ function StoreLayout() {
 
     if (isParceiro) {
       themeToApply = { ...PARCEIRO_THEME };
+    } else {
+      // Pleno: ícones do cabeçalho em laranja (#f37021) e botão Cesta em branco com borda/texto teal (#00b5ad)
+      themeToApply = {
+        "--header-icons": "#f37021",
+        "--cart-btn-bg": "#ffffff",
+        "--cart-btn-text": "#00b5ad",
+        "--cart-badge-bg": "#f37021",
+        "--cart-badge-text": "#ffffff",
+      };
     }
 
     if (activePharmacy.themeColors) {
