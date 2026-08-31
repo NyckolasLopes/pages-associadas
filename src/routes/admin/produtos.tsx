@@ -51,8 +51,11 @@ import { toast } from "sonner";
 import {
   SpreadsheetImporter,
   generateTemplate,
+  generateCsvTemplate,
   generateJsonTemplate,
+  exportProductsAsCsv,
   exportProductsAsExcel,
+  exportProductsAsJson,
 } from "@/components/admin/SpreadsheetImporter";
 import { DescriptionImporter } from "@/components/admin/DescriptionImporter";
 import { BulkEditModal } from "@/components/admin/BulkEditModal";
@@ -289,8 +292,8 @@ function AdminProdutos() {
   const handleExportJson = async () => {
     setIsLoading(true);
     try {
-      generateJsonTemplate();
-      toast.success("Modelo JSON completo exportado com sucesso!");
+      exportProductsAsJson(serverProducts);
+      toast.success(`${serverProducts.length} produtos exportados em JSON com sucesso!`);
     } catch (e) {
       toast.error("Erro ao exportar JSON");
     } finally {
@@ -669,14 +672,12 @@ function AdminProdutos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => exportProductsAsExcel(serverProducts)}
+                  onClick={() => exportProductsAsCsv(serverProducts)}
                   className="font-bold text-xs"
                 >
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
-                  Exportar Planilha
+                  Exportar Planilha (CSV)
                 </Button>
-                
-                
               </>
             )}
           </div>
@@ -739,20 +740,29 @@ function AdminProdutos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={generateTemplate}
-                  className="font-bold text-xs"
+                  onClick={generateCsvTemplate}
+                  className="font-bold text-xs border-teal-600 text-teal-700 hover:bg-teal-50"
                 >
                   <Download className="h-3.5 w-3.5 mr-1.5" />
-                  Baixar Modelo Planilha
+                  Baixar Modelo Planilha (.csv)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateTemplate}
+                  className="font-bold text-xs border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                  Baixar Modelo Planilha (.xlsx)
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={generateJsonTemplate}
-                  className="font-bold text-xs"
+                  className="font-bold text-xs border-indigo-600 text-indigo-700 hover:bg-indigo-50"
                 >
                   <Download className="h-3.5 w-3.5 mr-1.5" />
-                  Baixar Modelo JSON
+                  Baixar Modelo JSON (.json)
                 </Button>
               </>
             )}

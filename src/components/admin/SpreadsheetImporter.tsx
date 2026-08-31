@@ -461,6 +461,92 @@ function rowToProduct(
   };
 }
 
+function escapeCsvValue(val: any): string {
+  if (val === null || val === undefined) return '""';
+  const str = String(val);
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+// ---- Generate Template Spreadsheet CSV (.CSV) ----
+export function generateCsvTemplate() {
+  const headers = [
+    // 1. Identificação Básica
+    "Código Interno", "SKU", "EAN (Código de Barras)", "EAN 2", "EAN 3", "EANs Secundários", "Nome do Produto", "Marca / Laboratório",
+    // 2. Categorias & Classificação
+    "Categoria Principal", "Subcategoria Principal", "Categorias Adicionais", "Subcategorias Adicionais", "Tipo de Produto (fisico/servico)", "Natureza do Produto",
+    // 3. Regulatório & Farmacêutico
+    "Registro ANVISA / MS", "Tarja", "Retém Receita (Sim/Não)", "Tipo de Receita", "Genérico (Sim/Não)", "Tipo de Medicamento", "Princípios Ativos / Fórmula", "Classe Terapêutica", "Indicação Terapêutica", "Regime de Preço (Liberado/Monitorado)", "NCM", "Alerta Regulatório (Sim/Não)", "Texto do Alerta Regulatório",
+    // 4. Preços & Estoque
+    "Preço De (R$)", "Preço Por (Venda R$)", "Preço de Custo (R$)", "Estoque", "Preço Sob Consulta (Sim/Não)", "Bloquear Preço (Sim/Não)", "Em Campanha (Sim/Não)", "Preço Campanha (R$)", "Início Campanha (AAAA-MM-DD)", "Fim Campanha (AAAA-MM-DD)", "Preço Encarte (R$)", "Qtd Mínima", "Qtd Múltipla", "Programa Fidelidade (Sim/Não)",
+    // 5. Embalagem & Atributos
+    "Qtd Embalagem", "Unidade Embalagem", "Qtd Conteúdo", "Unidade Conteúdo", "Sabor / Aroma", "FPS", "Faixa Etária",
+    // 6. Descrições
+    "Resumo Curto", "Descrição Completa / Bula (HTML)",
+    // 7. Imagens & Mídia
+    "URL da Foto Principal", "URLs Fotos Adicionais (separadas por vírgula)", "Texto ALT da Imagem", "URL do Vídeo", "URL do Vídeo YouTube",
+    // 8. SEO & Busca
+    "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca (separadas por vírgula)", "Termos de Pesquisa",
+    // 9. Status & Visibilidade
+    "Produto Ativo (Sim/Não)", "Visível no Catálogo (Sim/Não)", "Buscável (Sim/Não)", "À Venda (Sim/Não)", "Destaque na Home (Sim/Não)", "Lançamento (Sim/Não)", "Prioridade / Relevância (0-100)", "Selos IDs", "Vitrines / Coleções", "Compre Junto (ID Produto)",
+    // 10. Serviços
+    "Instrução de Preparação", "Exige Prescrição"
+  ];
+
+  const sampleRows = [
+    [
+      "563003", "563003", "7896523207360", "", "", "", "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS", "CIMED",
+      "Medicamentos", "Dor e Febre", "", "", "fisico", "Medicamento",
+      "1438100510076", "Sem Tarja", "Não", "", "Sim", "Similar", "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg", "Analgésico e Relaxante Muscular", "Alívio de dores musculares e cefaleias", "Liberado", "30049099", "Não", "",
+      8.33, 4.99, 2.50, 1406, "Não", "Não", "Sim", 4.49, "2026-08-01", "2026-08-31", 4.99, 1, 1, "Sim",
+      10, "Comprimidos", 10, "unidades", "", 0, "Adulto e Pediátrico acima de 12 anos",
+      "Indicado para o alívio da dor associada a contraturas musculares.", "<p><strong>Nevralgex</strong> é indicado no alívio da dor associada a contraturas musculares decorrentes de processos traumáticos ou inflamatórios e em cefaleias tensionais.</p>",
+      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523207360.jpg", "", "Nevralgex 10 comprimidos Cimed", "", "",
+      "nevralgex-300mg-50mg-35mg-10-comprimidos-563003", "Nevralgex 10 Comprimidos - Compre Online com Melhor Preço", "Compre Nevralgex com 10 comprimidos na Farmácias Associadas. Alívio rápido para dores musculares e dor de cabeça com entrega rápida.", "nevralgex, dipirona, relaxante muscular, dor de cabeca, cimed", "nevralgex dor muscular relaxante",
+      "Sim", "Sim", "Sim", "Sim", "Sim", "Não", 80, "gen", "ofertas-do-mes,mais-vendidos", "",
+      "", "nao"
+    ],
+    [
+      "558600", "558600", "7896523216812", "", "", "", "DIAD 1.5MG COM 1 COMPRIMIDO", "CIMED",
+      "Medicamentos", "Saúde da Mulher", "", "", "fisico", "Medicamento",
+      "1438100880027", "Sem Tarja", "Não", "", "Sim", "Similar", "Levonorgestrel 1.5mg", "Contraceptivo de Emergência", "Anticoncepção de emergência", "Liberado", "30043919", "Não", "",
+      22.55, 19.99, 11.20, 822, "Não", "Não", "Não", 0, "", "", 19.99, 1, 1, "Não",
+      1, "Comprimido", 1.5, "mg", "", 0, "Adulto",
+      "Contraceptivo de emergência em dose única de levonorgestrel.", "<p><strong>Diad 1,5mg</strong> é indicado como contraceptivo de emergência, que deve ser utilizado dentro de 72 horas após relação sexual desprotegida.</p>",
+      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523216812.jpg", "", "Diad 1.5mg 1 comprimido Cimed", "", "",
+      "diad-15mg-1-comprimido-558600", "Diad 1.5mg com 1 Comprimido - Farmácias Associadas", "Compre Diad 1.5mg anticoncepcional de emergência com total discrição e entrega rápida na Farmácias Associadas.", "diad, levonorgestrel, pilula do dia seguinte, cimed", "diad pilula do dia seguinte emergencial",
+      "Sim", "Sim", "Sim", "Sim", "Não", "Não", 60, "", "saude-feminina", "",
+      "", "nao"
+    ],
+    [
+      "7891234", "7891234", "7891058021108", "", "", "", "PROTETOR SOLAR FACIAL FPS 60 TOQUE SECO 50G", "ASSOCIADAS DERMO",
+      "Dermocosméticos", "Proteção Solar", "Cuidados com a Pele", "Rosto", "fisico", "Cosmético",
+      "25351.123456/2026-78", "Sem Tarja", "Não", "", "Não", "", "Filtros Solares UVA/UVB, Vitamina E, Niacinamida", "Fotoprotetor Dermatológico", "Proteção solar diária com ação antioxidante e controle de oleosidade", "Liberado", "33049990", "Não", "",
+      69.90, 49.90, 28.00, 350, "Não", "Não", "Sim", 44.90, "2026-08-01", "2026-08-31", 49.90, 1, 1, "Sim",
+      1, "Bisnaga", 50, "g", "Sem Fragrância", 60, "Todas as Idades",
+      "Alta proteção solar UVA/UVB com toque seco e controle de oleosidade.", "<p>O <strong>Protetor Solar Facial FPS 60</strong> oferece alta proteção contra os raios solares, prevenindo o fotoenvelhecimento e manchas solares. Fórmula não comedogênica de rápida absorção.</p>",
+      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7891058021108.jpg", "", "Protetor Solar Facial FPS 60 Toque Seco Associadas Dermo 50g", "", "",
+      "protetor-solar-facial-fps-60-toque-seco-50g-7891234", "Protetor Solar Facial FPS 60 Toque Seco 50g - Farmácias Associadas", "Proteja sua pele com o Protetor Solar Facial FPS 60. Toque seco e alta durabilidade. Compre online com desconto exclusivo.", "protetor solar, protetor facial, fps 60, toque seco, dermocosmeticos", "protetor solar rosto toque seco",
+      "Sim", "Sim", "Sim", "Sim", "Sim", "Sim", 95, "lancamento,dermo", "verao,dermocosmeticos,destaques-home", "",
+      "", "nao"
+    ]
+  ];
+
+  const csvContent = "\uFEFF" + [
+    headers.map(escapeCsvValue).join(";"),
+    ...sampleRows.map(row => row.map(escapeCsvValue).join(";"))
+  ].join("\r\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const dlAnchorElem = document.createElement("a");
+  dlAnchorElem.setAttribute("href", url);
+  dlAnchorElem.setAttribute("download", "modelo_produtos_farmacia.csv");
+  document.body.appendChild(dlAnchorElem);
+  dlAnchorElem.click();
+  document.body.removeChild(dlAnchorElem);
+  URL.revokeObjectURL(url);
+}
+
 // ---- Generate Template Spreadsheet (.XLSX) ----
 export function generateTemplate() {
   const wb = XLSX.utils.book_new();
@@ -482,69 +568,47 @@ export function generateTemplate() {
     // 8. SEO & Busca
     "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca (separadas por vírgula)", "Termos de Pesquisa",
     // 9. Status & Visibilidade
-    "Produto Ativo (Sim/Não)", "Visível no Catálogo (Sim/Não)", "Buscável (Sim/Não)", "À Venda (Sim/Não)", "Destaque na Home (Sim/Não)", "Lançamento (Sim/Não)", "Prioridade / Relevância (0-100)", "Selos IDs", "Vitrines / Coleções", "Compre Junto (ID Produto)"
+    "Produto Ativo (Sim/Não)", "Visível no Catálogo (Sim/Não)", "Buscável (Sim/Não)", "À Venda (Sim/Não)", "Destaque na Home (Sim/Não)", "Lançamento (Sim/Não)", "Prioridade / Relevância (0-100)", "Selos IDs", "Vitrines / Coleções", "Compre Junto (ID Produto)",
+    // 10. Serviços
+    "Instrução de Preparação", "Exige Prescrição"
   ];
 
   const sampleRows = [
     [
-      // 1. Identificação Básica
       "563003", "563003", "7896523207360", "", "", "", "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS", "CIMED",
-      // 2. Categorias & Classificação
       "Medicamentos", "Dor e Febre", "", "", "fisico", "Medicamento",
-      // 3. Regulatório & Farmacêutico
       "1438100510076", "Sem Tarja", "Não", "", "Sim", "Similar", "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg", "Analgésico e Relaxante Muscular", "Alívio de dores musculares e cefaleias", "Liberado", "30049099", "Não", "",
-      // 4. Preços & Estoque
       8.33, 4.99, 2.50, 1406, "Não", "Não", "Sim", 4.49, "2026-08-01", "2026-08-31", 4.99, 1, 1, "Sim",
-      // 5. Embalagem & Atributos
       10, "Comprimidos", 10, "unidades", "", 0, "Adulto e Pediátrico acima de 12 anos",
-      // 6. Descrições
       "Indicado para o alívio da dor associada a contraturas musculares.", "<p><strong>Nevralgex</strong> é indicado no alívio da dor associada a contraturas musculares decorrentes de processos traumáticos ou inflamatórios e em cefaleias tensionais.</p>",
-      // 7. Imagens & Mídia
       "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523207360.jpg", "", "Nevralgex 10 comprimidos Cimed", "", "",
-      // 8. SEO & Busca
       "nevralgex-300mg-50mg-35mg-10-comprimidos-563003", "Nevralgex 10 Comprimidos - Compre Online com Melhor Preço", "Compre Nevralgex com 10 comprimidos na Farmácias Associadas. Alívio rápido para dores musculares e dor de cabeça com entrega rápida.", "nevralgex, dipirona, relaxante muscular, dor de cabeca, cimed", "nevralgex dor muscular relaxante",
-      // 9. Status & Visibilidade
-      "Sim", "Sim", "Sim", "Sim", "Sim", "Não", 80, "gen", "ofertas-do-mes,mais-vendidos", ""
+      "Sim", "Sim", "Sim", "Sim", "Sim", "Não", 80, "gen", "ofertas-do-mes,mais-vendidos", "",
+      "", "nao"
     ],
     [
-      // 1. Identificação Básica
       "558600", "558600", "7896523216812", "", "", "", "DIAD 1.5MG COM 1 COMPRIMIDO", "CIMED",
-      // 2. Categorias & Classificação
       "Medicamentos", "Saúde da Mulher", "", "", "fisico", "Medicamento",
-      // 3. Regulatório & Farmacêutico
       "1438100880027", "Sem Tarja", "Não", "", "Sim", "Similar", "Levonorgestrel 1.5mg", "Contraceptivo de Emergência", "Anticoncepção de emergência", "Liberado", "30043919", "Não", "",
-      // 4. Preços & Estoque
       22.55, 19.99, 11.20, 822, "Não", "Não", "Não", 0, "", "", 19.99, 1, 1, "Não",
-      // 5. Embalagem & Atributos
       1, "Comprimido", 1.5, "mg", "", 0, "Adulto",
-      // 6. Descrições
       "Contraceptivo de emergência em dose única de levonorgestrel.", "<p><strong>Diad 1,5mg</strong> é indicado como contraceptivo de emergência, que deve ser utilizado dentro de 72 horas após relação sexual desprotegida.</p>",
-      // 7. Imagens & Mídia
       "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523216812.jpg", "", "Diad 1.5mg 1 comprimido Cimed", "", "",
-      // 8. SEO & Busca
       "diad-15mg-1-comprimido-558600", "Diad 1.5mg com 1 Comprimido - Farmácias Associadas", "Compre Diad 1.5mg anticoncepcional de emergência com total discrição e entrega rápida na Farmácias Associadas.", "diad, levonorgestrel, pilula do dia seguinte, cimed", "diad pilula do dia seguinte emergencial",
-      // 9. Status & Visibilidade
-      "Sim", "Sim", "Sim", "Sim", "Não", "Não", 60, "", "saude-feminina", ""
+      "Sim", "Sim", "Sim", "Sim", "Não", "Não", 60, "", "saude-feminina", "",
+      "", "nao"
     ],
     [
-      // 1. Identificação Básica
       "7891234", "7891234", "7891058021108", "", "", "", "PROTETOR SOLAR FACIAL FPS 60 TOQUE SECO 50G", "ASSOCIADAS DERMO",
-      // 2. Categorias & Classificação
       "Dermocosméticos", "Proteção Solar", "Cuidados com a Pele", "Rosto", "fisico", "Cosmético",
-      // 3. Regulatório & Farmacêutico
       "25351.123456/2026-78", "Sem Tarja", "Não", "", "Não", "", "Filtros Solares UVA/UVB, Vitamina E, Niacinamida", "Fotoprotetor Dermatológico", "Proteção solar diária com ação antioxidante e controle de oleosidade", "Liberado", "33049990", "Não", "",
-      // 4. Preços & Estoque
       69.90, 49.90, 28.00, 350, "Não", "Não", "Sim", 44.90, "2026-08-01", "2026-08-31", 49.90, 1, 1, "Sim",
-      // 5. Embalagem & Atributos
       1, "Bisnaga", 50, "g", "Sem Fragrância", 60, "Todas as Idades",
-      // 6. Descrições
       "Alta proteção solar UVA/UVB com toque seco e controle de oleosidade.", "<p>O <strong>Protetor Solar Facial FPS 60</strong> oferece alta proteção contra os raios solares, prevenindo o fotoenvelhecimento e manchas solares. Fórmula não comedogênica de rápida absorção.</p>",
-      // 7. Imagens & Mídia
       "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7891058021108.jpg", "", "Protetor Solar Facial FPS 60 Toque Seco Associadas Dermo 50g", "", "",
-      // 8. SEO & Busca
       "protetor-solar-facial-fps-60-toque-seco-50g-7891234", "Protetor Solar Facial FPS 60 Toque Seco 50g - Farmácias Associadas", "Proteja sua pele com o Protetor Solar Facial FPS 60. Toque seco e alta durabilidade. Compre online com desconto exclusivo.", "protetor solar, protetor facial, fps 60, toque seco, dermocosmeticos", "protetor solar rosto toque seco",
-      // 9. Status & Visibilidade
-      "Sim", "Sim", "Sim", "Sim", "Sim", "Sim", 95, "lancamento,dermo", "verao,dermocosmeticos,destaques-home", ""
+      "Sim", "Sim", "Sim", "Sim", "Sim", "Sim", 95, "lancamento,dermo", "verao,dermocosmeticos,destaques-home", "",
+      "", "nao"
     ]
   ];
 
@@ -645,6 +709,10 @@ export function generateJsonTemplate() {
         "selos_ids": ["gen"],
         "vitrines_colecoes": ["ofertas-do-mes", "mais-vendidos"],
         "compre_junto_produto_id": ""
+      },
+      "servicos_e_saude": {
+        "instrucao_preparacao": "",
+        "prescricao_servico": "nao"
       }
     }
   ];
@@ -658,9 +726,114 @@ export function generateJsonTemplate() {
   document.body.removeChild(dlAnchorElem);
 }
 
-// ---- Export products as Excel ----
-export function exportProductsAsExcel(products: Produto[]) {
-  const wb = XLSX.utils.book_new();
+// ---- Export products as JSON ----
+export function exportProductsAsJson(products: Produto[]) {
+  const jsonList = products.map(p => ({
+    cabecalho_identificacao: {
+      codigo_interno: p.codigoInterno || p.id,
+      sku: p.sku || p.codigoInterno || p.ean || p.id,
+      ean_principal: p.ean || "",
+      ean_secundario_2: p.ean2 || "",
+      ean_secundario_3: p.ean3 || "",
+      eans_secundarios_adicionais: Array.isArray(p.eansSecundarios) ? p.eansSecundarios : (p.eansSecundarios ? [p.eansSecundarios] : []),
+      nome_produto_descricao_comercial: p.nome || "",
+      marca_fabricante_laboratorio: p.marca || ""
+    },
+    categorizacao_e_classificacao: {
+      categoria_principal: p.categoriaId || "",
+      subcategoria_principal: p.subcategoriaId || "",
+      categorias_adicionais: Array.isArray(p.categoriasAdicionais) ? p.categoriasAdicionais : (p.categoriasAdicionais ? [p.categoriasAdicionais] : []),
+      subcategorias_adicionais: Array.isArray(p.subcategoriasAdicionais) ? p.subcategoriasAdicionais : (p.subcategoriasAdicionais ? [p.subcategoriasAdicionais] : []),
+      tipo_produto: p.tipoProduto || "fisico",
+      natureza_do_produto: p.produtoNatureza || ""
+    },
+    informacoes_farmaceuticas_e_regulatorias: {
+      registro_anvisa_ms: p.registroAnvisa || "",
+      tarja: p.tarja || "Sem Tarja",
+      retem_receita: Boolean(p.retemReceita),
+      tipo_de_receita: p.tipoReceita || "",
+      medicamento_generico: Boolean(p.generico),
+      tipo_de_medicamento: p.tipoMedicamento || "",
+      principios_ativos_formula: Array.isArray(p.principiosAtivos) ? p.principiosAtivos.map(x => typeof x === 'string' ? x : x.nome).join(", ") : (p.principiosAtivos || ""),
+      classe_terapeutica: p.classeTerapeutica || "",
+      indicacao_terapeutica: p.indicacaoTerapeutica || "",
+      regime_de_preco: p.tipoDePreco || "Liberado",
+      ncm: p.ncm || "",
+      alerta_regulatorio: Boolean(p.alertaRegulatorio),
+      texto_alerta_regulatorio: p.alertaTexto || ""
+    },
+    precificacao_e_estoque: {
+      preco_de: p.precoDe || 0,
+      preco_por_venda: p.precoPor || 0,
+      preco_custo: p.precoCusto || 0,
+      estoque: p.estoque || 0,
+      preco_sob_consulta: Boolean(p.precoSobConsulta),
+      bloquear_preco: Boolean(p.bloquearPreco),
+      em_campanha: Boolean(p.emCampanha),
+      preco_campanha: p.precoCampanha || 0,
+      data_inicio_campanha: p.campanhaInicio || "",
+      data_fim_campanha: p.campanhaFim || "",
+      preco_encarte: p.precoEncarte || 0,
+      quantidade_minima_venda: p.quantidadeMinima || 1,
+      quantidade_multipla_venda: p.quantidadeMultipla || 1,
+      participa_programa_fidelidade: Boolean(p.programaFidelidade)
+    },
+    embalagem_e_atributos: {
+      quantidade_na_embalagem: p.quantidadeEmbalagem || 0,
+      unidade_da_embalagem: p.unidadeEmbalagem || "",
+      quantidade_do_conteudo: p.quantidadeConteudo || 0,
+      unidade_do_conteudo: p.unidadeConteudo || "",
+      sabor_aroma: p.sabor || "",
+      fps_protecao_solar: p.fps || 0,
+      faixa_etaria: p.faixaEtaria || ""
+    },
+    conteudo_e_descricoes: {
+      resumo_curto: p.resumoDescricao || "",
+      descricao_completa_html: p.descricao || ""
+    },
+    imagens_e_midia: {
+      url_foto_principal: p.foto || "",
+      urls_fotos_adicionais: Array.isArray(p.imagens) ? p.imagens.map((img: any) => typeof img === 'string' ? img : img?.caminhoImagem).filter(Boolean) : [],
+      texto_alt_imagem_seo: p.imagemAlt || "",
+      url_video: p.videoUrl || "",
+      url_video_youtube: p.youtubeVideoUrl || ""
+    },
+    seo_e_buscas: {
+      link_da_pagina_slug: p.url || "",
+      titulo_seo_meta_title: p.seoTitulo || "",
+      descricao_seo_meta_description: p.metaDescription || "",
+      tags_de_busca_interna: Array.isArray(p.internalTags) ? p.internalTags : (p.internalTags ? [p.internalTags] : []),
+      termos_pesquisa: p.termosPesquisa || ""
+    },
+    status_e_organizacao: {
+      produto_ativo: p.ativo !== false,
+      visivel_no_catalogo: p.visivel !== false,
+      buscavel_na_busca: p.buscavel !== false,
+      disponivel_para_venda: p.aVenda !== false,
+      destaque_na_home: Boolean(p.destaque),
+      selo_lancamento: Boolean(p.lancamento),
+      prioridade_relevancia: p.prioridade || 0,
+      selos_ids: Array.isArray(p.selosIds) ? p.selosIds : (p.selosIds ? [p.selosIds] : []),
+      vitrines_colecoes: Array.isArray(p.vitrines) ? p.vitrines : (p.vitrines ? [p.vitrines] : []),
+      compre_junto_produto_id: p.compreJuntoProdutoId || ""
+    },
+    servicos_e_saude: {
+      instrucao_preparacao: (p as any).instrucaoPreparacao || "",
+      prescricao_servico: (p as any).prescricaoServico || "nao"
+    }
+  }));
+
+  const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonList, null, 2));
+  const dlAnchorElem = document.createElement("a");
+  dlAnchorElem.setAttribute("href", dataStr);
+  dlAnchorElem.setAttribute("download", "produtos_exportados.json");
+  document.body.appendChild(dlAnchorElem);
+  dlAnchorElem.click();
+  document.body.removeChild(dlAnchorElem);
+}
+
+// ---- Export products as CSV (Spreadsheet) ----
+export function exportProductsAsCsv(products: Produto[]) {
   const headers = [
     // 1. Identificação Básica
     "Código Interno", "SKU", "EAN (Código de Barras)", "EAN 2", "EAN 3", "EANs Secundários", "Nome do Produto", "Marca / Laboratório",
@@ -679,7 +852,9 @@ export function exportProductsAsExcel(products: Produto[]) {
     // 8. SEO & Busca
     "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca", "Termos de Pesquisa",
     // 9. Status & Visibilidade
-    "Produto Ativo", "Visível no Catálogo", "Buscável", "À Venda", "Destaque na Home", "Lançamento", "Prioridade (0-100)", "Selos IDs", "Vitrines", "Compre Junto ID"
+    "Produto Ativo", "Visível no Catálogo", "Buscável", "À Venda", "Destaque na Home", "Lançamento", "Prioridade (0-100)", "Selos IDs", "Vitrines", "Compre Junto ID",
+    // 10. Serviços
+    "Instrução de Preparação", "Exige Prescrição"
   ];
   
   const getCatName = (id: string, isSubcat = false) => {
@@ -775,7 +950,149 @@ export function exportProductsAsExcel(products: Produto[]) {
     p.prioridade || 0,
     Array.isArray(p.selosIds) ? p.selosIds.join(", ") : (p.selosIds || ""),
     Array.isArray(p.vitrines) ? p.vitrines.join(", ") : (p.vitrines || ""),
-    p.compreJuntoProdutoId || ""
+    p.compreJuntoProdutoId || "",
+    (p as any).instrucaoPreparacao || "",
+    (p as any).prescricaoServico || ""
+  ]);
+
+  const csvContent = "\uFEFF" + [
+    headers.map(escapeCsvValue).join(";"),
+    ...rows.map(row => row.map(escapeCsvValue).join(";"))
+  ].join("\r\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const dlAnchorElem = document.createElement("a");
+  dlAnchorElem.setAttribute("href", url);
+  dlAnchorElem.setAttribute("download", "produtos_exportados.csv");
+  document.body.appendChild(dlAnchorElem);
+  dlAnchorElem.click();
+  document.body.removeChild(dlAnchorElem);
+  URL.revokeObjectURL(url);
+}
+
+// ---- Export products as Excel ----
+export function exportProductsAsExcel(products: Produto[]) {
+  const wb = XLSX.utils.book_new();
+  const headers = [
+    // 1. Identificação Básica
+    "Código Interno", "SKU", "EAN (Código de Barras)", "EAN 2", "EAN 3", "EANs Secundários", "Nome do Produto", "Marca / Laboratório",
+    // 2. Categorias & Classificação
+    "Categoria Principal", "Subcategoria Principal", "Categorias Adicionais", "Subcategorias Adicionais", "Tipo de Produto", "Natureza do Produto",
+    // 3. Regulatório & Farmacêutico
+    "Registro ANVISA / MS", "Tarja", "Retém Receita", "Tipo de Receita", "Genérico", "Tipo de Medicamento", "Princípios Ativos / Fórmula", "Classe Terapêutica", "Indicação Terapêutica", "Regime de Preço", "NCM", "Alerta Regulatório", "Texto do Alerta",
+    // 4. Preços & Estoque
+    "Preço De (R$)", "Preço Por (Venda R$)", "Preço de Custo (R$)", "Estoque", "Preço Sob Consulta", "Bloquear Preço", "Em Campanha", "Preço Campanha (R$)", "Início Campanha", "Fim Campanha", "Preço Encarte (R$)", "Qtd Mínima", "Qtd Múltipla", "Programa Fidelidade",
+    // 5. Embalagem & Atributos
+    "Qtd Embalagem", "Unidade Embalagem", "Qtd Conteúdo", "Unidade Conteúdo", "Sabor / Aroma", "FPS", "Faixa Etária",
+    // 6. Descrições
+    "Resumo Curto", "Descrição Completa (HTML)",
+    // 7. Imagens & Mídia
+    "URL da Foto Principal", "URLs Fotos Adicionais", "Texto ALT da Imagem", "URL do Vídeo", "URL do Vídeo YouTube",
+    // 8. SEO & Busca
+    "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca", "Termos de Pesquisa",
+    // 9. Status & Visibilidade
+    "Produto Ativo", "Visível no Catálogo", "Buscável", "À Venda", "Destaque na Home", "Lançamento", "Prioridade (0-100)", "Selos IDs", "Vitrines", "Compre Junto ID",
+    // 10. Serviços
+    "Instrução de Preparação", "Exige Prescrição"
+  ];
+  
+  const getCatName = (id: string, isSubcat = false) => {
+    const cats = categoriesData as any[];
+    const cat = cats.find(c => String(c.id) === String(id));
+    return cat ? cat.nome : id;
+  };
+
+  const rows = products.map((p) => [
+    // 1. Identificação Básica
+    p.codigoInterno || p.id,
+    p.sku || p.codigoInterno || p.ean || p.id,
+    p.ean || "",
+    p.ean2 || "",
+    p.ean3 || "",
+    Array.isArray(p.eansSecundarios) ? p.eansSecundarios.join(", ") : (p.eansSecundarios || ""),
+    p.nome || "",
+    p.marca || "",
+
+    // 2. Categorias & Classificação
+    getCatName(p.categoriaId),
+    getCatName(p.subcategoriaId, true),
+    Array.isArray(p.categoriasAdicionais) ? p.categoriasAdicionais.join(", ") : (p.categoriasAdicionais || ""),
+    Array.isArray(p.subcategoriasAdicionais) ? p.subcategoriasAdicionais.join(", ") : (p.subcategoriasAdicionais || ""),
+    p.tipoProduto || "fisico",
+    p.produtoNatureza || "",
+
+    // 3. Regulatório & Farmacêutico
+    p.registroAnvisa || "",
+    p.tarja || "Sem Tarja",
+    p.retemReceita ? "Sim" : "Não",
+    p.tipoReceita || "",
+    p.generico ? "Sim" : "Não",
+    p.tipoMedicamento || "",
+    Array.isArray(p.principiosAtivos) ? p.principiosAtivos.map(x => typeof x === 'string' ? x : x.nome).join(", ") : (p.principiosAtivos || ""),
+    p.classeTerapeutica || "",
+    p.indicacaoTerapeutica || "",
+    p.tipoDePreco || "Liberado",
+    p.ncm || "",
+    p.alertaRegulatorio ? "Sim" : "Não",
+    p.alertaTexto || "",
+
+    // 4. Preços & Estoque
+    p.precoDe || 0,
+    p.precoPor || 0,
+    p.precoCusto || 0,
+    p.estoque || 0,
+    p.precoSobConsulta ? "Sim" : "Não",
+    p.bloquearPreco ? "Sim" : "Não",
+    p.emCampanha ? "Sim" : "Não",
+    p.precoCampanha || 0,
+    p.campanhaInicio || "",
+    p.campanhaFim || "",
+    p.precoEncarte || 0,
+    p.quantidadeMinima || 1,
+    p.quantidadeMultipla || 1,
+    p.programaFidelidade ? "Sim" : "Não",
+
+    // 5. Embalagem & Atributos
+    p.quantidadeEmbalagem || 0,
+    p.unidadeEmbalagem || "",
+    p.quantidadeConteudo || 0,
+    p.unidadeConteudo || "",
+    p.sabor || "",
+    p.fps || 0,
+    p.faixaEtaria || "",
+
+    // 6. Descrições
+    p.resumoDescricao || "",
+    p.descricao || "",
+
+    // 7. Imagens & Mídia
+    p.foto || "",
+    Array.isArray(p.imagens) ? p.imagens.map(img => typeof img === 'string' ? img : img?.caminhoImagem).filter(Boolean).join(", ") : "",
+    p.imagemAlt || "",
+    p.videoUrl || "",
+    p.youtubeVideoUrl || "",
+
+    // 8. SEO & Busca
+    p.url || "",
+    p.seoTitulo || "",
+    p.metaDescription || "",
+    Array.isArray(p.internalTags) ? p.internalTags.join(", ") : (p.internalTags || ""),
+    p.termosPesquisa || "",
+
+    // 9. Status & Visibilidade
+    p.ativo !== false ? "Sim" : "Não",
+    p.visivel !== false ? "Sim" : "Não",
+    p.buscavel !== false ? "Sim" : "Não",
+    p.aVenda !== false ? "Sim" : "Não",
+    p.destaque ? "Sim" : "Não",
+    p.lancamento ? "Sim" : "Não",
+    p.prioridade || 0,
+    Array.isArray(p.selosIds) ? p.selosIds.join(", ") : (p.selosIds || ""),
+    Array.isArray(p.vitrines) ? p.vitrines.join(", ") : (p.vitrines || ""),
+    p.compreJuntoProdutoId || "",
+    (p as any).instrucaoPreparacao || "",
+    (p as any).prescricaoServico || ""
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -1186,7 +1503,19 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
                   <p className="text-sm font-bold text-slate-800">Precisa do modelo padrão?</p>
                   <p className="text-xs text-slate-500">Baixe o modelo com todos os campos idênticos ao cadastro e edição de produtos.</p>
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      generateCsvTemplate();
+                    }}
+                    className="font-bold text-xs flex-1 sm:flex-none border-teal-600 text-teal-700 hover:bg-teal-50"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    Baixar Modelo Planilha (.csv)
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
