@@ -56,6 +56,7 @@ export function StoreSelector({ className, hidePlenoForNonAdmin = false }: Store
             )}
             {userStores.map(loja => {
               const isLojaPleno = loja.categoriaAssociado === 'Pleno' || loja.isPleno === true;
+              const isLojaParceiro = loja.categoriaAssociado === 'Parceiro';
               return (
                 <SelectItem key={loja.id} value={loja.id}>
                   <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden max-w-[320px]">
@@ -64,6 +65,11 @@ export function StoreSelector({ className, hidePlenoForNonAdmin = false }: Store
                     {isGlobalAdmin && isLojaPleno && (
                       <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded shrink-0">
                         Pleno
+                      </span>
+                    )}
+                    {isGlobalAdmin && isLojaParceiro && (
+                      <span className="text-[10px] font-bold bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded shrink-0">
+                        Parceiro
                       </span>
                     )}
                   </div>
