@@ -489,8 +489,9 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
   );
 }
 
-export function getStoreBannerUrl(link?: string, storeSlug?: string): string {
-  if (!link || link === "#" || link.trim() === "") return `/${storeSlug || "poa"}`;
+export function getStoreBannerUrl(link?: string, storeSlug?: string): string | null {
+  // Sem link configurado → não deve ser clicável
+  if (!link || link === "#" || link.trim() === "") return null;
   const effectiveSlug = storeSlug || "poa";
   const trimmed = link.trim();
   
@@ -610,7 +611,7 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId, storeSlug: 
           {categorias.map(cat => {
             const Icon = getIcon(cat.imageUrl, cat.nome);
             const targetUrl = getStoreBannerUrl(cat.link, storeSlug);
-            const isExternal = targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("//");
+            const isExternal = targetUrl && (targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("//"));
 
             const content = (
               <div className="flex flex-col items-center gap-2 group cursor-pointer text-center w-full">
@@ -631,7 +632,11 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId, storeSlug: 
 
             return (
               <CarouselItem key={cat.id} className="pl-3 md:pl-4 basis-[95px] sm:basis-[110px] md:basis-[120px] lg:basis-[130px] flex justify-center shrink-0">
-                {isExternal ? (
+                {!targetUrl ? (
+                  <div className="w-full flex justify-center cursor-default">
+                    {content}
+                  </div>
+                ) : isExternal ? (
                   <a
                     href={targetUrl}
                     target="_blank"
@@ -668,33 +673,63 @@ function RecursiveBanner({ banner, allBanners, storeSlug: propStoreSlug }: { ban
   const link1 = getStoreBannerUrl(banner.link, storeSlug);
   const link2 = getStoreBannerUrl(banner.link2, storeSlug);
 
+  const imgClass = "block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow";
+  const noClickClass = "block overflow-hidden rounded-xl";
+
   return (
     <>
       <div key={banner.id}>
         {banner.formatoExtra === "2_banners" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <Link to={link1 as any} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            {link1 ? (
+              <Link to={link1 as any} className={imgClass}>
+                <picture className="w-full block">
+                  {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
+                  <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
+                </picture>
+              </Link>
+            ) : (
+              <div className={noClickClass}>
+                <picture className="w-full block">
+                  {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
+                  <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
+                </picture>
+              </div>
+            )}
+            {banner.imageUrl2 && (
+              link2 ? (
+                <Link to={link2 as any} className={imgClass}>
+                  <picture className="w-full block">
+                    {banner.mobileImageUrl2 && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl2} />}
+                    <img src={banner.imageUrl2} alt={banner.nome || "Banner promocional 2"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
+                  </picture>
+                </Link>
+              ) : (
+                <div className={noClickClass}>
+                  <picture className="w-full block">
+                    {banner.mobileImageUrl2 && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl2} />}
+                    <img src={banner.imageUrl2} alt={banner.nome || "Banner promocional 2"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
+                  </picture>
+                </div>
+              )
+            )}
+          </div>
+        ) : (
+          link1 ? (
+            <Link to={link1 as any} className={imgClass}>
               <picture className="w-full block">
                 {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
                 <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
               </picture>
             </Link>
-            {banner.imageUrl2 && (
-              <Link to={link2 as any} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <picture className="w-full block">
-                  {banner.mobileImageUrl2 && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl2} />}
-                  <img src={banner.imageUrl2} alt={banner.nome || "Banner promocional 2"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
-                </picture>
-              </Link>
-            )}
-          </div>
-        ) : (
-          <Link to={link1 as any} className="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
-            <picture className="w-full block">
-              {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
-              <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
-            </picture>
-          </Link>
+          ) : (
+            <div className={noClickClass}>
+              <picture className="w-full block">
+                {banner.mobileImageUrl && <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />}
+                <img src={banner.imageUrl} alt={banner.nome || "Banner promocional"} loading="lazy" decoding="async" className="w-full h-auto object-cover object-center" />
+              </picture>
+            </div>
+          )
         )}
       </div>
       {children.map(child => (

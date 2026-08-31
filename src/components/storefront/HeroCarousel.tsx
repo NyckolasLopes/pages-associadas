@@ -4,6 +4,7 @@ import { useParams } from "@tanstack/react-router";
 import { useAdmin, AdminBanner } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { getStoreBannerUrl } from "@/routes/_store.$storeSlug.index";
 
 interface HeroCarouselProps {
   page?: string;
@@ -171,38 +172,50 @@ export function HeroCarousel({
       >
         {deduplicatedActiveBanners.map((banner, idx) => {
           const isFirstSlide = idx === 0;
+          const resolvedLink = getStoreBannerUrl(banner.link, storeSlug);
+          const isExternal = resolvedLink && (resolvedLink.startsWith("http") || resolvedLink.startsWith("//"));
+
+          const picture = (
+            <picture className="block w-full h-full">
+              {/* Fonte mobile quando configurada */}
+              {banner.mobileImageUrl && (
+                <source
+                  media="(max-width: 767px)"
+                  srcSet={banner.mobileImageUrl}
+                  sizes="100vw"
+                />
+              )}
+              {/* Imagem principal com alta prioridade no primeiro slide e lazy no restante */}
+              <img
+                src={banner.imageUrl}
+                alt={banner.nome || "Banner Principal"}
+                className="w-full h-full object-cover object-center"
+                fetchPriority={isFirstSlide ? "high" : "low"}
+                loading={isFirstSlide ? "eager" : "lazy"}
+                decoding="async"
+                sizes="100vw"
+                width={1920}
+                height={600}
+              />
+            </picture>
+          );
 
           return (
             <div key={banner.id} className="w-full h-full shrink-0 relative">
-              <a 
-                href={banner.link?.match(/^\/(c|v|m|p|busca)\b/) ? `/${storeSlug}${banner.link}` : banner.link || "#"} 
-                target={banner.link && (banner.link.startsWith("http") || banner.link.startsWith("//")) ? "_blank" : undefined}
-                rel={banner.link && (banner.link.startsWith("http") || banner.link.startsWith("//")) ? "noopener noreferrer" : undefined}
-                className="block w-full h-full"
-              >
-                <picture className="block w-full h-full">
-                  {/* Fonte mobile quando configurada */}
-                  {banner.mobileImageUrl && (
-                    <source
-                      media="(max-width: 767px)"
-                      srcSet={banner.mobileImageUrl}
-                      sizes="100vw"
-                    />
-                  )}
-                  {/* Imagem principal com alta prioridade no primeiro slide e lazy no restante */}
-                  <img
-                    src={banner.imageUrl}
-                    alt={banner.nome || "Banner Principal"}
-                    className="w-full h-full object-cover object-center"
-                    fetchPriority={isFirstSlide ? "high" : "low"}
-                    loading={isFirstSlide ? "eager" : "lazy"}
-                    decoding="async"
-                    sizes="100vw"
-                    width={1920}
-                    height={600}
-                  />
-                </picture>
-              </a>
+              {resolvedLink ? (
+                <a
+                  href={resolvedLink}
+                  target={isExternal ? "_blank" : undefined}
+                  rel={isExternal ? "noopener noreferrer" : undefined}
+                  className="block w-full h-full"
+                >
+                  {picture}
+                </a>
+              ) : (
+                <div className="block w-full h-full cursor-default">
+                  {picture}
+                </div>
+              )}
             </div>
           );
         })}
