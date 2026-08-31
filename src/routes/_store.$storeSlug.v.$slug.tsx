@@ -17,6 +17,7 @@ const VITRINE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 import { useCart } from "@/stores/cart";
+import { ProductGridSkeleton } from "@/components/storefront/ProductGridSkeleton";
 
 export const Route = createFileRoute("/_store/$storeSlug/v/$slug")({
   validateSearch: zodValidator(
@@ -40,12 +41,15 @@ export const Route = createFileRoute("/_store/$storeSlug/v/$slug")({
 
     if (!vitrine) throw notFound();
 
-    const [unfilteredProducts, filteredProducts] = await Promise.all([
-      catalog.productsByVitrine(vitrine.id.toString(), vitrine.categoriaId, undefined, vitrine.modo === "manual" ? vitrine.produtoIds : undefined),
-      catalog.productsByVitrine(vitrine.id.toString(), vitrine.categoriaId, deps, vitrine.modo === "manual" ? vitrine.produtoIds : undefined),
-    ]);
+    const filteredProducts = await catalog.productsByVitrine(
+      vitrine.id.toString(), 
+      vitrine.categoriaId, 
+      deps, 
+      vitrine.modo === "manual" ? vitrine.produtoIds : undefined,
+      lojaId
+    );
 
-    return { vitrine, unfilteredProducts, filteredProducts };
+    return { vitrine, unfilteredProducts: filteredProducts, filteredProducts };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};
@@ -153,7 +157,7 @@ function VitrinePage() {
               <Button 
                 onClick={() => setVisibleCount(v => v + 24)} 
                 variant="outline" 
-                className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white"
+                className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white transition-all shadow-sm"
               >
                 Carregar mais produtos
               </Button>

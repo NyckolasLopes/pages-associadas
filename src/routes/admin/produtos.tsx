@@ -931,9 +931,53 @@ function AdminProdutos() {
 
         {/* Table content */}
         {isLoading ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
-            <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-slate-500 font-medium">Carregando produtos...</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-slate-50/50">
+                  <th className="text-left px-4 py-2.5 font-bold text-xs text-slate-500 uppercase tracking-wider">Produto</th>
+                  <th className="text-left px-4 py-2.5 font-bold text-xs text-slate-500 uppercase tracking-wider hidden md:table-cell">Origem</th>
+                  <th className="text-right px-4 py-2.5 font-bold text-xs text-slate-500 uppercase tracking-wider">Preço</th>
+                  <th className="text-right px-4 py-2.5 font-bold text-xs text-slate-500 uppercase tracking-wider">Estoque</th>
+                  <th className="text-center px-4 py-2.5 font-bold text-xs text-slate-500 uppercase tracking-wider">Status</th>
+                  <th className="text-center px-4 py-2.5 font-bold text-xs text-slate-500 uppercase tracking-wider">Destaque</th>
+                  <th className="text-right px-4 py-2.5 font-bold text-xs text-slate-500 uppercase tracking-wider w-12"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="border-b last:border-0 animate-pulse">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-slate-200 shrink-0" />
+                        <div className="space-y-1.5 flex-1">
+                          <div className="h-3.5 bg-slate-200 rounded w-48" />
+                          <div className="h-2.5 bg-slate-100 rounded w-24" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <div className="h-4 bg-slate-200 rounded w-16" />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="h-4 bg-emerald-100 rounded w-16 ml-auto" />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="h-4 bg-slate-200 rounded w-10 ml-auto" />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="h-5 bg-slate-200 rounded-full w-10 mx-auto" />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="h-5 bg-slate-200 rounded-full w-6 mx-auto" />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="h-7 w-7 bg-slate-200 rounded-lg ml-auto" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : totalProducts === 0 ? (
           search.length > 0 || listFilter !== 'all' ? (

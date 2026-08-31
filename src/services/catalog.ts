@@ -29,8 +29,17 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
 
     const ids = data.map((p: any) => p.id);
     
+    let precosQuery = supabase
+      .from('produto_precos_loja')
+      .select('produto_id, loja_id, preco_de, preco_por, estoque, ativo, destaque')
+      .in('produto_id', ids);
+    
+    if (lojaId) {
+      precosQuery = precosQuery.eq('loja_id', lojaId);
+    }
+
     const precosResponse: any = await Promise.race([
-      supabase.from('produto_precos_loja').select('*').in('produto_id', ids),
+      precosQuery,
       new Promise((_, reject) => setTimeout(() => reject(new Error("Supabase Precos Query Timeout")), timeoutMs))
     ]);
 

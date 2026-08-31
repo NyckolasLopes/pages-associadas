@@ -7,11 +7,9 @@ import { ProductCard } from "@/components/storefront/ProductCard";
 import type { Produto } from "@/types";
 import { ProductFilterSidebar } from "@/components/storefront/ProductFilterSidebar";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import { useSearchHistory } from "@/stores/searchHistory";
-import { useCart } from "@/stores/cart";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 import { Search, PackageOpen } from "lucide-react";
+import { ProductGridSkeleton } from "@/components/storefront/ProductGridSkeleton";
 
 export const Route = createFileRoute("/_store/$storeSlug/busca")({
   validateSearch: zodValidator(
@@ -31,7 +29,6 @@ function SearchPage() {
   const navigate = useNavigate();
   const { q, ...filters } = searchParams;
   
-  const [unfilteredResults, setUnfilteredResults] = useState<Produto[]>([]);
   const [productsList, setProductsList] = useState<Produto[]>([]);
   const [didYouMean, setDidYouMean] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -44,17 +41,6 @@ function SearchPage() {
   const logSearch = useSearchHistory((s) => s.logSearch);
 
   useEffect(() => {
-    // Fetch unfiltered for sidebar options (limited subset just for filters logic)
-    const fetchUnfiltered = async () => {
-      try {
-        const res = q ? await catalog.search(q, { pageSize: 120 }, selectedPharmacyId) : await catalog.listProducts({ pageSize: 120 }, selectedPharmacyId);
-        setUnfilteredResults(res || []);
-      } catch (e) {
-        setUnfilteredResults([]);
-      }
-    };
-    fetchUnfiltered();
-    
     if (q && selectedPharmacyId) {
       logSearch(selectedPharmacyId, q);
     }
@@ -157,9 +143,9 @@ function SearchPage() {
           )}
 
           {loading ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-              <Spinner size={32} />
-              <p className="text-sm font-medium">Buscando produtos...</p>
+            <div className="space-y-4">
+              <div className="h-4 w-40 bg-slate-200 rounded animate-pulse mb-4" />
+              <ProductGridSkeleton count={12} />
             </div>
           ) : productsList.length === 0 ? (
             <div className="py-16 flex flex-col items-center justify-center text-center bg-card rounded-2xl border p-8">
@@ -190,6 +176,12 @@ function SearchPage() {
                   <ProductCard key={p.id} p={p} />
                 ))}
               </div>
+
+              {loadingMore && (
+                <div className="mt-4">
+                  <ProductGridSkeleton count={8} />
+                </div>
+              )}
               
               {hasMore && (
                 <div className="mt-8 flex justify-center pb-8">
@@ -197,10 +189,10 @@ function SearchPage() {
                     onClick={loadMore} 
                     disabled={loadingMore}
                     variant="outline" 
-                    className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white"
+                    className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white transition-all shadow-sm"
                   >
                     {loadingMore ? <Spinner size={16} className="mr-2" /> : null}
-                    {loadingMore ? "Carregando..." : "Carregar mais produtos"}
+                    {loadingMore ? "Carregando mais produtos..." : "Carregar mais produtos"}
                   </Button>
                 </div>
               )}

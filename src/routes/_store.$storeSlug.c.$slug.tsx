@@ -19,6 +19,8 @@ import { useCart } from "@/stores/cart";
 import { useMarcasStore } from "@/stores/marcas";
 import { safeSlugify } from "@/hooks/useActivePharmacy";
 
+import { ProductGridSkeleton } from "@/components/storefront/ProductGridSkeleton";
+
 export const Route = createFileRoute("/_store/$storeSlug/c/$slug")({
   validateSearch: zodValidator(
     z.object({
@@ -33,13 +35,12 @@ export const Route = createFileRoute("/_store/$storeSlug/c/$slug")({
     const cat = await catalog.getCategoryBySlug(params.slug);
     if (!cat) throw notFound();
     
-    const [unfilteredProducts, filteredProducts, subs] = await Promise.all([
-      catalog.productsByCategory(cat.id),
-      catalog.productsByCategory(cat.id, deps),
+    const [initialProducts, subs] = await Promise.all([
+      catalog.productsByCategory(cat.id, { ...deps, page: 0, pageSize: 24 }),
       catalog.listSubcategories(cat.id),
     ]);
     
-    return { cat, unfilteredProducts, filteredProducts, subs };
+    return { cat, unfilteredProducts: initialProducts, filteredProducts: initialProducts, subs };
   },
   head: ({ loaderData, params }: any) => {
     if (!loaderData) return {};
@@ -307,6 +308,12 @@ function CategoryPage() {
               <ProductCard key={p.id} p={p} />
             ))}
           </div>
+
+          {loadingMore && (
+            <div className="mt-4">
+              <ProductGridSkeleton count={8} />
+            </div>
+          )}
           
           {hasMore && (
             <div className="mt-8 flex justify-center pb-8">
@@ -314,10 +321,10 @@ function CategoryPage() {
                 onClick={loadMore} 
                 disabled={loadingMore}
                 variant="outline" 
-                className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white"
+                className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white transition-all shadow-sm"
               >
                 {loadingMore ? <Spinner size={16} className="mr-2" /> : null}
-                {loadingMore ? "Carregando..." : "Carregar mais produtos"}
+                {loadingMore ? "Carregando produtos..." : "Carregar mais produtos"}
               </Button>
             </div>
           )}

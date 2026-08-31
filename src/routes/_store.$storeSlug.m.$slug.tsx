@@ -6,6 +6,7 @@ import { useMarcasStore } from "@/stores/marcas";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { ProductGridSkeleton } from "@/components/storefront/ProductGridSkeleton";
 
 export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
   loader: async ({ params }) => {
@@ -162,16 +163,23 @@ function BrandPage() {
               <ProductCard key={p.id} p={p} />
             ))}
           </div>
+
+          {loadingMore && (
+            <div className="mt-4">
+              <ProductGridSkeleton count={10} />
+            </div>
+          )}
+
           {hasMore && (
             <div className="mt-8 flex justify-center pb-8">
               <Button 
                 onClick={loadMore} 
                 disabled={loadingMore}
                 variant="outline" 
-                className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white"
+                className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white transition-all shadow-sm"
               >
                 {loadingMore ? <Spinner size={16} className="mr-2" /> : null}
-                {loadingMore ? "Carregando..." : "Carregar mais produtos"}
+                {loadingMore ? "Carregando produtos..." : "Carregar mais produtos"}
               </Button>
             </div>
           )}
