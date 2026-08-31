@@ -121,26 +121,35 @@ export function InstallPrompt() {
   const isStoreContext = !!activePharmacy?.id && !isRootHomePage;
 
   // Cores dinâmicas configuradas na aba 'Minhas Cores' da loja
-  const bannerBg = activePharmacy?.themeColors?.["pwaBannerBg"] || 
-                   activePharmacy?.themeColors?.["--pwa-banner-bg"] || 
-                   activePharmacy?.themeColors?.["primary"] || 
-                   activePharmacy?.themeColors?.["--primary"] || 
-                   activePharmacy?.topBarBgColor || 
-                   "#00b5ad";
+  const theme = activePharmacy?.themeColors || {};
 
-  const bannerTextColor = activePharmacy?.themeColors?.["pwaBannerText"] || 
-                          activePharmacy?.themeColors?.["--pwa-banner-text"] || 
+  const bannerBg = theme["--pwa-banner-bg"] || 
+                   theme["pwaBannerBg"] || 
+                   theme["--header-bg"] || 
+                   theme["headerBg"] || 
+                   theme["--primary"] || 
+                   theme["primary"] || 
+                   activePharmacy?.headerBgColor || 
+                   activePharmacy?.topBarBgColor || 
+                   "var(--header-bg, var(--primary, #00b5ad))";
+
+  const bannerTextColor = theme["--pwa-banner-text"] || 
+                          theme["pwaBannerText"] || 
+                          theme["--header-text"] || 
+                          theme["headerText"] || 
                           "#ffffff";
 
-  const btnBg = activePharmacy?.themeColors?.["pwaBannerBtnBg"] || 
-                activePharmacy?.themeColors?.["--pwa-banner-btn-bg"] || 
+  const btnBg = theme["--pwa-banner-btn-bg"] || 
+                theme["pwaBannerBtnBg"] || 
+                theme["--cart-btn-bg"] || 
+                theme["cartBtnBg"] || 
                 "#ffffff";
 
-  const btnTextColor = activePharmacy?.themeColors?.["pwaBannerBtnText"] || 
-                       activePharmacy?.themeColors?.["--pwa-banner-btn-text"] || 
-                       activePharmacy?.themeColors?.["primary"] || 
-                       activePharmacy?.themeColors?.["--primary"] || 
-                       "#00b5ad";
+  const btnTextColor = theme["--pwa-banner-btn-text"] || 
+                       theme["pwaBannerBtnText"] || 
+                       theme["--primary"] || 
+                       theme["primary"] || 
+                       bannerBg;
 
   return (
     <>
@@ -211,8 +220,8 @@ export function InstallPrompt() {
                 <img src={iconUrl} alt="App Icon" className="w-12 h-12 object-contain" />
               </div>
               <div className="flex-1 min-w-0 pr-6">
-                <DialogTitle className="text-xl font-bold leading-tight text-white">{appTitle}</DialogTitle>
-                <p className="text-xs text-white/85 mt-1">Tenha a farmácia na palma da sua mão com benefícios exclusivos</p>
+                <DialogTitle className="text-xl font-bold leading-tight" style={{ color: bannerTextColor }}>{appTitle}</DialogTitle>
+                <p className="text-xs opacity-90 mt-1" style={{ color: bannerTextColor }}>Tenha a farmácia na palma da sua mão com benefícios exclusivos</p>
               </div>
             </div>
 
@@ -235,7 +244,7 @@ export function InstallPrompt() {
             {/* Value Props Grid */}
             <div className="grid grid-cols-2 gap-2.5">
               <div className="bg-muted/50 p-2.5 rounded-xl border flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${theme['--primary'] || bannerBg}18`, color: theme['--primary'] || bannerBg }}>
                   <Zap className="h-4 w-4" />
                 </div>
                 <div className="text-left min-w-0">
@@ -244,7 +253,7 @@ export function InstallPrompt() {
                 </div>
               </div>
               <div className="bg-muted/50 p-2.5 rounded-xl border flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${theme['--primary'] || bannerBg}18`, color: theme['--primary'] || bannerBg }}>
                   <Tag className="h-4 w-4" />
                 </div>
                 <div className="text-left min-w-0">
@@ -253,7 +262,7 @@ export function InstallPrompt() {
                 </div>
               </div>
               <div className="bg-muted/50 p-2.5 rounded-xl border flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${theme['--primary'] || bannerBg}18`, color: theme['--primary'] || bannerBg }}>
                   <ShieldCheck className="h-4 w-4" />
                 </div>
                 <div className="text-left min-w-0">
@@ -262,7 +271,7 @@ export function InstallPrompt() {
                 </div>
               </div>
               <div className="bg-muted/50 p-2.5 rounded-xl border flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${theme['--primary'] || bannerBg}18`, color: theme['--primary'] || bannerBg }}>
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
                 <div className="text-left min-w-0">
@@ -316,19 +325,19 @@ export function InstallPrompt() {
               {activeTab === "android" && (
                 <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-start gap-3">
-                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
+                    <span className="text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5" style={{ backgroundColor: bannerBg }}>1</span>
                     <p className="text-xs text-foreground leading-relaxed">
                       Toque nos <strong>três pontinhos ⋮</strong> no canto superior direito do seu navegador Chrome.
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
+                    <span className="text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5" style={{ backgroundColor: bannerBg }}>2</span>
                     <p className="text-xs text-foreground leading-relaxed">
                       Toque na opção <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">3</span>
+                    <span className="text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5" style={{ backgroundColor: bannerBg }}>3</span>
                     <p className="text-xs text-foreground leading-relaxed">
                       Confirme em <strong>"Instalar"</strong>. O ícone aparecerá instantaneamente nos seus aplicativos!
                     </p>
@@ -340,19 +349,19 @@ export function InstallPrompt() {
               {activeTab === "ios" && (
                 <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-start gap-3">
-                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
+                    <span className="text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5" style={{ backgroundColor: bannerBg }}>1</span>
                     <p className="text-xs text-foreground leading-relaxed">
-                      No navegador Safari, toque no botão <strong>Compartilhar</strong> <Share className="inline h-3.5 w-3.5 mx-1 text-primary align-baseline" /> na barra inferior.
+                      No navegador Safari, toque no botão <strong>Compartilhar</strong> <Share className="inline h-3.5 w-3.5 mx-1 align-baseline" style={{ color: bannerBg }} /> na barra inferior.
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
+                    <span className="text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5" style={{ backgroundColor: bannerBg }}>2</span>
                     <p className="text-xs text-foreground leading-relaxed">
                       Role a lista para baixo e selecione <strong>"Adicionar à Tela de Início"</strong>.
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">3</span>
+                    <span className="text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5" style={{ backgroundColor: bannerBg }}>3</span>
                     <p className="text-xs text-foreground leading-relaxed">
                       Toque em <strong>"Adicionar"</strong> no canto superior direito. Pronto!
                     </p>
@@ -364,13 +373,13 @@ export function InstallPrompt() {
               {activeTab === "desktop" && (
                 <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-start gap-3">
-                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">1</span>
+                    <span className="text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5" style={{ backgroundColor: bannerBg }}>1</span>
                     <p className="text-xs text-foreground leading-relaxed">
                       No Google Chrome ou Edge, clique no ícone de <strong>instalar (computador com seta ⬇️)</strong> na barra de endereços (ao lado da estrela de favoritos).
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">2</span>
+                    <span className="text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold mt-0.5" style={{ backgroundColor: bannerBg }}>2</span>
                     <p className="text-xs text-foreground leading-relaxed">
                       Clique em <strong>"Instalar"</strong> para abrir a loja em uma janela dedicada e rápida!
                     </p>
@@ -383,8 +392,8 @@ export function InstallPrompt() {
             <div className="pt-1">
               <Button 
                 onClick={close} 
-                variant="default" 
-                className="w-full h-11 font-bold rounded-xl text-sm"
+                style={{ backgroundColor: bannerBg, color: bannerTextColor }}
+                className="w-full h-11 font-bold rounded-xl text-sm shadow-md hover:opacity-90 transition-opacity"
               >
                 Entendi, fechar
               </Button>

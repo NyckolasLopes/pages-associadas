@@ -51,6 +51,7 @@ import { toast } from "sonner";
 import {
   SpreadsheetImporter,
   generateTemplate,
+  generateJsonTemplate,
   exportProductsAsExcel,
 } from "@/components/admin/SpreadsheetImporter";
 import { DescriptionImporter } from "@/components/admin/DescriptionImporter";
@@ -288,76 +289,8 @@ function AdminProdutos() {
   const handleExportJson = async () => {
     setIsLoading(true);
     try {
-      // Exporta apenas a estrutura (exemplo) do JSON
-      const sampleStructure = [{
-        "produto": {
-          "cabecalho": {
-            "titulo": "",
-            "codigo_sistema": null
-          },
-          "informacoes_basicas": {
-            "produto_ativo": false,
-            "buscavel_visivel_na_busca": false,
-            "selo_de_lancamento": false,
-            "natureza_do_produto": "",
-            "sku_codigo_interno": "",
-            "ean_codigo_barras": "",
-            "eans_secundarios": "",
-            "descricao_comercial_nome": "",
-            "descricao_longa": "",
-            "categoria": {
-              "id": null,
-              "nome": ""
-            },
-            "subcategoria": {
-              "id": null,
-              "nome": ""
-            },
-            "categorias_adicionais": [],
-            "subcategorias_adicionais": []
-          },
-          "marca_e_dcb": {
-            "marca": "",
-            "principios_ativos": [],
-            "classe_terapeutica": ""
-          },
-          "alertas_e_caracteristicas": {
-            "alerta_regulatorio_texto": "",
-            "caracteristicas_adicionais": [],
-            "requer_exibicao_alerta_regulatorio": false
-          },
-          "registro_anvisa_retencao_tarja_tipo_receita": {
-            "ms_registro_anvisa": "",
-            "retem_receita": "",
-            "tarja": "",
-            "tipo_de_receita": ""
-          },
-          "imagens_do_produto": [],
-          "precificacao": {
-            "preco_de": null,
-            "preco_por": null
-          },
-          "tributario_e_relevancia": {
-            "ncm": "",
-            "nivel_de_relevancia_prioridade": null
-          },
-          "google_seo_aeo_geo": {
-            "titulo_da_pagina_seo": "",
-            "link_da_pagina_slug": "",
-            "palavras_chave_foco": "",
-            "descricao_da_pagina_meta_description": "",
-            "texto_alternativo_da_imagem_alt_seo": "",
-            "tags_de_busca_internas": ""
-          }
-        }
-      }];
-
-      const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleStructure, null, 2));
-      const dlAnchorElem = document.createElement("a");
-      dlAnchorElem.setAttribute("href", dataStr);
-      dlAnchorElem.setAttribute("download", "estrutura_produto_exemplo.json");
-      dlAnchorElem.click();
-      toast.success("Estrutura exportada com sucesso!");
+      generateJsonTemplate();
+      toast.success("Modelo JSON completo exportado com sucesso!");
     } catch (e) {
       toast.error("Erro ao exportar JSON");
     } finally {
@@ -811,6 +744,15 @@ function AdminProdutos() {
                 >
                   <Download className="h-3.5 w-3.5 mr-1.5" />
                   Baixar Modelo Planilha
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateJsonTemplate}
+                  className="font-bold text-xs"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                  Baixar Modelo JSON
                 </Button>
               </>
             )}

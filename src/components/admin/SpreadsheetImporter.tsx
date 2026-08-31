@@ -41,47 +41,97 @@ interface FieldMapping {
   label: string;
   aliases: string[];
   required: boolean;
-  type: "string" | "number" | "boolean" | "tarja";
+  type: "string" | "number" | "boolean" | "tarja" | "array";
 }
 
 const FIELD_MAPPINGS: FieldMapping[] = [
-  { key: "id", label: "ID/CÓDIGO INTERNO", aliases: ["id/código interno", "codigo interno", "código interno", "codigo", "código", "idproduto", "id_produto", "id"], required: true, type: "string" },
-  { key: "ean", label: "EAN/CÓDIGO DE BARRAS", aliases: ["ean/código de barras", "ean", "gtin", "codigo de barras", "código de barras", "barcode"], required: true, type: "string" },
-  { key: "nome", label: "DESCRIÇÃO COMERCIAL/NOME DO PRODUTO", aliases: ["descrição comercial/nome do produto", "descrição comercial", "descricao comercial", "nome do produto", "nome", "produto", "titulo"], required: true, type: "string" },
-  { key: "descricao", label: "DESCRIÇÃO LONGA", aliases: ["descrição longa", "descricao longa", "descrição", "descricao"], required: false, type: "string" },
-  { key: "categoriaId", label: "ID CATEGORIA", aliases: ["id categoria", "categoriaid", "id_categoria", "cat_id"], required: false, type: "string" },
-  { key: "subcategoriaId", label: "ID SUBCATEGORIA", aliases: ["id subcategoria", "subcategoriaid", "id_subcategoria", "subcat_id"], required: false, type: "string" },
-  { key: "marca", label: "marca (MARCA)", aliases: ["marca (marca)", "marca", "marca", "laboratório", "laboratorio", "brand"], required: false, type: "string" },
-  { key: "registroAnvisa", label: "MS/REGISTRO ANVISA", aliases: ["ms/registro anvisa", "registro anvisa", "ms", "registro ms", "reg_anvisa", "registroanvisa", "registro"], required: false, type: "string" },
-  { key: "tarja", label: "TARJA", aliases: ["tarja", "tipo tarja", "classificação"], required: false, type: "tarja" },
-  { key: "retemReceita", label: "RETÉM RECEITA", aliases: ["retém receita", "retem receita", "retemreceita", "receita", "controle especial"], required: false, type: "boolean" },
-  { key: "precoPor", label: "PREÇO POR", aliases: ["preço por", "preco por", "preço venda", "preco venda", "preco", "preço", "valor", "venda"], required: false, type: "number" },
-  { key: "precoDe", label: "PREÇO DE", aliases: ["preço de", "preco de", "preço custo", "preco original"], required: false, type: "number" },
-  { key: "estoque", label: "ESTOQUE", aliases: ["estoque", "quantidade", "qtd", "saldo"], required: false, type: "number" },
-  { key: "foto", label: "URL DA FOTO/IMAGEM", aliases: ["url da foto", "imagem", "foto", "url imagem", "image"], required: false, type: "string" },
-  { key: "url", label: "LINK DA PÁGINA (SLUG)", aliases: ["slug", "url", "link", "link da página"], required: false, type: "string" },
-  { key: "seoTitulo", label: "TÍTULO SEO", aliases: ["título seo", "seo titulo", "titulo seo", "seo title"], required: false, type: "string" },
-  { key: "metaDescription", label: "DESCRIÇÃO SEO", aliases: ["descrição seo", "meta description", "descricao seo"], required: false, type: "string" },
-  { key: "internalTags", label: "TAGS DE BUSCA", aliases: ["tags de busca", "tags", "palavras-chave", "keywords"], required: false, type: "string" },
-  { key: "tipoProduto", label: "TIPO DE PRODUTO", aliases: ["tipo de produto", "tipo produto", "tipo"], required: false, type: "string" },
-  { key: "produtoNatureza", label: "NATUREZA DO PRODUTO", aliases: ["natureza do produto", "natureza", "produto fisico ou servico"], required: false, type: "string" },
-  { key: "principiosAtivos", label: "PRINCÍPIOS ATIVOS", aliases: ["princípios ativos", "principios ativos", "principio ativo", "farmaco"], required: false, type: "string" },
-  { key: "generico", label: "GENÉRICO", aliases: ["genérico", "generico", "é genérico"], required: false, type: "boolean" },
-  { key: "sku", label: "SKU", aliases: ["sku", "código sku"], required: false, type: "string" },
-  { key: "ean2", label: "EAN 2", aliases: ["ean 2", "código de barras 2"], required: false, type: "string" },
-  { key: "ean3", label: "EAN 3", aliases: ["ean 3", "código de barras 3"], required: false, type: "string" },
-  { key: "videoUrl", label: "URL DO VÍDEO", aliases: ["url do vídeo", "video url", "video"], required: false, type: "string" },
-  { key: "youtubeVideoUrl", label: "URL YOUTUBE", aliases: ["url youtube", "youtube"], required: false, type: "string" },
-  { key: "prioridade", label: "PRIORIDADE", aliases: ["prioridade", "ordem"], required: false, type: "number" },
-  { key: "tipoReceita", label: "TIPO DE RECEITA", aliases: ["tipo de receita", "tipo receita"], required: false, type: "string" },
-  { key: "resumoDescricao", label: "RESUMO", aliases: ["resumo", "resumo curto"], required: false, type: "string" },
-  { key: "quantidadeEmbalagem", label: "QTD EMBALAGEM", aliases: ["qtd embalagem", "quantidade embalagem"], required: false, type: "number" },
-  { key: "unidadeEmbalagem", label: "UNIDADE EMBALAGEM", aliases: ["unidade embalagem", "und embalagem"], required: false, type: "string" },
-  { key: "quantidadeConteudo", label: "QTD CONTEÚDO", aliases: ["qtd conteúdo", "quantidade conteudo"], required: false, type: "number" },
-  { key: "unidadeConteudo", label: "UNIDADE CONTEÚDO", aliases: ["unidade conteúdo", "und conteudo"], required: false, type: "string" },
-  { key: "sabor", label: "SABOR", aliases: ["sabor", "flavor"], required: false, type: "string" },
-  { key: "fps", label: "FPS", aliases: ["fps", "fator de proteção"], required: false, type: "number" },
-  { key: "faixaEtaria", label: "FAIXA ETÁRIA", aliases: ["faixa etária", "faixa etaria", "idade"], required: false, type: "string" },
+  // 1. Identificação Básica
+  { key: "id", label: "ID/CÓDIGO INTERNO", aliases: ["id/código interno", "codigo interno", "código interno", "codigo", "código", "idproduto", "id_produto", "id", "cod"], required: true, type: "string" },
+  { key: "sku", label: "SKU", aliases: ["sku", "código sku", "codigo sku", "referencia"], required: false, type: "string" },
+  { key: "ean", label: "EAN/CÓDIGO DE BARRAS", aliases: ["ean/código de barras", "ean", "gtin", "codigo de barras", "código de barras", "barcode", "ean principal"], required: true, type: "string" },
+  { key: "ean2", label: "EAN 2", aliases: ["ean 2", "ean2", "código de barras 2", "codigo de barras 2"], required: false, type: "string" },
+  { key: "ean3", label: "EAN 3", aliases: ["ean 3", "ean3", "código de barras 3", "codigo de barras 3"], required: false, type: "string" },
+  { key: "eansSecundarios", label: "EANS SECUNDÁRIOS", aliases: ["eans secundários", "eans secundarios", "outros eans", "eans adicionais"], required: false, type: "array" },
+  { key: "nome", label: "NOME DO PRODUTO (DESCRIÇÃO COMERCIAL)", aliases: ["descrição comercial/nome do produto", "nome do produto", "descrição comercial", "descricao comercial", "nome", "produto", "titulo", "titulo comercial"], required: true, type: "string" },
+  { key: "marca", label: "MARCA / FABRICANTE / LABORATÓRIO", aliases: ["marca", "marca / fabricante / laboratório", "marca (marca)", "laboratório", "laboratorio", "fabricante", "brand"], required: false, type: "string" },
+
+  // 2. Categorias & Classificação
+  { key: "categoriaId", label: "CATEGORIA PRINCIPAL", aliases: ["categoria principal", "id categoria", "categoriaid", "id_categoria", "cat_id", "categoria", "departamento"], required: false, type: "string" },
+  { key: "subcategoriaId", label: "SUBCATEGORIA PRINCIPAL", aliases: ["subcategoria principal", "id subcategoria", "subcategoriaid", "id_subcategoria", "subcat_id", "subcategoria", "seção"], required: false, type: "string" },
+  { key: "categoriasAdicionais", label: "CATEGORIAS ADICIONAIS", aliases: ["categorias adicionais", "categorias ids", "outras categorias", "categorias secundarias"], required: false, type: "array" },
+  { key: "subcategoriasAdicionais", label: "SUBCATEGORIAS ADICIONAIS", aliases: ["subcategorias adicionais", "subcategorias ids", "outras subcategorias"], required: false, type: "array" },
+  { key: "tipoProduto", label: "TIPO DE PRODUTO (FISICO/SERVICO)", aliases: ["tipo de produto", "tipo produto", "tipo (fisico ou servico)", "tipo"], required: false, type: "string" },
+  { key: "produtoNatureza", label: "NATUREZA DO PRODUTO", aliases: ["natureza do produto", "natureza", "classificação fiscal produto", "tipo natureza"], required: false, type: "string" },
+
+  // 3. Regulatório & Farmacêutico
+  { key: "registroAnvisa", label: "REGISTRO ANVISA / MS", aliases: ["registro anvisa / ms", "ms/registro anvisa", "registro anvisa", "ms", "registro ms", "reg_anvisa", "registroanvisa", "registro"], required: false, type: "string" },
+  { key: "tarja", label: "TARJA", aliases: ["tarja", "tipo tarja", "classificação tarja", "cor tarja"], required: false, type: "tarja" },
+  { key: "retemReceita", label: "RETÉM RECEITA (SIM/NÃO)", aliases: ["retém receita", "retem receita", "retemreceita", "receita", "controle especial", "reter receita"], required: false, type: "boolean" },
+  { key: "tipoReceita", label: "TIPO DE RECEITA", aliases: ["tipo de receita", "tipo receita", "receituário", "receituario"], required: false, type: "string" },
+  { key: "generico", label: "MEDICAMENTO GENÉRICO (SIM/NÃO)", aliases: ["genérico", "generico", "é genérico", "medicamento generico"], required: false, type: "boolean" },
+  { key: "tipoMedicamento", label: "TIPO DE MEDICAMENTO", aliases: ["tipo de medicamento", "tipo medicamento", "classificação medicamento"], required: false, type: "string" },
+  { key: "principiosAtivos", label: "PRINCÍPIOS ATIVOS / FÓRMULA / DCB", aliases: ["princípios ativos", "principios ativos", "principio ativo", "farmaco", "dcb", "formula", "composição"], required: false, type: "string" },
+  { key: "classeTerapeutica", label: "CLASSE TERAPÊUTICA", aliases: ["classe terapêutica", "classe terapeutica", "ação terapeutica", "acao terapeutica"], required: false, type: "string" },
+  { key: "indicacaoTerapeutica", label: "INDICAÇÃO TERAPÊUTICA", aliases: ["indicação terapêutica", "indicacao terapeutica", "indicações", "indicacoes", "para que serve"], required: false, type: "string" },
+  { key: "tipoDePreco", label: "REGIME DE PREÇO (LIBERADO/MONITORADO)", aliases: ["regime de preço", "regime de preco", "tipo de preco", "tipo de preço", "tipo de precificacao"], required: false, type: "string" },
+  { key: "ncm", label: "NCM (CÓDIGO FISCAL)", aliases: ["ncm", "codigo ncm", "código ncm", "classificacao fiscal"], required: false, type: "string" },
+  { key: "alertaRegulatorio", label: "ALERTA REGULATÓRIO (SIM/NÃO)", aliases: ["alerta regulatório", "alerta regulatorio", "tem alerta"], required: false, type: "boolean" },
+  { key: "alertaTexto", label: "TEXTO DO ALERTA REGULATÓRIO", aliases: ["texto do alerta", "texto alerta regulatorio", "aviso anvisa"], required: false, type: "string" },
+
+  // 4. Preços & Estoque
+  { key: "precoDe", label: "PREÇO DE (R$)", aliases: ["preço de", "preco de", "preço de tabela", "preco tabela", "preço original", "preco original", "de"], required: false, type: "number" },
+  { key: "precoPor", label: "PREÇO POR / VENDA (R$)", aliases: ["preço por", "preco por", "preço venda", "preco venda", "preco", "preço", "valor", "venda", "por"], required: false, type: "number" },
+  { key: "precoCusto", label: "PREÇO DE CUSTO (R$)", aliases: ["preço de custo", "preco de custo", "preço custo", "preco custo", "custo"], required: false, type: "number" },
+  { key: "estoque", label: "ESTOQUE", aliases: ["estoque", "quantidade", "qtd", "saldo", "estoque atual"], required: false, type: "number" },
+  { key: "precoSobConsulta", label: "PREÇO SOB CONSULTA (SIM/NÃO)", aliases: ["preço sob consulta", "preco sob consulta", "sob consulta"], required: false, type: "boolean" },
+  { key: "bloquearPreco", label: "BLOQUEAR PREÇO (SIM/NÃO)", aliases: ["bloquear preço", "bloquear preco", "travar preco"], required: false, type: "boolean" },
+  { key: "emCampanha", label: "EM CAMPANHA (SIM/NÃO)", aliases: ["em campanha", "campanha ativa", "promocao ativa"], required: false, type: "boolean" },
+  { key: "precoCampanha", label: "PREÇO NA CAMPANHA (R$)", aliases: ["preço campanha", "preco campanha", "preço promocional campanha"], required: false, type: "number" },
+  { key: "campanhaInicio", label: "INÍCIO DA CAMPANHA (AAAA-MM-DD)", aliases: ["início da campanha", "inicio da campanha", "data inicio campanha"], required: false, type: "string" },
+  { key: "campanhaFim", label: "FIM DA CAMPANHA (AAAA-MM-DD)", aliases: ["fim da campanha", "data fim campanha", "data limite campanha"], required: false, type: "string" },
+  { key: "precoEncarte", label: "PREÇO DE ENCARTE (R$)", aliases: ["preço de encarte", "preco de encarte", "preço encarte", "preco encarte", "tabloide"], required: false, type: "number" },
+  { key: "quantidadeMinima", label: "QUANTIDADE MÍNIMA", aliases: ["quantidade mínima", "quantidade minima", "qtd minima", "compra minima"], required: false, type: "number" },
+  { key: "quantidadeMultipla", label: "QUANTIDADE MÚLTIPLA", aliases: ["quantidade múltipla", "quantidade multipla", "multiplo de venda"], required: false, type: "number" },
+  { key: "programaFidelidade", label: "PROGRAMA DE FIDELIDADE (SIM/NÃO)", aliases: ["programa de fidelidade", "programa fidelidade", "participa fidelidade", "pbm fidelidade"], required: false, type: "boolean" },
+
+  // 5. Embalagem & Características / Atributos
+  { key: "quantidadeEmbalagem", label: "QTD NA EMBALAGEM", aliases: ["qtd na embalagem", "qtd embalagem", "quantidade embalagem", "unidades na embalagem"], required: false, type: "number" },
+  { key: "unidadeEmbalagem", label: "UNIDADE DA EMBALAGEM", aliases: ["unidade da embalagem", "unidade embalagem", "und embalagem", "tipo embalagem"], required: false, type: "string" },
+  { key: "quantidadeConteudo", label: "QTD DE CONTEÚDO", aliases: ["qtd de conteúdo", "qtd conteúdo", "quantidade conteudo", "volume", "peso líquido"], required: false, type: "number" },
+  { key: "unidadeConteudo", label: "UNIDADE DO CONTEÚDO", aliases: ["unidade do conteúdo", "unidade conteúdo", "und conteudo", "unidade medida"], required: false, type: "string" },
+  { key: "sabor", label: "SABOR / AROMA", aliases: ["sabor / aroma", "sabor", "flavor", "aroma"], required: false, type: "string" },
+  { key: "fps", label: "FPS (FATOR PROTEÇÃO SOLAR)", aliases: ["fps", "fator de proteção", "fator protecao solar", "fps protetor"], required: false, type: "number" },
+  { key: "faixaEtaria", label: "FAIXA ETÁRIA", aliases: ["faixa etária", "faixa etaria", "idade", "idade recomendada"], required: false, type: "string" },
+
+  // 6. Descrição & Textos
+  { key: "resumoDescricao", label: "RESUMO / DESCRIÇÃO CURTA", aliases: ["resumo", "resumo curto", "descrição curta", "descricao curta", "sinopse"], required: false, type: "string" },
+  { key: "descricao", label: "DESCRIÇÃO COMPLETA / BULA (HTML)", aliases: ["descrição longa", "descricao longa", "descrição", "descricao", "bula", "detalhes do produto"], required: false, type: "string" },
+
+  // 7. Imagens & Mídia
+  { key: "foto", label: "URL DA FOTO PRINCIPAL", aliases: ["url da foto", "foto principal", "imagem principal", "imagem", "foto", "url imagem", "image"], required: false, type: "string" },
+  { key: "imagens", label: "FOTOS ADICIONAIS (SEPARADAS POR VÍRGULA)", aliases: ["fotos adicionais", "imagens adicionais", "outras fotos", "galeria imagens"], required: false, type: "array" },
+  { key: "imagemAlt", label: "TEXTO ALT DA IMAGEM (SEO)", aliases: ["texto alt da imagem", "alt imagem", "imagem alt", "alt seo"], required: false, type: "string" },
+  { key: "videoUrl", label: "URL DO VÍDEO", aliases: ["url do vídeo", "video url", "video", "link video"], required: false, type: "string" },
+  { key: "youtubeVideoUrl", label: "URL DO VÍDEO YOUTUBE", aliases: ["url youtube", "youtube", "link youtube", "youtube video"], required: false, type: "string" },
+
+  // 8. SEO & Busca
+  { key: "url", label: "LINK DA PÁGINA (SLUG)", aliases: ["slug", "url", "link", "link da página", "link da pagina", "url amigavel"], required: false, type: "string" },
+  { key: "seoTitulo", label: "TÍTULO SEO (META TITLE)", aliases: ["título seo", "seo titulo", "titulo seo", "seo title", "meta title"], required: false, type: "string" },
+  { key: "metaDescription", label: "DESCRIÇÃO SEO (META DESCRIPTION)", aliases: ["descrição seo", "meta description", "descricao seo", "seo description"], required: false, type: "string" },
+  { key: "internalTags", label: "TAGS DE BUSCA (SEPARADAS POR VÍRGULA)", aliases: ["tags de busca", "tags", "palavras-chave", "keywords", "tags internas"], required: false, type: "array" },
+  { key: "termosPesquisa", label: "TERMOS DE PESQUISA", aliases: ["termos de pesquisa", "termos busca", "sinonimos"], required: false, type: "string" },
+
+  // 9. Status, Visibilidade & Organização
+  { key: "ativo", label: "PRODUTO ATIVO (SIM/NÃO)", aliases: ["produto ativo", "ativo", "status ativo", "publicado"], required: false, type: "boolean" },
+  { key: "visivel", label: "VISÍVEL NO CATÁLOGO (SIM/NÃO)", aliases: ["visível no catálogo", "visivel no catalogo", "visivel", "visível"], required: false, type: "boolean" },
+  { key: "buscavel", label: "BUSCÁVEL NA BUSCA (SIM/NÃO)", aliases: ["buscável", "buscavel", "pesquisavel", "visivel na busca"], required: false, type: "boolean" },
+  { key: "aVenda", label: "DISPONÍVEL PARA VENDA (SIM/NÃO)", aliases: ["disponível para venda", "a venda", "a_venda", "comprar habilitado"], required: false, type: "boolean" },
+  { key: "destaque", label: "DESTAQUE NA HOME (SIM/NÃO)", aliases: ["destaque na home", "destaque", "produto em destaque", "featured"], required: false, type: "boolean" },
+  { key: "lancamento", label: "SELO DE LANÇAMENTO (SIM/NÃO)", aliases: ["selo de lançamento", "lancamento", "lançamento", "novo produto"], required: false, type: "boolean" },
+  { key: "prioridade", label: "PRIORIDADE / RELEVÂNCIA (0-100)", aliases: ["prioridade", "nivel de relevancia", "relevancia", "ordem"], required: false, type: "number" },
+  { key: "selosIds", label: "SELOS DO SISTEMA", aliases: ["selos do sistema", "selos ids", "selos", "selo"], required: false, type: "array" },
+  { key: "vitrines", label: "VITRINES / COLEÇÕES", aliases: ["vitrines / coleções", "vitrines", "coleções", "colecoes", "coleção"], required: false, type: "array" },
+  { key: "compreJuntoProdutoId", label: "COMPRE JUNTO (ID PRODUTO)", aliases: ["compre junto", "compre junto id", "order bump id", "compre_junto_produto_id"], required: false, type: "string" },
 ];
 
 const TARJA_VALUES: Tarja[] = ["Sem Tarja", "Vermelha", "Vermelha Retém Receita", "Preta", "Amarela"];
@@ -92,7 +142,8 @@ function normalizeHeader(header: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[_\-\.]/g, " ")
+    .replace(/[_\-\.\/\\()]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -108,13 +159,11 @@ function autoMapColumns(headers: string[]): Record<string, string> {
       const nh = normalizedHeaders[i];
       for (const alias of field.aliases) {
         const normalizedAlias = normalizeHeader(alias);
-        // Exact match
         if (nh === normalizedAlias) {
           bestMatch = headers[i];
           bestScore = 100;
           break;
         }
-        // Contains match
         if (nh.includes(normalizedAlias) || normalizedAlias.includes(nh)) {
           const score = 50 + (normalizedAlias.length / Math.max(nh.length, 1)) * 30;
           if (score > bestScore) {
@@ -149,53 +198,53 @@ function parseTarja(value: unknown): Tarja {
   const s = String(value || "").toLowerCase().trim();
   if (s.includes("preta")) return "Preta";
   if (s.includes("amarela")) return "Amarela";
-  if (s.includes("retém") || s.includes("retem") || s.includes("retém receita")) return "Vermelha Retém Receita";
+  if (s.includes("ret") || s.includes("receita")) return "Vermelha Retém Receita";
   if (s.includes("vermelha")) return "Vermelha";
   return "Sem Tarja";
 }
 
-function parseBoolean(value: unknown): boolean {
+function parseBoolean(value: unknown, defaultValue = false): boolean {
+  if (value === undefined || value === null || value === "") return defaultValue;
   if (typeof value === "boolean") return value;
-  const s = String(value || "").toLowerCase().trim();
-  return ["sim", "s", "true", "1", "yes", "y", "verdadeiro"].includes(s);
+  const s = String(value).toLowerCase().trim();
+  return ["sim", "s", "true", "1", "yes", "y", "ativo", "habilitado"].includes(s);
 }
 
-function parseNumber(value: unknown): number {
-  if (typeof value === "number") return value;
-  let s = String(value || "")
-    .replace(/[R$\s]/g, "");
-  
-  if (s.includes(".") && s.includes(",")) {
-    s = s.replace(/\./g, "").replace(",", ".");
-  } else if (s.includes(",")) {
-    s = s.replace(",", ".");
-  }
-  
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
+function parseNumber(value: unknown, defaultValue = 0): number {
+  if (value === undefined || value === null || value === "") return defaultValue;
+  if (typeof value === "number") return isNaN(value) ? defaultValue : value;
+  const cleaned = String(value)
+    .replace(/[R$\s]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? defaultValue : num;
 }
 
-function guessCategory(nome: string): { categoriaId: string; subcategoriaId: string } {
-  const nameLower = nome.toLowerCase();
-  
-  const rules = [
-    { keywords: ["shampoo", "condicionador", "creme para pentear", "pantene", "clear", "elseve"], cat: "143", sub: "895" },
-    { keywords: ["sabonete íntimo", "intimo", "íntimo"], cat: "143", sub: "902" },
-    { keywords: ["sabonete", "banho", "protex", "dove", "lux"], cat: "143", sub: "898" },
-    { keywords: ["desodorante", "antitranspirante", "rexona", "nivea", "axe"], cat: "143", sub: "899" },
-    { keywords: ["pasta", "creme dental", "escova", "enxaguante", "fio dental", "colgate", "sorriso", "oral-b"], cat: "143", sub: "897" },
-    { keywords: ["fralda", "lenço umedecido", "toalhinha", "pampers", "huggies", "turma da mônica"], cat: "144", sub: "906" },
-    { keywords: ["chupeta", "mamadeira", "nuk", "lillo"], cat: "144", sub: "909" },
-    { keywords: ["vitamina", "suplemento", "ômega", "omega", "calcio", "cálcio", "lavitan", "centrum"], cat: "146", sub: "918" },
-    { keywords: ["whey", "creatina", "bcaa"], cat: "146", sub: "920" },
-    { keywords: ["dor", "febre", "dipirona", "paracetamol", "ibuprofeno", "dorflex", "neosa", "nevrálgico", "nevralgex"], cat: "142", sub: "882" },
-    { keywords: ["gripe", "resfriado", "tosse", "xarope", "benegrip", "cimegripe", "multigrip", "vick"], cat: "142", sub: "883" },
-    { keywords: ["estômago", "digestão", "azia", "eno", "epocler", "omeprazol", "pantoprazol", "engov"], cat: "142", sub: "885" },
-    { keywords: ["antialérgico", "alergia", "loratadina", "dexclorfeniramina", "histamin", "alegra"], cat: "142", sub: "884" },
-    { keywords: ["creme", "loção", "hidratante", "cerave", "cetaphil"], cat: "145", sub: "913" },
-    { keywords: ["protetor solar", "episol", "sundown", "minesol", "la roche", "vichy"], cat: "145", sub: "915" },
-    { keywords: ["maquiagem", "base", "batom", "rímel", "corretivo", "vult", "tracta"], cat: "145", sub: "916" },
-    { keywords: ["esmalte", "unha", "acetona", "colorama", "risque", "impala"], cat: "143", sub: "901" },
+function parseArray(value: unknown): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(v => typeof v === "string" ? v : (v?.nome || v?.caminhoImagem || String(v))).filter(Boolean);
+  const s = String(value).trim();
+  if (!s) return [];
+  return s.split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+}
+
+function guessCategory(name: string): { categoriaId: string; subcategoriaId: string } {
+  const nameLower = name.toLowerCase();
+
+  const rules: { keywords: string[]; cat: string; sub: string }[] = [
+    { keywords: ["dipirona", "paracetamol", "ibuprofeno", "aspirina", "dorflex", "neosaldina", "novalgina", "tylenol", "nevralgex", "tandrilax", "torsilax", "dor ", "febre"], cat: "142", sub: "14201" },
+    { keywords: ["amoxicilina", "azitromicina", "cefalexina", "ciprofloxacino", "antibiotico"], cat: "142", sub: "14202" },
+    { keywords: ["loratadina", "antialergico", "antialérgico", "desloratadina", "allegra", "histamin", "polaramine"], cat: "142", sub: "14203" },
+    { keywords: ["omeprazol", "pantoprazol", "antiacido", "antiácido", "digestao", "digestão", "eno", "estomazil", "epocler"], cat: "142", sub: "14204" },
+    { keywords: ["losartana", "atenolol", "enalapril", "pressao", "pressão", "hipertensao", "coracao", "coração"], cat: "142", sub: "14205" },
+    { keywords: ["shampoo", "condicionador", "cabelo", "capilar", "mascara capilar", "tintura"], cat: "144", sub: "14401" },
+    { keywords: ["sabonete", "desodorante", "banho", "hidratante", "creme corporal"], cat: "144", sub: "14402" },
+    { keywords: ["escova dental", "creme dental", "pasta de dente", "enxaguante", "fio dental", "oral"], cat: "144", sub: "14403" },
+    { keywords: ["protetor solar", "bloqueador solar", "bronzeador", "pos sol", "fps "], cat: "144", sub: "14404" },
+    { keywords: ["fralda", "lenco umedecido", "lenço umedecido", "bebe", "bebê", "infantil", "pomada assadura", "mamadeira"], cat: "145", sub: "14501" },
+    { keywords: ["vitamina", "suplemento", "omega 3", "ômega 3", "colageno", "colágeno", "multivitaminico", "zinco", "vitamina c", "calcio", "creatina", "whey"], cat: "146", sub: "14601" },
+    { keywords: ["termometro", "termômetro", "medidor de pressao", "inalador", "nebulizador", "curativo", "gaze", "esparadrapo", "seringa"], cat: "147", sub: "14701" },
   ];
 
   for (const rule of rules) {
@@ -204,7 +253,6 @@ function guessCategory(nome: string): { categoriaId: string; subcategoriaId: str
     }
   }
 
-  // Return empty if no rule matches, so products don't falsely appear in Medicamentos
   return { categoriaId: "", subcategoriaId: "" };
 }
 
@@ -232,7 +280,7 @@ function resolveCategory(catInput: string, subcatInput: string): { categoriaId: 
     const matchedSubcat = findByNameOrId(subcatInput, allSubcats);
     if (matchedSubcat) {
       subcatId = matchedSubcat.id;
-      if (!catId && matchedSubcat.parentId) catId = matchedSubcat.parentId; // infer parent
+      if (!catId && matchedSubcat.parentId) catId = matchedSubcat.parentId;
     }
   }
 
@@ -249,33 +297,69 @@ function rowToProduct(
     return col ? row[col] : undefined;
   };
 
-  const nome = String(get("nome") || "Produto sem nome");
-  const codigoRaw = String(get("id") || "");
-  const id = codigoRaw || `gen-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const ean = String(get("ean") || "");
+  const nome = String(get("nome") || "Produto sem nome").trim();
+  const codigoRaw = String(get("id") || "").trim();
+  const id = codigoRaw || `prod-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const ean = String(get("ean") || "").trim();
+  const sku = String(get("sku") || codigoRaw || ean || id).trim();
+  const ean2 = String(get("ean2") || "").trim();
+  const ean3 = String(get("ean3") || "").trim();
+  const eansSecundarios = parseArray(get("eansSecundarios"));
+
   const precoPor = parseNumber(get("precoPor"));
   const precoDe = parseNumber(get("precoDe")) || precoPor;
+  const precoCusto = parseNumber(get("precoCusto"));
+  const estoque = parseNumber(get("estoque"));
 
   const guessed = guessCategory(nome);
-  
-  const foto = String(get("foto") || "");
-  const urlParam = String(get("url") || nome.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-|-$/g, '') + `-${id}`);
-  const seoTitulo = String(get("seoTitulo") || "");
+  const rawCat = String(get("categoriaId") || "");
+  const rawSubcat = String(get("subcategoriaId") || "");
+  const resolvedCat = resolveCategory(rawCat, rawSubcat);
+  const categoriaId = resolvedCat?.categoriaId || guessed.categoriaId;
+  const subcategoriaId = resolvedCat?.subcategoriaId || guessed.subcategoriaId;
+  const categoriasAdicionais = parseArray(get("categoriasAdicionais"));
+  const subcategoriasAdicionais = parseArray(get("subcategoriasAdicionais"));
+
+  const foto = String(get("foto") || "").trim();
+  const imagensRaw = parseArray(get("imagens"));
+  const imagens = imagensRaw.length > 0 ? imagensRaw.map(caminhoImagem => ({ caminhoImagem })) : (foto ? [{ caminhoImagem: foto }] : []);
+
+  const urlParam = String(get("url") || generateSlug(nome) + `-${id}`);
+  const seoTitulo = String(get("seoTitulo") || nome);
   const metaDescription = String(get("metaDescription") || "");
-  const internalTagsRaw = String(get("internalTags") || "");
-  const internalTags = internalTagsRaw ? internalTagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
-  const tipoProduto = String(get("tipoProduto") || "");
+  const internalTags = parseArray(get("internalTags"));
+  const termosPesquisa = String(get("termosPesquisa") || "");
+
+  const tipoProduto = String(get("tipoProduto") || "fisico");
   const produtoNatureza = String(get("produtoNatureza") || "");
   const principiosAtivosRaw = String(get("principiosAtivos") || "");
-  const principiosAtivos = principiosAtivosRaw ? principiosAtivosRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
-  const sku = String(get("sku") || ean);
-  const ean2 = String(get("ean2") || "");
-  const ean3 = String(get("ean3") || "");
-  const videoUrl = String(get("videoUrl") || "");
-  const youtubeVideoUrl = String(get("youtubeVideoUrl") || "");
-  const prioridade = parseNumber(get("prioridade"));
+  const principiosAtivos = principiosAtivosRaw ? principiosAtivosRaw.split(/[,;]/).map(s => s.trim()).filter(Boolean) : [];
+
+  const marca = String(get("marca") || "").trim();
+  const registroAnvisa = String(get("registroAnvisa") || "").trim();
+  const tarja = parseTarja(get("tarja"));
+  const retemReceita = parseBoolean(get("retemReceita"), tarja.includes("Retém"));
   const tipoReceita = String(get("tipoReceita") || "");
-  const resumoDescricao = String(get("resumoDescricao") || "");
+  const generico = parseBoolean(get("generico"), false);
+  const tipoMedicamento = String(get("tipoMedicamento") || (generico ? "Genérico" : ""));
+  const classeTerapeutica = String(get("classeTerapeutica") || "");
+  const indicacaoTerapeutica = String(get("indicacaoTerapeutica") || "");
+  const tipoDePreco = String(get("tipoDePreco") || "Liberado");
+  const ncm = String(get("ncm") || "");
+  const alertaRegulatorio = parseBoolean(get("alertaRegulatorio"), false);
+  const alertaTexto = String(get("alertaTexto") || "");
+
+  const precoSobConsulta = parseBoolean(get("precoSobConsulta"), false);
+  const bloquearPreco = parseBoolean(get("bloquearPreco"), false);
+  const emCampanha = parseBoolean(get("emCampanha"), false);
+  const precoCampanha = parseNumber(get("precoCampanha"));
+  const campanhaInicio = String(get("campanhaInicio") || "");
+  const campanhaFim = String(get("campanhaFim") || "");
+  const precoEncarte = parseNumber(get("precoEncarte"));
+  const quantidadeMinima = parseNumber(get("quantidadeMinima"), 1);
+  const quantidadeMultipla = parseNumber(get("quantidadeMultipla"), 1);
+  const programaFidelidade = parseBoolean(get("programaFidelidade"), false);
+
   const quantidadeEmbalagem = parseNumber(get("quantidadeEmbalagem"));
   const unidadeEmbalagem = String(get("unidadeEmbalagem") || "");
   const quantidadeConteudo = parseNumber(get("quantidadeConteudo"));
@@ -284,47 +368,66 @@ function rowToProduct(
   const fps = parseNumber(get("fps"));
   const faixaEtaria = String(get("faixaEtaria") || "");
 
-  const rawCat = String(get("categoriaId") || "");
-  const rawSubcat = String(get("subcategoriaId") || "");
-  const resolvedCat = resolveCategory(rawCat, rawSubcat);
-  
-  // Use resolved category by name, or if not found, use guessed category
-  const categoriaId = resolvedCat?.categoriaId || guessed.categoriaId;
-  const subcategoriaId = resolvedCat?.subcategoriaId || guessed.subcategoriaId;
+  const resumoDescricao = String(get("resumoDescricao") || "");
+  const descricao = String(get("descricao") || resumoDescricao || nome);
+  const imagemAlt = String(get("imagemAlt") || nome);
+  const videoUrl = String(get("videoUrl") || "");
+  const youtubeVideoUrl = String(get("youtubeVideoUrl") || "");
+
+  const ativo = parseBoolean(get("ativo"), true);
+  const visivel = parseBoolean(get("visivel"), true);
+  const buscavel = parseBoolean(get("buscavel"), true);
+  const aVenda = parseBoolean(get("aVenda"), true);
+  const destaque = parseBoolean(get("destaque"), false);
+  const lancamento = parseBoolean(get("lancamento"), false);
+  const prioridade = parseNumber(get("prioridade"), 0);
+  const selosIds = parseArray(get("selosIds"));
+  const vitrines = parseArray(get("vitrines"));
+  const compreJuntoProdutoId = String(get("compreJuntoProdutoId") || "");
 
   return {
     id,
-    ean,
-    nome,
-    descricao: String(get("descricao") || nome),
-        marca: String(get("marca") || ""),
-    precoDe,
-    precoPor,
-    estoque: parseNumber(get("estoque")),
-    registroAnvisa: String(get("registroAnvisa") || ""),
-    tarja: parseTarja(get("tarja")),
-    retemReceita: parseBoolean(get("retemReceita")),
-    generico: parseBoolean(get("generico")),
-    possuiImagem: false,
-    categoriaId,
-    subcategoriaId,
-
-    foto,
-    url: urlParam,
-    seoTitulo,
-    metaDescription,
-    internalTags,
-    tipoProduto,
-    produtoNatureza,
-    principiosAtivos,
     sku,
+    ean,
     ean2,
     ean3,
-    videoUrl,
-    youtubeVideoUrl,
-    prioridade,
+    eansSecundarios,
+    codigoInterno: codigoRaw || id,
+    nome,
+    marca,
+    categoriaId,
+    subcategoriaId,
+    categoriasAdicionais,
+    subcategoriasAdicionais,
+    tipoProduto,
+    produtoNatureza,
+    registroAnvisa,
+    tarja,
+    retemReceita,
     tipoReceita,
-    resumoDescricao,
+    generico,
+    tipoMedicamento,
+    principiosAtivos,
+    classeTerapeutica,
+    indicacaoTerapeutica,
+    tipoDePreco,
+    ncm,
+    alertaRegulatorio,
+    alertaTexto,
+    precoDe,
+    precoPor,
+    precoCusto,
+    estoque,
+    precoSobConsulta,
+    bloquearPreco,
+    emCampanha,
+    precoCampanha,
+    campanhaInicio,
+    campanhaFim,
+    precoEncarte,
+    quantidadeMinima,
+    quantidadeMultipla,
+    programaFidelidade,
     quantidadeEmbalagem,
     unidadeEmbalagem,
     quantidadeConteudo,
@@ -332,56 +435,252 @@ function rowToProduct(
     sabor,
     fps,
     faixaEtaria,
-
-    ativo: false,
-    visivel: false,
-    codigoInterno: codigoRaw,
+    resumoDescricao,
+    descricao,
+    foto: foto || (imagens[0]?.caminhoImagem || ""),
+    imagens,
+    imagemAlt,
+    videoUrl,
+    youtubeVideoUrl,
+    url: urlParam,
+    seoTitulo,
+    metaDescription,
+    internalTags,
+    termosPesquisa,
+    ativo,
+    visivel,
+    buscavel,
+    aVenda,
+    destaque,
+    lancamento,
+    prioridade,
+    selosIds,
+    vitrines,
+    compreJuntoProdutoId,
+    possuiImagem: Boolean(foto || imagens.length > 0),
   };
 }
 
-// ---- Generate Template ----
+// ---- Generate Template Spreadsheet (.XLSX) ----
 export function generateTemplate() {
   const wb = XLSX.utils.book_new();
   const headers = [
-    "Código Interno", "EAN", "Nome", "Descrição", "marca",
-    "Preço De", "Preço Por", "Estoque", "Registro ANVISA",
-    "Tarja", "Retém Receita", "Genérico", "Categoria", "Subcategoria",
-    "URL DA FOTO/IMAGEM", "LINK DA PÁGINA (SLUG)", "TÍTULO SEO", "DESCRIÇÃO SEO", "TAGS DE BUSCA",
-    "TIPO DE PRODUTO", "NATUREZA DO PRODUTO", "PRINCÍPIOS ATIVOS", "SKU", "EAN 2", "EAN 3",
-    "URL DO VÍDEO", "URL YOUTUBE", "PRIORIDADE", "TIPO DE RECEITA", "RESUMO",
-    "QTD EMBALAGEM", "UNIDADE EMBALAGEM", "QTD CONTEÚDO", "UNIDADE CONTEÚDO", "SABOR", "FPS", "FAIXA ETÁRIA"
-];
+    // 1. Identificação Básica
+    "Código Interno", "SKU", "EAN (Código de Barras)", "EAN 2", "EAN 3", "EANs Secundários", "Nome do Produto", "Marca / Laboratório",
+    // 2. Categorias & Classificação
+    "Categoria Principal", "Subcategoria Principal", "Categorias Adicionais", "Subcategorias Adicionais", "Tipo de Produto (fisico/servico)", "Natureza do Produto",
+    // 3. Regulatório & Farmacêutico
+    "Registro ANVISA / MS", "Tarja", "Retém Receita (Sim/Não)", "Tipo de Receita", "Genérico (Sim/Não)", "Tipo de Medicamento", "Princípios Ativos / Fórmula", "Classe Terapêutica", "Indicação Terapêutica", "Regime de Preço (Liberado/Monitorado)", "NCM", "Alerta Regulatório (Sim/Não)", "Texto do Alerta Regulatório",
+    // 4. Preços & Estoque
+    "Preço De (R$)", "Preço Por (Venda R$)", "Preço de Custo (R$)", "Estoque", "Preço Sob Consulta (Sim/Não)", "Bloquear Preço (Sim/Não)", "Em Campanha (Sim/Não)", "Preço Campanha (R$)", "Início Campanha (AAAA-MM-DD)", "Fim Campanha (AAAA-MM-DD)", "Preço Encarte (R$)", "Qtd Mínima", "Qtd Múltipla", "Programa Fidelidade (Sim/Não)",
+    // 5. Embalagem & Atributos
+    "Qtd Embalagem", "Unidade Embalagem", "Qtd Conteúdo", "Unidade Conteúdo", "Sabor / Aroma", "FPS", "Faixa Etária",
+    // 6. Descrições
+    "Resumo Curto", "Descrição Completa / Bula (HTML)",
+    // 7. Imagens & Mídia
+    "URL da Foto Principal", "URLs Fotos Adicionais (separadas por vírgula)", "Texto ALT da Imagem", "URL do Vídeo", "URL do Vídeo YouTube",
+    // 8. SEO & Busca
+    "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca (separadas por vírgula)", "Termos de Pesquisa",
+    // 9. Status & Visibilidade
+    "Produto Ativo (Sim/Não)", "Visível no Catálogo (Sim/Não)", "Buscável (Sim/Não)", "À Venda (Sim/Não)", "Destaque na Home (Sim/Não)", "Lançamento (Sim/Não)", "Prioridade / Relevância (0-100)", "Selos IDs", "Vitrines / Coleções", "Compre Junto (ID Produto)"
+  ];
+
   const sampleRows = [
-    ["563003", "7896523207360", "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
-      "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS", "CIMED",
-      8.33, 4.99, 1406, "1438100510076", "Sem Tarja", "Não", "Sim", "Medicamentos", "Dor e Febre",
-      "", "", "", "", "", "", "", "", "563003", "", "", "", "", 0, "", "", 0, "", 0, "", "", 0, ""],
-    ["558600", "7896523216812", "DIAD 1.5MG COM 1 COMPRIMIDO",
-      "DIAD 1.5MG COM 1 COMPRIMIDO", "CIMED",
-      22.55, 19.99, 822, "1438100880027", "Sem Tarja", "Não", "Sim", "Medicamentos", "Dor e Febre",
-      "", "", "", "", "", "", "", "", "558600", "", "", "", "", 0, "", "", 0, "", 0, "", "", 0, ""],
-];
+    [
+      // 1. Identificação Básica
+      "563003", "563003", "7896523207360", "", "", "", "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS", "CIMED",
+      // 2. Categorias & Classificação
+      "Medicamentos", "Dor e Febre", "", "", "fisico", "Medicamento",
+      // 3. Regulatório & Farmacêutico
+      "1438100510076", "Sem Tarja", "Não", "", "Sim", "Similar", "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg", "Analgésico e Relaxante Muscular", "Alívio de dores musculares e cefaleias", "Liberado", "30049099", "Não", "",
+      // 4. Preços & Estoque
+      8.33, 4.99, 2.50, 1406, "Não", "Não", "Sim", 4.49, "2026-08-01", "2026-08-31", 4.99, 1, 1, "Sim",
+      // 5. Embalagem & Atributos
+      10, "Comprimidos", 10, "unidades", "", 0, "Adulto e Pediátrico acima de 12 anos",
+      // 6. Descrições
+      "Indicado para o alívio da dor associada a contraturas musculares.", "<p><strong>Nevralgex</strong> é indicado no alívio da dor associada a contraturas musculares decorrentes de processos traumáticos ou inflamatórios e em cefaleias tensionais.</p>",
+      // 7. Imagens & Mídia
+      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523207360.jpg", "", "Nevralgex 10 comprimidos Cimed", "", "",
+      // 8. SEO & Busca
+      "nevralgex-300mg-50mg-35mg-10-comprimidos-563003", "Nevralgex 10 Comprimidos - Compre Online com Melhor Preço", "Compre Nevralgex com 10 comprimidos na Farmácias Associadas. Alívio rápido para dores musculares e dor de cabeça com entrega rápida.", "nevralgex, dipirona, relaxante muscular, dor de cabeca, cimed", "nevralgex dor muscular relaxante",
+      // 9. Status & Visibilidade
+      "Sim", "Sim", "Sim", "Sim", "Sim", "Não", 80, "gen", "ofertas-do-mes,mais-vendidos", ""
+    ],
+    [
+      // 1. Identificação Básica
+      "558600", "558600", "7896523216812", "", "", "", "DIAD 1.5MG COM 1 COMPRIMIDO", "CIMED",
+      // 2. Categorias & Classificação
+      "Medicamentos", "Saúde da Mulher", "", "", "fisico", "Medicamento",
+      // 3. Regulatório & Farmacêutico
+      "1438100880027", "Sem Tarja", "Não", "", "Sim", "Similar", "Levonorgestrel 1.5mg", "Contraceptivo de Emergência", "Anticoncepção de emergência", "Liberado", "30043919", "Não", "",
+      // 4. Preços & Estoque
+      22.55, 19.99, 11.20, 822, "Não", "Não", "Não", 0, "", "", 19.99, 1, 1, "Não",
+      // 5. Embalagem & Atributos
+      1, "Comprimido", 1.5, "mg", "", 0, "Adulto",
+      // 6. Descrições
+      "Contraceptivo de emergência em dose única de levonorgestrel.", "<p><strong>Diad 1,5mg</strong> é indicado como contraceptivo de emergência, que deve ser utilizado dentro de 72 horas após relação sexual desprotegida.</p>",
+      // 7. Imagens & Mídia
+      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523216812.jpg", "", "Diad 1.5mg 1 comprimido Cimed", "", "",
+      // 8. SEO & Busca
+      "diad-15mg-1-comprimido-558600", "Diad 1.5mg com 1 Comprimido - Farmácias Associadas", "Compre Diad 1.5mg anticoncepcional de emergência com total discrição e entrega rápida na Farmácias Associadas.", "diad, levonorgestrel, pilula do dia seguinte, cimed", "diad pilula do dia seguinte emergencial",
+      // 9. Status & Visibilidade
+      "Sim", "Sim", "Sim", "Sim", "Não", "Não", 60, "", "saude-feminina", ""
+    ],
+    [
+      // 1. Identificação Básica
+      "7891234", "7891234", "7891058021108", "", "", "", "PROTETOR SOLAR FACIAL FPS 60 TOQUE SECO 50G", "ASSOCIADAS DERMO",
+      // 2. Categorias & Classificação
+      "Dermocosméticos", "Proteção Solar", "Cuidados com a Pele", "Rosto", "fisico", "Cosmético",
+      // 3. Regulatório & Farmacêutico
+      "25351.123456/2026-78", "Sem Tarja", "Não", "", "Não", "", "Filtros Solares UVA/UVB, Vitamina E, Niacinamida", "Fotoprotetor Dermatológico", "Proteção solar diária com ação antioxidante e controle de oleosidade", "Liberado", "33049990", "Não", "",
+      // 4. Preços & Estoque
+      69.90, 49.90, 28.00, 350, "Não", "Não", "Sim", 44.90, "2026-08-01", "2026-08-31", 49.90, 1, 1, "Sim",
+      // 5. Embalagem & Atributos
+      1, "Bisnaga", 50, "g", "Sem Fragrância", 60, "Todas as Idades",
+      // 6. Descrições
+      "Alta proteção solar UVA/UVB com toque seco e controle de oleosidade.", "<p>O <strong>Protetor Solar Facial FPS 60</strong> oferece alta proteção contra os raios solares, prevenindo o fotoenvelhecimento e manchas solares. Fórmula não comedogênica de rápida absorção.</p>",
+      // 7. Imagens & Mídia
+      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7891058021108.jpg", "", "Protetor Solar Facial FPS 60 Toque Seco Associadas Dermo 50g", "", "",
+      // 8. SEO & Busca
+      "protetor-solar-facial-fps-60-toque-seco-50g-7891234", "Protetor Solar Facial FPS 60 Toque Seco 50g - Farmácias Associadas", "Proteja sua pele com o Protetor Solar Facial FPS 60. Toque seco e alta durabilidade. Compre online com desconto exclusivo.", "protetor solar, protetor facial, fps 60, toque seco, dermocosmeticos", "protetor solar rosto toque seco",
+      // 9. Status & Visibilidade
+      "Sim", "Sim", "Sim", "Sim", "Sim", "Sim", 95, "lancamento,dermo", "verao,dermocosmeticos,destaques-home", ""
+    ]
+  ];
+
   const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
-
-  // Set column widths
-  ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 4, 16) }));
-
+  ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 4, 18) }));
   XLSX.utils.book_append_sheet(wb, ws, "Produtos");
   XLSX.writeFile(wb, "modelo_produtos_farmacia.xlsx");
+}
+
+// ---- Generate Template JSON (.JSON) ----
+export function generateJsonTemplate() {
+  const jsonSample = [
+    {
+      "cabecalho_identificacao": {
+        "codigo_interno": "563003",
+        "sku": "563003",
+        "ean_principal": "7896523207360",
+        "ean_secundario_2": "",
+        "ean_secundario_3": "",
+        "eans_secundarios_adicionais": [],
+        "nome_produto_descricao_comercial": "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
+        "marca_fabricante_laboratorio": "CIMED"
+      },
+      "categorizacao_e_classificacao": {
+        "categoria_principal": "Medicamentos",
+        "subcategoria_principal": "Dor e Febre",
+        "categorias_adicionais": [],
+        "subcategorias_adicionais": [],
+        "tipo_produto": "fisico",
+        "natureza_do_produto": "Medicamento"
+      },
+      "informacoes_farmaceuticas_e_regulatorias": {
+        "registro_anvisa_ms": "1438100510076",
+        "tarja": "Sem Tarja",
+        "retem_receita": false,
+        "tipo_de_receita": "",
+        "medicamento_generico": true,
+        "tipo_de_medicamento": "Similar",
+        "principios_ativos_formula": "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg",
+        "classe_terapeutica": "Analgésico e Relaxante Muscular",
+        "indicacao_terapeutica": "Alívio de dores musculares e cefaleias",
+        "regime_de_preco": "Liberado",
+        "ncm": "30049099",
+        "alerta_regulatorio": false,
+        "texto_alerta_regulatorio": ""
+      },
+      "precificacao_e_estoque": {
+        "preco_de": 8.33,
+        "preco_por_venda": 4.99,
+        "preco_custo": 2.50,
+        "estoque": 1406,
+        "preco_sob_consulta": false,
+        "bloquear_preco": false,
+        "em_campanha": true,
+        "preco_campanha": 4.49,
+        "data_inicio_campanha": "2026-08-01",
+        "data_fim_campanha": "2026-08-31",
+        "preco_encarte": 4.99,
+        "quantidade_minima_venda": 1,
+        "quantidade_multipla_venda": 1,
+        "participa_programa_fidelidade": true
+      },
+      "embalagem_e_atributos": {
+        "quantidade_na_embalagem": 10,
+        "unidade_da_embalagem": "Comprimidos",
+        "quantidade_do_conteudo": 10,
+        "unidade_do_conteudo": "unidades",
+        "sabor_aroma": "",
+        "fps_protecao_solar": 0,
+        "faixa_etaria": "Adulto e Pediátrico acima de 12 anos"
+      },
+      "conteudo_e_descricoes": {
+        "resumo_curto": "Indicado para o alívio da dor associada a contraturas musculares.",
+        "descricao_completa_html": "<p><strong>Nevralgex</strong> é indicado no alívio da dor associada a contraturas musculares decorrentes de processos traumáticos ou inflamatórios e em cefaleias tensionais.</p>"
+      },
+      "imagens_e_midia": {
+        "url_foto_principal": "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523207360.jpg",
+        "urls_fotos_adicionais": [],
+        "texto_alt_imagem_seo": "Nevralgex 10 comprimidos Cimed",
+        "url_video": "",
+        "url_video_youtube": ""
+      },
+      "seo_e_buscas": {
+        "link_da_pagina_slug": "nevralgex-300mg-50mg-35mg-10-comprimidos-563003",
+        "titulo_seo_meta_title": "Nevralgex 10 Comprimidos - Compre Online com Melhor Preço",
+        "descricao_seo_meta_description": "Compre Nevralgex com 10 comprimidos na Farmácias Associadas. Alívio rápido para dores musculares e dor de cabeça com entrega rápida.",
+        "tags_de_busca_interna": ["nevralgex", "dipirona", "relaxante muscular", "dor de cabeca", "cimed"],
+        "termos_pesquisa": "nevralgex dor muscular relaxante"
+      },
+      "status_e_organizacao": {
+        "produto_ativo": true,
+        "visivel_no_catalogo": true,
+        "buscavel_na_busca": true,
+        "disponivel_para_venda": true,
+        "destaque_na_home": true,
+        "selo_lancamento": false,
+        "prioridade_relevancia": 80,
+        "selos_ids": ["gen"],
+        "vitrines_colecoes": ["ofertas-do-mes", "mais-vendidos"],
+        "compre_junto_produto_id": ""
+      }
+    }
+  ];
+
+  const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonSample, null, 2));
+  const dlAnchorElem = document.createElement("a");
+  dlAnchorElem.setAttribute("href", dataStr);
+  dlAnchorElem.setAttribute("download", "modelo_produtos_completo.json");
+  document.body.appendChild(dlAnchorElem);
+  dlAnchorElem.click();
+  document.body.removeChild(dlAnchorElem);
 }
 
 // ---- Export products as Excel ----
 export function exportProductsAsExcel(products: Produto[]) {
   const wb = XLSX.utils.book_new();
   const headers = [
-    "Código Interno", "EAN", "Nome", "Descrição", "marca",
-    "Preço De", "Preço Por", "Estoque", "Registro ANVISA",
-    "Tarja", "Retém Receita", "Genérico", "Categoria", "Subcategoria",
-    "URL DA FOTO/IMAGEM", "LINK DA PÁGINA (SLUG)", "TÍTULO SEO", "DESCRIÇÃO SEO", "TAGS DE BUSCA",
-    "TIPO DE PRODUTO", "NATUREZA DO PRODUTO", "PRINCÍPIOS ATIVOS", "SKU", "EAN 2", "EAN 3",
-    "URL DO VÍDEO", "URL YOUTUBE", "PRIORIDADE", "TIPO DE RECEITA", "RESUMO",
-    "QTD EMBALAGEM", "UNIDADE EMBALAGEM", "QTD CONTEÚDO", "UNIDADE CONTEÚDO", "SABOR", "FPS", "FAIXA ETÁRIA"
-];
+    // 1. Identificação Básica
+    "Código Interno", "SKU", "EAN (Código de Barras)", "EAN 2", "EAN 3", "EANs Secundários", "Nome do Produto", "Marca / Laboratório",
+    // 2. Categorias & Classificação
+    "Categoria Principal", "Subcategoria Principal", "Categorias Adicionais", "Subcategorias Adicionais", "Tipo de Produto", "Natureza do Produto",
+    // 3. Regulatório & Farmacêutico
+    "Registro ANVISA / MS", "Tarja", "Retém Receita", "Tipo de Receita", "Genérico", "Tipo de Medicamento", "Princípios Ativos / Fórmula", "Classe Terapêutica", "Indicação Terapêutica", "Regime de Preço", "NCM", "Alerta Regulatório", "Texto do Alerta",
+    // 4. Preços & Estoque
+    "Preço De (R$)", "Preço Por (Venda R$)", "Preço de Custo (R$)", "Estoque", "Preço Sob Consulta", "Bloquear Preço", "Em Campanha", "Preço Campanha (R$)", "Início Campanha", "Fim Campanha", "Preço Encarte (R$)", "Qtd Mínima", "Qtd Múltipla", "Programa Fidelidade",
+    // 5. Embalagem & Atributos
+    "Qtd Embalagem", "Unidade Embalagem", "Qtd Conteúdo", "Unidade Conteúdo", "Sabor / Aroma", "FPS", "Faixa Etária",
+    // 6. Descrições
+    "Resumo Curto", "Descrição Completa (HTML)",
+    // 7. Imagens & Mídia
+    "URL da Foto Principal", "URLs Fotos Adicionais", "Texto ALT da Imagem", "URL do Vídeo", "URL do Vídeo YouTube",
+    // 8. SEO & Busca
+    "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca", "Termos de Pesquisa",
+    // 9. Status & Visibilidade
+    "Produto Ativo", "Visível no Catálogo", "Buscável", "À Venda", "Destaque na Home", "Lançamento", "Prioridade (0-100)", "Selos IDs", "Vitrines", "Compre Junto ID"
+  ];
   
   const getCatName = (id: string, isSubcat = false) => {
     const cats = categoriesData as any[];
@@ -390,17 +689,97 @@ export function exportProductsAsExcel(products: Produto[]) {
   };
 
   const rows = products.map((p) => [
-    p.codigoInterno || p.id, p.ean, p.nome, p.descricao, p.marca,
-    p.precoDe, p.precoPor, p.estoque, p.registroAnvisa,
-    p.tarja, p.retemReceita ? "Sim" : "Não", p.generico ? "Sim" : "Não",
-    getCatName(p.categoriaId), getCatName(p.subcategoriaId, true),
-    p.foto || "", p.url || "", p.seoTitulo || "", p.metaDescription || "", (p.internalTags || []).join(", "),
-    p.tipoProduto || "", p.produtoNatureza || "", Array.isArray(p.principiosAtivos) ? p.principiosAtivos.map(x => typeof x === 'string' ? x : x.nome).join(", ") : "", p.sku || "", p.ean2 || "", p.ean3 || "",
-    p.videoUrl || "", p.youtubeVideoUrl || "", p.prioridade || 0, p.tipoReceita || "", p.resumoDescricao || "",
-    p.quantidadeEmbalagem || 0, p.unidadeEmbalagem || "", p.quantidadeConteudo || 0, p.unidadeConteudo || "", p.sabor || "", p.fps || 0, p.faixaEtaria || ""
+    // 1. Identificação Básica
+    p.codigoInterno || p.id,
+    p.sku || p.codigoInterno || p.ean || p.id,
+    p.ean || "",
+    p.ean2 || "",
+    p.ean3 || "",
+    Array.isArray(p.eansSecundarios) ? p.eansSecundarios.join(", ") : (p.eansSecundarios || ""),
+    p.nome || "",
+    p.marca || "",
+
+    // 2. Categorias & Classificação
+    getCatName(p.categoriaId),
+    getCatName(p.subcategoriaId, true),
+    Array.isArray(p.categoriasAdicionais) ? p.categoriasAdicionais.join(", ") : (p.categoriasAdicionais || ""),
+    Array.isArray(p.subcategoriasAdicionais) ? p.subcategoriasAdicionais.join(", ") : (p.subcategoriasAdicionais || ""),
+    p.tipoProduto || "fisico",
+    p.produtoNatureza || "",
+
+    // 3. Regulatório & Farmacêutico
+    p.registroAnvisa || "",
+    p.tarja || "Sem Tarja",
+    p.retemReceita ? "Sim" : "Não",
+    p.tipoReceita || "",
+    p.generico ? "Sim" : "Não",
+    p.tipoMedicamento || "",
+    Array.isArray(p.principiosAtivos) ? p.principiosAtivos.map(x => typeof x === 'string' ? x : x.nome).join(", ") : (p.principiosAtivos || ""),
+    p.classeTerapeutica || "",
+    p.indicacaoTerapeutica || "",
+    p.tipoDePreco || "Liberado",
+    p.ncm || "",
+    p.alertaRegulatorio ? "Sim" : "Não",
+    p.alertaTexto || "",
+
+    // 4. Preços & Estoque
+    p.precoDe || 0,
+    p.precoPor || 0,
+    p.precoCusto || 0,
+    p.estoque || 0,
+    p.precoSobConsulta ? "Sim" : "Não",
+    p.bloquearPreco ? "Sim" : "Não",
+    p.emCampanha ? "Sim" : "Não",
+    p.precoCampanha || 0,
+    p.campanhaInicio || "",
+    p.campanhaFim || "",
+    p.precoEncarte || 0,
+    p.quantidadeMinima || 1,
+    p.quantidadeMultipla || 1,
+    p.programaFidelidade ? "Sim" : "Não",
+
+    // 5. Embalagem & Atributos
+    p.quantidadeEmbalagem || 0,
+    p.unidadeEmbalagem || "",
+    p.quantidadeConteudo || 0,
+    p.unidadeConteudo || "",
+    p.sabor || "",
+    p.fps || 0,
+    p.faixaEtaria || "",
+
+    // 6. Descrições
+    p.resumoDescricao || "",
+    p.descricao || "",
+
+    // 7. Imagens & Mídia
+    p.foto || "",
+    Array.isArray(p.imagens) ? p.imagens.map(img => typeof img === 'string' ? img : img?.caminhoImagem).filter(Boolean).join(", ") : "",
+    p.imagemAlt || "",
+    p.videoUrl || "",
+    p.youtubeVideoUrl || "",
+
+    // 8. SEO & Busca
+    p.url || "",
+    p.seoTitulo || "",
+    p.metaDescription || "",
+    Array.isArray(p.internalTags) ? p.internalTags.join(", ") : (p.internalTags || ""),
+    p.termosPesquisa || "",
+
+    // 9. Status & Visibilidade
+    p.ativo !== false ? "Sim" : "Não",
+    p.visivel !== false ? "Sim" : "Não",
+    p.buscavel !== false ? "Sim" : "Não",
+    p.aVenda !== false ? "Sim" : "Não",
+    p.destaque ? "Sim" : "Não",
+    p.lancamento ? "Sim" : "Não",
+    p.prioridade || 0,
+    Array.isArray(p.selosIds) ? p.selosIds.join(", ") : (p.selosIds || ""),
+    Array.isArray(p.vitrines) ? p.vitrines.join(", ") : (p.vitrines || ""),
+    p.compreJuntoProdutoId || ""
   ]);
+
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 4, 16) }));
+  ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 4, 18) }));
   XLSX.utils.book_append_sheet(wb, ws, "Produtos");
   XLSX.writeFile(wb, "produtos_exportados.xlsx");
 }
@@ -443,14 +822,156 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
   }, [reset, onOpenChange]);
 
   const processFile = useCallback((file: File) => {
-    const validExtensions = [".xlsx", ".xls", ".csv"];
+    const validExtensions = [".xlsx", ".xls", ".csv", ".json"];
     const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
     if (!validExtensions.includes(ext)) {
-      toast.error("Formato inválido. Use .xlsx, .xls ou .csv");
+      toast.error("Formato inválido. Use .xlsx, .xls, .csv ou .json");
       return;
     }
 
     setFileName(file.name);
+
+    if (ext === ".json") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string;
+          const parsed = JSON.parse(text);
+          let items: any[] = [];
+
+          if (Array.isArray(parsed)) {
+            items = parsed;
+          } else if (parsed && typeof parsed === "object") {
+            if (Array.isArray(parsed.produtos)) items = parsed.produtos;
+            else if (Array.isArray(parsed.products)) items = parsed.products;
+            else if (parsed.produto) items = [parsed.produto];
+            else items = [parsed];
+          }
+
+          if (items.length === 0) {
+            toast.error("O arquivo JSON não contém produtos válidos.");
+            return;
+          }
+
+          // Converte estrutura de JSON aninhada ou plana em linhas tabulares
+          const flattenedRows = items.map((item: any) => {
+            const row: Record<string, any> = {};
+
+            // Se for estrutura aninhada por grupos
+            const iden = item.cabecalho_identificacao || item.identificacao || item.cabecalho || {};
+            const cat = item.categorizacao_e_classificacao || item.categorizacao || item.classificacao || item.categoria || {};
+            const reg = item.informacoes_farmaceuticas_e_regulatorias || item.regulatorio || item.farmaceutico || item.registro_anvisa_retencao_tarja_tipo_receita || {};
+            const prec = item.precificacao_e_estoque || item.precificacao || item.precos || item.estoque_precos || {};
+            const emb = item.embalagem_e_atributos || item.embalagem || item.atributos || item.caracteristicas || {};
+            const desc = item.conteudo_e_descricoes || item.descricoes || item.conteudo || {};
+            const midia = item.imagens_e_midia || item.midia || item.imagens || {};
+            const seo = item.seo_e_buscas || item.seo || item.google_seo_aeo_geo || {};
+            const st = item.status_e_organizacao || item.status || item.visibilidade || {};
+
+            row["id"] = iden.codigo_interno || iden.id || item.codigo_interno || item.id || item.codigoInterno || item.codigo;
+            row["sku"] = iden.sku || item.sku || row["id"];
+            row["ean"] = iden.ean_principal || iden.ean || item.ean_principal || item.ean || item.gtin;
+            row["ean2"] = iden.ean_secundario_2 || item.ean2 || item.ean_secundario_2;
+            row["ean3"] = iden.ean_secundario_3 || item.ean3 || item.ean_secundario_3;
+            row["eansSecundarios"] = Array.isArray(iden.eans_secundarios_adicionais) ? iden.eans_secundarios_adicionais.join(", ") : (item.eansSecundarios || "");
+            row["nome"] = iden.nome_produto_descricao_comercial || iden.nome || item.nome || item.nome_produto || item.descricao_comercial;
+            row["marca"] = iden.marca_fabricante_laboratorio || iden.marca || item.marca || item.laboratorio;
+
+            row["categoriaId"] = typeof cat === "string" ? cat : (cat.categoria_principal || cat.nome || cat.id || item.categoriaId || item.categoria);
+            row["subcategoriaId"] = typeof cat.subcategoria_principal === "string" ? cat.subcategoria_principal : (cat.subcategoria?.nome || cat.subcategoria_principal || item.subcategoriaId || item.subcategoria);
+            row["categoriasAdicionais"] = Array.isArray(cat.categorias_adicionais) ? cat.categorias_adicionais.join(", ") : (item.categoriasAdicionais || "");
+            row["subcategoriasAdicionais"] = Array.isArray(cat.subcategorias_adicionais) ? cat.subcategorias_adicionais.join(", ") : (item.subcategoriasAdicionais || "");
+            row["tipoProduto"] = cat.tipo_produto || item.tipoProduto || "fisico";
+            row["produtoNatureza"] = cat.natureza_do_produto || item.produtoNatureza || "";
+
+            row["registroAnvisa"] = reg.registro_anvisa_ms || reg.ms_registro_anvisa || item.registroAnvisa || item.registro_anvisa || "";
+            row["tarja"] = reg.tarja || item.tarja || "Sem Tarja";
+            row["retemReceita"] = reg.retem_receita !== undefined ? (reg.retem_receita ? "Sim" : "Não") : (item.retemReceita ? "Sim" : "Não");
+            row["tipoReceita"] = reg.tipo_de_receita || item.tipoReceita || "";
+            row["generico"] = reg.medicamento_generico !== undefined ? (reg.medicamento_generico ? "Sim" : "Não") : (item.generico ? "Sim" : "Não");
+            row["tipoMedicamento"] = reg.tipo_de_medicamento || item.tipoMedicamento || "";
+            row["principiosAtivos"] = Array.isArray(reg.principios_ativos_formula) ? reg.principios_ativos_formula.join(", ") : (reg.principios_ativos_formula || item.principiosAtivos || "");
+            row["classeTerapeutica"] = reg.classe_terapeutica || item.classeTerapeutica || "";
+            row["indicacaoTerapeutica"] = reg.indicacao_terapeutica || item.indicacaoTerapeutica || "";
+            row["tipoDePreco"] = reg.regime_de_preco || item.tipoDePreco || "Liberado";
+            row["ncm"] = reg.ncm || item.ncm || "";
+            row["alertaRegulatorio"] = reg.alerta_regulatorio ? "Sim" : "Não";
+            row["alertaTexto"] = reg.texto_alerta_regulatorio || item.alertaTexto || "";
+
+            row["precoDe"] = prec.preco_de !== undefined ? prec.preco_de : item.precoDe;
+            row["precoPor"] = prec.preco_por_venda !== undefined ? prec.preco_por_venda : (prec.preco_por !== undefined ? prec.preco_por : item.precoPor);
+            row["precoCusto"] = prec.preco_custo !== undefined ? prec.preco_custo : item.precoCusto;
+            row["estoque"] = prec.estoque !== undefined ? prec.estoque : item.estoque;
+            row["precoSobConsulta"] = prec.preco_sob_consulta ? "Sim" : "Não";
+            row["bloquearPreco"] = prec.bloquear_preco ? "Sim" : "Não";
+            row["emCampanha"] = prec.em_campanha ? "Sim" : "Não";
+            row["precoCampanha"] = prec.preco_campanha !== undefined ? prec.preco_campanha : item.precoCampanha;
+            row["campanhaInicio"] = prec.data_inicio_campanha || item.campanhaInicio || "";
+            row["campanhaFim"] = prec.data_fim_campanha || item.campanhaFim || "";
+            row["precoEncarte"] = prec.preco_encarte !== undefined ? prec.preco_encarte : item.precoEncarte;
+            row["quantidadeMinima"] = prec.quantidade_minima_venda || item.quantidadeMinima || 1;
+            row["quantidadeMultipla"] = prec.quantidade_multipla_venda || item.quantidadeMultipla || 1;
+            row["programaFidelidade"] = prec.participa_programa_fidelidade ? "Sim" : "Não";
+
+            row["quantidadeEmbalagem"] = emb.quantidade_na_embalagem || item.quantidadeEmbalagem || 0;
+            row["unidadeEmbalagem"] = emb.unidade_da_embalagem || item.unidadeEmbalagem || "";
+            row["quantidadeConteudo"] = emb.quantidade_do_conteudo || item.quantidadeConteudo || 0;
+            row["unidadeConteudo"] = emb.unidade_do_conteudo || item.unidadeConteudo || "";
+            row["sabor"] = emb.sabor_aroma || item.sabor || "";
+            row["fps"] = emb.fps_protecao_solar || item.fps || 0;
+            row["faixaEtaria"] = emb.faixa_etaria || item.faixaEtaria || "";
+
+            row["resumoDescricao"] = desc.resumo_curto || item.resumoDescricao || "";
+            row["descricao"] = desc.descricao_completa_html || item.descricao || row["resumoDescricao"] || row["nome"];
+
+            row["foto"] = midia.url_foto_principal || item.foto || (Array.isArray(item.imagens) ? item.imagens[0]?.caminhoImagem || item.imagens[0] : "");
+            row["imagens"] = Array.isArray(midia.urls_fotos_adicionais) ? midia.urls_fotos_adicionais.join(", ") : (Array.isArray(item.imagens) ? item.imagens.map((i: any) => typeof i === 'string' ? i : i.caminhoImagem).join(", ") : "");
+            row["imagemAlt"] = midia.texto_alt_imagem_seo || item.imagemAlt || row["nome"];
+            row["videoUrl"] = midia.url_video || item.videoUrl || "";
+            row["youtubeVideoUrl"] = midia.url_video_youtube || item.youtubeVideoUrl || "";
+
+            row["url"] = seo.link_da_pagina_slug || item.url || item.slug || "";
+            row["seoTitulo"] = seo.titulo_seo_meta_title || item.seoTitulo || row["nome"];
+            row["metaDescription"] = seo.descricao_seo_meta_description || item.metaDescription || "";
+            row["internalTags"] = Array.isArray(seo.tags_de_busca_interna) ? seo.tags_de_busca_interna.join(", ") : (item.internalTags || "");
+            row["termosPesquisa"] = seo.termos_pesquisa || item.termosPesquisa || "";
+
+            row["ativo"] = st.produto_ativo !== undefined ? (st.produto_ativo ? "Sim" : "Não") : (item.ativo !== false ? "Sim" : "Não");
+            row["visivel"] = st.visivel_no_catalogo !== undefined ? (st.visivel_no_catalogo ? "Sim" : "Não") : (item.visivel !== false ? "Sim" : "Não");
+            row["buscavel"] = st.buscavel_na_busca !== undefined ? (st.buscavel_na_busca ? "Sim" : "Não") : (item.buscavel !== false ? "Sim" : "Não");
+            row["aVenda"] = st.disponivel_para_venda !== undefined ? (st.disponivel_para_venda ? "Sim" : "Não") : (item.aVenda !== false ? "Sim" : "Não");
+            row["destaque"] = st.destaque_na_home ? "Sim" : (item.destaque ? "Sim" : "Não");
+            row["lancamento"] = st.selo_lancamento ? "Sim" : (item.lancamento ? "Sim" : "Não");
+            row["prioridade"] = st.prioridade_relevancia !== undefined ? st.prioridade_relevancia : (item.prioridade || 0);
+            row["selosIds"] = Array.isArray(st.selos_ids) ? st.selos_ids.join(", ") : (item.selosIds || "");
+            row["vitrines"] = Array.isArray(st.vitrines_colecoes) ? st.vitrines_colecoes.join(", ") : (item.vitrines || "");
+            row["compreJuntoProdutoId"] = st.compre_junto_produto_id || item.compreJuntoProdutoId || "";
+
+            return row;
+          });
+
+          const detectedHeaders = Object.keys(flattenedRows[0]);
+          setHeaders(detectedHeaders);
+          setRows(flattenedRows);
+
+          const autoMapping: Record<string, string> = {};
+          for (const k of detectedHeaders) {
+            autoMapping[k] = k;
+          }
+          setMapping(autoMapping);
+
+          const products = flattenedRows.map((row) => rowToProduct(row, autoMapping));
+          setParsedProducts(products);
+          setStep("preview");
+          toast.success(`${products.length} produtos carregados do arquivo JSON!`);
+        } catch (err) {
+          console.error(err);
+          toast.error("Erro ao ler o arquivo JSON. Verifique a formatação.");
+        }
+      };
+      reader.readAsText(file);
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -575,10 +1096,10 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
-            Importar Planilha de Produtos
+            Importar Planilha ou JSON de Produtos
           </DialogTitle>
           <DialogDescription>
-            {step === "upload" && "Selecione ou arraste um arquivo Excel (.xlsx) ou CSV para iniciar."}
+            {step === "upload" && "Selecione ou arraste um arquivo Excel (.xlsx, .xls, .csv) ou JSON (.json) com todos os campos de produto."}
             {step === "mapping" && "Confira o mapeamento das colunas. Ajuste se necessário."}
             {step === "preview" && `Revise os ${parsedProducts.length} produtos antes de importar.`}
             {step === "processing" && "Processando os produtos na base de dados..."}
@@ -619,40 +1140,77 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
         <div className="flex-1 overflow-y-auto min-h-0">
           {/* ---- UPLOAD STEP ---- */}
           {step === "upload" && (
-            <div
-              className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer ${
-                dragOver
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50"
-              }`}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                className="hidden"
-                onChange={handleFileInput}
-              />
-              <div className="flex flex-col items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-emerald-100 flex items-center justify-center">
-                  <Upload className="h-8 w-8 text-emerald-600" />
+            <div className="space-y-4">
+              <div
+                className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors cursor-pointer ${
+                  dragOver
+                    ? "border-emerald-500 bg-emerald-50"
+                    : "border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50"
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv,.json"
+                  className="hidden"
+                  onChange={handleFileInput}
+                />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-14 w-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
+                    <Upload className="h-7 w-7 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-base font-bold text-slate-700">
+                      Arraste sua planilha ou arquivo JSON aqui
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      ou clique para selecionar um arquivo do seu computador
+                    </p>
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    <Badge variant="secondary" className="text-xs">.xlsx</Badge>
+                    <Badge variant="secondary" className="text-xs">.xls</Badge>
+                    <Badge variant="secondary" className="text-xs">.csv</Badge>
+                    <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 border-emerald-300">.json</Badge>
+                  </div>
                 </div>
+              </div>
+
+              {/* Template download buttons */}
+              <div className="bg-slate-50 p-4 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div>
-                  <p className="text-base font-bold text-slate-700">
-                    Arraste sua planilha aqui
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    ou clique para selecionar um arquivo
-                  </p>
+                  <p className="text-sm font-bold text-slate-800">Precisa do modelo padrão?</p>
+                  <p className="text-xs text-slate-500">Baixe o modelo com todos os campos idênticos ao cadastro e edição de produtos.</p>
                 </div>
-                <div className="flex gap-2 mt-2">
-                  <Badge variant="secondary" className="text-xs">.xlsx</Badge>
-                  <Badge variant="secondary" className="text-xs">.xls</Badge>
-                  <Badge variant="secondary" className="text-xs">.csv</Badge>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      generateTemplate();
+                    }}
+                    className="font-bold text-xs flex-1 sm:flex-none border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    Baixar Modelo Planilha (.xlsx)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      generateJsonTemplate();
+                    }}
+                    className="font-bold text-xs flex-1 sm:flex-none border-indigo-600 text-indigo-700 hover:bg-indigo-50"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    Baixar Modelo JSON (.json)
+                  </Button>
                 </div>
               </div>
             </div>
