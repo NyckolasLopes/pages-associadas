@@ -29,15 +29,14 @@ function AdminMarketingCores() {
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(activeStoreId || null);
 
   const filteredPharmacies = pharmacies.filter((p) => {
-    // Apenas lojas parceiras possuem personalização de cores
-    if (p.categoriaAssociado === 'Pleno' || p.isPleno === true) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     const nome = (p.nome || "").toLowerCase();
     const slug = (p.slug || "").toLowerCase();
     const cidade = (p.cidade || "").toLowerCase();
     const uf = (p.uf || "").toLowerCase();
-    return nome.includes(q) || slug.includes(q) || cidade.includes(q) || uf.includes(q);
+    const categoria = (p.categoriaAssociado || "").toLowerCase();
+    return nome.includes(q) || slug.includes(q) || cidade.includes(q) || uf.includes(q) || categoria.includes(q);
   });
 
   const selectedStore = pharmacies.find((p) => p.id === selectedStoreId);

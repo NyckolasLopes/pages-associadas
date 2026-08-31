@@ -34,6 +34,8 @@ import {
   Percent,
   Stethoscope,
   Baby,
+  Leaf,
+  Battery,
   Tag,
   Clock,
   ArrowRight,
@@ -402,7 +404,7 @@ export function StoreColorManager({
     admin.grupos?.find(g => g.id === admin.currentUser?.grupoId)?.permissao_total || 
     admin.currentUser?.lojasVinculadas === undefined || false;
 
-  const isPleno = currentPharmacy?.categoriaAssociado === 'Pleno' || currentPharmacy?.isPleno === true;
+  const isPleno = !isGlobal && (currentPharmacy?.categoriaAssociado === 'Pleno' || currentPharmacy?.isPleno === true);
 
   const defaultTheme: Record<string, string> = useMemo(() => ({
     "--primary": "#00B5AD",
@@ -549,14 +551,18 @@ export function StoreColorManager({
     }
   };
 
-  const currentStripes = useMemo(() => [
-    getColor("--primary", "#00B5AD"),
-    getColor("--secondary", "#F37021"),
-    getColor("--header-bg", "#00B5AD"),
-    getColor("--topbar-bg", "#F37021"),
-    getColor("--menu-bg", "#008E88"),
-    getColor("--footer-bg", "#00B5AD"),
-  ], [colors]);
+  const currentStripes = useMemo(() => {
+    const p = getColor("--primary", "#00B5AD");
+    const s = getColor("--secondary", "#F37021");
+    return [
+      p,
+      s,
+      getColor("--header-bg", p),
+      getColor("--topbar-bg", s),
+      getColor("--menu-bg", p === "#00B5AD" ? "#008E88" : p),
+      getColor("--footer-bg", p),
+    ];
+  }, [colors]);
 
   const ColorRow = ({
     label,
@@ -1267,16 +1273,16 @@ export function StoreColorManager({
 
               {/* Scrollable Store Canvas */}
               <div
-                className={`overflow-hidden shadow-lg border border-slate-200 flex flex-col transition-all duration-300 max-h-[640px] overflow-y-auto scrollbar-thin ${
+                className={`overflow-hidden shadow-lg border border-slate-200 flex flex-col transition-all duration-300 max-h-[660px] overflow-y-auto scrollbar-thin relative ${
                   previewDevice === "mobile" ? "max-w-[360px] mx-auto rounded-b-xl" : "w-full rounded-b-xl"
                 }`}
                 style={{ backgroundColor: getColor("--background", "#FFFFFF") }}
               >
-                {/* 1. TOP ANNOUNCEMENT BAR */}
+                {/* 1. TOP ANNOUNCEMENT BAR (FAIXA SUPERIOR) */}
                 <div
-                  className="py-1 px-3 text-center text-[10px] font-bold transition-colors flex items-center justify-between gap-2 shadow-2xs"
+                  className="py-1 px-3 text-center text-[10px] font-bold transition-colors flex items-center justify-center gap-2 shadow-2xs"
                   style={{
-                    backgroundColor: getColor("--topbar-bg", "#F37021"),
+                    backgroundColor: getColor("--topbar-bg", getColor("--secondary", "#F37021")),
                     color: getColor("--topbar-text", "#FFFFFF")
                   }}
                 >
@@ -1285,27 +1291,27 @@ export function StoreColorManager({
                       className="w-3.5 h-3.5 shrink-0" 
                       style={{ color: getColor("--topbar-icon", "#FFFFFF") }}
                     />
-                    <span>RECEBER EM CASA: Entrega Expressa | Cupom: 10OFF</span>
+                    <span>RECEBA EM CASA: Entrega Expressa | Cupom: 10OFF</span>
                   </span>
                 </div>
 
-                {/* 2. MAIN HEADER */}
+                {/* 2. MAIN HEADER (CABEÇALHO DA LOJA) */}
                 <div
                   className="px-3.5 py-2.5 flex flex-col gap-2 transition-colors border-b border-black/5"
-                  style={{ backgroundColor: getColor("--header-bg", "#00B5AD") }}
+                  style={{ backgroundColor: getColor("--header-bg", getColor("--primary", "#00B5AD")) }}
                 >
                   <div className="flex items-center justify-between gap-3">
                     {/* Brand / Store Logo */}
                     <div className="flex items-center gap-2 shrink-0">
                       {currentPharmacy?.logoUrl ? (
-                        <img src={currentPharmacy.logoUrl} alt="Logo" className="h-6 max-w-[120px] object-contain" />
+                        <img src={currentPharmacy.logoUrl} alt="Logo" className="h-7 max-w-[130px] object-contain" />
                       ) : (
                         <div
-                          className="font-black text-xs tracking-tight flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-black/10"
+                          className="font-black text-xs tracking-tight flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-black/10 shadow-xs"
                           style={{ color: getColor("--header-text", "#FFFFFF") }}
                         >
-                          <Store className="w-3.5 h-3.5" style={{ color: getColor("--header-icons", "#FFFFFF") }} />
-                          <span className="uppercase truncate max-w-[140px]">{currentPharmacy?.nome || "FARMÁCIAS ASSOCIADAS"}</span>
+                          <Store className="w-4 h-4" style={{ color: getColor("--header-icons", "#FFFFFF") }} />
+                          <span className="uppercase truncate max-w-[140px] font-extrabold">{currentPharmacy?.nome || "FARMÁCIAS ASSOCIADAS"}</span>
                         </div>
                       )}
                     </div>
@@ -1313,7 +1319,7 @@ export function StoreColorManager({
                     {/* Desktop Search Bar */}
                     {previewDevice === "desktop" && (
                       <div
-                        className="h-8 flex-1 max-w-sm rounded-full flex items-center px-3 text-xs shadow-xs transition-colors border"
+                        className="h-8 flex-1 max-w-sm rounded-full flex items-center px-3 text-xs shadow-xs transition-colors border bg-white"
                         style={{
                           backgroundColor: getColor("--search-bg", "#FFFFFF"),
                           borderColor: getColor("--search-border", "#E2E8F0"),
@@ -1324,48 +1330,59 @@ export function StoreColorManager({
                           style={{ color: getColor("--search-icon", "#94A3B8") }}
                         />
                         <span 
-                          className="text-[11px] truncate"
+                          className="text-[10.5px] truncate flex-1"
                           style={{ color: getColor("--search-text", "#334155") }}
                         >
-                          Buscar medicamentos e cosméticos...
+                          Escreva o que procura ou escaneie o código de barras...
                         </span>
                       </div>
                     )}
 
                     {/* Store Header Actions */}
-                    <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       {previewDevice === "desktop" && (
-                        <div
-                          className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-white/15"
-                          style={{ color: getColor("--header-text", "#FFFFFF") }}
-                        >
-                          <MapPin className="w-3 h-3" style={{ color: getColor("--header-icons", "#FFFFFF") }} />
-                          <span className="truncate max-w-[90px]">Filial Matriz</span>
-                        </div>
+                        <>
+                          <div
+                            className="hidden lg:flex flex-col text-[9px] leading-tight font-medium opacity-90 cursor-pointer"
+                            style={{ color: getColor("--header-text", "#FFFFFF") }}
+                          >
+                            <span className="text-[8px] opacity-75">ACOMPANHAR</span>
+                            <span className="font-bold">Meus Pedidos</span>
+                          </div>
+
+                          <div
+                            className="hidden lg:flex flex-col text-[9px] leading-tight font-medium opacity-90 cursor-pointer ml-1"
+                            style={{ color: getColor("--header-text", "#FFFFFF") }}
+                          >
+                            <span className="text-[8px] opacity-75">VER LISTA</span>
+                            <span className="font-bold">Meus Favoritos</span>
+                          </div>
+
+                          <div
+                            className="flex items-center gap-1.5 text-[9.5px] font-bold px-2 py-1 rounded-md bg-black/10"
+                            style={{ color: getColor("--header-text", "#FFFFFF") }}
+                          >
+                            <User className="w-3.5 h-3.5" style={{ color: getColor("--header-icons", "#FFFFFF") }} />
+                            <span className="truncate max-w-[80px]">nyckolas</span>
+                          </div>
+                        </>
                       )}
-                      
-                      <div
-                        className="p-1 rounded-full hover:bg-white/10 cursor-pointer"
-                        style={{ color: getColor("--header-icons", "#FFFFFF") }}
-                      >
-                        <User className="w-4 h-4" />
-                      </div>
 
                       {/* Botão CESTA com Quantidade */}
                       <button
                         type="button"
-                        className="relative px-2.5 py-1 rounded-full flex items-center gap-1.5 text-[10px] font-bold transition shadow-xs"
+                        className="relative px-3 py-1.5 rounded-full flex items-center gap-1.5 text-[10.5px] font-bold transition shadow-xs hover:scale-105 active:scale-95"
                         style={{
                           backgroundColor: getColor("--cart-btn-bg", "#FFFFFF"),
-                          color: getColor("--cart-btn-text", "#00B5AD"),
+                          color: getColor("--cart-btn-text", getColor("--primary", "#00B5AD")),
                         }}
                       >
                         <ShoppingCart className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Cesta</span>
                         <span
-                          className="text-[8px] min-w-[14px] h-3.5 px-1 rounded-full flex items-center justify-center font-black ml-0.5"
+                          className="text-[9px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center font-black ml-0.5"
                           style={{
-                            backgroundColor: getColor("--cart-badge-bg", "#F43F5E"),
+                            backgroundColor: getColor("--cart-badge-bg", getColor("--accent", "#F43F5E")),
                             color: getColor("--cart-badge-text", "#FFFFFF")
                           }}
                         >
@@ -1392,7 +1409,7 @@ export function StoreColorManager({
                         className="text-[10px] truncate"
                         style={{ color: getColor("--search-text", "#334155") }}
                       >
-                        Buscar medicamentos, genéricos...
+                        Escreva o que procura...
                       </span>
                     </div>
                   )}
@@ -1400,151 +1417,160 @@ export function StoreColorManager({
 
                 {/* 3. CATEGORY NAVIGATION MENU */}
                 <div
-                  className="px-3 py-1.5 flex items-center gap-4 overflow-x-auto text-[10px] font-bold whitespace-nowrap scrollbar-none transition-colors shadow-xs"
+                  className="px-3 py-1.5 flex items-center gap-3.5 overflow-x-auto text-[10px] font-bold whitespace-nowrap scrollbar-none transition-colors shadow-xs"
                   style={{
-                    backgroundColor: getColor("--menu-bg", "#008E88"),
+                    backgroundColor: getColor("--menu-bg", getColor("--primary", "#008E88")),
                     color: getColor("--menu-text", "#FFFFFF")
                   }}
                 >
                   <span 
-                    className="flex items-center gap-1 opacity-100 font-extrabold border-b-2 border-white pb-0.5 cursor-pointer"
+                    className="flex items-center gap-1 opacity-100 font-extrabold cursor-pointer"
                     style={{ color: getColor("--all-cats-text", "#FFFFFF") }}
                   >
-                    <Menu className="w-3 h-3" style={{ color: getColor("--all-cats-icon", "#FFFFFF") }} />
-                    Todas as Categorias
+                    <Menu className="w-3.5 h-3.5" style={{ color: getColor("--all-cats-icon", "#FFFFFF") }} />
+                    Todas as categorias
                   </span>
                   <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-1">
-                    <Pill className="w-2.5 h-2.5" /> Medicamentos
+                    <Pill className="w-3 h-3" /> Medicamentos
                   </span>
                   <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5" /> Beleza & Higiene
+                    <Sparkles className="w-3 h-3" /> Higiene e Cuidados
                   </span>
                   <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-1">
-                    <Heart className="w-2.5 h-2.5" /> Vitaminas
+                    <Stethoscope className="w-3 h-3" /> Serviços
                   </span>
                   <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-1">
-                    <Baby className="w-2.5 h-2.5" /> Mamãe & Bebê
+                    <Baby className="w-3 h-3" /> Mamãe e Bebê
+                  </span>
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> Nossas Marcas
                   </span>
                 </div>
 
                 {/* 4. MAIN STORE BODY */}
-                <div className="p-3 space-y-4">
+                <div className="space-y-4">
                   
                   {/* Hero Banner Slide */}
                   <div
-                    className="rounded-xl p-4 text-white relative overflow-hidden shadow-xs flex flex-col justify-between min-h-[90px] transition-all"
-                    style={{
-                      background: `linear-gradient(135deg, ${getColor("--primary", "#00B5AD")} 0%, ${getColor("--secondary", "#F37021")} 100%)`
-                    }}
+                    className="relative w-full aspect-[21/8] min-h-[120px] bg-gradient-to-r from-sky-400 via-teal-500 to-emerald-600 flex items-center justify-between px-5 text-white overflow-hidden shadow-xs"
                   >
-                    <div className="space-y-1 relative z-10">
-                      <span
-                        className="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wide shadow-xs"
-                        style={{
-                          backgroundColor: getColor("--btn-secondary-bg", "#F37021"),
-                          color: getColor("--btn-secondary-text", "#FFFFFF")
-                        }}
-                      >
-                        Encarte da Semana
+                    <div className="space-y-1 z-10 max-w-[65%]">
+                      <span className="inline-block bg-white/20 backdrop-blur-xs text-white text-[8px] font-black uppercase px-2 py-0.5 rounded">
+                        Oferta Especial
                       </span>
-                      <div className="text-sm font-black leading-tight drop-shadow-xs">
-                        Descontos Especiais em Medicamentos
-                      </div>
-                      <div className="text-[10px] opacity-90">
-                        Economize até 50% em genéricos e similares
+                      <h4 className="text-sm md:text-base font-black leading-tight drop-shadow-md">
+                        Enxaguante Bucal CloseUp 360°
+                      </h4>
+                      <p className="text-[9.5px] opacity-90 leading-tight line-clamp-2">
+                        Proteção completa e hálito fresco por até 8 horas. Confira as opções de 500ml!
+                      </p>
+                      <div className="text-xs font-black text-amber-300 drop-shadow-sm pt-0.5">
+                        A partir de R$ 9,49
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/20 relative z-10">
-                      <button
-                        type="button"
-                        className="px-2.5 py-1 rounded text-[9px] font-extrabold uppercase shadow-xs transition hover:scale-105 active:scale-95"
-                        style={{
-                          backgroundColor: getColor("--btn-secondary-bg", "#F37021"),
-                          color: getColor("--btn-secondary-text", "#FFFFFF")
-                        }}
-                      >
-                        Aproveitar Ofertas
-                      </button>
-                      <div className="flex gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
+                    <div className="z-10 shrink-0 flex items-center gap-2">
+                      <div className="w-16 h-20 bg-white/10 backdrop-blur-xs rounded-xl border border-white/20 flex flex-col items-center justify-center p-1 shadow-md">
+                        <Sparkles className="w-8 h-8 text-white mb-1" />
+                        <span className="text-[7px] font-bold text-center uppercase tracking-wide">CloseUp</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Banner Tarja (Diferenciais) */}
-                  <div 
-                    className="border border-slate-200/80 rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 shadow-xs text-left transition-colors"
-                    style={{ backgroundColor: getColor("--tarja-bg", "#FFFFFF") }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
-                        style={{ color: getColor("--tarja-icon", "#00B5AD") }}
-                      >
-                        <MotorcycleIcon className="w-4 h-4" />
+                  {/* Banner Tarja (Diferenciais da Loja - Logo abaixo do banner) */}
+                  <div className="px-3">
+                    <div 
+                      className="border border-slate-200 rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-5 gap-2 shadow-xs text-left transition-colors"
+                      style={{ backgroundColor: getColor("--tarja-bg", "#FFFFFF") }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
+                          style={{ color: getColor("--tarja-icon", getColor("--primary", "#00B5AD")) }}
+                        >
+                          <MotorcycleIcon className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[8.5px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>RECEBA EM CASA</div>
+                          <div className="text-[7.5px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Compre pelo site</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-[9px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>Receber em casa</div>
-                        <div className="text-[8px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Entrega rápida</div>
+
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
+                          style={{ color: getColor("--tarja-icon", getColor("--primary", "#00B5AD")) }}
+                        >
+                          <Store className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[8.5px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>RETIRAR NA LOJA</div>
+                          <div className="text-[7.5px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Farmácia mais próxima</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
-                        style={{ color: getColor("--tarja-icon", "#00B5AD") }}
-                      >
-                        <Store className="w-4 h-4" />
+
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
+                          style={{ color: getColor("--tarja-icon", getColor("--primary", "#00B5AD")) }}
+                        >
+                          <Percent className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[8.5px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>NOSSOS CLIENTES</div>
+                          <div className="text-[7.5px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Ofertas exclusivas</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-[9px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>Retirar na Loja</div>
-                        <div className="text-[8px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Grátis em 1h</div>
+
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
+                          style={{ color: getColor("--tarja-icon", getColor("--primary", "#00B5AD")) }}
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[8.5px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>PROCEDÊNCIA</div>
+                          <div className="text-[7.5px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>100% Garantida</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
-                        style={{ color: getColor("--tarja-icon", "#00B5AD") }}
-                      >
-                        <Percent className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-[9px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>Melhores Ofertas</div>
-                        <div className="text-[8px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Encarte do mês</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
-                        style={{ color: getColor("--tarja-icon", "#00B5AD") }}
-                      >
-                        <ShieldCheck className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-[9px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>Procedência</div>
-                        <div className="text-[8px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>100% Garantida</div>
+
+                      <div className="flex items-center gap-2 col-span-2 sm:col-span-1">
+                        <div 
+                          className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
+                          style={{ color: getColor("--tarja-icon", getColor("--primary", "#00B5AD")) }}
+                        >
+                          <Stethoscope className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[8.5px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>ESPECIALIZADO</div>
+                          <div className="text-[7.5px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Farmacêutico dedicado</div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Compre por Categoria (Carrossel Circular) */}
-                  <div>
+                  {/* Compre por Categoria (Carrossel Circular Centralizado) */}
+                  <div className="px-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold" style={{ color: getColor("--headings", "#0F172A") }}>
+                      <span className="text-xs font-black tracking-tight" style={{ color: getColor("--headings", "#0F172A") }}>
                         Compre por categoria
                       </span>
-                      <span className="text-[10px] font-bold flex items-center gap-0.5" style={{ color: getColor("--primary", "#00B5AD") }}>
+                      <span 
+                        className="text-[10px] font-bold flex items-center gap-0.5 cursor-pointer" 
+                        style={{ color: getColor("--primary", "#00B5AD") }}
+                      >
                         Ver todas <ChevronRight className="w-3 h-3" />
                       </span>
                     </div>
-                    <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+
+                    <div className="flex items-center justify-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
                       {[
                         { name: "Medicamentos", icon: Pill },
-                        { name: "Beleza", icon: Sparkles },
-                        { name: "Higiene", icon: Heart },
-                        { name: "Vitaminas", icon: Percent },
-                        { name: "Bebê", icon: Baby },
+                        { name: "Higiene", icon: Sparkles },
+                        { name: "Dermocosmeticos", icon: Leaf },
+                        { name: "Vitaminas", icon: Battery },
+                        { name: "Mamãe e Bebê", icon: Baby },
+                        { name: "Nossas Marcas", icon: ShieldCheck },
                       ].map((cat, idx) => {
                         const IconComponent = cat.icon;
                         return (
@@ -1555,7 +1581,7 @@ export function StoreColorManager({
                             >
                               <IconComponent className="w-5 h-5 stroke-[1.75]" />
                             </div>
-                            <span className="text-[9px] font-bold text-slate-700 text-center truncate w-full">{cat.name}</span>
+                            <span className="text-[8.5px] font-bold text-slate-700 text-center truncate w-full">{cat.name}</span>
                           </div>
                         );
                       })}
@@ -1563,10 +1589,10 @@ export function StoreColorManager({
                   </div>
 
                   {/* Product Cards Showcase Grid */}
-                  <div>
+                  <div className="px-3 pb-2">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <span className="text-xs font-bold block" style={{ color: getColor("--headings", "#0F172A") }}>
+                        <span className="text-xs font-black block" style={{ color: getColor("--headings", "#0F172A") }}>
                           Super Ofertas da Loja
                         </span>
                         <span className="text-[9px] block" style={{ color: getColor("--section-desc", "#64748B") }}>
@@ -1574,19 +1600,29 @@ export function StoreColorManager({
                         </span>
                       </div>
                       <span className="text-[10px] font-bold" style={{ color: getColor("--primary", "#00B5AD") }}>
-                        Ver mais
+                        Ver catálogo
                       </span>
                     </div>
 
                     <div className={`grid gap-2.5 ${previewDevice === "desktop" ? "grid-cols-3" : "grid-cols-2"}`}>
                       {[
                         {
+                          name: "Enxaguante Bucal CloseUp 360° Ice 500ml",
+                          tag: "Higiene Bucal",
+                          oldPrice: "R$ 18,90",
+                          price: "R$ 14,99",
+                          discount: "-20%",
+                          colorTag: "bg-emerald-600",
+                          icon: Sparkles
+                        },
+                        {
                           name: "Dipirona Monoidratada 500mg 10 Comprimidos",
                           tag: "Tarja Vermelha",
                           oldPrice: "R$ 14,90",
                           price: "R$ 8,94",
                           discount: "-40%",
-                          colorTag: "bg-red-500"
+                          colorTag: "bg-red-500",
+                          icon: Pill
                         },
                         {
                           name: "Protetor Solar Facial FPS 60 Toque Seco 50g",
@@ -1594,155 +1630,131 @@ export function StoreColorManager({
                           oldPrice: "R$ 64,90",
                           price: "R$ 45,43",
                           discount: "-30%",
-                          colorTag: "bg-amber-500"
+                          colorTag: "bg-amber-500",
+                          icon: Leaf
                         },
-                        {
-                          name: "Vitamina C 1000mg + Zinco 30 Comprimidos",
-                          tag: "Suplemento",
-                          oldPrice: "R$ 49,90",
-                          price: "R$ 37,42",
-                          discount: "-25%",
-                          colorTag: "bg-blue-500"
-                        },
-                      ].slice(0, previewDevice === "desktop" ? 3 : 2).map((prod, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs flex flex-col justify-between relative hover:border-slate-300 transition-all group"
-                        >
-                          {/* Discount Badge */}
-                          <span
-                            className="absolute top-2 left-2 text-[8px] font-extrabold px-1.5 py-0.5 rounded shadow-2xs"
-                            style={{
-                              backgroundColor: getColor("--price-discount-badge-bg", "#F43F5E"),
-                              color: getColor("--price-discount-badge-text", "#FFFFFF")
-                            }}
+                      ].slice(0, previewDevice === "desktop" ? 3 : 2).map((prod, idx) => {
+                        const ProdIcon = prod.icon;
+                        return (
+                          <div
+                            key={idx}
+                            className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs flex flex-col justify-between relative hover:border-slate-300 transition-all group"
                           >
-                            {prod.discount}
-                          </span>
-
-                          {/* Product Image Placeholder */}
-                          <div className="w-full h-20 bg-slate-50 rounded-lg flex flex-col items-center justify-center relative mb-2 p-1 border border-slate-100">
-                            <Pill className="w-7 h-7 text-slate-300 mb-1" />
-                            <span className={`text-[7px] text-white font-extrabold px-1 py-0.2 rounded uppercase ${prod.colorTag}`}>
-                              {prod.tag}
+                            {/* Discount Badge */}
+                            <span
+                              className="absolute top-2 left-2 text-[8px] font-black px-1.5 py-0.5 rounded shadow-2xs z-10"
+                              style={{
+                                backgroundColor: getColor("--price-discount-badge-bg", getColor("--accent", "#F43F5E")),
+                                color: getColor("--price-discount-badge-text", "#FFFFFF")
+                              }}
+                            >
+                              {prod.discount}
                             </span>
-                          </div>
 
-                          {/* Product Info */}
-                          <div className="space-y-0.5">
-                            <div 
-                              className="text-[10px] font-bold line-clamp-2 leading-tight min-h-[26px]"
-                              style={{ color: getColor("--headings", "#0F172A") }}
-                            >
-                              {prod.name}
+                            {/* Product Image Placeholder */}
+                            <div className="w-full h-20 bg-slate-50 rounded-lg flex flex-col items-center justify-center relative mb-2 p-1 border border-slate-100">
+                              <ProdIcon className="w-7 h-7 text-slate-300 mb-1" />
+                              <span className={`text-[7px] text-white font-extrabold px-1 py-0.2 rounded uppercase ${prod.colorTag}`}>
+                                {prod.tag}
+                              </span>
                             </div>
-                            <div 
-                              className="text-[9px] line-through"
-                              style={{ color: getColor("--price-old", "#94A3B8") }}
-                            >
-                              {prod.oldPrice}
-                            </div>
-                            <div
-                              className="text-xs font-black"
-                              style={{ color: getColor("--price-main", "#00B5AD") }}
-                            >
-                              {prod.price}
-                            </div>
-                          </div>
 
-                          {/* Buy Button */}
-                          <button
-                            type="button"
-                            className="w-full mt-2 py-1.5 rounded-lg text-[10px] font-extrabold uppercase shadow-xs transition hover:opacity-90 active:scale-98 flex items-center justify-center gap-1"
-                            style={{
-                              backgroundColor: getColor("--btn-primary-bg", "#00B5AD"),
-                              color: getColor("--btn-primary-text", "#FFFFFF")
-                            }}
-                          >
-                            <ShoppingCart className="w-3 h-3" />
-                            Comprar
-                          </button>
-                        </div>
-                      ))}
+                            {/* Product Info */}
+                            <div className="space-y-0.5">
+                              <div 
+                                className="text-[10px] font-bold line-clamp-2 leading-tight min-h-[26px]"
+                                style={{ color: getColor("--headings", "#0F172A") }}
+                              >
+                                {prod.name}
+                              </div>
+                              <div 
+                                className="text-[9px] line-through"
+                                style={{ color: getColor("--price-old", "#94A3B8") }}
+                              >
+                                {prod.oldPrice}
+                              </div>
+                              <div
+                                className="text-xs font-black"
+                                style={{ color: getColor("--price-main", getColor("--primary", "#00B5AD")) }}
+                              >
+                                {prod.price}
+                              </div>
+                            </div>
+
+                            {/* Buy Button */}
+                            <button
+                              type="button"
+                              className="w-full mt-2 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-xs transition hover:opacity-90 active:scale-98 flex items-center justify-center gap-1"
+                              style={{
+                                backgroundColor: getColor("--btn-primary-bg", getColor("--primary", "#00B5AD")),
+                                color: getColor("--btn-primary-text", "#FFFFFF")
+                              }}
+                            >
+                              <ShoppingCart className="w-3 h-3" />
+                              COMPRAR
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* Newsletter Box */}
-                  <div
-                    className="p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2 transition-colors"
-                    style={{ backgroundColor: getColor("--news-bg", "#F8FAFC") }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 shrink-0" style={{ color: getColor("--primary", "#00B5AD") }} />
-                      <div>
-                        <div className="text-[11px] font-bold leading-tight" style={{ color: getColor("--news-text", "#0F172A") }}>
-                          Receba Nossas Ofertas Exclusivas
-                        </div>
-                        <div className="text-[9px] opacity-80" style={{ color: getColor("--news-text", "#0F172A") }}>
-                          Cadastre-se e ganhe cupons direto no seu e-mail
+                  <div className="px-3">
+                    <div
+                      className="p-3 rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2 transition-colors"
+                      style={{ backgroundColor: getColor("--news-bg", "#F8FAFC") }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 shrink-0" style={{ color: getColor("--primary", "#00B5AD") }} />
+                        <div>
+                          <div className="text-[10.5px] font-bold leading-tight" style={{ color: getColor("--news-text", "#0F172A") }}>
+                            Receba Nossas Ofertas Exclusivas
+                          </div>
+                          <div className="text-[8.5px] opacity-80" style={{ color: getColor("--news-text", "#0F172A") }}>
+                            Cadastre-se e ganhe cupons direto no seu e-mail
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex gap-1.5 mt-1">
-                      <div
-                        className="flex-1 h-7 rounded-lg border px-2.5 flex items-center shadow-inner text-[10px]"
-                        style={{
-                          backgroundColor: getColor("--news-input-bg", "#FFFFFF"),
-                          color: getColor("--news-input-text", "#1E293B"),
-                          borderColor: getColor("--news-input-border", "#CBD5E1"),
-                        }}
-                      >
-                        seu-email@exemplo.com
+                      <div className="flex gap-1.5 mt-0.5">
+                        <div
+                          className="flex-1 h-7 rounded-lg border px-2.5 flex items-center shadow-inner text-[9.5px]"
+                          style={{
+                            backgroundColor: getColor("--news-input-bg", "#FFFFFF"),
+                            color: getColor("--news-input-text", "#1E293B"),
+                            borderColor: getColor("--news-input-border", "#CBD5E1"),
+                          }}
+                        >
+                          seu-email@exemplo.com
+                        </div>
+                        <button
+                          type="button"
+                          className="px-3 py-1 rounded-lg text-[8.5px] font-extrabold uppercase shrink-0 shadow-xs transition hover:opacity-90 flex items-center gap-1"
+                          style={{
+                            backgroundColor: getColor("--news-btn-bg", getColor("--primary", "#00B5AD")),
+                            color: getColor("--news-btn-text", "#FFFFFF"),
+                          }}
+                        >
+                          <Send className="w-2.5 h-2.5" />
+                          Cadastrar
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="px-3 py-1 rounded-lg text-[9px] font-extrabold uppercase shrink-0 shadow-xs transition hover:opacity-90 flex items-center gap-1"
-                        style={{
-                          backgroundColor: getColor("--news-btn-bg", "#00B5AD"),
-                          color: getColor("--news-btn-text", "#FFFFFF"),
-                        }}
-                      >
-                        <Send className="w-2.5 h-2.5" />
-                        Cadastrar
-                      </button>
                     </div>
                   </div>
 
-                  {/* PWA App Banner Mock */}
-                  <div
-                    className="p-3 rounded-xl shadow-xs flex items-center justify-between gap-3 border border-white/20 transition-colors"
-                    style={{
-                      backgroundColor: getColor("--pwa-banner-bg", "#00B5AD"),
-                      color: getColor("--pwa-banner-text", "#FFFFFF")
-                    }}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                        <Smartphone className="w-4 h-4" />
-                      </div>
-                      <div className="text-[10px] leading-tight min-w-0">
-                        <div className="font-extrabold truncate">Baixe o App Associadas</div>
-                        <div className="text-[9px] opacity-90 truncate">Ofertas e cupons na palma da mão</div>
-                      </div>
+                  {/* Floating WhatsApp in Mockup */}
+                  <div className="px-3 flex justify-end">
+                    <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition">
+                      <Phone className="w-4 h-4 fill-white" />
                     </div>
-                    <button
-                      type="button"
-                      className="px-3 py-1.5 rounded-lg text-[9px] font-extrabold uppercase shrink-0 shadow-xs hover:scale-105 transition"
-                      style={{
-                        backgroundColor: getColor("--pwa-banner-btn-bg", "#FFFFFF"),
-                        color: getColor("--pwa-banner-btn-text", "#00B5AD")
-                      }}
-                    >
-                      Instalar
-                    </button>
                   </div>
                 </div>
 
                 {/* 5. MAIN FOOTER */}
                 <div
-                  className="p-4 border-t border-black/10 flex flex-col gap-3 transition-colors mt-auto text-center"
+                  className="p-4 border-t border-black/10 flex flex-col gap-2.5 transition-colors mt-auto text-center"
                   style={{
-                    backgroundColor: getColor("--footer-bg", "#00B5AD"),
+                    backgroundColor: getColor("--footer-bg", getColor("--primary", "#00B5AD")),
                     color: getColor("--footer-text", "#FFFFFF")
                   }}
                 >
@@ -1754,7 +1766,7 @@ export function StoreColorManager({
                         className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shadow-xs hover:scale-110 transition cursor-pointer"
                         style={{
                           backgroundColor: getColor("--social-icons-bg", "#FFFFFF"),
-                          color: getColor("--social-icons", "#00B5AD")
+                          color: getColor("--social-icons", getColor("--primary", "#00B5AD"))
                         }}
                       >
                         {social.charAt(0)}
@@ -1762,7 +1774,7 @@ export function StoreColorManager({
                     ))}
                   </div>
 
-                  <div className="text-[9px] opacity-90 leading-tight space-y-0.5">
+                  <div className="text-[8.5px] opacity-90 leading-tight space-y-0.5">
                     <div className="font-bold">{currentPharmacy?.razaoSocial || currentPharmacy?.nome || "Farmácias Associadas"}</div>
                     <div>CNPJ: {currentPharmacy?.cnpj || "00.000.000/0001-00"} • CRF: {currentPharmacy?.inscricaoFarmaceutico || "12345/RS"}</div>
                     <div>{currentPharmacy?.endereco || "Av. Principal"}, Nº {currentPharmacy?.numero || "100"} - {currentPharmacy?.cidade || "Porto Alegre"}/{currentPharmacy?.uf || "RS"}</div>
@@ -1771,9 +1783,9 @@ export function StoreColorManager({
 
                 {/* 6. FOOTER BOTTOM */}
                 <div
-                  className="px-4 py-2.5 text-center text-[8px] transition-colors border-t border-black/5"
+                  className="px-4 py-2 text-center text-[7.5px] transition-colors border-t border-black/5"
                   style={{
-                    backgroundColor: getColor("--footer-bottom-bg", "#008E88"),
+                    backgroundColor: getColor("--footer-bottom-bg", getColor("--primary", "#008E88")),
                     color: getColor("--footer-bottom-text", "#E2E8F0")
                   }}
                 >
