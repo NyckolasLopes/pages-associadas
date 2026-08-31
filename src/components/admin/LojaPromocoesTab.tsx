@@ -52,7 +52,15 @@ export function LojaPromocoesTab({ lojaId }: { lojaId: string }) {
       icone: "percent",
       ativa: true,
       tipoCampanha: "padrao",
-      levePague_precoPorItem: precoOferta 
+      precoPromocional: precoOferta,
+      levePague_precoPorItem: precoOferta,
+      produtosConfig: {
+        [produto.id]: {
+          quantidade: 1,
+          precoPorItem: precoOferta,
+          precoPromocional: precoOferta
+        } as any
+      }
     });
     
     toast.success("Oferta do mês criada com sucesso!");
@@ -80,7 +88,13 @@ export function LojaPromocoesTab({ lojaId }: { lojaId: string }) {
       ativa: true,
       tipoCampanha: "leve_pague",
       levePague_quantidade: qtd,
-      levePague_precoPorItem: precoUnidade
+      levePague_precoPorItem: precoUnidade,
+      produtosConfig: {
+        [produto.id]: {
+          quantidade: qtd,
+          precoPorItem: precoUnidade
+        }
+      }
     });
 
     toast.success("Promoção Leve + por - criada com sucesso!");
@@ -248,7 +262,15 @@ export function LojaPromocoesTab({ lojaId }: { lojaId: string }) {
         icone: "percent",
         ativa: true,
         tipoCampanha: "padrao",
+        precoPromocional: item.preco,
         levePague_precoPorItem: item.preco,
+        produtosConfig: {
+          [p.id]: {
+            quantidade: 1,
+            precoPorItem: item.preco,
+            precoPromocional: item.preco
+          } as any
+        }
       });
 
       created++;

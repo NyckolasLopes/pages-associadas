@@ -62,29 +62,48 @@ export function getEffectivePrice(item: any, pharmacyId: string | null): { preco
 
     // 3. Store-specific Oferta do Mês
     const marketingState = useMarketing.getState();
-    const storePromos = marketingState.lojaPromocoes[pharmacyId] || [];
-    const globalPromos = marketingState.promocoes || [];
+    const storePromos = (marketingState.lojaPromocoes[pharmacyId] && marketingState.lojaPromocoes[pharmacyId].length > 0)
+      ? marketingState.lojaPromocoes[pharmacyId]
+      : marketingState.promocoes.filter(pr => pr.lojaId && String(pr.lojaId) === String(pharmacyId));
+    const globalPromos = marketingState.promocoes.filter(p => !p.lojaId || p.lojaId === "" || p.lojaId === "global" || p.lojaId === "all");
+
     const checkTarget = (p: any, i: any) => {
       const tipo = p.tipoAlvo || 'produtos';
       if (tipo === 'categorias') {
-        return p.alvosId.some((id: any) => String(id) === String(i.categoriaId));
+        const cats = [
+          i.categoriaId,
+          i.subcategoriaId,
+          ...(Array.isArray(i.categoriasIds) ? i.categoriasIds : []),
+          ...(Array.isArray(i.categoriasAdicionais) ? i.categoriasAdicionais : [])
+        ].filter(Boolean).map(s => String(s).trim().toLowerCase());
+        return p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => cats.includes(String(id).trim().toLowerCase()));
       }
-      return p.alvosId.some((id: any) => String(id) === String(i.id));
+      const ids = [
+        String(i.id || ''),
+        String(i.sku || ''),
+        String(i.codigoInterno || ''),
+        String(i.ean || ''),
+        String(i.url || ''),
+        String(i.slug || '')
+      ].filter(Boolean).map(s => s.trim().toLowerCase());
+      return p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => ids.includes(String(id).trim().toLowerCase()));
     };
-    const storeOferta = storePromos.find(p => p.ativa && p.tipoCampanha === 'padrao' && checkTarget(p, item));
-    const globalOferta = storeOferta ? null : globalPromos.find(p => p.ativa && p.tipoCampanha === 'padrao' && checkTarget(p, item));
+
+    const storeOferta = storePromos.find(p => p.ativa && (p.tipoCampanha === 'padrao' || !p.tipoCampanha) && checkTarget(p, item));
+    const globalOferta = storeOferta ? null : globalPromos.find(p => p.ativa && (p.tipoCampanha === 'padrao' || !p.tipoCampanha) && checkTarget(p, item));
     const activeOferta = storeOferta || globalOferta;
     
     if (activeOferta) {
-      if (activeOferta.precoPromocional && activeOferta.precoPromocional > 0) {
-        precoDe = precoPor;
-        precoPor = activeOferta.precoPromocional;
+      const promoPreco = (activeOferta.precoPromocional && activeOferta.precoPromocional > 0)
+        ? activeOferta.precoPromocional
+        : ((activeOferta.levePague_precoPorItem && activeOferta.levePague_precoPorItem > 0) ? activeOferta.levePague_precoPorItem : 0);
+
+      if (promoPreco > 0) {
+        precoDe = precoPor > promoPreco ? precoPor : precoDe;
+        precoPor = promoPreco;
       } else if (activeOferta.descontoPercentual && activeOferta.descontoPercentual > 0) {
         precoDe = precoPor;
         precoPor = precoPor * (1 - activeOferta.descontoPercentual / 100);
-      } else if (activeOferta.levePague_precoPorItem && activeOferta.levePague_precoPorItem > 0) {
-        precoDe = precoPor;
-        precoPor = activeOferta.levePague_precoPorItem;
       }
     }
 

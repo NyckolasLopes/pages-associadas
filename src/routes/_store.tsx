@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
+import { useMarketing } from "@/stores/marketing";
 import { Header } from "@/components/storefront/Header";
 import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
@@ -152,6 +153,10 @@ function StoreLayout() {
   }, [storeTheme]);
 
   // — Efeitos (todos os hooks antes do early return) —
+  useEffect(() => {
+    useMarketing.getState().loadMarketing();
+  }, []);
+
   useEffect(() => {
     if (!activePharmacy) return;
 

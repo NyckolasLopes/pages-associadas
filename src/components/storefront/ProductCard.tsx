@@ -120,7 +120,9 @@ function ProductCardComponent({
   let activeStoreId: string | null = null;
   let activeFornecedor = null;
   let isLocalStock = false;
-  const storeFromSlug = storeSlug ? pharmacies.find(ph => ph.slug === storeSlug) : null;
+  const storeFromSlug = storeSlug 
+    ? pharmacies.find(ph => ph.slug === storeSlug || safeSlugify(ph.slug || ph.nome || ph.id) === safeSlugify(storeSlug) || ph.id === storeSlug) 
+    : null;
 
   if (selectedStoreId || storeFromSlug) {
     activeStoreId = selectedStoreId || storeFromSlug!.id;
@@ -250,21 +252,24 @@ function ProductCardComponent({
   // 3. Store-specific & Global Promotions
   const isMedicamento = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142"));
 
-  const lojaPromocoes = activeStoreId ? lojaPromocoesMap?.[activeStoreId] || [] : [];
-  const globalPromocoes = promocoes.filter(p => !p.lojaId);
+  const lojaPromocoes = activeStoreId 
+    ? (lojaPromocoesMap?.[activeStoreId] || promocoes.filter(pr => pr.lojaId && String(pr.lojaId) === String(activeStoreId))) 
+    : [];
+  const globalPromocoes = promocoes.filter(p => !p.lojaId || p.lojaId === "" || p.lojaId === "global" || p.lojaId === "all");
   const padraoPromo = getPadraoPromotionWithTimer(p, globalPromocoes, lojaPromocoes);
   const levePaguePromo = getLevePaguePromotion(p, globalPromocoes, lojaPromocoes);
 
   if (isAvailable && padraoPromo) {
-    if (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0) {
-      finalPrecoDe = finalPrecoPor;
-      finalPrecoPor = padraoPromo.precoPromocional;
+    const promoPreco = (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0)
+      ? padraoPromo.precoPromocional
+      : ((padraoPromo.levePague_precoPorItem && padraoPromo.levePague_precoPorItem > 0) ? padraoPromo.levePague_precoPorItem : 0);
+
+    if (promoPreco > 0) {
+      finalPrecoDe = Number(p.precoDe) > promoPreco ? Number(p.precoDe) : (Number(p.precoPor) > promoPreco ? Number(p.precoPor) : finalPrecoPor);
+      finalPrecoPor = promoPreco;
     } else if (padraoPromo.descontoPercentual && padraoPromo.descontoPercentual > 0) {
-      finalPrecoDe = finalPrecoPor;
+      finalPrecoDe = Number(p.precoDe) > 0 ? Number(p.precoDe) : finalPrecoPor;
       finalPrecoPor = finalPrecoPor * (1 - padraoPromo.descontoPercentual / 100);
-    } else if (padraoPromo.levePague_precoPorItem && padraoPromo.levePague_precoPorItem > 0) {
-      finalPrecoDe = finalPrecoPor;
-      finalPrecoPor = padraoPromo.levePague_precoPorItem;
     }
   }
 

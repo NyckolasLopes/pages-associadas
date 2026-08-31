@@ -759,15 +759,16 @@ function PDP() {
   const levePaguePromo = getLevePaguePromotion(p, globalPromocoes, lojaPromocoes);
 
   if (padraoPromo) {
-    if (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0) {
-      finalPrecoDe = Number(p.precoDe) > padraoPromo.precoPromocional ? Number(p.precoDe) : finalPrecoPor;
-      finalPrecoPor = padraoPromo.precoPromocional;
+    const promoPreco = (padraoPromo.precoPromocional && padraoPromo.precoPromocional > 0)
+      ? padraoPromo.precoPromocional
+      : ((padraoPromo.levePague_precoPorItem && padraoPromo.levePague_precoPorItem > 0) ? padraoPromo.levePague_precoPorItem : 0);
+
+    if (promoPreco > 0) {
+      finalPrecoDe = Number(p.precoDe) > promoPreco ? Number(p.precoDe) : (Number(p.precoPor) > promoPreco ? Number(p.precoPor) : finalPrecoPor);
+      finalPrecoPor = promoPreco;
     } else if (padraoPromo.descontoPercentual && padraoPromo.descontoPercentual > 0) {
       finalPrecoDe = Number(p.precoDe) > 0 ? Number(p.precoDe) : finalPrecoPor;
       finalPrecoPor = finalPrecoPor * (1 - padraoPromo.descontoPercentual / 100);
-    } else if (padraoPromo.levePague_precoPorItem && padraoPromo.levePague_precoPorItem > 0) {
-      finalPrecoDe = Number(p.precoDe) > 0 ? Number(p.precoDe) : finalPrecoPor;
-      finalPrecoPor = padraoPromo.levePague_precoPorItem;
     }
   }
 

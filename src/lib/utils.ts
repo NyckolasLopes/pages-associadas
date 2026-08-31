@@ -310,13 +310,27 @@ export function getLevePaguePromotion(produto: any, promocoes: any[] = [], store
     // Verificar se o produto ou categoria está no alvo
     const tipo = p.tipoAlvo || "produtos";
     if (tipo === "categorias") {
-      const catsToCheck = [produto.categoriaId, ...(Array.isArray(produto.categoriasIds) ? produto.categoriasIds : [])].filter(Boolean).map(String);
-      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => catsToCheck.includes(String(id).trim()))) {
+      const catsToCheck = [
+        produto.categoriaId,
+        produto.subcategoriaId,
+        ...(Array.isArray(produto.categoriasIds) ? produto.categoriasIds : []),
+        ...(Array.isArray(produto.categoriasAdicionais) ? produto.categoriasAdicionais : [])
+      ].filter(Boolean).map(s => String(s).trim().toLowerCase());
+
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => catsToCheck.includes(String(id).trim().toLowerCase()))) {
         return true;
       }
     } else {
-      const idsToCheck = [produto.id, produto.codigoInterno, produto.sku, produto.ean, produto.url].filter(Boolean).map(String);
-      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => idsToCheck.includes(String(id).trim()))) {
+      const idsToCheck = [
+        produto.id,
+        produto.codigoInterno,
+        produto.sku,
+        produto.ean,
+        produto.url,
+        produto.slug
+      ].filter(Boolean).map(s => String(s).trim().toLowerCase());
+
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => idsToCheck.includes(String(id).trim().toLowerCase()))) {
         return true;
       }
     }
@@ -333,14 +347,21 @@ export function getLevePaguePromotion(produto: any, promocoes: any[] = [], store
   const prodId = String(produto.id || '');
   const pConfig = foundPromo.produtosConfig?.[prodId] || 
     foundPromo.produtosConfig?.[produto.id] || 
+    (produto.ean ? foundPromo.produtosConfig?.[produto.ean] : undefined) ||
     (produto.sku ? foundPromo.produtosConfig?.[produto.sku] : undefined) ||
     (produto.codigoInterno ? foundPromo.produtosConfig?.[produto.codigoInterno] : undefined);
 
   if (pConfig) {
+    const parseNum = (val: any) => {
+      if (val === undefined || val === null || val === '') return undefined;
+      const parsed = Number(String(val).replace(',', '.'));
+      return isNaN(parsed) ? undefined : parsed;
+    };
+
     return {
       ...foundPromo,
       levePague_quantidade: Number(pConfig.quantidade) || foundPromo.levePague_quantidade || 2,
-      levePague_precoPorItem: Number(pConfig.precoPorItem) || foundPromo.levePague_precoPorItem || 0,
+      levePague_precoPorItem: parseNum(pConfig.precoPorItem) ?? parseNum(pConfig.precoPromocional) ?? foundPromo.levePague_precoPorItem ?? 0,
     };
   }
 
@@ -365,13 +386,27 @@ export function getPadraoPromotionWithTimer(produto: any, promocoes: any[] = [],
     // Verificar se o produto ou categoria está no alvo
     const tipo = p.tipoAlvo || "produtos";
     if (tipo === "categorias") {
-      const catsToCheck = [produto.categoriaId, ...(Array.isArray(produto.categoriasIds) ? produto.categoriasIds : [])].filter(Boolean).map(String);
-      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => catsToCheck.includes(String(id).trim()))) {
+      const catsToCheck = [
+        produto.categoriaId,
+        produto.subcategoriaId,
+        ...(Array.isArray(produto.categoriasIds) ? produto.categoriasIds : []),
+        ...(Array.isArray(produto.categoriasAdicionais) ? produto.categoriasAdicionais : [])
+      ].filter(Boolean).map(s => String(s).trim().toLowerCase());
+
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => catsToCheck.includes(String(id).trim().toLowerCase()))) {
         return true;
       }
     } else {
-      const idsToCheck = [produto.id, produto.codigoInterno, produto.sku, produto.ean, produto.url].filter(Boolean).map(String);
-      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => idsToCheck.includes(String(id).trim()))) {
+      const idsToCheck = [
+        produto.id,
+        produto.codigoInterno,
+        produto.sku,
+        produto.ean,
+        produto.url,
+        produto.slug
+      ].filter(Boolean).map(s => String(s).trim().toLowerCase());
+
+      if (p.alvosId && Array.isArray(p.alvosId) && p.alvosId.some((id: any) => idsToCheck.includes(String(id).trim().toLowerCase()))) {
         return true;
       }
     }
@@ -389,20 +424,29 @@ export function getPadraoPromotionWithTimer(produto: any, promocoes: any[] = [],
   const prodId = String(produto.id || '');
   const pConfig = foundPromo.produtosConfig?.[prodId] || 
     foundPromo.produtosConfig?.[produto.id] ||
+    (produto.ean ? foundPromo.produtosConfig?.[produto.ean] : undefined) ||
     (produto.sku ? foundPromo.produtosConfig?.[produto.sku] : undefined) ||
     (produto.codigoInterno ? foundPromo.produtosConfig?.[produto.codigoInterno] : undefined);
   
-  if (pConfig) {
-    const parseNum = (val: any) => {
-      if (val === undefined || val === null || val === '') return undefined;
-      const parsed = Number(String(val).replace(',', '.'));
-      return isNaN(parsed) ? undefined : parsed;
-    };
+  const parseNum = (val: any) => {
+    if (val === undefined || val === null || val === '') return undefined;
+    const parsed = Number(String(val).replace(',', '.'));
+    return isNaN(parsed) ? undefined : parsed;
+  };
 
+  if (pConfig) {
     return {
       ...foundPromo,
-      precoPromocional: parseNum(pConfig.precoPromocional) ?? foundPromo.precoPromocional,
+      precoPromocional: parseNum(pConfig.precoPromocional) ?? parseNum(pConfig.precoPorItem) ?? foundPromo.precoPromocional ?? foundPromo.levePague_precoPorItem,
       descontoPercentual: parseNum(pConfig.descontoPercentual) ?? foundPromo.descontoPercentual
+    };
+  }
+
+  // Fallback: se tiver levePague_precoPorItem preenchido como preço promocional na promoção padrão
+  if (!foundPromo.precoPromocional && foundPromo.levePague_precoPorItem) {
+    return {
+      ...foundPromo,
+      precoPromocional: foundPromo.levePague_precoPorItem
     };
   }
   
