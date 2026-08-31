@@ -39,20 +39,27 @@ export function HeroCarousel({
   }, [effectiveLojaId, fetchBanners]);
 
   const activeBanners = useMemo(() => {
+    // Só usa banners reais do banco (bannersByLoja), nunca defaultBanners fictícios.
+    // Enquanto o fetch não terminar, retorna lista vazia para exibir o skeleton.
     let bannersList: AdminBanner[] = [];
     if (effectiveLojaId && bannersByLoja[effectiveLojaId] && bannersByLoja[effectiveLojaId].length > 0) {
+      // Banners reais desta loja já carregados do banco
       bannersList = bannersByLoja[effectiveLojaId];
-    } else if (initialBanners && initialBanners.length > 0) {
-      // Filtra estritamente os banners iniciais para garantir que pertencem a esta loja ou são globais
-      const filteredInitial = initialBanners.filter(b => !b.lojaId || (effectiveLojaId && b.lojaId === effectiveLojaId));
-      if (filteredInitial.length > 0) {
-        bannersList = filteredInitial;
-      } else {
-        bannersList = getStoreBanners(effectiveLojaId);
+    } else if (!effectiveLojaId && bannersByLoja["global"] && bannersByLoja["global"].length > 0) {
+      // Banners globais reais já carregados do banco
+      bannersList = bannersByLoja["global"];
+    } else if (bannersLoaded && !bannersLoading) {
+      // Banco já respondeu, mas não há bannersByLoja para esta loja.
+      // Usa initialBanners filtrados (vindos do loader com dados reais), sem defaultBanners.
+      if (initialBanners && initialBanners.length > 0) {
+        const filteredInitial = initialBanners.filter(b => !b.lojaId || (effectiveLojaId && b.lojaId === effectiveLojaId));
+        if (filteredInitial.length > 0) {
+          bannersList = filteredInitial;
+        }
       }
-    } else {
-      bannersList = getStoreBanners(effectiveLojaId);
+      // Caso contrário, bannersList permanece vazio (sem defaultBanners fictícios)
     }
+    // Se ainda está carregando (bannersLoading ou !bannersLoaded), bannersList fica vazio → exibe skeleton
     
     const filtered = bannersList.filter(b => {
       // Both Full Banner and Banner por Categoria share this carousel component
@@ -99,7 +106,7 @@ export function HeroCarousel({
     });
 
     return filtered;
-  }, [adminBanners, bannersByLoja, initialBanners, getStoreBanners, page, categoriaId, effectiveLojaId]);
+  }, [adminBanners, bannersByLoja, initialBanners, bannersLoaded, bannersLoading, page, categoriaId, effectiveLojaId]);
 
   const deduplicatedActiveBanners = useMemo(() => {
     const uniqueMap = new Map();
