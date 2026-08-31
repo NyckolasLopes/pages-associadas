@@ -8,8 +8,7 @@ import { brl } from "@/lib/format";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Spinner } from "@/components/ui/spinner";
-import type { Pedido } from "@/stores/orders";
+import { useOrders, type Pedido } from "@/stores/orders";
 
 export const Route = createFileRoute("/_store/$storeSlug/sucesso")({
   component: SucessoPage,
@@ -44,44 +43,95 @@ function SucessoPage() {
     clearCart();
   }, [clearCart]);
 
-  // Fetch real order status directly from Supabase
+  // Fetch real order status directly from Supabase with fallback to lastOrder/local orders
   const { data: order, isLoading } = useQuery<Pedido | null>({
     queryKey: ['order-status', search.id],
     queryFn: async () => {
-      if (!search.id) return null;
-      
-      const { data, error } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('numero', search.id)
-        .maybeSingle();
+      const cleanId = String(search.id || "").trim();
+      const rawNumber = cleanId.replace(/^FA-/, '');
 
-      if (error) {
-        console.error("Error fetching order status:", error);
-        return null;
+      // 1. Tenta buscar no Supabase
+      if (cleanId) {
+        try {
+          let query = supabase
+            .from('pedidos')
+            .select('*, pedido_itens(*)');
+
+          // Busca flexível por numero ou id
+          if (cleanId.includes('-') && cleanId.length === 36) {
+            query = query.or(`id.eq.${cleanId},numero.eq.${cleanId},numero.eq.${rawNumber}`);
+          } else {
+            query = query.or(`numero.eq.${cleanId},numero.eq.${rawNumber}`);
+          }
+
+          const { data, error } = await query.maybeSingle();
+
+          if (!error && data) {
+            const d = data as any;
+            const parsedItens = (d.pedido_itens && Array.isArray(d.pedido_itens) && d.pedido_itens.length > 0)
+              ? d.pedido_itens.map((pi: any) => ({
+                  id: pi.produto_id || pi.id,
+                  nome: pi.nome,
+                  quantidade: Number(pi.qty) || 1,
+                  qtd: Number(pi.qty) || 1,
+                  valorUnitario: Number(pi.preco_unit) || 0,
+                  preco: Number(pi.preco_unit) || 0,
+                  imagem: pi.imagem || pi.foto || "",
+                  foto: pi.imagem || pi.foto || "",
+                }))
+              : (d.itens || d.produtos || []);
+
+            return {
+              id: d.id,
+              numero: d.numero || cleanId,
+              data: d.data || d.created_at,
+              status: d.status || 'novo',
+              cliente: d.cliente || {
+                nome: d.nome_cliente,
+                telefone: d.telefone_cliente,
+                email: d.email_cliente,
+                cpf: d.cpf_cliente,
+                endereco: d.endereco_entrega
+              },
+              itens: parsedItens,
+              produtos: parsedItens,
+              valores: d.valores || {
+                total: Number(d.total) || 0,
+                frete: Number(d.frete) || 0,
+                subtotal: Number(d.subtotal) || 0,
+                desconto: Number(d.desconto) || 0,
+                produtos: Number(d.subtotal) || 0
+              },
+              pagamento: d.pagamento || { metodo: d.metodo_pagamento },
+              envio: d.envio || { metodo: d.metodo_entrega, endereco: d.endereco_entrega },
+              lojaId: d.loja_id,
+              lojaNome: d.loja_nome || activePharmacy?.nome,
+              modalidade: d.modalidade || d.metodo_entrega,
+              historico: d.historico || []
+            } as Pedido;
+          }
+        } catch (err) {
+          console.warn("Supabase fetch failed in sucesso page, checking local fallback:", err);
+        }
       }
-      
-      if (!data) return null;
 
-      const d = data as any;
-      return {
-        id: d.id,
-        numero: d.numero,
-        data: d.data || d.created_at,
-        status: d.status,
-        cliente: d.cliente || { nome: d.nome_cliente, telefone: d.telefone_cliente, email: d.email_cliente },
-        itens: d.itens || d.produtos || [],
-        produtos: d.produtos || d.itens || [],
-        valores: d.valores || { total: d.total, frete: d.frete, subtotal: d.subtotal, desconto: d.desconto },
-        pagamento: d.pagamento || { metodo: d.metodo_pagamento },
-        envio: d.envio || { metodo: d.metodo_entrega, endereco: d.endereco_entrega },
-        lojaId: d.loja_id,
-        lojaNome: d.loja_nome || activePharmacy?.nome,
-        modalidade: d.modalidade || d.metodo_entrega,
-        historico: d.historico || []
-      } as Pedido;
+      // 2. Fallback: lastOrder salvo no Zustand/localStorage do carrinho
+      const lastOrder = useCart.getState().lastOrder;
+      if (lastOrder && (lastOrder.id === cleanId || lastOrder.numero === cleanId || !cleanId)) {
+        return lastOrder as Pedido;
+      }
+
+      // 3. Fallback: lista de pedidos do useOrders
+      const storeOrder = useOrders.getState().orders.find(o => 
+        o.id === cleanId || o.numero === cleanId || (o.numero && o.numero.replace('FA-', '') === rawNumber)
+      );
+      if (storeOrder) {
+        return storeOrder as Pedido;
+      }
+
+      return lastOrder || null;
     },
-    enabled: !!search.id,
+    enabled: true,
     refetchInterval: 5000,
   });
 

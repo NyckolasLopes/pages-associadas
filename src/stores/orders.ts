@@ -257,9 +257,10 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
   addOrder: async (order) => {
     const { data: userAuth } = await supabase.auth.getUser();
-    const user = userAuth?.user;
+    const orderNumber = order.numero || order.id || undefined;
 
     const { data: insertedOrder, error: orderError } = await (supabase.from('pedidos') as any).insert({
+      numero: orderNumber,
       loja_id: order.lojaId,
       user_id: user?.id || null,
       status: order.status || 'novo',
@@ -276,7 +277,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
       telefone_cliente: order.cliente?.telefone || '',
       email_cliente: order.cliente?.email || '',
       cpf_cliente: order.cliente?.cpf || ''
-    }).select('id').single();
+    }).select('id, numero').single();
 
     if (orderError) {
       console.error("Error inserting order:", orderError);

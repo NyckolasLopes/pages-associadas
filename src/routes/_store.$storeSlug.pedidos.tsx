@@ -73,7 +73,13 @@ function PedidosPage() {
   // Busca pedido por ID da URL automaticamente
   useEffect(() => {
     if (searchParams.id && orders.length > 0) {
-      const found = orders.find((o) => o.id.toLowerCase() === searchParams.id?.toLowerCase());
+      const clean = searchParams.id.toLowerCase().trim();
+      const rawNumber = clean.replace(/^fa-/, '');
+      const found = orders.find((o) => 
+        o.id?.toLowerCase() === clean || 
+        o.numero?.toLowerCase() === clean || 
+        (o.numero && o.numero.toLowerCase().replace(/^fa-/, '') === rawNumber)
+      );
       if (found) {
         setSelectedOrder(found);
       }
@@ -83,10 +89,13 @@ function PedidosPage() {
   // Lista de pedidos do usuário ou buscados
   const displayedOrders = useMemo(() => {
     if (searchQuery.trim()) {
-      const clean = sanitizeText(searchQuery).toLowerCase();
+      const clean = sanitizeText(searchQuery).toLowerCase().trim();
+      const rawNumber = clean.replace(/^fa-/, '');
       return orders.filter(
         (o) =>
-          o.id.toLowerCase().includes(clean) ||
+          o.id?.toLowerCase().includes(clean) ||
+          (o.numero && o.numero.toLowerCase().includes(clean)) ||
+          (o.numero && o.numero.toLowerCase().includes(rawNumber)) ||
           o.cliente.telefone.replace(/\D/g, "").includes(clean.replace(/\D/g, "")) ||
           o.cliente.nome.toLowerCase().includes(clean)
       );
@@ -103,19 +112,22 @@ function PedidosPage() {
     e.preventDefault();
     try {
       checkRateLimitOrThrow("order_tracking_search", RATE_LIMIT_PRESETS.SEARCH_QUERY);
-      const clean = sanitizeText(searchQuery).trim();
+      const clean = sanitizeText(searchQuery).trim().toLowerCase();
+      const rawNumber = clean.replace(/^fa-/, '');
       if (!clean) {
         toast.info("Digite o número do pedido ou telefone para buscar.");
         return;
       }
       const found = orders.find(
         (o) =>
-          o.id.toLowerCase() === clean.toLowerCase() ||
+          o.id?.toLowerCase() === clean ||
+          o.numero?.toLowerCase() === clean ||
+          (o.numero && o.numero.toLowerCase().replace(/^fa-/, '') === rawNumber) ||
           o.cliente.telefone.replace(/\D/g, "") === clean.replace(/\D/g, "")
       );
       if (found) {
         setSelectedOrder(found);
-        toast.success(`Pedido #${found.id} encontrado!`);
+        toast.success(`Pedido #${found.numero || found.id} encontrado!`);
       } else {
         toast.error("Nenhum pedido encontrado com este código ou telefone.");
       }
