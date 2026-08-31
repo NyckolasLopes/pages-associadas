@@ -99,6 +99,7 @@ interface OrdersState {
   updateOrderStatus: (id: string, status: string) => Promise<void>;
   updateOrderTracking: (id: string, tracking: string) => Promise<void>;
   deleteOrder: (id: string) => Promise<void>;
+  clearAllOrders: (lojaId?: string) => Promise<void>;
 }
 
 export const useOrders = create<OrdersState>((set, get) => ({
@@ -407,5 +408,37 @@ export const useOrders = create<OrdersState>((set, get) => ({
     set((state) => ({
       orders: state.orders.filter(o => o.id !== id),
     }));
+  },
+
+  clearAllOrders: async (lojaId?: string) => {
+    try {
+      if (lojaId) {
+        // 1. Obter IDs dos pedidos da loja
+        const { data: storeOrders } = await supabase.from('pedidos').select('id').eq('loja_id', lojaId);
+        const ids = storeOrders?.map(o => o.id) || [];
+        if (ids.length > 0) {
+          await supabase.from('pedido_itens').delete().in('pedido_id', ids);
+          await supabase.from('pedido_historico_status' as any).delete().in('pedido_id', ids);
+          const { error } = await supabase.from('pedidos').delete().in('id', ids);
+          if (error) throw error;
+        }
+        set((state) => ({
+          orders: state.orders.filter(o => o.lojaId !== lojaId),
+        }));
+      } else {
+        // Limpar todos os pedidos (Global)
+        await supabase.from('pedido_itens').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('pedido_historico_status' as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const { error } = await supabase.from('pedidos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        if (error) {
+          console.error("Error clearing all orders:", error);
+          throw error;
+        }
+        set({ orders: [] });
+      }
+    } catch (err) {
+      console.error("Error clearing orders:", err);
+      throw err;
+    }
   },
 }));

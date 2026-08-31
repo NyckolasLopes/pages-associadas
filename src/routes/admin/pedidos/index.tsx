@@ -23,9 +23,12 @@ import {
   Eye,
   Send,
   Zap,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
@@ -37,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useOrders, Pedido } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
@@ -156,6 +160,9 @@ export function PedidosAdmin() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
   const [mainView, setMainView] = useState<"todos" | "concluidos" | "pendentes">("todos");
   const [showApiDoc, setShowApiDoc] = useState(false);
+  const [clearOrdersModalOpen, setClearOrdersModalOpen] = useState(false);
+  const [isClearingOrders, setIsClearingOrders] = useState(false);
+  const [clearConfirmationText, setClearConfirmationText] = useState("");
 
   // Fetch orders with React Query (Server-side)
   const { data: ordersResponse, isLoading, refetch } = useOrdersQuery({
@@ -219,6 +226,26 @@ export function PedidosAdmin() {
       } catch (error) {
         toast.error("Erro ao excluir registro.");
       }
+    }
+  };
+
+  const handleClearAllOrders = async () => {
+    setIsClearingOrders(true);
+    try {
+      await useOrders.getState().clearAllOrders(activeStoreId || undefined);
+      await refetch();
+      setClearOrdersModalOpen(false);
+      setClearConfirmationText("");
+      setSelectedOrder(null);
+      toast.success(
+        activeStoreId
+          ? "Todos os pedidos desta farmácia foram limpos com sucesso!"
+          : "Todos os pedidos da rede foram limpos com sucesso!"
+      );
+    } catch (err: any) {
+      toast.error("Erro ao limpar pedidos: " + (err.message || "Tente novamente"));
+    } finally {
+      setIsClearingOrders(false);
     }
   };
 
@@ -912,6 +939,16 @@ export function PedidosAdmin() {
                 >
                   <Zap className="h-4 w-4" /> API de Status (ERP)
                 </Button>
+                <Button
+                  variant="outline"
+                  className="font-bold gap-2 bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:text-red-800"
+                  onClick={() => {
+                    setClearConfirmationText("");
+                    setClearOrdersModalOpen(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-red-600" /> Limpar Pedidos
+                </Button>
               </>
             )}
           </div>
@@ -1516,6 +1553,85 @@ export function PedidosAdmin() {
             </DialogDescription>
           </DialogHeader>
           <OrderStatusApiDoc />
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Confirmação de Limpar Pedidos */}
+      <Dialog open={clearOrdersModalOpen} onOpenChange={setClearOrdersModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-black text-slate-900">
+                  Limpar Pedidos {activeStoreId ? "da Loja" : "Globais"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 mt-0.5">
+                  {activeStoreId 
+                    ? `Excluir todos os pedidos vinculados a "${getLojaName(activeStoreId)}".`
+                    : "Excluir permanentemente todos os pedidos de todas as lojas da rede."}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800 space-y-1.5">
+              <p className="font-bold flex items-center gap-1.5 text-red-900">
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                Atenção: esta ação é definitiva e irreversível!
+              </p>
+              <p className="text-red-700 leading-relaxed">
+                Todos os registros de pedidos, itens comprados e histórico de situações serão apagados permanentemente da base de dados.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-700">
+                Para confirmar a limpeza, digite <span className="text-red-600 font-black">LIMPAR</span> abaixo:
+              </Label>
+              <Input
+                value={clearConfirmationText}
+                onChange={(e) => setClearConfirmationText(e.target.value)}
+                placeholder="Digite LIMPAR"
+                className="h-10 border-slate-200 uppercase font-mono text-sm tracking-wider"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setClearOrdersModalOpen(false);
+                setClearConfirmationText("");
+              }}
+              disabled={isClearingOrders}
+              className="font-bold border-slate-200"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleClearAllOrders}
+              disabled={clearConfirmationText.trim().toUpperCase() !== "LIMPAR" || isClearingOrders}
+              className="font-bold bg-red-600 hover:bg-red-700 text-white gap-2 shadow-sm"
+            >
+              {isClearingOrders ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Limpando pedidos...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Confirmar e Limpar Tudo
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

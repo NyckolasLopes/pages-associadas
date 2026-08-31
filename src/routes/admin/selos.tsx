@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, ChevronDown, Trash2, Edit2, CheckCircle2, Circle, Plus } from "lucide-react";
+import { Search, ChevronDown, Trash2, Edit2, CheckCircle2, Circle, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSelos } from "@/stores/selos";
 import { useAdminProducts } from "@/stores/products";
 import { SeloSistema, Produto } from "@/types";
@@ -46,31 +46,54 @@ function AdminSelos() {
   const [searchResults, setSearchResults] = useState<Produto[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
 
-  const fetchBadgeCounts = async () => {
-    try {
-      const counts: Record<string, number> = {};
-      for (const s of selos) {
+  // Inicializa badgeCounts imediatamente com base nos produtos em memória para evitar qualquer flicker
+  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>(() => {
+    const counts: Record<string, number> = {};
+    if (customProducts && customProducts.length > 0) {
+      selos.forEach((s) => {
         const isGen = s.id === 'gen' || s.nome.toLowerCase().includes("genérico") || s.nome.toLowerCase().includes("generico");
-        let query = supabase.from('produtos').select('*', { count: 'exact', head: true });
-        if (isGen) {
-          query = query.or(`internal_tags.cs.["selo:${s.id}"],nome.ilike.%generico%,nome.ilike.%genérico%,generico.eq.true`);
-        } else {
-          query = query.contains('internal_tags', JSON.stringify([`selo:${s.id}`]));
-        }
-        const { count } = await query;
-        counts[s.id] = count || 0;
-      }
+        const isServ = s.id === 'servico' || s.nome.toLowerCase().includes("serviço") || s.nome.toLowerCase().includes("servico");
+        counts[s.id] = customProducts.filter(p => {
+          if (p.selosIds?.includes(s.id)) return true;
+          if (p.selo === s.nome) return true;
+          if (isGen && (p.generico || p.nome?.toLowerCase().includes("genérico") || p.nome?.toLowerCase().includes("generico") || checkIsGenerico(p))) return true;
+          if (isServ && (p.tipoProduto === 'servico' || p.categoriaId === '200' || String(p.subcategoriaId).startsWith('20'))) return true;
+          return false;
+        }).length;
+      });
+    }
+    return counts;
+  });
+
+  const fetchBadgeCounts = useCallback(async () => {
+    try {
+      const results = await Promise.all(
+        selos.map(async (s) => {
+          const isGen = s.id === 'gen' || s.nome.toLowerCase().includes("genérico") || s.nome.toLowerCase().includes("generico");
+          let query = supabase.from('produtos').select('*', { count: 'exact', head: true });
+          if (isGen) {
+            query = query.or(`internal_tags.cs.["selo:${s.id}"],nome.ilike.%generico%,nome.ilike.%genérico%,generico.eq.true`);
+          } else {
+            query = query.contains('internal_tags', JSON.stringify([`selo:${s.id}`]));
+          }
+          const { count } = await query;
+          return { id: s.id, count: count || 0 };
+        })
+      );
+      const counts: Record<string, number> = {};
+      results.forEach(r => {
+        counts[r.id] = r.count;
+      });
       setBadgeCounts(counts);
     } catch (e) {
       console.error("Erro ao carregar contagem de selos", e);
     }
-  };
+  }, [selos]);
 
   useEffect(() => {
     fetchBadgeCounts();
-  }, [selos]);
+  }, [fetchBadgeCounts]);
 
   const filteredSelos = useMemo(() => {
     return selos.filter(s => s.nome.toLowerCase().includes(search.toLowerCase()));
@@ -234,7 +257,6 @@ function AdminSelos() {
           ) : (
             filteredSelos.map((selo) => {
               const count = badgeCounts[selo.id];
-              const countText = count !== undefined ? `${count} produto${count === 1 ? '' : 's'}` : (selo.id === 'gen' || selo.id === 'servico' ? 'Automático' : 'Carregando...');
               
               return (
                 <div 
@@ -254,9 +276,16 @@ function AdminSelos() {
                     </div>
                   </div>
                   <div className="text-center">
-                    <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-full">
-                      {countText}
-                    </span>
+                    {count !== undefined ? (
+                      <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full inline-block">
+                        {count} {count === 1 ? 'produto' : 'produtos'}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
+                        <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
+                        <span>Carregando...</span>
+                      </span>
+                    )}
                   </div>
                   <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={(e) => { e.stopPropagation(); handleOpenEdit(selo); }}>
