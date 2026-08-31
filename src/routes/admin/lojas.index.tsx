@@ -157,7 +157,7 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
 }
 
 function LojasAdmin() {
-  const { pharmacies, addPharmacy, updatePharmacy, togglePharmacyStatus, removePharmacy } = useAdmin();
+  const { pharmacies, addPharmacy, updatePharmacy, togglePharmacyStatus, removePharmacy, networkDefaultTheme } = useAdmin();
   const { regions } = useRegionsStore();
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -228,13 +228,19 @@ function LojasAdmin() {
 
     const payload = { ...form, categoriaAssociado: form.categoriaAssociado || "Pleno" };
 
+    const isPleno = (payload.categoriaAssociado || 'Pleno') === 'Pleno';
+    // Inject network default theme for new Pleno stores
+    if (!editingId && isPleno && networkDefaultTheme) {
+      payload.themeColors = { ...(networkDefaultTheme || {}), ...(payload.themeColors || {}) };
+    }
+
     try {
       if (editingId) {
         await updatePharmacy(editingId, payload);
         toast.success("Loja atualizada com sucesso!");
       } else {
         await addPharmacy(payload);
-        toast.success("Loja adicionada com sucesso!");
+        toast.success("Loja adicionada com sucesso! Tema padrão da rede aplicado.");
       }
       setModalOpen(false);
     } catch (err: any) {

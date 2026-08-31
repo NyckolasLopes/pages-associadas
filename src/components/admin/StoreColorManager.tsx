@@ -49,6 +49,9 @@ import {
   Flame,
   Zap,
   LayoutTemplate,
+  Globe,
+  Network,
+  AlertTriangle,
 } from "lucide-react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
@@ -418,6 +421,14 @@ export function StoreColorManager({
   const effectiveStoreId = storeId || admin.activeStoreId;
   const currentPharmacy = admin.pharmacies.find((p) => p.id === effectiveStoreId);
 
+  // Global admin detection
+  const currentUser = admin.currentUser;
+  const isGlobalAdmin = !!(currentUser?.proprietario ||
+    admin.grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
+
+  // Network theme mode: global admin + no specific store selected
+  const isNetworkMode = isGlobalAdmin && !effectiveStoreId;
+
   const defaultTheme: Record<string, string> = useMemo(() => ({
     "--primary": "#00B5AD",
     "--primary-foreground": "#FFFFFF",
@@ -492,6 +503,22 @@ export function StoreColorManager({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // Network theme state
+  const [networkColors, setNetworkColors] = useState<Record<string, string>>(() => admin.networkDefaultTheme || defaultTheme);
+  const [isNetworkSaving, setIsNetworkSaving] = useState(false);
+  const [isApplyingAll, setIsApplyingAll] = useState(false);
+
+  useEffect(() => {
+    // Load network theme on mount
+    admin.loadNetworkTheme();
+  }, []);
+
+  useEffect(() => {
+    if (admin.networkDefaultTheme) {
+      setNetworkColors({ ...defaultTheme, ...admin.networkDefaultTheme });
+    }
+  }, [admin.networkDefaultTheme, defaultTheme]);
+
   useEffect(() => {
     if (currentPharmacy?.themeColors && Object.keys(currentPharmacy.themeColors).length > 0) {
       setColors({ ...defaultTheme, ...currentPharmacy.themeColors });
@@ -532,8 +559,48 @@ export function StoreColorManager({
   };
 
   const handleResetToDefault = () => {
-    setColors(defaultTheme);
-    toast.info("Cores restauradas para o padrão oficial das Farmácias Associadas.");
+    if (isNetworkMode) {
+      setNetworkColors(defaultTheme);
+      toast.info("Tema da rede restaurado para o padrão oficial.");
+    } else {
+      setColors(defaultTheme);
+      toast.info("Cores restauradas para o padrão oficial das Farmácias Associadas.");
+    }
+  };
+
+  const handleSaveNetworkTheme = async () => {
+    setIsNetworkSaving(true);
+    try {
+      await admin.saveNetworkTheme(networkColors);
+      toast.success("Tema padrão da rede salvo! Novas lojas Pleno usarão essas cores automaticamente.");
+    } catch (err: any) {
+      toast.error("Erro ao salvar tema da rede: " + (err.message || "Tente novamente"));
+    } finally {
+      setIsNetworkSaving(false);
+    }
+  };
+
+  const handleApplyToAllPleno = async () => {
+    if (!window.confirm("Isso vai sobrescrever as cores de TODAS as lojas Pleno com o tema da rede. Confirmar?")) return;
+    setIsApplyingAll(true);
+    try {
+      await admin.saveNetworkTheme(networkColors);
+      const { updated } = await admin.applyNetworkThemeToAllPleno();
+      toast.success(`Tema aplicado em ${updated} loja(s) Pleno com sucesso!`);
+    } catch (err: any) {
+      toast.error("Erro: " + (err.message || "Tente novamente"));
+    } finally {
+      setIsApplyingAll(false);
+    }
+  };
+
+  const handleImportNetworkTheme = () => {
+    if (!admin.networkDefaultTheme) {
+      toast.error("Tema da rede não encontrado. Configure-o primeiro.");
+      return;
+    }
+    setColors(prev => ({ ...prev, ...admin.networkDefaultTheme }));
+    toast.success("Tema da rede importado! Clique em Salvar para aplicar nesta loja.");
   };
 
   const handleSave = async () => {
@@ -694,6 +761,112 @@ export function StoreColorManager({
     <div className="space-y-6">
       {showStoreSelector && !storeId && <StoreSelector hidePlenoForNonAdmin={false} />}
 
+      {/* ===== NETWORK THEME PANEL (shown only when global admin + no store selected) ===== */}
+      {isNetworkMode && (
+        <div className="space-y-4 bg-gradient-to-br from-indigo-50 to-violet-50 border-2 border-indigo-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl">
+                <Globe className="w-5 h-5" />
+              </span>
+              <div>
+                <h2 className="text-lg font-extrabold text-indigo-900">Tema Padrão da Rede</h2>
+                <p className="text-xs text-indigo-600">Cores aplicadas automaticamente em novas lojas Pleno e por aplicação em massa.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setNetworkColors(defaultTheme); toast.info("Restaurado para o padrão."); }}
+                className="border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Restaurar Padrão
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveNetworkTheme}
+                disabled={isNetworkSaving}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-sm"
+              >
+                <Save className="w-4 h-4 mr-1.5" />
+                {isNetworkSaving ? "Salvando..." : "Salvar Tema da Rede"}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleApplyToAllPleno}
+                disabled={isApplyingAll}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-sm"
+              >
+                <Network className="w-4 h-4 mr-1.5" />
+                {isApplyingAll ? "Aplicando..." : "Aplicar a Todas as Lojas Pleno"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Color palette preview */}
+          <div className="h-8 w-full rounded-xl overflow-hidden flex border border-indigo-200 shadow-inner">
+            {[
+              networkColors["--primary"] || "#00B5AD",
+              networkColors["--secondary"] || "#F37021",
+              networkColors["--header-bg"] || "#00B5AD",
+              networkColors["--topbar-bg"] || "#F37021",
+              networkColors["--menu-bg"] || "#008E88",
+              networkColors["--footer-bg"] || "#00B5AD",
+            ].map((color, idx) => (
+              <div key={idx} className="flex-1 h-full" style={{ backgroundColor: color }} title={color} />
+            ))}
+          </div>
+
+          {/* Color fields grid for network theme */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-1">
+            {[
+              { key: "--primary", label: "Cor Primária", fallback: "#00B5AD" },
+              { key: "--secondary", label: "Cor Secundária", fallback: "#F37021" },
+              { key: "--header-bg", label: "Fundo do Cabeçalho", fallback: "#00B5AD" },
+              { key: "--topbar-bg", label: "Fundo da Barra Superior", fallback: "#F37021" },
+              { key: "--menu-bg", label: "Fundo do Menu", fallback: "#008E88" },
+              { key: "--btn-primary-bg", label: "Botão Primário", fallback: "#00B5AD" },
+              { key: "--btn-secondary-bg", label: "Botão Secundário", fallback: "#F37021" },
+              { key: "--accent", label: "Cor de Destaque", fallback: "#F43F5E" },
+              { key: "--price-main", label: "Cor do Preço", fallback: "#00B5AD" },
+              { key: "--footer-bg", label: "Fundo do Rodapé", fallback: "#00B5AD" },
+              { key: "--footer-bottom-bg", label: "Fundo do Rodapé Inferior", fallback: "#008E88" },
+              { key: "--footer-bottom-text", label: "Texto do Rodapé Inferior", fallback: "#E2E8F0" },
+            ].map(({ key, label, fallback }) => {
+              const val = networkColors[key] || fallback;
+              const safeHex = /^#[0-9A-Fa-f]{6}$/.test(val) ? val : fallback;
+              return (
+                <div key={key} className="flex items-center gap-3 bg-white/70 rounded-xl p-3 border border-indigo-100">
+                  <label htmlFor={`net-${key}`} className="w-8 h-8 rounded-lg border-2 border-white shadow-md cursor-pointer shrink-0" style={{ backgroundColor: val }}>
+                    <span className="sr-only">{label}</span>
+                  </label>
+                  <input id={`net-${key}`} type="color" className="sr-only" value={safeHex}
+                    onChange={e => setNetworkColors(prev => ({ ...prev, [key]: e.target.value }))} />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-bold text-slate-800 block truncate">{label}</span>
+                    <span className="text-[10px] font-mono text-slate-500">{key}</span>
+                  </div>
+                  <Input
+                    type="text"
+                    value={val}
+                    onChange={e => setNetworkColors(prev => ({ ...prev, [key]: e.target.value }))}
+                    className="w-24 h-8 text-xs font-mono font-bold uppercase text-center border-indigo-200"
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              <strong>Atenção:</strong> "Aplicar a Todas as Lojas Pleno" sobrescreve as cores de <em>todas</em> as lojas Pleno existentes. Esta ação não afeta lojas Parceiro.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Top Header Card */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
@@ -728,6 +901,18 @@ export function StoreColorManager({
             <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
             Restaurar Padrão
           </Button>
+
+          {isGlobalAdmin && effectiveStoreId && admin.networkDefaultTheme && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleImportNetworkTheme}
+              className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-semibold"
+            >
+              <Globe className="w-3.5 h-3.5 mr-1.5" />
+              ↓ Importar Tema da Rede
+            </Button>
+          )}
 
           <Button
             onClick={handleSave}

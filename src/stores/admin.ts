@@ -343,6 +343,12 @@ interface AdminState {
   markRegistrationTokenUsed: (token: string) => void;
   deleteRegistrationToken: (token: string) => void;
   clearRegistrationTokens: () => void;
+
+  // Tema Padrão da Rede (Pleno)
+  networkDefaultTheme: Record<string, string> | null;
+  loadNetworkTheme: () => Promise<void>;
+  saveNetworkTheme: (colors: Record<string, string>) => Promise<void>;
+  applyNetworkThemeToAllPleno: () => Promise<{ updated: number }>;
 }
 
 import { lojas } from "@/data/stores";
@@ -1595,6 +1601,56 @@ export const useAdmin = create<AdminState>()(
       setStorefrontVitrineConfig: (config) => set((state) => ({
         storefrontVitrineConfig: { ...state.storefrontVitrineConfig, ...config }
       })),
+
+      // ─── Tema Padrão da Rede (Pleno) ───────────────────────────────────────
+      networkDefaultTheme: null,
+
+      loadNetworkTheme: async () => {
+        const { data } = await supabase
+          .from("theme_colors")
+          .select("*")
+          .eq("loja_id", "__network_default__")
+          .maybeSingle();
+        if (data) {
+          // Remove internal supabase-table fields, keep only theme vars
+          const { loja_id: _lid, id: _id, created_at: _ca, updated_at: _ua, ...themeVars } = data as any;
+          set({ networkDefaultTheme: themeVars as Record<string, string> });
+        }
+      },
+
+      saveNetworkTheme: async (colors) => {
+        // Filter to only CSS variables and extra theme fields
+        const payload: Record<string, any> = { ...colors, loja_id: "__network_default__" };
+        const { error } = await supabase
+          .from("theme_colors")
+          .upsert(payload, { onConflict: "loja_id" });
+        if (error) throw new Error(error.message);
+        set({ networkDefaultTheme: colors });
+      },
+
+      applyNetworkThemeToAllPleno: async () => {
+        const s = get();
+        const theme = s.networkDefaultTheme;
+        if (!theme) throw new Error("Tema da rede não carregado.");
+
+        const plenoStores = s.pharmacies.filter(
+          (p) => p.categoriaAssociado === "Pleno" || p.isPleno === true
+        );
+
+        let updated = 0;
+        for (const store of plenoStores) {
+          try {
+            await s.updatePharmacy(store.id, {
+              ...store,
+              themeColors: { ...(store.themeColors || {}), ...theme },
+            });
+            updated++;
+          } catch (e) {
+            console.error(`Erro ao aplicar tema na loja ${store.nome}:`, e);
+          }
+        }
+        return { updated };
+      },
     }),
     {
       name: "fa-admin-store-v4",
