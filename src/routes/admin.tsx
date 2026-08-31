@@ -81,6 +81,8 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, "");
 }
 
+import { resetStoreTheme } from "@/lib/themeUtils";
+
 export const Route = createFileRoute("/admin")({
   pendingComponent: () => (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center animate-in fade-in duration-150">
@@ -212,27 +214,7 @@ function AdminLayout() {
 
   // Garante que o painel admin nunca herde o tema de cor de nenhuma loja
   useEffect(() => {
-    const STORE_THEME_VARS = [
-      "--primary", "--primary-foreground", "--primary-dark",
-      "--secondary", "--secondary-foreground",
-      "--accent", "--accent-foreground",
-      "--background", "--foreground",
-      "--ring",
-      "--header-bg", "--header-icons",
-      "--search-bg", "--search-icon",
-      "--topbar-bg", "--topbar-text",
-      "--menu-bg", "--menu-text",
-      "--footer-bg", "--footer-text",
-      "--social-icons", "--social-icons-bg",
-      "--institutional-bg",
-      "--pwa-banner-bg", "--pwa-banner-text",
-      "--pwa-banner-btn-bg", "--pwa-banner-btn-text",
-      "--cart-btn-bg", "--cart-btn-text",
-      "--cart-badge-bg", "--cart-badge-text",
-      "--tarja-bg", "--tarja-text", "--tarja-icon",
-      "--all-cats-text", "--all-cats-icon",
-    ];
-    STORE_THEME_VARS.forEach(v => document.documentElement.style.removeProperty(v));
+    resetStoreTheme();
   }, []);
 
   useEffect(() => {

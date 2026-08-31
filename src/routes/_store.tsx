@@ -6,6 +6,8 @@ import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
 
+import { resetStoreTheme } from "@/lib/themeUtils";
+
 const Footer = lazy(() => import("@/components/storefront/Footer").then(m => ({ default: m.Footer })));
 const FloatingElements = lazy(() => import("@/components/storefront/BackToTop").then(m => ({ default: m.FloatingElements })));
 const CookieBanner = lazy(() => import("@/components/storefront/CookieBanner").then(m => ({ default: m.CookieBanner })));
@@ -142,13 +144,7 @@ function StoreLayout() {
       });
     }
     return () => {
-      if (storeTheme) {
-        Object.entries(storeTheme).forEach(([key]) => {
-          if (key.startsWith('--')) {
-            document.documentElement.style.removeProperty(key);
-          }
-        });
-      }
+      resetStoreTheme();
     };
   }, [storeTheme]);
 
