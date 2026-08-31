@@ -447,8 +447,11 @@ function AdminBanners() {
   const deletedIds = new Set(deletedDefaultBannerIds);
 
   const groupedBanners = BANNER_POSITIONS.map(pos => {
+    const isVectorSystemPos = pos === "Banner Tarja" || pos === "Banner Compre por categoria" || pos === "Banner Categoria";
+    const systemDefaults = isVectorSystemPos ? defaultBanners.filter(b => matchBannerPos(b, pos)) : [];
+
     if (activeStoreId) {
-      const storeItems = allBanners.filter(b => b.lojaId === activeStoreId && matchBannerPos(b, pos) && !deletedIds.has(b.id));
+      const storeItems = allBanners.filter(b => b.lojaId === activeStoreId && matchBannerPos(b, pos) && !deletedIds.has(b.id) && !b.imageUrl?.includes('unsplash'));
       if (storeItems.length > 0) {
         return {
           position: pos,
@@ -457,8 +460,8 @@ function AdminBanners() {
         };
       }
       // Se a loja não tem banners próprios nesta posição, exibe os banners da rede herdados que estão ativos na loja
-      const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos) && !deletedIds.has(b.id));
-      const fallbackItems = (globalItems.length > 0 ? globalItems : defaultBanners.filter(b => matchBannerPos(b, pos))).filter(b => !deletedIds.has(b.id));
+      const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos) && !deletedIds.has(b.id) && !b.imageUrl?.includes('unsplash'));
+      const fallbackItems = (globalItems.length > 0 ? globalItems : systemDefaults).filter(b => !deletedIds.has(b.id));
       
       const uniqueMap = new Map();
       for (const item of fallbackItems) {
@@ -477,8 +480,8 @@ function AdminBanners() {
       };
     }
 
-    const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos) && !deletedIds.has(b.id));
-    const fallbackItems = (globalItems.length > 0 ? globalItems : defaultBanners.filter(b => matchBannerPos(b, pos))).filter(b => !deletedIds.has(b.id));
+    const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos) && !deletedIds.has(b.id) && !b.imageUrl?.includes('unsplash'));
+    const fallbackItems = (globalItems.length > 0 ? globalItems : systemDefaults).filter(b => !deletedIds.has(b.id));
     
     const uniqueMap = new Map();
     for (const item of fallbackItems) {

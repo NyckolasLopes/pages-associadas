@@ -219,10 +219,11 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
     }
     const storeBanners = pharmacy?.id && adminState.bannersByLoja && adminState.bannersByLoja[pharmacy.id]?.length
       ? adminState.bannersByLoja[pharmacy.id]
-      : adminState.getStoreBanners(pharmacy?.id);
-    const heroBanner = storeBanners.find(b => 
+      : (adminState.bannersLoaded ? adminState.getStoreBanners(pharmacy?.id) : []);
+    const heroBanner = (storeBanners || []).find(b => 
       b.active && 
       b.posicao === "Full Banner" && 
+      b.imageUrl && !b.imageUrl.includes("unsplash") && b.id !== "fb-1" && b.id !== "fb-2" &&
       (!b.lojaId || b.lojaId === pharmacy?.id) &&
       (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === "Página inicial")
     );
@@ -242,7 +243,7 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
       { rel: "canonical", href: storeUrl },
     ];
 
-    if (heroBanner?.mobileImageUrl) {
+    if (heroBanner?.mobileImageUrl && !heroBanner.mobileImageUrl.includes("unsplash")) {
       preloadLinks.push({
         rel: "preload",
         as: "image",
@@ -252,7 +253,7 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
         fetchpriority: "high",
       });
     }
-    if (heroBanner?.imageUrl) {
+    if (heroBanner?.imageUrl && !heroBanner.imageUrl.includes("unsplash")) {
       preloadLinks.push({
         rel: "preload",
         as: "image",

@@ -74,6 +74,7 @@ export function HeroCarousel({
       }
 
       if (!b.active) return false;
+      if (!b.imageUrl || b.imageUrl.includes("unsplash") || b.id === "fb-1" || b.id === "fb-2") return false;
       
       // Check if there are ANY local banners for this position in this store
       const hasLocalBannerForPosition = bannersList.some(

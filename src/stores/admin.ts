@@ -400,26 +400,7 @@ const defaultPharmacies: Pharmacy[] = lojas.map((l, idx) => {
 });
 
 export const defaultBanners: AdminBanner[] = [
-  // Full Banner Padrão
-  {
-    id: "fb-1",
-    nome: "Farmácias Associadas - Cuidando de Você e sua Família",
-    imageUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1920&q=80",
-    link: "/",
-    posicao: "Full Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  {
-    id: "fb-2",
-    nome: "Medicamentos e Ofertas com Entrega Rápida",
-    imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=1920&q=80",
-    link: "/c/medicamentos",
-    posicao: "Full Banner",
-    paginaPublicacao: "Página inicial",
-    active: true,
-  },
-  // Banner Tarja Padrão
+  // Banner Tarja Padrão (Ícones vetoriais da rede)
   {
     id: "bt-1",
     nome: "Compre pelo site e **receba em casa.**",
@@ -465,7 +446,7 @@ export const defaultBanners: AdminBanner[] = [
     paginaPublicacao: "Página inicial",
     active: true,
   },
-  // Banner Categoria Padrão
+  // Banner Categoria Padrão (Ícones vetoriais)
   { id: "bc-1", nome: "Remédios para Dor e Febre", imageUrl: "icon:Thermometer", link: "/c/medicamentos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-2", nome: "Remédios para Sistema Nervoso", imageUrl: "icon:Leaf", link: "/c/medicamentos", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
   { id: "bc-3", nome: "Pastas de Dente e Higiene Bucal", imageUrl: "icon:Smile", link: "/c/higiene-e-cuidados", posicao: "Banner Categoria", paginaPublicacao: "Página inicial", active: true },
@@ -501,19 +482,31 @@ export function saveDeletedDefaultBanners(ids: string[]) {
 }
 
 export function getInitialCachedBanners(): { banners: AdminBanner[]; bannersByLoja: Record<string, AdminBanner[]> } {
-  if (typeof window === 'undefined') return { banners: defaultBanners, bannersByLoja: {} };
+  if (typeof window === 'undefined') return { banners: [], bannersByLoja: {} };
   try {
     const raw = localStorage.getItem(BANNERS_CACHE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        const banners = Array.isArray(parsed.banners) && parsed.banners.length > 0 ? parsed.banners : defaultBanners;
-        const bannersByLoja = parsed.bannersByLoja && typeof parsed.bannersByLoja === 'object' ? parsed.bannersByLoja : {};
+        const filterValid = (list: any[]) =>
+          Array.isArray(list)
+            ? list.filter((b: any) => b && b.imageUrl && !b.imageUrl.includes('unsplash') && b.id !== 'fb-1' && b.id !== 'fb-2')
+            : [];
+
+        const banners = filterValid(parsed.banners);
+        const bannersByLoja: Record<string, AdminBanner[]> = {};
+        if (parsed.bannersByLoja && typeof parsed.bannersByLoja === 'object') {
+          for (const [k, v] of Object.entries(parsed.bannersByLoja)) {
+            if (Array.isArray(v)) {
+              bannersByLoja[k] = filterValid(v);
+            }
+          }
+        }
         return { banners, bannersByLoja };
       }
     }
   } catch { /* ignore */ }
-  return { banners: defaultBanners, bannersByLoja: {} };
+  return { banners: [], bannersByLoja: {} };
 }
 
 export function saveCachedBanners(banners: AdminBanner[], bannersByLoja: Record<string, AdminBanner[]>) {
@@ -915,10 +908,13 @@ export const useAdmin = create<AdminState>()(
             return;
           }
 
-          // 3. Fallback para defaultBanners da respectiva posição (exceto os excluídos)
-          const defaultsForPos = defaultBanners.filter(b => matchPos(b, pos) && !deletedIds.has(b.id));
-          if (defaultsForPos.length > 0) {
-            rawResolved.push(...defaultsForPos);
+          // 3. Fallback apenas para ícones vetoriais do sistema (Tarja e Categoria), NUNCA para Full Banners ou imagens
+          const isVectorSystemPos = pos === "Banner Tarja" || pos === "Banner Compre por categoria" || pos === "Banner Categoria";
+          if (isVectorSystemPos) {
+            const defaultsForPos = defaultBanners.filter(b => matchPos(b, pos) && !deletedIds.has(b.id));
+            if (defaultsForPos.length > 0) {
+              rawResolved.push(...defaultsForPos);
+            }
           }
         });
 
@@ -929,12 +925,13 @@ export const useAdmin = create<AdminState>()(
           }
         });
 
-        // Desduplicação estrita por ID e assinatura de conteúdo
+        // Desduplicação estrita por ID e assinatura de conteúdo (filtrando placeholders)
         const uniqueResolved: AdminBanner[] = [];
         const seenKeys = new Set<string>();
 
         for (const b of rawResolved) {
           if (deletedIds.has(b.id)) continue;
+          if (b.imageUrl?.includes('unsplash') || b.id === 'fb-1' || b.id === 'fb-2') continue;
           const signature = `${b.posicao}|${b.nome || ''}|${b.imageUrl || ''}|${b.lojaId || 'global'}`;
           if (!seenKeys.has(b.id) && !seenKeys.has(signature)) {
             seenKeys.add(b.id);
@@ -977,33 +974,35 @@ export const useAdmin = create<AdminState>()(
               return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
             };
 
-            const parsedBanners = data.map((b: any) => ({
-              id: b.id,
-              nome: b.nome,
-              imageUrl: b.image_url,
-              mobileImageUrl: b.mobile_image_url,
-              link: b.link,
-              posicao: b.posicao,
-              paginaPublicacao: b.pagina_publicacao,
-              titulo: b.titulo,
-              active: b.ativo,
-              startDate: b.start_date ? formatToLocalDatetime(b.start_date) : "",
-              endDate: b.end_date ? formatToLocalDatetime(b.end_date) : "",
-              lojaId: b.loja_id,
-              vitrineVinculada: b.vitrine_vinculada,
-              bannerVinculado: b.banner_vinculado,
-              topicoVinculado: b.topico_vinculado,
-              formatoExtra: b.formato_extra,
-              imageUrl2: b.image_url2,
-              mobileImageUrl2: b.mobile_image_url2,
-              link2: b.link2,
-              imageUrl3: b.image_url3,
-              mobileImageUrl3: b.mobile_image_url3,
-              link3: b.link3,
-              ordem: b.ordem ?? 0,
-            })) as AdminBanner[];
+            const parsedBanners = data
+              .map((b: any) => ({
+                id: b.id,
+                nome: b.nome,
+                imageUrl: b.image_url,
+                mobileImageUrl: b.mobile_image_url,
+                link: b.link,
+                posicao: b.posicao,
+                paginaPublicacao: b.pagina_publicacao,
+                titulo: b.titulo,
+                active: b.ativo,
+                startDate: b.start_date ? formatToLocalDatetime(b.start_date) : "",
+                endDate: b.end_date ? formatToLocalDatetime(b.end_date) : "",
+                lojaId: b.loja_id,
+                vitrineVinculada: b.vitrine_vinculada,
+                bannerVinculado: b.banner_vinculado,
+                topicoVinculado: b.topico_vinculado,
+                formatoExtra: b.formato_extra,
+                imageUrl2: b.image_url2,
+                mobileImageUrl2: b.mobile_image_url2,
+                link2: b.link2,
+                imageUrl3: b.image_url3,
+                mobileImageUrl3: b.mobile_image_url3,
+                link3: b.link3,
+                ordem: b.ordem ?? 0,
+              }))
+              .filter((b: any) => b.imageUrl && !b.imageUrl.includes('unsplash') && b.id !== 'fb-1' && b.id !== 'fb-2') as AdminBanner[];
 
-            const finalBanners = parsedBanners.length > 0 ? parsedBanners : defaultBanners.filter(b => !b.lojaId || b.lojaId === lojaId);
+            const finalBanners = parsedBanners;
             set((s: any) => {
               const nextByLoja = { ...s.bannersByLoja, [key]: finalBanners };
               saveCachedBanners(finalBanners, nextByLoja);
