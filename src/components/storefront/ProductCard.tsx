@@ -395,6 +395,7 @@ function ProductCardComponent({
           to="/$storeSlug/produto/$slug"
           preload="intent"
           params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
+          style={{ color: 'var(--headings, inherit)' }}
           className="text-sm md:text-[15px] font-bold line-clamp-2 h-[2.5em] hover:text-primary-dark leading-tight overflow-hidden"
         >
           {p.nome}
@@ -408,7 +409,7 @@ function ProductCardComponent({
               <div className="flex flex-col justify-center min-h-[50px] border-l-2 border-primary px-2">
                 <div className="flex items-center gap-1">
                   <span className="text-sm font-bold text-primary">{levePaguePromo.levePague_quantidade} por</span>
-                  <div className="text-lg sm:text-2xl font-bold text-foreground">
+                  <div className="text-lg sm:text-2xl font-bold text-foreground" style={{ color: 'var(--price-main, inherit)' }}>
                     {brl(levePaguePromo.levePague_precoPorItem || 0)}
                   </div>
                   <span className="text-sm font-medium text-primary">cada</span>
@@ -420,16 +421,30 @@ function ProductCardComponent({
             ) : (
               <>
                 {finalPrecoDe > finalPrecoPor ? (
-                  <div className="text-xs sm:text-sm text-muted-foreground line-through decoration-red-500/50 min-h-[20px]">
+                  <div 
+                    className="text-xs sm:text-sm text-muted-foreground line-through decoration-red-500/50 min-h-[20px]"
+                    style={{ color: 'var(--price-old, inherit)' }}
+                  >
                     {brl(finalPrecoDe)}
                   </div>
                 ) : (
                   <div className="min-h-[20px]" aria-hidden="true" />
                 )}
                 <div className="flex items-center gap-2">
-                  <div className="text-lg sm:text-2xl font-bold text-foreground truncate">{brl(finalPrecoPor)}</div>
+                  <div 
+                    className="text-lg sm:text-2xl font-bold text-foreground truncate"
+                    style={{ color: 'var(--price-main, inherit)' }}
+                  >
+                    {brl(finalPrecoPor)}
+                  </div>
                   {desconto > 0 && (
-                    <span className="inline-flex shrink-0 items-center bg-[#e6f4ea] text-[#137333] text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
+                    <span 
+                      className="inline-flex shrink-0 items-center text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full"
+                      style={{
+                        backgroundColor: 'var(--price-discount-badge-bg, #e6f4ea)',
+                        color: 'var(--price-discount-badge-text, #137333)',
+                      }}
+                    >
                       -{desconto}%
                     </span>
                   )}
@@ -487,7 +502,9 @@ function ProductCardComponent({
                 style={
                   activePromo?.corBotao
                     ? { backgroundColor: activePromo.corBotao, color: activePromo.corTextoBotao || '#ffffff' }
-                    : undefined
+                    : (!isService && !p.precoSobConsulta
+                        ? { backgroundColor: 'var(--btn-primary-bg, var(--primary))', color: 'var(--btn-primary-text, var(--primary-foreground, #ffffff))' }
+                        : undefined)
                 }
                 className={`w-full font-bold text-xs py-2.5 rounded transition flex items-center justify-center gap-2 shadow-sm hover:brightness-110 active:scale-[0.99] ${
                   activePromo?.corBotao

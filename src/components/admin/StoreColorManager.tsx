@@ -38,6 +38,8 @@ import {
   Clock,
   ArrowRight,
   CreditCard,
+  Mail,
+  Send,
 } from "lucide-react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
@@ -58,653 +60,323 @@ export interface ColorPreset {
 
 export const COLOR_PRESETS: ColorPreset[] = [
   {
+    id: "associadas-oficial",
+    name: "Associadas Oficial (Teal & Laranja)",
+    stripes: ["#00B5AD", "#F37021", "#FFFFFF", "#008E88", "#0F172A", "#F43F5E"],
+    colors: {
+      "--primary": "#00B5AD",
+      "--primary-foreground": "#FFFFFF",
+      "--btn-primary-bg": "#00B5AD",
+      "--btn-primary-text": "#FFFFFF",
+      "--secondary": "#F37021",
+      "--secondary-foreground": "#FFFFFF",
+      "--btn-secondary-bg": "#F37021",
+      "--btn-secondary-text": "#FFFFFF",
+      "--accent": "#F43F5E",
+      "--accent-foreground": "#FFFFFF",
+      "--background": "#FFFFFF",
+      "--foreground": "#1E293B",
+      "--headings": "#0F172A",
+      "--section-desc": "#64748B",
+      "--header-bg": "#00B5AD",
+      "--header-icons": "#FFFFFF",
+      "--header-text": "#FFFFFF",
+      "--search-bg": "#FFFFFF",
+      "--search-text": "#334155",
+      "--search-icon": "#94A3B8",
+      "--search-border": "#E2E8F0",
+      "--cart-btn-bg": "#FFFFFF",
+      "--cart-btn-text": "#00B5AD",
+      "--cart-badge-bg": "#F43F5E",
+      "--cart-badge-text": "#FFFFFF",
+      "--topbar-bg": "#F37021",
+      "--topbar-icon": "#FFFFFF",
+      "--topbar-text": "#FFFFFF",
+      "--menu-bg": "#008E88",
+      "--menu-text": "#FFFFFF",
+      "--all-cats-icon": "#FFFFFF",
+      "--all-cats-text": "#FFFFFF",
+      "--price-main": "#00B5AD",
+      "--price-old": "#94A3B8",
+      "--price-discount-badge-bg": "#F43F5E",
+      "--price-discount-badge-text": "#FFFFFF",
+      "--tarja-bg": "#FFFFFF",
+      "--tarja-icon": "#00B5AD",
+      "--tarja-text": "#0F172A",
+      "--news-bg": "#F8FAFC",
+      "--news-text": "#0F172A",
+      "--news-input-bg": "#FFFFFF",
+      "--news-input-text": "#1E293B",
+      "--news-input-border": "#CBD5E1",
+      "--news-btn-bg": "#00B5AD",
+      "--news-btn-text": "#FFFFFF",
+      "--footer-bg": "#00B5AD",
+      "--footer-text": "#FFFFFF",
+      "--social-icons": "#00B5AD",
+      "--social-icons-bg": "#FFFFFF",
+      "--footer-bottom-bg": "#008E88",
+      "--footer-bottom-text": "#E2E8F0",
+      "--institutional-bg": "#F97316",
+      "--pwa-banner-bg": "#00B5AD",
+      "--pwa-banner-text": "#FFFFFF",
+      "--pwa-banner-btn-bg": "#FFFFFF",
+      "--pwa-banner-btn-text": "#00B5AD",
+    }
+  },
+  {
     id: "violet-magenta",
     name: "Violeta & Magenta Moderno",
-    stripes: ["#705BC2", "#FE509C", "#FFFFFF", "#199965", "#666666", "#C92A42"],
+    stripes: ["#705BC2", "#FE509C", "#FFFFFF", "#5F4BB6", "#1E1B4B", "#199965"],
     colors: {
       "--primary": "#705BC2",
       "--primary-foreground": "#FFFFFF",
+      "--btn-primary-bg": "#199965",
+      "--btn-primary-text": "#FFFFFF",
       "--secondary": "#FE509C",
       "--secondary-foreground": "#FFFFFF",
+      "--btn-secondary-bg": "#FE509C",
+      "--btn-secondary-text": "#FFFFFF",
       "--accent": "#FE509C",
       "--accent-foreground": "#FFFFFF",
       "--background": "#FFFFFF",
       "--foreground": "#1E293B",
+      "--headings": "#1E1B4B",
+      "--section-desc": "#64748B",
       "--header-bg": "#705BC2",
       "--header-icons": "#FFFFFF",
+      "--header-text": "#FFFFFF",
       "--search-bg": "#FFFFFF",
+      "--search-text": "#334155",
+      "--search-icon": "#705BC2",
+      "--search-border": "#E2E8F0",
+      "--cart-btn-bg": "#FE509C",
+      "--cart-btn-text": "#FFFFFF",
+      "--cart-badge-bg": "#199965",
+      "--cart-badge-text": "#FFFFFF",
       "--topbar-bg": "#FE509C",
+      "--topbar-icon": "#FFFFFF",
       "--topbar-text": "#FFFFFF",
       "--menu-bg": "#5F4BB6",
       "--menu-text": "#FFFFFF",
+      "--all-cats-icon": "#FE509C",
+      "--all-cats-text": "#FFFFFF",
+      "--price-main": "#705BC2",
+      "--price-old": "#94A3B8",
+      "--price-discount-badge-bg": "#FE509C",
+      "--price-discount-badge-text": "#FFFFFF",
+      "--tarja-bg": "#FAF5FF",
+      "--tarja-icon": "#705BC2",
+      "--tarja-text": "#1E1B4B",
+      "--news-bg": "#F5F3FF",
+      "--news-text": "#1E1B4B",
+      "--news-input-bg": "#FFFFFF",
+      "--news-input-text": "#1E293B",
+      "--news-input-border": "#DDD6FE",
+      "--news-btn-bg": "#705BC2",
+      "--news-btn-text": "#FFFFFF",
       "--footer-bg": "#1E1B4B",
       "--footer-text": "#FFFFFF",
       "--social-icons": "#705BC2",
       "--social-icons-bg": "#FFFFFF",
+      "--footer-bottom-bg": "#0F0E2A",
+      "--footer-bottom-text": "#DDD6FE",
       "--institutional-bg": "#705BC2",
       "--pwa-banner-bg": "#705BC2",
       "--pwa-banner-text": "#FFFFFF",
       "--pwa-banner-btn-bg": "#FFFFFF",
       "--pwa-banner-btn-text": "#705BC2",
-      "primary": "#705BC2",
-      "secondary": "#FE509C",
-      "accent": "#FE509C",
-      "headerBg": "#705BC2",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#FE509C",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#5F4BB6",
-      "menuText": "#FFFFFF",
-      "footerBg": "#1E1B4B",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#705BC2",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#705BC2",
-      "pwaBannerBg": "#705BC2",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#705BC2"
     }
   },
   {
     id: "indigo-cyan",
     name: "Índigo & Ciano Elétrico",
-    stripes: ["#6366F1", "#EC4899", "#FFFFFF", "#06B6D4", "#4F46E5", "#DB2777"],
+    stripes: ["#6366F1", "#06B6D4", "#FFFFFF", "#4F46E5", "#1E1B4B", "#EC4899"],
     colors: {
       "--primary": "#6366F1",
       "--primary-foreground": "#FFFFFF",
+      "--btn-primary-bg": "#6366F1",
+      "--btn-primary-text": "#FFFFFF",
       "--secondary": "#06B6D4",
       "--secondary-foreground": "#FFFFFF",
+      "--btn-secondary-bg": "#06B6D4",
+      "--btn-secondary-text": "#FFFFFF",
       "--accent": "#EC4899",
       "--accent-foreground": "#FFFFFF",
       "--background": "#FFFFFF",
       "--foreground": "#1E293B",
+      "--headings": "#1E1B4B",
+      "--section-desc": "#64748B",
       "--header-bg": "#6366F1",
       "--header-icons": "#FFFFFF",
+      "--header-text": "#FFFFFF",
       "--search-bg": "#FFFFFF",
+      "--search-text": "#334155",
+      "--search-icon": "#6366F1",
+      "--search-border": "#E0E7FF",
+      "--cart-btn-bg": "#06B6D4",
+      "--cart-btn-text": "#FFFFFF",
+      "--cart-badge-bg": "#EC4899",
+      "--cart-badge-text": "#FFFFFF",
       "--topbar-bg": "#4F46E5",
+      "--topbar-icon": "#06B6D4",
       "--topbar-text": "#FFFFFF",
       "--menu-bg": "#4F46E5",
       "--menu-text": "#FFFFFF",
+      "--all-cats-icon": "#06B6D4",
+      "--all-cats-text": "#FFFFFF",
+      "--price-main": "#6366F1",
+      "--price-old": "#94A3B8",
+      "--price-discount-badge-bg": "#EC4899",
+      "--price-discount-badge-text": "#FFFFFF",
+      "--tarja-bg": "#EEF2FF",
+      "--tarja-icon": "#6366F1",
+      "--tarja-text": "#1E1B4B",
+      "--news-bg": "#EEF2FF",
+      "--news-text": "#1E1B4B",
+      "--news-input-bg": "#FFFFFF",
+      "--news-input-text": "#1E293B",
+      "--news-input-border": "#C7D2FE",
+      "--news-btn-bg": "#6366F1",
+      "--news-btn-text": "#FFFFFF",
       "--footer-bg": "#1E1B4B",
       "--footer-text": "#FFFFFF",
       "--social-icons": "#6366F1",
       "--social-icons-bg": "#FFFFFF",
+      "--footer-bottom-bg": "#0F0E2A",
+      "--footer-bottom-text": "#C7D2FE",
       "--institutional-bg": "#6366F1",
       "--pwa-banner-bg": "#6366F1",
       "--pwa-banner-text": "#FFFFFF",
       "--pwa-banner-btn-bg": "#FFFFFF",
       "--pwa-banner-btn-text": "#6366F1",
-      "primary": "#6366F1",
-      "secondary": "#06B6D4",
-      "accent": "#EC4899",
-      "headerBg": "#6366F1",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#4F46E5",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#4F46E5",
-      "menuText": "#FFFFFF",
-      "footerBg": "#1E1B4B",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#6366F1",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#6366F1",
-      "pwaBannerBg": "#6366F1",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#6366F1"
     }
   },
   {
-    id: "rose-lime",
-    name: "Rosa & Lima Fresh",
-    stripes: ["#F472B6", "#4B5563", "#FFFFFF", "#84CC16", "#F472B6", "#A3E635"],
+    id: "emerald-mint",
+    name: "Esmeralda & Menta Natural",
+    stripes: ["#059669", "#10B981", "#FFFFFF", "#047857", "#064E3B", "#F59E0B"],
     colors: {
-      "--primary": "#F472B6",
+      "--primary": "#059669",
       "--primary-foreground": "#FFFFFF",
-      "--secondary": "#84CC16",
+      "--btn-primary-bg": "#059669",
+      "--btn-primary-text": "#FFFFFF",
+      "--secondary": "#10B981",
       "--secondary-foreground": "#FFFFFF",
-      "--accent": "#DB2777",
+      "--btn-secondary-bg": "#10B981",
+      "--btn-secondary-text": "#FFFFFF",
+      "--accent": "#F59E0B",
       "--accent-foreground": "#FFFFFF",
       "--background": "#FFFFFF",
-      "--foreground": "#1F2937",
-      "--header-bg": "#F472B6",
+      "--foreground": "#1E293B",
+      "--headings": "#064E3B",
+      "--section-desc": "#64748B",
+      "--header-bg": "#059669",
       "--header-icons": "#FFFFFF",
+      "--header-text": "#FFFFFF",
       "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#DB2777",
+      "--search-text": "#334155",
+      "--search-icon": "#059669",
+      "--search-border": "#D1FAE5",
+      "--cart-btn-bg": "#FFFFFF",
+      "--cart-btn-text": "#059669",
+      "--cart-badge-bg": "#F59E0B",
+      "--cart-badge-text": "#FFFFFF",
+      "--topbar-bg": "#047857",
+      "--topbar-icon": "#34D399",
       "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#EC4899",
+      "--menu-bg": "#047857",
       "--menu-text": "#FFFFFF",
-      "--footer-bg": "#1F2937",
+      "--all-cats-icon": "#34D399",
+      "--all-cats-text": "#FFFFFF",
+      "--price-main": "#059669",
+      "--price-old": "#94A3B8",
+      "--price-discount-badge-bg": "#F59E0B",
+      "--price-discount-badge-text": "#FFFFFF",
+      "--tarja-bg": "#ECFDF5",
+      "--tarja-icon": "#059669",
+      "--tarja-text": "#064E3B",
+      "--news-bg": "#ECFDF5",
+      "--news-text": "#064E3B",
+      "--news-input-bg": "#FFFFFF",
+      "--news-input-text": "#1E293B",
+      "--news-input-border": "#A7F3D0",
+      "--news-btn-bg": "#059669",
+      "--news-btn-text": "#FFFFFF",
+      "--footer-bg": "#064E3B",
       "--footer-text": "#FFFFFF",
-      "--social-icons": "#F472B6",
+      "--social-icons": "#059669",
       "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#F472B6",
-      "--pwa-banner-bg": "#F472B6",
+      "--footer-bottom-bg": "#022C22",
+      "--footer-bottom-text": "#A7F3D0",
+      "--institutional-bg": "#059669",
+      "--pwa-banner-bg": "#059669",
       "--pwa-banner-text": "#FFFFFF",
       "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#F472B6",
-      "primary": "#F472B6",
-      "secondary": "#84CC16",
-      "accent": "#DB2777",
-      "headerBg": "#F472B6",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#DB2777",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#EC4899",
-      "menuText": "#FFFFFF",
-      "footerBg": "#1F2937",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#F472B6",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#F472B6",
-      "pwaBannerBg": "#F472B6",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#F472B6"
+      "--pwa-banner-btn-text": "#059669",
     }
   },
   {
-    id: "slate-emerald-orange",
-    name: "Grafite & Esmeralda Laranja",
-    stripes: ["#1E293B", "#EF4444", "#FFFFFF", "#10B981", "#64748B", "#F97316"],
+    id: "ruby-red",
+    name: "Rubi & Vermelho Saúde",
+    stripes: ["#DC2626", "#EF4444", "#FFFFFF", "#B91C1C", "#7F1D1D", "#F97316"],
     colors: {
-      "--primary": "#10B981",
+      "--primary": "#DC2626",
       "--primary-foreground": "#FFFFFF",
+      "--btn-primary-bg": "#DC2626",
+      "--btn-primary-text": "#FFFFFF",
       "--secondary": "#F97316",
       "--secondary-foreground": "#FFFFFF",
-      "--accent": "#EF4444",
+      "--btn-secondary-bg": "#F97316",
+      "--btn-secondary-text": "#FFFFFF",
+      "--accent": "#F97316",
       "--accent-foreground": "#FFFFFF",
       "--background": "#FFFFFF",
       "--foreground": "#1E293B",
-      "--header-bg": "#1E293B",
+      "--headings": "#7F1D1D",
+      "--section-desc": "#64748B",
+      "--header-bg": "#DC2626",
       "--header-icons": "#FFFFFF",
+      "--header-text": "#FFFFFF",
       "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#F97316",
+      "--search-text": "#334155",
+      "--search-icon": "#DC2626",
+      "--search-border": "#FEE2E2",
+      "--cart-btn-bg": "#FFFFFF",
+      "--cart-btn-text": "#DC2626",
+      "--cart-badge-bg": "#F97316",
+      "--cart-badge-text": "#FFFFFF",
+      "--topbar-bg": "#B91C1C",
+      "--topbar-icon": "#FCA5A5",
       "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#0F172A",
+      "--menu-bg": "#B91C1C",
       "--menu-text": "#FFFFFF",
-      "--footer-bg": "#0F172A",
+      "--all-cats-icon": "#FCA5A5",
+      "--all-cats-text": "#FFFFFF",
+      "--price-main": "#DC2626",
+      "--price-old": "#94A3B8",
+      "--price-discount-badge-bg": "#F97316",
+      "--price-discount-badge-text": "#FFFFFF",
+      "--tarja-bg": "#FEF2F2",
+      "--tarja-icon": "#DC2626",
+      "--tarja-text": "#7F1D1D",
+      "--news-bg": "#FEF2F2",
+      "--news-text": "#7F1D1D",
+      "--news-input-bg": "#FFFFFF",
+      "--news-input-text": "#1E293B",
+      "--news-input-border": "#FECACA",
+      "--news-btn-bg": "#DC2626",
+      "--news-btn-text": "#FFFFFF",
+      "--footer-bg": "#7F1D1D",
       "--footer-text": "#FFFFFF",
-      "--social-icons": "#10B981",
+      "--social-icons": "#DC2626",
       "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#1E293B",
-      "--pwa-banner-bg": "#10B981",
+      "--footer-bottom-bg": "#450A0A",
+      "--footer-bottom-text": "#FECACA",
+      "--institutional-bg": "#DC2626",
+      "--pwa-banner-bg": "#DC2626",
       "--pwa-banner-text": "#FFFFFF",
       "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#10B981",
-      "primary": "#10B981",
-      "secondary": "#F97316",
-      "accent": "#EF4444",
-      "headerBg": "#1E293B",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#F97316",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#0F172A",
-      "menuText": "#FFFFFF",
-      "footerBg": "#0F172A",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#10B981",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#1E293B",
-      "pwaBannerBg": "#10B981",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#10B981"
-    }
-  },
-  {
-    id: "minimal-black-rose",
-    name: "Preto & Rosé Nude",
-    stripes: ["#18181B", "#C28871", "#FFFFFF", "#27272A", "#E0A99A", "#F4F4F5"],
-    colors: {
-      "--primary": "#18181B",
-      "--primary-foreground": "#FFFFFF",
-      "--secondary": "#C28871",
-      "--secondary-foreground": "#FFFFFF",
-      "--accent": "#C28871",
-      "--accent-foreground": "#FFFFFF",
-      "--background": "#FFFFFF",
-      "--foreground": "#18181B",
-      "--header-bg": "#18181B",
-      "--header-icons": "#FFFFFF",
-      "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#C28871",
-      "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#27272A",
-      "--menu-text": "#FFFFFF",
-      "--footer-bg": "#18181B",
-      "--footer-text": "#FFFFFF",
-      "--social-icons": "#18181B",
-      "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#18181B",
-      "--pwa-banner-bg": "#18181B",
-      "--pwa-banner-text": "#FFFFFF",
-      "--pwa-banner-btn-bg": "#C28871",
-      "--pwa-banner-btn-text": "#FFFFFF",
-      "primary": "#18181B",
-      "secondary": "#C28871",
-      "accent": "#C28871",
-      "headerBg": "#18181B",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#C28871",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#27272A",
-      "menuText": "#FFFFFF",
-      "footerBg": "#18181B",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#18181B",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#18181B",
-      "pwaBannerBg": "#18181B",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#C28871",
-      "pwaBannerBtnText": "#FFFFFF"
-    }
-  },
-  {
-    id: "navy-terracotta",
-    name: "Azul Marinho & Terracota",
-    stripes: ["#1E293B", "#475569", "#FFFFFF", "#5B8279", "#C27878", "#E2E8F0"],
-    colors: {
-      "--primary": "#1E293B",
-      "--primary-foreground": "#FFFFFF",
-      "--secondary": "#5B8279",
-      "--secondary-foreground": "#FFFFFF",
-      "--accent": "#C27878",
-      "--accent-foreground": "#FFFFFF",
-      "--background": "#FFFFFF",
-      "--foreground": "#1E293B",
-      "--header-bg": "#1E293B",
-      "--header-icons": "#FFFFFF",
-      "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#5B8279",
-      "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#0F172A",
-      "--menu-text": "#FFFFFF",
-      "--footer-bg": "#0F172A",
-      "--footer-text": "#FFFFFF",
-      "--social-icons": "#5B8279",
-      "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#1E293B",
-      "--pwa-banner-bg": "#1E293B",
-      "--pwa-banner-text": "#FFFFFF",
-      "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#1E293B",
-      "primary": "#1E293B",
-      "secondary": "#5B8279",
-      "accent": "#C27878",
-      "headerBg": "#1E293B",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#5B8279",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#0F172A",
-      "menuText": "#FFFFFF",
-      "footerBg": "#0F172A",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#5B8279",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#1E293B",
-      "pwaBannerBg": "#1E293B",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#1E293B"
-    }
-  },
-  {
-    id: "warm-amber-olive",
-    name: "Âmbar & Oliva Suave",
-    stripes: ["#E59866", "#D4AC0D", "#FFFFFF", "#7D9D6C", "#5D6D7E", "#4A4A4A"],
-    colors: {
-      "--primary": "#E59866",
-      "--primary-foreground": "#FFFFFF",
-      "--secondary": "#7D9D6C",
-      "--secondary-foreground": "#FFFFFF",
-      "--accent": "#D4AC0D",
-      "--accent-foreground": "#FFFFFF",
-      "--background": "#FFFFFF",
-      "--foreground": "#4A4A4A",
-      "--header-bg": "#E59866",
-      "--header-icons": "#FFFFFF",
-      "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#D4AC0D",
-      "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#CA6F1E",
-      "--menu-text": "#FFFFFF",
-      "--footer-bg": "#4A4A4A",
-      "--footer-text": "#FFFFFF",
-      "--social-icons": "#E59866",
-      "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#E59866",
-      "--pwa-banner-bg": "#E59866",
-      "--pwa-banner-text": "#FFFFFF",
-      "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#E59866",
-      "primary": "#E59866",
-      "secondary": "#7D9D6C",
-      "accent": "#D4AC0D",
-      "headerBg": "#E59866",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#D4AC0D",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#CA6F1E",
-      "menuText": "#FFFFFF",
-      "footerBg": "#4A4A4A",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#E59866",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#E59866",
-      "pwaBannerBg": "#E59866",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#E59866"
-    }
-  },
-  {
-    id: "coral-mint-cream",
-    name: "Coral & Menta Pastel",
-    stripes: ["#F87171", "#FB7185", "#FFFFFF", "#A3B899", "#D8D8C0", "#FDEBD0"],
-    colors: {
-      "--primary": "#F87171",
-      "--primary-foreground": "#FFFFFF",
-      "--secondary": "#A3B899",
-      "--secondary-foreground": "#FFFFFF",
-      "--accent": "#FB7185",
-      "--accent-foreground": "#FFFFFF",
-      "--background": "#FFFFFF",
-      "--foreground": "#334155",
-      "--header-bg": "#F87171",
-      "--header-icons": "#FFFFFF",
-      "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#FB7185",
-      "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#EF4444",
-      "--menu-text": "#FFFFFF",
-      "--footer-bg": "#334155",
-      "--footer-text": "#FFFFFF",
-      "--social-icons": "#F87171",
-      "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#F87171",
-      "--pwa-banner-bg": "#F87171",
-      "--pwa-banner-text": "#FFFFFF",
-      "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#F87171",
-      "primary": "#F87171",
-      "secondary": "#A3B899",
-      "accent": "#FB7185",
-      "headerBg": "#F87171",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#FB7185",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#EF4444",
-      "menuText": "#FFFFFF",
-      "footerBg": "#334155",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#F87171",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#F87171",
-      "pwaBannerBg": "#F87171",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#F87171"
-    }
-  },
-  {
-    id: "teal-fuchsia-gold",
-    name: "Teal Oceânico & Dourado",
-    stripes: ["#0D9488", "#1E1B4B", "#FFFFFF", "#E11D48", "#F59E0B", "#A3E635"],
-    colors: {
-      "--primary": "#0D9488",
-      "--primary-foreground": "#FFFFFF",
-      "--secondary": "#F59E0B",
-      "--secondary-foreground": "#FFFFFF",
-      "--accent": "#E11D48",
-      "--accent-foreground": "#FFFFFF",
-      "--background": "#FFFFFF",
-      "--foreground": "#1E293B",
-      "--header-bg": "#0D9488",
-      "--header-icons": "#FFFFFF",
-      "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#1E1B4B",
-      "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#0F766E",
-      "--menu-text": "#FFFFFF",
-      "--footer-bg": "#1E1B4B",
-      "--footer-text": "#FFFFFF",
-      "--social-icons": "#0D9488",
-      "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#0D9488",
-      "--pwa-banner-bg": "#0D9488",
-      "--pwa-banner-text": "#FFFFFF",
-      "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#0D9488",
-      "primary": "#0D9488",
-      "secondary": "#F59E0B",
-      "accent": "#E11D48",
-      "headerBg": "#0D9488",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#1E1B4B",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#0F766E",
-      "menuText": "#FFFFFF",
-      "footerBg": "#1E1B4B",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#0D9488",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#0D9488",
-      "pwaBannerBg": "#0D9488",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#0D9488"
-    }
-  },
-  {
-    id: "ocean-tangerine",
-    name: "Azul Petróleo & Tangerina",
-    stripes: ["#1E3A8A", "#0284C7", "#FFFFFF", "#38BDF8", "#EA580C", "#65A30D"],
-    colors: {
-      "--primary": "#1E3A8A",
-      "--primary-foreground": "#FFFFFF",
-      "--secondary": "#EA580C",
-      "--secondary-foreground": "#FFFFFF",
-      "--accent": "#EA580C",
-      "--accent-foreground": "#FFFFFF",
-      "--background": "#FFFFFF",
-      "--foreground": "#1E293B",
-      "--header-bg": "#1E3A8A",
-      "--header-icons": "#FFFFFF",
-      "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#EA580C",
-      "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#172554",
-      "--menu-text": "#FFFFFF",
-      "--footer-bg": "#172554",
-      "--footer-text": "#FFFFFF",
-      "--social-icons": "#1E3A8A",
-      "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#1E3A8A",
-      "--pwa-banner-bg": "#1E3A8A",
-      "--pwa-banner-text": "#FFFFFF",
-      "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#1E3A8A",
-      "primary": "#1E3A8A",
-      "secondary": "#EA580C",
-      "accent": "#EA580C",
-      "headerBg": "#1E3A8A",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#EA580C",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#172554",
-      "menuText": "#FFFFFF",
-      "footerBg": "#172554",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#1E3A8A",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#1E3A8A",
-      "pwaBannerBg": "#1E3A8A",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#1E3A8A"
-    }
-  },
-  {
-    id: "royal-blue-crimson",
-    name: "Azul Royal & Vermelho Vivo",
-    stripes: ["#1E293B", "#DC2626", "#FFFFFF", "#2563EB", "#1D4ED8", "#B91C1C"],
-    colors: {
-      "--primary": "#2563EB",
-      "--primary-foreground": "#FFFFFF",
-      "--secondary": "#DC2626",
-      "--secondary-foreground": "#FFFFFF",
-      "--accent": "#DC2626",
-      "--accent-foreground": "#FFFFFF",
-      "--background": "#FFFFFF",
-      "--foreground": "#1E293B",
-      "--header-bg": "#2563EB",
-      "--header-icons": "#FFFFFF",
-      "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#DC2626",
-      "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#1D4ED8",
-      "--menu-text": "#FFFFFF",
-      "--footer-bg": "#1E293B",
-      "--footer-text": "#FFFFFF",
-      "--social-icons": "#2563EB",
-      "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#2563EB",
-      "--pwa-banner-bg": "#2563EB",
-      "--pwa-banner-text": "#FFFFFF",
-      "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#2563EB",
-      "primary": "#2563EB",
-      "secondary": "#DC2626",
-      "accent": "#DC2626",
-      "headerBg": "#2563EB",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#DC2626",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#1D4ED8",
-      "menuText": "#FFFFFF",
-      "footerBg": "#1E293B",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#2563EB",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#2563EB",
-      "pwaBannerBg": "#2563EB",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#2563EB"
-    }
-  },
-  {
-    id: "cyber-lime-purple",
-    name: "Lima Vibrante & Roxo",
-    stripes: ["#65A30D", "#EAB308", "#FFFFFF", "#84CC16", "#475569", "#7E22CE"],
-    colors: {
-      "--primary": "#65A30D",
-      "--primary-foreground": "#FFFFFF",
-      "--secondary": "#7E22CE",
-      "--secondary-foreground": "#FFFFFF",
-      "--accent": "#EAB308",
-      "--accent-foreground": "#1E293B",
-      "--background": "#FFFFFF",
-      "--foreground": "#1E293B",
-      "--header-bg": "#65A30D",
-      "--header-icons": "#FFFFFF",
-      "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#7E22CE",
-      "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#4D7C0F",
-      "--menu-text": "#FFFFFF",
-      "--footer-bg": "#1E293B",
-      "--footer-text": "#FFFFFF",
-      "--social-icons": "#65A30D",
-      "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#65A30D",
-      "--pwa-banner-bg": "#65A30D",
-      "--pwa-banner-text": "#FFFFFF",
-      "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#65A30D",
-      "primary": "#65A30D",
-      "secondary": "#7E22CE",
-      "accent": "#EAB308",
-      "headerBg": "#65A30D",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#7E22CE",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#4D7C0F",
-      "menuText": "#FFFFFF",
-      "footerBg": "#1E293B",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#65A30D",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#65A30D",
-      "pwaBannerBg": "#65A30D",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#65A30D"
-    }
-  },
-  {
-    id: "associadas-classic",
-    name: "Farmácias Associadas Clássico",
-    stripes: ["#00B5AD", "#F37021", "#FFFFFF", "#00A389", "#334155", "#EF4444"],
-    colors: {
-      "--primary": "#00B5AD",
-      "--primary-foreground": "#FFFFFF",
-      "--secondary": "#F37021",
-      "--secondary-foreground": "#FFFFFF",
-      "--accent": "#EF4444",
-      "--accent-foreground": "#FFFFFF",
-      "--background": "#FFFFFF",
-      "--foreground": "#1E293B",
-      "--header-bg": "#00B5AD",
-      "--header-icons": "#FFFFFF",
-      "--search-bg": "#FFFFFF",
-      "--topbar-bg": "#F37021",
-      "--topbar-text": "#FFFFFF",
-      "--menu-bg": "#008E88",
-      "--menu-text": "#FFFFFF",
-      "--footer-bg": "#00B5AD",
-      "--footer-text": "#FFFFFF",
-      "--social-icons": "#00B5AD",
-      "--social-icons-bg": "#FFFFFF",
-      "--institutional-bg": "#F37021",
-      "--pwa-banner-bg": "#00B5AD",
-      "--pwa-banner-text": "#FFFFFF",
-      "--pwa-banner-btn-bg": "#FFFFFF",
-      "--pwa-banner-btn-text": "#00B5AD",
-      "primary": "#00B5AD",
-      "secondary": "#F37021",
-      "accent": "#EF4444",
-      "headerBg": "#00B5AD",
-      "headerIcons": "#FFFFFF",
-      "searchBg": "#FFFFFF",
-      "topbarBg": "#F37021",
-      "topbarText": "#FFFFFF",
-      "menuBg": "#008E88",
-      "menuText": "#FFFFFF",
-      "footerBg": "#00B5AD",
-      "footerText": "#FFFFFF",
-      "socialIcons": "#00B5AD",
-      "socialIconsBg": "#FFFFFF",
-      "institutionalBg": "#F37021",
-      "pwaBannerBg": "#00B5AD",
-      "pwaBannerText": "#FFFFFF",
-      "pwaBannerBtnBg": "#FFFFFF",
-      "pwaBannerBtnText": "#00B5AD"
+      "--pwa-banner-btn-text": "#DC2626",
     }
   }
 ];
@@ -712,8 +384,8 @@ export const COLOR_PRESETS: ColorPreset[] = [
 export function StoreColorManager({
   storeId,
   showStoreSelector = true,
-  title = "Personalizar Cores da Loja",
-  description = "Escolha as cores que representarão a sua marca no site e no aplicativo.",
+  title = "Cores e Identidade Visual",
+  description = "Defina a paleta de cores completa da sua loja. As alterações são refletidas em tempo real no simulador.",
 }: {
   storeId?: string;
   showStoreSelector?: boolean;
@@ -728,40 +400,61 @@ export function StoreColorManager({
   const defaultTheme: Record<string, string> = useMemo(() => ({
     "--primary": "#00B5AD",
     "--primary-foreground": "#FFFFFF",
+    "--btn-primary-bg": "#00B5AD",
+    "--btn-primary-text": "#FFFFFF",
     "--secondary": "#F37021",
     "--secondary-foreground": "#FFFFFF",
+    "--btn-secondary-bg": "#F37021",
+    "--btn-secondary-text": "#FFFFFF",
     "--accent": "#F43F5E",
     "--accent-foreground": "#FFFFFF",
     "--background": "#FFFFFF",
     "--foreground": "#1E293B",
+    "--headings": "#0F172A",
+    "--section-desc": "#64748B",
     "--header-bg": "#00B5AD",
     "--header-icons": "#FFFFFF",
+    "--header-text": "#FFFFFF",
     "--search-bg": "#FFFFFF",
+    "--search-text": "#334155",
+    "--search-icon": "#94A3B8",
+    "--search-border": "#E2E8F0",
+    "--cart-btn-bg": "#FFFFFF",
+    "--cart-btn-text": "#00B5AD",
+    "--cart-badge-bg": "#F43F5E",
+    "--cart-badge-text": "#FFFFFF",
     "--topbar-bg": "#F37021",
+    "--topbar-icon": "#FFFFFF",
     "--topbar-text": "#FFFFFF",
     "--menu-bg": "#008E88",
     "--menu-text": "#FFFFFF",
+    "--all-cats-icon": "#FFFFFF",
+    "--all-cats-text": "#FFFFFF",
+    "--price-main": "#00B5AD",
+    "--price-old": "#94A3B8",
+    "--price-discount-badge-bg": "#F43F5E",
+    "--price-discount-badge-text": "#FFFFFF",
+    "--tarja-bg": "#FFFFFF",
+    "--tarja-icon": "#00B5AD",
+    "--tarja-text": "#0F172A",
+    "--news-bg": "#F8FAFC",
+    "--news-text": "#0F172A",
+    "--news-input-bg": "#FFFFFF",
+    "--news-input-text": "#1E293B",
+    "--news-input-border": "#CBD5E1",
+    "--news-btn-bg": "#00B5AD",
+    "--news-btn-text": "#FFFFFF",
     "--footer-bg": "#00B5AD",
     "--footer-text": "#FFFFFF",
     "--social-icons": "#00B5AD",
     "--social-icons-bg": "#FFFFFF",
+    "--footer-bottom-bg": "#008E88",
+    "--footer-bottom-text": "#E2E8F0",
     "--institutional-bg": "#F97316",
     "--pwa-banner-bg": "#00B5AD",
     "--pwa-banner-text": "#FFFFFF",
     "--pwa-banner-btn-bg": "#FFFFFF",
     "--pwa-banner-btn-text": "#00B5AD",
-    "--badge-primary-bg": "#00B5AD",
-    "--badge-primary-text": "#FFFFFF",
-    "--badge-secondary-bg": "#F37021",
-    "--badge-secondary-text": "#FFFFFF",
-    "--badge-accent-bg": "#F43F5E",
-    "--badge-accent-text": "#FFFFFF",
-    "--btn-primary-bg": "#00B5AD",
-    "--btn-primary-text": "#FFFFFF",
-    "--btn-secondary-bg": "#F37021",
-    "--btn-secondary-text": "#FFFFFF",
-    "--btn-accent-bg": "#F43F5E",
-    "--btn-accent-text": "#FFFFFF",
   }), []);
 
   const [colors, setColors] = useState<Record<string, string>>(() => {
@@ -775,7 +468,6 @@ export function StoreColorManager({
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [showPresets, setShowPresets] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeCategoryTab, setActiveCategoryTab] = useState<string>("principais");
 
   useEffect(() => {
     if (currentPharmacy?.themeColors && Object.keys(currentPharmacy.themeColors).length > 0) {
@@ -808,92 +500,72 @@ export function StoreColorManager({
       ...prev,
       ...preset.colors
     }));
-    toast.success(`Paleta "${preset.name}" aplicada!`);
+    toast.success(`Paleta "${preset.name}" selecionada! Clique em Salvar para aplicar.`);
+  };
+
+  const handleResetToDefault = () => {
+    setColors(defaultTheme);
+    toast.info("Cores restauradas para o padrão oficial das Farmácias Associadas.");
   };
 
   const handleSave = async () => {
-    if (!effectiveStoreId || !currentPharmacy) {
-      toast.error("Selecione uma loja primeiro para salvar as cores.");
+    if (!effectiveStoreId) {
+      toast.error("Nenhuma farmácia selecionada.");
       return;
     }
 
     setIsSaving(true);
-    const toastId = toast.loading("Salvando paleta de cores...");
     try {
-      await admin.updatePharmacy(effectiveStoreId, {
-        ...currentPharmacy,
-        themeColors: colors
-      } as any);
+      if (currentPharmacy?.categoriaAssociado === 'Pleno' || currentPharmacy?.isPleno === true) {
+        toast.error("Farmácias da categoria Pleno não podem personalizar cores.");
+        setIsSaving(false);
+        return;
+      }
 
-      await saveConfig("cores", colors, effectiveStoreId);
-      toast.success("Cores atualizadas e aplicadas na loja com sucesso!", { id: toastId });
-    } catch (e) {
-      console.error("Erro ao salvar cores:", e);
-      toast.error("Erro ao salvar as cores no banco de dados.", { id: toastId });
+      if (currentPharmacy) {
+        await admin.updatePharmacy(effectiveStoreId, {
+          ...currentPharmacy,
+          themeColors: colors,
+        });
+      }
+
+      toast.success("Cores salvas com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao salvar cores: " + (err.message || "Tente novamente"));
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleReset = async () => {
-    setColors(defaultTheme);
-    if (effectiveStoreId && currentPharmacy) {
-      try {
-        await admin.updatePharmacy(effectiveStoreId, {
-          ...currentPharmacy,
-          themeColors: {}
-        } as any);
-        await saveConfig("cores", {}, effectiveStoreId);
-        toast.success("Cores restauradas para o padrão com sucesso!");
-      } catch (e) {
-        toast.error("Erro ao resetar cores.");
-      }
-    }
-  };
-
-  const currentStripes: [string, string, string, string, string, string] = useMemo(() => [
-    getColor("--primary", "#705BC2"),
-    getColor("--secondary", "#FE509C"),
-    getColor("--background", "#FFFFFF"),
-    getColor("--accent", "#199965"),
-    getColor("--foreground", "#666666"),
-    getColor("--topbar-bg", "#C92A42"),
+  const currentStripes = useMemo(() => [
+    getColor("--primary", "#00B5AD"),
+    getColor("--secondary", "#F37021"),
+    getColor("--header-bg", "#00B5AD"),
+    getColor("--topbar-bg", "#F37021"),
+    getColor("--menu-bg", "#008E88"),
+    getColor("--footer-bg", "#00B5AD"),
   ], [colors]);
 
   return (
     <div className="space-y-6">
+      {showStoreSelector && !storeId && <StoreSelector />}
+
       {/* Top Header Card */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Palette className="w-6 h-6 text-emerald-600" />
-            {title} {currentPharmacy?.nome ? `- ${currentPharmacy.nome}` : ""}
+            <Palette className="w-5 h-5 text-emerald-600" />
+            {title}
           </h2>
           <p className="text-sm text-slate-500 mt-1">{description}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {showStoreSelector && <StoreSelector className="mb-0" />}
-
-          {currentPharmacy && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 bg-white"
-              onClick={() => {
-                const targetSlug = currentPharmacy.slug || safeSlugify(currentPharmacy.nome || currentPharmacy.id);
-                window.open(`/${targetSlug}`, "_blank");
-              }}
-            >
-              <Eye className="w-4 h-4" /> Ver na minha loja
-            </Button>
-          )}
-
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Button
-            onClick={handleReset}
             variant="outline"
+            onClick={handleResetToDefault}
             size="sm"
-            className="text-slate-600 hover:text-slate-900"
+            className="text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Restaurar Padrão
@@ -903,7 +575,7 @@ export function StoreColorManager({
             onClick={handleSave}
             disabled={isSaving}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-bold"
           >
             <Save className="w-4 h-4 mr-2" />
             {isSaving ? "Salvando..." : "Salvar Alterações"}
@@ -922,7 +594,7 @@ export function StoreColorManager({
 
       {/* Main Grid: Controls + Live Preview */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Preset Strip + Accordions (7 Cols) */}
+        {/* Left Column: Preset Strip + Granular Accordions (7 Cols) */}
         <div className="xl:col-span-7 space-y-6">
           
           {/* Card 1: Paleta Atual & Predefinições */}
@@ -945,12 +617,12 @@ export function StoreColorManager({
               </Button>
             </div>
 
-            {/* Current Palette Stripe Bar (As requested in image 1) */}
+            {/* Current Palette Stripe Bar */}
             <div className="h-14 w-full rounded-xl overflow-hidden shadow-inner flex border border-slate-200">
               {currentStripes.map((color, index) => (
                 <div
                   key={index}
-                  className="flex-1 h-full transition-colors relative group"
+                  className="flex-1 h-full transition-colors relative group cursor-default"
                   style={{ backgroundColor: color }}
                   title={`Cor ${index + 1}: ${color}`}
                 >
@@ -961,7 +633,7 @@ export function StoreColorManager({
               ))}
             </div>
 
-            {/* Presets Grid Dropdown (As requested in image 2) */}
+            {/* Presets Grid Dropdown */}
             {showPresets && (
               <div className="mt-6 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3">
@@ -990,230 +662,440 @@ export function StoreColorManager({
             )}
           </div>
 
-          {/* Card 2: Accordions de Edição Minuciosa (As requested in images 3, 4, 5) */}
+          {/* Card 2: Accordions de Edição Granular */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-4 bg-slate-50/80 border-b border-slate-200">
               <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-slate-500" /> Configuração Granular de Cores
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Altere valores individuais de cada elemento do seu site e aplicativo.
+                Altere valores individuais de cada elemento da loja em tempo real.
               </p>
             </div>
 
-            <Accordion type="multiple" defaultValue={["cores-gerais", "botoes-primarios", "botoes-secundarios"]} className="w-full">
+            <Accordion type="multiple" defaultValue={["gerais-fundo", "informacao-destaque", "cabecalho", "carrinho-cesta", "produtos-botoes"]} className="w-full">
               
-              {/* 1. Cores Gerais */}
-              <AccordionItem value="cores-gerais" className="px-6 border-b border-slate-100">
+              {/* 1. Fundo da Loja e Estrutura Geral */}
+              <AccordionItem value="gerais-fundo" className="px-6 border-b border-slate-100">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--primary", "#705BC2") }} />
-                    Cores Gerais (Marca e Fundo)
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--background", "#FFFFFF") }} />
+                    Fundo da Loja e Estrutura Geral
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-2 pb-6 space-y-4">
                   <ColorRow
-                    label="Cor primária"
-                    description="A cor principal da marca (botões principais, links ativos, destaques)."
-                    value={getColor("--primary", "#705BC2")}
-                    onChange={(v) => updateColor("--primary", v)}
-                  />
-                  <ColorRow
-                    label="Cor secundária"
-                    description="Usada em botões secundários, ícones de menu e rodapé."
-                    value={getColor("--secondary", "#FE509C")}
-                    onChange={(v) => updateColor("--secondary", v)}
-                  />
-                  <ColorRow
-                    label="Cor de Destaque (Accent)"
-                    description="Usada para chamar atenção: descontos, preços promocionais, tags."
-                    value={getColor("--accent", "#FE509C")}
-                    onChange={(v) => updateColor("--accent", v)}
-                  />
-                  <ColorRow
                     label="Fundo da loja"
-                    description="Cor de fundo principal do site (Geralmente branco ou cinza claro)."
+                    description="Cor de fundo principal do site (Geralmente branco #FFFFFF ou cinza bem claro)."
                     value={getColor("--background", "#FFFFFF")}
                     onChange={(v) => updateColor("--background", v)}
                   />
                   <ColorRow
                     label="Texto Base"
-                    description="Cor principal para os textos e parágrafos do site."
+                    description="Cor principal para os textos gerais e parágrafos do site."
                     value={getColor("--foreground", "#1E293B")}
                     onChange={(v) => updateColor("--foreground", v)}
                   />
-                </AccordionContent>
-              </AccordionItem>
-
-              {/* 2. Botões Primários */}
-              <AccordionItem value="botoes-primarios" className="px-6 border-b border-slate-100">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--primary", "#199965") }} />
-                    Botões Primários (Comprar / Finalizar)
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-2 pb-6 space-y-4">
                   <ColorRow
-                    label="Cor do botão"
-                    description="Cor de fundo dos botões principais de compra e chamada de ação."
-                    value={getColor("--primary", "#199965")}
-                    onChange={(v) => updateColor("--primary", v)}
+                    label="Títulos"
+                    description="Cor dos títulos das seções, vitrines e blocos principais (ex: 'Compre por categoria', 'Super Ofertas')."
+                    value={getColor("--headings", "#0F172A")}
+                    onChange={(v) => updateColor("--headings", v)}
                   />
                   <ColorRow
-                    label="Cor do texto"
-                    description="Cor do texto e ícones dentro dos botões principais."
-                    value={getColor("--primary-foreground", "#FFFFFF")}
-                    onChange={(v) => updateColor("--primary-foreground", v)}
+                    label="Título da descrição"
+                    description="Cor de subtítulos, descrições secundárias e textos informativos das seções."
+                    value={getColor("--section-desc", "#64748B")}
+                    onChange={(v) => updateColor("--section-desc", v)}
                   />
                 </AccordionContent>
               </AccordionItem>
 
-              {/* 3. Botões Secundários */}
-              <AccordionItem value="botoes-secundarios" className="px-6 border-b border-slate-100">
+              {/* 2. Informação Destaque (Topo da Página) */}
+              <AccordionItem value="informacao-destaque" className="px-6 border-b border-slate-100">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--secondary", "#666666") }} />
-                    Botões Secundários
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--topbar-bg", "#F37021") }} />
+                    Informação Destaque (Topo da Página)
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-2 pb-6 space-y-4">
                   <ColorRow
-                    label="Cor do botão"
-                    description="Cor de fundo de botões secundários (filtros, detalhes, voltar)."
-                    value={getColor("--secondary", "#666666")}
-                    onChange={(v) => updateColor("--secondary", v)}
-                  />
-                  <ColorRow
-                    label="Cor do texto"
-                    description="Cor do texto dentro dos botões secundários."
-                    value={getColor("--secondary-foreground", "#FFFFFF")}
-                    onChange={(v) => updateColor("--secondary-foreground", v)}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-
-              {/* 4. Estrutura e Cabeçalho */}
-              <AccordionItem value="estrutura-cabecalho" className="px-6 border-b border-slate-100">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--header-bg", "#705BC2") }} />
-                    Estrutura, Cabeçalho e Faixa Superior
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-2 pb-6 space-y-4">
-                  <ColorRow
-                    label="Fundo da Faixa Superior"
-                    description="Cor de fundo da barra de avisos/cupons no topo."
-                    value={getColor("--topbar-bg", "#FE509C")}
+                    label="Fundo da informação destaque"
+                    description="Cor de fundo da barra de avisos/cupons no topo da página."
+                    value={getColor("--topbar-bg", "#F37021")}
                     onChange={(v) => updateColor("--topbar-bg", v)}
                   />
                   <ColorRow
-                    label="Texto da Faixa Superior"
-                    description="Cor do texto de avisos e cupons no topo."
+                    label="Ícone da informação"
+                    description="Cor do ícone de entrega/motoqueiro na barra de destaque do topo."
+                    value={getColor("--topbar-icon", "#FFFFFF")}
+                    onChange={(v) => updateColor("--topbar-icon", v)}
+                  />
+                  <ColorRow
+                    label="Texto da informação"
+                    description="Cor do texto com o cupom ou aviso no topo da página."
                     value={getColor("--topbar-text", "#FFFFFF")}
                     onChange={(v) => updateColor("--topbar-text", v)}
                   />
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* 3. Cabeçalho da Loja */}
+              <AccordionItem value="cabecalho" className="px-6 border-b border-slate-100">
+                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--header-bg", "#00B5AD") }} />
+                    Cabeçalho da Loja
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-6 space-y-4">
                   <ColorRow
-                    label="Fundo do Cabeçalho"
-                    description="Cor de fundo principal da área de logo e busca."
-                    value={getColor("--header-bg", "#705BC2")}
+                    label="Fundo do cabeçalho"
+                    description="Cor de fundo da barra principal do cabeçalho."
+                    value={getColor("--header-bg", "#00B5AD")}
                     onChange={(v) => updateColor("--header-bg", v)}
                   />
                   <ColorRow
-                    label="Ícones do Cabeçalho"
-                    description="Cor dos ícones de carrinho, usuário, menu e busca."
+                    label="Ícones do cabeçalho"
+                    description="Cor dos ícones de usuário, localização e favoritos no cabeçalho."
                     value={getColor("--header-icons", "#FFFFFF")}
                     onChange={(v) => updateColor("--header-icons", v)}
                   />
                   <ColorRow
-                    label="Barra de Pesquisa (Fundo)"
+                    label="Texto do cabeçalho"
+                    description="Cor dos textos e rótulos de informações dentro do cabeçalho."
+                    value={getColor("--header-text", "#FFFFFF")}
+                    onChange={(v) => updateColor("--header-text", v)}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* 4. Busca */}
+              <AccordionItem value="busca" className="px-6 border-b border-slate-100">
+                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--search-bg", "#FFFFFF") }} />
+                    Barra de Busca
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-6 space-y-4">
+                  <ColorRow
+                    label="Fundo da busca"
                     description="Cor de fundo do campo de busca de produtos."
                     value={getColor("--search-bg", "#FFFFFF")}
                     onChange={(v) => updateColor("--search-bg", v)}
                   />
+                  <ColorRow
+                    label="Texto da busca"
+                    description="Cor do texto digitado e do placeholder no campo de pesquisa."
+                    value={getColor("--search-text", "#334155")}
+                    onChange={(v) => updateColor("--search-text", v)}
+                  />
+                  <ColorRow
+                    label="Ícone da busca"
+                    description="Cor do ícone da lupa dentro do campo de busca."
+                    value={getColor("--search-icon", "#94A3B8")}
+                    onChange={(v) => updateColor("--search-icon", v)}
+                  />
+                  <ColorRow
+                    label="Borda da busca"
+                    description="Cor da borda do campo de busca."
+                    value={getColor("--search-border", "#E2E8F0")}
+                    onChange={(v) => updateColor("--search-border", v)}
+                  />
                 </AccordionContent>
               </AccordionItem>
 
-              {/* 5. Menu e Navegação */}
+              {/* 5. Carrinho / CESTA */}
+              <AccordionItem value="carrinho-cesta" className="px-6 border-b border-slate-100">
+                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--cart-badge-bg", "#F43F5E") }} />
+                    Botão CESTA e Quantidade do Carrinho
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-6 space-y-4">
+                  <ColorRow
+                    label="Cor do botão CESTA"
+                    description="Cor de fundo do botão da Cesta / Carrinho no cabeçalho."
+                    value={getColor("--cart-btn-bg", "#FFFFFF")}
+                    onChange={(v) => updateColor("--cart-btn-bg", v)}
+                  />
+                  <ColorRow
+                    label="Texto/Ícone do botão CESTA"
+                    description="Cor do ícone da cesta e do texto 'Cesta' no botão."
+                    value={getColor("--cart-btn-text", "#00B5AD")}
+                    onChange={(v) => updateColor("--cart-btn-text", v)}
+                  />
+                  <ColorRow
+                    label="Quantidade do carrinho (Fundo do badge)"
+                    description="Cor de fundo do selo com a quantidade de itens no carrinho."
+                    value={getColor("--cart-badge-bg", "#F43F5E")}
+                    onChange={(v) => updateColor("--cart-badge-bg", v)}
+                  />
+                  <ColorRow
+                    label="Número quantidade do carrinho"
+                    description="Cor do número indicativo da quantidade de itens dentro do selo."
+                    value={getColor("--cart-badge-text", "#FFFFFF")}
+                    onChange={(v) => updateColor("--cart-badge-text", v)}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* 6. Menu e Navegação */}
               <AccordionItem value="menu-navegacao" className="px-6 border-b border-slate-100">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--menu-bg", "#5F4BB6") }} />
-                    Menu e Navegação de Categorias
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--menu-bg", "#008E88") }} />
+                    Menu e Categorias
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-2 pb-6 space-y-4">
                   <ColorRow
-                    label="Fundo do Menu"
-                    description="Cor da barra de categorias principal."
-                    value={getColor("--menu-bg", "#5F4BB6")}
+                    label="Fundo do menu"
+                    description="Cor da barra de categorias principal do site."
+                    value={getColor("--menu-bg", "#008E88")}
                     onChange={(v) => updateColor("--menu-bg", v)}
                   />
                   <ColorRow
-                    label="Texto do Menu"
-                    description="Cor dos títulos de categorias no menu."
+                    label="Texto do menu (incluído ícones)"
+                    description="Cor dos títulos de categorias e seus ícones na barra de navegação."
                     value={getColor("--menu-text", "#FFFFFF")}
                     onChange={(v) => updateColor("--menu-text", v)}
+                  />
+                  <ColorRow
+                    label="Ícone todas as categorias"
+                    description="Cor do ícone do menu 'Todas as categorias'."
+                    value={getColor("--all-cats-icon", "#FFFFFF")}
+                    onChange={(v) => updateColor("--all-cats-icon", v)}
+                  />
+                  <ColorRow
+                    label="Texto todas as categorias"
+                    description="Cor do texto 'Todas as categorias' no início do menu."
+                    value={getColor("--all-cats-text", "#FFFFFF")}
+                    onChange={(v) => updateColor("--all-cats-text", v)}
                   />
                 </AccordionContent>
               </AccordionItem>
 
-              {/* 6. Rodapé e Redes Sociais */}
-              <AccordionItem value="rodape-sociais" className="px-6 border-b border-slate-100">
+              {/* 7. Produtos, Preços e Botões */}
+              <AccordionItem value="produtos-botoes" className="px-6 border-b border-slate-100">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--footer-bg", "#1E1B4B") }} />
-                    Rodapé, Footer e Ícones de Redes Sociais
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--btn-primary-bg", "#00B5AD") }} />
+                    Produtos, Preços e Botões
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-2 pb-6 space-y-4">
                   <ColorRow
-                    label="Fundo do Rodapé"
-                    description="Cor de fundo da área inferior do site."
-                    value={getColor("--footer-bg", "#1E1B4B")}
+                    label="Botões (Fundo do botão Comprar)"
+                    description="Cor de fundo dos botões principais de compra nos cards de produtos."
+                    value={getColor("--btn-primary-bg", getColor("--primary", "#00B5AD"))}
+                    onChange={(v) => {
+                      updateColor("--btn-primary-bg", v);
+                      updateColor("--primary", v);
+                    }}
+                  />
+                  <ColorRow
+                    label="Texto dos botões"
+                    description="Cor do texto 'COMPRAR' e ícone dentro dos botões de compra."
+                    value={getColor("--btn-primary-text", getColor("--primary-foreground", "#FFFFFF"))}
+                    onChange={(v) => {
+                      updateColor("--btn-primary-text", v);
+                      updateColor("--primary-foreground", v);
+                    }}
+                  />
+                  <ColorRow
+                    label="Preço principal"
+                    description="Cor do valor promocional de venda dos produtos em destaque."
+                    value={getColor("--price-main", "#00B5AD")}
+                    onChange={(v) => updateColor("--price-main", v)}
+                  />
+                  <ColorRow
+                    label="Preço 'De:' (Riscado)"
+                    description="Cor do preço original riscado antes do desconto."
+                    value={getColor("--price-old", "#94A3B8")}
+                    onChange={(v) => updateColor("--price-old", v)}
+                  />
+                  <ColorRow
+                    label="Selo de Desconto (Fundo)"
+                    description="Cor de fundo da tag com percentual de desconto (-30%)."
+                    value={getColor("--price-discount-badge-bg", "#F43F5E")}
+                    onChange={(v) => updateColor("--price-discount-badge-bg", v)}
+                  />
+                  <ColorRow
+                    label="Selo de Desconto (Texto)"
+                    description="Cor do texto dentro da tag de desconto."
+                    value={getColor("--price-discount-badge-text", "#FFFFFF")}
+                    onChange={(v) => updateColor("--price-discount-badge-text", v)}
+                  />
+                  <ColorRow
+                    label="Botões Secundários (Fundo)"
+                    description="Cor de fundo de botões secundários (filtros, detalhes, voltar)."
+                    value={getColor("--btn-secondary-bg", getColor("--secondary", "#F37021"))}
+                    onChange={(v) => {
+                      updateColor("--btn-secondary-bg", v);
+                      updateColor("--secondary", v);
+                    }}
+                  />
+                  <ColorRow
+                    label="Texto dos botões secundários"
+                    description="Cor do texto dentro dos botões secundários."
+                    value={getColor("--btn-secondary-text", getColor("--secondary-foreground", "#FFFFFF"))}
+                    onChange={(v) => {
+                      updateColor("--btn-secondary-text", v);
+                      updateColor("--secondary-foreground", v);
+                    }}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* 8. Banners de Tarja (Diferenciais) */}
+              <AccordionItem value="banners-tarja" className="px-6 border-b border-slate-100">
+                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--tarja-icon", "#00B5AD") }} />
+                    Banners de Tarja (Diferenciais da Loja)
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-6 space-y-4">
+                  <ColorRow
+                    label="Fundo do banner de tarja"
+                    description="Cor de fundo da seção de diferenciais da loja."
+                    value={getColor("--tarja-bg", "#FFFFFF")}
+                    onChange={(v) => updateColor("--tarja-bg", v)}
+                  />
+                  <ColorRow
+                    label="Cor dos ícones dos banners de tarja"
+                    description="Cor dos ícones representativos (entrega, retirada, procedência, ofertas)."
+                    value={getColor("--tarja-icon", "#00B5AD")}
+                    onChange={(v) => updateColor("--tarja-icon", v)}
+                  />
+                  <ColorRow
+                    label="Texto do banner de tarja"
+                    description="Cor dos títulos e descrições dos diferenciais da loja."
+                    value={getColor("--tarja-text", "#0F172A")}
+                    onChange={(v) => updateColor("--tarja-text", v)}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* 9. Newsletter */}
+              <AccordionItem value="newsletter" className="px-6 border-b border-slate-100">
+                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--news-bg", "#F8FAFC") }} />
+                    Newsletter
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-6 space-y-4">
+                  <ColorRow
+                    label="Fundo da newsletter"
+                    description="Cor de fundo do bloco de captura de e-mails da newsletter."
+                    value={getColor("--news-bg", "#F8FAFC")}
+                    onChange={(v) => updateColor("--news-bg", v)}
+                  />
+                  <ColorRow
+                    label="Texto da newsletter"
+                    description="Cor do título e texto de chamada da newsletter."
+                    value={getColor("--news-text", "#0F172A")}
+                    onChange={(v) => updateColor("--news-text", v)}
+                  />
+                  <ColorRow
+                    label="Caixa newsletter (Fundo)"
+                    description="Cor de fundo do campo de digitação do e-mail."
+                    value={getColor("--news-input-bg", "#FFFFFF")}
+                    onChange={(v) => updateColor("--news-input-bg", v)}
+                  />
+                  <ColorRow
+                    label="Texto caixa newsletter"
+                    description="Cor do texto digitado e do placeholder no campo da newsletter."
+                    value={getColor("--news-input-text", "#1E293B")}
+                    onChange={(v) => updateColor("--news-input-text", v)}
+                  />
+                  <ColorRow
+                    label="Borda caixa newsletter"
+                    description="Cor da borda do campo de digitação do e-mail."
+                    value={getColor("--news-input-border", "#CBD5E1")}
+                    onChange={(v) => updateColor("--news-input-border", v)}
+                  />
+                  <ColorRow
+                    label="Botão newsletter (Fundo)"
+                    description="Cor de fundo do botão 'Cadastrar' da newsletter."
+                    value={getColor("--news-btn-bg", "#00B5AD")}
+                    onChange={(v) => updateColor("--news-btn-bg", v)}
+                  />
+                  <ColorRow
+                    label="Texto botão newsletter"
+                    description="Cor do texto do botão 'Cadastrar' da newsletter."
+                    value={getColor("--news-btn-text", "#FFFFFF")}
+                    onChange={(v) => updateColor("--news-btn-text", v)}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* 10. Rodapé Principal */}
+              <AccordionItem value="rodape" className="px-6 border-b border-slate-100">
+                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--footer-bg", "#00B5AD") }} />
+                    Rodapé Principal e Redes Sociais
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-6 space-y-4">
+                  <ColorRow
+                    label="Fundo do rodapé"
+                    description="Cor de fundo da área principal do rodapé."
+                    value={getColor("--footer-bg", "#00B5AD")}
                     onChange={(v) => updateColor("--footer-bg", v)}
                   />
                   <ColorRow
-                    label="Texto do Rodapé"
-                    description="Cor dos textos informativos, links e títulos do rodapé."
+                    label="Texto do rodapé"
+                    description="Cor dos textos informativos, links e títulos no rodapé."
                     value={getColor("--footer-text", "#FFFFFF")}
                     onChange={(v) => updateColor("--footer-text", v)}
                   />
                   <ColorRow
-                    label="Ícones de Redes Sociais"
-                    description="Cor dos ícones do Instagram, Facebook, WhatsApp no rodapé."
-                    value={getColor("--social-icons", "#705BC2")}
-                    onChange={(v) => updateColor("--social-icons", v)}
-                  />
-                  <ColorRow
-                    label="Fundo dos Ícones de Redes Sociais"
+                    label="Social do rodapé (Fundo dos ícones)"
                     description="Cor do círculo de fundo dos ícones de redes sociais."
                     value={getColor("--social-icons-bg", "#FFFFFF")}
                     onChange={(v) => updateColor("--social-icons-bg", v)}
                   />
-                </AccordionContent>
-              </AccordionItem>
-
-              {/* 7. Sessões Institucionais */}
-              <AccordionItem value="sessoes-institucionais" className="px-6 border-b border-slate-100">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--institutional-bg", "#705BC2") }} />
-                    Sessões Institucionais
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-2 pb-6 space-y-4">
                   <ColorRow
-                    label="Fundo das Sessões Institucionais"
-                    description="Cor de fundo das seções institucionais (Serviços de Saúde e Diferenciais)."
-                    value={getColor("--institutional-bg", "#705BC2")}
-                    onChange={(v) => updateColor("--institutional-bg", v)}
+                    label="Ícones do social do rodapé"
+                    description="Cor dos ícones de redes sociais (Instagram, Facebook, WhatsApp)."
+                    value={getColor("--social-icons", "#00B5AD")}
+                    onChange={(v) => updateColor("--social-icons", v)}
                   />
                 </AccordionContent>
               </AccordionItem>
 
-              {/* 8. Balão PWA */}
+              {/* 11. Rodapé Inferior */}
+              <AccordionItem value="rodape-inferior" className="px-6 border-b border-slate-100">
+                <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor("--footer-bottom-bg", "#008E88") }} />
+                    Rodapé Inferior (Dados da Loja & Copyright)
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-6 space-y-4">
+                  <ColorRow
+                    label="Fundo do rodapé inferior"
+                    description="Cor de fundo da faixa inferior com CNPJ, endereço e direitos reservados."
+                    value={getColor("--footer-bottom-bg", "#008E88")}
+                    onChange={(v) => updateColor("--footer-bottom-bg", v)}
+                  />
+                  <ColorRow
+                    label="Texto do rodapé inferior"
+                    description="Cor do texto com os dados da empresa e direitos autorais."
+                    value={getColor("--footer-bottom-text", "#E2E8F0")}
+                    onChange={(v) => updateColor("--footer-bottom-text", v)}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* 12. Balão PWA */}
               <AccordionItem value="balao-pwa" className="px-6">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold text-slate-800 text-sm">
                   <div className="flex items-center gap-2">
@@ -1225,7 +1107,7 @@ export function StoreColorManager({
                   <ColorRow
                     label="Fundo do Balão do App"
                     description="Cor de fundo do card flutuante de instalação do app no celular."
-                    value={getColor("--pwa-banner-bg", "#705BC2")}
+                    value={getColor("--pwa-banner-bg", "#00B5AD")}
                     onChange={(v) => updateColor("--pwa-banner-bg", v)}
                   />
                   <ColorRow
@@ -1242,8 +1124,8 @@ export function StoreColorManager({
                   />
                   <ColorRow
                     label="Texto do Botão de Instalar"
-                    description="Cor do texto e ícone dentro do botão de instalar."
-                    value={getColor("--pwa-banner-btn-text", "#705BC2")}
+                    description="Cor do texto dentro do botão de instalar."
+                    value={getColor("--pwa-banner-btn-text", "#00B5AD")}
                     onChange={(v) => updateColor("--pwa-banner-btn-text", v)}
                   />
                 </AccordionContent>
@@ -1262,7 +1144,7 @@ export function StoreColorManager({
                   <Monitor className="w-4 h-4 text-emerald-600" /> Demonstração na Loja em Tempo Real
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  Visualização fiel e interativa com a identidade visual da loja.
+                  Visualização fiel e correspondente com todos os elementos da sua loja.
                 </p>
               </div>
               <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 shrink-0">
@@ -1322,8 +1204,11 @@ export function StoreColorManager({
                   }}
                 >
                   <span className="truncate flex items-center gap-1.5 mx-auto">
-                    <MotorcycleIcon className="w-3.5 h-3.5 shrink-0" />
-                    <span>RECEBER EM CASA: Entrega Expressa | WhatsApp: (51) 99999-9999</span>
+                    <MotorcycleIcon 
+                      className="w-3.5 h-3.5 shrink-0" 
+                      style={{ color: getColor("--topbar-icon", "#FFFFFF") }}
+                    />
+                    <span>RECEBER EM CASA: Entrega Expressa | Cupom: 10OFF</span>
                   </span>
                 </div>
 
@@ -1340,9 +1225,9 @@ export function StoreColorManager({
                       ) : (
                         <div
                           className="font-black text-xs tracking-tight flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-black/10"
-                          style={{ color: getColor("--header-icons", "#FFFFFF") }}
+                          style={{ color: getColor("--header-text", "#FFFFFF") }}
                         >
-                          <Store className="w-3.5 h-3.5" />
+                          <Store className="w-3.5 h-3.5" style={{ color: getColor("--header-icons", "#FFFFFF") }} />
                           <span className="uppercase truncate max-w-[140px]">{currentPharmacy?.nome || "FARMÁCIAS ASSOCIADAS"}</span>
                         </div>
                       )}
@@ -1351,11 +1236,22 @@ export function StoreColorManager({
                     {/* Desktop Search Bar */}
                     {previewDevice === "desktop" && (
                       <div
-                        className="h-8 flex-1 max-w-sm rounded-full flex items-center px-3 text-xs shadow-xs transition-colors"
-                        style={{ backgroundColor: getColor("--search-bg", "#FFFFFF") }}
+                        className="h-8 flex-1 max-w-sm rounded-full flex items-center px-3 text-xs shadow-xs transition-colors border"
+                        style={{
+                          backgroundColor: getColor("--search-bg", "#FFFFFF"),
+                          borderColor: getColor("--search-border", "#E2E8F0"),
+                        }}
                       >
-                        <Search className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                        <span className="text-[11px] text-slate-400 truncate">Buscar medicamentos e cosméticos...</span>
+                        <Search 
+                          className="w-3.5 h-3.5 mr-2 shrink-0" 
+                          style={{ color: getColor("--search-icon", "#94A3B8") }}
+                        />
+                        <span 
+                          className="text-[11px] truncate"
+                          style={{ color: getColor("--search-text", "#334155") }}
+                        >
+                          Buscar medicamentos e cosméticos...
+                        </span>
                       </div>
                     )}
 
@@ -1364,9 +1260,9 @@ export function StoreColorManager({
                       {previewDevice === "desktop" && (
                         <div
                           className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-white/15"
-                          style={{ color: getColor("--header-icons", "#FFFFFF") }}
+                          style={{ color: getColor("--header-text", "#FFFFFF") }}
                         >
-                          <MapPin className="w-3 h-3" />
+                          <MapPin className="w-3 h-3" style={{ color: getColor("--header-icons", "#FFFFFF") }} />
                           <span className="truncate max-w-[90px]">Filial Matriz</span>
                         </div>
                       )}
@@ -1378,29 +1274,49 @@ export function StoreColorManager({
                         <User className="w-4 h-4" />
                       </div>
 
-                      <div className="relative p-1 rounded-full hover:bg-white/10 cursor-pointer">
-                        <ShoppingCart className="w-4 h-4" style={{ color: getColor("--header-icons", "#FFFFFF") }} />
+                      {/* Botão CESTA com Quantidade */}
+                      <button
+                        type="button"
+                        className="relative px-2.5 py-1 rounded-full flex items-center gap-1.5 text-[10px] font-bold transition shadow-xs"
+                        style={{
+                          backgroundColor: getColor("--cart-btn-bg", "#FFFFFF"),
+                          color: getColor("--cart-btn-text", "#00B5AD"),
+                        }}
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Cesta</span>
                         <span
-                          className="absolute -top-0.5 -right-0.5 text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold"
+                          className="text-[8px] min-w-[14px] h-3.5 px-1 rounded-full flex items-center justify-center font-black ml-0.5"
                           style={{
-                            backgroundColor: getColor("--badge-accent-bg", getColor("--accent", "#F43F5E")),
-                            color: getColor("--badge-accent-text", "#FFFFFF")
+                            backgroundColor: getColor("--cart-badge-bg", "#F43F5E"),
+                            color: getColor("--cart-badge-text", "#FFFFFF")
                           }}
                         >
                           2
                         </span>
-                      </div>
+                      </button>
                     </div>
                   </div>
 
                   {/* Mobile Search Bar */}
                   {previewDevice === "mobile" && (
                     <div
-                      className="h-7 rounded-full flex items-center px-3 text-xs shadow-xs transition-colors"
-                      style={{ backgroundColor: getColor("--search-bg", "#FFFFFF") }}
+                      className="h-7 rounded-full flex items-center px-3 text-xs shadow-xs transition-colors border"
+                      style={{
+                        backgroundColor: getColor("--search-bg", "#FFFFFF"),
+                        borderColor: getColor("--search-border", "#E2E8F0"),
+                      }}
                     >
-                      <Search className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                      <span className="text-[10px] text-slate-400 truncate">Buscar medicamentos, genéricos...</span>
+                      <Search 
+                        className="w-3.5 h-3.5 mr-2 shrink-0" 
+                        style={{ color: getColor("--search-icon", "#94A3B8") }}
+                      />
+                      <span 
+                        className="text-[10px] truncate"
+                        style={{ color: getColor("--search-text", "#334155") }}
+                      >
+                        Buscar medicamentos, genéricos...
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1413,20 +1329,29 @@ export function StoreColorManager({
                     color: getColor("--menu-text", "#FFFFFF")
                   }}
                 >
-                  <span className="flex items-center gap-1 opacity-100 font-extrabold border-b-2 border-white pb-0.5">
-                    <Menu className="w-3 h-3" /> Todas as Categorias
+                  <span 
+                    className="flex items-center gap-1 opacity-100 font-extrabold border-b-2 border-white pb-0.5 cursor-pointer"
+                    style={{ color: getColor("--all-cats-text", "#FFFFFF") }}
+                  >
+                    <Menu className="w-3 h-3" style={{ color: getColor("--all-cats-icon", "#FFFFFF") }} />
+                    Todas as Categorias
                   </span>
-                  <span className="opacity-90 hover:opacity-100 cursor-pointer">Medicamentos</span>
-                  <span className="opacity-90 hover:opacity-100 cursor-pointer">Beleza & Higiene</span>
-                  <span className="opacity-90 hover:opacity-100 cursor-pointer">Vitaminas</span>
-                  <span className="opacity-90 hover:opacity-100 cursor-pointer">Mamãe & Bebê</span>
-                  <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-0.5">
-                    <Sparkles className="w-2.5 h-2.5" /> Ofertas
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-1">
+                    <Pill className="w-2.5 h-2.5" /> Medicamentos
+                  </span>
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" /> Beleza & Higiene
+                  </span>
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-1">
+                    <Heart className="w-2.5 h-2.5" /> Vitaminas
+                  </span>
+                  <span className="opacity-90 hover:opacity-100 cursor-pointer flex items-center gap-1">
+                    <Baby className="w-2.5 h-2.5" /> Mamãe & Bebê
                   </span>
                 </div>
 
                 {/* 4. MAIN STORE BODY */}
-                <div className="p-3 space-y-3.5">
+                <div className="p-3 space-y-4">
                   
                   {/* Hero Banner Slide */}
                   <div
@@ -1439,8 +1364,8 @@ export function StoreColorManager({
                       <span
                         className="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wide shadow-xs"
                         style={{
-                          backgroundColor: getColor("--badge-secondary-bg", "#F37021"),
-                          color: getColor("--badge-secondary-text", "#FFFFFF")
+                          backgroundColor: getColor("--btn-secondary-bg", "#F37021"),
+                          color: getColor("--btn-secondary-text", "#FFFFFF")
                         }}
                       >
                         Encarte da Semana
@@ -1472,41 +1397,56 @@ export function StoreColorManager({
                   </div>
 
                   {/* Banner Tarja (Diferenciais) */}
-                  <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 shadow-xs text-left">
+                  <div 
+                    className="border border-slate-200/80 rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 shadow-xs text-left transition-colors"
+                    style={{ backgroundColor: getColor("--tarja-bg", "#FFFFFF") }}
+                  >
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <MotorcycleIcon className="w-3.5 h-3.5" />
+                      <div 
+                        className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
+                        style={{ color: getColor("--tarja-icon", "#00B5AD") }}
+                      >
+                        <MotorcycleIcon className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-[9px] font-extrabold text-slate-800 leading-tight">Receber em casa</div>
-                        <div className="text-[8px] text-slate-500">Entrega rápida</div>
+                        <div className="text-[9px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>Receber em casa</div>
+                        <div className="text-[8px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Entrega rápida</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <Store className="w-3.5 h-3.5" />
+                      <div 
+                        className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
+                        style={{ color: getColor("--tarja-icon", "#00B5AD") }}
+                      >
+                        <Store className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-[9px] font-extrabold text-slate-800 leading-tight">Retirar na Loja</div>
-                        <div className="text-[8px] text-slate-500">Grátis em 1h</div>
+                        <div className="text-[9px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>Retirar na Loja</div>
+                        <div className="text-[8px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Grátis em 1h</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-md bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
-                        <Percent className="w-3.5 h-3.5" />
+                      <div 
+                        className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
+                        style={{ color: getColor("--tarja-icon", "#00B5AD") }}
+                      >
+                        <Percent className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-[9px] font-extrabold text-slate-800 leading-tight">Melhores Ofertas</div>
-                        <div className="text-[8px] text-slate-500">Encarte do mês</div>
+                        <div className="text-[9px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>Melhores Ofertas</div>
+                        <div className="text-[8px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>Encarte do mês</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                        <ShieldCheck className="w-3.5 h-3.5" />
+                      <div 
+                        className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"
+                        style={{ color: getColor("--tarja-icon", "#00B5AD") }}
+                      >
+                        <ShieldCheck className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-[9px] font-extrabold text-slate-800 leading-tight">Procedência</div>
-                        <div className="text-[8px] text-slate-500">100% Garantida</div>
+                        <div className="text-[9px] font-extrabold leading-tight" style={{ color: getColor("--tarja-text", "#0F172A") }}>Procedência</div>
+                        <div className="text-[8px] opacity-75" style={{ color: getColor("--tarja-text", "#0F172A") }}>100% Garantida</div>
                       </div>
                     </div>
                   </div>
@@ -1514,22 +1454,29 @@ export function StoreColorManager({
                   {/* Compre por Categoria (Carrossel Circular) */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-900">Compre por categoria</span>
-                      <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">Ver todas <ChevronRight className="w-3 h-3" /></span>
+                      <span className="text-xs font-bold" style={{ color: getColor("--headings", "#0F172A") }}>
+                        Compre por categoria
+                      </span>
+                      <span className="text-[10px] font-bold flex items-center gap-0.5" style={{ color: getColor("--primary", "#00B5AD") }}>
+                        Ver todas <ChevronRight className="w-3 h-3" />
+                      </span>
                     </div>
                     <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
                       {[
-                        { name: "Medicamentos", icon: Pill, color: "text-blue-500" },
-                        { name: "Beleza", icon: Sparkles, color: "text-pink-500" },
-                        { name: "Higiene", icon: Heart, color: "text-emerald-500" },
-                        { name: "Vitaminas", icon: Percent, color: "text-amber-500" },
-                        { name: "Bebê", icon: Baby, color: "text-purple-500" },
+                        { name: "Medicamentos", icon: Pill },
+                        { name: "Beleza", icon: Sparkles },
+                        { name: "Higiene", icon: Heart },
+                        { name: "Vitaminas", icon: Percent },
+                        { name: "Bebê", icon: Baby },
                       ].map((cat, idx) => {
                         const IconComponent = cat.icon;
                         return (
-                          <div key={idx} className="flex flex-col items-center gap-1 shrink-0 w-14">
-                            <div className="w-11 h-11 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center shadow-2xs hover:border-emerald-500 transition-colors">
-                              <IconComponent className={`w-4 h-4 ${cat.color}`} />
+                          <div key={idx} className="flex flex-col items-center gap-1 shrink-0 w-14 group cursor-pointer">
+                            <div 
+                              className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shadow-2xs hover:scale-105 transition-all"
+                              style={{ color: getColor("--primary", "#00B5AD") }}
+                            >
+                              <IconComponent className="w-5 h-5 stroke-[1.75]" />
                             </div>
                             <span className="text-[9px] font-bold text-slate-700 text-center truncate w-full">{cat.name}</span>
                           </div>
@@ -1541,8 +1488,17 @@ export function StoreColorManager({
                   {/* Product Cards Showcase Grid */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-900">Super Ofertas da Loja</span>
-                      <span className="text-[10px] font-bold text-emerald-600">Ver mais</span>
+                      <div>
+                        <span className="text-xs font-bold block" style={{ color: getColor("--headings", "#0F172A") }}>
+                          Super Ofertas da Loja
+                        </span>
+                        <span className="text-[9px] block" style={{ color: getColor("--section-desc", "#64748B") }}>
+                          Confira os produtos com os melhores descontos do dia
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold" style={{ color: getColor("--primary", "#00B5AD") }}>
+                        Ver mais
+                      </span>
                     </div>
 
                     <div className={`grid gap-2.5 ${previewDevice === "desktop" ? "grid-cols-3" : "grid-cols-2"}`}>
@@ -1580,8 +1536,8 @@ export function StoreColorManager({
                           <span
                             className="absolute top-2 left-2 text-[8px] font-extrabold px-1.5 py-0.5 rounded shadow-2xs"
                             style={{
-                              backgroundColor: getColor("--badge-accent-bg", getColor("--accent", "#F43F5E")),
-                              color: getColor("--badge-accent-text", "#FFFFFF")
+                              backgroundColor: getColor("--price-discount-badge-bg", "#F43F5E"),
+                              color: getColor("--price-discount-badge-text", "#FFFFFF")
                             }}
                           >
                             {prod.discount}
@@ -1597,15 +1553,21 @@ export function StoreColorManager({
 
                           {/* Product Info */}
                           <div className="space-y-0.5">
-                            <div className="text-[10px] font-bold line-clamp-2 leading-tight text-slate-800 min-h-[26px]">
+                            <div 
+                              className="text-[10px] font-bold line-clamp-2 leading-tight min-h-[26px]"
+                              style={{ color: getColor("--headings", "#0F172A") }}
+                            >
                               {prod.name}
                             </div>
-                            <div className="text-[9px] text-slate-400 line-through">
+                            <div 
+                              className="text-[9px] line-through"
+                              style={{ color: getColor("--price-old", "#94A3B8") }}
+                            >
                               {prod.oldPrice}
                             </div>
                             <div
                               className="text-xs font-black"
-                              style={{ color: getColor("--accent", "#F43F5E") }}
+                              style={{ color: getColor("--price-main", "#00B5AD") }}
                             >
                               {prod.price}
                             </div>
@@ -1616,8 +1578,8 @@ export function StoreColorManager({
                             type="button"
                             className="w-full mt-2 py-1.5 rounded-lg text-[10px] font-extrabold uppercase shadow-xs transition hover:opacity-90 active:scale-98 flex items-center justify-center gap-1"
                             style={{
-                              backgroundColor: getColor("--btn-primary-bg", getColor("--primary", "#00B5AD")),
-                              color: getColor("--btn-primary-text", getColor("--primary-foreground", "#FFFFFF"))
+                              backgroundColor: getColor("--btn-primary-bg", "#00B5AD"),
+                              color: getColor("--btn-primary-text", "#FFFFFF")
                             }}
                           >
                             <ShoppingCart className="w-3 h-3" />
@@ -1625,6 +1587,47 @@ export function StoreColorManager({
                           </button>
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Newsletter Box */}
+                  <div
+                    className="p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2 transition-colors"
+                    style={{ backgroundColor: getColor("--news-bg", "#F8FAFC") }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 shrink-0" style={{ color: getColor("--primary", "#00B5AD") }} />
+                      <div>
+                        <div className="text-[11px] font-bold leading-tight" style={{ color: getColor("--news-text", "#0F172A") }}>
+                          Receba Nossas Ofertas Exclusivas
+                        </div>
+                        <div className="text-[9px] opacity-80" style={{ color: getColor("--news-text", "#0F172A") }}>
+                          Cadastre-se e ganhe cupons direto no seu e-mail
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5 mt-1">
+                      <div
+                        className="flex-1 h-7 rounded-lg border px-2.5 flex items-center shadow-inner text-[10px]"
+                        style={{
+                          backgroundColor: getColor("--news-input-bg", "#FFFFFF"),
+                          color: getColor("--news-input-text", "#1E293B"),
+                          borderColor: getColor("--news-input-border", "#CBD5E1"),
+                        }}
+                      >
+                        seu-email@exemplo.com
+                      </div>
+                      <button
+                        type="button"
+                        className="px-3 py-1 rounded-lg text-[9px] font-extrabold uppercase shrink-0 shadow-xs transition hover:opacity-90 flex items-center gap-1"
+                        style={{
+                          backgroundColor: getColor("--news-btn-bg", "#00B5AD"),
+                          color: getColor("--news-btn-text", "#FFFFFF"),
+                        }}
+                      >
+                        <Send className="w-2.5 h-2.5" />
+                        Cadastrar
+                      </button>
                     </div>
                   </div>
 
@@ -1658,7 +1661,7 @@ export function StoreColorManager({
                   </div>
                 </div>
 
-                {/* 5. FOOTER */}
+                {/* 5. MAIN FOOTER */}
                 <div
                   className="p-4 border-t border-black/10 flex flex-col gap-3 transition-colors mt-auto text-center"
                   style={{
@@ -1687,10 +1690,17 @@ export function StoreColorManager({
                     <div>CNPJ: {currentPharmacy?.cnpj || "00.000.000/0001-00"} • CRF: {currentPharmacy?.inscricaoFarmaceutico || "12345/RS"}</div>
                     <div>{currentPharmacy?.endereco || "Av. Principal"}, Nº {currentPharmacy?.numero || "100"} - {currentPharmacy?.cidade || "Porto Alegre"}/{currentPharmacy?.uf || "RS"}</div>
                   </div>
+                </div>
 
-                  <div className="text-[8px] opacity-75 pt-2 border-t border-white/10">
-                    © {new Date().getFullYear()} Farmácias Associadas. Todos os direitos reservados.
-                  </div>
+                {/* 6. FOOTER BOTTOM */}
+                <div
+                  className="px-4 py-2.5 text-center text-[8px] transition-colors border-t border-black/5"
+                  style={{
+                    backgroundColor: getColor("--footer-bottom-bg", "#008E88"),
+                    color: getColor("--footer-bottom-text", "#E2E8F0")
+                  }}
+                >
+                  © {new Date().getFullYear()} {currentPharmacy?.nome || "Farmácias Associadas"}. Todos os direitos reservados.
                 </div>
 
               </div>

@@ -404,9 +404,22 @@ export function Footer() {
                 name="email"
                 required
                 placeholder="Seu melhor e-mail"
+                style={isParceiro ? {
+                  backgroundColor: 'var(--news-input-bg, #ffffff)',
+                  color: 'var(--news-input-text, inherit)',
+                  borderColor: 'var(--news-input-border, var(--border))'
+                } : undefined}
                 className="bg-white text-foreground placeholder:text-muted-foreground"
               />
-              <Button type="submit" variant="secondary" className="shrink-0">
+              <Button 
+                type="submit" 
+                variant="secondary" 
+                style={isParceiro ? {
+                  backgroundColor: 'var(--news-btn-bg, var(--secondary))',
+                  color: 'var(--news-btn-text, var(--secondary-foreground))'
+                } : undefined}
+                className="shrink-0"
+              >
                 <Send className="h-4 w-4 mr-1" /> Inscrever
               </Button>
             </form>
@@ -510,9 +523,18 @@ export function Footer() {
       </div>
 
       {/* Legal */}
-      <div className="bg-white text-slate-800 border-t-4 border-accent">
+      <div 
+        className="bg-white text-slate-800 border-t-4 border-accent"
+        style={isParceiro ? {
+          backgroundColor: 'var(--footer-bottom-bg, #ffffff)',
+          color: 'var(--footer-bottom-text, #1e293b)'
+        } : undefined}
+      >
         <div className="container-fa py-6">
-          <div className="text-[11px] leading-relaxed text-slate-700 break-words overflow-hidden w-full max-w-full">
+          <div 
+            className="text-[11px] leading-relaxed break-words overflow-hidden w-full max-w-full"
+            style={isParceiro ? { color: 'var(--footer-bottom-text, #334155)' } : undefined}
+          >
             {activePharmacy?.footerPlataformaTexto ? (
               <p className="whitespace-pre-wrap break-words">{activePharmacy.footerPlataformaTexto}</p>
             ) : (
@@ -533,7 +555,7 @@ export function Footer() {
           </div>
         </div>
 
-          <div className="border-t border-slate-200 pb-6 md:pb-8">
+          <div className="border-t border-slate-200/60 pb-6 md:pb-8">
             <div className="container-fa py-8 flex flex-col gap-8">
               {(activePharmacy?.anvisaLogoUrl || activePharmacy?.categoriaAssociado !== 'Parceiro') && (
                 <div className="flex flex-col md:flex-row items-center justify-center w-full gap-10">
@@ -549,8 +571,11 @@ export function Footer() {
                 </div>
               )}
               
-              <div className="flex flex-col items-center justify-center gap-4 text-xs pt-6 border-t border-slate-100">
-                <span className="text-center text-slate-500 pb-24 md:pb-0">
+              <div className="flex flex-col items-center justify-center gap-4 text-xs pt-6 border-t border-slate-100/50">
+                <span 
+                  className="text-center pb-24 md:pb-0"
+                  style={isParceiro ? { color: 'var(--footer-bottom-text, #64748B)' } : undefined}
+                >
                   © {new Date().getFullYear()} {activePharmacy?.nome || dadosLoja?.nomeLoja || "Farmácias Associadas"}. Todos os direitos reservados.
                 </span>
               </div>

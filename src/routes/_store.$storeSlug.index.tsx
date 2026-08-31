@@ -402,7 +402,10 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
   };
 
   return (
-    <section className="bg-white border-y py-3 md:py-4 mt-2 md:mt-4 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
+    <section 
+      className="border-y py-3 md:py-4 mt-2 md:mt-4 shadow-[0_1px_3px_rgb(0,0,0,0.03)] transition-colors"
+      style={{ backgroundColor: 'var(--tarja-bg, #ffffff)' }}
+    >
       <div className="container-fa">
         <div className="flex overflow-x-auto pb-2 px-4 -mx-4 md:px-0 md:mx-0 snap-x scrollbar-none lg:justify-between lg:items-stretch divide-x divide-slate-200">
           {tarjaItems.map((item, index) => {
@@ -415,9 +418,25 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
               let content: React.ReactNode[] = [];
               parts.forEach((part, i) => {
                 if (part.startsWith('**') && part.endsWith('**')) {
-                  content.push(<strong key={i} className="block text-[#0a2540] font-bold text-[13px] md:text-[15px] leading-tight uppercase tracking-tight">{part.slice(2, -2)}</strong>);
+                  content.push(
+                    <strong 
+                      key={i} 
+                      style={{ color: 'var(--tarja-text, #0a2540)' }}
+                      className="block font-bold text-[13px] md:text-[15px] leading-tight uppercase tracking-tight"
+                    >
+                      {part.slice(2, -2)}
+                    </strong>
+                  );
                 } else if (part.trim().length > 0) {
-                  content.push(<span key={`text-${i}`} className="block text-slate-500 text-[11px] md:text-[13px] leading-tight">{part.trim()}</span>);
+                  content.push(
+                    <span 
+                      key={`text-${i}`} 
+                      style={{ color: 'var(--tarja-text, #64748B)', opacity: 0.8 }}
+                      className="block text-[11px] md:text-[13px] leading-tight"
+                    >
+                      {part.trim()}
+                    </span>
+                  );
                 }
               });
               return <div className="flex flex-col justify-center">{content}</div>;
@@ -425,7 +444,10 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
 
             return (
               <div key={index} className={`shrink-0 w-[240px] lg:flex-1 flex items-center justify-center gap-3 lg:gap-4 snap-start px-4 md:px-6 ${index === 0 ? 'pl-0' : ''} ${index === tarjaItems.length - 1 ? 'pr-0' : ''}`}>
-                <div className="h-10 w-10 md:h-12 md:w-12 shrink-0 flex items-center justify-center text-[#0a2540] overflow-hidden">
+                <div 
+                  className="h-10 w-10 md:h-12 md:w-12 shrink-0 flex items-center justify-center overflow-hidden transition-colors"
+                  style={{ color: 'var(--tarja-icon, var(--primary, #0a2540))' }}
+                >
                   {Icon ? (
                     <Icon className="h-8 w-8 md:h-10 md:w-10 stroke-[1.5]" />
                   ) : item.icon ? (
@@ -439,8 +461,22 @@ function DynamicTarja({ page = "Página inicial", lojaId }: { page?: string; loj
                     formatLegacyText(item.subtitle)
                   ) : (
                     <div className="flex flex-col justify-center">
-                      {item.title && <strong className="block text-[#0a2540] font-bold text-[13px] md:text-[15px] leading-tight uppercase tracking-tight">{item.title}</strong>}
-                      {item.subtitle && <span className="block text-slate-500 text-[11px] md:text-[13px] leading-tight">{item.subtitle}</span>}
+                      {item.title && (
+                        <strong 
+                          style={{ color: 'var(--tarja-text, #0a2540)' }}
+                          className="block font-bold text-[13px] md:text-[15px] leading-tight uppercase tracking-tight"
+                        >
+                          {item.title}
+                        </strong>
+                      )}
+                      {item.subtitle && (
+                        <span 
+                          style={{ color: 'var(--tarja-text, #64748B)', opacity: 0.8 }}
+                          className="block text-[11px] md:text-[13px] leading-tight"
+                        >
+                          {item.subtitle}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

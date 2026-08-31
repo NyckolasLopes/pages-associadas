@@ -506,7 +506,10 @@ export function Header() {
           <Popover open={searchOpen} onOpenChange={setSearchOpen}>
             <PopoverTrigger asChild>
               <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" 
+                  style={isParceiro ? { color: 'var(--search-icon, var(--muted-foreground))' } : undefined}
+                />
                 <Input
                   value={q}
                   onFocus={() => setSearchOpen(true)}
@@ -515,6 +518,11 @@ export function Header() {
                     setSearchOpen(true);
                   }}
                   placeholder="Escreva o que procura ou escaneie o código de barras"
+                  style={isParceiro ? {
+                    backgroundColor: 'var(--search-bg, #ffffff)',
+                    color: 'var(--search-text, inherit)',
+                    borderColor: 'var(--search-border, var(--border))',
+                  } : undefined}
                   className="pl-10 h-11 rounded-full border-2 focus-visible:border-primary w-full pr-10"
                 />
                 <button
@@ -522,6 +530,7 @@ export function Header() {
                   aria-label="Escanear código"
                   onClick={() => setScannerOpen(true)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                  style={isParceiro ? { color: 'var(--search-icon, var(--muted-foreground))' } : undefined}
                 >
                   <Camera className="h-4 w-4" />
                 </button>
@@ -656,11 +665,25 @@ export function Header() {
         {/* Cesta */}
         <Sheet open={mounted && drawerOpen} onOpenChange={setDrawer}>
           <SheetTrigger asChild>
-            <Button variant="outline" className={`relative gap-2 transition-colors ${isParceiro ? 'border-[var(--header-icons,var(--primary))] text-[var(--header-icons,var(--primary))] hover:bg-[var(--header-icons,var(--primary))] hover:text-white' : 'border-primary text-primary hover:bg-primary hover:text-white'}`}>
+            <Button 
+              variant="outline" 
+              style={isParceiro ? {
+                backgroundColor: 'var(--cart-btn-bg, #ffffff)',
+                color: 'var(--cart-btn-text, var(--header-icons, var(--primary)))',
+                borderColor: 'var(--cart-btn-text, var(--header-icons, var(--primary)))'
+              } : undefined}
+              className={`relative gap-2 transition-colors ${!isParceiro ? 'border-primary text-primary hover:bg-primary hover:text-white' : ''}`}
+            >
               <ShoppingBasket className="h-5 w-5" />
               <span className="hidden sm:inline">Cesta</span>
               {mounted && count > 0 && (
-                <Badge className="absolute -top-2 -right-2 bg-accent text-accent-foreground">
+                <Badge 
+                  style={isParceiro ? {
+                    backgroundColor: 'var(--cart-badge-bg, var(--accent))',
+                    color: 'var(--cart-badge-text, var(--accent-foreground))'
+                  } : undefined}
+                  className="absolute -top-2 -right-2 bg-accent text-accent-foreground"
+                >
                   {count}
                 </Badge>
               )}
@@ -692,11 +715,24 @@ export function Header() {
               <SheetTrigger asChild>
                 <button
                   aria-label="Abrir cesta"
+                  style={isParceiro ? {
+                    backgroundColor: 'var(--cart-btn-bg, var(--background))',
+                    borderColor: 'var(--cart-btn-text, var(--border))'
+                  } : undefined}
                   className="relative h-10 w-10 rounded-full border flex items-center justify-center bg-background"
                 >
-                  <ShoppingBasket className="h-5 w-5 text-primary" />
+                  <ShoppingBasket 
+                    className="h-5 w-5" 
+                    style={isParceiro ? { color: 'var(--cart-btn-text, var(--primary))' } : undefined} 
+                  />
                   {mounted && count > 0 && (
-                    <Badge className="absolute -top-1 -right-1 bg-accent text-accent-foreground h-5 min-w-5 text-[10px] px-1">
+                    <Badge 
+                      style={isParceiro ? {
+                        backgroundColor: 'var(--cart-badge-bg, var(--accent))',
+                        color: 'var(--cart-badge-text, var(--accent-foreground))'
+                      } : undefined}
+                      className="absolute -top-1 -right-1 bg-accent text-accent-foreground h-5 min-w-5 text-[10px] px-1"
+                    >
                       {count}
                     </Badge>
                   )}
@@ -1244,13 +1280,17 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
             <Link
               to="/$storeSlug/busca"
               params={{ storeSlug }}
+              style={isParceiro ? { color: 'var(--all-cats-text, var(--menu-text, inherit))' } : undefined}
               className={`inline-flex items-center gap-1 xl:gap-2 px-1 lg:px-2 py-3 text-[11px] lg:text-[12px] xl:text-[13px] font-bold transition border-b-2 whitespace-nowrap ${
                 open === "all"
                   ? "border-accent"
                   : "border-transparent opacity-90 hover:opacity-100"
               }`}
             >
-              <Menu className="h-4 w-4" />
+              <Menu 
+                className="h-4 w-4" 
+                style={isParceiro ? { color: 'var(--all-cats-icon, var(--menu-text, inherit))' } : undefined}
+              />
               Todas as categorias
             </Link>
           </li>
@@ -1264,6 +1304,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                 <Link
                   to="/$storeSlug/c/$slug"
                   params={{ storeSlug, slug: isNossasMarcas ? "nossas-marcas" : c.slug }}
+                  style={isParceiro && !isOfertas ? { color: 'var(--menu-text, inherit)' } : undefined}
                   className={`inline-flex items-center gap-1 xl:gap-2 text-[11px] lg:text-[12px] xl:text-[13px] font-bold transition whitespace-nowrap ${
                     isOfertas 
                       ? "bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-full"
@@ -1275,7 +1316,9 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                   {isNossasMarcas ? (
                     !isParceiro && <img src="/icone-associadas.png" alt="" className="h-4 w-4 object-contain brightness-0 invert" />
                   ) : Icon ? (
-                    <Icon className="h-4 w-4" />
+                    <span style={isParceiro ? { color: 'var(--menu-text, inherit)' } : undefined} className="inline-flex items-center">
+                      <Icon className="h-4 w-4" />
+                    </span>
                   ) : null}
                   {c.nome}
                 </Link>

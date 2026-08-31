@@ -1,6 +1,6 @@
 import React from "react";
 
-export function MotorcycleIcon({ className = "w-4 h-4" }: { className?: string }) {
+export function MotorcycleIcon({ className = "w-4 h-4", style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -10,6 +10,7 @@ export function MotorcycleIcon({ className = "w-4 h-4" }: { className?: string }
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
+      style={style}
     >
       {/* Baú de Entrega / Delivery Box */}
       <rect x="1.5" y="6" width="5.5" height="5.5" rx="1" strokeWidth="1.8" />
