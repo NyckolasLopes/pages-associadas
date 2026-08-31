@@ -19,6 +19,8 @@ export const STORE_THEME_VARS = [
   "--menu-text",
   "--footer-bg",
   "--footer-text",
+  "--footer-bottom-bg",
+  "--footer-bottom-text",
   "--social-icons",
   "--social-icons-bg",
   "--institutional-bg",

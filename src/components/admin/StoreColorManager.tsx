@@ -1087,6 +1087,18 @@ export function StoreColorManager({
                   fallback="#00B5AD"
                 />
                 <ColorField
+                  nameKey="--footer-bottom-bg"
+                  label="Fundo do Rodapé Inferior (Legal)"
+                  description="Faixa inferior com aviso legal, ANVISA e copyright."
+                  fallback="#008E88"
+                />
+                <ColorField
+                  nameKey="--footer-bottom-text"
+                  label="Texto do Rodapé Inferior"
+                  description="Cor do texto de aviso legal, CNPJ e copyright."
+                  fallback="#E2E8F0"
+                />
+                <ColorField
                   nameKey="--pwa-banner-bg"
                   label="Fundo do Banner do App (PWA)"
                   description="Faixa que convida o cliente a instalar o aplicativo."

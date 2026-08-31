@@ -28,6 +28,10 @@ const PARCEIRO_THEME: Record<string, string> = {
   "--accent": "#6b7280",
   "--accent-foreground": "#ffffff",
   "--ring": "#a1a1aa",
+  "--footer-bg": "#1a1a1a",
+  "--footer-text": "#ffffff",
+  "--footer-bottom-bg": "#111827",
+  "--footer-bottom-text": "#9ca3af",
 };
 
 function StoreLayout() {
@@ -111,8 +115,10 @@ function StoreLayout() {
         "--topbar-text": topbarText,
         "--menu-bg": menuBg || primary,
         "--menu-text": menuText || "#ffffff",
-        "--footer-bg": footerBg || primary,
+        "--footer-bg": footerBg || (isParceiro ? (primary || "#1a1a1a") : primary),
         "--footer-text": footerText || "#ffffff",
+        "--footer-bottom-bg": t['--footer-bottom-bg'] || t.footerBottomBg || (isParceiro ? "#111827" : "#ffffff"),
+        "--footer-bottom-text": t['--footer-bottom-text'] || t.footerBottomText || (isParceiro ? "#9ca3af" : "#1e293b"),
         "--social-icons": socialIcons || primary,
         "--social-icons-bg": socialIconsBg || "#ffffff",
         "--institutional-bg": institutionalBg || "#f97316",

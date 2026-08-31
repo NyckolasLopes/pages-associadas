@@ -524,16 +524,16 @@ export function Footer() {
 
       {/* Legal */}
       <div 
-        className="bg-white text-slate-800 border-t-4 border-accent"
-        style={isParceiro ? {
+        className="border-t-4 border-accent"
+        style={{
           backgroundColor: 'var(--footer-bottom-bg, #ffffff)',
           color: 'var(--footer-bottom-text, #1e293b)'
-        } : undefined}
+        }}
       >
         <div className="container-fa py-6">
           <div 
             className="text-[11px] leading-relaxed break-words overflow-hidden w-full max-w-full"
-            style={isParceiro ? { color: 'var(--footer-bottom-text, #334155)' } : undefined}
+            style={{ color: 'var(--footer-bottom-text, #334155)' }}
           >
             {activePharmacy?.footerPlataformaTexto ? (
               <p className="whitespace-pre-wrap break-words">{activePharmacy.footerPlataformaTexto}</p>
@@ -574,7 +574,7 @@ export function Footer() {
               <div className="flex flex-col items-center justify-center gap-4 text-xs pt-6 border-t border-slate-100/50">
                 <span 
                   className="text-center pb-24 md:pb-0"
-                  style={isParceiro ? { color: 'var(--footer-bottom-text, #64748B)' } : undefined}
+                  style={{ color: 'var(--footer-bottom-text, #64748B)' }}
                 >
                   © {new Date().getFullYear()} {activePharmacy?.nome || dadosLoja?.nomeLoja || "Farmácias Associadas"}. Todos os direitos reservados.
                 </span>
