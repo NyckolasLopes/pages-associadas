@@ -610,7 +610,23 @@ export function Header() {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-bold truncate text-foreground">{p.nome}</div>
-                            <div className="text-xs text-muted-foreground truncate">{p.marca || "Associadas"}</div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                              <span className="font-medium text-slate-700 dark:text-slate-300">{p.marca || "Associadas"}</span>
+                              {p.tarja && !p.tarja.toLowerCase().includes("sem") && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase ${
+                                  p.tarja.toLowerCase().includes("preta") 
+                                    ? "bg-slate-900 text-white" 
+                                    : "bg-red-600 text-white"
+                                }`}>
+                                  {p.tarja}
+                                </span>
+                              )}
+                            </div>
+                            {Array.isArray(p.principiosAtivos) && p.principiosAtivos.length > 0 && (
+                              <div className="text-[11px] text-muted-foreground/80 truncate">
+                                {p.principiosAtivos.map((pa: any) => typeof pa === "string" ? pa : pa.nome).filter(Boolean).join(", ")}
+                              </div>
+                            )}
                           </div>
                           <div className="text-sm font-bold text-primary shrink-0">{brl(ep.precoPor)}</div>
                         </Link>
@@ -851,7 +867,23 @@ export function Header() {
                               />
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-bold truncate text-foreground">{p.nome}</div>
-                                <div className="text-xs text-muted-foreground truncate">{p.marca || "Associadas"}</div>
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                                  <span className="font-medium text-slate-700 dark:text-slate-300">{p.marca || "Associadas"}</span>
+                                  {p.tarja && !p.tarja.toLowerCase().includes("sem") && (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase ${
+                                      p.tarja.toLowerCase().includes("preta") 
+                                        ? "bg-slate-900 text-white" 
+                                        : "bg-red-600 text-white"
+                                    }`}>
+                                      {p.tarja}
+                                    </span>
+                                  )}
+                                </div>
+                                {Array.isArray(p.principiosAtivos) && p.principiosAtivos.length > 0 && (
+                                  <div className="text-[11px] text-muted-foreground/80 truncate">
+                                    {p.principiosAtivos.map((pa: any) => typeof pa === "string" ? pa : pa.nome).filter(Boolean).join(", ")}
+                                  </div>
+                                )}
                               </div>
                               <div className="text-sm font-bold text-primary shrink-0">{brl(ep.precoPor)}</div>
                             </Link>
