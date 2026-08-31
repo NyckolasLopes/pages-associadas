@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import categoriesData from "@/data/categories.json";
 import { waitForDomRepaint } from "@/lib/massActionUtils";
+import { checkIsGenerico } from "@/lib/format";
 
 // ---- Column Mapping Config ----
 interface FieldMapping {
@@ -45,93 +46,54 @@ interface FieldMapping {
 }
 
 const FIELD_MAPPINGS: FieldMapping[] = [
-  // 1. Identificação Básica
-  { key: "id", label: "ID/CÓDIGO INTERNO", aliases: ["id/código interno", "codigo interno", "código interno", "codigo", "código", "idproduto", "id_produto", "id", "cod"], required: true, type: "string" },
-  { key: "sku", label: "SKU", aliases: ["sku", "código sku", "codigo sku", "referencia"], required: false, type: "string" },
-  { key: "ean", label: "EAN/CÓDIGO DE BARRAS", aliases: ["ean/código de barras", "ean", "gtin", "codigo de barras", "código de barras", "barcode", "ean principal"], required: true, type: "string" },
-  { key: "ean2", label: "EAN 2", aliases: ["ean 2", "ean2", "código de barras 2", "codigo de barras 2"], required: false, type: "string" },
-  { key: "ean3", label: "EAN 3", aliases: ["ean 3", "ean3", "código de barras 3", "codigo de barras 3"], required: false, type: "string" },
-  { key: "eansSecundarios", label: "EANS SECUNDÁRIOS", aliases: ["eans secundários", "eans secundarios", "outros eans", "eans adicionais"], required: false, type: "array" },
-  { key: "nome", label: "NOME DO PRODUTO (DESCRIÇÃO COMERCIAL)", aliases: ["descrição comercial/nome do produto", "nome do produto", "descrição comercial", "descricao comercial", "nome", "produto", "titulo", "titulo comercial"], required: true, type: "string" },
-  { key: "marca", label: "MARCA / FABRICANTE / LABORATÓRIO", aliases: ["marca", "marca / fabricante / laboratório", "marca (marca)", "laboratório", "laboratorio", "fabricante", "brand"], required: false, type: "string" },
+  // 1. Status & Visibilidade
+  { key: "ativo", label: "Produto Ativo", aliases: ["produto ativo", "ativo", "status ativo", "publicado"], required: false, type: "boolean" },
+  { key: "buscavel", label: "Buscável (Busca)", aliases: ["buscável (busca)", "buscavel (busca)", "buscável na busca", "buscavel na busca", "buscável", "buscavel", "pesquisavel", "visivel na busca"], required: false, type: "boolean" },
+  { key: "lancamento", label: "Selo Lançamento", aliases: ["selo lançamento", "selo lancamento", "lançamento", "lancamento", "selo de lançamento", "novo produto"], required: false, type: "boolean" },
+  { key: "generico", label: "Selo Genérico", aliases: ["selo genérico", "selo generico", "medicamento genérico", "medicamento generico", "genérico", "generico", "é genérico"], required: false, type: "boolean" },
+  { key: "produtoNatureza", label: "Natureza do Produto", aliases: ["natureza do produto", "natureza", "tipo de produto", "tipo produto", "classificação fiscal produto"], required: false, type: "string" },
 
-  // 2. Categorias & Classificação
-  { key: "categoriaId", label: "CATEGORIA PRINCIPAL", aliases: ["categoria principal", "id categoria", "categoriaid", "id_categoria", "cat_id", "categoria", "departamento"], required: false, type: "string" },
-  { key: "subcategoriaId", label: "SUBCATEGORIA PRINCIPAL", aliases: ["subcategoria principal", "id subcategoria", "subcategoriaid", "id_subcategoria", "subcat_id", "subcategoria", "seção"], required: false, type: "string" },
-  { key: "categoriasAdicionais", label: "CATEGORIAS ADICIONAIS", aliases: ["categorias adicionais", "categorias ids", "outras categorias", "categorias secundarias"], required: false, type: "array" },
-  { key: "subcategoriasAdicionais", label: "SUBCATEGORIAS ADICIONAIS", aliases: ["subcategorias adicionais", "subcategorias ids", "outras subcategorias"], required: false, type: "array" },
-  { key: "tipoProduto", label: "TIPO DE PRODUTO (FISICO/SERVICO)", aliases: ["tipo de produto", "tipo produto", "tipo (fisico ou servico)", "tipo"], required: false, type: "string" },
-  { key: "produtoNatureza", label: "NATUREZA DO PRODUTO", aliases: ["natureza do produto", "natureza", "classificação fiscal produto", "tipo natureza"], required: false, type: "string" },
+  // 2. Identificação
+  { key: "id", label: "ID / SKU / Código Interno", aliases: ["id / sku / código interno", "id / sku / codigo interno", "id/código interno", "codigo interno", "código interno", "sku", "id", "cod", "idproduto", "id_produto"], required: true, type: "string" },
+  { key: "ean", label: "EAN / Código de Barras*", aliases: ["ean / código de barras*", "ean / código de barras", "ean / codigo de barras*", "ean / codigo de barras", "ean/código de barras", "ean", "gtin", "codigo de barras", "código de barras", "barcode", "ean principal"], required: true, type: "string" },
+  { key: "eansSecundarios", label: "EANs Secundários (separados por vírgula)", aliases: ["eans secundários (separados por vírgula)", "eans secundarios (separados por virgula)", "eans secundários", "eans secundarios", "outros eans", "eans adicionais", "ean 2", "ean 3", "ean2", "ean3"], required: false, type: "array" },
+  { key: "nome", label: "Descrição Comercial / Nome do Produto*", aliases: ["descrição comercial / nome do produto*", "descrição comercial / nome do produto", "descricao comercial / nome do produto*", "descricao comercial / nome do produto", "descrição comercial/nome do produto", "nome do produto", "descrição comercial", "descricao comercial", "nome", "produto", "titulo"], required: true, type: "string" },
+  { key: "descricao", label: "Descrição Longa", aliases: ["descrição longa", "descricao longa", "descrição completa / bula (html)", "descrição completa", "descricao completa", "descrição", "descricao", "bula", "detalhes do produto"], required: false, type: "string" },
 
-  // 3. Regulatório & Farmacêutico
-  { key: "registroAnvisa", label: "REGISTRO ANVISA / MS", aliases: ["registro anvisa / ms", "ms/registro anvisa", "registro anvisa", "ms", "registro ms", "reg_anvisa", "registroanvisa", "registro"], required: false, type: "string" },
-  { key: "tarja", label: "TARJA", aliases: ["tarja", "tipo tarja", "classificação tarja", "cor tarja"], required: false, type: "tarja" },
-  { key: "retemReceita", label: "RETÉM RECEITA (SIM/NÃO)", aliases: ["retém receita", "retem receita", "retemreceita", "receita", "controle especial", "reter receita"], required: false, type: "boolean" },
-  { key: "tipoReceita", label: "TIPO DE RECEITA", aliases: ["tipo de receita", "tipo receita", "receituário", "receituario"], required: false, type: "string" },
-  { key: "generico", label: "MEDICAMENTO GENÉRICO (SIM/NÃO)", aliases: ["genérico", "generico", "é genérico", "medicamento generico"], required: false, type: "boolean" },
-  { key: "tipoMedicamento", label: "TIPO DE MEDICAMENTO", aliases: ["tipo de medicamento", "tipo medicamento", "classificação medicamento"], required: false, type: "string" },
-  { key: "principiosAtivos", label: "PRINCÍPIOS ATIVOS / FÓRMULA / DCB", aliases: ["princípios ativos", "principios ativos", "principio ativo", "farmaco", "dcb", "formula", "composição"], required: false, type: "string" },
-  { key: "classeTerapeutica", label: "CLASSE TERAPÊUTICA", aliases: ["classe terapêutica", "classe terapeutica", "ação terapeutica", "acao terapeutica"], required: false, type: "string" },
-  { key: "indicacaoTerapeutica", label: "INDICAÇÃO TERAPÊUTICA", aliases: ["indicação terapêutica", "indicacao terapeutica", "indicações", "indicacoes", "para que serve"], required: false, type: "string" },
-  { key: "tipoDePreco", label: "REGIME DE PREÇO (LIBERADO/MONITORADO)", aliases: ["regime de preço", "regime de preco", "tipo de preco", "tipo de preço", "tipo de precificacao"], required: false, type: "string" },
-  { key: "ncm", label: "NCM (CÓDIGO FISCAL)", aliases: ["ncm", "codigo ncm", "código ncm", "classificacao fiscal"], required: false, type: "string" },
-  { key: "alertaRegulatorio", label: "ALERTA REGULATÓRIO (SIM/NÃO)", aliases: ["alerta regulatório", "alerta regulatorio", "tem alerta"], required: false, type: "boolean" },
-  { key: "alertaTexto", label: "TEXTO DO ALERTA REGULATÓRIO", aliases: ["texto do alerta", "texto alerta regulatorio", "aviso anvisa"], required: false, type: "string" },
+  // 3. Categorização
+  { key: "categoriaId", label: "Categoria (com ID)", aliases: ["categoria (com id)", "categoria com id", "categoria principal", "id categoria", "categoriaid", "id_categoria", "cat_id", "categoria", "departamento"], required: false, type: "string" },
+  { key: "subcategoriaId", label: "Subcategoria (com ID)", aliases: ["subcategoria (com id)", "subcategoria com id", "subcategoria principal", "id subcategoria", "subcategoriaid", "id_subcategoria", "subcat_id", "subcategoria", "seção"], required: false, type: "string" },
+  { key: "categoriasAdicionais", label: "Categoria Adicional", aliases: ["categoria adicional", "categorias adicionais", "categorias ids", "outras categorias", "categorias extras"], required: false, type: "array" },
+  { key: "subcategoriasAdicionais", label: "Subcategoria Adicional", aliases: ["subcategoria adicional", "subcategorias adicionais", "subcategorias ids", "outras subcategorias", "subcategorias extras"], required: false, type: "array" },
 
-  // 4. Preços & Estoque
-  { key: "precoDe", label: "PREÇO DE (R$)", aliases: ["preço de", "preco de", "preço de tabela", "preco tabela", "preço original", "preco original", "de"], required: false, type: "number" },
-  { key: "precoPor", label: "PREÇO POR / VENDA (R$)", aliases: ["preço por", "preco por", "preço venda", "preco venda", "preco", "preço", "valor", "venda", "por"], required: false, type: "number" },
-  { key: "precoCusto", label: "PREÇO DE CUSTO (R$)", aliases: ["preço de custo", "preco de custo", "preço custo", "preco custo", "custo"], required: false, type: "number" },
-  { key: "estoque", label: "ESTOQUE", aliases: ["estoque", "quantidade", "qtd", "saldo", "estoque atual"], required: false, type: "number" },
-  { key: "precoSobConsulta", label: "PREÇO SOB CONSULTA (SIM/NÃO)", aliases: ["preço sob consulta", "preco sob consulta", "sob consulta"], required: false, type: "boolean" },
-  { key: "bloquearPreco", label: "BLOQUEAR PREÇO (SIM/NÃO)", aliases: ["bloquear preço", "bloquear preco", "travar preco"], required: false, type: "boolean" },
-  { key: "emCampanha", label: "EM CAMPANHA (SIM/NÃO)", aliases: ["em campanha", "campanha ativa", "promocao ativa"], required: false, type: "boolean" },
-  { key: "precoCampanha", label: "PREÇO NA CAMPANHA (R$)", aliases: ["preço campanha", "preco campanha", "preço promocional campanha"], required: false, type: "number" },
-  { key: "campanhaInicio", label: "INÍCIO DA CAMPANHA (AAAA-MM-DD)", aliases: ["início da campanha", "inicio da campanha", "data inicio campanha"], required: false, type: "string" },
-  { key: "campanhaFim", label: "FIM DA CAMPANHA (AAAA-MM-DD)", aliases: ["fim da campanha", "data fim campanha", "data limite campanha"], required: false, type: "string" },
-  { key: "precoEncarte", label: "PREÇO DE ENCARTE (R$)", aliases: ["preço de encarte", "preco de encarte", "preço encarte", "preco encarte", "tabloide"], required: false, type: "number" },
-  { key: "quantidadeMinima", label: "QUANTIDADE MÍNIMA", aliases: ["quantidade mínima", "quantidade minima", "qtd minima", "compra minima"], required: false, type: "number" },
-  { key: "quantidadeMultipla", label: "QUANTIDADE MÚLTIPLA", aliases: ["quantidade múltipla", "quantidade multipla", "multiplo de venda"], required: false, type: "number" },
-  { key: "programaFidelidade", label: "PROGRAMA DE FIDELIDADE (SIM/NÃO)", aliases: ["programa de fidelidade", "programa fidelidade", "participa fidelidade", "pbm fidelidade"], required: false, type: "boolean" },
+  // 4. Princípios Ativos & Características
+  { key: "principiosAtivos", label: "Princípios Ativos", aliases: ["princípios ativos", "principios ativos", "princípios ativos / fórmula / dcb", "principio ativo", "farmaco", "dcb", "formula", "composição"], required: false, type: "string" },
+  { key: "caracteristicas", label: "Características Adicionais", aliases: ["características adicionais", "caracteristicas adicionais", "características", "caracteristicas", "atributos", "propriedades adicionais"], required: false, type: "string" },
+  { key: "marca", label: "Marca", aliases: ["marca", "marca / fabricante / laboratório", "marca (marca)", "laboratório", "laboratorio", "fabricante", "brand"], required: false, type: "string" },
+  { key: "classeTerapeutica", label: "Classe Terapêutica", aliases: ["classe terapêutica", "classe terapeutica", "ação terapeutica", "acao terapeutica"], required: false, type: "string" },
 
-  // 5. Embalagem & Características / Atributos
-  { key: "quantidadeEmbalagem", label: "QTD NA EMBALAGEM", aliases: ["qtd na embalagem", "qtd embalagem", "quantidade embalagem", "unidades na embalagem"], required: false, type: "number" },
-  { key: "unidadeEmbalagem", label: "UNIDADE DA EMBALAGEM", aliases: ["unidade da embalagem", "unidade embalagem", "und embalagem", "tipo embalagem"], required: false, type: "string" },
-  { key: "quantidadeConteudo", label: "QTD DE CONTEÚDO", aliases: ["qtd de conteúdo", "qtd conteúdo", "quantidade conteudo", "volume", "peso líquido"], required: false, type: "number" },
-  { key: "unidadeConteudo", label: "UNIDADE DO CONTEÚDO", aliases: ["unidade do conteúdo", "unidade conteúdo", "und conteudo", "unidade medida"], required: false, type: "string" },
-  { key: "sabor", label: "SABOR / AROMA", aliases: ["sabor / aroma", "sabor", "flavor", "aroma"], required: false, type: "string" },
-  { key: "fps", label: "FPS (FATOR PROTEÇÃO SOLAR)", aliases: ["fps", "fator de proteção", "fator protecao solar", "fps protetor"], required: false, type: "number" },
-  { key: "faixaEtaria", label: "FAIXA ETÁRIA", aliases: ["faixa etária", "faixa etaria", "idade", "idade recomendada"], required: false, type: "string" },
+  // 5. Regulatório & Farmacêutico
+  { key: "alertaTexto", label: "Alerta Regulatório (Texto)", aliases: ["alerta regulatório (texto)", "alerta regulatorio (texto)", "texto do alerta regulatório", "texto alerta regulatorio", "texto do alerta", "aviso anvisa"], required: false, type: "string" },
+  { key: "alertaRegulatorio", label: "Requer Exibição do Alerta Regulatório", aliases: ["requer exibição do alerta regulatório", "requer exibicao do alerta regulatorio", "alerta regulatório (sim/não)", "alerta regulatório", "alerta regulatorio", "tem alerta"], required: false, type: "boolean" },
+  { key: "registroAnvisa", label: "MS / Registro ANVISA", aliases: ["ms / registro anvisa", "ms/registro anvisa", "registro anvisa / ms", "registro anvisa", "ms", "registro ms", "reg_anvisa", "registroanvisa", "registro"], required: false, type: "string" },
+  { key: "retemReceita", label: "Retém Receita?", aliases: ["retém receita?", "retem receita?", "retém receita (sim/não)", "retém receita", "retem receita", "retemreceita", "receita", "controle especial", "reter receita"], required: false, type: "boolean" },
+  { key: "tipoMedicamento", label: "Classificação / Tipo do Medicamento", aliases: ["classificação / tipo do medicamento", "classificacao / tipo do medicamento", "tipo de medicamento", "tipo medicamento", "classificação medicamento", "classificacao medicamento"], required: false, type: "string" },
+  { key: "tarja", label: "Tarja", aliases: ["tarja", "tipo tarja", "classificação tarja", "cor tarja"], required: false, type: "tarja" },
+  { key: "tipoReceita", label: "Tipo de Receita", aliases: ["tipo de receita", "tipo receita", "receituário", "receituario"], required: false, type: "string" },
+  { key: "ncm", label: "NCM", aliases: ["ncm", "ncm (código fiscal)", "codigo ncm", "código ncm", "classificacao fiscal"], required: false, type: "string" },
+  { key: "prioridade", label: "Nível de Relevância (Prioridade)", aliases: ["nível de relevância (prioridade)", "nivel de relevancia (prioridade)", "prioridade / relevância (0-100)", "nível de relevância", "nivel de relevancia", "prioridade", "relevancia", "ordem"], required: false, type: "number" },
 
-  // 6. Descrição & Textos
-  { key: "resumoDescricao", label: "RESUMO / DESCRIÇÃO CURTA", aliases: ["resumo", "resumo curto", "descrição curta", "descricao curta", "sinopse"], required: false, type: "string" },
-  { key: "descricao", label: "DESCRIÇÃO COMPLETA / BULA (HTML)", aliases: ["descrição longa", "descricao longa", "descrição", "descricao", "bula", "detalhes do produto"], required: false, type: "string" },
+  // 6. Preços
+  { key: "precoDe", label: "Preço (de) (R$)", aliases: ["preço (de) (r$)", "preco (de) (r$)", "preço de (r$)", "preço de", "preco de", "preço de tabela", "preco tabela", "preço original", "preco original", "de"], required: false, type: "number" },
+  { key: "precoPor", label: "Preço (por) (R$)", aliases: ["preço (por) (r$)", "preco (por) (r$)", "preço por (venda r$)", "preço por", "preco por", "preço venda", "preco venda", "preco", "preço", "valor", "venda", "por"], required: false, type: "number" },
 
-  // 7. Imagens & Mídia
-  { key: "foto", label: "URL DA FOTO PRINCIPAL", aliases: ["url da foto", "foto principal", "imagem principal", "imagem", "foto", "url imagem", "image"], required: false, type: "string" },
-  { key: "imagens", label: "FOTOS ADICIONAIS (SEPARADAS POR VÍRGULA)", aliases: ["fotos adicionais", "imagens adicionais", "outras fotos", "galeria imagens"], required: false, type: "array" },
-  { key: "imagemAlt", label: "TEXTO ALT DA IMAGEM (SEO)", aliases: ["texto alt da imagem", "alt imagem", "imagem alt", "alt seo"], required: false, type: "string" },
-  { key: "videoUrl", label: "URL DO VÍDEO", aliases: ["url do vídeo", "video url", "video", "link video"], required: false, type: "string" },
-  { key: "youtubeVideoUrl", label: "URL DO VÍDEO YOUTUBE", aliases: ["url youtube", "youtube", "link youtube", "youtube video"], required: false, type: "string" },
-
-  // 8. SEO & Busca
-  { key: "url", label: "LINK DA PÁGINA (SLUG)", aliases: ["slug", "url", "link", "link da página", "link da pagina", "url amigavel"], required: false, type: "string" },
-  { key: "seoTitulo", label: "TÍTULO SEO (META TITLE)", aliases: ["título seo", "seo titulo", "titulo seo", "seo title", "meta title"], required: false, type: "string" },
-  { key: "metaDescription", label: "DESCRIÇÃO SEO (META DESCRIPTION)", aliases: ["descrição seo", "meta description", "descricao seo", "seo description"], required: false, type: "string" },
-  { key: "internalTags", label: "TAGS DE BUSCA (SEPARADAS POR VÍRGULA)", aliases: ["tags de busca", "tags", "palavras-chave", "keywords", "tags internas"], required: false, type: "array" },
-  { key: "termosPesquisa", label: "TERMOS DE PESQUISA", aliases: ["termos de pesquisa", "termos busca", "sinonimos"], required: false, type: "string" },
-
-  // 9. Status, Visibilidade & Organização
-  { key: "ativo", label: "PRODUTO ATIVO (SIM/NÃO)", aliases: ["produto ativo", "ativo", "status ativo", "publicado"], required: false, type: "boolean" },
-  { key: "visivel", label: "VISÍVEL NO CATÁLOGO (SIM/NÃO)", aliases: ["visível no catálogo", "visivel no catalogo", "visivel", "visível"], required: false, type: "boolean" },
-  { key: "buscavel", label: "BUSCÁVEL NA BUSCA (SIM/NÃO)", aliases: ["buscável", "buscavel", "pesquisavel", "visivel na busca"], required: false, type: "boolean" },
-  { key: "aVenda", label: "DISPONÍVEL PARA VENDA (SIM/NÃO)", aliases: ["disponível para venda", "a venda", "a_venda", "comprar habilitado"], required: false, type: "boolean" },
-  { key: "destaque", label: "DESTAQUE NA HOME (SIM/NÃO)", aliases: ["destaque na home", "destaque", "produto em destaque", "featured"], required: false, type: "boolean" },
-  { key: "lancamento", label: "SELO DE LANÇAMENTO (SIM/NÃO)", aliases: ["selo de lançamento", "lancamento", "lançamento", "novo produto"], required: false, type: "boolean" },
-  { key: "prioridade", label: "PRIORIDADE / RELEVÂNCIA (0-100)", aliases: ["prioridade", "nivel de relevancia", "relevancia", "ordem"], required: false, type: "number" },
-  { key: "selosIds", label: "SELOS DO SISTEMA", aliases: ["selos do sistema", "selos ids", "selos", "selo"], required: false, type: "array" },
-  { key: "vitrines", label: "VITRINES / COLEÇÕES", aliases: ["vitrines / coleções", "vitrines", "coleções", "colecoes", "coleção"], required: false, type: "array" },
-  { key: "compreJuntoProdutoId", label: "COMPRE JUNTO (ID PRODUTO)", aliases: ["compre junto", "compre junto id", "order bump id", "compre_junto_produto_id"], required: false, type: "string" },
+  // 7. SEO & Busca
+  { key: "seoTitulo", label: "Título da Página (SEO)", aliases: ["título da página (seo)", "titulo da pagina (seo)", "título seo (meta title)", "título seo", "seo titulo", "titulo seo", "seo title", "meta title"], required: false, type: "string" },
+  { key: "url", label: "Link da Página (Slug)", aliases: ["link da página (slug)", "link da pagina (slug)", "link da página", "link da pagina", "slug", "url", "link", "url amigavel"], required: false, type: "string" },
+  { key: "palavrasChave" as any, label: "Palavras-Chave Foco (GEO / AEO)", aliases: ["palavras-chave foco (geo / aeo)", "palavras chave foco (geo / aeo)", "palavras-chave foco", "palavras chave foco", "palavras-chave", "palavras chave", "meta keywords", "keywords"], required: false, type: "string" },
+  { key: "metaDescription", label: "Descrição da Página (SEO / Meta Description)", aliases: ["descrição da página (seo / meta description)", "descricao da pagina (seo / meta description)", "descrição seo (meta description)", "descrição seo", "meta description", "descricao seo", "seo description"], required: false, type: "string" },
+  { key: "imagemAlt", label: "Texto Alternativo da Imagem (Alt SEO)", aliases: ["texto alternativo da imagem (alt seo)", "texto alternativo da imagem", "texto alt da imagem (seo)", "texto alt da imagem", "alt imagem", "imagem alt", "alt seo"], required: false, type: "string" },
+  { key: "internalTags", label: "Tags de Busca Internas", aliases: ["tags de busca internas", "tags de busca (separadas por vírgula)", "tags de busca", "tags", "tags internas", "termos de pesquisa"], required: false, type: "array" },
 ];
 
 const TARJA_VALUES: Tarja[] = ["Sem Tarja", "Vermelha", "Vermelha Retém Receita", "Preta", "Amarela"];
@@ -256,6 +218,54 @@ function guessCategory(name: string): { categoriaId: string; subcategoriaId: str
   return { categoriaId: "", subcategoriaId: "" };
 }
 
+function parsePrincipiosAtivos(val: any): any[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  const str = String(val).trim();
+  if (!str) return [];
+  if (str.startsWith("[") && str.endsWith("]")) {
+    try { return JSON.parse(str); } catch (e) {}
+  }
+  return str.split(/[,;\n]/).map(item => {
+    const trimmed = item.trim();
+    if (!trimmed) return null;
+    const match = trimmed.match(/^([^(]+)(?:\(([^)]+)\))?$/);
+    if (match) {
+      const nome = match[1].trim();
+      const concRaw = (match[2] || "").trim();
+      const concMatch = concRaw.match(/^([\d.,]+)\s*([a-zA-Z%]+)?$/);
+      return {
+        nome,
+        concentracao: concMatch ? concMatch[1] : concRaw,
+        unidadeMedida: concMatch ? (concMatch[2] || "") : ""
+      };
+    }
+    return { nome: trimmed, concentracao: "", unidadeMedida: "" };
+  }).filter(Boolean);
+}
+
+function parseCaracteristicas(val: any): any[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  const str = String(val).trim();
+  if (!str) return [];
+  if (str.startsWith("[") && str.endsWith("]")) {
+    try { return JSON.parse(str); } catch (e) {}
+  }
+  return str.split(/[;\n]/).map(item => {
+    const trimmed = item.trim();
+    if (!trimmed) return null;
+    const colonIdx = trimmed.indexOf(":");
+    if (colonIdx > 0) {
+      return {
+        titulo: trimmed.slice(0, colonIdx).trim(),
+        descricao: trimmed.slice(colonIdx + 1).trim()
+      };
+    }
+    return { titulo: trimmed, descricao: "" };
+  }).filter(Boolean);
+}
+
 function resolveCategory(catInput: string, subcatInput: string): { categoriaId: string; subcategoriaId: string } | null {
   if (!catInput && !subcatInput) return null;
   const cats = categoriesData as any[];
@@ -264,8 +274,16 @@ function resolveCategory(catInput: string, subcatInput: string): { categoriaId: 
   let subcatId = "";
 
   const findByNameOrId = (val: string, list: any[]) => {
-    const lower = val.toLowerCase().trim();
-    return list.find(c => String(c.id) === val || c.nome.toLowerCase() === lower);
+    if (!val) return null;
+    const str = String(val).trim();
+    const idPrefixMatch = str.match(/^(\d+)\s*[-–—:]?\s*(.*)$/);
+    if (idPrefixMatch) {
+      const parsedId = idPrefixMatch[1];
+      const match = list.find(c => String(c.id) === parsedId);
+      if (match) return match;
+    }
+    const lower = str.toLowerCase();
+    return list.find(c => String(c.id) === str || c.nome.toLowerCase() === lower);
   };
 
   const topCats = cats.filter(c => !c.parentId);
@@ -329,11 +347,12 @@ function rowToProduct(
   const metaDescription = String(get("metaDescription") || "");
   const internalTags = parseArray(get("internalTags"));
   const termosPesquisa = String(get("termosPesquisa") || "");
+  const palavrasChave = parseArray(get("palavrasChave") || get("metaKeywords"));
 
   const tipoProduto = String(get("tipoProduto") || "fisico");
   const produtoNatureza = String(get("produtoNatureza") || "");
-  const principiosAtivosRaw = String(get("principiosAtivos") || "");
-  const principiosAtivos = principiosAtivosRaw ? principiosAtivosRaw.split(/[,;]/).map(s => s.trim()).filter(Boolean) : [];
+  const principiosAtivos = parsePrincipiosAtivos(get("principiosAtivos"));
+  const caracteristicas = parseCaracteristicas(get("caracteristicas"));
 
   const marca = String(get("marca") || "").trim();
   const registroAnvisa = String(get("registroAnvisa") || "").trim();
@@ -348,6 +367,7 @@ function rowToProduct(
   const ncm = String(get("ncm") || "");
   const alertaRegulatorio = parseBoolean(get("alertaRegulatorio"), false);
   const alertaTexto = String(get("alertaTexto") || "");
+  const prioridade = parseNumber(get("prioridade"), 0);
 
   const precoSobConsulta = parseBoolean(get("precoSobConsulta"), false);
   const bloquearPreco = parseBoolean(get("bloquearPreco"), false);
@@ -380,7 +400,6 @@ function rowToProduct(
   const aVenda = parseBoolean(get("aVenda"), true);
   const destaque = parseBoolean(get("destaque"), false);
   const lancamento = parseBoolean(get("lancamento"), false);
-  const prioridade = parseNumber(get("prioridade"), 0);
   const selosIds = parseArray(get("selosIds"));
   const vitrines = parseArray(get("vitrines"));
   const compreJuntoProdutoId = String(get("compreJuntoProdutoId") || "");
@@ -408,6 +427,7 @@ function rowToProduct(
     generico,
     tipoMedicamento,
     principiosAtivos,
+    caracteristicas,
     classeTerapeutica,
     indicacaoTerapeutica,
     tipoDePreco,
@@ -447,6 +467,7 @@ function rowToProduct(
     metaDescription,
     internalTags,
     termosPesquisa,
+    palavrasChave: palavrasChave.length > 0 ? palavrasChave : undefined,
     ativo,
     visivel,
     buscavel,
@@ -454,6 +475,7 @@ function rowToProduct(
     destaque,
     lancamento,
     prioridade,
+    nivelRelevancia: prioridade,
     selosIds,
     vitrines,
     compreJuntoProdutoId,
@@ -467,73 +489,209 @@ function escapeCsvValue(val: any): string {
   return `"${str.replace(/"/g, '""')}"`;
 }
 
+// ----------------------------------------------------
+// CABEÇALHOS OFICIAIS EXATOS (35 CAMPOS DO CADASTRO)
+// ----------------------------------------------------
+export const HEADERS_OFICIAIS = [
+  "Produto Ativo",
+  "Buscável (Busca)",
+  "Selo Lançamento",
+  "Selo Genérico",
+  "Natureza do Produto",
+  "ID / SKU / Código Interno",
+  "EAN / Código de Barras*",
+  "EANs Secundários (separados por vírgula)",
+  "Descrição Comercial / Nome do Produto*",
+  "Descrição Longa",
+  "Categoria (com ID)",
+  "Subcategoria (com ID)",
+  "Categoria Adicional",
+  "Subcategoria Adicional",
+  "Princípios Ativos",
+  "Características Adicionais",
+  "Marca",
+  "Classe Terapêutica",
+  "Alerta Regulatório (Texto)",
+  "Requer Exibição do Alerta Regulatório",
+  "MS / Registro ANVISA",
+  "Retém Receita?",
+  "Classificação / Tipo do Medicamento",
+  "Tarja",
+  "Tipo de Receita",
+  "NCM",
+  "Nível de Relevância (Prioridade)",
+  "Preço (de) (R$)",
+  "Preço (por) (R$)",
+  "Título da Página (SEO)",
+  "Link da Página (Slug)",
+  "Palavras-Chave Foco (GEO / AEO)",
+  "Descrição da Página (SEO / Meta Description)",
+  "Texto Alternativo da Imagem (Alt SEO)",
+  "Tags de Busca Internas"
+];
+
+export function formatProductRow(p: Produto): any[] {
+  const cats = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
+  
+  const getCatDisplay = (id?: string) => {
+    if (!id) return "";
+    const cat = cats.find((c: any) => String(c.id) === String(id));
+    return cat ? `${cat.id} - ${cat.nome}` : String(id);
+  };
+
+  const formatPrincipiosAtivos = (val: any) => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    if (Array.isArray(val)) {
+      return val.map((item: any) => {
+        if (typeof item === "string") return item;
+        const parts = [item.nome || ""];
+        if (item.concentracao || item.unidadeMedida) {
+          parts.push(`(${[item.concentracao, item.unidadeMedida].filter(Boolean).join("")})`);
+        }
+        return parts.filter(Boolean).join(" ");
+      }).filter(Boolean).join(", ");
+    }
+    return "";
+  };
+
+  const formatCaracteristicas = (val: any) => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    if (Array.isArray(val)) {
+      return val.map((item: any) => {
+        if (typeof item === "string") return item;
+        if (item.titulo && item.descricao) return `${item.titulo}: ${item.descricao}`;
+        return item.titulo || item.descricao || "";
+      }).filter(Boolean).join("; ");
+    }
+    return "";
+  };
+
+  const formatMultiCats = (list: any) => {
+    if (!list) return "";
+    if (Array.isArray(list)) {
+      return list.map((id: any) => getCatDisplay(id)).filter(Boolean).join(", ");
+    }
+    return String(list);
+  };
+
+  const eansSec = Array.isArray(p.eansSecundarios) 
+    ? p.eansSecundarios.filter(Boolean).join(", ") 
+    : (p.eansSecundarios || [p.ean2, p.ean3].filter(Boolean).join(", ") || "");
+
+  const tags = Array.isArray(p.internalTags) 
+    ? p.internalTags.filter(Boolean).join(", ") 
+    : (p.internalTags || "");
+
+  const palavrasChave = Array.isArray((p as any).palavrasChave)
+    ? (p as any).palavrasChave.filter(Boolean).join(", ")
+    : ((p as any).palavrasChave || (p as any).metaKeywords || tags || "");
+
+  return [
+    p.ativo !== false ? "Sim" : "Não",
+    (p.buscaveis ?? p.buscavel ?? true) ? "Sim" : "Não",
+    p.lancamento ? "Sim" : "Não",
+    (p.generico ?? checkIsGenerico(p)) ? "Sim" : "Não",
+    p.produtoNatureza || (p.tipoProduto === "servico" ? "Serviço" : (p.categoriaId === "142" ? "Medicamento" : "Físico")),
+    p.codigoInterno || p.sku || p.id || "",
+    p.ean || "",
+    eansSec,
+    p.nome || "",
+    p.descricao || "",
+    getCatDisplay(p.categoriaId),
+    getCatDisplay(p.subcategoriaId),
+    formatMultiCats(p.categoriasIds || p.categoriasAdicionais),
+    formatMultiCats(p.subcategoriasIds || p.subcategoriasAdicionais),
+    formatPrincipiosAtivos(p.principiosAtivos),
+    formatCaracteristicas(p.caracteristicas),
+    p.marca || "",
+    p.classeTerapeutica || "",
+    p.alertaTexto || "",
+    p.alertaRegulatorio ? "Sim" : "Não",
+    p.registroAnvisa || p.registroMs || "",
+    p.retemReceita ? "Sim" : "Não",
+    p.classificacaoRegistro || p.tipoMedicamento || "",
+    p.tarja || "Sem Tarja",
+    p.tipoReceita || "",
+    p.ncm || "",
+    p.nivelRelevancia ?? p.prioridade ?? 0,
+    p.precoDe || "",
+    p.precoPor || "",
+    p.seoTitulo || p.metaTitle || "",
+    p.url || p.slug || "",
+    palavrasChave,
+    p.metaDescription || "",
+    p.imagemAlt || p.altText || "",
+    tags
+  ];
+}
+
+const SAMPLE_ROWS = [
+  [
+    "Sim", "Sim", "Não", "Sim", "Medicamento",
+    "563003", "7896523207360", "7896523207361, 7896523207362",
+    "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
+    "<p><strong>Nevralgex</strong> é indicado no alívio da dor associada a contraturas musculares decorrentes de processos traumáticos ou inflamatórios e em cefaleias tensionais.</p>",
+    "142 - Medicamentos", "14201 - Dor e Febre", "", "",
+    "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg",
+    "Forma: Comprimidos; Quantidade: 10 comprimidos; Uso: Oral",
+    "CIMED", "Analgésico e Relaxante Muscular",
+    "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO.", "Sim",
+    "1438100510076", "Não", "Similar", "Sem Tarja", "", "30049099", 80,
+    8.33, 4.99,
+    "Nevralgex 10 Comprimidos - Compre Online com Melhor Preço",
+    "nevralgex-300mg-50mg-35mg-10-comprimidos-563003",
+    "nevralgex, dor muscular, dor de cabeca, cimed",
+    "Compre Nevralgex com 10 comprimidos na Farmácias Associadas. Alívio rápido para dores musculares e dor de cabeça com entrega rápida.",
+    "Nevralgex 10 comprimidos Cimed",
+    "nevralgex, dipirona, relaxante muscular, dor de cabeca, cimed"
+  ],
+  [
+    "Sim", "Sim", "Não", "Sim", "Medicamento",
+    "558600", "7896523216812", "",
+    "DIAD 1.5MG COM 1 COMPRIMIDO",
+    "<p><strong>Diad 1,5mg</strong> é indicado como contraceptivo de emergência, que deve ser utilizado dentro de 72 horas após relação sexual desprotegida.</p>",
+    "142 - Medicamentos", "14206 - Saúde da Mulher", "", "",
+    "Levonorgestrel 1.5mg",
+    "Forma: Comprimido; Dose: Dose Única",
+    "CIMED", "Contraceptivo de Emergência",
+    "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO.", "Sim",
+    "1438100880027", "Não", "Similar", "Sem Tarja", "", "30043919", 60,
+    22.55, 19.99,
+    "Diad 1.5mg com 1 Comprimido - Farmácias Associadas",
+    "diad-15mg-1-comprimido-558600",
+    "diad, levonorgestrel, pilula do dia seguinte, cimed",
+    "Compre Diad 1.5mg anticoncepcional de emergência com total discrição e entrega rápida na Farmácias Associadas.",
+    "Diad 1.5mg 1 comprimido Cimed",
+    "diad, levonorgestrel, pilula do dia seguinte, anticoncepcional"
+  ],
+  [
+    "Sim", "Sim", "Sim", "Não", "Cosmético",
+    "7891234", "7891058021108", "",
+    "PROTETOR SOLAR FACIAL FPS 60 TOQUE SECO 50G",
+    "<p>O <strong>Protetor Solar Facial FPS 60</strong> oferece alta proteção contra os raios solares, prevenindo o fotoenvelhecimento e manchas solares.</p>",
+    "144 - Dermocosméticos e Beleza", "14404 - Proteção Solar", "144 - Cuidados com a Pele", "14402 - Rosto",
+    "Vitamina E, Niacinamida, Filtros UVA/UVB",
+    "FPS: 60; Toque: Seco; Conteúdo: 50g; Tipo de Pele: Oleosa e Mista",
+    "ASSOCIADAS DERMO", "Fotoprotetor Dermatológico",
+    "", "Não",
+    "25351.123456/2026-78", "Não", "", "Sem Tarja", "", "33049990", 95,
+    69.90, 49.90,
+    "Protetor Solar Facial FPS 60 Toque Seco 50g - Farmácias Associadas",
+    "protetor-solar-facial-fps-60-toque-seco-50g-7891234",
+    "protetor solar, protetor facial, fps 60, toque seco, dermocosmeticos",
+    "Proteja sua pele com o Protetor Solar Facial FPS 60. Toque seco e alta durabilidade na Farmácias Associadas.",
+    "Protetor Solar Facial FPS 60 Toque Seco Associadas Dermo 50g",
+    "protetor solar, fps 60, toque seco, rosto, protetor facial"
+  ]
+];
+
 // ---- Generate Template Spreadsheet CSV (.CSV) ----
 export function generateCsvTemplate() {
-  const headers = [
-    // 1. Identificação Básica
-    "Código Interno", "SKU", "EAN (Código de Barras)", "EAN 2", "EAN 3", "EANs Secundários", "Nome do Produto", "Marca / Laboratório",
-    // 2. Categorias & Classificação
-    "Categoria Principal", "Subcategoria Principal", "Categorias Adicionais", "Subcategorias Adicionais", "Tipo de Produto (fisico/servico)", "Natureza do Produto",
-    // 3. Regulatório & Farmacêutico
-    "Registro ANVISA / MS", "Tarja", "Retém Receita (Sim/Não)", "Tipo de Receita", "Genérico (Sim/Não)", "Tipo de Medicamento", "Princípios Ativos / Fórmula", "Classe Terapêutica", "Indicação Terapêutica", "Regime de Preço (Liberado/Monitorado)", "NCM", "Alerta Regulatório (Sim/Não)", "Texto do Alerta Regulatório",
-    // 4. Preços & Estoque
-    "Preço De (R$)", "Preço Por (Venda R$)", "Preço de Custo (R$)", "Estoque", "Preço Sob Consulta (Sim/Não)", "Bloquear Preço (Sim/Não)", "Em Campanha (Sim/Não)", "Preço Campanha (R$)", "Início Campanha (AAAA-MM-DD)", "Fim Campanha (AAAA-MM-DD)", "Preço Encarte (R$)", "Qtd Mínima", "Qtd Múltipla", "Programa Fidelidade (Sim/Não)",
-    // 5. Embalagem & Atributos
-    "Qtd Embalagem", "Unidade Embalagem", "Qtd Conteúdo", "Unidade Conteúdo", "Sabor / Aroma", "FPS", "Faixa Etária",
-    // 6. Descrições
-    "Resumo Curto", "Descrição Completa / Bula (HTML)",
-    // 7. Imagens & Mídia
-    "URL da Foto Principal", "URLs Fotos Adicionais (separadas por vírgula)", "Texto ALT da Imagem", "URL do Vídeo", "URL do Vídeo YouTube",
-    // 8. SEO & Busca
-    "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca (separadas por vírgula)", "Termos de Pesquisa",
-    // 9. Status & Visibilidade
-    "Produto Ativo (Sim/Não)", "Visível no Catálogo (Sim/Não)", "Buscável (Sim/Não)", "À Venda (Sim/Não)", "Destaque na Home (Sim/Não)", "Lançamento (Sim/Não)", "Prioridade / Relevância (0-100)", "Selos IDs", "Vitrines / Coleções", "Compre Junto (ID Produto)",
-    // 10. Serviços
-    "Instrução de Preparação", "Exige Prescrição"
-  ];
-
-  const sampleRows = [
-    [
-      "563003", "563003", "7896523207360", "", "", "", "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS", "CIMED",
-      "Medicamentos", "Dor e Febre", "", "", "fisico", "Medicamento",
-      "1438100510076", "Sem Tarja", "Não", "", "Sim", "Similar", "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg", "Analgésico e Relaxante Muscular", "Alívio de dores musculares e cefaleias", "Liberado", "30049099", "Não", "",
-      8.33, 4.99, 2.50, 1406, "Não", "Não", "Sim", 4.49, "2026-08-01", "2026-08-31", 4.99, 1, 1, "Sim",
-      10, "Comprimidos", 10, "unidades", "", 0, "Adulto e Pediátrico acima de 12 anos",
-      "Indicado para o alívio da dor associada a contraturas musculares.", "<p><strong>Nevralgex</strong> é indicado no alívio da dor associada a contraturas musculares decorrentes de processos traumáticos ou inflamatórios e em cefaleias tensionais.</p>",
-      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523207360.jpg", "", "Nevralgex 10 comprimidos Cimed", "", "",
-      "nevralgex-300mg-50mg-35mg-10-comprimidos-563003", "Nevralgex 10 Comprimidos - Compre Online com Melhor Preço", "Compre Nevralgex com 10 comprimidos na Farmácias Associadas. Alívio rápido para dores musculares e dor de cabeça com entrega rápida.", "nevralgex, dipirona, relaxante muscular, dor de cabeca, cimed", "nevralgex dor muscular relaxante",
-      "Sim", "Sim", "Sim", "Sim", "Sim", "Não", 80, "gen", "ofertas-do-mes,mais-vendidos", "",
-      "", "nao"
-    ],
-    [
-      "558600", "558600", "7896523216812", "", "", "", "DIAD 1.5MG COM 1 COMPRIMIDO", "CIMED",
-      "Medicamentos", "Saúde da Mulher", "", "", "fisico", "Medicamento",
-      "1438100880027", "Sem Tarja", "Não", "", "Sim", "Similar", "Levonorgestrel 1.5mg", "Contraceptivo de Emergência", "Anticoncepção de emergência", "Liberado", "30043919", "Não", "",
-      22.55, 19.99, 11.20, 822, "Não", "Não", "Não", 0, "", "", 19.99, 1, 1, "Não",
-      1, "Comprimido", 1.5, "mg", "", 0, "Adulto",
-      "Contraceptivo de emergência em dose única de levonorgestrel.", "<p><strong>Diad 1,5mg</strong> é indicado como contraceptivo de emergência, que deve ser utilizado dentro de 72 horas após relação sexual desprotegida.</p>",
-      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523216812.jpg", "", "Diad 1.5mg 1 comprimido Cimed", "", "",
-      "diad-15mg-1-comprimido-558600", "Diad 1.5mg com 1 Comprimido - Farmácias Associadas", "Compre Diad 1.5mg anticoncepcional de emergência com total discrição e entrega rápida na Farmácias Associadas.", "diad, levonorgestrel, pilula do dia seguinte, cimed", "diad pilula do dia seguinte emergencial",
-      "Sim", "Sim", "Sim", "Sim", "Não", "Não", 60, "", "saude-feminina", "",
-      "", "nao"
-    ],
-    [
-      "7891234", "7891234", "7891058021108", "", "", "", "PROTETOR SOLAR FACIAL FPS 60 TOQUE SECO 50G", "ASSOCIADAS DERMO",
-      "Dermocosméticos", "Proteção Solar", "Cuidados com a Pele", "Rosto", "fisico", "Cosmético",
-      "25351.123456/2026-78", "Sem Tarja", "Não", "", "Não", "", "Filtros Solares UVA/UVB, Vitamina E, Niacinamida", "Fotoprotetor Dermatológico", "Proteção solar diária com ação antioxidante e controle de oleosidade", "Liberado", "33049990", "Não", "",
-      69.90, 49.90, 28.00, 350, "Não", "Não", "Sim", 44.90, "2026-08-01", "2026-08-31", 49.90, 1, 1, "Sim",
-      1, "Bisnaga", 50, "g", "Sem Fragrância", 60, "Todas as Idades",
-      "Alta proteção solar UVA/UVB com toque seco e controle de oleosidade.", "<p>O <strong>Protetor Solar Facial FPS 60</strong> oferece alta proteção contra os raios solares, prevenindo o fotoenvelhecimento e manchas solares. Fórmula não comedogênica de rápida absorção.</p>",
-      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7891058021108.jpg", "", "Protetor Solar Facial FPS 60 Toque Seco Associadas Dermo 50g", "", "",
-      "protetor-solar-facial-fps-60-toque-seco-50g-7891234", "Protetor Solar Facial FPS 60 Toque Seco 50g - Farmácias Associadas", "Proteja sua pele com o Protetor Solar Facial FPS 60. Toque seco e alta durabilidade. Compre online com desconto exclusivo.", "protetor solar, protetor facial, fps 60, toque seco, dermocosmeticos", "protetor solar rosto toque seco",
-      "Sim", "Sim", "Sim", "Sim", "Sim", "Sim", 95, "lancamento,dermo", "verao,dermocosmeticos,destaques-home", "",
-      "", "nao"
-    ]
-  ];
-
   const csvContent = "\uFEFF" + [
-    headers.map(escapeCsvValue).join(";"),
-    ...sampleRows.map(row => row.map(escapeCsvValue).join(";"))
+    HEADERS_OFICIAIS.map(escapeCsvValue).join(";"),
+    ...SAMPLE_ROWS.map(row => row.map(escapeCsvValue).join(";"))
   ].join("\r\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -550,172 +708,21 @@ export function generateCsvTemplate() {
 // ---- Generate Template Spreadsheet (.XLSX) ----
 export function generateTemplate() {
   const wb = XLSX.utils.book_new();
-  const headers = [
-    // 1. Identificação Básica
-    "Código Interno", "SKU", "EAN (Código de Barras)", "EAN 2", "EAN 3", "EANs Secundários", "Nome do Produto", "Marca / Laboratório",
-    // 2. Categorias & Classificação
-    "Categoria Principal", "Subcategoria Principal", "Categorias Adicionais", "Subcategorias Adicionais", "Tipo de Produto (fisico/servico)", "Natureza do Produto",
-    // 3. Regulatório & Farmacêutico
-    "Registro ANVISA / MS", "Tarja", "Retém Receita (Sim/Não)", "Tipo de Receita", "Genérico (Sim/Não)", "Tipo de Medicamento", "Princípios Ativos / Fórmula", "Classe Terapêutica", "Indicação Terapêutica", "Regime de Preço (Liberado/Monitorado)", "NCM", "Alerta Regulatório (Sim/Não)", "Texto do Alerta Regulatório",
-    // 4. Preços & Estoque
-    "Preço De (R$)", "Preço Por (Venda R$)", "Preço de Custo (R$)", "Estoque", "Preço Sob Consulta (Sim/Não)", "Bloquear Preço (Sim/Não)", "Em Campanha (Sim/Não)", "Preço Campanha (R$)", "Início Campanha (AAAA-MM-DD)", "Fim Campanha (AAAA-MM-DD)", "Preço Encarte (R$)", "Qtd Mínima", "Qtd Múltipla", "Programa Fidelidade (Sim/Não)",
-    // 5. Embalagem & Atributos
-    "Qtd Embalagem", "Unidade Embalagem", "Qtd Conteúdo", "Unidade Conteúdo", "Sabor / Aroma", "FPS", "Faixa Etária",
-    // 6. Descrições
-    "Resumo Curto", "Descrição Completa / Bula (HTML)",
-    // 7. Imagens & Mídia
-    "URL da Foto Principal", "URLs Fotos Adicionais (separadas por vírgula)", "Texto ALT da Imagem", "URL do Vídeo", "URL do Vídeo YouTube",
-    // 8. SEO & Busca
-    "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca (separadas por vírgula)", "Termos de Pesquisa",
-    // 9. Status & Visibilidade
-    "Produto Ativo (Sim/Não)", "Visível no Catálogo (Sim/Não)", "Buscável (Sim/Não)", "À Venda (Sim/Não)", "Destaque na Home (Sim/Não)", "Lançamento (Sim/Não)", "Prioridade / Relevância (0-100)", "Selos IDs", "Vitrines / Coleções", "Compre Junto (ID Produto)",
-    // 10. Serviços
-    "Instrução de Preparação", "Exige Prescrição"
-  ];
-
-  const sampleRows = [
-    [
-      "563003", "563003", "7896523207360", "", "", "", "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS", "CIMED",
-      "Medicamentos", "Dor e Febre", "", "", "fisico", "Medicamento",
-      "1438100510076", "Sem Tarja", "Não", "", "Sim", "Similar", "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg", "Analgésico e Relaxante Muscular", "Alívio de dores musculares e cefaleias", "Liberado", "30049099", "Não", "",
-      8.33, 4.99, 2.50, 1406, "Não", "Não", "Sim", 4.49, "2026-08-01", "2026-08-31", 4.99, 1, 1, "Sim",
-      10, "Comprimidos", 10, "unidades", "", 0, "Adulto e Pediátrico acima de 12 anos",
-      "Indicado para o alívio da dor associada a contraturas musculares.", "<p><strong>Nevralgex</strong> é indicado no alívio da dor associada a contraturas musculares decorrentes de processos traumáticos ou inflamatórios e em cefaleias tensionais.</p>",
-      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523207360.jpg", "", "Nevralgex 10 comprimidos Cimed", "", "",
-      "nevralgex-300mg-50mg-35mg-10-comprimidos-563003", "Nevralgex 10 Comprimidos - Compre Online com Melhor Preço", "Compre Nevralgex com 10 comprimidos na Farmácias Associadas. Alívio rápido para dores musculares e dor de cabeça com entrega rápida.", "nevralgex, dipirona, relaxante muscular, dor de cabeca, cimed", "nevralgex dor muscular relaxante",
-      "Sim", "Sim", "Sim", "Sim", "Sim", "Não", 80, "gen", "ofertas-do-mes,mais-vendidos", "",
-      "", "nao"
-    ],
-    [
-      "558600", "558600", "7896523216812", "", "", "", "DIAD 1.5MG COM 1 COMPRIMIDO", "CIMED",
-      "Medicamentos", "Saúde da Mulher", "", "", "fisico", "Medicamento",
-      "1438100880027", "Sem Tarja", "Não", "", "Sim", "Similar", "Levonorgestrel 1.5mg", "Contraceptivo de Emergência", "Anticoncepção de emergência", "Liberado", "30043919", "Não", "",
-      22.55, 19.99, 11.20, 822, "Não", "Não", "Não", 0, "", "", 19.99, 1, 1, "Não",
-      1, "Comprimido", 1.5, "mg", "", 0, "Adulto",
-      "Contraceptivo de emergência em dose única de levonorgestrel.", "<p><strong>Diad 1,5mg</strong> é indicado como contraceptivo de emergência, que deve ser utilizado dentro de 72 horas após relação sexual desprotegida.</p>",
-      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523216812.jpg", "", "Diad 1.5mg 1 comprimido Cimed", "", "",
-      "diad-15mg-1-comprimido-558600", "Diad 1.5mg com 1 Comprimido - Farmácias Associadas", "Compre Diad 1.5mg anticoncepcional de emergência com total discrição e entrega rápida na Farmácias Associadas.", "diad, levonorgestrel, pilula do dia seguinte, cimed", "diad pilula do dia seguinte emergencial",
-      "Sim", "Sim", "Sim", "Sim", "Não", "Não", 60, "", "saude-feminina", "",
-      "", "nao"
-    ],
-    [
-      "7891234", "7891234", "7891058021108", "", "", "", "PROTETOR SOLAR FACIAL FPS 60 TOQUE SECO 50G", "ASSOCIADAS DERMO",
-      "Dermocosméticos", "Proteção Solar", "Cuidados com a Pele", "Rosto", "fisico", "Cosmético",
-      "25351.123456/2026-78", "Sem Tarja", "Não", "", "Não", "", "Filtros Solares UVA/UVB, Vitamina E, Niacinamida", "Fotoprotetor Dermatológico", "Proteção solar diária com ação antioxidante e controle de oleosidade", "Liberado", "33049990", "Não", "",
-      69.90, 49.90, 28.00, 350, "Não", "Não", "Sim", 44.90, "2026-08-01", "2026-08-31", 49.90, 1, 1, "Sim",
-      1, "Bisnaga", 50, "g", "Sem Fragrância", 60, "Todas as Idades",
-      "Alta proteção solar UVA/UVB com toque seco e controle de oleosidade.", "<p>O <strong>Protetor Solar Facial FPS 60</strong> oferece alta proteção contra os raios solares, prevenindo o fotoenvelhecimento e manchas solares. Fórmula não comedogênica de rápida absorção.</p>",
-      "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7891058021108.jpg", "", "Protetor Solar Facial FPS 60 Toque Seco Associadas Dermo 50g", "", "",
-      "protetor-solar-facial-fps-60-toque-seco-50g-7891234", "Protetor Solar Facial FPS 60 Toque Seco 50g - Farmácias Associadas", "Proteja sua pele com o Protetor Solar Facial FPS 60. Toque seco e alta durabilidade. Compre online com desconto exclusivo.", "protetor solar, protetor facial, fps 60, toque seco, dermocosmeticos", "protetor solar rosto toque seco",
-      "Sim", "Sim", "Sim", "Sim", "Sim", "Sim", 95, "lancamento,dermo", "verao,dermocosmeticos,destaques-home", "",
-      "", "nao"
-    ]
-  ];
-
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
-  ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 4, 18) }));
+  const ws = XLSX.utils.aoa_to_sheet([HEADERS_OFICIAIS, ...SAMPLE_ROWS]);
+  ws["!cols"] = HEADERS_OFICIAIS.map((h) => ({ wch: Math.max(h.length + 4, 18) }));
   XLSX.utils.book_append_sheet(wb, ws, "Produtos");
   XLSX.writeFile(wb, "modelo_produtos_farmacia.xlsx");
 }
 
 // ---- Generate Template JSON (.JSON) ----
 export function generateJsonTemplate() {
-  const jsonSample = [
-    {
-      "cabecalho_identificacao": {
-        "codigo_interno": "563003",
-        "sku": "563003",
-        "ean_principal": "7896523207360",
-        "ean_secundario_2": "",
-        "ean_secundario_3": "",
-        "eans_secundarios_adicionais": [],
-        "nome_produto_descricao_comercial": "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
-        "marca_fabricante_laboratorio": "CIMED"
-      },
-      "categorizacao_e_classificacao": {
-        "categoria_principal": "Medicamentos",
-        "subcategoria_principal": "Dor e Febre",
-        "categorias_adicionais": [],
-        "subcategorias_adicionais": [],
-        "tipo_produto": "fisico",
-        "natureza_do_produto": "Medicamento"
-      },
-      "informacoes_farmaceuticas_e_regulatorias": {
-        "registro_anvisa_ms": "1438100510076",
-        "tarja": "Sem Tarja",
-        "retem_receita": false,
-        "tipo_de_receita": "",
-        "medicamento_generico": true,
-        "tipo_de_medicamento": "Similar",
-        "principios_ativos_formula": "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg",
-        "classe_terapeutica": "Analgésico e Relaxante Muscular",
-        "indicacao_terapeutica": "Alívio de dores musculares e cefaleias",
-        "regime_de_preco": "Liberado",
-        "ncm": "30049099",
-        "alerta_regulatorio": false,
-        "texto_alerta_regulatorio": ""
-      },
-      "precificacao_e_estoque": {
-        "preco_de": 8.33,
-        "preco_por_venda": 4.99,
-        "preco_custo": 2.50,
-        "estoque": 1406,
-        "preco_sob_consulta": false,
-        "bloquear_preco": false,
-        "em_campanha": true,
-        "preco_campanha": 4.49,
-        "data_inicio_campanha": "2026-08-01",
-        "data_fim_campanha": "2026-08-31",
-        "preco_encarte": 4.99,
-        "quantidade_minima_venda": 1,
-        "quantidade_multipla_venda": 1,
-        "participa_programa_fidelidade": true
-      },
-      "embalagem_e_atributos": {
-        "quantidade_na_embalagem": 10,
-        "unidade_da_embalagem": "Comprimidos",
-        "quantidade_do_conteudo": 10,
-        "unidade_do_conteudo": "unidades",
-        "sabor_aroma": "",
-        "fps_protecao_solar": 0,
-        "faixa_etaria": "Adulto e Pediátrico acima de 12 anos"
-      },
-      "conteudo_e_descricoes": {
-        "resumo_curto": "Indicado para o alívio da dor associada a contraturas musculares.",
-        "descricao_completa_html": "<p><strong>Nevralgex</strong> é indicado no alívio da dor associada a contraturas musculares decorrentes de processos traumáticos ou inflamatórios e em cefaleias tensionais.</p>"
-      },
-      "imagens_e_midia": {
-        "url_foto_principal": "https://vtx-ag-p.s3.us-east-1.amazonaws.com/10940/7896523207360.jpg",
-        "urls_fotos_adicionais": [],
-        "texto_alt_imagem_seo": "Nevralgex 10 comprimidos Cimed",
-        "url_video": "",
-        "url_video_youtube": ""
-      },
-      "seo_e_buscas": {
-        "link_da_pagina_slug": "nevralgex-300mg-50mg-35mg-10-comprimidos-563003",
-        "titulo_seo_meta_title": "Nevralgex 10 Comprimidos - Compre Online com Melhor Preço",
-        "descricao_seo_meta_description": "Compre Nevralgex com 10 comprimidos na Farmácias Associadas. Alívio rápido para dores musculares e dor de cabeça com entrega rápida.",
-        "tags_de_busca_interna": ["nevralgex", "dipirona", "relaxante muscular", "dor de cabeca", "cimed"],
-        "termos_pesquisa": "nevralgex dor muscular relaxante"
-      },
-      "status_e_organizacao": {
-        "produto_ativo": true,
-        "visivel_no_catalogo": true,
-        "buscavel_na_busca": true,
-        "disponivel_para_venda": true,
-        "destaque_na_home": true,
-        "selo_lancamento": false,
-        "prioridade_relevancia": 80,
-        "selos_ids": ["gen"],
-        "vitrines_colecoes": ["ofertas-do-mes", "mais-vendidos"],
-        "compre_junto_produto_id": ""
-      },
-      "servicos_e_saude": {
-        "instrucao_preparacao": "",
-        "prescricao_servico": "nao"
-      }
-    }
-  ];
+  const jsonSample = SAMPLE_ROWS.map(row => {
+    const obj: Record<string, any> = {};
+    HEADERS_OFICIAIS.forEach((header, idx) => {
+      obj[header] = row[idx] !== undefined ? row[idx] : "";
+    });
+    return obj;
+  });
 
   const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonSample, null, 2));
   const dlAnchorElem = document.createElement("a");
@@ -724,104 +731,19 @@ export function generateJsonTemplate() {
   document.body.appendChild(dlAnchorElem);
   dlAnchorElem.click();
   document.body.removeChild(dlAnchorElem);
+  URL.revokeObjectURL(url => {});
 }
 
 // ---- Export products as JSON ----
 export function exportProductsAsJson(products: Produto[]) {
-  const jsonList = products.map(p => ({
-    cabecalho_identificacao: {
-      codigo_interno: p.codigoInterno || p.id,
-      sku: p.sku || p.codigoInterno || p.ean || p.id,
-      ean_principal: p.ean || "",
-      ean_secundario_2: p.ean2 || "",
-      ean_secundario_3: p.ean3 || "",
-      eans_secundarios_adicionais: Array.isArray(p.eansSecundarios) ? p.eansSecundarios : (p.eansSecundarios ? [p.eansSecundarios] : []),
-      nome_produto_descricao_comercial: p.nome || "",
-      marca_fabricante_laboratorio: p.marca || ""
-    },
-    categorizacao_e_classificacao: {
-      categoria_principal: p.categoriaId || "",
-      subcategoria_principal: p.subcategoriaId || "",
-      categorias_adicionais: Array.isArray(p.categoriasAdicionais) ? p.categoriasAdicionais : (p.categoriasAdicionais ? [p.categoriasAdicionais] : []),
-      subcategorias_adicionais: Array.isArray(p.subcategoriasAdicionais) ? p.subcategoriasAdicionais : (p.subcategoriasAdicionais ? [p.subcategoriasAdicionais] : []),
-      tipo_produto: p.tipoProduto || "fisico",
-      natureza_do_produto: p.produtoNatureza || ""
-    },
-    informacoes_farmaceuticas_e_regulatorias: {
-      registro_anvisa_ms: p.registroAnvisa || "",
-      tarja: p.tarja || "Sem Tarja",
-      retem_receita: Boolean(p.retemReceita),
-      tipo_de_receita: p.tipoReceita || "",
-      medicamento_generico: Boolean(p.generico),
-      tipo_de_medicamento: p.tipoMedicamento || "",
-      principios_ativos_formula: Array.isArray(p.principiosAtivos) ? p.principiosAtivos.map(x => typeof x === 'string' ? x : x.nome).join(", ") : (p.principiosAtivos || ""),
-      classe_terapeutica: p.classeTerapeutica || "",
-      indicacao_terapeutica: p.indicacaoTerapeutica || "",
-      regime_de_preco: p.tipoDePreco || "Liberado",
-      ncm: p.ncm || "",
-      alerta_regulatorio: Boolean(p.alertaRegulatorio),
-      texto_alerta_regulatorio: p.alertaTexto || ""
-    },
-    precificacao_e_estoque: {
-      preco_de: p.precoDe || 0,
-      preco_por_venda: p.precoPor || 0,
-      preco_custo: p.precoCusto || 0,
-      estoque: p.estoque || 0,
-      preco_sob_consulta: Boolean(p.precoSobConsulta),
-      bloquear_preco: Boolean(p.bloquearPreco),
-      em_campanha: Boolean(p.emCampanha),
-      preco_campanha: p.precoCampanha || 0,
-      data_inicio_campanha: p.campanhaInicio || "",
-      data_fim_campanha: p.campanhaFim || "",
-      preco_encarte: p.precoEncarte || 0,
-      quantidade_minima_venda: p.quantidadeMinima || 1,
-      quantidade_multipla_venda: p.quantidadeMultipla || 1,
-      participa_programa_fidelidade: Boolean(p.programaFidelidade)
-    },
-    embalagem_e_atributos: {
-      quantidade_na_embalagem: p.quantidadeEmbalagem || 0,
-      unidade_da_embalagem: p.unidadeEmbalagem || "",
-      quantidade_do_conteudo: p.quantidadeConteudo || 0,
-      unidade_do_conteudo: p.unidadeConteudo || "",
-      sabor_aroma: p.sabor || "",
-      fps_protecao_solar: p.fps || 0,
-      faixa_etaria: p.faixaEtaria || ""
-    },
-    conteudo_e_descricoes: {
-      resumo_curto: p.resumoDescricao || "",
-      descricao_completa_html: p.descricao || ""
-    },
-    imagens_e_midia: {
-      url_foto_principal: p.foto || "",
-      urls_fotos_adicionais: Array.isArray(p.imagens) ? p.imagens.map((img: any) => typeof img === 'string' ? img : img?.caminhoImagem).filter(Boolean) : [],
-      texto_alt_imagem_seo: p.imagemAlt || "",
-      url_video: p.videoUrl || "",
-      url_video_youtube: p.youtubeVideoUrl || ""
-    },
-    seo_e_buscas: {
-      link_da_pagina_slug: p.url || "",
-      titulo_seo_meta_title: p.seoTitulo || "",
-      descricao_seo_meta_description: p.metaDescription || "",
-      tags_de_busca_interna: Array.isArray(p.internalTags) ? p.internalTags : (p.internalTags ? [p.internalTags] : []),
-      termos_pesquisa: p.termosPesquisa || ""
-    },
-    status_e_organizacao: {
-      produto_ativo: p.ativo !== false,
-      visivel_no_catalogo: p.visivel !== false,
-      buscavel_na_busca: p.buscavel !== false,
-      disponivel_para_venda: p.aVenda !== false,
-      destaque_na_home: Boolean(p.destaque),
-      selo_lancamento: Boolean(p.lancamento),
-      prioridade_relevancia: p.prioridade || 0,
-      selos_ids: Array.isArray(p.selosIds) ? p.selosIds : (p.selosIds ? [p.selosIds] : []),
-      vitrines_colecoes: Array.isArray(p.vitrines) ? p.vitrines : (p.vitrines ? [p.vitrines] : []),
-      compre_junto_produto_id: p.compreJuntoProdutoId || ""
-    },
-    servicos_e_saude: {
-      instrucao_preparacao: (p as any).instrucaoPreparacao || "",
-      prescricao_servico: (p as any).prescricaoServico || "nao"
-    }
-  }));
+  const jsonList = products.map(p => {
+    const row = formatProductRow(p);
+    const obj: Record<string, any> = {};
+    HEADERS_OFICIAIS.forEach((header, idx) => {
+      obj[header] = row[idx] !== undefined ? row[idx] : "";
+    });
+    return obj;
+  });
 
   const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonList, null, 2));
   const dlAnchorElem = document.createElement("a");
@@ -830,133 +752,15 @@ export function exportProductsAsJson(products: Produto[]) {
   document.body.appendChild(dlAnchorElem);
   dlAnchorElem.click();
   document.body.removeChild(dlAnchorElem);
+  URL.revokeObjectURL(url => {});
 }
 
 // ---- Export products as CSV (Spreadsheet) ----
 export function exportProductsAsCsv(products: Produto[]) {
-  const headers = [
-    // 1. Identificação Básica
-    "Código Interno", "SKU", "EAN (Código de Barras)", "EAN 2", "EAN 3", "EANs Secundários", "Nome do Produto", "Marca / Laboratório",
-    // 2. Categorias & Classificação
-    "Categoria Principal", "Subcategoria Principal", "Categorias Adicionais", "Subcategorias Adicionais", "Tipo de Produto", "Natureza do Produto",
-    // 3. Regulatório & Farmacêutico
-    "Registro ANVISA / MS", "Tarja", "Retém Receita", "Tipo de Receita", "Genérico", "Tipo de Medicamento", "Princípios Ativos / Fórmula", "Classe Terapêutica", "Indicação Terapêutica", "Regime de Preço", "NCM", "Alerta Regulatório", "Texto do Alerta",
-    // 4. Preços & Estoque
-    "Preço De (R$)", "Preço Por (Venda R$)", "Preço de Custo (R$)", "Estoque", "Preço Sob Consulta", "Bloquear Preço", "Em Campanha", "Preço Campanha (R$)", "Início Campanha", "Fim Campanha", "Preço Encarte (R$)", "Qtd Mínima", "Qtd Múltipla", "Programa Fidelidade",
-    // 5. Embalagem & Atributos
-    "Qtd Embalagem", "Unidade Embalagem", "Qtd Conteúdo", "Unidade Conteúdo", "Sabor / Aroma", "FPS", "Faixa Etária",
-    // 6. Descrições
-    "Resumo Curto", "Descrição Completa (HTML)",
-    // 7. Imagens & Mídia
-    "URL da Foto Principal", "URLs Fotos Adicionais", "Texto ALT da Imagem", "URL do Vídeo", "URL do Vídeo YouTube",
-    // 8. SEO & Busca
-    "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca", "Termos de Pesquisa",
-    // 9. Status & Visibilidade
-    "Produto Ativo", "Visível no Catálogo", "Buscável", "À Venda", "Destaque na Home", "Lançamento", "Prioridade (0-100)", "Selos IDs", "Vitrines", "Compre Junto ID",
-    // 10. Serviços
-    "Instrução de Preparação", "Exige Prescrição"
-  ];
-  
-  const getCatName = (id: string, isSubcat = false) => {
-    const cats = categoriesData as any[];
-    const cat = cats.find(c => String(c.id) === String(id));
-    return cat ? cat.nome : id;
-  };
-
-  const rows = products.map((p) => [
-    // 1. Identificação Básica
-    p.codigoInterno || p.id,
-    p.sku || p.codigoInterno || p.ean || p.id,
-    p.ean || "",
-    p.ean2 || "",
-    p.ean3 || "",
-    Array.isArray(p.eansSecundarios) ? p.eansSecundarios.join(", ") : (p.eansSecundarios || ""),
-    p.nome || "",
-    p.marca || "",
-
-    // 2. Categorias & Classificação
-    getCatName(p.categoriaId),
-    getCatName(p.subcategoriaId, true),
-    Array.isArray(p.categoriasAdicionais) ? p.categoriasAdicionais.join(", ") : (p.categoriasAdicionais || ""),
-    Array.isArray(p.subcategoriasAdicionais) ? p.subcategoriasAdicionais.join(", ") : (p.subcategoriasAdicionais || ""),
-    p.tipoProduto || "fisico",
-    p.produtoNatureza || "",
-
-    // 3. Regulatório & Farmacêutico
-    p.registroAnvisa || "",
-    p.tarja || "Sem Tarja",
-    p.retemReceita ? "Sim" : "Não",
-    p.tipoReceita || "",
-    p.generico ? "Sim" : "Não",
-    p.tipoMedicamento || "",
-    Array.isArray(p.principiosAtivos) ? p.principiosAtivos.map(x => typeof x === 'string' ? x : x.nome).join(", ") : (p.principiosAtivos || ""),
-    p.classeTerapeutica || "",
-    p.indicacaoTerapeutica || "",
-    p.tipoDePreco || "Liberado",
-    p.ncm || "",
-    p.alertaRegulatorio ? "Sim" : "Não",
-    p.alertaTexto || "",
-
-    // 4. Preços & Estoque
-    p.precoDe || 0,
-    p.precoPor || 0,
-    p.precoCusto || 0,
-    p.estoque || 0,
-    p.precoSobConsulta ? "Sim" : "Não",
-    p.bloquearPreco ? "Sim" : "Não",
-    p.emCampanha ? "Sim" : "Não",
-    p.precoCampanha || 0,
-    p.campanhaInicio || "",
-    p.campanhaFim || "",
-    p.precoEncarte || 0,
-    p.quantidadeMinima || 1,
-    p.quantidadeMultipla || 1,
-    p.programaFidelidade ? "Sim" : "Não",
-
-    // 5. Embalagem & Atributos
-    p.quantidadeEmbalagem || 0,
-    p.unidadeEmbalagem || "",
-    p.quantidadeConteudo || 0,
-    p.unidadeConteudo || "",
-    p.sabor || "",
-    p.fps || 0,
-    p.faixaEtaria || "",
-
-    // 6. Descrições
-    p.resumoDescricao || "",
-    p.descricao || "",
-
-    // 7. Imagens & Mídia
-    p.foto || "",
-    Array.isArray(p.imagens) ? p.imagens.map(img => typeof img === 'string' ? img : img?.caminhoImagem).filter(Boolean).join(", ") : "",
-    p.imagemAlt || "",
-    p.videoUrl || "",
-    p.youtubeVideoUrl || "",
-
-    // 8. SEO & Busca
-    p.url || "",
-    p.seoTitulo || "",
-    p.metaDescription || "",
-    Array.isArray(p.internalTags) ? p.internalTags.join(", ") : (p.internalTags || ""),
-    p.termosPesquisa || "",
-
-    // 9. Status & Visibilidade
-    p.ativo !== false ? "Sim" : "Não",
-    p.visivel !== false ? "Sim" : "Não",
-    p.buscavel !== false ? "Sim" : "Não",
-    p.aVenda !== false ? "Sim" : "Não",
-    p.destaque ? "Sim" : "Não",
-    p.lancamento ? "Sim" : "Não",
-    p.prioridade || 0,
-    Array.isArray(p.selosIds) ? p.selosIds.join(", ") : (p.selosIds || ""),
-    Array.isArray(p.vitrines) ? p.vitrines.join(", ") : (p.vitrines || ""),
-    p.compreJuntoProdutoId || "",
-    (p as any).instrucaoPreparacao || "",
-    (p as any).prescricaoServico || ""
-  ]);
+  const rows = products.map(p => formatProductRow(p));
 
   const csvContent = "\uFEFF" + [
-    headers.map(escapeCsvValue).join(";"),
+    HEADERS_OFICIAIS.map(escapeCsvValue).join(";"),
     ...rows.map(row => row.map(escapeCsvValue).join(";"))
   ].join("\r\n");
 
@@ -974,129 +778,9 @@ export function exportProductsAsCsv(products: Produto[]) {
 // ---- Export products as Excel ----
 export function exportProductsAsExcel(products: Produto[]) {
   const wb = XLSX.utils.book_new();
-  const headers = [
-    // 1. Identificação Básica
-    "Código Interno", "SKU", "EAN (Código de Barras)", "EAN 2", "EAN 3", "EANs Secundários", "Nome do Produto", "Marca / Laboratório",
-    // 2. Categorias & Classificação
-    "Categoria Principal", "Subcategoria Principal", "Categorias Adicionais", "Subcategorias Adicionais", "Tipo de Produto", "Natureza do Produto",
-    // 3. Regulatório & Farmacêutico
-    "Registro ANVISA / MS", "Tarja", "Retém Receita", "Tipo de Receita", "Genérico", "Tipo de Medicamento", "Princípios Ativos / Fórmula", "Classe Terapêutica", "Indicação Terapêutica", "Regime de Preço", "NCM", "Alerta Regulatório", "Texto do Alerta",
-    // 4. Preços & Estoque
-    "Preço De (R$)", "Preço Por (Venda R$)", "Preço de Custo (R$)", "Estoque", "Preço Sob Consulta", "Bloquear Preço", "Em Campanha", "Preço Campanha (R$)", "Início Campanha", "Fim Campanha", "Preço Encarte (R$)", "Qtd Mínima", "Qtd Múltipla", "Programa Fidelidade",
-    // 5. Embalagem & Atributos
-    "Qtd Embalagem", "Unidade Embalagem", "Qtd Conteúdo", "Unidade Conteúdo", "Sabor / Aroma", "FPS", "Faixa Etária",
-    // 6. Descrições
-    "Resumo Curto", "Descrição Completa (HTML)",
-    // 7. Imagens & Mídia
-    "URL da Foto Principal", "URLs Fotos Adicionais", "Texto ALT da Imagem", "URL do Vídeo", "URL do Vídeo YouTube",
-    // 8. SEO & Busca
-    "Link da Página (Slug)", "Título SEO", "Descrição SEO (Meta Description)", "Tags de Busca", "Termos de Pesquisa",
-    // 9. Status & Visibilidade
-    "Produto Ativo", "Visível no Catálogo", "Buscável", "À Venda", "Destaque na Home", "Lançamento", "Prioridade (0-100)", "Selos IDs", "Vitrines", "Compre Junto ID",
-    // 10. Serviços
-    "Instrução de Preparação", "Exige Prescrição"
-  ];
-  
-  const getCatName = (id: string, isSubcat = false) => {
-    const cats = categoriesData as any[];
-    const cat = cats.find(c => String(c.id) === String(id));
-    return cat ? cat.nome : id;
-  };
-
-  const rows = products.map((p) => [
-    // 1. Identificação Básica
-    p.codigoInterno || p.id,
-    p.sku || p.codigoInterno || p.ean || p.id,
-    p.ean || "",
-    p.ean2 || "",
-    p.ean3 || "",
-    Array.isArray(p.eansSecundarios) ? p.eansSecundarios.join(", ") : (p.eansSecundarios || ""),
-    p.nome || "",
-    p.marca || "",
-
-    // 2. Categorias & Classificação
-    getCatName(p.categoriaId),
-    getCatName(p.subcategoriaId, true),
-    Array.isArray(p.categoriasAdicionais) ? p.categoriasAdicionais.join(", ") : (p.categoriasAdicionais || ""),
-    Array.isArray(p.subcategoriasAdicionais) ? p.subcategoriasAdicionais.join(", ") : (p.subcategoriasAdicionais || ""),
-    p.tipoProduto || "fisico",
-    p.produtoNatureza || "",
-
-    // 3. Regulatório & Farmacêutico
-    p.registroAnvisa || "",
-    p.tarja || "Sem Tarja",
-    p.retemReceita ? "Sim" : "Não",
-    p.tipoReceita || "",
-    p.generico ? "Sim" : "Não",
-    p.tipoMedicamento || "",
-    Array.isArray(p.principiosAtivos) ? p.principiosAtivos.map(x => typeof x === 'string' ? x : x.nome).join(", ") : (p.principiosAtivos || ""),
-    p.classeTerapeutica || "",
-    p.indicacaoTerapeutica || "",
-    p.tipoDePreco || "Liberado",
-    p.ncm || "",
-    p.alertaRegulatorio ? "Sim" : "Não",
-    p.alertaTexto || "",
-
-    // 4. Preços & Estoque
-    p.precoDe || 0,
-    p.precoPor || 0,
-    p.precoCusto || 0,
-    p.estoque || 0,
-    p.precoSobConsulta ? "Sim" : "Não",
-    p.bloquearPreco ? "Sim" : "Não",
-    p.emCampanha ? "Sim" : "Não",
-    p.precoCampanha || 0,
-    p.campanhaInicio || "",
-    p.campanhaFim || "",
-    p.precoEncarte || 0,
-    p.quantidadeMinima || 1,
-    p.quantidadeMultipla || 1,
-    p.programaFidelidade ? "Sim" : "Não",
-
-    // 5. Embalagem & Atributos
-    p.quantidadeEmbalagem || 0,
-    p.unidadeEmbalagem || "",
-    p.quantidadeConteudo || 0,
-    p.unidadeConteudo || "",
-    p.sabor || "",
-    p.fps || 0,
-    p.faixaEtaria || "",
-
-    // 6. Descrições
-    p.resumoDescricao || "",
-    p.descricao || "",
-
-    // 7. Imagens & Mídia
-    p.foto || "",
-    Array.isArray(p.imagens) ? p.imagens.map(img => typeof img === 'string' ? img : img?.caminhoImagem).filter(Boolean).join(", ") : "",
-    p.imagemAlt || "",
-    p.videoUrl || "",
-    p.youtubeVideoUrl || "",
-
-    // 8. SEO & Busca
-    p.url || "",
-    p.seoTitulo || "",
-    p.metaDescription || "",
-    Array.isArray(p.internalTags) ? p.internalTags.join(", ") : (p.internalTags || ""),
-    p.termosPesquisa || "",
-
-    // 9. Status & Visibilidade
-    p.ativo !== false ? "Sim" : "Não",
-    p.visivel !== false ? "Sim" : "Não",
-    p.buscavel !== false ? "Sim" : "Não",
-    p.aVenda !== false ? "Sim" : "Não",
-    p.destaque ? "Sim" : "Não",
-    p.lancamento ? "Sim" : "Não",
-    p.prioridade || 0,
-    Array.isArray(p.selosIds) ? p.selosIds.join(", ") : (p.selosIds || ""),
-    Array.isArray(p.vitrines) ? p.vitrines.join(", ") : (p.vitrines || ""),
-    p.compreJuntoProdutoId || "",
-    (p as any).instrucaoPreparacao || "",
-    (p as any).prescricaoServico || ""
-  ]);
-
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 4, 18) }));
+  const rows = products.map(p => formatProductRow(p));
+  const ws = XLSX.utils.aoa_to_sheet([HEADERS_OFICIAIS, ...rows]);
+  ws["!cols"] = HEADERS_OFICIAIS.map((h) => ({ wch: Math.max(h.length + 4, 18) }));
   XLSX.utils.book_append_sheet(wb, ws, "Produtos");
   XLSX.writeFile(wb, "produtos_exportados.xlsx");
 }

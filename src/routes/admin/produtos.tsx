@@ -314,7 +314,7 @@ function AdminProdutos() {
   const handleExportJson = async () => {
     await runWithMassLoading({
       title: "Exportando JSON em Massa",
-      message: `Estruturando ${serverProducts.length} produtos em formato JSON...`,
+      message: `Estruturando ${serverProducts.length} produtos em formato JSON com os 35 campos oficiais...`,
       submessage: "O download iniciará automaticamente após a renderização dos dados.",
       icon: "download"
     }, async () => {
@@ -326,7 +326,7 @@ function AdminProdutos() {
   const handleExportCsv = async () => {
     await runWithMassLoading({
       title: "Exportando Planilha CSV em Massa",
-      message: `Exportando todos os ${serverProducts.length} produtos com os 72 campos oficiais para CSV...`,
+      message: `Exportando todos os ${serverProducts.length} produtos com os 35 campos oficiais para CSV...`,
       submessage: "Aguarde a serialização e renderização do arquivo.",
       icon: "spreadsheet"
     }, async () => {
@@ -338,7 +338,7 @@ function AdminProdutos() {
   const handleExportExcel = async () => {
     await runWithMassLoading({
       title: "Exportando Planilha Excel em Massa",
-      message: `Formatando ${serverProducts.length} produtos em planilha Excel (.xlsx)...`,
+      message: `Formatando ${serverProducts.length} produtos com os 35 campos oficiais em planilha Excel (.xlsx)...`,
       submessage: "Aguarde o processamento dos dados.",
       icon: "spreadsheet"
     }, async () => {
@@ -421,7 +421,7 @@ function AdminProdutos() {
   const handleDownloadCsvTemplate = async () => {
     await runWithMassLoading({
       title: "Gerando Modelo de Planilha (.csv)",
-      message: "Estruturando planilha modelo com todos os 72 campos oficiais...",
+      message: "Estruturando planilha modelo com todos os 35 campos oficiais do cadastro de produtos...",
       icon: "spreadsheet"
     }, async () => {
       generateCsvTemplate();
@@ -431,7 +431,7 @@ function AdminProdutos() {
   const handleDownloadExcelTemplate = async () => {
     await runWithMassLoading({
       title: "Gerando Modelo de Planilha (.xlsx)",
-      message: "Gerando arquivo Excel (.xlsx) com cabeçalhos oficiais e exemplos...",
+      message: "Gerando arquivo Excel (.xlsx) com os 35 cabeçalhos oficiais e exemplos...",
       icon: "spreadsheet"
     }, async () => {
       generateTemplate();
@@ -441,7 +441,7 @@ function AdminProdutos() {
   const handleDownloadJsonTemplate = async () => {
     await runWithMassLoading({
       title: "Gerando Modelo JSON (.json)",
-      message: "Gerando modelo estruturado JSON de produtos...",
+      message: "Gerando modelo estruturado JSON de produtos com os 35 campos oficiais...",
       icon: "download"
     }, async () => {
       generateJsonTemplate();
