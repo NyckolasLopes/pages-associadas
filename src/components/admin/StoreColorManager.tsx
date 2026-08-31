@@ -40,6 +40,7 @@ import {
   CreditCard,
   Mail,
   Send,
+  Lock,
 } from "lucide-react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
@@ -397,6 +398,12 @@ export function StoreColorManager({
   const effectiveStoreId = storeId || admin.activeStoreId;
   const currentPharmacy = admin.pharmacies.find((p) => p.id === effectiveStoreId);
 
+  const isGlobal = admin.currentUser?.proprietario || 
+    admin.grupos?.find(g => g.id === admin.currentUser?.grupoId)?.permissao_total || 
+    admin.currentUser?.lojasVinculadas === undefined || false;
+
+  const isPleno = currentPharmacy?.categoriaAssociado === 'Pleno' || currentPharmacy?.isPleno === true;
+
   const defaultTheme: Record<string, string> = useMemo(() => ({
     "--primary": "#00B5AD",
     "--primary-foreground": "#FFFFFF",
@@ -458,6 +465,7 @@ export function StoreColorManager({
   }), []);
 
   const [colors, setColors] = useState<Record<string, string>>(() => {
+    if (isPleno) return defaultTheme;
     const savedColors = currentPharmacy?.themeColors;
     if (savedColors && typeof savedColors === 'object' && Object.keys(savedColors).length > 0) {
       return { ...defaultTheme, ...savedColors };
@@ -470,18 +478,21 @@ export function StoreColorManager({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (currentPharmacy?.themeColors && Object.keys(currentPharmacy.themeColors).length > 0) {
+    if (isPleno) {
+      setColors(defaultTheme);
+    } else if (currentPharmacy?.themeColors && Object.keys(currentPharmacy.themeColors).length > 0) {
       setColors({ ...defaultTheme, ...currentPharmacy.themeColors });
     } else {
       setColors(defaultTheme);
     }
-  }, [currentPharmacy, defaultTheme]);
+  }, [currentPharmacy, defaultTheme, isPleno]);
 
   const getColor = (key: string, fallback: string) => {
     return colors[key] || colors[`--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`] || colors[key.replace(/^--/, '')] || fallback;
   };
 
   const updateColor = (key: string, value: string) => {
+    if (isPleno) return;
     setColors(prev => {
       const updated = { ...prev, [key]: value };
       if (key.startsWith('--')) {
@@ -496,6 +507,7 @@ export function StoreColorManager({
   };
 
   const applyPreset = (preset: ColorPreset) => {
+    if (isPleno) return;
     setColors(prev => ({
       ...prev,
       ...preset.colors
@@ -504,6 +516,7 @@ export function StoreColorManager({
   };
 
   const handleResetToDefault = () => {
+    if (isPleno) return;
     setColors(defaultTheme);
     toast.info("Cores restauradas para o padrão oficial das Farmácias Associadas.");
   };
@@ -514,14 +527,13 @@ export function StoreColorManager({
       return;
     }
 
+    if (isPleno) {
+      toast.info("Lojas da categoria Pleno utilizam exclusivamente as cores oficiais da rede.");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      if (currentPharmacy?.categoriaAssociado === 'Pleno' || currentPharmacy?.isPleno === true) {
-        toast.error("Farmácias da categoria Pleno não podem personalizar cores.");
-        setIsSaving(false);
-        return;
-      }
-
       if (currentPharmacy) {
         await admin.updatePharmacy(effectiveStoreId, {
           ...currentPharmacy,
@@ -546,9 +558,53 @@ export function StoreColorManager({
     getColor("--footer-bg", "#00B5AD"),
   ], [colors]);
 
+  const ColorRow = ({
+    label,
+    description,
+    value,
+    onChange,
+  }: {
+    label: string;
+    description: string;
+    value: string;
+    onChange: (val: string) => void;
+  }) => {
+    return (
+      <div className={`flex items-start justify-between gap-4 p-2 rounded-lg transition ${isPleno ? 'opacity-70 bg-slate-50/50 cursor-not-allowed' : 'hover:bg-slate-50/80'}`}>
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div
+            className="w-8 h-8 rounded-full border border-slate-300 shadow-sm shrink-0 mt-0.5 transition-colors"
+            style={{ backgroundColor: value || "#000000" }}
+          />
+          <div className="min-w-0 flex-1">
+            <Label className="text-xs font-bold text-slate-800 block">{label}</Label>
+            <p className="text-[11px] text-slate-500 leading-tight mt-0.5">{description}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Input
+            type="color"
+            disabled={isPleno}
+            className="w-9 h-8 p-0.5 cursor-pointer rounded-md border-slate-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            value={value || "#000000"}
+            onChange={(e) => !isPleno && onChange(e.target.value)}
+          />
+          <Input
+            type="text"
+            disabled={isPleno}
+            className="font-mono uppercase w-24 h-8 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            value={value || "#000000"}
+            onChange={(e) => !isPleno && onChange(e.target.value)}
+          />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      {showStoreSelector && !storeId && <StoreSelector />}
+      {showStoreSelector && !storeId && <StoreSelector hidePlenoForNonAdmin={true} />}
 
       {/* Top Header Card */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -561,33 +617,50 @@ export function StoreColorManager({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <Button
-            variant="outline"
-            onClick={handleResetToDefault}
-            size="sm"
-            className="text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Restaurar Padrão
-          </Button>
+          {isPleno ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300 px-3.5 py-2 rounded-lg shadow-sm">
+              <Lock className="w-4 h-4 text-amber-700" />
+              Somente Visualização (Cores da Rede)
+            </span>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleResetToDefault}
+                size="sm"
+                className="text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Restaurar Padrão
+              </Button>
 
-          <Button
-            onClick={handleSave}
-            disabled={isSaving}
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-bold"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {isSaving ? "Salvando..." : "Salvar Alterações"}
-          </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isSaving}
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-bold"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? "Salvando..." : "Salvar Alterações"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
-      {currentPharmacy && (currentPharmacy.categoriaAssociado === 'Pleno' || currentPharmacy.isPleno === true) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 text-amber-900 text-sm shadow-sm">
-          <Info className="w-5 h-5 text-amber-600 shrink-0" />
-          <span>
-            <strong>Atenção:</strong> Esta farmácia é uma <strong>Loja Plena</strong>. Lojas plenas utilizam a identidade visual oficial da rede. Cores personalizadas são aplicadas somente para farmácias da categoria Parceiro.
+      {isPleno && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-amber-950 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Info className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <p className="font-bold text-sm">Farmácia Categoria Pleno — Visualização das Cores da Rede</p>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Esta filial pertence à categoria Pleno e utiliza exclusivamente a identidade visual oficial da rede Farmácias Associadas. As cores estão disponíveis somente para visualização.
+              </p>
+            </div>
+          </div>
+          <span className="px-3 py-1 bg-amber-200 text-amber-900 text-xs font-black uppercase rounded-full shrink-0 w-fit">
+            Somente Leitura
           </span>
         </div>
       )}
@@ -606,16 +679,20 @@ export function StoreColorManager({
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">Visão geral das cores principais em uso</p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 font-bold text-xs"
-                onClick={() => setShowPresets(!showPresets)}
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5 mr-1.5" />
-                {showPresets ? "Ocultar predefinições" : "Escolher outra paleta"}
-              </Button>
+              {!isPleno && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 font-bold text-xs"
+                  onClick={() => setShowPresets(!showPresets)}
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 mr-1.5" />
+                  {showPresets ? "Ocultar predefinições" : "Escolher outra paleta"}
+                </Button>
+              )}
             </div>
+
+            {/* Current Palette Stripe Bar */}
 
             {/* Current Palette Stripe Bar */}
             <div className="h-14 w-full rounded-xl overflow-hidden shadow-inner flex border border-slate-200">
@@ -1706,58 +1783,23 @@ export function StoreColorManager({
               </div>
             </div>
 
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-sm"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? "Salvando cores..." : "Salvar e Aplicar Cores na Loja"}
-            </Button>
+            {isPleno ? (
+              <div className="w-full mt-4 bg-slate-100 border border-slate-300 text-slate-600 font-bold h-11 rounded-lg flex items-center justify-center gap-2 text-sm shadow-sm">
+                <Lock className="w-4 h-4 text-amber-600" />
+                Loja Plena — Visualização das Cores Oficiais da Rede
+              </div>
+            ) : (
+              <Button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-sm"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? "Salvando cores..." : "Salvar e Aplicar Cores na Loja"}
+              </Button>
+            )}
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function ColorRow({
-  label,
-  description,
-  value,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  value: string;
-  onChange: (val: string) => void;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4 p-2 rounded-lg hover:bg-slate-50/80 transition">
-      <div className="flex items-start gap-3 flex-1 min-w-0">
-        <div
-          className="w-8 h-8 rounded-full border border-slate-300 shadow-sm shrink-0 mt-0.5 transition-colors"
-          style={{ backgroundColor: value || "#000000" }}
-        />
-        <div className="min-w-0 flex-1">
-          <Label className="text-xs font-bold text-slate-800 block cursor-pointer">{label}</Label>
-          <p className="text-[11px] text-slate-500 leading-tight mt-0.5">{description}</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 shrink-0">
-        <Input
-          type="color"
-          className="w-9 h-8 p-0.5 cursor-pointer rounded-md border-slate-200 shrink-0"
-          value={value || "#000000"}
-          onChange={(e) => onChange(e.target.value)}
-        />
-        <Input
-          type="text"
-          className="font-mono uppercase w-24 h-8 text-xs font-bold"
-          value={value || "#000000"}
-          onChange={(e) => onChange(e.target.value)}
-        />
       </div>
     </div>
   );

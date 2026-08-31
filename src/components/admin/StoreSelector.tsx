@@ -5,9 +5,10 @@ import { Store } from "lucide-react";
 
 interface StoreSelectorProps {
   className?: string;
+  hidePlenoForNonAdmin?: boolean;
 }
 
-export function StoreSelector({ className }: StoreSelectorProps) {
+export function StoreSelector({ className, hidePlenoForNonAdmin = false }: StoreSelectorProps) {
   const { currentUser, pharmacies, activeStoreId, setActiveStoreId, grupos } = useAdmin();
 
   // Basic checks
@@ -19,7 +20,14 @@ export function StoreSelector({ className }: StoreSelectorProps) {
 
   const userStores = isGlobalAdmin 
     ? pharmacies 
-    : pharmacies.filter(p => currentUser.lojasVinculadas?.includes(p.id));
+    : pharmacies.filter(p => {
+        const isLinked = currentUser.lojasVinculadas?.includes(p.id);
+        if (!isLinked) return false;
+        if (hidePlenoForNonAdmin && (p.categoriaAssociado === 'Pleno' || p.isPleno === true)) {
+          return false;
+        }
+        return true;
+      });
 
   if (userStores.length === 0) return null;
   if (!isGlobalAdmin && userStores.length <= 1) return null;
@@ -46,12 +54,22 @@ export function StoreSelector({ className }: StoreSelectorProps) {
                 <span className="font-bold text-emerald-800">Todas as Lojas (Visão Global)</span>
               </SelectItem>
             )}
-            {userStores.map(loja => (
-              <SelectItem key={loja.id} value={loja.id}>
-                <span className="font-bold text-slate-800">{(loja as any).nomeFantasia || loja.nome}</span>
-                {loja.cidade && <span className="text-slate-500 text-xs ml-2 font-normal">({loja.cidade})</span>}
-              </SelectItem>
-            ))}
+            {userStores.map(loja => {
+              const isLojaPleno = loja.categoriaAssociado === 'Pleno' || loja.isPleno === true;
+              return (
+                <SelectItem key={loja.id} value={loja.id}>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-slate-800">{(loja as any).nomeFantasia || loja.nome}</span>
+                    {loja.cidade && <span className="text-slate-500 text-xs font-normal">({loja.cidade})</span>}
+                    {isGlobalAdmin && isLojaPleno && (
+                      <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+                        Pleno
+                      </span>
+                    )}
+                  </div>
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
       </div>
