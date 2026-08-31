@@ -30,6 +30,7 @@ function SearchPage() {
   const { q, ...filters } = searchParams;
   
   const [productsList, setProductsList] = useState<Produto[]>([]);
+  const [unfilteredResults, setUnfilteredResults] = useState<Produto[]>([]);
   const [didYouMean, setDidYouMean] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   
@@ -57,18 +58,21 @@ function SearchPage() {
           const { results, didYouMean: dym } = await catalog.searchWithSuggestions(q, { ...filters, page: 0, pageSize: 24 }, selectedPharmacyId);
           if (!isCurrent) return;
           setProductsList(results || []);
+          setUnfilteredResults(results || []);
           setDidYouMean(dym);
           setHasMore((results || []).length >= 24);
         } else {
           const results = await catalog.listProducts({ ...filters, page: 0, pageSize: 24 }, selectedPharmacyId);
           if (!isCurrent) return;
           setProductsList(results || []);
+          setUnfilteredResults(results || []);
           setDidYouMean(undefined);
           setHasMore((results || []).length >= 24);
         }
       } catch (e) {
         if (!isCurrent) return;
         setProductsList([]);
+        setUnfilteredResults([]);
         setHasMore(false);
       } finally {
         if (isCurrent) setLoading(false);

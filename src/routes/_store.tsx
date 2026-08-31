@@ -5,6 +5,7 @@ import { Header } from "@/components/storefront/Header";
 import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
+import { useAuth } from "@/stores/auth";
 
 import { resetStoreTheme } from "@/lib/themeUtils";
 
@@ -158,15 +159,20 @@ function StoreLayout() {
 
     // Salva o slug da loja para páginas que não têm slug na URL (login, perfil, etc.)
     const isStoreSlugPage = potentialSlug && !SYSTEM_PAGES.has(potentialSlug);
+    const slug = isStoreSlugPage
+      ? safeSlugify(potentialSlug)
+      : activePharmacy.slug
+      ? safeSlugify(activePharmacy.slug)
+      : safeSlugify(activePharmacy.nome || activePharmacy.id);
+
     if (isStoreSlugPage) {
       try {
-        const slug = activePharmacy.slug
-          ? safeSlugify(activePharmacy.slug)
-          : safeSlugify(activePharmacy.nome || activePharmacy.id);
         sessionStorage.setItem('fa-last-store-slug', slug);
       } catch { /* sessionStorage indisponível */ }
     }
-  }, [activePharmacy?.id, potentialSlug]);
+
+    useAuth.getState().syncStoreSession(slug);
+  }, [activePharmacy?.id, activePharmacy?.slug, potentialSlug]);
 
   useEffect(() => {
     if (!activePharmacy) return;

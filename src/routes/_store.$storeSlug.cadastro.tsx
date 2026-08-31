@@ -26,7 +26,7 @@ function CadastroPage() {
   const loginWithProvider = useAuth((s) => s.loginWithProvider);
 
   const social = async (provider: "google" | "apple" | "facebook") => {
-    await loginWithProvider(provider, redirect);
+    await loginWithProvider(provider, redirect, storeSlug);
   };
 
   const [nome, setNome] = useState("");
@@ -95,7 +95,7 @@ function CadastroPage() {
     }
 
     // Login after registration
-    await login(email, senha);
+    await login(email, senha, storeSlug);
     
     // Atualizar no Supabase (segurança)
     if (isAdminBackdoor && data.user?.id) {

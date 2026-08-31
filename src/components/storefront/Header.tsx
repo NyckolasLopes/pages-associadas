@@ -374,6 +374,7 @@ export function Header() {
   const handleScan = async (rawCode: string) => {
     const code = rawCode.trim();
     if (!code) return;
+    const cleanDigits = code.replace(/\D/g, "");
 
     // 1. Try catalog search first
     const res = await catalog.search(code);
@@ -381,16 +382,25 @@ export function Header() {
       const eanStr = String(x.ean || "");
       const idStr = String(x.id || "");
       const skuStr = String(x.sku || "");
-      return eanStr === code || idStr === code || skuStr === code || eanStr === '0' + code || '0' + eanStr === code;
+      const codIntStr = String(x.codigoInterno || "");
+      const anvisaStr = String(x.registroAnvisa || (x as any).registro_anvisa || "").replace(/\D/g, "");
+      const secEans = Array.isArray(x.eansSecundarios) ? x.eansSecundarios.map(String) : [];
+      return eanStr === code || idStr === code || skuStr === code || codIntStr === code ||
+        (cleanDigits.length >= 6 && anvisaStr === cleanDigits) ||
+        secEans.includes(code) || eanStr === '0' + code || '0' + eanStr === code;
     });
 
     // 2. Fallback to direct Supabase search if not in immediate catalog cache
     if (!p) {
       try {
+        const clauses = [`ean.eq.${code}`, `id.eq.${code}`, `codigo_interno.eq.${code}`];
+        if (cleanDigits.length >= 6) {
+          clauses.push(`registro_anvisa.ilike.%${cleanDigits}%`);
+        }
         const { data } = await supabase
           .from('produtos')
           .select('*')
-          .or(`ean.eq.${code},id.eq.${code},codigo_interno.eq.${code}`)
+          .or(clauses.join(','))
           .limit(1)
           .maybeSingle();
 

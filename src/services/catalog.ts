@@ -306,16 +306,32 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
     .filter(p => p && p.id)
     .sort((a, b) => (b.nivelRelevancia || 0) - (a.nivelRelevancia || 0));
   
-  // Pre-calculate search strings for faster exact matching
+  // Pre-calculate search strings for faster exact matching across all fields
   merged.forEach((p: any) => {
     const n = removeAccents(String(p.nome || "").toLowerCase());
-    const tags = (p.internalTags || []).map((t: string) => removeAccents(String(t || "").toLowerCase()));
-    const pa = removeAccents(String(p.principiosAtivos || "").toLowerCase());
-    const fab = removeAccents(String(p.marca || "").toLowerCase());
-    const terms = removeAccents(String(p.termosPesquisa || "").toLowerCase());
-    const desc = removeAccents(String(p.descricao || "").toLowerCase());
     const brand = removeAccents(String(p.marca || "").toLowerCase());
-    p._searchString = [n, ...tags, pa, fab, terms, desc, brand].join(" ");
+    const ean = [
+      p.ean, p.ean2, p.ean3, p.sku, p.codigoInterno,
+      ...(Array.isArray(p.eansSecundarios) ? p.eansSecundarios : [])
+    ].filter(Boolean).map(e => String(e).toLowerCase()).join(" ");
+    const anvisa = removeAccents(String(p.registroAnvisa || p.registro_anvisa || "").toLowerCase());
+    const tarja = removeAccents(String(p.tarja || "").toLowerCase());
+    const pa = Array.isArray(p.principiosAtivos)
+      ? p.principiosAtivos.map((x: any) => typeof x === "string" ? x : `${x.nome || ""} ${x.concentracao || ""} ${x.dosagem || ""}`).join(" ")
+      : String(p.principiosAtivos || "");
+    const paClean = removeAccents(pa.toLowerCase());
+    const tags = (p.internalTags || []).map((t: string) => removeAccents(String(t || "").toLowerCase()));
+    const terms = removeAccents(String(p.termosPesquisa || "").toLowerCase());
+    const desc = removeAccents(String(p.descricao || "").replace(/<[^>]*>?/gm, " ").toLowerCase());
+    const resumo = removeAccents(String(p.resumoDescricao || "").toLowerCase());
+    const ind = removeAccents(String(p.indicacaoTerapeutica || "").toLowerCase());
+    const cls = removeAccents(String(p.classeTerapeutica || "").toLowerCase());
+    const chars = Array.isArray(p.caracteristicas)
+      ? p.caracteristicas.map((c: any) => typeof c === "string" ? c : `${c.titulo || ""} ${c.descricao || ""}`).join(" ")
+      : "";
+    const charsClean = removeAccents(chars.toLowerCase());
+
+    p._searchString = [n, brand, ean, anvisa, tarja, paClean, ...tags, terms, desc, resumo, ind, cls, charsClean].join(" ");
   });
   
   if (!lojaId) {
@@ -337,7 +353,7 @@ export const getAllProdutos = (lojaId?: string | null): Produto[] => {
 
 const wait = <T,>(v: T, ms = 0) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 
-// Fuzzy search index — typo-tolerant
+// Fuzzy search index — typo-tolerant across all product fields
 const getFuse = () => {
   const produtos = getAllProdutos();
   if (cachedFuse) return cachedFuse;
@@ -345,14 +361,22 @@ const getFuse = () => {
   cachedFuse = new Fuse(produtos, {
     keys: [
       { name: "nome", weight: 4.0 },
-      { name: "termosPesquisa", weight: 3.5 },
-      { name: "internalTags", weight: 3.0 },
-      { name: "principiosAtivos", weight: 2.5 },
-      { name: "ean", weight: 2.0 },
-      { name: "marca", weight: 1.5 },
-      { name: "marca", weight: 1.0 },
-      { name: "descricao", weight: 0.5 },
-      { name: "resumoDescricao", weight: 0.5 },
+      { name: "ean", weight: 3.5 },
+      { name: "eansSecundarios", weight: 3.0 },
+      { name: "codigoInterno", weight: 3.0 },
+      { name: "sku", weight: 3.0 },
+      { name: "registroAnvisa", weight: 3.5 },
+      { name: "marca", weight: 3.0 },
+      { name: "principiosAtivos", weight: 3.5 },
+      { name: "termosPesquisa", weight: 3.0 },
+      { name: "tarja", weight: 2.5 },
+      { name: "indicacaoTerapeutica", weight: 2.5 },
+      { name: "classeTerapeutica", weight: 2.0 },
+      { name: "caracteristicas.titulo", weight: 2.0 },
+      { name: "caracteristicas.descricao", weight: 2.0 },
+      { name: "internalTags", weight: 2.0 },
+      { name: "resumoDescricao", weight: 1.5 },
+      { name: "descricao", weight: 1.0 },
     ],
     threshold: 0.45, // Mais tolerante a erros de ortografia
     ignoreLocation: true, // Ignora a posição da palavra
@@ -790,40 +814,51 @@ export const catalog = {
     const profile = analyzeSearchQuery(q);
     let candidates: Produto[] = [];
 
-    if (profile.isNumeric) {
-      // EAN / SKU / ID query
-      const query = supabase.from('produtos').select('*')
-        .or(`ean.eq.${profile.cleanQuery},codigo_interno.eq.${profile.cleanQuery},id.eq.${profile.cleanQuery}`)
-        .limit(60);
-      candidates = await fetchFromSupabaseWithPrices(query, lojaId);
+    // Combine Supabase query and local effective products for maximum coverage
+    const localMatches = rankProductsBySearch(getAllProdutos(lojaId), q).ranked;
+
+    if (profile.isCodeLike && profile.digitsOnly.length >= 4) {
+      // EAN / SKU / Registro ANVISA / ID query
+      const codeQuery = supabase.from('produtos').select('*')
+        .or(`ean.ilike.%${profile.digitsOnly}%,codigo_interno.ilike.%${profile.digitsOnly}%,registro_anvisa.ilike.%${profile.digitsOnly}%,id.eq.${profile.cleanQuery}`)
+        .limit(100);
+      candidates = await fetchFromSupabaseWithPrices(codeQuery, lojaId);
     } else {
-      // Multi-column and multi-token search clauses using ONLY existing Supabase columns
+      // Multi-column and multi-token search clauses using existing Supabase columns
       const orClauses: string[] = [];
       const cleanQ = profile.cleanQuery;
 
-      // 1. Full query matches
+      // 1. Full query matches across all relevant columns
       if (cleanQ) {
         orClauses.push(`nome.ilike.%${cleanQ}%`);
         orClauses.push(`marca.ilike.%${cleanQ}%`);
         orClauses.push(`descricao.ilike.%${cleanQ}%`);
+        orClauses.push(`ean.ilike.%${cleanQ}%`);
+        orClauses.push(`codigo_interno.ilike.%${cleanQ}%`);
+        orClauses.push(`registro_anvisa.ilike.%${cleanQ}%`);
+        orClauses.push(`tarja.ilike.%${cleanQ}%`);
         orClauses.push(`classe_terapeutica.ilike.%${cleanQ}%`);
         orClauses.push(`indicacao_terapeutica.ilike.%${cleanQ}%`);
         orClauses.push(`slug.ilike.%${cleanQ}%`);
       }
 
-      // 2. Individual tokens (e.g. "pomada" and "assadura")
+      // 2. Individual tokens (e.g. "dipirona", "500mg", "ems")
       for (const token of profile.tokens) {
-        if (token.length >= 3) {
+        if (token.length >= 2) {
           orClauses.push(`nome.ilike.%${token}%`);
           orClauses.push(`marca.ilike.%${token}%`);
           orClauses.push(`descricao.ilike.%${token}%`);
+          orClauses.push(`ean.ilike.%${token}%`);
+          orClauses.push(`codigo_interno.ilike.%${token}%`);
+          orClauses.push(`registro_anvisa.ilike.%${token}%`);
+          orClauses.push(`tarja.ilike.%${token}%`);
           orClauses.push(`classe_terapeutica.ilike.%${token}%`);
           orClauses.push(`indicacao_terapeutica.ilike.%${token}%`);
         }
       }
 
       // 3. Synonym / Indication expanded terms
-      for (const exp of profile.expandedTerms.slice(0, 6)) {
+      for (const exp of profile.expandedTerms.slice(0, 8)) {
         if (exp !== cleanQ && exp.length >= 3) {
           orClauses.push(`nome.ilike.%${exp}%`);
           orClauses.push(`marca.ilike.%${exp}%`);
@@ -835,6 +870,7 @@ export const catalog = {
       // 4. "Did you mean" typo correction term
       if (profile.didYouMean) {
         orClauses.push(`nome.ilike.%${profile.didYouMean}%`);
+        orClauses.push(`marca.ilike.%${profile.didYouMean}%`);
         orClauses.push(`descricao.ilike.%${profile.didYouMean}%`);
       }
 
@@ -842,23 +878,33 @@ export const catalog = {
       if (uniqueClauses.length > 0) {
         const query = supabase.from('produtos').select('*')
           .or(uniqueClauses.join(','))
-          .limit(160);
+          .limit(200);
 
         candidates = await fetchFromSupabaseWithPrices(query, lojaId);
       }
 
       // Fallback if broad search found 0 candidates: try matching first 2 tokens
       if (candidates.length === 0 && profile.tokens.length > 0) {
-        const fallbackClauses = profile.tokens.slice(0, 2).map(t => `nome.ilike.%${t}%,descricao.ilike.%${t}%`).join(',');
+        const fallbackClauses = profile.tokens.slice(0, 2).map(t => `nome.ilike.%${t}%,marca.ilike.%${t}%,descricao.ilike.%${t}%`).join(',');
         if (fallbackClauses) {
-          const fallbackQuery = supabase.from('produtos').select('*').or(fallbackClauses).limit(80);
+          const fallbackQuery = supabase.from('produtos').select('*').or(fallbackClauses).limit(100);
           candidates = await fetchFromSupabaseWithPrices(fallbackQuery, lojaId);
         }
       }
     }
 
+    // Merge Supabase candidates with local memory matches (deduplicate by id)
+    const candidatesMap = new Map<string, Produto>();
+    candidates.forEach(p => candidatesMap.set(p.id, p));
+    localMatches.forEach(p => {
+      if (!candidatesMap.has(p.id)) {
+        candidatesMap.set(p.id, p);
+      }
+    });
+    const allCandidates = Array.from(candidatesMap.values());
+
     // Apply filters (categories, price, prescription, etc.)
-    const filteredCandidates = applyFilters(candidates, filters);
+    const filteredCandidates = applyFilters(allCandidates, filters);
 
     // Score and rank candidates by relevance & typo tolerance
     const { ranked, didYouMean } = rankProductsBySearch(filteredCandidates, q);

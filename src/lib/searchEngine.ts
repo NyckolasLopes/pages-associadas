@@ -1,5 +1,11 @@
 import type { Produto } from "@/types";
 
+// Strip HTML tags from strings
+export function stripHtml(html?: string | null): string {
+  if (!html) return "";
+  return html.replace(/<[^>]*>?/gm, " ");
+}
+
 // Clean and normalize text: lowercase, remove accents, symbols to spaces
 export function normalizeSearchTerm(str: string | null | undefined): string {
   if (!str) return "";
@@ -10,6 +16,12 @@ export function normalizeSearchTerm(str: string | null | undefined): string {
     .replace(/[^a-z0-9\s]/g, " ")   // remove special chars
     .replace(/\s+/g, " ")           // collapse spaces
     .trim();
+}
+
+// Extract only digits
+export function extractDigits(str: string | null | undefined): string {
+  if (!str) return "";
+  return String(str).replace(/\D/g, "");
 }
 
 // Levenshtein distance for typo tolerance
@@ -133,24 +145,30 @@ export const PHARMA_VOCABULARY: string[] = [
 export interface SearchQueryProfile {
   rawQuery: string;
   cleanQuery: string;
+  digitsOnly: string;
   tokens: string[];
   expandedTerms: string[];
   didYouMean?: string;
   isNumeric: boolean;
+  isCodeLike: boolean;
 }
 
 // Expands search query with typo correction, tokenization, and medical synonym enrichment
 export function analyzeSearchQuery(rawQuery: string): SearchQueryProfile {
   const cleanQuery = normalizeSearchTerm(rawQuery);
+  const digitsOnly = extractDigits(rawQuery);
   const isNumeric = /^\d+$/.test(cleanQuery);
+  const isCodeLike = isNumeric || (digitsOnly.length >= 6 && /\d/.test(rawQuery));
 
   if (!cleanQuery) {
     return {
       rawQuery,
       cleanQuery: "",
+      digitsOnly: "",
       tokens: [],
       expandedTerms: [],
       isNumeric: false,
+      isCodeLike: false,
     };
   }
 
@@ -213,10 +231,12 @@ export function analyzeSearchQuery(rawQuery: string): SearchQueryProfile {
   return {
     rawQuery,
     cleanQuery,
+    digitsOnly,
     tokens: effectiveTokens,
     expandedTerms: Array.from(expandedSet),
     didYouMean,
     isNumeric,
+    isCodeLike,
   };
 }
 
@@ -225,13 +245,92 @@ export function extractProductSearchFields(p: Produto) {
   const nameClean = normalizeSearchTerm(p.nome);
   const brandClean = normalizeSearchTerm(p.marca);
   
-  const activeIngArray = Array.isArray(p.principiosAtivos)
-    ? p.principiosAtivos
-    : typeof p.principiosAtivos === "string"
-    ? [p.principiosAtivos]
-    : [];
-  const activeIngClean = normalizeSearchTerm(activeIngArray.join(" "));
+  // 1. Princípios Ativos (Active Ingredients)
+  let activeIngList: string[] = [];
+  let dosageList: string[] = [];
 
+  if (Array.isArray(p.principiosAtivos)) {
+    p.principiosAtivos.forEach((pa: any) => {
+      if (typeof pa === "string") {
+        activeIngList.push(pa);
+      } else if (pa && typeof pa === "object") {
+        if (pa.nome) activeIngList.push(pa.nome);
+        if (pa.concentracao) dosageList.push(pa.concentracao);
+        if (pa.unidadeMedida) dosageList.push(pa.unidadeMedida);
+        if (pa.dosagem) dosageList.push(pa.dosagem);
+      }
+    });
+  } else if (typeof p.principiosAtivos === "string") {
+    activeIngList.push(p.principiosAtivos);
+  }
+
+  if (Array.isArray(p.principiosAtivosDetalhes)) {
+    p.principiosAtivosDetalhes.forEach((pad) => {
+      if (pad.nome) activeIngList.push(pad.nome);
+      if (pad.concentracao) dosageList.push(pad.concentracao);
+      if (pad.unidadeMedida) dosageList.push(pad.unidadeMedida);
+    });
+  }
+
+  const activeIngClean = normalizeSearchTerm(activeIngList.join(" "));
+
+  // 2. Dosagem / Concentração
+  // Extract dosage patterns (e.g. 500mg, 1000mg, 1g, 20mg/ml, 100ml, 50mcg, 40mg, etc.) from name & description
+  const dosageMatches = (p.nome + " " + (p.descricao || "")).match(/\b\d+(\.\d+)?\s*(mg|g|mcg|ml|l|ui|%|mg\/ml|g\/ml)\b/gi) || [];
+  dosageMatches.forEach((dm) => dosageList.push(dm));
+  const dosageClean = normalizeSearchTerm(dosageList.join(" "));
+
+  // 3. EANs, Códigos de barras e Código interno
+  const eanParts: string[] = [
+    p.ean || "",
+    p.ean2 || "",
+    p.ean3 || "",
+    p.sku || "",
+    p.codigoInterno || "",
+    p.id || "",
+  ];
+  if (Array.isArray(p.eansSecundarios)) {
+    p.eansSecundarios.forEach((e) => eanParts.push(String(e)));
+  }
+  const eanClean = normalizeSearchTerm(eanParts.join(" "));
+  const eanDigits = eanParts.map((e) => extractDigits(e)).filter(Boolean).join(" ");
+
+  // 4. Registro MS (ANVISA)
+  const anvisaRaw = p.registroAnvisa || (p as any).registro_anvisa || (p as any).registroMs || "";
+  const anvisaClean = normalizeSearchTerm(anvisaRaw);
+  const anvisaDigits = extractDigits(anvisaRaw);
+
+  // 5. Tarja
+  let tarjaTerms: string[] = [];
+  if (p.tarja) {
+    tarjaTerms.push(p.tarja);
+    const tLow = String(p.tarja).toLowerCase();
+    if (tLow.includes("preta")) tarjaTerms.push("tarja preta", "preta");
+    if (tLow.includes("vermelha")) tarjaTerms.push("tarja vermelha", "vermelha");
+    if (tLow.includes("amarela")) tarjaTerms.push("tarja amarela", "amarela");
+    if (tLow.includes("sem tarja") || tLow === "n") tarjaTerms.push("sem tarja", "livre");
+    if (p.retemReceita || tLow.includes("ret")) tarjaTerms.push("retem receita", "retencao de receita");
+  }
+  const tarjaClean = normalizeSearchTerm(tarjaTerms.join(" "));
+
+  // 6. Características
+  let charList: string[] = [];
+  if (Array.isArray(p.caracteristicas)) {
+    p.caracteristicas.forEach((c: any) => {
+      if (typeof c === "string") charList.push(c);
+      else if (c && typeof c === "object") {
+        if (c.titulo) charList.push(c.titulo);
+        if (c.descricao) charList.push(c.descricao);
+      }
+    });
+  }
+  const caracteristicasClean = normalizeSearchTerm(charList.join(" "));
+
+  // 7. Descrição e Resumo do Produto
+  const rawDesc = stripHtml(p.descricao || "") + " " + (p.resumoDescricao || "") + " " + stripHtml((p as any).descricaoHtml || "");
+  const descClean = normalizeSearchTerm(rawDesc);
+
+  // 8. Indicações e Classes
   const indicationClean = normalizeSearchTerm(
     p.indicacaoTerapeutica || (p as any).metadata?.indicacao_terapeutica || ""
   );
@@ -239,19 +338,8 @@ export function extractProductSearchFields(p: Produto) {
     p.classeTerapeutica || (p as any).metadata?.classe_terapeutica || ""
   );
   const termsClean = normalizeSearchTerm(p.termosPesquisa);
-  
-  const descClean = normalizeSearchTerm(
-    (p.descricao || "") + " " + ((p as any).descricaoHtml || "") + " " + (p.resumoDescricao || "") + " " + ((p as any).metadata?.resumo_descricao || "")
-  );
-
   const tagsClean = normalizeSearchTerm(
-    (Array.isArray(p.internalTags) ? p.internalTags.join(" ") : "") +
-    " " +
-    (Array.isArray(p.caracteristicas) ? p.caracteristicas.join(" ") : "")
-  );
-
-  const eanClean = normalizeSearchTerm(
-    (p.ean || "") + " " + (p.sku || "") + " " + (p.codigoInterno || "") + " " + (Array.isArray(p.eansSecundarios) ? p.eansSecundarios.join(" ") : "")
+    Array.isArray(p.internalTags) ? p.internalTags.join(" ") : ""
   );
 
   // Full unified text for global phrase scanning
@@ -259,12 +347,16 @@ export function extractProductSearchFields(p: Produto) {
     nameClean,
     brandClean,
     activeIngClean,
+    dosageClean,
+    eanClean,
+    anvisaClean,
+    tarjaClean,
+    caracteristicasClean,
     indicationClean,
     classClean,
     termsClean,
-    descClean,
     tagsClean,
-    eanClean
+    descClean,
   ].join(" ");
 
   // Collect individual words into a set for fast lookup
@@ -274,12 +366,18 @@ export function extractProductSearchFields(p: Produto) {
     nameClean,
     brandClean,
     activeIngClean,
+    dosageClean,
+    eanClean,
+    eanDigits,
+    anvisaClean,
+    anvisaDigits,
+    tarjaClean,
+    caracteristicasClean,
+    descClean,
     indicationClean,
     classClean,
     termsClean,
-    descClean,
     tagsClean,
-    eanClean,
     fullText,
     wordsSet,
   };
@@ -289,64 +387,102 @@ export function extractProductSearchFields(p: Produto) {
 export function scoreProductRelevance(p: Produto, profile: SearchQueryProfile): number {
   if (!p) return 0;
   const fields = extractProductSearchFields(p);
-  const { cleanQuery, tokens, expandedTerms, didYouMean, isNumeric } = profile;
+  const { cleanQuery, digitsOnly, tokens, expandedTerms, didYouMean, isNumeric, isCodeLike } = profile;
 
-  // Numeric search (EAN / SKU / Code)
-  if (isNumeric) {
-    if (fields.eanClean.includes(cleanQuery)) return 2000;
-    if (String(p.id) === cleanQuery) return 2000;
+  // Exact / Partial match on EAN / Barcode / ANVISA (Highest priority)
+  if (isCodeLike && digitsOnly.length >= 4) {
+    if (fields.eanDigits.includes(digitsOnly)) return 2600;
+    if (fields.anvisaDigits && fields.anvisaDigits.includes(digitsOnly)) return 2500;
+    if (fields.eanClean.includes(cleanQuery)) return 2400;
+    if (String(p.id) === cleanQuery) return 2300;
   }
 
   let score = 0;
 
-  // 1. EXACT & PREFIX NAME MATCHES (Highest Priority)
+  // 1. EXACT & PREFIX NAME MATCHES (Highest Priority for text)
   if (fields.nameClean === cleanQuery) {
-    score += 1200;
+    score += 1500;
   } else if (fields.nameClean.startsWith(cleanQuery)) {
-    score += 800;
+    score += 1000;
   } else if (fields.nameClean.includes(cleanQuery)) {
+    score += 600;
+  }
+
+  // 2. ACTIVE INGREDIENT MATCHES (Princípios Ativos)
+  if (fields.activeIngClean.includes(cleanQuery)) {
+    score += 700;
+  }
+
+  // 3. DOSAGE MATCHES (Dosagem / Concentração)
+  if (fields.dosageClean.includes(cleanQuery)) {
+    score += 600;
+  }
+
+  // 4. BRAND MATCHES (Marca)
+  if (fields.brandClean.includes(cleanQuery)) {
+    score += 550;
+  }
+
+  // 5. TARJA MATCHES
+  if (fields.tarjaClean.includes(cleanQuery)) {
     score += 500;
   }
 
-  // 2. ACTIVE INGREDIENT MATCHES (e.g. "aciclovir", "dipirona")
-  if (fields.activeIngClean.includes(cleanQuery)) {
+  // 6. ANVISA / REGISTRO MS MATCHES
+  if (fields.anvisaClean && fields.anvisaClean.includes(cleanQuery)) {
+    score += 700;
+  }
+
+  // 7. CARACTERÍSTICAS MATCHES
+  if (fields.caracteristicasClean.includes(cleanQuery)) {
     score += 450;
   }
 
-  // 3. SEARCH TERMS & SYNONYMS MATCHES
+  // 8. SEARCH TERMS & SYNONYMS MATCHES
   if (fields.termsClean.includes(cleanQuery)) {
+    score += 450;
+  }
+
+  // 9. THERAPEUTIC INDICATION & CLASS MATCHES
+  if (fields.indicationClean.includes(cleanQuery)) {
     score += 400;
   }
-
-  // 4. THERAPEUTIC INDICATION MATCHES (e.g. "pomada para assadura", "assadura")
-  if (fields.indicationClean.includes(cleanQuery)) {
-    score += 380;
-  }
-
-  // 5. BRAND & THERAPEUTIC CLASS MATCHES
-  if (fields.brandClean.includes(cleanQuery)) {
+  if (fields.classClean.includes(cleanQuery)) {
     score += 350;
   }
-  if (fields.classClean.includes(cleanQuery)) {
+
+  // 10. DESCRIPTION & FULL TEXT PHRASE MATCHES
+  if (fields.descClean.includes(cleanQuery)) {
     score += 300;
   }
 
-  // 6. DESCRIPTION & FULL TEXT PHRASE MATCHES
-  if (fields.descClean.includes(cleanQuery)) {
-    score += 260;
-  }
-
-  // 7. TOKEN-LEVEL MATCHING (Multi-word queries like "pomada assadura")
+  // 11. TOKEN-LEVEL MATCHING (Multi-word queries like "paracetamol 750mg cimed")
   let matchedTokensCount = 0;
   for (const token of tokens) {
     let tokenMatched = false;
 
     if (fields.nameClean.includes(token)) {
-      score += 120;
+      score += 150;
       tokenMatched = true;
     }
     if (fields.activeIngClean.includes(token)) {
+      score += 130;
+      tokenMatched = true;
+    }
+    if (fields.dosageClean.includes(token)) {
+      score += 120;
+      tokenMatched = true;
+    }
+    if (fields.brandClean.includes(token)) {
+      score += 110;
+      tokenMatched = true;
+    }
+    if (fields.tarjaClean.includes(token)) {
       score += 100;
+      tokenMatched = true;
+    }
+    if (fields.caracteristicasClean.includes(token)) {
+      score += 90;
       tokenMatched = true;
     }
     if (fields.indicationClean.includes(token)) {
@@ -357,12 +493,8 @@ export function scoreProductRelevance(p: Produto, profile: SearchQueryProfile): 
       score += 80;
       tokenMatched = true;
     }
-    if (fields.brandClean.includes(token)) {
-      score += 70;
-      tokenMatched = true;
-    }
     if (fields.descClean.includes(token)) {
-      score += 50;
+      score += 60;
       tokenMatched = true;
     }
 
@@ -370,7 +502,7 @@ export function scoreProductRelevance(p: Produto, profile: SearchQueryProfile): 
     if (!tokenMatched) {
       for (const word of fields.wordsSet) {
         if (word.length >= 3 && isFuzzyWordMatch(token, word)) {
-          score += 65;
+          score += 75;
           tokenMatched = true;
           break;
         }
@@ -383,37 +515,37 @@ export function scoreProductRelevance(p: Produto, profile: SearchQueryProfile): 
   // Token coverage bonus (reward products having ALL tokens anywhere across fields)
   if (tokens.length > 0) {
     const coverageRatio = matchedTokensCount / tokens.length;
-    score += coverageRatio * 300;
+    score += coverageRatio * 350;
     if (matchedTokensCount === tokens.length && tokens.length > 1) {
-      score += 250; // Bonus for 100% token coverage
+      score += 300; // Bonus for 100% token coverage
     }
   }
 
-  // 8. EXPANDED SYNONYMS & INDICATION MAPPINGS
+  // 12. EXPANDED SYNONYMS & INDICATION MAPPINGS
   for (const exp of expandedTerms) {
     if (exp !== cleanQuery && exp !== didYouMean) {
-      if (fields.nameClean.includes(exp)) score += 180;
-      if (fields.activeIngClean.includes(exp)) score += 160;
-      if (fields.indicationClean.includes(exp)) score += 150;
-      if (fields.descClean.includes(exp)) score += 120;
-      if (fields.termsClean.includes(exp)) score += 110;
+      if (fields.nameClean.includes(exp)) score += 200;
+      if (fields.activeIngClean.includes(exp)) score += 180;
+      if (fields.indicationClean.includes(exp)) score += 160;
+      if (fields.descClean.includes(exp)) score += 130;
+      if (fields.termsClean.includes(exp)) score += 120;
     }
   }
 
-  // 9. DID YOU MEAN MATCHES
+  // 13. DID YOU MEAN MATCHES
   if (didYouMean) {
-    if (fields.nameClean.includes(didYouMean)) score += 250;
-    if (fields.activeIngClean.includes(didYouMean)) score += 200;
-    if (fields.descClean.includes(didYouMean)) score += 150;
+    if (fields.nameClean.includes(didYouMean)) score += 280;
+    if (fields.activeIngClean.includes(didYouMean)) score += 220;
+    if (fields.descClean.includes(didYouMean)) score += 160;
   }
 
-  // 10. STOCK PRIORITY BONUS
+  // 14. STOCK PRIORITY BONUS
   if ((p.estoque || 0) > 0) {
-    score += 80;
+    score += 100;
   }
 
-  // 11. CATALOG RELEVANCE PRIORITY
-  score += (p.nivelRelevancia || 0) * 3;
+  // 15. CATALOG RELEVANCE PRIORITY
+  score += (p.nivelRelevancia || 0) * 5;
 
   return score;
 }
@@ -429,7 +561,7 @@ export function rankProductsBySearch(products: Produto[], rawQuery: string): { r
 
   for (const p of products) {
     const score = scoreProductRelevance(p, profile);
-    if (score > 40) {
+    if (score > 35) {
       scoredProducts.push({ product: p, score });
     }
   }

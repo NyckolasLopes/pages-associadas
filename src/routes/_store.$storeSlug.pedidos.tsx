@@ -137,7 +137,7 @@ function PedidosPage() {
   };
 
   const handleLogout = () => {
-    logout();
+    logout(storeSlug);
     navigate({ to: "/$storeSlug", params: { storeSlug } });
   };
 

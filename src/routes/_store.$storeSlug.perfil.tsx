@@ -143,7 +143,7 @@ function PerfilPage() {
   }
 
   const handleLogout = () => {
-    logout();
+    logout(storeSlug);
     navigate({ to: "/$storeSlug", params: { storeSlug } });
   };
 
@@ -180,16 +180,26 @@ function PerfilPage() {
           if (authError) throw authError;
         }
 
-        useAuth.setState((state) => ({
-          user: state.user ? {
-            ...state.user,
-            name: editName,
-            nome: editName,
-            email: editEmail,
-            cpf: editCpf,
-            celular: editPhone,
-          } : null
-        }));
+        const updatedUser = {
+          ...user,
+          name: editName,
+          nome: editName,
+          email: editEmail,
+          cpf: editCpf,
+          celular: editPhone,
+        };
+
+        const currentStore = storeSlug || "loja-padrao";
+        useAuth.setState((state) => {
+          const newStoreUsers = { ...state.storeUsers, [currentStore]: updatedUser };
+          try {
+            localStorage.setItem("fa_store_sessions", JSON.stringify(newStoreUsers));
+          } catch {}
+          return {
+            user: updatedUser,
+            storeUsers: newStoreUsers,
+          };
+        });
 
         toast.success("Informações pessoais atualizadas com sucesso!");
       }

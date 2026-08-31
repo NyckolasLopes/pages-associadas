@@ -22,7 +22,7 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
     setLoading(true);
     
     if (step === "credentials") {
-      const res = await login(email, senha);
+      const res = await login(email, senha, activePharmacy?.slug || "loja-padrao");
       if (res === true) {
         onOpenChange(false);
         onLoginSuccess();

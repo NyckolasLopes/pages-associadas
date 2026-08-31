@@ -91,7 +91,7 @@ function LoginPage() {
       }
     }
     
-    const result = await login(email, pass);
+    const result = await login(email, pass, storeSlug);
     
     if (result === "rate_limit") {
       toast.error("Muitas tentativas detectadas pelos nossos servidores. Por segurança, aguarde alguns minutos.");
@@ -128,7 +128,7 @@ function LoginPage() {
   const submitOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (token.length < 6) return toast.error("Código inválido.");
-    const ok = await verifyOtp(email, token);
+    const ok = await verifyOtp(email, token, storeSlug);
     const targetRedirect = (!redirect || redirect === "/") ? `/${storeSlug}` : redirect;
     if (ok) {
       toast.success("Verificação concluída!");
@@ -154,7 +154,7 @@ function LoginPage() {
   };
 
   const social = async (provider: "google" | "apple" | "facebook") => {
-    await loginWithProvider(provider, redirect);
+    await loginWithProvider(provider, redirect, storeSlug);
   };
 
   return (

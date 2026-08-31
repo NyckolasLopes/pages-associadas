@@ -10,13 +10,9 @@ if (typeof window !== "undefined") {
   } catch {}
 }
 
-// Flag de módulo: quando true, havia uma sessão ativa no momento do init,
-// então eventos SIGNED_IN subsequentes são apenas re-hidratações silenciosas (renovação de token,
-// navegação entre páginas, troca de aba) — não devem exibir o toast.
-let _hadSessionOnInit = false;
-let _isLoggingOut = false;
+const STORE_SESSIONS_STORAGE_KEY = "fa_store_sessions";
 
-interface User {
+export interface User {
   id?: string;
   name?: string;
   nome?: string;
@@ -25,51 +21,139 @@ interface User {
   celular?: string;
   enderecos?: any[];
   provider?: "email" | "google" | "apple" | "facebook";
+  storeSlug?: string;
+  loggedAt?: number;
 }
+
+export function safeSlugifyAuth(text?: string | null): string {
+  if (!text) return "loja-padrao";
+  const clean = String(text)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return clean || "loja-padrao";
+}
+
+export function resolveStoreSlug(explicitSlug?: string): string {
+  if (explicitSlug && explicitSlug !== "loja-padrao") {
+    return safeSlugifyAuth(explicitSlug);
+  }
+  if (typeof window !== "undefined") {
+    try {
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      const systemPages = new Set([
+        "admin", "login", "cadastro", "perfil", "pedidos", "cart", "checkout",
+        "sucesso", "compartilhado", "faq", "ajuda", "mapa-site", "politica-de-privacidade",
+        "reset-password", "p", "v", "c", "m", "pagina", "busca"
+      ]);
+      if (parts[0] && !systemPages.has(parts[0])) {
+        return safeSlugifyAuth(parts[0]);
+      }
+      const last = sessionStorage.getItem("fa-last-store-slug");
+      if (last && !systemPages.has(last)) {
+        return safeSlugifyAuth(last);
+      }
+    } catch {}
+  }
+  return "loja-padrao";
+}
+
+function loadStoreSessions(): Record<string, User> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(STORE_SESSIONS_STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function saveStoreSessions(sessions: Record<string, User>): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORE_SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
+  } catch {}
+}
+
+let _isLoggingOut = false;
 
 interface AuthState {
   user: User | null;
+  storeUsers: Record<string, User>;
+  currentStoreSlug: string;
   loginOpen: boolean;
-  login: (email: string, password: string) => Promise<boolean | "otp_required" | "rate_limit">;
+  login: (email: string, password: string, explicitStoreSlug?: string) => Promise<boolean | "otp_required" | "rate_limit">;
   sendOtp: (email: string) => Promise<boolean>;
-  verifyOtp: (email: string, token: string) => Promise<boolean>;
-  loginWithProvider: (provider: "google" | "apple" | "facebook", redirectPath?: string) => Promise<void>;
-  logout: () => Promise<void>;
-  deleteAccount: () => Promise<boolean>;
+  verifyOtp: (email: string, token: string, explicitStoreSlug?: string) => Promise<boolean>;
+  loginWithProvider: (provider: "google" | "apple" | "facebook", redirectPath?: string, explicitStoreSlug?: string) => Promise<void>;
+  logout: (explicitStoreSlug?: string) => Promise<void>;
+  deleteAccount: (explicitStoreSlug?: string) => Promise<boolean>;
   setLoginOpen: (open: boolean) => void;
+  syncStoreSession: (storeSlug?: string) => void;
+  getUserForStore: (storeSlug?: string) => User | null;
   _initListener: () => void;
 }
 
-export const useAuth = create<AuthState>((set, get) => ({
-  user: null,
-  loginOpen: false,
+export const useAuth = create<AuthState>((set, get) => {
+  const initialSessions = loadStoreSessions();
+  const initialSlug = typeof window !== "undefined" ? resolveStoreSlug() : "loja-padrao";
+  const initialUser = initialSessions[initialSlug] || null;
 
-  login: async (email, password) => {
-    _isLoggingOut = false;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      if (error.status === 429) return "rate_limit";
-      return false;
-    }
-    if (!data.user) return false;
+  return {
+    user: initialUser,
+    storeUsers: initialSessions,
+    currentStoreSlug: initialSlug,
+    loginOpen: false,
 
-    const u = data.user;
-    // Fetch extended profile (nome, cpf, celular, has_logged_in_before)
-    const { data: rawProfile } = await supabase
-      .from("profiles" as any)
-      .select("nome, cpf, telefone, has_logged_in_before, enderecos")
-      .eq("id", u.id)
-      .single();
+    syncStoreSession: (storeSlug?: string) => {
+      const targetSlug = resolveStoreSlug(storeSlug);
+      const sessions = loadStoreSessions();
+      const targetUser = sessions[targetSlug] || null;
 
-    const profile = rawProfile as any;
+      set({
+        currentStoreSlug: targetSlug,
+        storeUsers: sessions,
+        user: targetUser,
+      });
+    },
 
-    if (!profile?.has_logged_in_before) {
-      // First time login with email/password. Mark as logged in.
-      await supabase.from("profiles" as any).update({ has_logged_in_before: true }).eq("id", u.id);
-    }
+    getUserForStore: (storeSlug?: string) => {
+      const targetSlug = resolveStoreSlug(storeSlug);
+      const sessions = loadStoreSessions();
+      return sessions[targetSlug] || null;
+    },
 
-    set({
-      user: {
+    login: async (email, password, explicitStoreSlug) => {
+      _isLoggingOut = false;
+      const targetSlug = resolveStoreSlug(explicitStoreSlug);
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (error.status === 429) return "rate_limit";
+        return false;
+      }
+      if (!data.user) return false;
+
+      const u = data.user;
+      // Fetch extended profile (nome, cpf, celular, has_logged_in_before)
+      const { data: rawProfile } = await supabase
+        .from("profiles" as any)
+        .select("nome, cpf, telefone, has_logged_in_before, enderecos")
+        .eq("id", u.id)
+        .single();
+
+      const profile = rawProfile as any;
+
+      if (!profile?.has_logged_in_before) {
+        await supabase.from("profiles" as any).update({ has_logged_in_before: true }).eq("id", u.id);
+      }
+
+      const userObj: User = {
         id: u.id,
         email: u.email!,
         name: profile?.nome || u.email!.split("@")[0],
@@ -78,224 +162,250 @@ export const useAuth = create<AuthState>((set, get) => ({
         celular: profile?.telefone || undefined,
         enderecos: profile?.enderecos || [],
         provider: "email",
-      },
-      loginOpen: false,
-    });
-    return true;
-  },
+        storeSlug: targetSlug,
+        loggedAt: Date.now(),
+      };
 
-  sendOtp: async (email: string) => {
-    _isLoggingOut = false;
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    return !error;
-  },
+      const sessions = loadStoreSessions();
+      sessions[targetSlug] = userObj;
+      saveStoreSessions(sessions);
 
-  verifyOtp: async (email: string, token: string) => {
-    _isLoggingOut = false;
-    const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
-    if (error || !data.user) return false;
+      set({
+        user: userObj,
+        currentStoreSlug: targetSlug,
+        storeUsers: sessions,
+        loginOpen: false,
+      });
 
-    const u = data.user;
-    const { data: profile } = await (supabase
-      .from("profiles") as any)
-      .select("nome, cpf, telefone, enderecos")
-      .eq("id", u.id)
-      .maybeSingle();
+      return true;
+    },
 
-    set({
-      user: {
+    sendOtp: async (email: string) => {
+      _isLoggingOut = false;
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      return !error;
+    },
+
+    verifyOtp: async (email: string, token: string, explicitStoreSlug?: string) => {
+      _isLoggingOut = false;
+      const targetSlug = resolveStoreSlug(explicitStoreSlug);
+
+      const { data, error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
+      if (error || !data.user) return false;
+
+      const u = data.user;
+      const { data: profile } = await (supabase
+        .from("profiles") as any)
+        .select("nome, cpf, telefone, enderecos")
+        .eq("id", u.id)
+        .maybeSingle();
+
+      const userObj: User = {
         id: u.id,
         email: u.email!,
         name: profile?.nome || u.email!.split("@")[0],
         nome: profile?.nome || undefined,
         cpf: profile?.cpf || undefined,
         celular: profile?.telefone || undefined,
+        enderecos: profile?.enderecos || [],
         provider: "email",
-      },
-      loginOpen: false,
-    });
-    return true;
-  },
+        storeSlug: targetSlug,
+        loggedAt: Date.now(),
+      };
 
-  loginWithProvider: async (provider, redirectPath) => {
-    _isLoggingOut = false;
-    const redirectTo = redirectPath 
-      ? `${window.location.origin}${redirectPath}`
-      : window.location.origin;
-      
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo },
-    });
-  },
+      const sessions = loadStoreSessions();
+      sessions[targetSlug] = userObj;
+      saveStoreSessions(sessions);
 
-  logout: async () => {
-    _isLoggingOut = true;
-    // Invalidates refresh token on Supabase server
-    await supabase.auth.signOut();
-    _hadSessionOnInit = false;
-    set({ user: null });
-    try {
-      const { useFavorites } = await import("./favorites");
-      useFavorites.getState().clearAll();
-    } catch (e) {}
-    try {
-      const { useCart } = await import("./cart");
-      useCart.getState().clear();
-    } catch (e) {}
-  },
+      set({
+        user: userObj,
+        currentStoreSlug: targetSlug,
+        storeUsers: sessions,
+        loginOpen: false,
+      });
 
-  deleteAccount: async () => {
-    _isLoggingOut = true;
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUserId = sessionData?.session?.user?.id || get().user?.id;
+      return true;
+    },
 
-      if (!currentUserId) {
-        console.warn("Nenhum usuário ativo para exclusão.");
-        return false;
+    loginWithProvider: async (provider, redirectPath, explicitStoreSlug) => {
+      _isLoggingOut = false;
+      const targetSlug = resolveStoreSlug(explicitStoreSlug);
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("fa_oauth_pending_store", targetSlug);
+        } catch {}
       }
 
-      // 1. Tentar chamar a RPC delete_own_account do Supabase
-      let rpcSuccess = false;
-      try {
-        const { error: rpcError } = await (supabase.rpc as any)('delete_own_account');
-        if (!rpcError) {
-          rpcSuccess = true;
-        } else {
-          console.warn("RPC delete_own_account retornou aviso:", rpcError);
-        }
-      } catch (err) {
-        console.warn("Falha ao invocar RPC delete_own_account:", err);
+      const redirectTo = redirectPath 
+        ? `${window.location.origin}${redirectPath}`
+        : window.location.origin;
+        
+      await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo },
+      });
+    },
+
+    logout: async (explicitStoreSlug?: string) => {
+      _isLoggingOut = true;
+      const targetSlug = resolveStoreSlug(explicitStoreSlug);
+      const sessions = loadStoreSessions();
+
+      delete sessions[targetSlug];
+      saveStoreSessions(sessions);
+
+      // If no more active store sessions exist, sign out from Supabase as well
+      if (Object.keys(sessions).length === 0) {
+        try {
+          await supabase.auth.signOut();
+        } catch {}
       }
 
-      // 2. Se a RPC não estiver disponível ou falhar por dependência, efetuar limpeza direta das tabelas
-      if (!rpcSuccess) {
-        try {
-          await (supabase.from("carrinhos_abandonados" as any) as any).delete().eq("user_id", currentUserId);
-        } catch (e) { /* ignore */ }
+      const currentStore = get().currentStoreSlug;
+      const nextUser = (currentStore === targetSlug) ? null : (sessions[currentStore] || null);
 
-        try {
-          await (supabase.from("enderecos" as any) as any).delete().eq("user_id", currentUserId);
-        } catch (e) { /* ignore */ }
-
-        try {
-          await (supabase.from("pedidos") as any).update({ user_id: null }).eq("user_id", currentUserId);
-        } catch (e) { /* ignore */ }
-
-        try {
-          await supabase.from("profiles").delete().eq("id", currentUserId);
-        } catch (e) { /* ignore */ }
-
-        // Tentar novamente a exclusão via RPC após limpeza dos registros dependentes
-        try {
-          const { error: retryError } = await (supabase.rpc as any)('delete_own_account');
-          if (!retryError) {
-            rpcSuccess = true;
-          }
-        } catch (e) { /* ignore */ }
-      }
-
-      // 3. Encerrar sessão do usuário e limpar dados locais do navegador
-      await supabase.auth.signOut();
-      set({ user: null });
+      set({
+        user: nextUser,
+        storeUsers: sessions,
+      });
 
       try {
         const { useFavorites } = await import("./favorites");
         useFavorites.getState().clearAll();
       } catch (e) {}
-
       try {
         const { useCart } = await import("./cart");
         useCart.getState().clear();
       } catch (e) {}
-
-      try {
-        sessionStorage.removeItem("fa-auth-user");
-        sessionStorage.removeItem("fa-visitor-session");
-        localStorage.removeItem("fa-auth-token");
-      } catch (e) {}
-
-      return true;
-    } catch (globalErr) {
-      console.error("Erro geral durante exclusão de conta:", globalErr);
-      return false;
-    } finally {
       _isLoggingOut = false;
-    }
-  },
+    },
 
-  setLoginOpen: (open) => set({ loginOpen: open }),
+    deleteAccount: async (explicitStoreSlug?: string) => {
+      _isLoggingOut = true;
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const currentUserId = sessionData?.session?.user?.id || get().user?.id;
 
-  // Call once on app mount to restore session and listen for changes
-  _initListener: () => {
-    // Restore current session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user && !_isLoggingOut) {
-        // Sessão ativa — flag para suprimir toast em eventos subsequentes
-        _hadSessionOnInit = true;
-        const u = session.user;
-        supabase
-          .from("profiles")
-          .select("nome, cpf, telefone")
-          .eq("id", u.id)
-          .single()
-          .then(({ data: profile }) => {
-            if (_isLoggingOut) return;
-            set({
-              user: {
-                id: u.id,
-                email: u.email!,
-                name: profile?.nome || u.email!.split("@")[0],
-                nome: profile?.nome || undefined,
-                cpf: profile?.cpf || undefined,
-                celular: profile?.telefone || undefined,
-                provider: u.app_metadata?.provider as any,
-              },
-            });
-          });
-      }
-    });
+        if (!currentUserId) {
+          console.warn("Nenhum usuário ativo para exclusão.");
+          return false;
+        }
 
-    // Listen for auth state changes (login/logout from any tab)
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT") {
-        _hadSessionOnInit = false;
-        _isLoggingOut = false; // Reset the flag
-        set({ user: null });
+        // 1. Tentar chamar a RPC delete_own_account do Supabase
+        let rpcSuccess = false;
         try {
-          import("./favorites").then(({ useFavorites }) => {
-            useFavorites.getState().clearAll();
-          });
+          const { error: rpcError } = await (supabase.rpc as any)("delete_own_account");
+          if (!rpcError) {
+            rpcSuccess = true;
+          }
+        } catch (err) {
+          console.warn("Falha ao invocar RPC delete_own_account:", err);
+        }
+
+        // 2. Limpeza direta das tabelas
+        if (!rpcSuccess) {
+          try {
+            await (supabase.from("carrinhos_abandonados" as any) as any).delete().eq("user_id", currentUserId);
+          } catch (e) {}
+
+          try {
+            await (supabase.from("enderecos" as any) as any).delete().eq("user_id", currentUserId);
+          } catch (e) {}
+
+          try {
+            await (supabase.from("pedidos") as any).update({ user_id: null }).eq("user_id", currentUserId);
+          } catch (e) {}
+
+          try {
+            await supabase.from("profiles").delete().eq("id", currentUserId);
+          } catch (e) {}
+        }
+
+        // 3. Encerrar sessão do usuário e limpar todas as sessões por loja
+        await supabase.auth.signOut();
+        saveStoreSessions({});
+        set({ user: null, storeUsers: {} });
+
+        try {
+          const { useFavorites } = await import("./favorites");
+          useFavorites.getState().clearAll();
         } catch (e) {}
-      } else if (session?.user && !_isLoggingOut) {
-        if (event === "SIGNED_IN") {
-          // Não exibe toast global para evitar duplicação com as páginas de login
-          if (!_hadSessionOnInit) {
-            _hadSessionOnInit = true;
+
+        try {
+          const { useCart } = await import("./cart");
+          useCart.getState().clear();
+        } catch (e) {}
+
+        try {
+          sessionStorage.removeItem("fa-auth-user");
+          sessionStorage.removeItem("fa-visitor-session");
+          localStorage.removeItem("fa-auth-token");
+          localStorage.removeItem(STORE_SESSIONS_STORAGE_KEY);
+        } catch (e) {}
+
+        return true;
+      } catch (globalErr) {
+        console.error("Erro geral durante exclusão de conta:", globalErr);
+        return false;
+      } finally {
+        _isLoggingOut = false;
+      }
+    },
+
+    setLoginOpen: (open) => set({ loginOpen: open }),
+
+    _initListener: () => {
+      // Sincroniza sessão imediatamente para a loja ativa atual
+      get().syncStoreSession();
+
+      // Listen for auth state changes (OAuth redirect, background refresh, etc.)
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === "SIGNED_OUT") {
+          _isLoggingOut = false;
+        } else if (session?.user && !_isLoggingOut) {
+          let pendingStore: string | null = null;
+          try {
+            pendingStore = sessionStorage.getItem("fa_oauth_pending_store");
+            if (pendingStore) sessionStorage.removeItem("fa_oauth_pending_store");
+          } catch {}
+
+          const currentStore = pendingStore || get().currentStoreSlug || resolveStoreSlug();
+          const sessions = loadStoreSessions();
+
+          // Só atualiza os dados do usuário se esta loja possuir sessão ativa ou se veio de fluxo OAuth pendente
+          if (pendingStore || sessions[currentStore]) {
+            const u = session.user;
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("nome, cpf, telefone")
+              .eq("id", u.id)
+              .maybeSingle();
+
+            if (_isLoggingOut) return;
+
+            const userObj: User = {
+              id: u.id,
+              email: u.email!,
+              name: profile?.nome || u.email!.split("@")[0],
+              nome: profile?.nome || undefined,
+              cpf: profile?.cpf || undefined,
+              celular: profile?.telefone || undefined,
+              provider: u.app_metadata?.provider as any,
+              storeSlug: currentStore,
+              loggedAt: Date.now(),
+            };
+
+            sessions[currentStore] = userObj;
+            saveStoreSessions(sessions);
+
+            set({
+              user: userObj,
+              currentStoreSlug: currentStore,
+              storeUsers: sessions,
+            });
           }
         }
-        const u = session.user;
-        supabase
-          .from("profiles")
-          .select("nome, cpf, telefone")
-          .eq("id", u.id)
-          .single()
-          .then(({ data: profile }) => {
-            if (_isLoggingOut) return;
-            set({
-              user: {
-                id: u.id,
-                email: u.email!,
-                name: profile?.nome || u.email!.split("@")[0],
-                nome: profile?.nome || undefined,
-                cpf: profile?.cpf || undefined,
-                celular: profile?.telefone || undefined,
-                provider: u.app_metadata?.provider as any,
-              },
-            });
-          });
-      }
-    });
-  },
-}));
+      });
+    },
+  };
+});
