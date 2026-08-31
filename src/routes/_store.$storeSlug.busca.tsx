@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 import { Search, PackageOpen } from "lucide-react";
 import { ProductGridSkeleton } from "@/components/storefront/ProductGridSkeleton";
+import mascotNotFound from "@/assets/produto-nao-encontrado.png";
 
 export const Route = createFileRoute("/_store/$storeSlug/busca")({
   validateSearch: zodValidator(
@@ -152,13 +153,15 @@ function SearchPage() {
               <ProductGridSkeleton count={12} />
             </div>
           ) : productsList.length === 0 ? (
-            <div className="py-16 flex flex-col items-center justify-center text-center bg-card rounded-2xl border p-8">
-              <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4 text-muted-foreground">
-                <PackageOpen className="h-8 w-8" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">Nenhum produto encontrado</h3>
+            <div className="py-12 flex flex-col items-center justify-center text-center bg-card rounded-2xl border p-8">
+              <img 
+                src={mascotNotFound} 
+                alt="Produto não encontrado" 
+                className="w-full max-w-[260px] sm:max-w-[300px] h-auto mb-6 drop-shadow-md object-contain" 
+              />
+              <h3 className="text-xl font-bold text-foreground mb-2">Produto não encontrado</h3>
               <p className="text-sm text-muted-foreground max-w-md mb-6">
-                Não encontramos nenhum resultado para <span className="font-semibold text-foreground">"{q || "sua busca"}"</span>. Tente verificar a ortografia ou buscar por termos mais genéricos.
+                Não encontramos nenhum resultado para <span className="font-semibold text-foreground">"{q || "sua busca"}"</span>. Tente verificar a ortografia, buscar pela marca, princípio ativo ou dosagem.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <Button 

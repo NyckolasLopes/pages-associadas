@@ -2,7 +2,7 @@ import { useActivePharmacy, safeSlugify } from "@/hooks/useActivePharmacy";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, SearchX, FileQuestion, PackageX, LayoutGrid } from "lucide-react";
 import mascot404 from "@/assets/404-mascot.png";
-import mascotNotFound from "@/assets/404-mascot.png";
+import mascotNotFound from "@/assets/produto-nao-encontrado.png";
 
 interface NotFoundProps {
   type?: "page" | "product" | "category" | "showcase";
@@ -12,7 +12,6 @@ interface NotFoundProps {
 
 export function NotFound({ type = "page", title, description }: NotFoundProps) {
   const activePharmacy = useActivePharmacy();
-  const isPartner = activePharmacy?.categoriaAssociado === "Parceiro";
 
   let storeSlug = "";
   if (activePharmacy?.slug) {
@@ -36,15 +35,6 @@ export function NotFound({ type = "page", title, description }: NotFoundProps) {
     return type === "product" ? mascotNotFound : mascot404;
   };
 
-  const getIcon = () => {
-    switch (type) {
-      case "product": return <PackageX className="w-24 h-24 text-slate-300 mb-6" />;
-      case "category": return <LayoutGrid className="w-24 h-24 text-slate-300 mb-6" />;
-      case "showcase": return <SearchX className="w-24 h-24 text-slate-300 mb-6" />;
-      default: return <FileQuestion className="w-24 h-24 text-slate-300 mb-6" />;
-    }
-  };
-
   const defaultTitle = {
     page: "Página não encontrada",
     product: "Produto não encontrado",
@@ -65,15 +55,11 @@ export function NotFound({ type = "page", title, description }: NotFoundProps) {
   return (
     <div className="flex flex-col items-center justify-center text-center p-8 bg-slate-50 min-h-[60vh]">
       <div className="max-w-md w-full flex flex-col items-center">
-        {isPartner ? (
-          getIcon()
-        ) : (
-          <img 
-            src={getMascot()} 
-            alt={finalTitle} 
-            className="w-full max-w-sm h-auto mb-6 drop-shadow-md" 
-          />
-        )}
+        <img 
+          src={getMascot()} 
+          alt={finalTitle} 
+          className="w-full max-w-[280px] sm:max-w-xs h-auto mb-6 drop-shadow-md object-contain" 
+        />
         
         <h1 className="text-2xl font-bold text-slate-800 mb-2">{finalTitle}</h1>
         <p className="text-sm text-slate-500 mb-8">{finalDescription}</p>
