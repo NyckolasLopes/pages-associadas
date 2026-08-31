@@ -602,10 +602,11 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId, storeSlug: 
           align: "start",
           loop: false,
           dragFree: true,
+          containScroll: "trimSnaps",
         }}
         className="w-full"
       >
-        <CarouselContent className="-ml-3 md:-ml-4 pb-2">
+        <CarouselContent className="-ml-3 md:-ml-4 pb-2 [justify-content:safe_center]">
           {categorias.map(cat => {
             const Icon = getIcon(cat.imageUrl, cat.nome);
             const targetUrl = getStoreBannerUrl(cat.link, storeSlug);
@@ -651,8 +652,8 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId, storeSlug: 
             );
           })}
         </CarouselContent>
-        <CarouselPrevious className="hidden md:flex absolute -left-3 md:-left-4 top-[36px] md:top-[40px] -translate-y-1/2 z-10 h-8 w-8 md:h-9 md:w-9 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all opacity-0 group-hover:opacity-100 disabled:hidden" />
-        <CarouselNext className="hidden md:flex absolute -right-3 md:-right-4 top-[36px] md:top-[40px] -translate-y-1/2 z-10 h-8 w-8 md:h-9 md:w-9 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all opacity-0 group-hover:opacity-100 disabled:hidden" />
+        <CarouselPrevious className="flex absolute -left-2 sm:-left-3 md:-left-4 top-[32px] md:top-[40px] -translate-y-1/2 z-20 h-8 w-8 md:h-10 md:w-10 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer" />
+        <CarouselNext className="flex absolute -right-2 sm:-right-3 md:-right-4 top-[32px] md:top-[40px] -translate-y-1/2 z-20 h-8 w-8 md:h-10 md:w-10 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer" />
       </Carousel>
     </div>
   );
