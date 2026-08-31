@@ -269,14 +269,6 @@ export const useAuth = create<AuthState>((set, get) => {
         storeUsers: sessions,
       });
 
-      try {
-        const { useFavorites } = await import("./favorites");
-        useFavorites.getState().clearAll();
-      } catch (e) {}
-      try {
-        const { useCart } = await import("./cart");
-        useCart.getState().clear();
-      } catch (e) {}
       _isLoggingOut = false;
     },
 
