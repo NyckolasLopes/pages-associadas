@@ -961,8 +961,6 @@ export const useAdmin = create<AdminState>()(
           let query = supabase.from('banners' as any).select('*');
           if (lojaId) {
             query = query.or(`loja_id.eq.${lojaId},loja_id.is.null`);
-          } else {
-            query = query.is('loja_id', null);
           }
           const { data, error } = await query;
           if (!error && data) {

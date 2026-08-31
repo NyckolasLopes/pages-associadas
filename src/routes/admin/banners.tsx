@@ -756,42 +756,63 @@ function AdminBanners() {
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {pharmacies.map(loja => {
               const bannerCount = allBanners.filter(b => b.lojaId === loja.id).length;
+              const storeName = loja.nome || (loja as any).nomeFantasia || loja.razaoSocial || "Loja";
+              const isParceiro = loja.categoriaAssociado === 'Parceiro' || loja.isPleno === false;
+
               return (
-                <div key={loja.id} className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer group" onClick={() => setActiveStoreId(loja.id)}>
-                  <div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                        <Store className="w-6 h-6" />
+                <div 
+                  key={loja.id} 
+                  className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer group shadow-xs" 
+                  onClick={() => setActiveStoreId(loja.id)}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-11 h-11 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
+                        <Store className="w-5 h-5" />
                       </div>
-                      <div>
-                        <h3 className="font-bold text-slate-800 text-lg group-hover:text-emerald-600 transition-colors">{loja.nome || (loja as any).nomeFantasia || loja.razaoSocial}</h3>
-                        <p className="text-xs text-slate-500 flex items-center gap-2 mt-1">
-                          Filial #{loja.id}
-                          <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] uppercase tracking-wider ${
-                            loja.categoriaAssociado === 'Parceiro'
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-slate-800 text-base group-hover:text-emerald-600 transition-colors truncate" title={storeName}>
+                          {storeName}
+                        </h3>
+                        <div className="flex items-center justify-between gap-2 mt-1">
+                          <span className="text-xs text-slate-500 truncate" title={`Filial #${loja.id}`}>
+                            Filial #{loja.id.length > 12 ? `${loja.id.slice(0, 10)}...` : loja.id}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wider shrink-0 ${
+                            isParceiro
                               ? 'bg-orange-500 text-white'
                               : 'bg-emerald-100 text-emerald-800'
                           }`}>
-                            {loja.categoriaAssociado === 'Parceiro' ? 'Parceiro' : 'Pleno'}
+                            {isParceiro ? 'Parceiro' : 'Pleno'}
                           </span>
-                        </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-center justify-between mb-4">
-                      <span className="text-sm font-medium text-slate-600">Banners cadastrados</span>
-                      <span className="text-sm font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">{bannerCount}</span>
+
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-600">Banners cadastrados</span>
+                      <span className="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        {bannerCount}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                    <Button variant="outline" className="flex-1 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 font-bold" onClick={(e) => { e.stopPropagation(); setActiveStoreId(loja.id); }}>
-                      <Layers className="w-4 h-4 mr-2" /> Gerenciar Banners
+
+                  <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-100">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="w-full border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 font-bold text-xs truncate" 
+                      onClick={(e) => { e.stopPropagation(); setActiveStoreId(loja.id); }}
+                    >
+                      <Layers className="w-3.5 h-3.5 mr-1.5 shrink-0" /> Gerenciar
                     </Button>
                     <Button
                       variant="outline"
-                      className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold text-xs shrink-0"
+                      size="sm"
+                      className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold text-xs truncate"
                       onClick={(e) => {
                         e.stopPropagation();
                         setLojaToClearBanners(loja);
@@ -799,7 +820,7 @@ function AdminBanners() {
                       }}
                       title="Limpar todos os banners desta loja"
                     >
-                      <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Limpar área de banners
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5 shrink-0" /> Limpar
                     </Button>
                   </div>
                 </div>
