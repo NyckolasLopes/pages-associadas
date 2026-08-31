@@ -679,7 +679,7 @@ function AdminBanners() {
   return (
     <div className="max-w-6xl space-y-6 pb-20">
       {/* Top Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div className="flex flex-col">
           <h2 className="text-[22px] font-bold text-[#1a1a1a]">
             {activeTab === "vitrines" ? "Minhas Vitrines" : activeTab === "logo" ? "Logotipo da Loja" : activeTab === "cores" ? "Minhas Cores" : "Banners"}
@@ -694,7 +694,7 @@ function AdminBanners() {
               : "Gerencie os banners promocionais e visuais da sua loja"}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 justify-start xl:justify-end">
           {activeStoreId && isGlobalAdmin() && activeTab === "banners" && (
             <Button variant="outline" onClick={() => setActiveStoreId("")} className="font-bold text-slate-600 bg-white shadow-sm border-slate-200">
               <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
@@ -738,7 +738,6 @@ function AdminBanners() {
               <Plus className="w-4 h-4 mr-2" /> Novo banner
             </Button>
           )}
-
         </div>
       </div>
 
