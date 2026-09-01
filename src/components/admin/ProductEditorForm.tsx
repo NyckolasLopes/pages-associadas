@@ -211,6 +211,11 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         vitrines: product.vitrines || [],
         filtrosValores: product.filtrosValores || [],
         compreJuntoProdutoId: product.compreJuntoProdutoId || "",
+        alertaRegulatorio: product.alertaRegulatorio ?? false,
+        alertaTexto: product.alertaTexto || "",
+        tipoReceita: product.tipoReceita || "",
+        nivelRelevancia: product.nivelRelevancia ?? product.prioridade ?? 0,
+        prioridade: product.prioridade ?? product.nivelRelevancia ?? 0,
       });
     }
   }, [product]);
@@ -946,7 +951,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
               <Switch 
                 id="alertaRegulatorio" 
-                checked={formData.alertaRegulatorio} 
+                checked={!!formData.alertaRegulatorio} 
                 onCheckedChange={checked => setFormData({...formData, alertaRegulatorio: checked})}
               />
               <Label htmlFor="alertaRegulatorio" className="font-medium cursor-pointer">Requer Exibição do Alerta Regulatório</Label>

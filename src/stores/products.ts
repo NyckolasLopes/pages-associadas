@@ -292,7 +292,8 @@ export const useAdminProducts = create<ProductsState>()(
           resumo_descricao: formattedProduct.resumoDescricao || null,
           termos_pesquisa: formattedProduct.termosPesquisa || null,
           buscavel: formattedProduct.buscavel !== false,
-          nivel_relevancia: formattedProduct.nivelRelevancia || 0,
+          nivel_relevancia: Number(formattedProduct.nivelRelevancia ?? formattedProduct.prioridade) || 0,
+          prioridade: Number(formattedProduct.nivelRelevancia ?? formattedProduct.prioridade) || 0,
           imagem_alt: formattedProduct.imagemAlt || null,
         });
         

@@ -7,6 +7,7 @@ ADD COLUMN IF NOT EXISTS resumo_descricao TEXT,
 ADD COLUMN IF NOT EXISTS termos_pesquisa TEXT,
 ADD COLUMN IF NOT EXISTS buscavel BOOLEAN DEFAULT true,
 ADD COLUMN IF NOT EXISTS nivel_relevancia INT DEFAULT 0,
+ADD COLUMN IF NOT EXISTS prioridade INT DEFAULT 0,
 ADD COLUMN IF NOT EXISTS imagem_alt TEXT;
 
 -- 2. Garante que a tabela carrinhos_abandonados existe e tenha as colunas necessárias

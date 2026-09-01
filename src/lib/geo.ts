@@ -1,3 +1,5 @@
+import { useAdmin } from "@/stores/admin";
+
 export const fetchWithTimeout = async (url: string, timeout = 3000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
@@ -28,6 +30,16 @@ const CITY_CEP_FALLBACK: Record<string, string> = {
   "Caxias do Sul": "95010000",
   "Pelotas": "96010000",
   "Santa Maria": "97010000",
+  "Passo Fundo": "99010000",
+  "Rio Grande": "96200000",
+  "Bento Gonçalves": "95700000",
+  "Uruguaiana": "97500000",
+  "Bagé": "96400000",
+  "Santa Cruz do Sul": "96810000",
+  "Erechim": "99700000",
+  "Lajeado": "95900000",
+  "Ijuí": "98700000",
+  "Farroupilha": "95180000",
   "São Paulo": "01001000",
   "Rio de Janeiro": "20010000",
   "Curitiba": "80010000",
@@ -38,6 +50,18 @@ const CITY_CEP_FALLBACK: Record<string, string> = {
   "Recife": "50010000",
   "Fortaleza": "60010000",
 };
+
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Raio da terra em km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
 
 /** Extract a valid 8-digit CEP from raw postcode string */
 function extractCep(raw: string | undefined | null): string | null {
@@ -87,7 +111,19 @@ export async function reverseGeocodeLatLon(lat: number, lng: number): Promise<st
   if (awesomeCep) return awesomeCep;
 
   // Collect city/state info for ViaCEP fallback
-  detectedCity = nomData?.address?.city || nomData?.address?.town || bdcData?.locality || bdcData?.city || null;
+  detectedCity = nomData?.address?.city || 
+                 nomData?.address?.town || 
+                 nomData?.address?.municipality || 
+                 nomData?.address?.village || 
+                 nomData?.address?.city_district || 
+                 nomData?.address?.county || 
+                 nomData?.address?.suburb || 
+                 bdcData?.city || 
+                 bdcData?.locality || 
+                 bdcData?.localityInfo?.administrative?.[2]?.name ||
+                 bdcData?.localityInfo?.administrative?.[3]?.name ||
+                 null;
+
   detectedState = nomData?.address?.state || bdcData?.principalSubdivision || null;
   detectedRoad = nomData?.address?.road || null;
 
@@ -134,7 +170,46 @@ export async function reverseGeocodeLatLon(lat: number, lng: number): Promise<st
     }
   }
 
-  // ── PHASE 3: Hardcoded city fallback ──
+  // ── PHASE 3: Match from registered pharmacies in database or proximity ──
+  try {
+    const pharmacies = useAdmin.getState().pharmacies || [];
+    if (pharmacies.length > 0) {
+      if (detectedCity) {
+        const normDet = detectedCity.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const matchPharm = pharmacies.find(p => {
+          if (!p.cidade) return false;
+          const normP = p.cidade.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          return normDet.includes(normP) || normP.includes(normDet);
+        });
+        if (matchPharm?.cep) {
+          const cepClean = extractCep(matchPharm.cep);
+          if (cepClean) return cepClean;
+        }
+      }
+
+      // Find closest pharmacy by GPS coordinates
+      const withCoords = pharmacies.filter(p => p.lat && p.lng && p.cep);
+      if (withCoords.length > 0) {
+        let closest = withCoords[0];
+        let minDist = Infinity;
+        for (const p of withCoords) {
+          const d = getDistanceKm(lat, lng, p.lat!, p.lng!);
+          if (d < minDist) {
+            minDist = d;
+            closest = p;
+          }
+        }
+        if (closest && closest.cep) {
+          const cepClean = extractCep(closest.cep);
+          if (cepClean) return cepClean;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Pharmacy fallback error in reverse geocoding:", e);
+  }
+
+  // ── PHASE 4: Hardcoded city fallback ──
   if (detectedCity) {
     const normalizedCity = detectedCity.trim();
     const fallback = CITY_CEP_FALLBACK[normalizedCity];
