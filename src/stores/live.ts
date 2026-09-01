@@ -59,9 +59,6 @@ interface LiveStore {
   cleanup: () => void;
 }
 
-const getCityByIPMock = () => {
-  return CIDADES[Math.floor(Math.random() * CIDADES.length)];
-};
 
 export const useLive = create<LiveStore>((set, get) => ({
   visitors: [],
@@ -150,81 +147,88 @@ export const useLive = create<LiveStore>((set, get) => ({
 
       channel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          let realCity = getCityByIPMock();
-          let gotGps = false;
+          // Detecta cidade real por múltiplas APIs GeoIP — sem precisar de GPS
+          let realCity: CIDADES_TYPE | null = null;
 
-          // Tentativa de usar GPS Exato
+          // ── Fase 1: Múltiplas APIs GeoIP em paralelo ──
+          // Cada API retorna cidade + lat/lng exatos baseados no IP do usuário
+          const [ipapiData, ipwhoisData, geojsData] = await Promise.all([
+            // ipapi.co — muito preciso para cidades brasileiras
+            fetch(`https://ipapi.co/json/?_t=${Date.now()}`)
+              .then(r => r.ok ? r.json() : null)
+              .catch(() => null),
+            // ipwhois.app — bom fallback
+            fetch(`https://ipwhois.app/json/?lang=pt&_t=${Date.now()}`)
+              .then(r => r.ok ? r.json() : null)
+              .catch(() => null),
+            // geojs.io — confiável
+            fetch(`https://get.geojs.io/v1/ip/geo.json?_t=${Date.now()}`)
+              .then(r => r.ok ? r.json() : null)
+              .catch(() => null),
+          ]);
+
+          // Tenta cada fonte na ordem de confiança
+          if (ipapiData?.city && ipapiData?.latitude && ipapiData?.longitude) {
+            // ipapi retorna nome em português para BR
+            realCity = {
+              nome: ipapiData.city,
+              uf: ipapiData.region_code || ipapiData.region || "",
+              x: 50, y: 50,
+              lat: parseFloat(ipapiData.latitude),
+              lng: parseFloat(ipapiData.longitude),
+            };
+          } else if (ipwhoisData?.city && ipwhoisData?.latitude && ipwhoisData?.longitude) {
+            realCity = {
+              nome: ipwhoisData.city,
+              uf: ipwhoisData.region_code || ipwhoisData.region || "",
+              x: 50, y: 50,
+              lat: parseFloat(ipwhoisData.latitude),
+              lng: parseFloat(ipwhoisData.longitude),
+            };
+          } else if (geojsData?.city && geojsData?.latitude && geojsData?.longitude) {
+            realCity = {
+              nome: geojsData.city,
+              uf: geojsData.region || "",
+              x: 50, y: 50,
+              lat: parseFloat(geojsData.latitude),
+              lng: parseFloat(geojsData.longitude),
+            };
+          }
+
+          // ── Fase 2: GPS (opcional, melhora precisão se permitido) ──
+          // Tenta enriquecer com nome local via Nominatim se o GPS for concedido
           if (typeof window !== 'undefined' && navigator.geolocation) {
             try {
               const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                  enableHighAccuracy: true, timeout: 5000, maximumAge: 60000
+                });
               });
-              
               const lat = pos.coords.latitude;
               const lng = pos.coords.longitude;
-              
-              const nomRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
-                headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' }
-              });
-              if (nomRes.ok) {
-                const nomData = await nomRes.json();
-                const addr = nomData.address || {};
-                // Prioridade: city > town > village > county (não usar municipality pois pode retornar cidade vizinha)
-                const city = addr.city || addr.town || addr.village || addr.county || addr.region || "Desconhecida";
-                // Estado: usar state_code (ex: "RS") se disponível, senão state completo
-                const uf = addr.state_code || addr.state || "";
-                
-                realCity = {
-                  nome: city,
-                  uf: uf,
-                  x: 50,
-                  y: 50,
-                  lat,
-                  lng
-                };
-                gotGps = true;
+              // Refina o nome da cidade com Nominatim (mais preciso que IP para localização exata)
+              const nomRes = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+                { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } }
+              ).then(r => r.ok ? r.json() : null).catch(() => null);
+
+              if (nomRes?.address) {
+                const addr = nomRes.address;
+                const cityName = addr.city || addr.town || addr.municipality || addr.village || addr.county || addr.region || (realCity?.nome ?? "Desconhecida");
+                const uf = addr.state_code || addr.state || realCity?.uf || "";
+                realCity = { nome: cityName, uf, x: 50, y: 50, lat, lng };
+              } else if (realCity) {
+                // GPS deu posição mas Nominatim falhou — usa coordenada GPS com nome do IP
+                realCity = { ...realCity, lat, lng };
               }
-            } catch (e) {
-              console.warn("GPS ignorado ou falhou, caindo para IP:", e);
+            } catch {
+              // GPS negado ou timeout — continua com dados de IP (já temos realCity)
             }
           }
 
-          // Se GPS falhou ou foi negado, usa IP
-          if (!gotGps) {
-            try {
-              const res = await fetch(`https://get.geojs.io/v1/ip/geo.json?_t=${Date.now()}`);
-              if (res.ok) {
-                const data = await res.json();
-                if (data.city && data.region) {
-                  let x = 50;
-                  let y = 50;
-                  let lat = parseFloat(data.latitude);
-                  let lng = parseFloat(data.longitude);
-                  
-                  const found = CIDADES.find(c => c.nome.toLowerCase() === data.city.toLowerCase());
-                  if (found) {
-                    x = found.x;
-                    y = found.y;
-                    lat = found.lat;
-                    lng = found.lng;
-                  } else if (data.longitude && data.latitude) {
-                     x = ((data.longitude + 74) / 40) * 100;
-                     y = ((5.2 - data.latitude) / 38.9) * 100;
-                  }
-                  
-                  realCity = {
-                    nome: data.city,
-                    uf: data.region,
-                    x,
-                    y,
-                    lat,
-                    lng
-                  };
-                }
-              }
-            } catch (e) {
-              console.error("GeoIP Fetch Error:", e);
-            }
+          // ── Fase 3: Último fallback — cidade aleatória da lista somente se TUDO falhou ──
+          if (!realCity) {
+            realCity = CIDADES[Math.floor(Math.random() * CIDADES.length)];
           }
 
           // Salvar cidade para possibilitar atualizações futuras de track (quando a lojaId mudar)
