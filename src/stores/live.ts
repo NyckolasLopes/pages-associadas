@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from "@supabase/supabase-js";
 
-interface CIDADES_TYPE {
+export interface CIDADES_TYPE {
   uf: string;
   nome: string;
   x: number;
@@ -11,7 +11,7 @@ interface CIDADES_TYPE {
   lng?: number;
 }
 
-export const CIDADES = [
+export const CIDADES: CIDADES_TYPE[] = [
   { uf: "RS", nome: "Porto Alegre", x: 52, y: 88, lat: -30.0346, lng: -51.2177 },
   { uf: "RS", nome: "Caxias do Sul", x: 53, y: 86, lat: -29.1681, lng: -51.1794 },
   { uf: "RS", nome: "Pelotas", x: 51, y: 92, lat: -31.7654, lng: -52.3376 },
@@ -55,13 +55,128 @@ interface LiveStore {
   channel: RealtimeChannel | null;
   myCidade: CIDADES_TYPE | null;
   mySessionId: string | null;
+  isPolling: boolean;
   initPresence: (sessionId: string, lojaId?: string) => void;
   updateMyCity: () => Promise<void>;
   recordLojaAccess: (lojaId: string) => void;
   fetchRealAcessos: () => Promise<void>;
+  fetchActiveVisitors: () => Promise<void>;
+  startPollingVisitors: () => () => void;
+  stopPollingVisitors: () => void;
   cleanup: () => void;
 }
 
+let heartbeatTimer: any = null;
+let pollTimer: any = null;
+let statsPollTimer: any = null;
+
+function getPageInfo() {
+  if (typeof window === 'undefined') return { pagina: "Início", path: "/" };
+  const p = window.location.pathname;
+  if (p.includes('/carrinho') || p.includes('/cart')) return { pagina: "Carrinho", path: p };
+  if (p.includes('/checkout')) return { pagina: "Checkout", path: p };
+  if (p.includes('/produto/') || p.includes('/p/')) return { pagina: "Página de Produto", path: p };
+  if (p.includes('/c/')) return { pagina: "Categoria", path: p };
+  if (p.includes('/v/')) return { pagina: "Vitrine", path: p };
+  if (p.includes('/busca') || p.includes('/search')) return { pagina: "Busca", path: p };
+  if (p.includes('/painel') || p.includes('/admin')) return { pagina: "Painel Admin", path: p };
+  return { pagina: "Início / Loja", path: p };
+}
+
+async function resolveVisitorLocation(): Promise<CIDADES_TYPE> {
+  // ── Fase 1: GPS direto ──
+  if (typeof window !== 'undefined' && navigator.geolocation) {
+    try {
+      let gpsPermission: PermissionState = 'prompt';
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' });
+        gpsPermission = perm.state;
+      } catch {}
+
+      if (gpsPermission !== 'denied') {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: gpsPermission === 'granted' ? 12000 : 5000,
+            maximumAge: 0
+          });
+        });
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        const [nomRes, bdcRes] = await Promise.all([
+          fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=pt-BR`,
+            { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } }
+          ).then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=pt`
+          ).then(r => r.ok ? r.json() : null).catch(() => null),
+        ]);
+
+        let cityName: string | null = null;
+        let uf = "";
+
+        if (nomRes?.address) {
+          const addr = nomRes.address;
+          cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet || addr.district || addr.city_district || addr.suburb || null;
+          uf = addr.state_code || addr.state || "";
+        }
+        if (!cityName && bdcRes) {
+          cityName = bdcRes.city || bdcRes.locality
+            || bdcRes.localityInfo?.administrative?.find((a: any) => a.adminLevel === 8 || a.description?.toLowerCase()?.includes('município'))?.name
+            || null;
+          uf = uf || bdcRes.principalSubdivisionCode?.replace('BR-', '') || bdcRes.principalSubdivision || "";
+        }
+
+        if (cityName) {
+          return { nome: cityName, uf, x: 50, y: 50, lat, lng };
+        }
+      }
+    } catch {}
+  }
+
+  // ── Fase 2: GeoIP ──
+  try {
+    const [ipapiData, ipwhoisData, geojsData] = await Promise.all([
+      fetch(`https://ipapi.co/json/?_t=${Date.now()}`)
+        .then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`https://ipwhois.app/json/?lang=pt&_t=${Date.now()}`)
+        .then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`https://get.geojs.io/v1/ip/geo.json?_t=${Date.now()}`)
+        .then(r => r.ok ? r.json() : null).catch(() => null),
+    ]);
+
+    if (ipapiData?.city && ipapiData?.latitude) {
+      return {
+        nome: ipapiData.city,
+        uf: ipapiData.region_code || ipapiData.region || "",
+        x: 50, y: 50,
+        lat: parseFloat(ipapiData.latitude),
+        lng: parseFloat(ipapiData.longitude),
+      };
+    } else if (ipwhoisData?.city && ipwhoisData?.latitude) {
+      return {
+        nome: ipwhoisData.city,
+        uf: ipwhoisData.region_code || ipwhoisData.region || "",
+        x: 50, y: 50,
+        lat: parseFloat(ipwhoisData.latitude),
+        lng: parseFloat(ipwhoisData.longitude),
+      };
+    } else if (geojsData?.city && geojsData?.latitude) {
+      return {
+        nome: geojsData.city,
+        uf: geojsData.region || "",
+        x: 50, y: 50,
+        lat: parseFloat(geojsData.latitude),
+        lng: parseFloat(geojsData.longitude),
+      };
+    }
+  } catch {}
+
+  // ── Fase 3: Fallback padrão ──
+  return CIDADES[0];
+}
 
 export const useLive = create<LiveStore>((set, get) => ({
   visitors: [],
@@ -71,15 +186,15 @@ export const useLive = create<LiveStore>((set, get) => ({
   channel: null,
   myCidade: null,
   mySessionId: null,
+  isPolling: false,
 
   fetchRealAcessos: async () => {
     try {
       const { data, error } = await supabase.from('site_acessos').select('*');
       if (error) {
-        console.error("ERRO AO BUSCAR ACESSOS (Possível bloqueio de RLS):", error);
+        console.warn("Aviso ao buscar histórico de acessos:", error.message);
         return;
       }
-      console.log("Acessos obtidos do DB:", data?.length);
 
       const now = new Date();
       const isHoje = (d: Date) => d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -88,7 +203,7 @@ export const useLive = create<LiveStore>((set, get) => ({
       const stats: Record<string, LojaAcessoStat> = {};
       let globTotal = 0;
 
-      data.forEach(acesso => {
+      (data || []).forEach(acesso => {
         const date = new Date(acesso.created_at);
         const lojaId = acesso.loja_id || 'global';
         
@@ -104,25 +219,147 @@ export const useLive = create<LiveStore>((set, get) => ({
 
       set({ lojasAcessos: stats, totalAcessos: globTotal });
     } catch (e) {
-      console.error("Exceção ao buscar acessos:", e);
+      console.warn("Exceção ao buscar acessos:", e);
     }
   },
 
-  recordLojaAccess: async (lojaId: string) => {
+  fetchActiveVisitors: async () => {
     try {
-      const { error } = await supabase.from('site_acessos').insert({
-        loja_id: lojaId,
-        created_at: new Date().toISOString()
-      });
+      // Considera visitantes com heartbeat nos últimos 45 segundos como ativos e online
+      const since = new Date(Date.now() - 45000).toISOString();
+      const { data, error } = await supabase
+        .from('site_acessos')
+        .select('*')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false });
+
       if (error) {
-        console.error("Erro ao registrar acesso no DB (Verificar RLS):", error);
+        return;
       }
+
+      const activeVisitors: VisitorInfo[] = [];
+      const seenSessions = new Set<string>();
+
+      (data || []).forEach((row) => {
+        let sid = row.session_id;
+        let cidade: CIDADES_TYPE = CIDADES[0];
+        let pagina = "Início / Loja";
+        let path = "/";
+
+        if (typeof row.session_id === 'string' && row.session_id.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(row.session_id);
+            sid = parsed.s || row.session_id;
+            if (parsed.c) {
+              cidade = {
+                nome: parsed.c,
+                uf: parsed.u || "",
+                x: 50,
+                y: 50,
+                lat: parsed.lat || -30.0346,
+                lng: parsed.lng || -51.2177,
+              };
+            }
+            pagina = parsed.p || pagina;
+            path = parsed.path || path;
+          } catch {}
+        }
+
+        if (!seenSessions.has(sid)) {
+          seenSessions.add(sid);
+          activeVisitors.push({
+            id: typeof row.id === 'string' ? Math.abs(hashCode(row.id)) : Math.floor(Math.random() * 1000000),
+            sessionId: sid,
+            cidade,
+            expiresAt: new Date(row.created_at).getTime() + 45000,
+            lojaId: row.loja_id || undefined,
+            pagina,
+            path,
+          });
+        }
+      });
+
+      set({ visitors: activeVisitors });
     } catch (e) {
-      console.error("Falha ao registrar acesso:", e);
+      console.warn("Falha ao buscar visitantes ao vivo:", e);
+    }
+  },
+
+  startPollingVisitors: () => {
+    const { fetchActiveVisitors, fetchRealAcessos } = get();
+    set({ isPolling: true });
+
+    // Busca inicial imediata
+    fetchActiveVisitors();
+    fetchRealAcessos();
+
+    if (pollTimer) clearInterval(pollTimer);
+    if (statsPollTimer) clearInterval(statsPollTimer);
+
+    // Polling contínuo de visitantes ativos a cada 4 segundos
+    pollTimer = setInterval(() => {
+      fetchActiveVisitors();
+    }, 4000);
+
+    // Atualização de totais a cada 30 segundos
+    statsPollTimer = setInterval(() => {
+      fetchRealAcessos();
+    }, 30000);
+
+    return () => {
+      get().stopPollingVisitors();
+    };
+  },
+
+  stopPollingVisitors: () => {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+    if (statsPollTimer) {
+      clearInterval(statsPollTimer);
+      statsPollTimer = null;
+    }
+    set({ isPolling: false });
+  },
+
+  recordLojaAccess: async (lojaId: string) => {
+    if (!lojaId) return;
+
+    const trackedKey = `fa-tracked-store-${lojaId}`;
+    if (typeof window !== 'undefined' && !sessionStorage.getItem(trackedKey)) {
+      const sessionId = sessionStorage.getItem("fa-visitor-session") || Math.random().toString(36).substring(2);
+      if (!sessionStorage.getItem("fa-visitor-session")) {
+        sessionStorage.setItem("fa-visitor-session", sessionId);
+      }
+
+      const city = get().myCidade || CIDADES[0];
+      const pInfo = getPageInfo();
+      const payload = JSON.stringify({
+        s: sessionId,
+        c: city.nome,
+        u: city.uf,
+        lat: city.lat,
+        lng: city.lng,
+        p: pInfo.pagina,
+        path: pInfo.path,
+      });
+
+      try {
+        await supabase.from("site_acessos").insert({
+          session_id: payload,
+          loja_id: lojaId,
+          created_at: new Date().toISOString()
+        });
+        sessionStorage.setItem(trackedKey, "true");
+      } catch (e) {
+        console.warn("Aviso ao registrar acesso na loja:", e);
+      }
     }
 
+    const now = Date.now();
     set((state) => {
-      const current = state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: 0 };
+      const current = state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: now };
       return {
         totalAcessos: state.totalAcessos + 1,
         lojasAcessos: {
@@ -131,197 +368,64 @@ export const useLive = create<LiveStore>((set, get) => ({
             total: current.total + 1,
             mes: current.mes + 1,
             hoje: current.hoje + 1,
-            lastAccess: Date.now()
-          }
-        }
+            lastAccess: now,
+          },
+        },
       };
     });
   },
 
   initPresence: (sessionId: string, lojaId?: string) => {
-    try {
-      const { channel: existingChannel } = get();
-      if (existingChannel) {
-        return;
+    set({ mySessionId: sessionId });
+
+    const emitHeartbeat = async () => {
+      try {
+        const city = get().myCidade || CIDADES[0];
+        const pInfo = getPageInfo();
+        const payload = JSON.stringify({
+          s: sessionId,
+          c: city.nome,
+          u: city.uf,
+          lat: city.lat,
+          lng: city.lng,
+          p: pInfo.pagina,
+          path: pInfo.path,
+        });
+
+        await supabase.from('site_acessos').insert({
+          session_id: payload,
+          loja_id: lojaId || null,
+          created_at: new Date().toISOString()
+        });
+      } catch (err) {
+        // Silently catch heartbeat errors
       }
+    };
 
-      if (supabase) {
-        const channel = supabase.channel('online-visitors', {
-          config: {
-            presence: {
-              key: sessionId,
-            },
-          },
-        });
+    // 1. Resolve localização e dispara primeiro heartbeat com a cidade real
+    resolveVisitorLocation().then((resolvedCity) => {
+      set({ myCidade: resolvedCity });
+      emitHeartbeat();
+    });
 
-      channel.on('presence', { event: 'sync' }, () => {
-        const newState = channel!.presenceState();
-        const activeVisitors: VisitorInfo[] = [];
-        const seenSessions = new Set<string>();
-        
-        Object.keys(newState).forEach(key => {
-          (newState[key] as any[]).forEach((pres: any) => {
-            const sid = pres.sessionId || key;
-            if (!seenSessions.has(sid)) {
-              seenSessions.add(sid);
-              activeVisitors.push({
-                id: pres.id || Math.floor(Math.random() * 1000000),
-                sessionId: sid,
-                cidade: pres.cidade,
-                expiresAt: Date.now() + 60000,
-                lojaId: pres.lojaId,
-                pagina: pres.pagina || (pres.path?.includes('/carrinho') ? 'Carrinho' : pres.path?.includes('/produto') ? 'Produto' : 'Início / Loja'),
-                path: pres.path,
-              });
-            }
-          });
-        });
-        
-        set({ visitors: activeVisitors });
+    // 2. Heartbeat contínuo a cada 15 segundos enquanto a página estiver aberta
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    heartbeatTimer = setInterval(() => {
+      emitHeartbeat();
+    }, 15000);
+
+    // 3. Heartbeat em mudanças de foco ou visibilidade da aba
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', emitHeartbeat);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') emitHeartbeat();
       });
-
-      channel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          let realCity: CIDADES_TYPE | null = null;
-
-          // Verifica se o usuário já concedeu permissão de localização anteriormente
-          let gpsPermission: PermissionState = 'prompt';
-          try {
-            const perm = await navigator.permissions.query({ name: 'geolocation' });
-            gpsPermission = perm.state; // 'granted' | 'denied' | 'prompt'
-          } catch { /* Permissions API não suportada */ }
-
-          // ── Fase 1: GPS direto (sempre que disponível) ──
-          // maximumAge: 0 = NUNCA usar posição cacheada de rede/antena, sempre GPS fresco
-          if (gpsPermission !== 'denied' && typeof window !== 'undefined' && navigator.geolocation) {
-            try {
-              const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
-                  enableHighAccuracy: true,
-                  timeout: gpsPermission === 'granted' ? 15000 : 7000, // mais tempo se já tem permissão
-                  maximumAge: 0 // NUNCA usar cache — sempre pedir posição GPS real
-                });
-              });
-              const lat = pos.coords.latitude;
-              const lng = pos.coords.longitude;
-
-              // Nominatim + BigDataCloud em paralelo — melhor cobertura para cidades pequenas
-              const [nomRes, bdcRes] = await Promise.all([
-                fetch(
-                  `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=pt-BR`,
-                  { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } }
-                ).then(r => r.ok ? r.json() : null).catch(() => null),
-                fetch(
-                  `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=pt`
-                ).then(r => r.ok ? r.json() : null).catch(() => null),
-              ]);
-
-              let cityName: string | null = null;
-              let uf = "";
-
-              // Nominatim: prioridade para cidades pequenas (municipality, town, village, district)
-              if (nomRes?.address) {
-                const addr = nomRes.address;
-                cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet || addr.district || addr.city_district || addr.suburb || null;
-                uf = addr.state_code || addr.state || "";
-              }
-              // BigDataCloud: fallback com boa cobertura de municípios brasileiros
-              if (!cityName && bdcRes) {
-                cityName = bdcRes.city || bdcRes.locality
-                  || bdcRes.localityInfo?.administrative?.find((a: any) => a.adminLevel === 8 || a.description?.toLowerCase()?.includes('município'))?.name
-                  || null;
-                uf = uf || bdcRes.principalSubdivisionCode?.replace('BR-', '') || bdcRes.principalSubdivision || "";
-              }
-
-              if (cityName) {
-                realCity = { nome: cityName, uf, x: 50, y: 50, lat, lng };
-              }
-            } catch {
-              // GPS negado ou timeout — cai para GeoIP
-            }
-          }
-
-          // ── Fase 2: GeoIP apenas se GPS falhou/negado ──
-          if (!realCity) {
-            const [ipapiData, ipwhoisData, geojsData] = await Promise.all([
-              fetch(`https://ipapi.co/json/?_t=${Date.now()}`)
-                .then(r => r.ok ? r.json() : null).catch(() => null),
-              fetch(`https://ipwhois.app/json/?lang=pt&_t=${Date.now()}`)
-                .then(r => r.ok ? r.json() : null).catch(() => null),
-              fetch(`https://get.geojs.io/v1/ip/geo.json?_t=${Date.now()}`)
-                .then(r => r.ok ? r.json() : null).catch(() => null),
-            ]);
-
-            if (ipapiData?.city && ipapiData?.latitude) {
-              realCity = {
-                nome: ipapiData.city,
-                uf: ipapiData.region_code || ipapiData.region || "",
-                x: 50, y: 50,
-                lat: parseFloat(ipapiData.latitude),
-                lng: parseFloat(ipapiData.longitude),
-              };
-            } else if (ipwhoisData?.city && ipwhoisData?.latitude) {
-              realCity = {
-                nome: ipwhoisData.city,
-                uf: ipwhoisData.region_code || ipwhoisData.region || "",
-                x: 50, y: 50,
-                lat: parseFloat(ipwhoisData.latitude),
-                lng: parseFloat(ipwhoisData.longitude),
-              };
-            } else if (geojsData?.city && geojsData?.latitude) {
-              realCity = {
-                nome: geojsData.city,
-                uf: geojsData.region || "",
-                x: 50, y: 50,
-                lat: parseFloat(geojsData.latitude),
-                lng: parseFloat(geojsData.longitude),
-              };
-            }
-          }
-
-          // ── Fase 3: Último fallback ──
-          if (!realCity) {
-            realCity = CIDADES[Math.floor(Math.random() * CIDADES.length)];
-          }
-
-          set({ myCidade: realCity, mySessionId: sessionId });
-
-          const getPageInfo = () => {
-            if (typeof window === 'undefined') return { pagina: "Início", path: "/" };
-            const p = window.location.pathname;
-            if (p.includes('/carrinho') || p.includes('/cart')) return { pagina: "Carrinho", path: p };
-            if (p.includes('/checkout')) return { pagina: "Checkout", path: p };
-            if (p.includes('/produto/') || p.includes('/p/')) return { pagina: "Página de Produto", path: p };
-            if (p.includes('/c/')) return { pagina: "Categoria", path: p };
-            if (p.includes('/v/')) return { pagina: "Vitrine", path: p };
-            if (p.includes('/busca') || p.includes('/search')) return { pagina: "Busca", path: p };
-            if (p.includes('/painel') || p.includes('/admin')) return { pagina: "Painel Admin", path: p };
-            return { pagina: "Início / Loja", path: p };
-          };
-
-          const pInfo = getPageInfo();
-
-          await channel!.track({
-            sessionId,
-            lojaId,
-            cidade: realCity,
-            pagina: pInfo.pagina,
-            path: pInfo.path,
-            onlineAt: new Date().toISOString()
-          });
-        }
-      });
-
-      set({ channel });
     }
-  } catch (err) {
-    console.warn('[Live Presence] Falha silenciosa ao inicializar canais de presença:', err);
-  }
-},
+  },
 
   updateMyCity: async () => {
-    const { channel, mySessionId } = get();
-    if (!channel || !mySessionId) return;
+    const { mySessionId } = get();
+    if (!mySessionId) return;
 
     try {
       const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -359,67 +463,46 @@ export const useLive = create<LiveStore>((set, get) => ({
       if (cityName) {
         const updatedCity: CIDADES_TYPE = { nome: cityName, uf, x: 50, y: 50, lat, lng };
         set({ myCidade: updatedCity });
-        await channel.track({
-          sessionId: mySessionId,
-          lojaId: undefined,
-          cidade: updatedCity,
-          onlineAt: new Date().toISOString()
+
+        // Envia heartbeat imediato com a nova localização
+        const pInfo = getPageInfo();
+        const payload = JSON.stringify({
+          s: mySessionId,
+          c: cityName,
+          u: uf,
+          lat,
+          lng,
+          p: pInfo.pagina,
+          path: pInfo.path,
+        });
+
+        await supabase.from('site_acessos').insert({
+          session_id: payload,
+          loja_id: undefined,
+          created_at: new Date().toISOString()
         });
       }
     } catch (e) {
       console.warn("GPS não disponível para corrigir localização:", e);
-      throw e; // Re-throw para a UI tratar
+      throw e;
     }
   },
 
-  recordLojaAccess: async (lojaId: string) => {
-    if (!lojaId) return;
-
-    // Persist to database only once per session
-    const trackedKey = `fa-tracked-store-${lojaId}`;
-    if (typeof window !== 'undefined' && !sessionStorage.getItem(trackedKey)) {
-      let sessionId = sessionStorage.getItem("fa-visitor-session") || Math.random().toString(36).substring(2);
-      if (!sessionStorage.getItem("fa-visitor-session")) {
-        sessionStorage.setItem("fa-visitor-session", sessionId);
-      }
-
-      try {
-        const { error } = await supabase.from("site_acessos").insert({
-          session_id: sessionId,
-          loja_id: lojaId,
-        });
-        if (error) {
-          console.error("Supabase insert error for site_acessos:", error);
-        } else {
-          sessionStorage.setItem(trackedKey, "true");
-        }
-      } catch (e) {
-        console.error("Failed to track store access:", e);
-      }
-    }
-
-    const now = Date.now();
-    set((state) => {
-      const current = state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: now };
-      return {
-        totalAcessos: state.totalAcessos + 1,
-        lojasAcessos: {
-          ...state.lojasAcessos,
-          [lojaId]: {
-            total: current.total + 1,
-            mes: current.mes + 1,
-            hoje: current.hoje + 1,
-            lastAccess: now,
-          },
-        },
-      };
-    });
-  },
-  
   cleanup: () => {
-    const channel = get().channel;
-    if (channel) {
-      channel.untrack();
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
     }
+    get().stopPollingVisitors();
   }
 }));
+
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return hash;
+}

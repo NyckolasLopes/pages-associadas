@@ -16,7 +16,7 @@ export const Route = createFileRoute("/admin/ao-vivo")({
 });
 
 function AoVivo() {
-  const { visitors: rawVisitors, totalAcessos, stats, myCidade, updateMyCity } = useLive();
+  const { visitors: rawVisitors, totalAcessos, stats, myCidade, updateMyCity, startPollingVisitors } = useLive();
   const { currentUser, activeStoreId, pharmacies } = useAdmin();
   const [isUpdatingCity, setIsUpdatingCity] = useState(false);
 
@@ -25,7 +25,11 @@ function AoVivo() {
 
   useEffect(() => {
     loadOrders();
-  }, [loadOrders]);
+    const stopPolling = startPollingVisitors();
+    return () => {
+      stopPolling();
+    };
+  }, [loadOrders, startPollingVisitors]);
 
   const handleCorrectLocation = async () => {
     setIsUpdatingCity(true);
