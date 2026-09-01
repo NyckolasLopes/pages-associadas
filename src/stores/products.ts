@@ -286,6 +286,14 @@ export const useAdminProducts = create<ProductsState>()(
           titulo_seo: formattedProduct.seoTitulo || formattedProduct.tituloSeo || null,
           meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
           eans_secundarios: formattedProduct.eansSecundarios || [],
+          alerta_regulatorio: formattedProduct.alertaRegulatorio === true,
+          alerta_texto: formattedProduct.alertaTexto || null,
+          tipo_receita: formattedProduct.tipoReceita || null,
+          resumo_descricao: formattedProduct.resumoDescricao || null,
+          termos_pesquisa: formattedProduct.termosPesquisa || null,
+          buscavel: formattedProduct.buscavel !== false,
+          nivel_relevancia: formattedProduct.nivelRelevancia || 0,
+          imagem_alt: formattedProduct.imagemAlt || null,
         });
         
         if (error) {

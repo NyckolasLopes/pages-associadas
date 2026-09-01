@@ -10,7 +10,7 @@ export function toTitleCase(str: string) {
   return str.toLowerCase().replace(/(?:^|\s)\S/g, function(a) { return a.toUpperCase(); });
 }
 
-export function getCityFromCep(cep: string, pharmacies?: { cep: string, cidade: string }[]) {
+export function getCityFromCep(cep: string, pharmacies?: { cep: string, cidade: string }[]): string {
   if (!cep || !pharmacies || pharmacies.length === 0) return "Porto Alegre";
   const userCepNum = parseInt(cep.replace(/\D/g, ""), 10);
   if (isNaN(userCepNum)) return "Porto Alegre";
@@ -30,6 +30,44 @@ export function getCityFromCep(cep: string, pharmacies?: { cep: string, cidade: 
   }
   
   return closestCity;
+}
+
+export async function getCityFromCepAsync(
+  cep: string,
+  pharmacies: { cep: string; cidade: string; lat?: number; lng?: number }[] = []
+): Promise<string> {
+  if (!cep || pharmacies.length === 0) return "Porto Alegre";
+
+  try {
+    const userCoords = await getCepCoordinates(cep);
+    if (!userCoords) return getCityFromCep(cep, pharmacies);
+
+    let closestCity = pharmacies[0]?.cidade || "Porto Alegre";
+    let minDist = Infinity;
+
+    for (const p of pharmacies) {
+      if (!p.cidade) continue;
+      try {
+        const pharmCoords = p.lat && p.lng
+          ? { lat: p.lat, lng: p.lng }
+          : await getCepCoordinates(p.cep);
+        if (!pharmCoords) continue;
+
+        const dist = await getRoadDistanceKm(
+          userCoords.lat, userCoords.lng,
+          pharmCoords.lat, pharmCoords.lng
+        );
+        if (dist < minDist) {
+          minDist = dist;
+          closestCity = p.cidade;
+        }
+      } catch (_) { /* continua */ }
+    }
+
+    return closestCity;
+  } catch {
+    return getCityFromCep(cep, pharmacies);
+  }
 }
 
 export function formatPrice(price: number) {

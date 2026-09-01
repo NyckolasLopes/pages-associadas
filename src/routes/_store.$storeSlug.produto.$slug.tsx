@@ -34,7 +34,7 @@ import { useWaitlist } from "@/stores/waitlist";
 import { useAuth } from "@/stores/auth";
 import { useSelos } from "@/stores/selos";
 import { LoginModal } from "@/components/storefront/LoginModal";
-import { getCityFromCep, isCampanhaAtiva, getCepCoordinates, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion, getPadraoPromotionWithTimer } from "@/lib/utils";
+import { getCityFromCep, getCityFromCepAsync, isCampanhaAtiva, getCepCoordinates, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion, getPadraoPromotionWithTimer } from "@/lib/utils";
 import { getRoadDistanceKm } from "@/lib/distanceApis";
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
@@ -493,27 +493,34 @@ function PDP() {
   const allPharmacies = useAdmin((s) => s.pharmacies);
   const fornecedores = useAdminProducts((s) => s.fornecedores);
 
-  const rawCity = (freteCalculado && cep) ? (
-    (cep === globalCep && globalCity) ? globalCity : getCityFromCep(cep, allPharmacies)
-  ) : "Porto Alegre";
+  const [resolvedCity, setResolvedCity] = useState<string>("Porto Alegre");
+
+  useEffect(() => {
+    if (!freteCalculado || !cep) {
+      setResolvedCity("Porto Alegre");
+      return;
+    }
+    if (cep === globalCep && globalCity) {
+      setResolvedCity(globalCity);
+      return;
+    }
+    (async () => {
+      try {
+        const city = await getCityFromCepAsync(cep, allPharmacies);
+        setResolvedCity(city);
+      } catch {
+        setResolvedCity("Porto Alegre");
+      }
+    })();
+  }, [freteCalculado, cep, globalCep, globalCity, allPharmacies]);
+
   const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
-  const currentCity = normalize(rawCity);
+  const currentCity = normalize(resolvedCity);
   
   let cityPharmacies = (freteCalculado && cep) ? allPharmacies.filter(f => 
     normalize(f.cidade).includes(currentCity) || 
     normalize(f.endereco).includes(currentCity)
   ) : allPharmacies;
-
-  if (cityPharmacies.length === 0 && allPharmacies.length > 0 && cep) {
-    const userCepNum = parseInt(cep.replace(/\D/g, ""), 10);
-    const sortedByDistance = [...allPharmacies].sort((a, b) => {
-      const aDist = Math.abs(userCepNum - parseInt(a.cep.replace(/\D/g, ""), 10));
-      const bDist = Math.abs(userCepNum - parseInt(b.cep.replace(/\D/g, ""), 10));
-      return aDist - bDist;
-    });
-    const closestCity = sortedByDistance[0].cidade;
-    cityPharmacies = allPharmacies.filter(f => normalize(f.cidade) === normalize(closestCity));
-  }
 
   const isCampanha = isCampanhaAtiva(p);
 
