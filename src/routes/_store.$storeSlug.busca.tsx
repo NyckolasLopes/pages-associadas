@@ -155,33 +155,54 @@ function SearchPage() {
               <ProductGridSkeleton count={12} />
             </div>
           ) : productsList.length === 0 ? (
-            <div className="py-8 px-4 flex flex-col items-center justify-center text-center bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm animate-in fade-in duration-300">
-              <img 
-                src={mascotNotFound} 
-                alt="Produto não encontrado" 
-                loading="eager"
-                fetchPriority="high"
-                decoding="sync"
-                className="w-full max-w-[300px] sm:max-w-[360px] h-auto mb-4 object-contain pointer-events-none drop-shadow-sm" 
-              />
-              {q && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                  <span>Nenhum resultado para:</span>
-                  <span className="font-bold text-foreground">"{q}"</span>
+            isParceiro ? (
+              <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-card rounded-2xl border p-8 animate-in fade-in duration-300">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4 text-muted-foreground">
+                  <Search className="w-8 h-8 opacity-40" />
                 </div>
-              )}
-              <p className="text-xs sm:text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
-                Tente verificar a ortografia, buscar pela marca, princípio ativo ou categoria do produto.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <Button 
-                  onClick={() => navigate({ search: { q: "" } as any, replace: true })}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-2.5 rounded-xl shadow-sm transition"
-                >
-                  Ver todos os produtos
-                </Button>
+                <h3 className="text-xl font-bold text-foreground mb-2">Nenhum produto encontrado</h3>
+                <p className="text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
+                  Não encontramos nenhum resultado para <span className="font-semibold text-foreground">"{q || "sua busca"}"</span>. Tente verificar a ortografia ou buscar por outros termos.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate({ search: { q: "" } as any, replace: true })}
+                    className="font-bold px-6 py-2.5 rounded-xl shadow-sm transition"
+                  >
+                    Ver todos os produtos
+                  </Button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="py-8 px-4 flex flex-col items-center justify-center text-center bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm animate-in fade-in duration-300">
+                <img 
+                  src={mascotNotFound} 
+                  alt="Produto não encontrado" 
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="sync"
+                  className="w-full max-w-[300px] sm:max-w-[360px] h-auto mb-4 object-contain pointer-events-none drop-shadow-sm" 
+                />
+                {q && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                    <span>Nenhum resultado para:</span>
+                    <span className="font-bold text-foreground">"{q}"</span>
+                  </div>
+                )}
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
+                  Tente verificar a ortografia, buscar pela marca, princípio ativo ou categoria do produto.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button 
+                    onClick={() => navigate({ search: { q: "" } as any, replace: true })}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-2.5 rounded-xl shadow-sm transition"
+                  >
+                    Ver todos os produtos
+                  </Button>
+                </div>
+              </div>
+            )
           ) : (
             <>
               <div className="text-sm text-muted-foreground mb-4 font-medium">
