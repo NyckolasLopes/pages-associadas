@@ -111,6 +111,9 @@ function SingleDynamicVitrine({
     return null;
   }
 
+  const IconComponent = vitrine.icone ? VITRINE_ICONS[vitrine.icone] || Sparkles : Sparkles;
+  const vitrineSlug = vitrine.linkSeo || vitrine.nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+
   const linkedBanners = allBanners.filter(b => 
     b.active && 
     b.posicao === "Banner Extra" &&
@@ -124,8 +127,6 @@ function SingleDynamicVitrine({
     (b.lojaId === lojaId || !b.lojaId) && 
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
   );
-  const IconComponent = vitrine.icone ? VITRINE_ICONS[vitrine.icone] || Sparkles : Sparkles;
-  const vitrineSlug = vitrine.linkSeo || vitrine.nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
   return (
     <div>
