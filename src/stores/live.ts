@@ -150,18 +150,28 @@ export const useLive = create<LiveStore>((set, get) => ({
         if (status === 'SUBSCRIBED') {
           let realCity: CIDADES_TYPE | null = null;
 
-          // ── Fase 1: GPS primeiro (mais preciso para qualquer cidade) ──
-          if (typeof window !== 'undefined' && navigator.geolocation) {
+          // Verifica se o usuário já concedeu permissão de localização anteriormente
+          let gpsPermission: PermissionState = 'prompt';
+          try {
+            const perm = await navigator.permissions.query({ name: 'geolocation' });
+            gpsPermission = perm.state; // 'granted' | 'denied' | 'prompt'
+          } catch { /* Permissions API não suportada */ }
+
+          // ── Fase 1: GPS direto (sempre que disponível) ──
+          // maximumAge: 0 = NUNCA usar posição cacheada de rede/antena, sempre GPS fresco
+          if (gpsPermission !== 'denied' && typeof window !== 'undefined' && navigator.geolocation) {
             try {
               const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, reject, {
-                  enableHighAccuracy: true, timeout: 8000, maximumAge: 30000
+                  enableHighAccuracy: true,
+                  timeout: gpsPermission === 'granted' ? 15000 : 7000, // mais tempo se já tem permissão
+                  maximumAge: 0 // NUNCA usar cache — sempre pedir posição GPS real
                 });
               });
               const lat = pos.coords.latitude;
               const lng = pos.coords.longitude;
 
-              // Usa Nominatim + BigDataCloud em paralelo para melhor resultado
+              // Nominatim + BigDataCloud em paralelo — melhor cobertura para cidades pequenas
               const [nomRes, bdcRes] = await Promise.all([
                 fetch(
                   `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=pt-BR`,
@@ -173,16 +183,19 @@ export const useLive = create<LiveStore>((set, get) => ({
               ]);
 
               let cityName: string | null = null;
-              let uf: string = "";
+              let uf = "";
 
+              // Nominatim: prioridade para cidades pequenas (municipality, town, village, district)
               if (nomRes?.address) {
                 const addr = nomRes.address;
-                // Cidades pequenas aparecem como city, town, municipality ou village no Nominatim
-                cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet || addr.county || addr.suburb || null;
+                cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet || addr.district || addr.city_district || addr.suburb || null;
                 uf = addr.state_code || addr.state || "";
               }
+              // BigDataCloud: fallback com boa cobertura de municípios brasileiros
               if (!cityName && bdcRes) {
-                cityName = bdcRes.city || bdcRes.locality || bdcRes.localityInfo?.administrative?.[3]?.name || bdcRes.localityInfo?.administrative?.[2]?.name || null;
+                cityName = bdcRes.city || bdcRes.locality
+                  || bdcRes.localityInfo?.administrative?.find((a: any) => a.adminLevel === 8 || a.description?.toLowerCase()?.includes('município'))?.name
+                  || null;
                 uf = uf || bdcRes.principalSubdivisionCode?.replace('BR-', '') || bdcRes.principalSubdivision || "";
               }
 
@@ -194,7 +207,7 @@ export const useLive = create<LiveStore>((set, get) => ({
             }
           }
 
-          // ── Fase 2: GeoIP em paralelo se GPS falhou/negado ──
+          // ── Fase 2: GeoIP apenas se GPS falhou/negado ──
           if (!realCity) {
             const [ipapiData, ipwhoisData, geojsData] = await Promise.all([
               fetch(`https://ipapi.co/json/?_t=${Date.now()}`)
@@ -259,7 +272,7 @@ export const useLive = create<LiveStore>((set, get) => ({
     try {
       const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+          enableHighAccuracy: true, timeout: 15000, maximumAge: 0
         });
       });
       const lat = pos.coords.latitude;
@@ -279,11 +292,13 @@ export const useLive = create<LiveStore>((set, get) => ({
       let uf = "";
       if (nomRes?.address) {
         const addr = nomRes.address;
-        cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet || addr.county || null;
+        cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet || addr.district || addr.city_district || addr.suburb || null;
         uf = addr.state_code || addr.state || "";
       }
       if (!cityName && bdcRes) {
-        cityName = bdcRes.city || bdcRes.locality || bdcRes.localityInfo?.administrative?.[3]?.name || null;
+        cityName = bdcRes.city || bdcRes.locality
+          || bdcRes.localityInfo?.administrative?.find((a: any) => a.adminLevel === 8 || a.description?.toLowerCase()?.includes('município'))?.name
+          || null;
         uf = uf || bdcRes.principalSubdivisionCode?.replace('BR-', '') || "";
       }
 

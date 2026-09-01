@@ -76,59 +76,58 @@ export async function reverseGeocodeLatLon(lat: number, lng: number): Promise<st
   let detectedRoad: string | null = null;
 
   // ── PHASE 1: Run fast APIs in parallel ──
-  // Race BigDataCloud, AwesomeAPI reverse, and Nominatim simultaneously
-  // Return the first valid CEP found
-  
   const bdcPromise = fetchWithTimeout(
     `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=pt`,
-    2500
+    3500
   ).then(r => r.ok ? r.json() : null).catch(() => null);
 
   const awesomePromise = fetchWithTimeout(
     `https://cep.awesomeapi.com.br/json/lat/${lat}/lng/${lng}`,
-    2500
+    3000
   ).then(r => r.ok ? r.json() : null).catch(() => null);
 
   const nomPromise = fetchWithTimeout(
-    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-    3000
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=pt-BR`,
+    4000
   ).then(r => r.ok ? r.json() : null).catch(() => null);
 
   // Wait for all three in parallel
   const [bdcData, awesomeData, nomData] = await Promise.all([bdcPromise, awesomePromise, nomPromise]);
 
+  // Check Nominatim postcode first (very accurate for Brazilian cities)
+  const nomCep = extractCep(nomData?.address?.postcode);
+  if (nomCep) return nomCep;
+
   // Check BigDataCloud postcode
   const bdcCep = extractCep(bdcData?.postcode);
   if (bdcCep) return bdcCep;
-
-  // Check Nominatim postcode
-  const nomCep = extractCep(nomData?.address?.postcode);
-  if (nomCep) return nomCep;
 
   // Check AwesomeAPI (returns object or array)
   const awesomeItem = Array.isArray(awesomeData) ? awesomeData[0] : awesomeData;
   const awesomeCep = extractCep(awesomeItem?.cep);
   if (awesomeCep) return awesomeCep;
 
-  // Collect city/state info for ViaCEP fallback
+  // Extract detected municipality / city cleanly
+  // Prioritize city > town > municipality > village > hamlet > district
+  // DO NOT prioritize county (county in Brazil is often the judicial comarca or microrregião)
   detectedCity = nomData?.address?.city || 
                  nomData?.address?.town || 
                  nomData?.address?.municipality || 
                  nomData?.address?.village || 
-                 nomData?.address?.city_district || 
-                 nomData?.address?.county || 
-                 nomData?.address?.suburb || 
+                 nomData?.address?.hamlet || 
+                 nomData?.address?.district || 
                  bdcData?.city || 
                  bdcData?.locality || 
-                 bdcData?.localityInfo?.administrative?.[2]?.name ||
-                 bdcData?.localityInfo?.administrative?.[3]?.name ||
+                 bdcData?.localityInfo?.administrative?.find((a: any) => a.adminLevel === 8 || a.description?.toLowerCase()?.includes('município'))?.name ||
+                 nomData?.address?.city_district || 
+                 nomData?.address?.suburb || 
                  null;
 
   detectedState = nomData?.address?.state || bdcData?.principalSubdivision || null;
   detectedRoad = nomData?.address?.road || null;
 
-  // ── PHASE 2: ViaCEP street search fallback ──
-  if (detectedState && detectedCity) {
+  // ── PHASE 2: Lookup CEP by detected City and State via ViaCEP & Nominatim Search ──
+  if (detectedCity) {
     const ufMap: Record<string, string> = {
       Acre: "AC", Alagoas: "AL", "Amapá": "AP", Amazonas: "AM", Bahia: "BA",
       "Ceará": "CE", "Distrito Federal": "DF", "Espírito Santo": "ES", "Goiás": "GO",
@@ -139,14 +138,32 @@ export async function reverseGeocodeLatLon(lat: number, lng: number): Promise<st
       Roraima: "RR", "Santa Catarina": "SC", "São Paulo": "SP", Sergipe: "SE",
       Tocantins: "TO",
     };
-    const uf = ufMap[detectedState] || detectedState;
+    const uf = (detectedState ? (ufMap[detectedState] || detectedState) : "").substring(0, 2).toUpperCase();
+
+    const searches: Promise<string | null>[] = [];
+
+    // 1. Nominatim City Search for postcode
+    searches.push(
+      fetchWithTimeout(
+        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(detectedCity)}&country=Brazil&format=json&addressdetails=1&accept-language=pt-BR`,
+        3000
+      )
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            for (const item of data) {
+              const cep = extractCep(item.address?.postcode);
+              if (cep) return cep;
+            }
+          }
+          return null;
+        })
+        .catch(() => null)
+    );
 
     if (uf.length === 2) {
       const roadStr = detectedRoad ? detectedRoad.split(" - ")[0].split(",")[0] : null;
 
-      // Try street + Centro in parallel
-      const searches: Promise<string | null>[] = [];
-      
       if (roadStr) {
         searches.push(
           fetchWithTimeout(`https://viacep.com.br/ws/${uf}/${encodeURIComponent(detectedCity)}/${encodeURIComponent(roadStr)}/json/`, 2500)
@@ -162,51 +179,31 @@ export async function reverseGeocodeLatLon(lat: number, lng: number): Promise<st
           .then(data => Array.isArray(data) && data.length > 0 && data[0].cep ? extractCep(data[0].cep) : null)
           .catch(() => null)
       );
+    }
 
-      const viaCepResults = await Promise.all(searches);
-      for (const result of viaCepResults) {
-        if (result) return result;
-      }
+    const citySearchResults = await Promise.all(searches);
+    for (const res of citySearchResults) {
+      if (res) return res;
     }
   }
 
-  // ── PHASE 3: Match from registered pharmacies in database or proximity ──
+  // ── PHASE 3: Match from registered pharmacies in the SAME city ──
   try {
     const pharmacies = useAdmin.getState().pharmacies || [];
-    if (pharmacies.length > 0) {
-      if (detectedCity) {
-        const normDet = detectedCity.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const matchPharm = pharmacies.find(p => {
-          if (!p.cidade) return false;
-          const normP = p.cidade.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          return normDet.includes(normP) || normP.includes(normDet);
-        });
-        if (matchPharm?.cep) {
-          const cepClean = extractCep(matchPharm.cep);
-          if (cepClean) return cepClean;
-        }
-      }
-
-      // Find closest pharmacy by GPS coordinates
-      const withCoords = pharmacies.filter(p => p.lat && p.lng && p.cep);
-      if (withCoords.length > 0) {
-        let closest = withCoords[0];
-        let minDist = Infinity;
-        for (const p of withCoords) {
-          const d = getDistanceKm(lat, lng, p.lat!, p.lng!);
-          if (d < minDist) {
-            minDist = d;
-            closest = p;
-          }
-        }
-        if (closest && closest.cep) {
-          const cepClean = extractCep(closest.cep);
-          if (cepClean) return cepClean;
-        }
+    if (pharmacies.length > 0 && detectedCity) {
+      const normDet = detectedCity.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const matchPharm = pharmacies.find(p => {
+        if (!p.cidade) return false;
+        const normP = p.cidade.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return normDet.includes(normP) || normP.includes(normDet);
+      });
+      if (matchPharm?.cep) {
+        const cepClean = extractCep(matchPharm.cep);
+        if (cepClean) return cepClean;
       }
     }
   } catch (e) {
-    console.warn("Pharmacy fallback error in reverse geocoding:", e);
+    console.warn("Pharmacy match error:", e);
   }
 
   // ── PHASE 4: Hardcoded city fallback ──
