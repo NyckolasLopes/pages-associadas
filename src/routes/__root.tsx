@@ -115,7 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         {
           httpEquiv: "Content-Security-Policy",
-          content: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://* http://*; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://* wss://*; frame-src 'self' https://*;",
+          content: "default-src 'self' https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://* http://*; style-src 'self' 'unsafe-inline' https://* http://* https://fonts.googleapis.com; img-src 'self' data: blob: https://* http://*; font-src 'self' data: https://* http://* https://fonts.gstatic.com; connect-src 'self' https://* http://* wss://* ws://*; frame-src 'self' https://* http://*;",
         },
         { title: title },
         {
