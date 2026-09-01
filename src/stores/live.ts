@@ -54,6 +54,7 @@ interface LiveStore {
   myCidade: CIDADES_TYPE | null;
   mySessionId: string | null;
   initPresence: (sessionId: string, lojaId?: string) => void;
+  updateMyCity: () => Promise<void>;
   recordLojaAccess: (lojaId: string) => void;
   fetchRealAcessos: () => Promise<void>;
   cleanup: () => void;
@@ -147,91 +148,95 @@ export const useLive = create<LiveStore>((set, get) => ({
 
       channel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          // Detecta cidade real por múltiplas APIs GeoIP — sem precisar de GPS
           let realCity: CIDADES_TYPE | null = null;
 
-          // ── Fase 1: Múltiplas APIs GeoIP em paralelo ──
-          // Cada API retorna cidade + lat/lng exatos baseados no IP do usuário
-          const [ipapiData, ipwhoisData, geojsData] = await Promise.all([
-            // ipapi.co — muito preciso para cidades brasileiras
-            fetch(`https://ipapi.co/json/?_t=${Date.now()}`)
-              .then(r => r.ok ? r.json() : null)
-              .catch(() => null),
-            // ipwhois.app — bom fallback
-            fetch(`https://ipwhois.app/json/?lang=pt&_t=${Date.now()}`)
-              .then(r => r.ok ? r.json() : null)
-              .catch(() => null),
-            // geojs.io — confiável
-            fetch(`https://get.geojs.io/v1/ip/geo.json?_t=${Date.now()}`)
-              .then(r => r.ok ? r.json() : null)
-              .catch(() => null),
-          ]);
-
-          // Tenta cada fonte na ordem de confiança
-          if (ipapiData?.city && ipapiData?.latitude && ipapiData?.longitude) {
-            // ipapi retorna nome em português para BR
-            realCity = {
-              nome: ipapiData.city,
-              uf: ipapiData.region_code || ipapiData.region || "",
-              x: 50, y: 50,
-              lat: parseFloat(ipapiData.latitude),
-              lng: parseFloat(ipapiData.longitude),
-            };
-          } else if (ipwhoisData?.city && ipwhoisData?.latitude && ipwhoisData?.longitude) {
-            realCity = {
-              nome: ipwhoisData.city,
-              uf: ipwhoisData.region_code || ipwhoisData.region || "",
-              x: 50, y: 50,
-              lat: parseFloat(ipwhoisData.latitude),
-              lng: parseFloat(ipwhoisData.longitude),
-            };
-          } else if (geojsData?.city && geojsData?.latitude && geojsData?.longitude) {
-            realCity = {
-              nome: geojsData.city,
-              uf: geojsData.region || "",
-              x: 50, y: 50,
-              lat: parseFloat(geojsData.latitude),
-              lng: parseFloat(geojsData.longitude),
-            };
-          }
-
-          // ── Fase 2: GPS (opcional, melhora precisão se permitido) ──
-          // Tenta enriquecer com nome local via Nominatim se o GPS for concedido
+          // ── Fase 1: GPS primeiro (mais preciso para qualquer cidade) ──
           if (typeof window !== 'undefined' && navigator.geolocation) {
             try {
               const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, reject, {
-                  enableHighAccuracy: true, timeout: 5000, maximumAge: 60000
+                  enableHighAccuracy: true, timeout: 8000, maximumAge: 30000
                 });
               });
               const lat = pos.coords.latitude;
               const lng = pos.coords.longitude;
-              // Refina o nome da cidade com Nominatim (mais preciso que IP para localização exata)
-              const nomRes = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
-                { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } }
-              ).then(r => r.ok ? r.json() : null).catch(() => null);
+
+              // Usa Nominatim + BigDataCloud em paralelo para melhor resultado
+              const [nomRes, bdcRes] = await Promise.all([
+                fetch(
+                  `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=pt-BR`,
+                  { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } }
+                ).then(r => r.ok ? r.json() : null).catch(() => null),
+                fetch(
+                  `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=pt`
+                ).then(r => r.ok ? r.json() : null).catch(() => null),
+              ]);
+
+              let cityName: string | null = null;
+              let uf: string = "";
 
               if (nomRes?.address) {
                 const addr = nomRes.address;
-                const cityName = addr.city || addr.town || addr.municipality || addr.village || addr.county || addr.region || (realCity?.nome ?? "Desconhecida");
-                const uf = addr.state_code || addr.state || realCity?.uf || "";
+                // Cidades pequenas aparecem como city, town, municipality ou village no Nominatim
+                cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet || addr.county || addr.suburb || null;
+                uf = addr.state_code || addr.state || "";
+              }
+              if (!cityName && bdcRes) {
+                cityName = bdcRes.city || bdcRes.locality || bdcRes.localityInfo?.administrative?.[3]?.name || bdcRes.localityInfo?.administrative?.[2]?.name || null;
+                uf = uf || bdcRes.principalSubdivisionCode?.replace('BR-', '') || bdcRes.principalSubdivision || "";
+              }
+
+              if (cityName) {
                 realCity = { nome: cityName, uf, x: 50, y: 50, lat, lng };
-              } else if (realCity) {
-                // GPS deu posição mas Nominatim falhou — usa coordenada GPS com nome do IP
-                realCity = { ...realCity, lat, lng };
               }
             } catch {
-              // GPS negado ou timeout — continua com dados de IP (já temos realCity)
+              // GPS negado ou timeout — cai para GeoIP
             }
           }
 
-          // ── Fase 3: Último fallback — cidade aleatória da lista somente se TUDO falhou ──
+          // ── Fase 2: GeoIP em paralelo se GPS falhou/negado ──
+          if (!realCity) {
+            const [ipapiData, ipwhoisData, geojsData] = await Promise.all([
+              fetch(`https://ipapi.co/json/?_t=${Date.now()}`)
+                .then(r => r.ok ? r.json() : null).catch(() => null),
+              fetch(`https://ipwhois.app/json/?lang=pt&_t=${Date.now()}`)
+                .then(r => r.ok ? r.json() : null).catch(() => null),
+              fetch(`https://get.geojs.io/v1/ip/geo.json?_t=${Date.now()}`)
+                .then(r => r.ok ? r.json() : null).catch(() => null),
+            ]);
+
+            if (ipapiData?.city && ipapiData?.latitude) {
+              realCity = {
+                nome: ipapiData.city,
+                uf: ipapiData.region_code || ipapiData.region || "",
+                x: 50, y: 50,
+                lat: parseFloat(ipapiData.latitude),
+                lng: parseFloat(ipapiData.longitude),
+              };
+            } else if (ipwhoisData?.city && ipwhoisData?.latitude) {
+              realCity = {
+                nome: ipwhoisData.city,
+                uf: ipwhoisData.region_code || ipwhoisData.region || "",
+                x: 50, y: 50,
+                lat: parseFloat(ipwhoisData.latitude),
+                lng: parseFloat(ipwhoisData.longitude),
+              };
+            } else if (geojsData?.city && geojsData?.latitude) {
+              realCity = {
+                nome: geojsData.city,
+                uf: geojsData.region || "",
+                x: 50, y: 50,
+                lat: parseFloat(geojsData.latitude),
+                lng: parseFloat(geojsData.longitude),
+              };
+            }
+          }
+
+          // ── Fase 3: Último fallback ──
           if (!realCity) {
             realCity = CIDADES[Math.floor(Math.random() * CIDADES.length)];
           }
 
-          // Salvar cidade para possibilitar atualizações futuras de track (quando a lojaId mudar)
           set({ myCidade: realCity, mySessionId: sessionId });
 
           await channel!.track({
@@ -244,6 +249,57 @@ export const useLive = create<LiveStore>((set, get) => ({
       });
 
       set({ channel });
+    }
+  },
+
+  updateMyCity: async () => {
+    const { channel, mySessionId } = get();
+    if (!channel || !mySessionId) return;
+
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+        });
+      });
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      const [nomRes, bdcRes] = await Promise.all([
+        fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=pt-BR`,
+          { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } }
+        ).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=pt`
+        ).then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
+
+      let cityName: string | null = null;
+      let uf = "";
+      if (nomRes?.address) {
+        const addr = nomRes.address;
+        cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet || addr.county || null;
+        uf = addr.state_code || addr.state || "";
+      }
+      if (!cityName && bdcRes) {
+        cityName = bdcRes.city || bdcRes.locality || bdcRes.localityInfo?.administrative?.[3]?.name || null;
+        uf = uf || bdcRes.principalSubdivisionCode?.replace('BR-', '') || "";
+      }
+
+      if (cityName) {
+        const updatedCity: CIDADES_TYPE = { nome: cityName, uf, x: 50, y: 50, lat, lng };
+        set({ myCidade: updatedCity });
+        await channel.track({
+          sessionId: mySessionId,
+          lojaId: undefined,
+          cidade: updatedCity,
+          onlineAt: new Date().toISOString()
+        });
+      }
+    } catch (e) {
+      console.warn("GPS não disponível para corrigir localização:", e);
+      throw e; // Re-throw para a UI tratar
     }
   },
 

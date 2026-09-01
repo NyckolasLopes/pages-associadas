@@ -985,7 +985,7 @@ export function PedidosAdmin() {
                     setClearOrdersModalOpen(true);
                   }}
                 >
-                  <Trash2 className="h-4 w-4 text-red-600" /> Limpar Pedidos
+                  <Trash2 className="h-4 w-4 text-red-600" /> Excluir todos os Pedidos
                 </Button>
               </>
             )}
@@ -1594,7 +1594,7 @@ export function PedidosAdmin() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal: Confirmação de Limpar Pedidos */}
+      {/* Modal: Confirmação de Excluir todos os Pedidos */}
       <Dialog open={clearOrdersModalOpen} onOpenChange={setClearOrdersModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -1604,7 +1604,7 @@ export function PedidosAdmin() {
               </div>
               <div>
                 <DialogTitle className="text-lg font-black text-slate-900">
-                  Limpar Pedidos {activeStoreId ? "da Loja" : "Globais"}
+                  Excluir todos os Pedidos {activeStoreId ? "da Loja" : "Globais"}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-500 mt-0.5">
                   {activeStoreId 
@@ -1660,12 +1660,12 @@ export function PedidosAdmin() {
               {isClearingOrders ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Limpando pedidos...
+                  Excluindo pedidos...
                 </>
               ) : (
                 <>
                   <Trash2 className="w-4 h-4" />
-                  Confirmar e Limpar Tudo
+                  Confirmar e Excluir Tudo
                 </>
               )}
             </Button>

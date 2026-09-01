@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
-import { Circle, MapPin } from "lucide-react";
-import { useMemo } from "react";
+import { Circle, MapPin, Navigation, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useLive, CIDADES } from "@/stores/live";
 import { LiveMap } from "@/components/admin/LiveMap";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 import { useOrders } from "@/stores/orders";
 import { useAdmin } from "@/stores/admin";
@@ -14,8 +16,21 @@ export const Route = createFileRoute("/admin/ao-vivo")({
 });
 
 function AoVivo() {
-  const { visitors: rawVisitors, totalAcessos, stats } = useLive();
+  const { visitors: rawVisitors, totalAcessos, stats, myCidade, updateMyCity } = useLive();
   const { currentUser, activeStoreId, pharmacies } = useAdmin();
+  const [isUpdatingCity, setIsUpdatingCity] = useState(false);
+
+  const handleCorrectLocation = async () => {
+    setIsUpdatingCity(true);
+    try {
+      await updateMyCity();
+      toast.success(`Localização corrigida! ${useLive.getState().myCidade?.nome || ""}`);
+    } catch {
+      toast.error("Permita o acesso à localização no seu navegador para corrigir.");
+    } finally {
+      setIsUpdatingCity(false);
+    }
+  };
   
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined;
   
@@ -85,8 +100,26 @@ function AoVivo() {
             </span>
             Ao Vivo
           </h2>
+          {myCidade && (
+            <span className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3 h-3" /> Sua localização: <strong className="text-slate-600">{myCidade.nome}{myCidade.uf ? ` - ${myCidade.uf}` : ""}</strong>
+            </span>
+          )}
         </div>
-        <StoreSelector />
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCorrectLocation}
+            disabled={isUpdatingCity}
+            className="font-bold text-xs text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5"
+            title="Usar GPS para corrigir sua localização"
+          >
+            {isUpdatingCity ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Navigation className="w-3.5 h-3.5" />}
+            Corrigir localização
+          </Button>
+          <StoreSelector />
+        </div>
       </div>
       <div className="relative h-[calc(100vh-150px)] w-full rounded-xl overflow-hidden border border-slate-200 shadow-md bg-gradient-to-br from-slate-50 to-emerald-50/20">
       {/* Efeitos de fundo premium */}
