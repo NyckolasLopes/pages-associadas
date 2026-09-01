@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { Circle, MapPin, Navigation, Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useLive, CIDADES } from "@/stores/live";
 import { LiveMap } from "@/components/admin/LiveMap";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,13 @@ function AoVivo() {
   const { visitors: rawVisitors, totalAcessos, stats, myCidade, updateMyCity } = useLive();
   const { currentUser, activeStoreId, pharmacies } = useAdmin();
   const [isUpdatingCity, setIsUpdatingCity] = useState(false);
+
+  const loadOrders = useOrders((state) => state.loadOrders);
+  const pedidos = useOrders((state) => state.orders);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const handleCorrectLocation = async () => {
     setIsUpdatingCity(true);
@@ -42,7 +49,9 @@ function AoVivo() {
     ? rawVisitors.filter(v => v.lojaId === effectiveStoreId || v.lojaId === `admin-loja-${effectiveStoreId}`)
     : rawVisitors;
 
-  const getLojaName = (id: string) => {
+  const getLojaName = (id?: string) => {
+    if (!id) return "";
+    if (id.includes('unidades') || id.includes('lojas')) return id;
     if (id === "admin-sede") return "Admin da Sede";
     if (id.startsWith('admin-loja-')) {
       const realId = id.replace('admin-loja-', '');
@@ -53,39 +62,76 @@ function AoVivo() {
     const store = pharmacies.find(l => String(l.id) === String(realId));
     return store?.nome || "Loja";
   };
-  const pedidos = useOrders((state) => state.orders);
 
   const topCidades = useMemo(() => {
-    const activeCounts: Record<string, { acessos: number, lojaId?: string }> = {};
+    const cityMap: Record<string, { nome: string; uf: string; acessos: number; lojas: Set<string> }> = {};
+    
     visitors.forEach((v: any) => {
-      const key = isGlobalAdmin && v.lojaId ? `${v.cidade.nome}::${v.lojaId}` : v.cidade.nome;
-      if (!activeCounts[key]) {
-        activeCounts[key] = { acessos: 0, lojaId: v.lojaId };
+      if (!v?.cidade?.nome) return;
+      const nome = v.cidade.nome;
+      const uf = v.cidade.uf || "";
+      const key = nome.toLowerCase().trim();
+      
+      if (!cityMap[key]) {
+        cityMap[key] = { nome, uf, acessos: 0, lojas: new Set() };
       }
-      activeCounts[key].acessos += 1;
+      cityMap[key].acessos += 1;
+      if (v.lojaId) {
+        cityMap[key].lojas.add(v.lojaId);
+      }
     });
 
-    return Object.entries(activeCounts)
-      .map(([key, data]) => {
-        const nome = key.split("::")[0];
-        const cityInfo = CIDADES.find((c: any) => c.nome === nome);
-        const uf = cityInfo?.uf || visitors.find((v: any) => v.cidade.nome === nome)?.cidade.uf || "";
-        return { nome, uf, acessos: data.acessos, lojaId: data.lojaId };
+    return Object.values(cityMap)
+      .map(data => {
+        const cityInfo = CIDADES.find((c: any) => c.nome.toLowerCase() === data.nome.toLowerCase());
+        const uf = data.uf || cityInfo?.uf || "";
+        const lojaId = data.lojas.size === 1 
+          ? Array.from(data.lojas)[0] 
+          : (data.lojas.size > 1 ? `${data.lojas.size} unidades ativas` : undefined);
+        return { nome: data.nome, uf, acessos: data.acessos, lojaId };
       })
       .sort((a, b) => b.acessos - a.acessos)
       .slice(0, 6);
-  }, [visitors, isGlobalAdmin]);
+  }, [visitors]);
 
-  const hojeStr = new Date().toLocaleDateString('pt-BR');
+  const isOrderToday = (dateStr?: string) => {
+    if (!dateStr) return false;
+    try {
+      const d = new Date(dateStr);
+      const now = new Date();
+      if (!isNaN(d.getTime())) {
+        return (
+          d.getDate() === now.getDate() &&
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear()
+        );
+      }
+      const parts = dateStr.split(' ')[0].split('/');
+      if (parts.length === 3) {
+        const day = Number(parts[0]);
+        const month = Number(parts[1]) - 1;
+        const year = Number(parts[2]);
+        return (
+          day === now.getDate() &&
+          month === now.getMonth() &&
+          year === now.getFullYear()
+        );
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  };
+
   const faturamentoHoje = pedidos
-    .filter(p => p.data.split(' ')[0] === hojeStr)
+    .filter(p => isOrderToday(p.data))
     .filter(p => {
       if (!isGlobalAdmin || effectiveStoreId) {
-        return p.lojaId === effectiveStoreId;
+        return String(p.lojaId) === String(effectiveStoreId);
       }
       return true;
     })
-    .reduce((acc, p) => acc + p.valores.total, 0);
+    .reduce((acc, p) => acc + (Number(p.valores?.total) || 0), 0);
 
   const valorVendido = faturamentoHoje.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 

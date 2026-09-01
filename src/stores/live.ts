@@ -130,16 +130,21 @@ export const useLive = create<LiveStore>((set, get) => ({
       channel.on('presence', { event: 'sync' }, () => {
         const newState = channel!.presenceState();
         const activeVisitors: VisitorInfo[] = [];
+        const seenSessions = new Set<string>();
         
         Object.keys(newState).forEach(key => {
           (newState[key] as any[]).forEach((pres: any) => {
-            activeVisitors.push({
-              id: Math.floor(Math.random() * 1000000), // Random ID
-              sessionId: pres.sessionId,
-              cidade: pres.cidade,
-              expiresAt: Date.now() + 60000,
-              lojaId: pres.lojaId
-            });
+            const sid = pres.sessionId || key;
+            if (!seenSessions.has(sid)) {
+              seenSessions.add(sid);
+              activeVisitors.push({
+                id: pres.id || Math.floor(Math.random() * 1000000),
+                sessionId: sid,
+                cidade: pres.cidade,
+                expiresAt: Date.now() + 60000,
+                lojaId: pres.lojaId
+              });
+            }
           });
         });
         
