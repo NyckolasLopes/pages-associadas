@@ -161,15 +161,15 @@ function StoreLayout() {
   }, []);
 
   useEffect(() => {
-    if (!activePharmacy) return;
-
     // Salva o slug da loja para páginas que não têm slug na URL (login, perfil, etc.)
     const isStoreSlugPage = potentialSlug && !SYSTEM_PAGES.has(potentialSlug);
     const slug = isStoreSlugPage
       ? safeSlugify(potentialSlug)
-      : activePharmacy.slug
+      : activePharmacy?.slug
       ? safeSlugify(activePharmacy.slug)
-      : safeSlugify(activePharmacy.nome || activePharmacy.id);
+      : activePharmacy?.nome
+      ? safeSlugify(activePharmacy.nome)
+      : "loja-padrao";
 
     if (isStoreSlugPage) {
       try {
@@ -178,7 +178,7 @@ function StoreLayout() {
     }
 
     useAuth.getState().syncStoreSession(slug);
-  }, [activePharmacy?.id, activePharmacy?.slug, potentialSlug]);
+  }, [potentialSlug, activePharmacy?.id, activePharmacy?.slug, activePharmacy?.nome]);
 
   useEffect(() => {
     if (!activePharmacy) return;

@@ -165,7 +165,19 @@ function CartPage() {
   const removeCoupon = useCart((s) => s.removeCoupon);
   const pbm = useCart((s) => s.pbm);
   const total = useCart((s) => s.total());
-  const user = useAuth((s) => s.user);
+  const { storeSlug } = Route.useParams();
+  const rawUser = useAuth((s) => s.user);
+  const user = useMemo(() => {
+    if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
+    return useAuth.getState().getUserForStore(storeSlug);
+  }, [rawUser, storeSlug]);
+
+  useEffect(() => {
+    if (storeSlug) {
+      useAuth.getState().syncStoreSession(storeSlug);
+    }
+  }, [storeSlug]);
+
   const fornecedores = useAdminProducts((s) => s.fornecedores);
 
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
@@ -174,7 +186,6 @@ function CartPage() {
   const promocoes = useMarketing((s) => s.promocoes);
   
   const allPharmacies = useAdmin((s) => s.pharmacies);
-  const { storeSlug } = Route.useParams();
   const selectedPharmacy = useMemo(() => {
     if (storeSlug) {
       const p = allPharmacies.find(ph => (ph.slug || "").toLowerCase() === storeSlug.toLowerCase());

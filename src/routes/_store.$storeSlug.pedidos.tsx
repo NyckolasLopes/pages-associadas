@@ -48,7 +48,18 @@ function getStepIndex(status: string): number {
 function PedidosPage() {
   const searchParams = Route.useSearch();
   const { storeSlug } = Route.useParams();
-  const user = useAuth((s) => s.user);
+  const rawUser = useAuth((s) => s.user);
+  const user = useMemo(() => {
+    if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
+    return useAuth.getState().getUserForStore(storeSlug);
+  }, [rawUser, storeSlug]);
+
+  useEffect(() => {
+    if (storeSlug) {
+      useAuth.getState().syncStoreSession(storeSlug);
+    }
+  }, [storeSlug]);
+
   const logout = useAuth((s) => s.logout);
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);

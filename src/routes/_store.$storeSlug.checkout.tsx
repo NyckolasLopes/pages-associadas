@@ -79,9 +79,20 @@ function Checkout() {
   const [orderedTotal, setOrderedTotal] = useState(0);
   const [creditCardStatus, setCreditCardStatus] = useState<"approved" | "refused" | "analysis" | null>(null);
   const clear = useCart((s) => s.clear);
-  const user = useAuth((s) => s.user);
-  const navigate = useNavigate();
   const { storeSlug } = Route.useParams();
+  const rawUser = useAuth((s) => s.user);
+  const user = useMemo(() => {
+    if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
+    return useAuth.getState().getUserForStore(storeSlug);
+  }, [rawUser, storeSlug]);
+
+  useEffect(() => {
+    if (storeSlug) {
+      useAuth.getState().syncStoreSession(storeSlug);
+    }
+  }, [storeSlug]);
+
+  const navigate = useNavigate();
   const geoCep = useGeoCep((s) => s.cep);
   const geoLat = useGeoCep((s) => s.lat);
   const geoLng = useGeoCep((s) => s.lng);

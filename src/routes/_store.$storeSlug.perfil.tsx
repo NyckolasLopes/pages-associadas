@@ -2,7 +2,7 @@ import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/stores/auth";
 import { useFavorites } from "@/stores/favorites";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,45 +30,56 @@ export const Route = createFileRoute("/_store/$storeSlug/perfil")({
       tab: search.tab as string | undefined,
     }
   },
-  head: () => ({ meta: [{ title: `Meus Dados — ${getBrandNameForHead()}` }] }),
+  head: () => ({ meta: [{ title: `Minha Conta — ${getBrandNameForHead()}` }] }),
   component: PerfilPage,
 });
 
-const formatCpfCnpj = (value: string) => {
-  if (!value) return "";
-  let v = value.replace(/\D/g, "");
-  if (v.length > 14) v = v.slice(0, 14);
-  if (v.length <= 11) {
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-  } else {
-    v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
-    v = v.replace(/(\d{4})(\d)/, "$1-$2");
-  }
+const formatPhone = (val: string) => {
+  let v = val.replace(/\D/g, "");
+  if (v.length > 11) v = v.slice(0, 11);
+  if (v.length > 10) return v.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+  if (v.length > 6) return v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, "($1) $2-$3");
+  if (v.length > 2) return v.replace(/^(\d{2})(\d{0,5})$/, "($1) $2");
   return v;
 };
 
-const formatPhone = (value: string) => {
-  if (!value) return "";
-  let v = value.replace(/\D/g, "");
-  if (v.length > 11) v = v.slice(0, 11);
-  v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
-  v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+const formatCpfCnpj = (val: string) => {
+  let v = val.replace(/\D/g, "");
+  if (v.length <= 11) {
+    if (v.length > 11) v = v.slice(0, 11);
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    return v;
+  }
+  if (v.length > 14) v = v.slice(0, 14);
+  v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+  v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+  v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+  v = v.replace(/(\d{4})(\d)/, "$1-$2");
   return v;
 };
 
 function PerfilPage() {
-  const user = useAuth((s) => s.user);
+  const { storeSlug } = Route.useParams();
+  const rawUser = useAuth((s) => s.user);
+  const user = useMemo(() => {
+    if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
+    return useAuth.getState().getUserForStore(storeSlug);
+  }, [rawUser, storeSlug]);
+
+  useEffect(() => {
+    if (storeSlug) {
+      useAuth.getState().syncStoreSession(storeSlug);
+    }
+  }, [storeSlug]);
+
   const logout = useAuth((s) => s.logout);
   const deleteAccount = useAuth((s) => s.deleteAccount);
   const login = useAuth((s) => s.login);
   const { ids: favoriteIds, toggle: toggleFavorite, notifications: favNotifications, clearNotifications: clearFavNotifications } = useFavorites();
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const { storeSlug } = Route.useParams();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"dados" | "favoritos">(search.tab === "favoritos" ? "favoritos" : "dados");
   const [favoriteProducts, setFavoriteProducts] = useState<any[]>([]);

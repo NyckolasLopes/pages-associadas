@@ -361,10 +361,10 @@ export const useAuth = create<AuthState>((set, get) => {
             if (pendingStore) sessionStorage.removeItem("fa_oauth_pending_store");
           } catch {}
 
-          const currentStore = pendingStore || get().currentStoreSlug || resolveStoreSlug();
+          const currentStore = pendingStore || resolveStoreSlug();
           const sessions = loadStoreSessions();
 
-          // Só atualiza os dados do usuário se esta loja possuir sessão ativa ou se veio de fluxo OAuth pendente
+          // Só atualiza os dados do usuário se esta loja possuir sessão ativa prévia ou se veio de fluxo OAuth pendente
           if (pendingStore || sessions[currentStore]) {
             const u = session.user;
             const { data: profile } = await supabase
@@ -390,9 +390,18 @@ export const useAuth = create<AuthState>((set, get) => {
             sessions[currentStore] = userObj;
             saveStoreSessions(sessions);
 
+            const activeNow = resolveStoreSlug();
             set({
-              user: userObj,
-              currentStoreSlug: currentStore,
+              user: activeNow === currentStore ? userObj : (sessions[activeNow] || null),
+              currentStoreSlug: activeNow,
+              storeUsers: sessions,
+            });
+          } else {
+            // Se esta loja NÃO possui sessão ativa gravada, garantir que user seja null no state
+            const activeNow = resolveStoreSlug();
+            set({
+              user: sessions[activeNow] || null,
+              currentStoreSlug: activeNow,
               storeUsers: sessions,
             });
           }

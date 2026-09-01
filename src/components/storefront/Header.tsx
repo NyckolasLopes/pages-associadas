@@ -235,7 +235,17 @@ export function Header() {
   const handleClearError = () => {
     setScanError(null);
   };
-  const user = useAuth((s) => s.user);
+  const rawUser = useAuth((s) => s.user);
+  const user = useMemo(() => {
+    if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
+    return useAuth.getState().getUserForStore(storeSlug);
+  }, [rawUser, storeSlug]);
+
+  useEffect(() => {
+    if (storeSlug) {
+      useAuth.getState().syncStoreSession(storeSlug);
+    }
+  }, [storeSlug]);
 
   const detectCep = (closeFn: () => void) => {
     if (navigator.geolocation) {
@@ -1018,7 +1028,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   const [cepDialogOpen, setCepDialogOpen] = useState(false);
   const [isGeoLoading, setIsGeoLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const user = useAuth((s) => s.user);
+  const rawUser = useAuth((s) => s.user);
   const marcas = useMarcasStore((s) => s.marcas);
   const activePharmacy = useActivePharmacy();
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
@@ -1027,6 +1037,10 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                      ((params as any)?.storeSlug && (params as any)?.storeSlug !== 'loja-padrao');
   const allCategories = useAdminCategories(s => s.categories);
   const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
+  const user = useMemo(() => {
+    if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
+    return useAuth.getState().getUserForStore(storeSlug);
+  }, [rawUser, storeSlug]);
   
   const detectCep = (closeFn: () => void) => {
     if (!navigator.geolocation) return;
