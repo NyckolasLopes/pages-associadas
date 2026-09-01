@@ -213,30 +213,35 @@ function ProductCardComponent({
   const isLocalActive = !activeStoreId || p.precosPorLoja?.[activeStoreId]?.ativo !== false;
   const isAvailable = (maxStock > 0 || isService) && isGlobalActive && isLocalActive;
   const isCampanha = isAvailable && isCampanhaAtiva(p);
-  let finalPrecoPor = Number(p.precoPor || p.preco || 0);
-  let finalPrecoDe = Number(p.precoDe || finalPrecoPor);
+
+  const rawBasePrecoPor = Number(p.precoPor || p.preco || p.precoBase || 0);
+  const rawBasePrecoDe = Number(p.precoDe || rawBasePrecoPor);
+  let finalPrecoPor = rawBasePrecoPor;
+  let finalPrecoDe = rawBasePrecoDe;
   let isLojaPromoActiva = false;
 
-  if (isCampanha) {
-    finalPrecoPor = p.precoCampanha ? Number(p.precoCampanha) : finalPrecoPor;
+  if (isCampanha && p.precoCampanha && Number(p.precoCampanha) > 0) {
+    finalPrecoPor = Number(p.precoCampanha);
   } else if (activeStoreId) {
     // 1. Base table price
     const activePharm = pharmacies.find(f => f.id === activeStoreId);
     if (activePharm) {
       const activeTabela = activePharm.tabelaPrecoId || "poa";
       const regPrice = regionalPrices[`${activeTabela}-${p.id}`];
-      if (regPrice !== undefined) finalPrecoPor = Number(regPrice);
+      if (regPrice !== undefined && Number(regPrice) > 0) finalPrecoPor = Number(regPrice);
     }
     
     // 2. Specific store override
     if (p.precosPorLoja?.[activeStoreId]) {
       const pLoja = p.precosPorLoja[activeStoreId];
       const lojaPrecoPor = pLoja.precoPor ? Number(pLoja.precoPor) : 0;
-      const lojaPrecoDe = pLoja.precoDe ? Number(pLoja.precoDe) : lojaPrecoPor;
+      const lojaPrecoDe = pLoja.precoDe ? Number(pLoja.precoDe) : 0;
       
-      if (lojaPrecoPor > 0 || lojaPrecoDe > 0) {
-        finalPrecoPor = lojaPrecoPor || lojaPrecoDe;
-        finalPrecoDe = lojaPrecoDe || lojaPrecoPor;
+      if (lojaPrecoPor > 0) {
+        finalPrecoPor = lojaPrecoPor;
+      }
+      if (lojaPrecoDe > 0) {
+        finalPrecoDe = lojaPrecoDe;
       }
       
       if (pLoja.campanhaInicio || pLoja.campanhaFim) {
@@ -247,6 +252,14 @@ function ProductCardComponent({
         if (valid) isLojaPromoActiva = true;
       }
     }
+  }
+
+  // Ensure final price is NEVER 0 if base price was positive
+  if (finalPrecoPor <= 0 && rawBasePrecoPor > 0) {
+    finalPrecoPor = rawBasePrecoPor;
+  }
+  if (finalPrecoDe < finalPrecoPor) {
+    finalPrecoDe = finalPrecoPor;
   }
 
   // 3. Store-specific & Global Promotions

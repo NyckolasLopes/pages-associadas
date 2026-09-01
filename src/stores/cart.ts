@@ -28,11 +28,14 @@ export interface CartItem {
 /** Resolve the effective price for a cart item or product based on the selected pharmacy */
 export function getEffectivePrice(item: any, pharmacyId: string | null): { precoPor: number; precoDe: number } {
   if (item.isOrderBump) {
-    return { precoPor: item.preco, precoDe: item.precoDe || item.preco };
+    const pBump = Number(item.preco || item.precoPor || 0);
+    return { precoPor: pBump, precoDe: Number(item.precoDe || pBump) };
   }
 
-  let precoPor = item.precoPor ?? item.preco ?? 0;
-  let precoDe = item.precoDe ?? precoPor;
+  const rawBasePrecoPor = Number(item.precoPor || item.preco || item.precoBase || 0);
+  const rawBasePrecoDe = Number(item.precoDe || rawBasePrecoPor);
+  let precoPor = rawBasePrecoPor;
+  let precoDe = rawBasePrecoDe;
 
   if (pharmacyId) {
     const adminState = useAdmin.getState();
@@ -43,8 +46,8 @@ export function getEffectivePrice(item: any, pharmacyId: string | null): { preco
     if (activePharm) {
       const activeTabela = activePharm.tabelaPrecoId || "poa";
       const regPrice = regionsState.prices[`${activeTabela}-${item.id}`];
-      if (regPrice !== undefined) {
-        precoPor = regPrice;
+      if (regPrice !== undefined && Number(regPrice) > 0) {
+        precoPor = Number(regPrice);
       }
     }
 
@@ -52,11 +55,13 @@ export function getEffectivePrice(item: any, pharmacyId: string | null): { preco
     if (item.precosPorLoja?.[pharmacyId]) {
       const loja = item.precosPorLoja[pharmacyId];
       const lojaPrecoPor = loja.precoPor ? Number(loja.precoPor) : 0;
-      const lojaPrecoDe = loja.precoDe ? Number(loja.precoDe) : lojaPrecoPor;
+      const lojaPrecoDe = loja.precoDe ? Number(loja.precoDe) : 0;
       
-      if (lojaPrecoPor > 0 || lojaPrecoDe > 0) {
-        precoPor = lojaPrecoPor || lojaPrecoDe;
-        precoDe = lojaPrecoDe || lojaPrecoPor;
+      if (lojaPrecoPor > 0) {
+        precoPor = lojaPrecoPor;
+      }
+      if (lojaPrecoDe > 0) {
+        precoDe = lojaPrecoDe;
       }
     }
 
@@ -94,24 +99,31 @@ export function getEffectivePrice(item: any, pharmacyId: string | null): { preco
     const activeOferta = storeOferta || globalOferta;
     
     if (activeOferta) {
-      const promoPreco = (activeOferta.precoPromocional && activeOferta.precoPromocional > 0)
-        ? activeOferta.precoPromocional
-        : ((activeOferta.levePague_precoPorItem && activeOferta.levePague_precoPorItem > 0) ? activeOferta.levePague_precoPorItem : 0);
+      const promoPreco = (activeOferta.precoPromocional && Number(activeOferta.precoPromocional) > 0)
+        ? Number(activeOferta.precoPromocional)
+        : ((activeOferta.levePague_precoPorItem && Number(activeOferta.levePague_precoPorItem) > 0) ? Number(activeOferta.levePague_precoPorItem) : 0);
 
       if (promoPreco > 0) {
         precoDe = precoPor > promoPreco ? precoPor : precoDe;
         precoPor = promoPreco;
-      } else if (activeOferta.descontoPercentual && activeOferta.descontoPercentual > 0) {
+      } else if (activeOferta.descontoPercentual && Number(activeOferta.descontoPercentual) > 0) {
         precoDe = precoPor;
-        precoPor = precoPor * (1 - activeOferta.descontoPercentual / 100);
+        precoPor = precoPor * (1 - Number(activeOferta.descontoPercentual) / 100);
       }
     }
 
     // 4. Encarte (Overrides all if store is Pleno)
-    if (activePharm && activePharm.categoriaAssociado === 'Pleno' && item.precoEncarte !== undefined) {
-      precoDe = precoPor; // The original price becomes the old price
-      precoPor = item.precoEncarte;
+    if (activePharm && activePharm.categoriaAssociado === 'Pleno' && item.precoEncarte !== undefined && Number(item.precoEncarte) > 0) {
+      precoDe = precoPor;
+      precoPor = Number(item.precoEncarte);
     }
+  }
+
+  if (precoPor <= 0 && rawBasePrecoPor > 0) {
+    precoPor = rawBasePrecoPor;
+  }
+  if (precoDe < precoPor) {
+    precoDe = precoPor;
   }
 
   return { precoPor, precoDe };

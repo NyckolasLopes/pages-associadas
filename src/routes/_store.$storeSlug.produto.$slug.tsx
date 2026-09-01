@@ -720,39 +720,51 @@ function PDP() {
   let isLojaPromoActiva = false;
 
   const activePharmacyId = effectiveStoreId || selectedPharmacyId || (availablePharmacies.length > 0 ? availablePharmacies[0].id : null);
-  let finalPrecoDe = Number(p.precoDe) || 0;
-  let finalPrecoPor = Number(p.precoPor) || finalPrecoDe || 0;
+  const rawBasePrecoPor = Number(p.precoPor || p.preco || p.precoBase || 0);
+  const rawBasePrecoDe = Number(p.precoDe || rawBasePrecoPor);
+  let finalPrecoDe = rawBasePrecoDe;
+  let finalPrecoPor = rawBasePrecoPor;
 
-  if (isCampanha) {
-    finalPrecoPor = p.precoCampanha ? Number(p.precoCampanha) : finalPrecoPor;
+  if (isCampanha && p.precoCampanha && Number(p.precoCampanha) > 0) {
+    finalPrecoPor = Number(p.precoCampanha);
   } else if (activePharmacyId) {
     // 1. Base table price
     const activePharm = allPharmacies.find(f => f.id === activePharmacyId);
     if (activePharm) {
       const activeTabela = activePharm.tabelaPrecoId || "poa";
       const regPrice = regionalPrices[`${activeTabela}-${p.id}`];
-      if (regPrice !== undefined) finalPrecoPor = Number(regPrice);
+      if (regPrice !== undefined && Number(regPrice) > 0) finalPrecoPor = Number(regPrice);
     }
     
     // 2. Specific store override
-      if (p.precosPorLoja?.[activePharmacyId]) {
-        const pLoja = p.precosPorLoja[activePharmacyId];
-        const lojaPrecoPor = pLoja.precoPor ? Number(pLoja.precoPor) : 0;
-        const lojaPrecoDe = pLoja.precoDe ? Number(pLoja.precoDe) : lojaPrecoPor;
-        
-        if (lojaPrecoPor > 0 || lojaPrecoDe > 0) {
-          finalPrecoPor = lojaPrecoPor || lojaPrecoDe;
-          finalPrecoDe = lojaPrecoDe || lojaPrecoPor;
-        }
-        
-        if (pLoja.campanhaInicio || pLoja.campanhaFim) {
-          const now = new Date();
-          let valid = true;
-          if (pLoja.campanhaInicio && new Date(pLoja.campanhaInicio + 'T00:00:00') > now) valid = false;
-          if (pLoja.campanhaFim && new Date(pLoja.campanhaFim + 'T23:59:59') < now) valid = false;
-          if (valid) isLojaPromoActiva = true;
-        }
+    if (p.precosPorLoja?.[activePharmacyId]) {
+      const pLoja = p.precosPorLoja[activePharmacyId];
+      const lojaPrecoPor = pLoja.precoPor ? Number(pLoja.precoPor) : 0;
+      const lojaPrecoDe = pLoja.precoDe ? Number(pLoja.precoDe) : 0;
+      
+      if (lojaPrecoPor > 0) {
+        finalPrecoPor = lojaPrecoPor;
       }
+      if (lojaPrecoDe > 0) {
+        finalPrecoDe = lojaPrecoDe;
+      }
+      
+      if (pLoja.campanhaInicio || pLoja.campanhaFim) {
+        const now = new Date();
+        let valid = true;
+        if (pLoja.campanhaInicio && new Date(pLoja.campanhaInicio + 'T00:00:00') > now) valid = false;
+        if (pLoja.campanhaFim && new Date(pLoja.campanhaFim + 'T23:59:59') < now) valid = false;
+        if (valid) isLojaPromoActiva = true;
+      }
+    }
+  }
+
+  // Ensure final price is NEVER 0 if base price was positive
+  if (finalPrecoPor <= 0 && rawBasePrecoPor > 0) {
+    finalPrecoPor = rawBasePrecoPor;
+  }
+  if (finalPrecoDe < finalPrecoPor) {
+    finalPrecoDe = finalPrecoPor;
   }
 
   // 3. Store-specific & Global Promotions
