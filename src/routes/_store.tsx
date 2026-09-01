@@ -216,16 +216,16 @@ function StoreLayout() {
     
     const isParceiroOrAssociado = activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado';
     const appName = isParceiroOrAssociado && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
-    const manifestIcon = activePharmacy.faviconUrl || (isParceiroOrAssociado ? "data:," : (globalFavicon || "/favicon.png"));
+    const manifestIcon = activePharmacy.faviconUrl || globalFavicon || "/favicon.png";
     const storeSlug = activePharmacy.slug || "";
     const origin = typeof window !== 'undefined' ? window.location.origin : "";
     
     const manifest = {
       name: appName,
       short_name: appName,
-      start_url: `${origin}/${storeSlug}`,
+      start_url: `${origin}/${storeSlug}/`,
       scope: `${origin}/${storeSlug}/`,
-      id: `/${storeSlug}`,
+      id: `/${storeSlug}/`,
       display: "standalone",
       background_color: "#ffffff",
       theme_color: "#00B5AD",
@@ -269,10 +269,6 @@ function StoreLayout() {
       }
     }
   }, [activePharmacy?.slug, potentialSlug]);
-
-  if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && !pharmaciesLoaded) {
-    return <GlobalLoading />;
-  }
 
   if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && pharmaciesLoaded && pharmacies.length > 0 && !activePharmacy) {
     return <NotFound type="page" />;

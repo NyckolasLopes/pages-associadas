@@ -41,6 +41,7 @@ function SearchPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const activePharmacy = useActivePharmacy();
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.categoriaAssociado === 'Associado' || activePharmacy?.isPleno === false;
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId) || activePharmacy?.id;
   const logSearch = useSearchHistory((s) => s.logSearch);
 
