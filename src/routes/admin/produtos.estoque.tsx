@@ -130,11 +130,20 @@ function AdminProdutosEstoque() {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      const upserts: Array<{ produto_id: string; loja_id: string; estoque: number }> = [];
+      const upserts: Array<{ produto_id: string; loja_id: string; estoque: number; preco_por?: number; preco_de?: number }> = [];
       
       for (const [produtoId, lojas] of Object.entries(pendingChanges)) {
+        const prod = serverProducts.find(p => p.id === produtoId);
+        const basePrecoPor = Number(prod?.precoPor) || Number(prod?.preco) || 0;
+        const basePrecoDe = Number(prod?.precoDe) || basePrecoPor;
+
         for (const [lojaId, estoque] of Object.entries(lojas)) {
-          upserts.push({ produto_id: produtoId, loja_id: lojaId, estoque });
+          upserts.push({
+            produto_id: produtoId,
+            loja_id: lojaId,
+            estoque,
+            ...(basePrecoPor > 0 ? { preco_por: basePrecoPor, preco_de: basePrecoDe > 0 ? basePrecoDe : basePrecoPor } : {})
+          });
         }
       }
 

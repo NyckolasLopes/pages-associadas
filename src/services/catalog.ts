@@ -67,8 +67,14 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
        p.estoquesPorLoja = {};
        pPrecos.forEach((pr: any) => {
           if (pr.loja_id) {
-             p.precosPorLoja![pr.loja_id] = { precoDe: pr.preco_de || 0, precoPor: pr.preco_por || 0, ativo: pr.ativo ?? true };
-             p.estoquesPorLoja![pr.loja_id] = pr.estoque || 0;
+             const pPor = Number(pr.preco_por) || 0;
+             const pDe = Number(pr.preco_de) || 0;
+             p.precosPorLoja![pr.loja_id] = {
+               precoDe: pDe > 0 ? pDe : (p.precoDe || p.precoPor || p.preco || 0),
+               precoPor: pPor > 0 ? pPor : (p.precoPor || p.preco || 0),
+               ativo: pr.ativo ?? true
+             };
+             p.estoquesPorLoja![pr.loja_id] = pr.estoque !== null && pr.estoque !== undefined ? Number(pr.estoque) : 0;
           }
        });
     }
@@ -80,8 +86,16 @@ async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | 
 
     const storeP = { ...p, ...ov };
     if (lojaId) {
-       storeP.precoPor = storePrice?.precoPor !== undefined ? storePrice.precoPor : (ov.precoPor !== undefined ? ov.precoPor : p.precoPor);
-       storeP.precoDe = storePrice?.precoDe !== undefined ? storePrice.precoDe : (ov.precoDe !== undefined ? ov.precoDe : p.precoDe);
+       const resolvedPrecoPor = (storePrice?.precoPor !== undefined && Number(storePrice.precoPor) > 0)
+         ? Number(storePrice.precoPor)
+         : (ov.precoPor !== undefined && Number(ov.precoPor) > 0 ? Number(ov.precoPor) : (p.precoPor || p.preco || 0));
+
+       const resolvedPrecoDe = (storePrice?.precoDe !== undefined && Number(storePrice.precoDe) > 0)
+         ? Number(storePrice.precoDe)
+         : (ov.precoDe !== undefined && Number(ov.precoDe) > 0 ? Number(ov.precoDe) : (p.precoDe || resolvedPrecoPor));
+
+       storeP.precoPor = resolvedPrecoPor;
+       storeP.precoDe = resolvedPrecoDe;
        // Use store stock if explicitly set, otherwise fall back to global estoque
        const resolvedStock = (storeStock !== undefined && storeStock !== null) 
          ? storeStock 

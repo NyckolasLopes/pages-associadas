@@ -585,8 +585,8 @@ function PDP() {
       }
       
       // 2. Specific store override
-      if (p.precosPorLoja?.[f.id]) {
-        preco = p.precosPorLoja[f.id].precoPor;
+      if (p.precosPorLoja?.[f.id] && Number(p.precosPorLoja[f.id].precoPor) > 0) {
+        preco = Number(p.precosPorLoja[f.id].precoPor);
       }
     }
     // Distância já foi calculada de forma assíncrona (com fallback ORS/Haversine)

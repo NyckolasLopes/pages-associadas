@@ -123,8 +123,12 @@ export function EstoqueLojaTab({ loja }: { loja: Loja }) {
               ) : (
                 serverProducts.map((item) => {
                   const stock = lojaApiDataMap[item.id]?.estoque ?? getDeterministicStock(item, loja.id);
-                  const precoPor = lojaApiDataMap[item.id]?.precoPor ?? item.precoPor;
-                  const precoDe = lojaApiDataMap[item.id]?.precoDe ?? item.precoDe;
+                  const precoPor = (lojaApiDataMap[item.id]?.precoPor && Number(lojaApiDataMap[item.id].precoPor) > 0)
+                    ? Number(lojaApiDataMap[item.id].precoPor)
+                    : (Number(item.precoPor) || Number(item.preco) || 0);
+                  const precoDe = (lojaApiDataMap[item.id]?.precoDe && Number(lojaApiDataMap[item.id].precoDe) > 0)
+                    ? Number(lojaApiDataMap[item.id].precoDe)
+                    : (Number(item.precoDe) || precoPor);
                   
                   return (
                     <TableRow key={item.id}>

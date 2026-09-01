@@ -311,8 +311,8 @@ export const useAdminProducts = create<ProductsState>()(
 
         if (lojaId) {
           const localOverrides = (formattedProduct.precosPorLoja?.[lojaId] || {}) as any;
-          const pDe = localOverrides.precoDe ?? formattedProduct.precoDe ?? 0;
-          const pPor = localOverrides.precoPor ?? formattedProduct.precoPor ?? 0;
+          const pPor = Number(localOverrides.precoPor) > 0 ? Number(localOverrides.precoPor) : (Number(formattedProduct.precoPor) || Number(formattedProduct.preco) || 0);
+          const pDe = Number(localOverrides.precoDe) > 0 ? Number(localOverrides.precoDe) : (Number(formattedProduct.precoDe) || pPor);
           const pEst = localOverrides.estoque ?? formattedProduct.estoque ?? 0;
           const pAtivo = localOverrides.ativo ?? formattedProduct.ativo ?? true;
 
@@ -325,8 +325,8 @@ export const useAdminProducts = create<ProductsState>()(
           let storeError;
           if (existing) {
             const res = await supabase.from('produto_precos_loja').update({
-              preco_de: pDe,
-              preco_por: pPor,
+              ...(pDe > 0 ? { preco_de: pDe } : {}),
+              ...(pPor > 0 ? { preco_por: pPor } : {}),
               estoque: pEst,
               ativo: pAtivo
             }).eq('id', existing.id);
@@ -891,9 +891,13 @@ export const useAdminProducts = create<ProductsState>()(
             }).eq('id', existing.id);
             error = res.error;
           } else {
+            const pPor = Number(product.precoPor) || Number(product.preco) || 0;
+            const pDe = Number(product.precoDe) || pPor;
             const res = await supabase.from('produto_precos_loja').insert({
               loja_id: lojaId,
               produto_id: productId,
+              preco_por: pPor > 0 ? pPor : 0,
+              preco_de: pDe > 0 ? pDe : pPor,
               ativo: ativo
             });
             error = res.error;
@@ -943,9 +947,13 @@ export const useAdminProducts = create<ProductsState>()(
             }).eq('id', existing.id);
             error = res.error;
           } else {
+            const pPor = Number(product.precoPor) || Number(product.preco) || 0;
+            const pDe = Number(product.precoDe) || pPor;
             const res = await (supabase.from('produto_precos_loja') as any).insert({
               loja_id: lojaId,
               produto_id: productId,
+              preco_por: pPor > 0 ? pPor : 0,
+              preco_de: pDe > 0 ? pDe : pPor,
               destaque: destaque
             });
             error = res.error;
@@ -961,26 +969,27 @@ export const useAdminProducts = create<ProductsState>()(
       updateStoreProductStock: async (lojaId, productId, estoque) => {
         const state = get();
         const product = state.customProducts.find(p => p.id === productId);
-        if (!product) return;
 
-        const prevStore = product.estoquesPorLoja || {};
+        const prevStore = product?.estoquesPorLoja || {};
         const newEstoquesPorLoja = {
           ...prevStore,
           [lojaId]: estoque
         };
 
         // Optimistic UI Update
-        set((s) => ({
-          customProducts: s.customProducts.map(x => x.id === productId ? {
-            ...x,
-            estoquesPorLoja: newEstoquesPorLoja
-          } : x)
-        }));
+        if (product) {
+          set((s) => ({
+            customProducts: s.customProducts.map(x => x.id === productId ? {
+              ...x,
+              estoquesPorLoja: newEstoquesPorLoja
+            } : x)
+          }));
+        }
 
         // Supabase DB Update
         try {
           const { data: existing } = await supabase.from('produto_precos_loja')
-            .select('id')
+            .select('id, preco_por, preco_de')
             .eq('loja_id', lojaId)
             .eq('produto_id', productId)
             .maybeSingle();
@@ -992,10 +1001,22 @@ export const useAdminProducts = create<ProductsState>()(
             }).eq('id', existing.id);
             error = res.error;
           } else {
+            let pPor = Number(product?.precoPor) || Number(product?.preco) || 0;
+            let pDe = Number(product?.precoDe) || pPor;
+
+            if (pPor === 0) {
+              const { data: prodData } = await supabase.from('produtos').select('preco_por, preco_de').eq('id', productId).maybeSingle();
+              if (prodData) {
+                pPor = Number(prodData.preco_por) || 0;
+                pDe = Number(prodData.preco_de) || pPor;
+              }
+            }
+
             const res = await supabase.from('produto_precos_loja').insert({
               loja_id: lojaId,
               produto_id: productId,
-              estoque: estoque
+              estoque: estoque,
+              ...(pPor > 0 ? { preco_por: pPor, preco_de: pDe > 0 ? pDe : pPor } : {})
             });
             error = res.error;
           }
