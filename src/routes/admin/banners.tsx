@@ -757,7 +757,21 @@ function AdminBanners() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {pharmacies.map(loja => {
-              const bannerCount = allBanners.filter(b => b.lojaId === loja.id).length;
+              const bannerCount = BANNER_POSITIONS.reduce((total, pos) => {
+                // Banners próprios da loja nesta posição
+                const ownItems = allBanners.filter(b =>
+                  b.lojaId === loja.id && matchBannerPos(b, pos) && !deletedIds.has(b.id) && !b.imageUrl?.includes('unsplash')
+                );
+                if (ownItems.length > 0) return total + ownItems.length;
+                // Se não tem próprios, conta os herdados da rede (globais)
+                const inheritedItems = allBanners.filter(b =>
+                  !b.lojaId && matchBannerPos(b, pos) && !deletedIds.has(b.id) && !b.imageUrl?.includes('unsplash')
+                );
+                if (inheritedItems.length > 0) return total + inheritedItems.length;
+                // Por último, conta os defaults do sistema (vetores)
+                const sysDefaults = defaultBanners.filter(b => matchBannerPos(b, pos));
+                return total + sysDefaults.length;
+              }, 0);
               const storeName = loja.nome || (loja as any).nomeFantasia || loja.razaoSocial || "Loja";
               const isParceiro = loja.categoriaAssociado === 'Parceiro' || loja.isPleno === false;
 
