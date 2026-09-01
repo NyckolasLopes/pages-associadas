@@ -262,7 +262,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
     const { data: insertedOrder, error: orderError } = await (supabase.from('pedidos') as any).insert({
       numero: orderNumber,
       loja_id: order.lojaId,
-      user_id: user?.id || null,
+      user_id: userAuth?.user?.id || null,
       status: order.status || 'novo',
       total: order.valores?.total || 0,
       subtotal: order.valores?.subtotal || order.valores?.produtos || 0,
@@ -315,11 +315,11 @@ export const useOrders = create<OrdersState>((set, get) => ({
     }
 
     // Remove ou converte o carrinho abandonado, pois o pedido foi finalizado e não é mais pendente/abandonado
-    if (user?.id) {
+    if (userAuth?.user?.id) {
       await supabase
         .from('carrinhos_abandonados' as any)
         .update({ status: 'convertido', updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
+        .eq('user_id', userAuth.user.id)
         .eq('status', 'abandonado');
     }
 

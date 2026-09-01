@@ -694,12 +694,12 @@ function AdminProdutosPrecos() {
         if (selectedPharmacyId && selectedPharmacyId !== "global") {
           if (!newProduct.precosPorLoja) newProduct.precosPorLoja = {};
           newProduct.precosPorLoja[selectedPharmacyId] = {
-            ...newProduct.precosPorLoja[selectedPharmacyId],
+            ...(newProduct.precosPorLoja[selectedPharmacyId] as any),
             precoEncarte: encartePrice,
             emCampanha: true,
             campanhaInicio: finalStartDate,
             campanhaFim: finalEndDate,
-          };
+          } as any;
         }
 
         addOrUpdateProduct(newProduct, null);

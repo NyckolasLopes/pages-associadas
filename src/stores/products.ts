@@ -286,7 +286,6 @@ export const useAdminProducts = create<ProductsState>()(
           titulo_seo: formattedProduct.seoTitulo || formattedProduct.tituloSeo || null,
           meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
           eans_secundarios: formattedProduct.eansSecundarios || [],
-          metadata: metadataPayload,
         });
         
         if (error) {

@@ -10,7 +10,8 @@ import {
   Lock, 
   User, 
   Webhook,
-  Store
+  Store,
+  Palette
 } from "lucide-react";
 
 import { useAdmin } from "@/stores/admin";
@@ -42,6 +43,16 @@ function ConfiguracoesPage() {
       titulo: "Usuários",
       descricao: "Gerencie os usuários, grupos e permissões",
       icon: <User className="h-5 w-5 text-slate-600" />
+    });
+  }
+
+  if (isGlobalAdmin) {
+    configs.push({
+      id: "cores-rede",
+      url: "/admin/design/cores-rede",
+      titulo: "Cores da Rede",
+      descricao: "Defina a paleta de cores padrão da rede. Novas lojas Pleno herdam essas cores automaticamente.",
+      icon: <Palette className="h-5 w-5 text-indigo-600" />
     });
   }
 

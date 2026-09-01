@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface Customer {
   id: string;
@@ -26,7 +27,7 @@ interface CustomersStore {
   loadCustomers: () => Promise<void>;
   addCustomer: (customer: Customer) => Promise<void>;
   updateCustomer: (id: string, customer: Partial<Customer>) => Promise<void>;
-  removeCustomer: (id: string) => Promise<void>;
+  removeCustomer: (id: string) => Promise<boolean>;
 }
 
 export const useCustomers = create<CustomersStore>((set, get) => ({
@@ -108,10 +109,14 @@ export const useCustomers = create<CustomersStore>((set, get) => ({
   removeCustomer: async (id) => {
     // Delete profile (se possível)
     const { error } = await supabase.from('profiles' as any).delete().eq('id', id);
-    if (!error) {
-      set((state) => ({
-        customers: state.customers.filter((c) => c.id !== id),
-      }));
+    if (error) {
+      console.error('Erro ao excluir cliente:', error);
+      toast.error(`Não foi possível excluir o cliente: ${error.message}`);
+      return false;
     }
+    set((state) => ({
+      customers: state.customers.filter((c) => c.id !== id),
+    }));
+    return true;
   },
 }));

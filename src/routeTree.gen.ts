@@ -73,6 +73,7 @@ import { Route as AdminDesignVisualRouteImport } from './routes/admin/design.vis
 import { Route as AdminDesignScriptsRouteImport } from './routes/admin/design.scripts'
 import { Route as AdminDesignPaginasRouteImport } from './routes/admin/design.paginas'
 import { Route as AdminDesignLogoRouteImport } from './routes/admin/design.logo'
+import { Route as AdminDesignCoresRedeRouteImport } from './routes/admin/design.cores-rede'
 import { Route as AdminDesignCoresRouteImport } from './routes/admin/design.cores'
 import { Route as AdminConfiguracoesRedirectsRouteImport } from './routes/admin/configuracoes.redirects'
 import { Route as AdminConfiguracoesPagamentoRouteImport } from './routes/admin/configuracoes.pagamento'
@@ -430,6 +431,11 @@ const AdminDesignLogoRoute = AdminDesignLogoRouteImport.update({
   path: '/design/logo',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDesignCoresRedeRoute = AdminDesignCoresRedeRouteImport.update({
+  id: '/design/cores-rede',
+  path: '/design/cores-rede',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDesignCoresRoute = AdminDesignCoresRouteImport.update({
   id: '/design/cores',
   path: '/design/cores',
@@ -646,6 +652,7 @@ export interface FileRoutesByFullPath {
   '/admin/configuracoes/pagamento': typeof AdminConfiguracoesPagamentoRoute
   '/admin/configuracoes/redirects': typeof AdminConfiguracoesRedirectsRoute
   '/admin/design/cores': typeof AdminDesignCoresRoute
+  '/admin/design/cores-rede': typeof AdminDesignCoresRedeRoute
   '/admin/design/logo': typeof AdminDesignLogoRoute
   '/admin/design/paginas': typeof AdminDesignPaginasRoute
   '/admin/design/scripts': typeof AdminDesignScriptsRoute
@@ -740,6 +747,7 @@ export interface FileRoutesByTo {
   '/admin/configuracoes/pagamento': typeof AdminConfiguracoesPagamentoRoute
   '/admin/configuracoes/redirects': typeof AdminConfiguracoesRedirectsRoute
   '/admin/design/cores': typeof AdminDesignCoresRoute
+  '/admin/design/cores-rede': typeof AdminDesignCoresRedeRoute
   '/admin/design/logo': typeof AdminDesignLogoRoute
   '/admin/design/paginas': typeof AdminDesignPaginasRoute
   '/admin/design/scripts': typeof AdminDesignScriptsRoute
@@ -837,6 +845,7 @@ export interface FileRoutesById {
   '/admin/configuracoes/pagamento': typeof AdminConfiguracoesPagamentoRoute
   '/admin/configuracoes/redirects': typeof AdminConfiguracoesRedirectsRoute
   '/admin/design/cores': typeof AdminDesignCoresRoute
+  '/admin/design/cores-rede': typeof AdminDesignCoresRedeRoute
   '/admin/design/logo': typeof AdminDesignLogoRoute
   '/admin/design/paginas': typeof AdminDesignPaginasRoute
   '/admin/design/scripts': typeof AdminDesignScriptsRoute
@@ -934,6 +943,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes/pagamento'
     | '/admin/configuracoes/redirects'
     | '/admin/design/cores'
+    | '/admin/design/cores-rede'
     | '/admin/design/logo'
     | '/admin/design/paginas'
     | '/admin/design/scripts'
@@ -1028,6 +1038,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes/pagamento'
     | '/admin/configuracoes/redirects'
     | '/admin/design/cores'
+    | '/admin/design/cores-rede'
     | '/admin/design/logo'
     | '/admin/design/paginas'
     | '/admin/design/scripts'
@@ -1124,6 +1135,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes/pagamento'
     | '/admin/configuracoes/redirects'
     | '/admin/design/cores'
+    | '/admin/design/cores-rede'
     | '/admin/design/logo'
     | '/admin/design/paginas'
     | '/admin/design/scripts'
@@ -1628,6 +1640,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDesignLogoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/design/cores-rede': {
+      id: '/admin/design/cores-rede'
+      path: '/design/cores-rede'
+      fullPath: '/admin/design/cores-rede'
+      preLoaderRoute: typeof AdminDesignCoresRedeRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/design/cores': {
       id: '/admin/design/cores'
       path: '/design/cores'
@@ -1991,6 +2010,7 @@ interface AdminRouteChildren {
   AdminConfiguracoesPagamentoRoute: typeof AdminConfiguracoesPagamentoRoute
   AdminConfiguracoesRedirectsRoute: typeof AdminConfiguracoesRedirectsRoute
   AdminDesignCoresRoute: typeof AdminDesignCoresRoute
+  AdminDesignCoresRedeRoute: typeof AdminDesignCoresRedeRoute
   AdminDesignLogoRoute: typeof AdminDesignLogoRoute
   AdminDesignPaginasRoute: typeof AdminDesignPaginasRoute
   AdminDesignScriptsRoute: typeof AdminDesignScriptsRoute
@@ -2051,6 +2071,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminConfiguracoesPagamentoRoute: AdminConfiguracoesPagamentoRoute,
   AdminConfiguracoesRedirectsRoute: AdminConfiguracoesRedirectsRoute,
   AdminDesignCoresRoute: AdminDesignCoresRoute,
+  AdminDesignCoresRedeRoute: AdminDesignCoresRedeRoute,
   AdminDesignLogoRoute: AdminDesignLogoRoute,
   AdminDesignPaginasRoute: AdminDesignPaginasRoute,
   AdminDesignScriptsRoute: AdminDesignScriptsRoute,

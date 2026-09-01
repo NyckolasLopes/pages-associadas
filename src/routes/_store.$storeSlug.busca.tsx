@@ -8,9 +8,11 @@ import type { Produto } from "@/types";
 import { ProductFilterSidebar } from "@/components/storefront/ProductFilterSidebar";
 import { Button } from "@/components/ui/button";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
-import { Search, PackageOpen } from "lucide-react";
+import { Search, PackageOpen, Loader2 } from "lucide-react";
 import { ProductGridSkeleton } from "@/components/storefront/ProductGridSkeleton";
 import mascotNotFound from "@/assets/produto-nao-encontrado.png";
+import { useCart } from "@/stores/cart";
+import { useSearchHistory } from "@/stores/searchHistory";
 
 export const Route = createFileRoute("/_store/$storeSlug/busca")({
   validateSearch: zodValidator(
@@ -198,7 +200,7 @@ function SearchPage() {
                     variant="outline" 
                     className="w-full md:w-auto font-bold px-8 text-primary border-primary hover:bg-primary hover:text-white transition-all shadow-sm"
                   >
-                    {loadingMore ? <Spinner size={16} className="mr-2" /> : null}
+                    {loadingMore ? <Loader2 size={16} className="mr-2 animate-spin" /> : null}
                     {loadingMore ? "Carregando mais produtos..." : "Carregar mais produtos"}
                   </Button>
                 </div>

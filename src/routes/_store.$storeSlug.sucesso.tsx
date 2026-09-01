@@ -160,7 +160,7 @@ function SucessoPage() {
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
-          <Spinner size={48} className="mb-4" />
+          <Loader2 size={48} className="mb-4 animate-spin text-primary" />
           <h2 className="text-xl font-bold text-slate-800">Processando seu pedido...</h2>
         </div>
       ) : order ? (

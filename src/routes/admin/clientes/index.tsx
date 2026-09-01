@@ -277,14 +277,16 @@ function ClientesAdmin() {
     setConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete) {
-      removeCustomer(itemToDelete.id);
-      toast.success(`Cliente ${itemToDelete.name} removido!`);
-      setConfirmOpen(false);
-      if (selectedLead?.id === itemToDelete.id) {
-        setSelectedLead(null);
+      const success = await removeCustomer(itemToDelete.id);
+      if (success) {
+        toast.success(`Cliente ${itemToDelete.name} removido!`);
+        if (selectedLead?.id === itemToDelete.id) {
+          setSelectedLead(null);
+        }
       }
+      setConfirmOpen(false);
     }
   };
 

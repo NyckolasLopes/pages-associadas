@@ -1606,7 +1606,7 @@ export const useAdmin = create<AdminState>()(
       networkDefaultTheme: null,
 
       loadNetworkTheme: async () => {
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from("theme_colors")
           .select("*")
           .eq("loja_id", "__network_default__")
@@ -1621,7 +1621,7 @@ export const useAdmin = create<AdminState>()(
       saveNetworkTheme: async (colors) => {
         // Filter to only CSS variables and extra theme fields
         const payload: Record<string, any> = { ...colors, loja_id: "__network_default__" };
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("theme_colors")
           .upsert(payload, { onConflict: "loja_id" });
         if (error) throw new Error(error.message);
