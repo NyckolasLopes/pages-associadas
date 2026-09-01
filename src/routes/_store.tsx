@@ -7,6 +7,7 @@ import { CompleteProfileModal } from "@/components/storefront/CompleteProfileMod
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
 import { useAuth } from "@/stores/auth";
 import { NotFound } from "@/components/storefront/NotFound";
+import { GlobalLoading } from "@/components/ui/global-loading";
 
 import { resetStoreTheme } from "@/lib/themeUtils";
 
@@ -216,11 +217,15 @@ function StoreLayout() {
     const isParceiroOrAssociado = activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado';
     const appName = isParceiroOrAssociado && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
     const manifestIcon = activePharmacy.faviconUrl || (isParceiroOrAssociado ? "data:," : (globalFavicon || "/favicon.png"));
+    const storeSlug = activePharmacy.slug || "";
+    const origin = typeof window !== 'undefined' ? window.location.origin : "";
     
     const manifest = {
       name: appName,
       short_name: appName,
-      start_url: typeof window !== 'undefined' ? `${window.location.origin}/${activePharmacy.slug || ""}` : `/${activePharmacy.slug || ""}`,
+      start_url: `${origin}/${storeSlug}`,
+      scope: `${origin}/${storeSlug}/`,
+      id: `/${storeSlug}`,
       display: "standalone",
       background_color: "#ffffff",
       theme_color: "#00B5AD",
@@ -246,6 +251,28 @@ function StoreLayout() {
       URL.revokeObjectURL(manifestURL);
     };
   }, [activePharmacy?.faviconUrl, activePharmacy?.isPleno, activePharmacy?.slug, activePharmacy?.nome, activePharmacy?.categoriaAssociado]);
+
+  // Trava de execução no PWA (Aplicativo Instalado):
+  // Quando o app é aberto a partir do atalho baixado, ele fica 100% travado na loja instalada.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
+    
+    if (isStandalone && activePharmacy?.slug) {
+      localStorage.setItem("fa_installed_store_slug", activePharmacy.slug);
+    }
+    
+    if (isStandalone) {
+      const lockedSlug = localStorage.getItem("fa_installed_store_slug");
+      if (lockedSlug && activePharmacy?.slug && activePharmacy.slug !== lockedSlug) {
+        window.location.replace(`/${lockedSlug}`);
+      }
+    }
+  }, [activePharmacy?.slug, potentialSlug]);
+
+  if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && !pharmaciesLoaded) {
+    return <GlobalLoading />;
+  }
 
   if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && pharmaciesLoaded && pharmacies.length > 0 && !activePharmacy) {
     return <NotFound type="page" />;

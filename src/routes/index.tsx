@@ -87,6 +87,17 @@ function IndexGateway() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
+      if (isStandalone) {
+        const lockedSlug = localStorage.getItem("fa_installed_store_slug") || sessionStorage.getItem("fa-last-store-slug");
+        if (lockedSlug && lockedSlug !== "loja-padrao") {
+          window.location.replace(`/${lockedSlug}`);
+          return;
+        }
+      }
+    }
+
     resetStoreTheme();
     if (!pharmaciesLoaded) {
       loadPharmacies();

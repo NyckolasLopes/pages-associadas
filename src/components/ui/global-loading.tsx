@@ -13,7 +13,6 @@ export function GlobalLoading() {
   const pathParts = currentPath.split('/').filter(Boolean);
   const potentialSlug = pathParts[0] ?? "";
   const isAdminArea = currentPath.startsWith('/admin') || potentialSlug === 'admin' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
-  const isCustomStoreSlug = !isAdminArea && potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && potentialSlug !== 'loja-padrao';
 
   // 1. Tentar farmácia ativa (apenas fora do painel administrativo)
   let currentPharmacy = !isAdminArea ? activePharmacy : null;
@@ -48,67 +47,34 @@ export function GlobalLoading() {
     ? (currentPharmacy.categoriaAssociado === 'Parceiro' || currentPharmacy.categoriaAssociado === 'Associado' || currentPharmacy.isPleno === false)
     : false;
 
-  const partnerLogo = currentPharmacy?.loadingLogoUrl || currentPharmacy?.logoUrl || currentPharmacy?.footerLogoUrl;
-  const partnerName = currentPharmacy?.nome || (potentialSlug ? potentialSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : "Loja Parceira");
-
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center animate-in fade-in duration-150">
-      <div className="bg-white shadow-2xl border border-slate-200 rounded-3xl p-8 flex flex-col items-center max-w-sm w-full mx-4 text-center">
-        {isParceiro ? (
-          // ==================== LOJA PARCEIRA (EX: ZONA SUL) ====================
-          // Carregamento EXCLUSIVO para parceiros: Logo cadastrado da loja (ou nome formatado) e spinner neutro e moderno
-          <div className="flex flex-col items-center justify-center mb-4 w-full">
-            {partnerLogo ? (
-              <img 
-                src={partnerLogo} 
-                alt={partnerName || "Logo da Loja"} 
-                className="max-h-16 max-w-[210px] w-auto h-auto mb-5 object-contain" 
-              />
-            ) : (
-              <div className="mb-5 flex flex-col items-center gap-1">
-                <span className="text-[11px] uppercase tracking-widest font-bold text-slate-400">Loja Parceira</span>
-                <div className="text-xl font-black text-slate-800 tracking-tight">
-                  {partnerName}
-                </div>
-              </div>
-            )}
-            {/* Redondo comum carregando (Spinner convencional sem mascote/cruz pleno) */}
-            <div className="flex items-center justify-center my-2">
-              <Loader2 className="w-10 h-10 text-slate-800 animate-spin" />
-            </div>
-            
-            <h3 className="text-base font-bold text-slate-800 mt-3">Carregando loja...</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Aguarde um momento enquanto preparamos os produtos e ofertas para você.
-            </p>
-          </div>
-        ) : (
-          // ==================== LOJA PLENO (FARMÁCIAS ASSOCIADAS) ====================
-          // Logo oficial da Farmácias Associadas e SPIN cruz giratória
-          <div className="flex flex-col items-center justify-center mb-4 w-full">
-            <img
-              src={globalLogo || "/logo.png"}
-              alt="Farmácias Associadas"
-              className="max-h-14 max-w-[210px] w-auto h-auto mb-5 object-contain"
-            />
-            {/* Spin da Associadas (cruz giratória com animate-spin) */}
-            <img
-              src="/icone-associadas.png"
-              alt="Carregando..."
-              className="w-14 h-14 animate-spin object-contain"
-            />
-            
-            <h3 className="text-base font-bold text-slate-800 mt-3">
-              {isAdminArea ? "Carregando painel..." : "Carregando..."}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              {isAdminArea 
-                ? "Aguarde um momento enquanto carregamos o sistema administrativo." 
-                : "Aguarde um momento enquanto preparamos tudo para você."}
-            </p>
-          </div>
-        )}
-      </div>
+    <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[99999] flex flex-col items-center justify-center animate-in fade-in duration-150">
+      {isParceiro ? (
+        // ==================== LOJA PARCEIRA ====================
+        // Carregamento comum neutro sem nome de loja, apenas o círculo girando
+        <div className="flex flex-col items-center justify-center p-6 text-center">
+          <Loader2 className="w-10 h-10 text-slate-700 animate-spin" />
+        </div>
+      ) : (
+        // ==================== LOJA PLENO (FARMÁCIAS ASSOCIADAS) ====================
+        // Logo oficial da Farmácias Associadas e SPIN cruz giratória
+        <div className="bg-white shadow-xl border border-slate-100 rounded-3xl p-8 flex flex-col items-center max-w-xs w-full mx-4 text-center">
+          <img
+            src={globalLogo || "/logo.png"}
+            alt="Farmácias Associadas"
+            className="max-h-14 max-w-[210px] w-auto h-auto mb-6 object-contain"
+          />
+          {/* Spin da Associadas (cruz giratória com animate-spin) */}
+          <img
+            src="/icone-associadas.png"
+            alt="Carregando..."
+            className="w-14 h-14 animate-spin object-contain"
+          />
+          <span className="text-sm font-semibold text-slate-600 mt-4">
+            {isAdminArea ? "Carregando painel..." : "Carregando..."}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
