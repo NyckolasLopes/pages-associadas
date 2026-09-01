@@ -12,6 +12,64 @@ const supabase = activeKey ? createClient(supabaseUrl, activeKey) : null;
 
 export async function handleCustomApiRoute(request: Request): Promise<Response | null> {
   const url = new URL(request.url);
+
+  // 1. Reverse Proxy for Supabase (Prevents Mixed Content blocks on HTTPS pages when Supabase is HTTP)
+  if (url.pathname.startsWith("/api/supabase")) {
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+        },
+      });
+    }
+
+    const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+    const subPath = url.pathname.replace(/^\/api\/supabase/, "");
+    const targetUrl = `${targetBase}${subPath}${url.search}`;
+
+    try {
+      const forwardHeaders = new Headers();
+      request.headers.forEach((value, key) => {
+        const lower = key.toLowerCase();
+        if (lower !== "host" && lower !== "connection" && lower !== "origin" && lower !== "referer") {
+          forwardHeaders.set(key, value);
+        }
+      });
+
+      const body = request.method !== "GET" && request.method !== "HEAD" 
+        ? await request.arrayBuffer() 
+        : undefined;
+
+      const proxyRes = await fetch(targetUrl, {
+        method: request.method,
+        headers: forwardHeaders,
+        body: body,
+      });
+
+      const responseHeaders = new Headers();
+      proxyRes.headers.forEach((value, key) => {
+        responseHeaders.set(key, value);
+      });
+      responseHeaders.set("Access-Control-Allow-Origin", "*");
+      responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+      responseHeaders.set("Access-Control-Allow-Headers", "*");
+
+      return new Response(proxyRes.body, {
+        status: proxyRes.status,
+        statusText: proxyRes.statusText,
+        headers: responseHeaders,
+      });
+    } catch (err: any) {
+      console.error("[Supabase Proxy Error]:", err);
+      return new Response(JSON.stringify({ error: "Proxy connection failed", details: err.message }), {
+        status: 502,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }
   
   if (url.pathname.includes("/api/rpc/")) {
     const rpcName = url.pathname.split("/").pop();

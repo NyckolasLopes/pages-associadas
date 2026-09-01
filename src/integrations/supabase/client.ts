@@ -129,9 +129,14 @@ function createSupabaseClient() {
     throw new Error(message);
   }
 
+  let effectiveUrl = SUPABASE_URL;
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && SUPABASE_URL.startsWith('http://')) {
+    effectiveUrl = `${window.location.origin}/api/supabase`;
+  }
+
   const safeTransport = getSafeWebSocketTransport();
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  return createClient<Database>(effectiveUrl, SUPABASE_PUBLISHABLE_KEY, {
     global: {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
     },

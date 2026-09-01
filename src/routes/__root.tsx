@@ -115,7 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         {
           httpEquiv: "Content-Security-Policy",
-          content: "default-src 'self' http://20.7.19.49:3006 ws://20.7.19.49:3006 https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://* http://* http://20.7.19.49:3006; style-src 'self' 'unsafe-inline' https://* http://* https://fonts.googleapis.com; img-src 'self' data: blob: https://* http://* http://20.7.19.49:3006; font-src 'self' data: https://* http://* https://fonts.gstatic.com; connect-src 'self' http://20.7.19.49:3006 ws://20.7.19.49:3006 http://20.7.19.49:* ws://20.7.19.49:* https://* http://* wss://* ws://* https: http: ws: wss:; frame-src 'self' https://* http://* http://20.7.19.49:3006;",
+          content: "default-src 'self' http://20.7.19.49:3006 ws://20.7.19.49:3006 https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://* http://* http://20.7.19.49:3006; style-src 'self' 'unsafe-inline' https://* http://* https://fonts.googleapis.com; img-src 'self' data: blob: https://* http://* http://20.7.19.49:3006; font-src 'self' data: https://* http://* https://fonts.gstatic.com; connect-src 'self' http://20.7.19.49:3006 ws://20.7.19.49:3006 http://20.7.19.49:* ws://20.7.19.49:* https://* http://* wss://* ws://* https: http: ws: wss:; frame-src 'self' https://* http://* http://20.7.19.49:3006; manifest-src 'self' blob: data:;",
         },
         { title: title },
         {
