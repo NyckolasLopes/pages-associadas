@@ -329,7 +329,7 @@ function ProductCardComponent({
     : (pharmacies[0]?.slug ? safeSlugify(pharmacies[0].slug) : "poa");
 
   return (
-    <article className="group bg-card rounded-xl border hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative h-full w-full">
+    <article className="group/card bg-card rounded-xl border hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative h-full w-full">
       {/* Floating Actions */}
       <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-2">
         {p.youtubeVideoUrl && (
@@ -385,7 +385,7 @@ function ProductCardComponent({
           decoding="async"
           width={400}
           height={400}
-          className={`w-full h-full object-contain transition-transform duration-500 md:group-hover:scale-110 ${maxStock === 0 && !isService ? 'grayscale opacity-75' : ''}`}
+          className={`w-full h-full object-contain transition-transform duration-500 md:group-hover/card:scale-110 ${maxStock === 0 && !isService ? 'grayscale opacity-75' : ''}`}
         />
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none items-start">
           {activeSelos.map(selo => (

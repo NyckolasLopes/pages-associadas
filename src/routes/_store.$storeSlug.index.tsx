@@ -605,7 +605,7 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId, storeSlug: 
   };
 
   return (
-    <div className="relative group w-full px-1">
+    <div className="relative group/catcarousel w-full px-1">
       <Carousel
         opts={{
           align: "start",
@@ -622,17 +622,17 @@ function DynamicCategoriaBanners({ page = "Página inicial", lojaId, storeSlug: 
             const isExternal = targetUrl && (targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("//"));
 
             const content = (
-              <div className="flex flex-col items-center gap-2 group cursor-pointer text-center w-full">
-                <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-50 border border-slate-200/80 group-hover:border-primary/40 group-hover:bg-primary/5 flex items-center justify-center shadow-xs group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-200 p-3.5">
+              <div className="flex flex-col items-center gap-2 group/cat cursor-pointer text-center w-full">
+                <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-slate-50 border border-slate-200/80 group-hover/cat:border-primary/40 group-hover/cat:bg-primary/5 flex items-center justify-center shadow-xs group-hover/cat:shadow-md group-hover/cat:-translate-y-1 transition-all duration-200 p-3.5">
                   {cat.imageUrl && !cat.imageUrl.startsWith("icon:") ? (
                     <img src={cat.imageUrl} alt={cat.nome} className="w-full h-full object-contain rounded-xl" />
                   ) : Icon ? (
-                    <Icon className="h-7 w-7 md:h-9 md:w-9 text-primary group-hover:scale-110 transition-transform stroke-[1.75]" />
+                    <Icon className="h-7 w-7 md:h-9 md:w-9 text-primary group-hover/cat:scale-110 transition-transform stroke-[1.75]" />
                   ) : (
-                    <Tag className="h-7 w-7 md:h-9 md:w-9 text-primary group-hover:scale-110 transition-transform stroke-[1.75]" />
+                    <Tag className="h-7 w-7 md:h-9 md:w-9 text-primary group-hover/cat:scale-110 transition-transform stroke-[1.75]" />
                   )}
                 </div>
-                <span className="text-[11px] md:text-xs font-semibold text-slate-700 group-hover:text-primary transition-colors leading-snug line-clamp-2 min-h-[2.2rem] flex items-start justify-center px-1">
+                <span className="text-[11px] md:text-xs font-semibold text-slate-700 group-hover/cat:text-primary transition-colors leading-snug line-clamp-2 min-h-[2.2rem] flex items-start justify-center px-1">
                   {cat.nome}
                 </span>
               </div>
@@ -1009,7 +1009,7 @@ function StoreHome() {
         <SquarePromoGrid lojaId={lojaId} />
 
         {/* Top critical above-the-fold content: render immediately */}
-        <section className="container-fa pt-2 pb-4 md:pb-6 relative group">
+        <section className="container-fa pt-2 pb-4 md:pb-6 relative">
           <h1 className="text-lg md:text-2xl font-bold mb-3 md:mb-4 text-foreground">Compre por categoria</h1>
           <DynamicCategoriaBanners lojaId={lojaId} />
         </section>
@@ -1078,7 +1078,7 @@ function StoreHome() {
                       <ShieldCheck className="h-8 w-8" />
                     </div>
                     <h3 className="font-bold text-sm">Qualidade Comprovada</h3>
-                    <p className="text-xs text-orange-100">Produtos originais e com a garantia que você e sua família merecem.</p>
+                    <p className="text-xs text-orange-100">Trabalhamos apenas com produtos certificados e de procedência.</p>
                   </div>
                 </div>
               </div>
@@ -1091,17 +1091,17 @@ function StoreHome() {
           <DynamicVitrines local="espaco_3" lojaId={lojaId} storeSlug={storeSlug} />
         </LazySection>
 
-        {/* Parceiros / Marcas */}
-        <LazySection height="300px">
-          <section className="container-fa my-12">
+        {/* Marcas Parceiras */}
+        <LazySection height="200px">
+          <section className="container-fa py-8">
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <Handshake className="h-6 w-6 text-primary" />
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Confiança e Qualidade</span>
                 <h2 className="text-xl md:text-2xl font-bold">Somos parceiros das melhores marcas</h2>
               </div>
             </div>
             
-            <div className="relative group w-full">
+            <div className="relative group/marcas w-full">
               <Carousel
                 opts={{
                   align: "start",
@@ -1131,8 +1131,8 @@ function StoreHome() {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" />
-                <CarouselNext className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" />
+                <CarouselPrevious className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover/marcas:opacity-100" />
+                <CarouselNext className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover/marcas:opacity-100" />
               </Carousel>
             </div>
           </section>

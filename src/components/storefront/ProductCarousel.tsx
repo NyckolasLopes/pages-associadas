@@ -52,7 +52,7 @@ export function ProductCarousel({ products, selectedStoreId }: { products: Produ
     return true;
   });
   return (
-    <div className="relative group w-full">
+    <div className="relative group/pcarousel w-full">
       <Carousel
         opts={{
           align: "start",
@@ -75,10 +75,10 @@ export function ProductCarousel({ products, selectedStoreId }: { products: Produ
         </CarouselContent>
 
         <CarouselPrevious 
-          className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" 
+          className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover/pcarousel:opacity-100" 
         />
         <CarouselNext 
-          className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover:opacity-100" 
+          className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover/pcarousel:opacity-100" 
         />
       </Carousel>
     </div>
