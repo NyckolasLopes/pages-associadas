@@ -4,6 +4,7 @@ import { StoreSelector } from "@/components/admin/StoreSelector";
 import { 
   BarChart3, 
   ShoppingBag, 
+  ShoppingCart,
   CheckCircle2, 
   Clock, 
   Store, 
@@ -49,7 +50,7 @@ export const Route = createFileRoute("/admin/metricas")({
   component: Metricas,
 });
 
-export type UnifiedOrderStatus = "Concluído" | "Pendente" | "Cancelado";
+export type UnifiedOrderStatus = "Concluído" | "Pendente" | "Carrinho Abandonado" | "Cancelado";
 
 export interface UnifiedOrder {
   id: string;
@@ -83,8 +84,8 @@ function getUnifiedOrderStatus(order: { status?: string; origem?: string; type?:
   }
 
   // Carrinho abandonado 
-  if (statusStr === "abandonado no carrinho" || origemStr === "carrinho") {
-    return { label: "Pendente", desc: "Abandonado no carrinho" };
+  if (statusStr === "abandonado no carrinho" || origemStr === "carrinho" || statusStr.includes("abandon")) {
+    return { label: "Carrinho Abandonado", desc: "Carrinho Abandonado" };
   }
 
   // Pedido real pendente
@@ -112,7 +113,7 @@ function Metricas() {
     useOrders.getState().loadOrders();
   }, []);
 
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<"todos" | "Concluído" | "Pendente" | "Cancelado">("todos");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<"todos" | "Concluído" | "Pendente" | "Carrinho Abandonado" | "Cancelado">("todos");
   const [selectedLojaFilter, setSelectedLojaFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<UnifiedOrder | null>(null);
@@ -197,7 +198,7 @@ function Metricas() {
       });
     });
 
-    // 2. Processa carrinhos abandonados (como pedidos Pendentes no carrinho - sem forma de pagamento escolhida)
+    // 2. Processa carrinhos abandonados (como categoria dedicada de Carrinho Abandonado)
     (rawCarts || []).forEach(cart => {
       if (seenIds.has(cart.id)) return;
       const safeLojaId = normalizeLojaId(cart.lojaId) || "loja-poa-centro";
@@ -223,8 +224,8 @@ function Metricas() {
         lojaId: safeLojaId,
         lojaNome: lojaObj?.nome || "Farmácias Associadas",
         lojaCidadeUf: lojaObj ? `${lojaObj.cidade}/${lojaObj.uf}` : "POA/RS",
-        status: "Pendente",
-        statusDesc: "Pendente (Carrinho)",
+        status: "Carrinho Abandonado",
+        statusDesc: "Carrinho Abandonado",
         origem: "carrinho",
         itensQtd: totalItemsCount,
         valorTotal: cart.total || 0,
@@ -258,12 +259,15 @@ function Metricas() {
   const totalPedidos = scopedOrders.length;
   const concluidosCount = scopedOrders.filter(o => o.status === "Concluído").length;
   const pendentesCount = scopedOrders.filter(o => o.status === "Pendente").length;
+  const abandonadosCount = scopedOrders.filter(o => o.status === "Carrinho Abandonado").length;
   const canceladosCount = scopedOrders.filter(o => o.status === "Cancelado").length;
 
   const concluidosPct = totalPedidos > 0 ? Math.round((concluidosCount / totalPedidos) * 100) : 0;
   const pendentesPct = totalPedidos > 0 ? Math.round((pendentesCount / totalPedidos) * 100) : 0;
+  const abandonadosPct = totalPedidos > 0 ? Math.round((abandonadosCount / totalPedidos) * 100) : 0;
 
   const totalValorConcluido = scopedOrders.filter(o => o.status === "Concluído").reduce((acc, o) => acc + o.valorTotal, 0);
+  const totalValorAbandonado = scopedOrders.filter(o => o.status === "Carrinho Abandonado").reduce((acc, o) => acc + o.valorTotal, 0);
   const ticketMedio = concluidosCount > 0 ? totalValorConcluido / concluidosCount : 0;
 
   // Lojas ativas com pedidos
@@ -277,13 +281,13 @@ function Metricas() {
   const distribuicaoLojas = useMemo(() => {
     return pharmacies.map(loja => {
       const pedidosDaLoja = allUnifiedOrders.filter(o => o.lojaId === loja.id);
-      const pedidosReais = pedidosDaLoja.filter(o => o.tipoRegistro === "pedido");
-      const total = pedidosReais.length;
-      const concluidos = pedidosReais.filter(o => o.status === "Concluído").length;
-      const pendentes = pedidosDaLoja.filter(o => o.tipoRegistro === "carrinho").length;
-      const valorTotal = pedidosReais.reduce((acc, o) => acc + o.valorTotal, 0);
-      const taxaConclusao = total > 0 ? Math.round((concluidos / total) * 100) : 0;
-      const ultimoPedido = pedidosReais[0]?.data || "Nenhum";
+      const total = pedidosDaLoja.length;
+      const concluidos = pedidosDaLoja.filter(o => o.status === "Concluído").length;
+      const pendentes = pedidosDaLoja.filter(o => o.status === "Pendente").length;
+      const abandonados = pedidosDaLoja.filter(o => o.status === "Carrinho Abandonado").length;
+      const valorTotal = pedidosDaLoja.filter(o => o.status === "Concluído").reduce((acc, o) => acc + o.valorTotal, 0);
+      const taxaConclusao = (concluidos + pendentes + abandonados) > 0 ? Math.round((concluidos / (concluidos + pendentes + abandonados)) * 100) : 0;
+      const ultimoPedido = pedidosDaLoja[0]?.data || "Nenhum";
 
       return {
         id: loja.id,
@@ -293,6 +297,7 @@ function Metricas() {
         total,
         concluidos,
         pendentes,
+        abandonados,
         valorTotal,
         taxaConclusao,
         ultimoPedido
@@ -300,14 +305,15 @@ function Metricas() {
     }).sort((a, b) => b.total - a.total);
   }, [pharmacies, allUnifiedOrders]);
 
-  // Dados para Gráfico de Status (Concluídos vs Pendentes vs Cancelados)
+  // Dados para Gráfico de Status (Concluídos vs Pendentes vs Carrinhos Abandonados vs Cancelados)
   const statusPieData = useMemo(() => {
     const data = [];
     if (concluidosCount > 0) data.push({ name: "Concluído (WhatsApp)", value: concluidosCount, color: "#10b981" });
     if (pendentesCount > 0) data.push({ name: "Pendente", value: pendentesCount, color: "#3b82f6" });
+    if (abandonadosCount > 0) data.push({ name: "Carrinho Abandonado", value: abandonadosCount, color: "#f59e0b" });
     if (canceladosCount > 0) data.push({ name: "Cancelado", value: canceladosCount, color: "#ef4444" });
     return data;
-  }, [concluidosCount, pendentesCount, canceladosCount]);
+  }, [concluidosCount, pendentesCount, abandonadosCount, canceladosCount]);
 
   // Dados para Gráfico de Barras de Pedidos por Loja
   const lojaBarData = useMemo(() => {
@@ -323,6 +329,7 @@ function Metricas() {
       name: l.nome.replace("Farmácias Associadas — ", "").replace("Farmácias Associadas - ", ""),
       concluidos: l.concluidos,
       pendentes: l.pendentes,
+      abandonados: l.abandonados,
       total: l.total
     }));
   }, [distribuicaoLojas, selectedLojaFilter]);
@@ -394,15 +401,15 @@ function Metricas() {
         </div>
       </div>
 
-      {/* KPI Cards — Conforme Requisito: Total de Pedidos, Concluídos (WhatsApp), Pendentes (Carrinho) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total de Pedidos (Substitui Pedido Pago / Receita Total) */}
+      {/* KPI Cards — Conforme Requisito: Total de Pedidos, Concluídos (WhatsApp), Pendentes, Carrinhos Abandonados, Lojas/Ticket */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* Card 1: Total Geral */}
         <div className="bg-white rounded-2xl border shadow-sm p-5 flex flex-col justify-between hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              {isGlobalView ? "Total de Pedidos (Rede)" : "Total de Pedidos (Loja)"}
+              {isGlobalView ? "Total Geral (Rede)" : "Total Geral (Loja)"}
             </span>
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+            <div className="p-2 bg-slate-100 text-slate-700 rounded-xl">
               <ShoppingBag className="w-4 h-4" />
             </div>
           </div>
@@ -410,10 +417,10 @@ function Metricas() {
             <div className="text-3xl font-black text-slate-900 tracking-tight">
               {totalPedidos}
             </div>
-            <div className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-1.5">
+            <div className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-1.5 flex-wrap">
               <span className="text-emerald-600 font-bold">{concluidosCount} concluídos</span>
               <span>•</span>
-              <span className="text-amber-600 font-bold">{pendentesCount} pendentes</span>
+              <span className="text-blue-600 font-bold">{pendentesCount} pendentes</span>
             </div>
           </div>
         </div>
@@ -468,12 +475,43 @@ function Metricas() {
           </div>
         </div>
 
-        {/* Card 4: Visão da Rede / Loja */}
+        {/* Card 4 [NOVO]: Carrinhos Abandonados */}
+        <div className="bg-white rounded-2xl border shadow-sm p-5 flex flex-col justify-between hover:border-amber-200 transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Carrinhos Abandonados
+            </span>
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+              <ShoppingCart className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-3xl font-black text-amber-600 tracking-tight">
+                {abandonadosCount}
+              </div>
+              <Badge className="bg-amber-100 text-amber-800 border-0 text-[11px] font-bold">
+                {abandonadosPct}% do total
+              </Badge>
+            </div>
+            <div className="text-xs text-slate-500 mt-1 font-medium">
+              {totalValorAbandonado > 0 ? (
+                <span className="font-semibold text-amber-700">
+                  {totalValorAbandonado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} em itens
+                </span>
+              ) : (
+                "Não finalizaram a compra"
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 5: Visão da Rede / Loja */}
         {isGlobalView ? (
           <div className="bg-white rounded-2xl border shadow-sm p-5 flex flex-col justify-between hover:border-purple-200 transition-all">
             <div className="flex items-center justify-between text-slate-500 mb-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Lojas com Pedidos
+                Lojas Ativas
               </span>
               <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
                 <Store className="w-4 h-4" />
@@ -484,7 +522,7 @@ function Metricas() {
                 {lojasComPedidosIds.size} <span className="text-sm font-bold text-slate-400">/ {pharmacies.length}</span>
               </div>
               <div className="text-xs text-slate-500 mt-1 font-medium">
-                Unidades com transações ativas
+                Unidades com movimentação
               </div>
             </div>
           </div>
@@ -512,13 +550,13 @@ function Metricas() {
 
       {/* Gráficos de Pedidos — Conforme Requisito: Sem Evolução de Receita */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráfico 1: Status dos Pedidos (Concluídos vs Pendentes) */}
+        {/* Gráfico 1: Status dos Pedidos */}
         <div className="bg-white rounded-2xl border shadow-sm p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <PackageCheck className="w-5 h-5 text-emerald-600" />
               <h3 className="font-bold text-slate-800 text-base">
-                Status dos Pedidos
+                Status dos Pedidos e Carrinhos
               </h3>
             </div>
             <span className="text-xs font-semibold text-slate-400">
@@ -534,9 +572,9 @@ function Metricas() {
                     data={statusPieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={65}
-                    outerRadius={95}
-                    paddingAngle={0}
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={2}
                     dataKey="value"
                     stroke="none"
                   >
@@ -545,12 +583,12 @@ function Metricas() {
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(val: number) => [`${val} pedidos`, "Quantidade"]}
+                    formatter={(val: number) => [`${val} registros`, "Quantidade"]}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.1)' }}
                   />
                   <Legend 
                     verticalAlign="bottom" 
-                    height={36} 
+                    height={40} 
                     iconType="circle"
                     formatter={(value) => <span className="text-xs font-semibold text-slate-700">{value}</span>}
                   />
@@ -558,24 +596,28 @@ function Metricas() {
               </ResponsiveContainer>
             ) : (
               <div className="text-center text-slate-400 text-sm font-medium py-12">
-                Nenhum pedido registrado.
+                Nenhum pedido ou carrinho registrado.
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-100 mt-2">
-            <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-100">
-              <div className="text-[11px] font-bold text-emerald-800 uppercase">Concluídos (WhatsApp)</div>
-              <div className="text-lg font-black text-emerald-700 mt-0.5">{concluidosCount} ({concluidosPct}%)</div>
+          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100 mt-2">
+            <div className="p-2 bg-emerald-50/70 rounded-xl border border-emerald-100 text-center">
+              <div className="text-[10px] font-bold text-emerald-800 uppercase">Concluídos</div>
+              <div className="text-base font-black text-emerald-700 mt-0.5">{concluidosCount}</div>
             </div>
-            <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-100">
-              <div className="text-[11px] font-bold text-blue-800 uppercase">Pendentes</div>
-              <div className="text-lg font-black text-blue-700 mt-0.5">{pendentesCount} ({pendentesPct}%)</div>
+            <div className="p-2 bg-blue-50/70 rounded-xl border border-blue-100 text-center">
+              <div className="text-[10px] font-bold text-blue-800 uppercase">Pendentes</div>
+              <div className="text-base font-black text-blue-700 mt-0.5">{pendentesCount}</div>
+            </div>
+            <div className="p-2 bg-amber-50/70 rounded-xl border border-amber-100 text-center">
+              <div className="text-[10px] font-bold text-amber-800 uppercase">Abandonados</div>
+              <div className="text-base font-black text-amber-700 mt-0.5">{abandonadosCount}</div>
             </div>
           </div>
         </div>
 
-        {/* Gráfico 2: Distribuição de Pedidos por Loja (Global) ou Resumo por Modalidade (Loja) */}
+        {/* Gráfico 2: Distribuição por Loja (Global) ou Resumo por Modalidade (Loja) */}
         <div className="bg-white rounded-2xl border shadow-sm p-6 flex flex-col lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -611,8 +653,8 @@ function Metricas() {
                     />
                     <Tooltip 
                       formatter={(val: number, name: string) => [
-                        `${val} pedidos`, 
-                        name === "concluidos" ? "Concluídos (WhatsApp)" : name === "pendentes" ? "Pendentes (Carrinho)" : "Total"
+                        `${val} registros`, 
+                        name === "concluidos" ? "Concluídos (WhatsApp)" : name === "pendentes" ? "Pendentes" : name === "abandonados" ? "Carrinhos Abandonados" : "Total"
                       ]}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.1)' }}
                     />
@@ -623,7 +665,8 @@ function Metricas() {
                       formatter={(value) => <span className="text-xs font-semibold text-slate-700">{value}</span>}
                     />
                     <Bar dataKey="concluidos" name="Concluídos (WhatsApp)" fill="#10b981" radius={[0, 0, 4, 4]} stackId="a" />
-                    <Bar dataKey="pendentes" name="Pendentes (Carrinho)" fill="#3b82f6" radius={[4, 4, 0, 0]} stackId="a" />
+                    <Bar dataKey="pendentes" name="Pendentes" fill="#3b82f6" stackId="a" />
+                    <Bar dataKey="abandonados" name="Carrinhos Abandonados" fill="#f59e0b" radius={[4, 4, 0, 0]} stackId="a" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -632,11 +675,11 @@ function Metricas() {
                 </div>
               )
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 h-full items-center py-6">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 h-full items-center py-6">
                 <div className="bg-slate-50 p-4 rounded-xl border text-center">
                   <div className="text-xs font-bold text-slate-500 uppercase">Total Recebido</div>
                   <div className="text-2xl font-black text-slate-900 mt-1">{totalPedidos}</div>
-                  <div className="text-[11px] text-slate-400 mt-1">Pedidos registrados</div>
+                  <div className="text-[11px] text-slate-400 mt-1">Registros totais</div>
                 </div>
                 <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-center">
                   <div className="text-xs font-bold text-emerald-800 uppercase">Concluídos</div>
@@ -647,6 +690,11 @@ function Metricas() {
                   <div className="text-xs font-bold text-blue-800 uppercase">Pendentes</div>
                   <div className="text-2xl font-black text-blue-700 mt-1">{pendentesCount}</div>
                   <div className="text-[11px] text-blue-600 font-medium mt-1">Aguardando ação</div>
+                </div>
+                <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-center">
+                  <div className="text-xs font-bold text-amber-800 uppercase">Abandonados</div>
+                  <div className="text-2xl font-black text-amber-700 mt-1">{abandonadosCount}</div>
+                  <div className="text-[11px] text-amber-600 font-medium mt-1">{abandonadosPct}% de taxa</div>
                 </div>
               </div>
             )}
@@ -667,7 +715,7 @@ function Metricas() {
                   Distribuição de Pedidos por Loja
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Acompanhe a quantidade de pedidos concluídos e pendentes em cada unidade da rede
+                  Acompanhe a quantidade de pedidos concluídos, pendentes e carrinhos abandonados em cada unidade da rede
                 </p>
               </div>
             </div>
@@ -690,11 +738,12 @@ function Metricas() {
               <thead className="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-100">
                 <tr>
                   <th className="py-3.5 px-4">Loja / Farmácia</th>
-                  <th className="py-3.5 px-4 text-center">Total de Pedidos</th>
+                  <th className="py-3.5 px-4 text-center">Total</th>
                   <th className="py-3.5 px-4 text-center">Concluídos (WhatsApp)</th>
-                  <th className="py-3.5 px-4 text-center">Pendentes (Carrinho)</th>
+                  <th className="py-3.5 px-4 text-center">Pendentes</th>
+                  <th className="py-3.5 px-4 text-center">Carrinhos Abandonados</th>
                   <th className="py-3.5 px-4 text-center">Taxa de Conclusão</th>
-                  <th className="py-3.5 px-4 text-right">Último Pedido</th>
+                  <th className="py-3.5 px-4 text-right">Último Registro</th>
                   <th className="py-3.5 px-4 text-center">Ação</th>
                 </tr>
               </thead>
@@ -728,9 +777,16 @@ function Metricas() {
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                          <Clock className="w-3 h-3 text-amber-600" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                          <Clock className="w-3 h-3 text-blue-600" />
                           {loja.pendentes}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          <ShoppingCart className="w-3 h-3 text-amber-600" />
+                          {loja.abandonados}
                         </span>
                       </td>
 
@@ -778,10 +834,10 @@ function Metricas() {
             </div>
             <div>
               <h3 className="font-bold text-slate-800 text-lg">
-                {isGlobalView ? "Últimos Pedidos da Rede" : "Últimos Pedidos da Loja"}
+                {isGlobalView ? "Últimos Pedidos e Carrinhos da Rede" : "Últimos Pedidos e Carrinhos da Loja"}
               </h3>
               <p className="text-xs text-slate-500">
-                Data do pedido, cliente, loja que faturou, quantidade de itens, status e valor
+                Data do registro, cliente, loja, quantidade de itens, status e valor
               </p>
             </div>
           </div>
@@ -798,7 +854,7 @@ function Metricas() {
               />
             </div>
 
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl gap-1">
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl gap-1 flex-wrap">
               <button
                 type="button"
                 onClick={() => setSelectedStatusFilter("todos")}
@@ -816,9 +872,16 @@ function Metricas() {
               <button
                 type="button"
                 onClick={() => setSelectedStatusFilter("Pendente")}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${selectedStatusFilter === "Pendente" ? "bg-blue-500 text-white shadow-sm" : "text-blue-700 hover:bg-blue-50"}`}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${selectedStatusFilter === "Pendente" ? "bg-blue-600 text-white shadow-sm" : "text-blue-700 hover:bg-blue-50"}`}
               >
                 Pendentes ({pendentesCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedStatusFilter("Carrinho Abandonado")}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${selectedStatusFilter === "Carrinho Abandonado" ? "bg-amber-600 text-white shadow-sm" : "text-amber-700 hover:bg-amber-50"}`}
+              >
+                Carrinhos Abandonados ({abandonadosCount})
               </button>
             </div>
           </div>
@@ -849,6 +912,7 @@ function Metricas() {
                 filteredLatestOrders.map((order) => {
                   const isConcluido = order.status === "Concluído";
                   const isPendente = order.status === "Pendente";
+                  const isAbandonado = order.status === "Carrinho Abandonado";
                   const isCancelado = order.status === "Cancelado";
 
                   return (
@@ -870,7 +934,6 @@ function Metricas() {
                         </div>
                       </td>
 
-
                       {/* Loja que Faturou (Aparece no Painel Global sem corte) */}
                       {isGlobalView && (
                         <td className="py-3.5 px-4 whitespace-nowrap">
@@ -888,7 +951,7 @@ function Metricas() {
                         </span>
                       </td>
 
-                      {/* Status: Concluído (WhatsApp) ou Pendente (Carrinho) */}
+                      {/* Status: Concluído (WhatsApp), Pendente, Carrinho Abandonado ou Cancelado */}
                       <td className="py-3.5 px-4 text-center">
                         {isConcluido && (
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -900,6 +963,12 @@ function Metricas() {
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
                             <span className="w-2 h-2 rounded-full bg-blue-500" />
                             Pendente
+                          </span>
+                        )}
+                        {isAbandonado && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            Carrinho Abandonado
                           </span>
                         )}
                         {isCancelado && (
@@ -945,15 +1014,19 @@ function Metricas() {
             <div className="flex items-center justify-between pr-6">
               <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-emerald-600" />
-                Pedido #{selectedOrderDetails?.id}
+                {selectedOrderDetails?.tipoRegistro === "carrinho" ? "Carrinho #" : "Pedido #"}{selectedOrderDetails?.id}
               </DialogTitle>
               {selectedOrderDetails?.status === "Concluído" ? (
                 <Badge className="bg-emerald-100 text-emerald-800 border-0 font-bold">
                   Concluído
                 </Badge>
               ) : selectedOrderDetails?.status === "Pendente" ? (
-                <Badge className="bg-amber-100 text-amber-800 border-0 font-bold">
+                <Badge className="bg-blue-100 text-blue-800 border-0 font-bold">
                   Pendente
+                </Badge>
+              ) : selectedOrderDetails?.status === "Carrinho Abandonado" ? (
+                <Badge className="bg-amber-100 text-amber-800 border-0 font-bold">
+                  Carrinho Abandonado
                 </Badge>
               ) : (
                 <Badge className="bg-red-100 text-red-800 border-0 font-bold">
