@@ -603,7 +603,11 @@ export function Header() {
                 <>
                   <div className="divide-y">
                     {results.map((p) => {
-                      const ep = getEffectivePrice(p, activePharmacy?.id || selectedPharmacyId);
+                      const storeId = activePharmacy?.id || selectedPharmacyId;
+                      const ep = getEffectivePrice(p, storeId);
+                      const stock = getDeterministicStock(p, storeId || '');
+                      const isAvail = (stock > 0 || p.tipoProduto === "servico") && p.ativo !== false && (p.precosPorLoja?.[storeId || '']?.ativo !== false);
+
                       return (
                         <Link
                           key={p.id}
@@ -638,7 +642,13 @@ export function Header() {
                               </div>
                             )}
                           </div>
-                          <div className="text-sm font-bold text-primary shrink-0">{brl(ep.precoPor)}</div>
+                          <div className="text-right shrink-0">
+                            {isAvail ? (
+                              <div className="text-sm font-bold text-primary">{brl(ep.precoPor)}</div>
+                            ) : (
+                              <span className="text-xs font-semibold text-slate-400">Indisponível</span>
+                            )}
+                          </div>
                         </Link>
                       );
                     })}

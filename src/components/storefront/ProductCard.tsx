@@ -419,7 +419,16 @@ function ProductCardComponent({
           {p.nome}
         </Link>
           <div className="flex flex-col mt-1">
-            {p.precoSobConsulta ? (
+            {!isAvailable ? (
+              <div className="min-h-[50px] flex flex-col justify-center">
+                <span className="text-sm font-semibold text-slate-400">
+                  Preço indisponível
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  Sem estoque no momento
+                </span>
+              </div>
+            ) : p.precoSobConsulta ? (
               <div className="text-lg sm:text-xl font-bold text-slate-700 min-h-[50px] flex items-center">
                 Preço sob consulta
               </div>

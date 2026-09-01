@@ -1057,13 +1057,13 @@ function PDP() {
             <h1 className="text-2xl font-bold leading-tight lg:hidden block">{p.nome}</h1>
             
             {/* Mobile Promotional Displays */}
-            {padraoPromo && (
+            {isAvailable && padraoPromo && (
               <div className="lg:hidden mt-3 mb-2">
                 <PromoProductPageBanner promo={padraoPromo} precoOriginal={finalPrecoDe} precoPromocional={finalPrecoPor} />
               </div>
             )}
 
-            {levePaguePromo && (
+            {isAvailable && levePaguePromo && (
               <div className="lg:hidden mt-3 mb-2">
                 <PromoLevePagueOfferBox 
                   promo={levePaguePromo} 
@@ -1306,13 +1306,13 @@ function PDP() {
             <h1 className="text-2xl font-bold leading-tight hidden lg:block">{p.nome}</h1>
             
             {/* Desktop Promotional Displays */}
-            {padraoPromo && (
+            {isAvailable && padraoPromo && (
               <div className="hidden lg:block mt-2 mb-2">
                 <PromoProductPageBanner promo={padraoPromo} precoOriginal={finalPrecoDe} precoPromocional={finalPrecoPor} />
               </div>
             )}
 
-            {levePaguePromo && (
+            {isAvailable && levePaguePromo && (
               <div className="hidden lg:block mt-2 mb-2">
                 <PromoLevePagueOfferBox 
                   promo={levePaguePromo} 
@@ -1352,7 +1352,16 @@ function PDP() {
 
 
           <div className="bg-card border rounded-xl p-5 shadow-elevated">
-            {p.precoSobConsulta ? (
+            {!isAvailable ? (
+              <div className="flex flex-col gap-1 min-h-[60px] justify-center">
+                <span className="text-xl font-bold text-slate-500">
+                  Preço indisponível
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Consulte a disponibilidade e valores quando o item retornar ao estoque.
+                </span>
+              </div>
+            ) : p.precoSobConsulta ? (
               <div className="flex items-center gap-3 mt-1 min-h-[60px]">
                 <div className="text-2xl font-bold text-slate-700">Preço sob consulta</div>
               </div>
