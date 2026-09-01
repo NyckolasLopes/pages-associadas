@@ -332,6 +332,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         updatedSelosIds = updatedSelosIds.filter(id => id !== servicoSelo.id);
       }
       finalFormData.selosIds = updatedSelosIds;
+    }
+
     if (finalFormData.alertaRegulatorio && !finalFormData.alertaTexto?.trim()) {
       finalFormData.alertaTexto = "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO.";
     }
