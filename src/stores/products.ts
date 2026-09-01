@@ -285,7 +285,6 @@ export const useAdminProducts = create<ProductsState>()(
           faixa_etaria: formattedProduct.faixaEtaria || null,
           titulo_seo: formattedProduct.seoTitulo || formattedProduct.tituloSeo || null,
           meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
-          eans_secundarios: formattedProduct.eansSecundarios || [],
           alerta_regulatorio: formattedProduct.alertaRegulatorio === true,
           alerta_texto: formattedProduct.alertaTexto || null,
           tipo_receita: formattedProduct.tipoReceita || null,
@@ -295,6 +294,7 @@ export const useAdminProducts = create<ProductsState>()(
           nivel_relevancia: Number(formattedProduct.nivelRelevancia ?? formattedProduct.prioridade) || 0,
           prioridade: Number(formattedProduct.nivelRelevancia ?? formattedProduct.prioridade) || 0,
           imagem_alt: formattedProduct.imagemAlt || null,
+          metadata: metadataPayload,
         });
         
         if (error) {

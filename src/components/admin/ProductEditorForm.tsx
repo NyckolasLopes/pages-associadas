@@ -211,8 +211,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         vitrines: product.vitrines || [],
         filtrosValores: product.filtrosValores || [],
         compreJuntoProdutoId: product.compreJuntoProdutoId || "",
-        alertaRegulatorio: product.alertaRegulatorio ?? false,
-        alertaTexto: product.alertaTexto || "",
+        alertaRegulatorio: product.alertaRegulatorio ?? (product as any).alerta_regulatorio ?? (product as any).metadata?.alerta_regulatorio ?? false,
+        alertaTexto: product.alertaTexto ?? (product as any).alerta_texto ?? (product as any).metadata?.alerta_texto ?? "",
         tipoReceita: product.tipoReceita || "",
         nivelRelevancia: product.nivelRelevancia ?? product.prioridade ?? 0,
         prioridade: product.prioridade ?? product.nivelRelevancia ?? 0,
@@ -892,7 +892,12 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Alerta Regulatório (Texto)</Label>
-                <Textarea value={formData.alertaTexto || (isMedicamento ? '"AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."' : "")} onChange={e => setFormData({...formData, alertaTexto: e.target.value})} className="bg-white" placeholder="Ex: Ao persistirem os sintomas, o médico deverá ser consultado." />
+                <Textarea 
+                  value={formData.alertaTexto ?? ""} 
+                  onChange={e => setFormData({...formData, alertaTexto: e.target.value})} 
+                  className="bg-white" 
+                  placeholder="Ex: AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO." 
+                />
               </div>
             </div>
 
@@ -954,7 +959,16 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               <Switch 
                 id="alertaRegulatorio" 
                 checked={!!formData.alertaRegulatorio} 
-                onCheckedChange={checked => setFormData({...formData, alertaRegulatorio: checked})}
+                onCheckedChange={checked => {
+                  const nextText = (checked && !formData.alertaTexto?.trim())
+                    ? "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."
+                    : formData.alertaTexto;
+                  setFormData({
+                    ...formData, 
+                    alertaRegulatorio: checked,
+                    alertaTexto: nextText
+                  });
+                }}
               />
               <Label htmlFor="alertaRegulatorio" className="font-medium cursor-pointer">Requer Exibição do Alerta Regulatório</Label>
             </div>
