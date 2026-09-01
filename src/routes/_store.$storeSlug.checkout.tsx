@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useEffect, useState, useMemo } from "react";
 import { Lock, Store, Home, User, Truck, CreditCard, Users, QrCode, Clock, CheckCircle2, Banknote, Tag, X, AlertCircle, AlertTriangle, MapPin, Plus, Star, MessageCircle } from "lucide-react";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
+import { PixIcon } from "@/components/ui/pix-icon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import { toast } from "sonner";
@@ -825,7 +826,7 @@ function Checkout() {
                   <label className={`border rounded-lg p-3 cursor-pointer flex flex-col gap-1.5 transition ${paymentMethod === "pix" ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm" : "hover:border-primary/50"}`}>
                     <div className="flex items-center justify-between">
                       <input type="radio" name="payment" checked={paymentMethod === "pix"} onChange={() => setPaymentMethod("pix")} className="accent-primary" />
-                      <QrCode className="w-5 h-5 text-primary" />
+                      <PixIcon className="w-5 h-5 text-[#32BCAD]" />
                     </div>
                     <span className="text-sm font-bold leading-tight mt-1">Pix</span>
                   </label>
@@ -863,7 +864,7 @@ function Checkout() {
                   <label className={`border rounded-lg p-3 cursor-pointer flex flex-col gap-1.5 transition ${paymentMethod === "pix_machine" ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm" : "hover:border-primary/50"}`}>
                     <div className="flex items-center justify-between">
                       <input type="radio" name="payment" checked={paymentMethod === "pix_machine"} onChange={() => setPaymentMethod("pix_machine")} className="accent-primary" />
-                      <QrCode className="w-4 h-4 text-primary" />
+                      <PixIcon className="w-4 h-4 text-[#32BCAD]" />
                     </div>
                     <span className="text-xs font-bold leading-tight mt-1">Pix</span>
                   </label>

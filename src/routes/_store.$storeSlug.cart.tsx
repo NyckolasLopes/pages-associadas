@@ -24,6 +24,7 @@ import {
   Building2, Clock, Edit2
 } from "lucide-react";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
+import { PixIcon } from "@/components/ui/pix-icon";
 import { toast } from "sonner";
 import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
 import { sanitizeText, validatePhone, validateCPF, validateEmail, sanitizeCouponCode } from "@/lib/security";
@@ -1460,40 +1461,96 @@ function CartPage() {
 
                   {selected !== "pickup" && (
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2 animate-in fade-in slide-in-from-top-2">
-                      <p className="text-[11px] text-muted-foreground mb-2">Preencha seu CEP para estimar o valor e o prazo de entrega.</p>
-                      <div className="flex gap-2 mb-2">
-                        <Input 
-                          placeholder="00000-000" 
-                          maxLength={9} 
-                          value={cep} 
-                          disabled={isCalcLoading} 
-                          onChange={(e) => {
-                            let v = e.target.value.replace(/\D/g, "");
-                            if (v.length > 5) v = v.replace(/^(\d{5})(\d)/, "$1-$2");
-                            setCep(v);
-                          }} 
-                        />
-                        <Button variant="outline" disabled={isCalcLoading} onClick={calcFreight}>
-                          {isCalcLoading ? "Calculando..." : "Calcular"}
-                        </Button>
-                      </div>
+                      <p className="text-[11px] text-muted-foreground mb-3 font-medium">Preencha seu CEP para estimar frete e prazo de entrega.</p>
                       
+                      {/* Campo CEP melhorado com botão inline */}
+                      <div className="flex gap-2 mb-2">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="00000-000"
+                            maxLength={9}
+                            value={cep}
+                            disabled={isCalcLoading}
+                            onChange={(e) => {
+                              let v = e.target.value.replace(/\D/g, "");
+                              if (v.length > 5) v = v.replace(/^(\d{5})(\d)/, "$1-$2");
+                              setCep(v);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && cep.replace(/\D/g, "").length === 8) {
+                                calcFreight();
+                              }
+                            }}
+                            className={`
+                              w-full h-11 px-3 pr-10 rounded-lg border text-sm font-medium
+                              focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary
+                              transition-all bg-white
+                              ${isCalcLoading ? "opacity-60 cursor-not-allowed" : ""}
+                              ${freight && freight.filter(f => f.id !== "pickup").length > 0 ? "border-green-400 bg-green-50/50" : "border-slate-300"}
+                            `}
+                          />
+                          {/* Ícone de status à direita do input */}
+                          {isCalcLoading ? (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          ) : freight && freight.filter(f => f.id !== "pickup").length > 0 ? (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                              </svg>
+                            </div>
+                          ) : null}
+                        </div>
+                        
+                        <button
+                          disabled={isCalcLoading || cep.replace(/\D/g, "").length < 8}
+                          onClick={calcFreight}
+                          className={`
+                            h-11 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap shrink-0 border
+                            ${cep.replace(/\D/g, "").length === 8 && !isCalcLoading
+                              ? "bg-primary text-white hover:bg-primary/90 border-primary shadow-sm hover:shadow-md"
+                              : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                            }
+                          `}
+                        >
+                          {isCalcLoading ? (
+                            <span className="flex items-center gap-1.5">
+                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Calculando...
+                            </span>
+                          ) : "Calcular"}
+                        </button>
+                      </div>
+
+                      {/* Botão de localização GPS */}
                       <button 
                         onClick={handleUseLocation} 
                         disabled={isLocating}
-                        className="text-xs text-primary font-bold hover:underline flex items-center gap-1 mt-1 mb-3"
+                        className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:text-primary/80 transition-colors mt-1 mb-3 group"
                       >
-                        <MapPin className="h-3 w-3" />
+                        <div className={`flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors ${isLocating ? "animate-pulse" : ""}`}>
+                          <MapPin className="h-3 w-3 text-primary" />
+                        </div>
                         {isLocating ? "Obtendo localização..." : "Usar minha localização atual"}
                       </button>
                       
+                      {/* Resultados de frete */}
                       {freight && freight.filter(f => f.id !== "pickup").length > 0 ? (
-                        <div className="space-y-2 mt-4">
+                        <div className="space-y-2 mt-3">
+                          <p className="text-[11px] font-semibold text-green-700 flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                            {freight.filter(f => f.id !== "pickup").length} opção(ões) disponível(eis) para {cep}
+                          </p>
                           {freight.filter(f => f.id !== "pickup").map(f => {
                             const Icon = f.icon;
                             const active = selected === f.id || (selected === "delivery_placeholder" && f.id === freight.filter(x => x.id !== "pickup")[0]?.id);
                             return (
-                              <label key={f.id} className={`flex items-center gap-2 border rounded-lg p-2.5 cursor-pointer bg-white ${active ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}>
+                              <label key={f.id} className={`flex items-center gap-2 border rounded-lg p-2.5 cursor-pointer bg-white transition-all ${active ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm" : "hover:border-primary/50 hover:shadow-sm"}`}>
                                 <input type="radio" checked={active} onChange={() => setSelected(f.id)} />
                                 <Icon className="h-4 w-4 text-primary" />
                                 <div className="flex-1">
@@ -1506,9 +1563,14 @@ function CartPage() {
                           })}
                         </div>
                       ) : (
-                         cep.replace(/\D/g, "").length >= 8 && !isCalcLoading ? (
-                           <div className="text-sm text-red-600 font-medium mt-3">Não há opções de entrega disponíveis para este CEP.</div>
-                         ) : null
+                        cep.replace(/\D/g, "").length >= 8 && !isCalcLoading ? (
+                          <div className="flex items-start gap-2 text-sm text-red-600 font-medium mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                            <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                            </svg>
+                            <span>Nenhuma opção de entrega disponível para o CEP <strong>{cep}</strong>. Tente outro endereço ou escolha retirar na loja.</span>
+                          </div>
+                        ) : null
                       )}
                     </div>
                   )}
@@ -1812,7 +1874,7 @@ function CartPage() {
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">Como prefere pagar?</div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { id: "pix", label: "PIX", icon: Sparkles },
+                  { id: "pix", label: "PIX", icon: PixIcon },
                   { id: "cartao_credito", label: "Crédito", icon: CreditCard },
                   { id: "cartao_debito", label: "Débito", icon: CreditCard },
                   { id: "dinheiro", label: "Dinheiro", icon: DollarSign },
@@ -1824,9 +1886,9 @@ function CartPage() {
                       key={pm.id}
                       type="button"
                       onClick={() => setPaymentMethod(pm.id as any)}
-                      className={`border rounded-lg p-2 text-xs font-bold flex flex-col items-center gap-1 transition-all ${active ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20" : "bg-white text-slate-700 hover:bg-slate-100"}`}
+                      className={`border rounded-lg p-2 text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${active ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 shadow-xs" : "bg-white text-slate-700 hover:bg-slate-100"}`}
                     >
-                      <Icon className="h-4 w-4 text-emerald-600" />
+                      <Icon className={`h-4 w-4 ${pm.id === "pix" ? "text-[#32BCAD]" : "text-emerald-600"}`} />
                       <span>{pm.label}</span>
                     </button>
                   );
