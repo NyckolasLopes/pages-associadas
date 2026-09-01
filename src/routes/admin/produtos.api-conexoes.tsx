@@ -166,7 +166,7 @@ function ApiConexoes() {
     const lastPing = type === 'stock_price' ? conn?.stock_price_last_ping : type === 'catalog' ? conn?.catalog_last_ping : conn?.orders_last_ping;
     
     // Construct the full URL for the API endpoint
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL || "https://uqwxpoxwwvyqnwgquxit.supabase.co";
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL || "http://20.7.19.49:3006";
     const rpcEndpoint = type === 'stock_price' ? 'sync_estoque_preco_loja' : type === 'catalog' ? 'sync_produtos_loja' : 'sync_pedidos_loja';
     const fullApiUrl = hash ? `${baseUrl}/rest/v1/rpc/${rpcEndpoint}?apikey=${hash}` : null;
 

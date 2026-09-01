@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient('https://epnuvpyuodpsbcqdxlmm.supabase.co', 'sb_publishable_R3vpPxcidobuL0_PoGnpKQ_ZdZyesJ1');
+const supabase = createClient('http://20.7.19.49:3006', 'sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU');
 
 async function run() {
   const { data, error } = await supabase

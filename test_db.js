@@ -1,4 +1,4 @@
 
 const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient('https://epnuvpyuodpsbcqdxlmm.supabase.co', 'YOUR_KEY_HERE'); // I'll fetch the key from the env or env file
+const supabase = createClient('http://20.7.19.49:3006', 'sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU');
 
