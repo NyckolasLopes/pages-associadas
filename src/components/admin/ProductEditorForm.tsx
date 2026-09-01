@@ -46,7 +46,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const [saveStep, setSaveStep] = useState<"idle" | "saving" | "syncing" | "done">("idle");
   const { pharmacies, currentUser, grupos } = useAdmin();
   const allSelos = useSelos(s => s.selos);
-  const isGlobalAdmin = currentUser?.proprietario || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total === true;
+  const isGlobalAdmin = !lojaId || currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || currentUser?.lojasVinculadas?.length === 0 || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total === true;
   const currentLoja = lojaId ? pharmacies.find(l => l.id === lojaId) : null;
   const canOfferServices = (isGlobalAdmin && !lojaId) ? true : currentLoja?.offersServices !== false;
   const { vitrines, customProducts } = useAdminProducts();
@@ -213,9 +213,13 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         compreJuntoProdutoId: product.compreJuntoProdutoId || "",
         alertaRegulatorio: product.alertaRegulatorio ?? (product as any).alerta_regulatorio ?? (product as any).metadata?.alerta_regulatorio ?? false,
         alertaTexto: product.alertaTexto ?? (product as any).alerta_texto ?? (product as any).metadata?.alerta_texto ?? "",
-        tipoReceita: product.tipoReceita || "",
-        nivelRelevancia: product.nivelRelevancia ?? product.prioridade ?? 0,
-        prioridade: product.prioridade ?? product.nivelRelevancia ?? 0,
+        tipoReceita: product.tipoReceita ?? (product as any).tipo_receita ?? (product as any).metadata?.tipo_receita ?? "",
+        tipoMedicamento: product.tipoMedicamento ?? (product as any).tipo_medicamento ?? (product as any).metadata?.tipo_medicamento ?? "",
+        classificacaoRegistro: product.classificacaoRegistro ?? (product as any).classificacao_registro ?? (product as any).metadata?.classificacao_registro ?? "",
+        classeTerapeutica: product.classeTerapeutica ?? (product as any).classe_terapeutica ?? (product as any).metadata?.classe_terapeutica ?? "",
+        indicacaoTerapeutica: product.indicacaoTerapeutica ?? (product as any).indicacao_terapeutica ?? (product as any).metadata?.indicacao_terapeutica ?? "",
+        nivelRelevancia: product.nivelRelevancia ?? product.prioridade ?? (product as any).nivel_relevancia ?? (product as any).prioridade ?? 0,
+        prioridade: product.prioridade ?? product.nivelRelevancia ?? (product as any).prioridade ?? (product as any).nivel_relevancia ?? 0,
       });
     }
   }, [product]);
