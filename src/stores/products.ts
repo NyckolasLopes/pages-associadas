@@ -187,10 +187,14 @@ export const useAdminProducts = create<ProductsState>()(
           selosIds.push(...filtered);
         }
 
+        const relev = Math.max(1, Math.min(10, Math.round(Number(p.nivelRelevancia ?? p.prioridade) || 1)));
+
         const formattedProduct: Produto = { 
           ...p, 
           generico: isGen,
           selosIds,
+          nivelRelevancia: relev,
+          prioridade: relev,
           nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "" 
         };
         
@@ -228,8 +232,8 @@ export const useAdminProducts = create<ProductsState>()(
           alerta_regulatorio: formattedProduct.alertaRegulatorio || false,
           caracteristicas: formattedProduct.caracteristicas || [],
           ncm: formattedProduct.ncm || null,
-          nivel_relevancia: formattedProduct.nivelRelevancia || 0,
-          prioridade: formattedProduct.nivelRelevancia || formattedProduct.prioridade || 0,
+          nivel_relevancia: relev,
+          prioridade: relev,
           termos_pesquisa: formattedProduct.termosPesquisa || null,
           seo_titulo: formattedProduct.seoTitulo || formattedProduct.tituloSeo || null,
           titulo_seo: formattedProduct.seoTitulo || formattedProduct.tituloSeo || null,

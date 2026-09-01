@@ -1075,13 +1075,34 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
 
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Nível de Relevância (Prioridade)</Label>
-                <NumericInput disabled={!isGlobalAdmin} 
-                  allowDecimals={false}
-                  value={formData.nivelRelevancia} 
-                  onChange={val => setFormData({...formData, nivelRelevancia: val || 0})} 
-                  className="bg-white" 
-                />
+                <div className="flex items-center justify-between">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Nível de Relevância (Prioridade)</Label>
+                  <span className="text-[11px] text-slate-400 font-bold">Escala 1 a 10</span>
+                </div>
+                <Select 
+                  disabled={!isGlobalAdmin}
+                  value={String(formData.nivelRelevancia || formData.prioridade || 1)} 
+                  onValueChange={v => {
+                    const num = parseInt(v, 10) || 1;
+                    setFormData({ ...formData, nivelRelevancia: num, prioridade: num });
+                  }}
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Selecione a prioridade (1 a 10)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 - Máxima Prioridade (Topo da Busca / Destaque)</SelectItem>
+                    <SelectItem value="9">9 - Prioridade Altíssima</SelectItem>
+                    <SelectItem value="8">8 - Prioridade Muito Alta</SelectItem>
+                    <SelectItem value="7">7 - Prioridade Alta</SelectItem>
+                    <SelectItem value="6">6 - Prioridade Média-Alta</SelectItem>
+                    <SelectItem value="5">5 - Prioridade Média</SelectItem>
+                    <SelectItem value="4">4 - Prioridade Moderada</SelectItem>
+                    <SelectItem value="3">3 - Prioridade Baixa</SelectItem>
+                    <SelectItem value="2">2 - Prioridade Muito Baixa</SelectItem>
+                    <SelectItem value="1">1 - Menor Prioridade</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
