@@ -30,6 +30,12 @@ function scheduleSupabaseWrite(name: string, parsedValue: any) {
     if (val === undefined) return;
 
     try {
+      // Somente tenta salvar estado compartilhado no banco se houver sessão autenticada
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        return;
+      }
+
       const { error } = await supabase
         // @ts-ignore
         .from('app_state')
@@ -44,7 +50,7 @@ function scheduleSupabaseWrite(name: string, parsedValue: any) {
         console.error(`Erro ao salvar estado '${name}' no Supabase:`, error);
       }
     } catch (err) {
-      console.error(`Exceção ao gravar '${name}' no Supabase:`, err);
+      // Fallback silencioso
     }
   }, 2000); // 2 segundos de debounce
 

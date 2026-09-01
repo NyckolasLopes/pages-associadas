@@ -968,12 +968,11 @@ function StoreHome() {
     };
   }, [loja, storeSlug]);
 
-  if (storeSlug === "loja-padrao") {
-    if (typeof window !== "undefined") {
+  useEffect(() => {
+    if (storeSlug === "loja-padrao" && typeof window !== "undefined") {
       window.location.replace("/");
-      return null;
     }
-  }
+  }, [storeSlug]);
 
   if (!loja && pharmacies.length > 0 && pharmaciesLoaded) {
     return <NotFound type="page" />;
