@@ -139,19 +139,20 @@ export const useLive = create<LiveStore>((set, get) => ({
   },
 
   initPresence: (sessionId: string, lojaId?: string) => {
-    const { channel: existingChannel } = get();
-    if (existingChannel) {
-      return;
-    }
+    try {
+      const { channel: existingChannel } = get();
+      if (existingChannel) {
+        return;
+      }
 
-    if (supabase) {
-      const channel = supabase.channel('online-visitors', {
-        config: {
-          presence: {
-            key: sessionId,
+      if (supabase) {
+        const channel = supabase.channel('online-visitors', {
+          config: {
+            presence: {
+              key: sessionId,
+            },
           },
-        },
-      });
+        });
 
       channel.on('presence', { event: 'sync' }, () => {
         const newState = channel!.presenceState();
@@ -313,7 +314,10 @@ export const useLive = create<LiveStore>((set, get) => ({
 
       set({ channel });
     }
-  },
+  } catch (err) {
+    console.warn('[Live Presence] Falha silenciosa ao inicializar canais de presença:', err);
+  }
+},
 
   updateMyCity: async () => {
     const { channel, mySessionId } = get();

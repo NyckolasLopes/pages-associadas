@@ -27,6 +27,92 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 
+// Safe WebSocket wrapper to prevent browser Mixed Content crashes when connecting to ws:// from https://
+function getSafeWebSocketTransport() {
+  if (typeof window === 'undefined') return undefined;
+  
+  return class SafeWebSocket {
+    private ws: WebSocket | null = null;
+    public readyState: number = 3; // CLOSED
+    public onopen: ((ev: Event) => any) | null = null;
+    public onclose: ((ev: CloseEvent) => any) | null = null;
+    public onerror: ((ev: Event) => any) | null = null;
+    public onmessage: ((ev: MessageEvent) => any) | null = null;
+
+    constructor(url: string | URL, protocols?: string | string[]) {
+      const urlStr = String(url);
+      const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      
+      if (isHttpsPage && urlStr.startsWith('ws://')) {
+        console.warn(
+          '[Supabase Realtime] Conexão WebSocket insegura (ws://) bloqueada pelo navegador em página HTTPS. ' +
+          'Para habilitar o Realtime em produção, configure SSL/HTTPS no seu servidor Supabase.'
+        );
+        this.readyState = 3;
+        setTimeout(() => {
+          if (this.onerror) this.onerror(new Event('error'));
+          if (this.onclose) this.onclose(new CloseEvent('close', { code: 1000, reason: 'Insecure WS blocked on HTTPS', wasClean: true }));
+        }, 0);
+        return;
+      }
+
+      try {
+        const wsInstance = new WebSocket(url, protocols);
+        this.ws = wsInstance;
+        this.readyState = wsInstance.readyState;
+
+        wsInstance.onopen = (ev) => {
+          this.readyState = wsInstance.readyState;
+          if (this.onopen) this.onopen(ev);
+        };
+        wsInstance.onclose = (ev) => {
+          this.readyState = wsInstance.readyState;
+          if (this.onclose) this.onclose(ev);
+        };
+        wsInstance.onerror = (ev) => {
+          this.readyState = wsInstance.readyState;
+          if (this.onerror) this.onerror(ev);
+        };
+        wsInstance.onmessage = (ev) => {
+          if (this.onmessage) this.onmessage(ev);
+        };
+      } catch (err) {
+        console.warn('[Supabase Realtime] Falha ao instanciar WebSocket:', err);
+        this.readyState = 3;
+        setTimeout(() => {
+          if (this.onerror) this.onerror(new Event('error'));
+          if (this.onclose) this.onclose(new CloseEvent('close', { code: 1006, reason: 'Failed to construct WebSocket', wasClean: false }));
+        }, 0);
+      }
+    }
+
+    send(data: any) {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(data);
+      }
+    }
+
+    close(code?: number, reason?: string) {
+      if (this.ws) {
+        this.ws.close(code, reason);
+      }
+      this.readyState = 3;
+    }
+
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
+      if (this.ws) {
+        this.ws.addEventListener(type, listener, options);
+      }
+    }
+
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions) {
+      if (this.ws) {
+        this.ws.removeEventListener(type, listener, options);
+      }
+    }
+  };
+}
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
@@ -43,6 +129,8 @@ function createSupabaseClient() {
     throw new Error(message);
   }
 
+  const safeTransport = getSafeWebSocketTransport();
+
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
@@ -51,6 +139,9 @@ function createSupabaseClient() {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
+    },
+    realtime: {
+      transport: safeTransport as any,
     }
   });
 }
