@@ -1,8 +1,6 @@
-import { useActivePharmacy, safeSlugify } from "@/hooks/useActivePharmacy";
-import { Link } from "@tanstack/react-router";
-import { ChevronLeft, SearchX, FileQuestion, PackageX, LayoutGrid } from "lucide-react";
-import mascot404 from "@/assets/404-mascot.png";
-import mascotNotFound from "@/assets/produto-nao-encontrado.png";
+import error404Img from "@/assets/error-404.png";
+import produtoNaoEncontradoImg from "@/assets/produto-nao-encontrado.png";
+import { ArrowLeft } from "lucide-react";
 
 interface NotFoundProps {
   type?: "page" | "product" | "category" | "showcase";
@@ -11,75 +9,28 @@ interface NotFoundProps {
 }
 
 export function NotFound({ type = "page", title, description }: NotFoundProps) {
-  const activePharmacy = useActivePharmacy();
-
-  let storeSlug = "";
-  if (activePharmacy?.slug) {
-    storeSlug = safeSlugify(activePharmacy.slug);
-  } else if (activePharmacy?.nome) {
-    storeSlug = safeSlugify(activePharmacy.nome);
-  } else {
-    try {
-      const lastSlug = sessionStorage.getItem('fa-last-store-slug');
-      if (lastSlug) storeSlug = lastSlug;
-    } catch {}
-    if (!storeSlug && typeof window !== "undefined") {
-      const parts = window.location.pathname.split("/").filter(Boolean);
-      if (parts[0] && !["admin", "login", "cadastro", "reset-password"].includes(parts[0])) {
-        storeSlug = safeSlugify(parts[0]);
-      }
-    }
-  }
-
-  const getMascot = () => {
-    return type === "product" ? mascotNotFound : mascot404;
-  };
-
-  const defaultTitle = {
-    page: "Página não encontrada",
-    product: "Produto não encontrado",
-    category: "Categoria não encontrada",
-    showcase: "Vitrine não encontrada"
-  }[type];
-
-  const defaultDescription = {
-    page: "Desculpe, não conseguimos encontrar a página que você está procurando.",
-    product: "O produto que você procura não existe ou foi removido do catálogo.",
-    category: "A categoria solicitada não foi encontrada.",
-    showcase: "A vitrine de produtos não está mais disponível."
-  }[type];
-
-  const finalTitle = title || defaultTitle;
-  const finalDescription = description || defaultDescription;
+  const isProduct = type === "product";
+  const imgSrc = isProduct ? produtoNaoEncontradoImg : error404Img;
+  const altText = isProduct ? "Produto não encontrado" : "Página não encontrada - 404";
 
   return (
-    <div className="flex flex-col items-center justify-center text-center p-8 bg-slate-50 min-h-[60vh]">
-      <div className="max-w-md w-full flex flex-col items-center">
+    <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none">
+      <div className="max-w-md sm:max-w-lg w-full flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
         <img 
-          src={getMascot()} 
-          alt={finalTitle} 
-          className="w-full max-w-[280px] sm:max-w-xs h-auto mb-6 drop-shadow-md object-contain" 
+          src={imgSrc} 
+          alt={altText} 
+          className="w-full max-w-[340px] sm:max-w-[420px] h-auto object-contain drop-shadow-sm pointer-events-none"
         />
         
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">{finalTitle}</h1>
-        <p className="text-sm text-slate-500 mb-8">{finalDescription}</p>
-        
-        {storeSlug ? (
-          <Link 
-            to="/$storeSlug" 
-            params={{ storeSlug }}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium flex items-center justify-center gap-2 px-6 py-3 rounded-md transition-all hover:scale-105 shadow-sm w-full sm:w-auto"
+        <div className="mt-8 flex flex-col items-center gap-3 w-full sm:w-auto">
+          <a 
+            href="/login"
+            className="bg-[#00B5AD] hover:bg-[#009E97] text-white font-bold text-base px-8 py-3.5 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2.5 w-full sm:w-auto"
           >
-            <ChevronLeft className="w-5 h-5" /> Voltar para a loja
-          </Link>
-        ) : (
-          <Link 
-            to="/" 
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium flex items-center justify-center gap-2 px-6 py-3 rounded-md transition-all hover:scale-105 shadow-sm w-full sm:w-auto"
-          >
-            <ChevronLeft className="w-5 h-5" /> Voltar para o início
-          </Link>
-        )}
+            <ArrowLeft className="w-5 h-5" />
+            Voltar para a rede
+          </a>
+        </div>
       </div>
     </div>
   );

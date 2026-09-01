@@ -6,6 +6,7 @@ import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
 import { useAuth } from "@/stores/auth";
+import { NotFound } from "@/components/storefront/NotFound";
 
 import { resetStoreTheme } from "@/lib/themeUtils";
 
@@ -246,7 +247,9 @@ function StoreLayout() {
     };
   }, [activePharmacy?.faviconUrl, activePharmacy?.isPleno, activePharmacy?.slug, activePharmacy?.nome, activePharmacy?.categoriaAssociado]);
 
-  // ─── Early returns (APÓS todos os hooks) ───────────────────────────────────
+  if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && pharmaciesLoaded && pharmacies.length > 0 && !activePharmacy) {
+    return <NotFound type="page" />;
+  }
 
   if (activePharmacy?.virtualStoreStatus === "Inativa") {
     return (
