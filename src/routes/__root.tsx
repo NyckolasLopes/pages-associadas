@@ -39,18 +39,47 @@ export function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const isChunkError = Boolean(
+    error?.message && (
+      error.message.includes("dynamically imported module") ||
+      error.message.includes("Importing a module script failed") ||
+      error.message.includes("Loading chunk") ||
+      error.message.includes("Failed to fetch")
+    )
+  );
+
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+
+    if (isChunkError && typeof window !== "undefined") {
+      const now = Date.now();
+      const lastReload = parseInt(sessionStorage.getItem("last_chunk_reload") || "0", 10);
+      if (now - lastReload > 10000) {
+        sessionStorage.setItem("last_chunk_reload", now.toString());
+        window.location.reload();
+      }
+    }
+  }, [error, isChunkError]);
+
+  const handleRetry = () => {
+    if (isChunkError && typeof window !== "undefined") {
+      window.location.reload();
+    } else {
+      router.invalidate();
+      reset();
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-2xl text-center w-full px-6">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Página não encontrada
+          {isChunkError ? "Nova Versão Disponível" : "Página não encontrada"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Ocorreu um erro ou a página que você tentou acessar não existe.
+          {isChunkError 
+            ? "Uma nova versão do sistema foi disponibilizada. Clique no botão abaixo para atualizar."
+            : "Ocorreu um problema e a página parou de responder. O seu acesso não foi perdido."}
         </p>
         <div className="mt-4 p-4 bg-red-50 text-red-900 border border-red-200 rounded text-left overflow-auto text-xs font-mono w-full">
           <strong>Erro:</strong> {error?.message}
@@ -58,20 +87,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           <strong>Detalhes:</strong>
           <pre className="whitespace-pre-wrap">{error?.stack}</pre>
         </div>
-        <div className="mt-4 p-4 text-xs text-left text-red-500 bg-red-50 rounded overflow-auto border border-red-200 max-h-[300px]">
-          <strong>{error.name}:</strong> {error.message}
-          <br/><br/>
-          <pre>{error.stack}</pre>
-        </div>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
+            onClick={handleRetry}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Tentar novamente
+            {isChunkError ? "Recarregar e Atualizar" : "Tentar novamente"}
           </button>
           <a
             href="/"
@@ -295,17 +316,37 @@ function RootComponent() {
   useEffect(() => {
     // Atualização Automática Silenciosa: se o chunk falhar (ex: deploy ocorreu enquanto usuário navegava)
     const handleDynamicImportError = (e: any) => {
-      if (e.reason?.message?.includes("Failed to fetch dynamically imported module")) {
-        e.preventDefault();
-        window.location.reload();
+      const msg = e?.reason?.message || e?.message || "";
+      if (
+        msg.includes("Failed to fetch dynamically imported module") ||
+        msg.includes("Importing a module script failed") ||
+        msg.includes("Loading chunk") ||
+        msg.includes("Failed to fetch")
+      ) {
+        if (e.preventDefault) e.preventDefault();
+        const now = Date.now();
+        const lastReload = parseInt(sessionStorage.getItem("last_chunk_reload") || "0", 10);
+        if (now - lastReload > 10000) {
+          sessionStorage.setItem("last_chunk_reload", now.toString());
+          window.location.reload();
+        }
       }
     };
     window.addEventListener("unhandledrejection", handleDynamicImportError);
-    window.addEventListener("vite:preloadError", () => window.location.reload());
+    window.addEventListener("error", handleDynamicImportError);
+    window.addEventListener("vite:preloadError", () => {
+      const now = Date.now();
+      const lastReload = parseInt(sessionStorage.getItem("last_chunk_reload") || "0", 10);
+      if (now - lastReload > 10000) {
+        sessionStorage.setItem("last_chunk_reload", now.toString());
+        window.location.reload();
+      }
+    });
 
     if (!customJs) {
       return () => {
         window.removeEventListener("unhandledrejection", handleDynamicImportError);
+        window.removeEventListener("error", handleDynamicImportError);
       };
     }
     
@@ -315,6 +356,7 @@ function RootComponent() {
     return () => {
       document.body.removeChild(script);
       window.removeEventListener("unhandledrejection", handleDynamicImportError);
+      window.removeEventListener("error", handleDynamicImportError);
     };
   }, [customJs]);
 

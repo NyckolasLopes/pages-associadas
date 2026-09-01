@@ -680,27 +680,50 @@ function AdminLayout() {
           <CatchBoundary
             getResetKey={() => "admin-error"}
             onCatch={(error) => console.error("Admin Page Error:", error)}
-            errorComponent={({ error, reset }) => (
-              <div className="flex flex-col items-center justify-center h-full max-w-lg mx-auto text-center p-8">
-                <div className="h-16 w-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
-                  <AlertTriangle className="h-8 w-8" />
-                </div>
-                <h2 className="text-xl font-bold text-slate-800 mb-2">Erro ao carregar a página</h2>
-                <p className="text-slate-600 mb-6 text-sm">
-                  Ocorreu um problema e a página parou de responder. O seu acesso não foi perdido.
-                </p>
-                
-                <div className="w-full bg-slate-100 text-slate-500 p-4 rounded-lg text-left overflow-auto text-xs font-mono mb-6 max-h-[150px]">
-                  {error.message || "Erro desconhecido. Tente recarregar."}
-                </div>
+            errorComponent={({ error, reset }) => {
+              const isChunkError = Boolean(
+                error?.message && (
+                  error.message.includes("dynamically imported module") ||
+                  error.message.includes("Importing a module script failed") ||
+                  error.message.includes("Loading chunk") ||
+                  error.message.includes("Failed to fetch")
+                )
+              );
 
-                <div className="flex gap-4 w-full justify-center">
-                  <Button onClick={reset} size="lg" className="w-full">
-                    Tentar Novamente
-                  </Button>
+              const handleRetry = () => {
+                if (isChunkError && typeof window !== "undefined") {
+                  window.location.reload();
+                } else {
+                  reset();
+                }
+              };
+
+              return (
+                <div className="flex flex-col items-center justify-center h-full max-w-lg mx-auto text-center p-8">
+                  <div className="h-16 w-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
+                    <AlertTriangle className="h-8 w-8" />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-800 mb-2">
+                    {isChunkError ? "Nova Versão do Sistema Disponível" : "Erro ao carregar a página"}
+                  </h2>
+                  <p className="text-slate-600 mb-6 text-sm">
+                    {isChunkError
+                      ? "O sistema foi atualizado no servidor com novos recursos. Clique no botão abaixo para recarregar a versão mais recente."
+                      : "Ocorreu um problema e a página parou de responder. O seu acesso não foi perdido."}
+                  </p>
+                  
+                  <div className="w-full bg-slate-100 text-slate-500 p-4 rounded-lg text-left overflow-auto text-xs font-mono mb-6 max-h-[150px]">
+                    {error?.message || "Erro desconhecido. Tente recarregar."}
+                  </div>
+
+                  <div className="flex gap-4 w-full justify-center">
+                    <Button onClick={handleRetry} size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold">
+                      {isChunkError ? "Recarregar e Atualizar" : "Tentar Novamente"}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            }}
           >
             <Outlet />
           </CatchBoundary>
