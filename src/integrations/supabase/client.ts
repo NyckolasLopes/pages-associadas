@@ -16,12 +16,13 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
 
-    // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === `Bearer ${supabaseKey}`) {
-      headers.delete('Authorization');
+    if (!headers.has('apikey')) {
+      headers.set('apikey', supabaseKey);
+    }
+    if (!headers.has('Authorization') || !headers.get('Authorization')) {
+      headers.set('Authorization', `Bearer ${supabaseKey}`);
     }
 
-    headers.set('apikey', supabaseKey);
     return fetch(input, { ...init, headers });
   };
 }
@@ -43,15 +44,11 @@ function getSafeWebSocketTransport() {
       const urlStr = String(url);
       const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:';
       
-      if (isHttpsPage && urlStr.startsWith('ws://')) {
-        console.warn(
-          '[Supabase Realtime] Conexão WebSocket insegura (ws://) bloqueada pelo navegador em página HTTPS. ' +
-          'Para habilitar o Realtime em produção, configure SSL/HTTPS no seu servidor Supabase.'
-        );
+      // If we are on HTTPS and WebSocket is ws:// or points to HTTP proxy, gracefully bypass
+      if (urlStr.includes('/api/supabase') || (isHttpsPage && urlStr.startsWith('ws://')) || (isHttpsPage && urlStr.includes(window.location.host))) {
         this.readyState = 3;
         setTimeout(() => {
-          if (this.onerror) this.onerror(new Event('error'));
-          if (this.onclose) this.onclose(new CloseEvent('close', { code: 1000, reason: 'Insecure WS blocked on HTTPS', wasClean: true }));
+          if (this.onclose) this.onclose(new CloseEvent('close', { code: 1000, reason: 'Realtime disabled over HTTP/proxy', wasClean: true }));
         }, 0);
         return;
       }

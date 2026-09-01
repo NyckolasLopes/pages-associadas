@@ -39,6 +39,14 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         }
       });
 
+      const defaultKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      if (!forwardHeaders.has("apikey")) {
+        forwardHeaders.set("apikey", defaultKey);
+      }
+      if (!forwardHeaders.has("authorization") || !forwardHeaders.get("authorization")) {
+        forwardHeaders.set("authorization", `Bearer ${defaultKey}`);
+      }
+
       const body = request.method !== "GET" && request.method !== "HEAD" 
         ? await request.arrayBuffer() 
         : undefined;

@@ -219,7 +219,7 @@ function StoreLayout() {
     const manifest = {
       name: appName,
       short_name: appName,
-      start_url: `/${activePharmacy.slug || ""}`,
+      start_url: typeof window !== 'undefined' ? `${window.location.origin}/${activePharmacy.slug || ""}` : `/${activePharmacy.slug || ""}`,
       display: "standalone",
       background_color: "#ffffff",
       theme_color: "#00B5AD",
