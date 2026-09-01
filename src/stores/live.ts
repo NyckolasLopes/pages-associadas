@@ -36,6 +36,8 @@ export interface VisitorInfo {
   cidade: CIDADES_TYPE;
   expiresAt: number;
   lojaId?: string;
+  pagina?: string;
+  path?: string;
 }
 
 export interface LojaAcessoStat {
@@ -72,7 +74,6 @@ export const useLive = create<LiveStore>((set, get) => ({
 
   fetchRealAcessos: async () => {
     try {
-      // Puxar do banco real e calcular total, mes, hoje por loja e global.
       const { data, error } = await supabase.from('site_acessos').select('*');
       if (error) {
         console.error("ERRO AO BUSCAR ACESSOS (Possível bloqueio de RLS):", error);
@@ -107,26 +108,51 @@ export const useLive = create<LiveStore>((set, get) => ({
     }
   },
 
-  initPresence: (sessionId: string, lojaId?: string) => {
-    let channel = get().channel;
-    
-    if (channel) {
-      // Se já temos um canal e a cidade, apenas atualizamos o status de presence
-      const { myCidade } = get();
-      if (myCidade) {
-        channel.track({
-          sessionId,
-          lojaId,
-          cidade: myCidade,
-          onlineAt: new Date().toISOString()
-        }).catch(console.error);
+  recordLojaAccess: async (lojaId: string) => {
+    try {
+      const { error } = await supabase.from('site_acessos').insert({
+        loja_id: lojaId,
+        created_at: new Date().toISOString()
+      });
+      if (error) {
+        console.error("Erro ao registrar acesso no DB (Verificar RLS):", error);
       }
+    } catch (e) {
+      console.error("Falha ao registrar acesso:", e);
+    }
+
+    set((state) => {
+      const current = state.lojasAcessos[lojaId] || { total: 0, mes: 0, hoje: 0, lastAccess: 0 };
+      return {
+        totalAcessos: state.totalAcessos + 1,
+        lojasAcessos: {
+          ...state.lojasAcessos,
+          [lojaId]: {
+            total: current.total + 1,
+            mes: current.mes + 1,
+            hoje: current.hoje + 1,
+            lastAccess: Date.now()
+          }
+        }
+      };
+    });
+  },
+
+  initPresence: (sessionId: string, lojaId?: string) => {
+    const { channel: existingChannel } = get();
+    if (existingChannel) {
       return;
     }
 
-    if (!channel) {
-      channel = supabase.channel('online-visitors');
-      
+    if (supabase) {
+      const channel = supabase.channel('online-visitors', {
+        config: {
+          presence: {
+            key: sessionId,
+          },
+        },
+      });
+
       channel.on('presence', { event: 'sync' }, () => {
         const newState = channel!.presenceState();
         const activeVisitors: VisitorInfo[] = [];
@@ -142,7 +168,9 @@ export const useLive = create<LiveStore>((set, get) => ({
                 sessionId: sid,
                 cidade: pres.cidade,
                 expiresAt: Date.now() + 60000,
-                lojaId: pres.lojaId
+                lojaId: pres.lojaId,
+                pagina: pres.pagina || (pres.path?.includes('/carrinho') ? 'Carrinho' : pres.path?.includes('/produto') ? 'Produto' : 'Início / Loja'),
+                path: pres.path,
               });
             }
           });
@@ -257,10 +285,27 @@ export const useLive = create<LiveStore>((set, get) => ({
 
           set({ myCidade: realCity, mySessionId: sessionId });
 
+          const getPageInfo = () => {
+            if (typeof window === 'undefined') return { pagina: "Início", path: "/" };
+            const p = window.location.pathname;
+            if (p.includes('/carrinho') || p.includes('/cart')) return { pagina: "Carrinho", path: p };
+            if (p.includes('/checkout')) return { pagina: "Checkout", path: p };
+            if (p.includes('/produto/') || p.includes('/p/')) return { pagina: "Página de Produto", path: p };
+            if (p.includes('/c/')) return { pagina: "Categoria", path: p };
+            if (p.includes('/v/')) return { pagina: "Vitrine", path: p };
+            if (p.includes('/busca') || p.includes('/search')) return { pagina: "Busca", path: p };
+            if (p.includes('/painel') || p.includes('/admin')) return { pagina: "Painel Admin", path: p };
+            return { pagina: "Início / Loja", path: p };
+          };
+
+          const pInfo = getPageInfo();
+
           await channel!.track({
             sessionId,
             lojaId,
             cidade: realCity,
+            pagina: pInfo.pagina,
+            path: pInfo.path,
             onlineAt: new Date().toISOString()
           });
         }

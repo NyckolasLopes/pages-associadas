@@ -64,7 +64,7 @@ function AoVivo() {
   };
 
   const topCidades = useMemo(() => {
-    const cityMap: Record<string, { nome: string; uf: string; acessos: number; lojas: Set<string> }> = {};
+    const cityMap: Record<string, { nome: string; uf: string; acessos: number; lojas: Set<string>; paginas: Record<string, number> }> = {};
     
     visitors.forEach((v: any) => {
       if (!v?.cidade?.nome) return;
@@ -73,12 +73,14 @@ function AoVivo() {
       const key = nome.toLowerCase().trim();
       
       if (!cityMap[key]) {
-        cityMap[key] = { nome, uf, acessos: 0, lojas: new Set() };
+        cityMap[key] = { nome, uf, acessos: 0, lojas: new Set(), paginas: {} };
       }
       cityMap[key].acessos += 1;
       if (v.lojaId) {
         cityMap[key].lojas.add(v.lojaId);
       }
+      const pag = v.pagina || (v.path?.includes('/carrinho') ? 'Carrinho' : v.path?.includes('/produto') ? 'Produto' : 'Início / Loja');
+      cityMap[key].paginas[pag] = (cityMap[key].paginas[pag] || 0) + 1;
     });
 
     return Object.values(cityMap)
@@ -88,7 +90,7 @@ function AoVivo() {
         const lojaId = data.lojas.size === 1 
           ? Array.from(data.lojas)[0] 
           : (data.lojas.size > 1 ? `${data.lojas.size} unidades ativas` : undefined);
-        return { nome: data.nome, uf, acessos: data.acessos, lojaId };
+        return { nome: data.nome, uf, acessos: data.acessos, lojaId, paginas: data.paginas };
       })
       .sort((a, b) => b.acessos - a.acessos)
       .slice(0, 6);
@@ -134,6 +136,9 @@ function AoVivo() {
     .reduce((acc, p) => acc + (Number(p.valores?.total) || 0), 0);
 
   const valorVendido = faturamentoHoje.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const carrinhoCount = visitors.filter(v => v.pagina === "Carrinho" || v.path?.includes("/carrinho") || v.path?.includes("/checkout")).length;
+  const nasLojasCount = Math.max(0, visitors.length - carrinhoCount);
 
   return (
     <div className="space-y-4">
@@ -184,7 +189,7 @@ function AoVivo() {
       </div>
 
       {/* Left Panels */}
-      <div className="absolute top-6 bottom-6 left-6 flex flex-col gap-4 w-72 z-20 overflow-y-auto pr-2 pb-2" style={{ scrollbarWidth: 'none' }}>
+      <div className="absolute top-6 bottom-6 left-6 flex flex-col gap-4 w-80 z-20 overflow-y-auto pr-2 pb-2" style={{ scrollbarWidth: 'none' }}>
         
         {/* Panel 1: Online stats */}
         <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-5 space-y-5 transition-all">
@@ -204,11 +209,11 @@ function AoVivo() {
           <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center">
               <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Nas Lojas</div>
-              <div className="font-black text-slate-700 text-xl">{Math.max(0, visitors.length - Math.floor(visitors.length / 3))}</div>
+              <div className="font-black text-slate-700 text-xl">{nasLojasCount}</div>
             </div>
             <div className="bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100 text-center">
               <div className="text-[10px] text-emerald-600 uppercase tracking-wider font-bold mb-0.5">Carrinho</div>
-              <div className="font-black text-emerald-700 text-xl">{Math.floor(visitors.length / 3)}</div>
+              <div className="font-black text-emerald-700 text-xl">{carrinhoCount}</div>
             </div>
           </div>
         </div>
@@ -233,17 +238,33 @@ function AoVivo() {
           ) : (
             <div className="space-y-3">
               {topCidades.map((cidade, i) => (
-                <div key={i} className="flex items-start justify-between group py-1">
-                  <div className="flex items-start gap-2.5 flex-1 min-w-0 pr-2">
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors leading-tight">{cidade.nome}</span>
-                      {cidade.lojaId && (
-                        <span className="text-[10px] font-semibold text-indigo-500 leading-tight mt-0.5">{getLojaName(cidade.lojaId)}</span>
-                      )}
+                <div key={i} className="flex flex-col bg-slate-50/70 hover:bg-slate-100/80 p-3 rounded-xl border border-slate-100 transition-colors group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-slate-900 transition-colors truncate">
+                        {cidade.nome}{cidade.uf ? ` - ${cidade.uf}` : ""}
+                      </span>
+                    </div>
+                    <div className="text-xs font-black text-slate-700 bg-white shadow-xs border border-slate-200 px-2 py-0.5 rounded-md shrink-0">
+                      {cidade.acessos}
                     </div>
                   </div>
-                  <div className="text-xs font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md shrink-0 mt-0.5">
-                    {cidade.acessos}
+                  
+                  {cidade.lojaId && (
+                    <span className="text-[10px] font-semibold text-indigo-600 mt-1 pl-5 truncate">
+                      {getLojaName(cidade.lojaId)}
+                    </span>
+                  )}
+
+                  {/* Páginas acessadas na cidade */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2 pl-5">
+                    {Object.entries(cidade.paginas || {}).map(([paginaNome, count], pIdx) => (
+                      <span key={pIdx} className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-white border border-slate-200/80 px-2 py-0.5 rounded-full shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <strong className="text-slate-700 font-bold">{count}</strong> na {paginaNome}
+                      </span>
+                    ))}
                   </div>
                 </div>
               ))}

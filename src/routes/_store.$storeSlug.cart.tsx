@@ -565,6 +565,16 @@ function CartPage() {
                    isEligible = true;
                 }
              }
+             
+             // Safeguard: Se for a mesma cidade ou mesmo CEP da farmácia e ainda não pegou regra específica
+             if (!isEligible) {
+                const isSameCity = customerCity && p.cidade && customerCity.toLowerCase().trim() === p.cidade.toLowerCase().trim();
+                const isSameCep = p.cep && clean === p.cep.replace(/\D/g, "");
+                if (isSameCity || isSameCep) {
+                  deliveryPrice = Number(p.custoEntrega) || (p.raiosEntrega && p.raiosEntrega.length > 0 ? p.raiosEntrega[0].preco : 0);
+                  isEligible = true;
+                }
+             }
           }
         }
 

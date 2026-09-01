@@ -114,7 +114,13 @@ function SingleDynamicVitrine({
   const linkedBanners = allBanners.filter(b => 
     b.active && 
     b.posicao === "Banner Extra" &&
-    b.vitrineVinculada === vitrine.id.toString() &&
+    (
+      b.vitrineVinculada === vitrine.id.toString() ||
+      b.vitrineVinculada === vitrine.nome ||
+      (vitrine.slug && b.vitrineVinculada === vitrine.slug) ||
+      b.vitrineVinculada === vitrineSlug ||
+      b.vitrineVinculada?.toLowerCase() === vitrine.nome?.toLowerCase()
+    ) &&
     (b.lojaId === lojaId || !b.lojaId) && 
     (!b.paginaPublicacao || b.paginaPublicacao === "Todas as páginas" || b.paginaPublicacao === page)
   );

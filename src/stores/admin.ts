@@ -1046,7 +1046,7 @@ export const useAdmin = create<AdminState>()(
           image_url3: cleanBanner.imageUrl3,
           mobile_image_url3: cleanBanner.mobileImageUrl3,
           link3: cleanBanner.link3,
-          // ordem: cleanBanner.ordem ?? 0,
+          ordem: cleanBanner.ordem ?? 0,
         };
         const { data, error } = await supabase.from('banners' as any).insert(payload).select().single();
         if (error) {
@@ -1073,6 +1073,8 @@ export const useAdmin = create<AdminState>()(
         if (cleanBanner.endDate !== undefined) payload.end_date = (cleanBanner.endDate && cleanBanner.endDate.trim() !== "") ? new Date(cleanBanner.endDate).toISOString() : null;
         if (cleanBanner.lojaId !== undefined) payload.loja_id = cleanBanner.lojaId;
         if (cleanBanner.vitrineVinculada !== undefined) payload.vitrine_vinculada = cleanBanner.vitrineVinculada;
+        if (cleanBanner.bannerVinculado !== undefined) payload.banner_vinculado = cleanBanner.bannerVinculado;
+        if (cleanBanner.topicoVinculado !== undefined) payload.topico_vinculado = cleanBanner.topicoVinculado;
         if (cleanBanner.formatoExtra !== undefined) payload.formato_extra = cleanBanner.formatoExtra;
         if (cleanBanner.imageUrl2 !== undefined) payload.image_url2 = cleanBanner.imageUrl2;
         if (cleanBanner.mobileImageUrl2 !== undefined) payload.mobile_image_url2 = cleanBanner.mobileImageUrl2;
@@ -1080,7 +1082,7 @@ export const useAdmin = create<AdminState>()(
         if (cleanBanner.imageUrl3 !== undefined) payload.image_url3 = cleanBanner.imageUrl3;
         if (cleanBanner.mobileImageUrl3 !== undefined) payload.mobile_image_url3 = cleanBanner.mobileImageUrl3;
         if (cleanBanner.link3 !== undefined) payload.link3 = cleanBanner.link3;
-        // if (cleanBanner.ordem !== undefined) payload.ordem = cleanBanner.ordem;
+        if (cleanBanner.ordem !== undefined) payload.ordem = cleanBanner.ordem;
         
         const { error } = await supabase.from('banners' as any).update(payload).eq('id', id);
         if (error) {
@@ -1241,7 +1243,7 @@ export const useAdmin = create<AdminState>()(
                 virtualStoreStatus: l.status_loja_virtual || parsedThemeColors?.status_loja_virtual,
                 isVirtualStoreGenerated: !!l.status_loja_virtual,
                 api_key: l.api_key,
-                aceitaEntrega: parsedThemeColors?.aceitaEntrega ?? false,
+                aceitaEntrega: parsedThemeColors?.aceitaEntrega !== false,
                 modeloFrete: parsedThemeColors?.modeloFrete ?? 'raio',
                 horarioInicioEntrega: parsedThemeColors?.horarioInicioEntrega ?? '',
                 horarioFimEntrega: parsedThemeColors?.horarioFimEntrega ?? '',
@@ -1250,7 +1252,7 @@ export const useAdmin = create<AdminState>()(
                 custoEntrega: parsedThemeColors?.custoEntrega ?? 0,
                 raioEntregaKm: parsedThemeColors?.raioEntregaKm,
                 faixasCep: parsedThemeColors?.faixasCep ?? [],
-                aceitaRetirada: parsedThemeColors?.aceitaRetirada ?? false,
+                aceitaRetirada: parsedThemeColors?.aceitaRetirada !== false,
                 horarioInicioRetirada: parsedThemeColors?.horarioInicioRetirada ?? '',
                 horarioFimRetirada: parsedThemeColors?.horarioFimRetirada ?? '',
                 tempoRetirada: parsedThemeColors?.tempoRetirada ?? '',

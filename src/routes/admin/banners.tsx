@@ -62,7 +62,7 @@ function getIcon(url: string) {
   return Sparkles;
 }
 
-function getDimensionsForPosition(pos: string) {
+function getDimensionsForPosition(pos: string, formatoExtra?: string) {
   switch (pos) {
     case "Full Banner": 
       return { 
@@ -95,6 +95,13 @@ function getDimensionsForPosition(pos: string) {
         descricao: "Banner de topo nas páginas de categoria (/c/medicamentos). Resolução: 1920x350px."
       };
     case "Banner Extra": 
+      if (formatoExtra === "2_banners") {
+        return { 
+          desktop: "720x360px ou 600x300px (2:1)", 
+          mobile: "600x300px (2:1)",
+          descricao: "Dois banners lado a lado (50/50). Resolução para cada banner: 720x360px Desktop e 600x300px Mobile."
+        };
+      }
       return { 
         desktop: "1440x320px ou 1200x300px (4:1)", 
         mobile: "800x400px (2:1)",
@@ -674,7 +681,7 @@ function AdminBanners() {
     }
   };
 
-  const dimensions = editingBanner?.posicao ? getDimensionsForPosition(editingBanner.posicao) : null;
+  const dimensions = editingBanner?.posicao ? getDimensionsForPosition(editingBanner.posicao, editingBanner.formatoExtra) : null;
 
   return (
     <div className="max-w-6xl space-y-6 pb-20">
@@ -1679,6 +1686,7 @@ function AdminBanners() {
                         <div className="space-y-4">
                           <div className="flex items-center justify-between border-b pb-2">
                             <h4 className="font-bold text-slate-700">Imagem Desktop</h4>
+                            {dimensions && <span className="text-xs bg-blue-100 text-blue-900 px-2.5 py-1 rounded-md font-bold font-mono border border-blue-200 shadow-sm">{dimensions.desktop}</span>}
                           </div>
                           <div 
                             className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
@@ -1707,6 +1715,9 @@ function AdminBanners() {
                                   <UploadCloud className="w-8 h-8" />
                                 </div>
                                 <h4 className="font-bold text-slate-700 mb-1">Arraste e solte a imagem do banner aqui</h4>
+                                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                                  Resolução ideal: <strong className="text-blue-700">{dimensions?.desktop || "720x360px"}</strong>. Formato JPG, PNG ou WebP até 2MB.
+                                </p>
                                 <Input 
                                   type="text" 
                                   placeholder="Ou cole a URL da imagem aqui..." 
@@ -1723,6 +1734,7 @@ function AdminBanners() {
                         <div className="space-y-4">
                           <div className="flex items-center justify-between border-b pb-2">
                             <h4 className="font-bold text-slate-700">Imagem Mobile (Opcional)</h4>
+                            {dimensions && <span className="text-xs bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded-md font-bold font-mono border border-emerald-200 shadow-sm">{dimensions.mobile}</span>}
                           </div>
                           <div 
                             className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center hover:bg-slate-100 transition-colors cursor-pointer group"
@@ -1748,6 +1760,9 @@ function AdminBanners() {
                                   <ImageIcon className="w-8 h-8" />
                                 </div>
                                 <h4 className="font-bold text-slate-700 mb-1">Arraste e solte a imagem mobile aqui</h4>
+                                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                                  Resolução ideal: <strong className="text-emerald-700">{dimensions?.mobile || "600x300px"}</strong>. Formato JPG ou PNG.
+                                </p>
                                 <Input 
                                   type="text" 
                                   placeholder="Ou cole a URL da imagem mobile aqui..." 

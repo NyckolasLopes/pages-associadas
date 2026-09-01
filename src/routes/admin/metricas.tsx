@@ -616,8 +616,14 @@ function Metricas() {
                       ]}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.1)' }}
                     />
-                    <Bar dataKey="concluidos" name="Concluídos (WhatsApp)" fill="#10b981" radius={[4, 4, 0, 0]} stackId="a" />
-                    <Bar dataKey="pendentes" name="Pendentes (Carrinho)" fill="#f59e0b" radius={[4, 4, 0, 0]} stackId="a" />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36} 
+                      iconType="circle"
+                      formatter={(value) => <span className="text-xs font-semibold text-slate-700">{value}</span>}
+                    />
+                    <Bar dataKey="concluidos" name="Concluídos (WhatsApp)" fill="#10b981" radius={[0, 0, 4, 4]} stackId="a" />
+                    <Bar dataKey="pendentes" name="Pendentes (Carrinho)" fill="#3b82f6" radius={[4, 4, 0, 0]} stackId="a" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

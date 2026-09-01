@@ -1453,27 +1453,50 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               </div>
 
               {/* Preview do Google */}
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Visualização de como vai ficar no Google</Label>
-                <div className="bg-white p-4 border border-slate-200 rounded-lg shadow-sm max-w-full font-sans">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-7 h-7 bg-slate-100 rounded-full flex items-center justify-center">
-                      <Search className="h-3 w-3 text-slate-500" />
-                    </div>
-                    <div>
-                      <div className="text-[14px] text-[#202124] leading-tight">Sua Loja</div>
-                      <div className="text-[12px] text-[#4d5156] leading-tight flex items-center gap-1">
-                        <span>https://sualoja.com.br</span>
-                        <span>›</span>
-                        <span>{formData.url || "nome-do-produto"}</span>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <Label className="font-bold text-xs uppercase text-slate-500">Visualização de como vai ficar no Google</Label>
+                  <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 flex items-center gap-1">
+                    <Search className="w-3 h-3" /> Resultado de Busca (SERP)
+                  </span>
+                </div>
+                
+                <div className="bg-white p-5 border border-slate-200/90 rounded-2xl shadow-sm max-w-full font-sans hover:shadow-md transition-shadow">
+                  {/* Google Header: Favicon + Brand + Breadcrumbs + 3 dots */}
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 shadow-xs">
+                        {currentLoja?.nome?.charAt(0) || "A"}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[13px] font-medium text-[#202124] leading-none truncate">
+                          {currentLoja?.nome || "Farmácias Associadas"}
+                        </span>
+                        <span className="text-[11px] text-[#4d5156] leading-tight truncate mt-0.5">
+                          https://www.farmaciasassociadas.com.br › produto › {formData.slug || formData.url || "produto"}
+                        </span>
                       </div>
                     </div>
+                    <div className="text-slate-400 text-xs px-1">⋮</div>
                   </div>
-                  <div className="text-[20px] text-[#1a0dab] hover:underline cursor-pointer leading-tight mb-1 truncate">
-                    {formData.seoTitulo || formData.nome || "Título da Página"}
+
+                  {/* Google Title */}
+                  <div className="text-[19px] sm:text-[20px] text-[#1a0dab] font-medium hover:underline cursor-pointer leading-snug mb-1">
+                    {formData.seoTitulo || formData.nome || "Título do Produto"}
                   </div>
-                  <div className="text-[14px] text-[#4d5156] leading-snug line-clamp-2">
-                    {formData.metaDescription || formData.seoDescricao || "Sua descrição SEO aparecerá aqui. Escreva um texto atraente para incentivar as pessoas a clicarem e conhecerem o seu produto."}
+
+                  {/* Rich Snippet (Preço e Disponibilidade) */}
+                  <div className="flex items-center gap-2 text-[12px] text-[#006621] font-medium mb-1">
+                    <span>★★★★★ 4.9 (98)</span>
+                    <span>·</span>
+                    <span className="text-[#3c4043] font-bold">R$ {Number(formData.precoPor || formData.precoDe || 0).toFixed(2).replace('.', ',')}</span>
+                    <span>·</span>
+                    <span className="text-emerald-700 font-semibold">Em estoque</span>
+                  </div>
+
+                  {/* Google Snippet Text */}
+                  <div className="text-[13.5px] text-[#4d5156] leading-relaxed line-clamp-2">
+                    {formData.metaDescription || formData.seoDescricao || "Compre online com os melhores preços e entrega rápida. Consulte ofertas, bula, dosagem e receba na comodidade da sua casa."}
                   </div>
                 </div>
               </div>
