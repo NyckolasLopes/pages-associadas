@@ -137,26 +137,23 @@ export function useCartSync() {
 
         if (existingCart) {
           // Atualiza carrinho existente
-          const { error: updateErr } = await (supabase
+          await (supabase
             .from('carrinhos_abandonados' as any) as any)
             .update(cartData)
             .eq('id', existingCart.id);
-          
-          if (updateErr) {
-            console.error("[CartSync] Erro ao atualizar carrinho abandonado:", updateErr.message);
-          }
+        } else if (user?.id && selectedPharmacyId) {
+          // Usuário logado: upsert evitando conflito de chave única (user_id, loja_id)
+          await (supabase
+            .from('carrinhos_abandonados' as any) as any)
+            .upsert(cartData, { onConflict: 'user_id, loja_id' });
         } else {
-          // Insere novo carrinho abandonado
-          const { error: insertErr } = await (supabase
+          // Visitante: insere novo carrinho abandonado
+          await (supabase
             .from('carrinhos_abandonados' as any) as any)
             .insert(cartData);
-            
-          if (insertErr) {
-            console.error("[CartSync] Erro ao inserir carrinho abandonado:", insertErr.message);
-          }
         }
       } catch (err) {
-        console.error("[CartSync] Falha na sincronização:", err);
+        // Log silencioso sem interromper a navegação do cliente
       }
     }, 800);
 

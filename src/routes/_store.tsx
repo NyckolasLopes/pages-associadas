@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useMarketing } from "@/stores/marketing";
 import { Header } from "@/components/storefront/Header";
-import { Suspense, lazy, useMemo, useEffect, type CSSProperties } from "react";
+import { Suspense, lazy, useMemo, useEffect, useState, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
 import { useAuth } from "@/stores/auth";
@@ -216,9 +216,10 @@ function StoreLayout() {
     
     const isParceiroOrAssociado = activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado';
     const appName = isParceiroOrAssociado && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
-    const manifestIcon = activePharmacy.faviconUrl || globalFavicon || "/favicon.png";
     const storeSlug = activePharmacy.slug || "";
-    const origin = typeof window !== 'undefined' ? window.location.origin : "";
+    const origin = typeof window !== 'undefined' ? window.location.origin : "https://pages-associadas.vercel.app";
+    const rawIcon = activePharmacy.faviconUrl || globalFavicon || "/favicon.png";
+    const absoluteIcon = rawIcon.startsWith("http") ? rawIcon : `${origin}${rawIcon.startsWith("/") ? "" : "/"}${rawIcon}`;
     
     const manifest = {
       name: appName,
@@ -231,12 +232,12 @@ function StoreLayout() {
       theme_color: "#00B5AD",
       icons: [
         {
-          src: manifestIcon,
+          src: absoluteIcon,
           sizes: "192x192",
           type: "image/png"
         },
         {
-          src: manifestIcon,
+          src: absoluteIcon,
           sizes: "512x512",
           type: "image/png"
         }
@@ -270,7 +271,12 @@ function StoreLayout() {
     }
   }, [activePharmacy?.slug, potentialSlug]);
 
-  if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && pharmaciesLoaded && pharmacies.length > 0 && !activePharmacy) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (mounted && potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && pharmaciesLoaded && pharmacies.length > 0 && !activePharmacy) {
     return <NotFound type="page" />;
   }
 
