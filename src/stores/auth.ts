@@ -268,14 +268,27 @@ export const useAuth = create<AuthState>((set, get) => {
         } catch {}
       }
 
-      const redirectTo = redirectPath 
-        ? `${window.location.origin}${redirectPath}`
-        : window.location.origin;
+      // Retorno pós-login sempre na loja ativa
+      const storeReturnPath = targetSlug && targetSlug !== "loja-padrao" ? `/${targetSlug}` : "";
+      const effectivePath = redirectPath && redirectPath !== "/" ? redirectPath : (storeReturnPath || "/");
+      const redirectTo = `${window.location.origin}${effectivePath}`;
         
-      await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo },
+        options: { 
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        },
       });
+
+      if (error) {
+        console.error("Erro ao iniciar login social:", error);
+        toast.error(`Falha no login com ${provider}: ${error.message}`);
+        throw error;
+      }
     },
 
     logout: async (explicitStoreSlug?: string) => {
