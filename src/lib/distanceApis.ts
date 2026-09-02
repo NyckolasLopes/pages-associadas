@@ -94,7 +94,6 @@ export async function getRoadDistanceKm(
   }
 
   // Fallback: Haversine
-  console.warn('[distanceApis] ORS falhou, usando Haversine como fallback.');
   const hav = haversineKm(lat1, lng1, lat2, lng2);
   _roadDistCache[key] = hav;
   return hav;
