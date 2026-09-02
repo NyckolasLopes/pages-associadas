@@ -1119,14 +1119,23 @@ function StoreHome() {
                       <Link 
                         to="/$storeSlug/m/$slug"
                         params={{ storeSlug: storeSlug || "loja-padrao", slug: marca.seoUrl || marca.slug }}
-                        className="shrink-0 w-[120px] h-[80px] md:w-[150px] md:h-[100px] bg-white border rounded-xl flex items-center justify-center shadow-sm hover:border-[#00AFA9] transition cursor-pointer p-4"
+                        className="group/marca shrink-0 w-[125px] sm:w-[140px] md:w-[160px] h-[105px] sm:h-[115px] md:h-[125px] bg-white border border-slate-200/90 hover:border-primary hover:shadow-md rounded-2xl flex flex-col items-center justify-between p-3 transition-all duration-200 cursor-pointer text-center"
                         title={marca.nome}
                       >
-                        {marca.logo ? (
-                          <img src={marca.logo} alt={marca.nome} className="w-full h-full object-contain" />
-                        ) : (
-                          <span className="font-black text-muted-foreground/60 tracking-wider text-sm md:text-base text-center px-2">{marca.nome}</span>
-                        )}
+                        <div className="w-full flex-1 flex items-center justify-center p-1 overflow-hidden">
+                          {marca.logo ? (
+                            <img 
+                              src={marca.logo} 
+                              alt={marca.nome} 
+                              className="max-h-[46px] md:max-h-[56px] max-w-full object-contain group-hover/marca:scale-105 transition-transform duration-200" 
+                            />
+                          ) : (
+                            <span className="font-black text-muted-foreground/60 tracking-wider text-xs md:text-sm text-center uppercase px-1">{marca.nome}</span>
+                          )}
+                        </div>
+                        <span className="text-[11px] md:text-xs font-bold text-slate-700 group-hover/marca:text-primary transition-colors text-center truncate w-full pt-1.5 border-t border-slate-100/80">
+                          {marca.nome}
+                        </span>
                       </Link>
                     </CarouselItem>
                   ))}

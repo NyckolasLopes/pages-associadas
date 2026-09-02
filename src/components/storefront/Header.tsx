@@ -1459,9 +1459,17 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                           to="/$storeSlug/m/$slug"
                           params={{ storeSlug, slug: m.seoUrl || m.slug }}
                           onClick={() => setOpen(null)}
-                          className="aspect-[4/3] flex items-center justify-center p-4 bg-white border border-slate-200 rounded-xl hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
+                          className="flex flex-col items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all h-[100px] text-center group/mb"
+                          title={m.nome}
                         >
-                          <img src={m.logo} alt={m.nome} title={m.nome} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+                          <div className="w-full flex-1 flex items-center justify-center overflow-hidden">
+                            {m.logo ? (
+                              <img src={m.logo} alt={m.nome} title={m.nome} className="max-h-[44px] max-w-full object-contain mix-blend-multiply group-hover/mb:scale-105 transition-transform" />
+                            ) : null}
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-700 group-hover/mb:text-primary transition-colors truncate w-full pt-1 border-t border-slate-100">
+                            {m.nome}
+                          </span>
                         </Link>
                       ))}
                     </div>
