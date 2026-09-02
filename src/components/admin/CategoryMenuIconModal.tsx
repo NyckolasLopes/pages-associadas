@@ -20,6 +20,7 @@ import {
 import { useAdmin } from "@/stores/admin";
 import { toast } from "sonner";
 import type { Categoria } from "@/types";
+import { resolveCategoryIcon } from "@/lib/categoryIcons";
 
 export const AVAILABLE_MENU_ICONS = [
   { id: "pill", icon: Pill, label: "Medicamentos / Pílula", tags: "remedio farmacia comprimido saude" },
@@ -108,7 +109,9 @@ export function CategoryMenuIconModal({
     return item.label.toLowerCase().includes(q) || item.tags.toLowerCase().includes(q) || item.id.toLowerCase().includes(q);
   });
 
-  const SelectedIconComp = selectedIcon ? (MENU_ICON_MAP[selectedIcon] || Folder) : null;
+  const SelectedIconComp = selectedIcon 
+    ? (MENU_ICON_MAP[selectedIcon] || Folder) 
+    : resolveCategoryIcon(category, { storeCategoryIcons, categoryIcons, storeId: lojaId });
 
   const handleSave = () => {
     if (lojaId) {

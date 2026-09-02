@@ -11,9 +11,10 @@ import { useAdminCategories } from "@/stores/categories";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CategoryFormModal } from "@/components/admin/CategoryFormModal";
-import { CategoryMenuIconModal, MENU_ICON_MAP } from "@/components/admin/CategoryMenuIconModal";
+import { CategoryMenuIconModal } from "@/components/admin/CategoryMenuIconModal";
 import { SubirDadosLojaModal } from "@/components/admin/SubirDadosLojaModal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { resolveCategoryIcon } from "@/lib/categoryIcons";
 
 export const Route = createFileRoute("/admin/categorias")({
   component: AdminCategorias,
@@ -101,12 +102,12 @@ function AdminCategorias() {
   };
 
   
-  const getCategoryIconComp = (catId: string, fallbackIcon?: string) => {
-    const iconKey = (currentLojaId && storeCategoryIcons?.[currentLojaId]?.[catId])
-      || categoryIcons?.[catId]
-      || fallbackIcon
-      || "";
-    return iconKey ? (MENU_ICON_MAP[iconKey] || null) : null;
+  const getCategoryIconComp = (cat: Categoria) => {
+    return resolveCategoryIcon(cat, {
+      storeCategoryIcons,
+      categoryIcons,
+      storeId: currentLojaId,
+    });
   };
 
   const categoryTree = allCategories
@@ -216,10 +217,8 @@ function AdminCategorias() {
                         title="Clique para alterar o ícone desta categoria no menu"
                       >
                         {(() => {
-                          const IconComp = getCategoryIconComp(cat.id, cat.icone);
-                          if (IconComp) return <IconComp className="h-4 w-4 transition-transform group-hover/iconbtn:scale-110" />;
-                          if (isExpanded) return <FolderOpen className="h-4 w-4" />;
-                          return <Folder className="h-4 w-4" />;
+                          const IconComp = getCategoryIconComp(cat);
+                          return <IconComp className="h-4 w-4 transition-transform group-hover/iconbtn:scale-110" />;
                         })()}
                         <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-white border border-[#00B5AD] flex items-center justify-center shadow-xs opacity-0 group-hover/iconbtn:opacity-100 transition-opacity">
                           <Palette className="h-2 w-2 text-[#00B5AD]" />
@@ -311,9 +310,8 @@ function AdminCategorias() {
                               title="Clique para alterar o ícone do menu"
                             >
                               {(() => {
-                                const ChildIcon = getCategoryIconComp(child.id, child.icone);
-                                if (ChildIcon) return <ChildIcon className="h-3 w-3" />;
-                                return <Tag className="h-3 w-3" />;
+                                const ChildIcon = getCategoryIconComp(child);
+                                return <ChildIcon className="h-3 w-3 transition-transform group-hover/childicon:scale-110" />;
                               })()}
                             </button>
                             <span className={`text-sm font-medium text-slate-700 ${search && child.nome.toLowerCase().includes(search.toLowerCase()) ? "text-emerald-700 font-bold" : ""}`}>
