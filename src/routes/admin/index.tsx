@@ -33,6 +33,17 @@ import {
   Globe
 } from "lucide-react";
 
+function slugify(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
 });
@@ -64,9 +75,11 @@ function AdminDashboard() {
       if (!stat) {
         stat = { total: 0, mes: 0, hoje: 0, lastAccess: 0 };
       }
+      const slug = loja.slug ? slugify(loja.slug) : slugify(loja.nome || loja.nomeFantasia || loja.id);
       return {
         id: loja.id,
         nome: loja.nome,
+        slug: slug,
         cidade: loja.cidade,
         uf: loja.uf,
         mes: stat.mes || 0,
@@ -501,7 +514,7 @@ function AdminDashboard() {
                           <span>{loja.cidade ? `${loja.cidade}/${loja.uf}` : "Rede"}</span>
                           <span>•</span>
                           <a 
-                            href={`/loja/${loja.id}`} 
+                            href={`/${loja.slug || loja.id}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-emerald-600 hover:underline flex items-center gap-0.5 font-medium"

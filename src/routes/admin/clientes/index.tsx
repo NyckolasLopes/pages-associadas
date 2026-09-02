@@ -452,12 +452,7 @@ function ClientesAdmin() {
             />
           </div>
           <div className="flex items-center gap-2">
-            {activeLoja && (
-              <a href={`/loja/${activeLoja.id}`} target="_blank" className="flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md transition-colors">Exibindo {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente' : 'clientes'}</a>
-            )}
-            {!activeLoja && (
-              <span className="flex items-center gap-1.5 text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">Exibindo {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente' : 'clientes'}</span>
-            )}
+            <span className="flex items-center gap-1.5 text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">Exibindo {filteredCustomers.length} {filteredCustomers.length === 1 ? 'cliente' : 'clientes'}</span>
           </div>
         </div>
 
