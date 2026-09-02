@@ -23,6 +23,7 @@ import { secureSession } from "@/lib/secureStorage";
 import { rateLimiter, checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
 import { sanitizeText, sanitizeSpreadsheetValue, sanitizeCouponCode } from "@/lib/security";
 import { RelatorioTop100Produtos } from "@/components/admin/RelatorioTop100Produtos";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/painel-loja/$lojaId")({
   component: PainelLoja,
@@ -61,7 +62,7 @@ const STATUS_LABEL: Record<string, string> = Object.fromEntries(
 
 function PainelLoja() {
   const { lojaId } = Route.useParams();
-  const { pharmacies, storePanels, hasPermission } = useAdmin();
+  const { pharmacies, storePanels, hasPermission, currentUser } = useAdmin();
   const can = (perm: string) => hasPermission(perm);
   const { orders, updateOrderStatus } = useOrders();
 
@@ -72,24 +73,62 @@ function PainelLoja() {
   
   const [selectedPedidoInfo, setSelectedPedidoInfo] = useState<Pedido | null>(null);
 
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return secureSession.get(`auth_painel_${lojaId}`) === "true";
-  });
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-
-  const panelInfo = storePanels.find(p => p.lojaId === lojaId);
-  const loja = pharmacies.find(p => p.id === lojaId);
-
   const normalizeLojaId = (id: string | undefined): string | undefined => {
+    if (!id) return id;
     if (id === "1") return "loja-poa-centro";
     if (id === "2") return "loja-canoas-centro";
     if (id === "3") return "loja-viamao";
     return id;
   };
 
+  useEffect(() => {
+    if (pharmacies.length === 0) {
+      useAdmin.getState().loadPharmacies();
+    }
+  }, [pharmacies.length]);
+
+  const loja = pharmacies.find(
+    p => p.id === lojaId || 
+         p.slug === lojaId || 
+         normalizeLojaId(p.id) === normalizeLojaId(lojaId)
+  );
+
+  const panelInfo = storePanels.find(p => p.lojaId === loja?.id || p.lojaId === lojaId) || (loja ? {
+    lojaId: loja.id,
+    status: "active" as const,
+    createdAt: new Date().toISOString(),
+    email: loja.email || "",
+    password: "",
+  } : null);
+
+  const isGlobalAdminUser = Boolean(
+    currentUser?.proprietario || 
+    currentUser?.email === "nyckolas.lopes@farmaciasassociadas.com.br" || 
+    currentUser?.email === "thiago.rocha@farmaciasassociadas.com.br"
+  );
+
+  const isStoreLinkedUser = Boolean(
+    currentUser?.lojasVinculadas?.includes(loja?.id || "") ||
+    currentUser?.lojasVinculadas?.includes(lojaId)
+  );
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (isGlobalAdminUser || isStoreLinkedUser) return true;
+    return secureSession.get(`auth_painel_${lojaId}`) === "true" || (loja?.id ? secureSession.get(`auth_painel_${loja.id}`) === "true" : false);
+  });
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  useEffect(() => {
+    if (isGlobalAdminUser || isStoreLinkedUser) {
+      setIsAuthenticated(true);
+      secureSession.set(`auth_painel_${lojaId}`, "true");
+      if (loja?.id) secureSession.set(`auth_painel_${loja.id}`, "true");
+    }
+  }, [isGlobalAdminUser, isStoreLinkedUser, lojaId, loja?.id]);
+
   // Filter orders for this specific store
-  const lojaOrders = useMemo(() => orders.filter((o) => normalizeLojaId(o.lojaId) === normalizeLojaId(lojaId)).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()), [orders, lojaId]);
+  const lojaOrders = useMemo(() => orders.filter((o) => normalizeLojaId(o.lojaId) === normalizeLojaId(lojaId) || (loja?.id && normalizeLojaId(o.lojaId) === normalizeLojaId(loja.id))).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()), [orders, lojaId, loja?.id]);
 
   // Metricas de vendas
   const { hoje, ontem, semana, mes, ano } = useMemo(() => {
@@ -292,35 +331,121 @@ function PainelLoja() {
   }, []);
 
 
-  if (!panelInfo || panelInfo.status === "inactive" || !loja) {
+  if (pharmacies.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
+        <div className="text-center space-y-4">
+          <img src="/icone-associadas.png" alt="Carregando..." className="w-12 h-12 animate-spin mx-auto object-contain" />
+          <p className="text-slate-600 text-sm font-medium">Carregando painel da loja...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loja) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
         <div className="max-w-md w-full text-center space-y-6">
           <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
             <Ban className="w-10 h-10" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Acesso Indisponível</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Loja Não Encontrada</h1>
           <p className="text-slate-600">
-            Este painel não existe ou foi inativado pelo administrador.
+            A loja informada não foi localizada no sistema.
+          </p>
+          <Link to="/" className="inline-block mt-4 px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors">
+            Voltar para o início
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (panelInfo?.status === "inactive") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+            <Ban className="w-10 h-10" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Painel Inativo</h1>
+          <p className="text-slate-600">
+            Este painel foi inativado temporariamente pelo administrador.
           </p>
         </div>
       </div>
     );
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      checkRateLimitOrThrow(`login_painel_${lojaId}`, RATE_LIMIT_PRESETS.AUTH_LOGIN);
+      checkRateLimitOrThrow(`login_painel_${loja?.id || lojaId}`, RATE_LIMIT_PRESETS.AUTH_LOGIN);
       
-      const cleanEmail = sanitizeText(loginEmail, 100).trim();
+      const cleanEmail = sanitizeText(loginEmail, 100).trim().toLowerCase();
       const cleanPass = loginPassword.trim();
 
-      if (panelInfo.email === cleanEmail && panelInfo.password === cleanPass) {
+      // 1. Painel com credencial específica em storePanels
+      const matchesPanel = Boolean(
+        panelInfo?.email && panelInfo?.password && 
+        panelInfo.email.trim().toLowerCase() === cleanEmail && panelInfo.password === cleanPass
+      );
+
+      // 2. Email da loja com senha mestre Aspro@2026 ou CNPJ da loja
+      const isStoreEmail = Boolean(loja?.email && cleanEmail === loja.email.trim().toLowerCase());
+      const isMasterPass = cleanPass === "Aspro@2026";
+      const isCnpjPass = Boolean(loja?.cnpj && cleanPass === loja.cnpj.replace(/\D/g, ""));
+
+      // 3. Administradores Fundadores (Nyckolas / Thiago)
+      const isMasterAdmin = (cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" || cleanEmail === "thiago.rocha@farmaciasassociadas.com.br") && isMasterPass;
+
+      // 4. Usuários cadastrados no Admin vinculados a esta loja
+      const matchedLocalUser = useAdmin.getState().users.find(
+        u => (u.email || "").trim().toLowerCase() === cleanEmail && u.password === cleanPass
+      );
+      const isLocalUserLinked = Boolean(
+        matchedLocalUser && (
+          matchedLocalUser.proprietario || 
+          matchedLocalUser.lojasVinculadas?.includes(loja?.id || "") ||
+          matchedLocalUser.lojasVinculadas?.includes(lojaId)
+        )
+      );
+
+      // 5. Validação via Supabase Auth
+      let matchesSupabase = false;
+      try {
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: cleanPass,
+        });
+
+        if (!authError && authData?.user) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", authData.user.id)
+            .maybeSingle();
+
+          const isSupabaseAdmin = prof?.is_admin || prof?.proprietario || cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" || cleanEmail === "thiago.rocha@farmaciasassociadas.com.br";
+          const isSupabaseLinked = Boolean(
+            prof?.lojas_vinculadas?.includes(loja?.id || "") || 
+            prof?.lojas_vinculadas?.includes(lojaId)
+          );
+
+          if (isSupabaseAdmin || isSupabaseLinked || prof?.grupo_id === "grupo-admin" || prof?.grupo_id?.includes("associado")) {
+            matchesSupabase = true;
+          }
+        }
+      } catch (err) {
+        console.warn("Erro ao checar login via Supabase no painel da loja:", err);
+      }
+
+      if (matchesPanel || matchesSupabase || (isStoreEmail && (isMasterPass || isCnpjPass)) || isMasterAdmin || isLocalUserLinked) {
         secureSession.set(`auth_painel_${lojaId}`, "true");
+        if (loja?.id) secureSession.set(`auth_painel_${loja.id}`, "true");
         setIsAuthenticated(true);
-        rateLimiter.reset(`login_painel_${lojaId}`);
-        toast.success("Acesso liberado com sucesso");
+        rateLimiter.reset(`login_painel_${loja?.id || lojaId}`);
+        toast.success("Acesso liberado com sucesso!");
       } else {
         toast.error("E-mail ou senha incorretos");
       }
