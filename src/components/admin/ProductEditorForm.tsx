@@ -220,6 +220,12 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         indicacaoTerapeutica: product.indicacaoTerapeutica ?? (product as any).indicacao_terapeutica ?? (product as any).metadata?.indicacao_terapeutica ?? "",
         nivelRelevancia: product.nivelRelevancia ?? product.prioridade ?? (product as any).nivel_relevancia ?? (product as any).prioridade ?? 0,
         prioridade: product.prioridade ?? product.nivelRelevancia ?? (product as any).prioridade ?? (product as any).nivel_relevancia ?? 0,
+        retemReceita: (product.tarja === "Vermelha Retém Receita" || product.tarja === "Preta") ? true : (product.retemReceita ?? (product as any).retem_receita ?? (product as any).metadata?.retem_receita ?? false),
+        retemReceitaStatus: (product.tarja === "Vermelha Retém Receita" || product.tarja === "Preta" || product.retemReceita === true || (product as any).retem_receita === true)
+          ? "retem"
+          : (product.tarja === "Vermelha" || product.retemReceita === false || (product as any).retem_receita === false)
+            ? (product.tarja === "Sem Tarja" ? "nao_aplica" : "nao_retem")
+            : (product.tarja === "Sem Tarja" || !product.tarja) ? "nao_aplica" : "nao_retem",
       });
     }
   }, [product]);
@@ -290,6 +296,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     }
 
     let finalFormData = { ...formData };
+    finalFormData.retemReceita = finalFormData.retemReceitaStatus === "retem" || (finalFormData.retemReceitaStatus !== "nao_retem" && finalFormData.retemReceitaStatus !== "nao_aplica" && finalFormData.retemReceita === true);
     
     // Combina as categorias e subcategorias de volta no campo categoriasAdicionais antes de salvar
     finalFormData.categoriasAdicionais = [
@@ -1029,11 +1036,34 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">Retém Receita?</Label>
-                  <Select disabled={!isGlobalAdmin} value={formData.retemReceita ? "retem" : formData.retemReceita === false ? "nao_retem" : "nao_aplica"} onValueChange={v => {
-                    if (v === "retem") setFormData({...formData, retemReceita: true});
-                    else if (v === "nao_retem") setFormData({...formData, retemReceita: false});
-                    else setFormData({...formData, retemReceita: false});
-                  }}>
+                  <Select 
+                    disabled={!isGlobalAdmin} 
+                    value={formData.retemReceitaStatus || (formData.retemReceita === true ? "retem" : (formData.tarja === "Sem Tarja" || !formData.tarja) ? "nao_aplica" : "nao_retem")} 
+                    onValueChange={(v: "retem" | "nao_retem" | "nao_aplica") => {
+                      if (v === "retem") {
+                        setFormData(prev => prev ? ({
+                          ...prev,
+                          retemReceita: true,
+                          retemReceitaStatus: "retem",
+                          tarja: (!prev.tarja || prev.tarja === "Sem Tarja") ? "Vermelha Retém Receita" : prev.tarja
+                        }) : prev);
+                      } else if (v === "nao_retem") {
+                        setFormData(prev => prev ? ({
+                          ...prev,
+                          retemReceita: false,
+                          retemReceitaStatus: "nao_retem",
+                          tarja: prev.tarja === "Vermelha Retém Receita" ? "Vermelha" : prev.tarja
+                        }) : prev);
+                      } else {
+                        setFormData(prev => prev ? ({
+                          ...prev,
+                          retemReceita: false,
+                          retemReceitaStatus: "nao_aplica",
+                          tarja: (prev.tarja === "Vermelha Retém Receita" || prev.tarja === "Vermelha") ? "Sem Tarja" : prev.tarja
+                        }) : prev);
+                      }
+                    }}
+                  >
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="retem">SIM</SelectItem>
@@ -1045,7 +1075,30 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 
                 <div className="space-y-2">
                   <Label className="font-bold text-xs uppercase text-slate-500">Tarja</Label>
-                  <Select disabled={!isGlobalAdmin} value={formData.tarja || "Sem Tarja"} onValueChange={v => setFormData({...formData, tarja: v})}>
+                  <Select 
+                    disabled={!isGlobalAdmin} 
+                    value={formData.tarja || "Sem Tarja"} 
+                    onValueChange={v => {
+                      let newRetem = formData.retemReceita;
+                      let newStatus = formData.retemReceitaStatus;
+                      if (v === "Vermelha Retém Receita" || v === "Preta") {
+                        newRetem = true;
+                        newStatus = "retem";
+                      } else if (v === "Vermelha") {
+                        newRetem = false;
+                        newStatus = "nao_retem";
+                      } else if (v === "Sem Tarja") {
+                        newRetem = false;
+                        newStatus = "nao_aplica";
+                      }
+                      setFormData(prev => prev ? ({
+                        ...prev,
+                        tarja: v,
+                        retemReceita: newRetem,
+                        retemReceitaStatus: newStatus
+                      }) : prev);
+                    }}
+                  >
                     <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione a tarja" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Sem Tarja">Sem Tarja</SelectItem>
