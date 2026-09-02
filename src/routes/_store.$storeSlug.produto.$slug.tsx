@@ -955,7 +955,7 @@ function PDP() {
 
       // Validação de Loja
       const couponLojaId = c.lojaId || c.farmaciaId;
-      if (activeStoreId && couponLojaId && String(couponLojaId) !== String(activeStoreId)) {
+      if (activeStoreId && couponLojaId && couponLojaId !== "global" && couponLojaId !== "all" && String(couponLojaId) !== String(activeStoreId)) {
         return false;
       }
 
@@ -965,7 +965,7 @@ function PDP() {
       const validUntil = c.dataTermino || c.validade;
       if (validUntil && new Date(validUntil + (validUntil.includes('T') ? '' : 'T23:59:59')) < now) return false;
 
-      // Validação de Alvo (O selo no card/página SÓ deve aparecer para produtos ou categorias especificamente selecionados na loja)
+      // Validação de Alvo
       const tipoAlvo = c.tipoAlvo || (c.produtosIds?.length ? "produtos" : (c.categoriasIds?.length ? "categorias" : "todos"));
       const alvos: string[] = (c.alvosId || c.produtosIds || c.categoriasIds || []).map((id: any) => String(id).trim().toLowerCase());
 
@@ -983,8 +983,8 @@ function PDP() {
         return true;
       }
 
-      // Se for "todos" ou não tiver produtos/categorias específicos selecionados, NÃO exibe o selo
-      return false;
+      // Se for "todos" ou não tiver alvos específicos, aplica para todos os produtos da loja!
+      return true;
     });
 
     if (validCoupons.length === 0) return null;

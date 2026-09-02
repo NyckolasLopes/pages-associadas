@@ -360,7 +360,9 @@ export const useCart = create<CartState>()(
           return { success: false, message: "Selecione uma farmácia antes de aplicar o cupom." };
         }
         const coupon = cupons.find(c => c.codigo.toUpperCase() === clean);
-        if (!coupon || !coupon.ativo || !coupon.lojaId || coupon.lojaId !== pid) {
+        const couponLojaId = coupon?.lojaId || (coupon as any)?.farmaciaId;
+        const isStoreMatch = !couponLojaId || couponLojaId === "" || couponLojaId === "global" || couponLojaId === "all" || String(couponLojaId) === String(pid);
+        if (!coupon || !coupon.ativo || !isStoreMatch) {
           return { success: false, message: "Cupom inválido ou não disponível para esta loja." };
         }
         if (coupon.totalDisponiveis > 0 && (coupon.numeroUtilizacoes || 0) >= coupon.totalDisponiveis) {
