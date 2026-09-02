@@ -716,8 +716,13 @@ export function Header() {
               <span className="font-bold text-primary truncate w-full leading-tight">{user?.name?.split(" ")[0]}</span>
             </Link>
           ) : (
-            <Button variant="ghost" onClick={() => navigate({ to: "/$storeSlug/login", params: { storeSlug }, search: { redirect: window.location.pathname } as any })} style={isParceiro ? { color: 'var(--header-icons, var(--foreground))' } : undefined}>
-              <User className="h-4 w-4 mr-1" /> Entrar
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate({ to: "/$storeSlug/login", params: { storeSlug }, search: { redirect: window.location.pathname } as any })}
+              className="font-bold gap-1.5 transition-colors hover:!bg-primary/10 hover:!text-primary active:scale-95 text-slate-700"
+              style={isParceiro ? { color: 'var(--header-icons, var(--foreground))' } : undefined}
+            >
+              <User className="h-4 w-4 mr-0.5" /> Entrar
             </Button>
           )}
         </div>
