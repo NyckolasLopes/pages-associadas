@@ -195,36 +195,48 @@ function StoreLayout() {
     newLink.type = 'image/png';
     
     const globalFavicon = useAdmin.getState().faviconUrl;
+    const isParceiroOrAssociado = activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado' || activePharmacy.isPleno === false;
     
-    if (activePharmacy.faviconUrl) {
-      newLink.href = activePharmacy.faviconUrl;
-    } else if (activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado' || activePharmacy.isPleno === false) {
-      newLink.href = 'data:,'; // Empty favicon for partners without custom favicon
+    // Identifica o favicon da loja (se não tiver favicon e for parceiro, pode usar o logo)
+    let storeFavicon = activePharmacy.faviconUrl || (isParceiroOrAssociado ? activePharmacy.logoUrl : null);
+    
+    if (storeFavicon) {
+      newLink.href = storeFavicon;
+    } else if (isParceiroOrAssociado) {
+      // Para parceiro sem ícone cadastrado: gera um favicon com a primeira letra da loja
+      const initial = (activePharmacy.nome || "F").trim().charAt(0).toUpperCase();
+      const primaryColor = activePharmacy.themeColors?.primary || "#00B5AD";
+      newLink.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='${encodeURIComponent(primaryColor)}'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='55' font-family='sans-serif' font-weight='bold' fill='#ffffff'>${initial}</text></svg>`;
     } else {
       newLink.href = globalFavicon || '/favicon.png';
     }
     
     document.head.appendChild(newLink);
 
-    // Attempt to update manifest dynamically for PWA install prompt
-    let manifestLink = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
-    if (!manifestLink) {
-      manifestLink = document.createElement('link');
-      manifestLink.rel = 'manifest';
-      document.head.appendChild(manifestLink);
-    }
-    
-    const isParceiroOrAssociado = activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado';
+    // Dynamic manifest update for PWA install prompt
     const appName = isParceiroOrAssociado && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
     const storeSlug = activePharmacy.slug || "";
     const origin = typeof window !== 'undefined' ? window.location.origin : "https://pages-associadas.vercel.app";
-    const rawIcon = activePharmacy.faviconUrl || globalFavicon || "/favicon.png";
     
-    let manifestIcon = `${origin}/favicon.png`;
-    if (rawIcon && !rawIcon.startsWith("data:") && !rawIcon.startsWith("blob:")) {
-      manifestIcon = rawIcon.startsWith("http") ? rawIcon : `${origin}${rawIcon.startsWith("/") ? "" : "/"}${rawIcon}`;
+    // Ícone do Manifest: para parceiro, JAMAIS usar /favicon.png ou globalFavicon da rede!
+    let manifestIcon = storeFavicon;
+    if (!manifestIcon && !isParceiroOrAssociado) {
+      manifestIcon = globalFavicon || "/favicon.png";
     }
-    
+
+    if (manifestIcon) {
+      if (manifestIcon.startsWith("/") && !manifestIcon.startsWith("//")) {
+        manifestIcon = `${origin}${manifestIcon}`;
+      }
+    } else {
+      // Fallback exclusivo de parceiro: SVG estilizado com a inicial e as cores da loja parceira
+      const initial = (activePharmacy.nome || "F").trim().charAt(0).toUpperCase();
+      const primaryColor = activePharmacy.themeColors?.primary || "#00B5AD";
+      manifestIcon = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='${encodeURIComponent(primaryColor)}'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='55' font-family='sans-serif' font-weight='bold' fill='#ffffff'>${initial}</text></svg>`;
+    }
+
+    const iconType = manifestIcon.startsWith("data:image/svg") ? "image/svg+xml" : "image/png";
+
     const manifest = {
       name: appName,
       short_name: appName,
@@ -233,29 +245,53 @@ function StoreLayout() {
       id: `/${storeSlug}/`,
       display: "standalone",
       background_color: "#ffffff",
-      theme_color: "#00B5AD",
+      theme_color: activePharmacy.themeColors?.primary || "#00B5AD",
       icons: [
         {
           src: manifestIcon,
           sizes: "192x192",
-          type: "image/png"
+          type: iconType,
+          purpose: "any"
         },
         {
           src: manifestIcon,
           sizes: "512x512",
-          type: "image/png"
+          type: iconType,
+          purpose: "any"
+        },
+        {
+          src: manifestIcon,
+          sizes: "512x512",
+          type: iconType,
+          purpose: "maskable"
         }
       ]
     };
     
-    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
     const manifestURL = URL.createObjectURL(manifestBlob);
+
+    // Remove link de manifest antigo para forçar o navegador a recarregar as novas propriedades
+    const oldManifests = document.querySelectorAll("link[rel='manifest']");
+    oldManifests.forEach(m => m.remove());
+
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
     manifestLink.href = manifestURL;
+    document.head.appendChild(manifestLink);
     
     return () => {
       URL.revokeObjectURL(manifestURL);
     };
-  }, [activePharmacy?.faviconUrl, activePharmacy?.isPleno, activePharmacy?.slug, activePharmacy?.nome, activePharmacy?.categoriaAssociado]);
+  }, [
+    activePharmacy?.faviconUrl, 
+    activePharmacy?.logoUrl, 
+    activePharmacy?.isPleno, 
+    activePharmacy?.slug, 
+    activePharmacy?.nome, 
+    activePharmacy?.categoriaAssociado,
+    activePharmacy?.themeColors
+  ]);
 
   // Trava de execução no PWA (Aplicativo Instalado):
   // Quando o app é aberto a partir do atalho baixado, ele fica 100% travado na loja instalada.
