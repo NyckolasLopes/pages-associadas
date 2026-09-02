@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Camera, AlertCircle, RefreshCw, Upload, Flashlight, SwitchCamera, Loader2 } from "lucide-react";
+import { Camera, AlertCircle, RefreshCw, Upload, Flashlight, SwitchCamera, Loader2, FlipHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ export function BarcodeScannerModal({
   const [manualCode, setManualCode] = useState("");
   const [isLoadingCamera, setIsLoadingCamera] = useState(false);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+  const [isMirrored, setIsMirrored] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
 
@@ -193,12 +194,19 @@ export function BarcodeScannerModal({
 
     streamRef.current = activeStream;
 
-    // Check torch capability
+    // Check torch and facing mode capability
     const track = activeStream.getVideoTracks()[0];
     if (track) {
       try {
         const capabilities: any = track.getCapabilities ? track.getCapabilities() : {};
         setHasTorch(!!capabilities.torch);
+        const settings: any = track.getSettings ? track.getSettings() : {};
+        const detectedFacing = settings.facingMode || mode;
+        if (detectedFacing === "user") {
+          setIsMirrored(true);
+        } else if (detectedFacing === "environment") {
+          setIsMirrored(false);
+        }
       } catch (e) {}
     }
 
@@ -325,6 +333,7 @@ export function BarcodeScannerModal({
   const switchCamera = () => {
     const nextMode = facingMode === "environment" ? "user" : "environment";
     setFacingMode(nextMode);
+    setIsMirrored(nextMode === "user");
     startCamera(nextMode);
   };
 
@@ -400,7 +409,9 @@ export function BarcodeScannerModal({
             playsInline
             muted
             autoPlay
-            className="w-full h-full object-cover min-h-[320px]"
+            className={`w-full h-full object-cover min-h-[320px] transition-transform duration-300 ${
+              isMirrored ? "-scale-x-100" : ""
+            }`}
             style={{ display: errorMsg ? "none" : "block" }}
           />
 
@@ -427,7 +438,7 @@ export function BarcodeScannerModal({
             </div>
           )}
 
-          {/* Controls Overlay (Torch & Flip Camera) */}
+          {/* Controls Overlay (Torch, Flip Mirror & Switch Camera) */}
           {!errorMsg && !isLoadingCamera && (
             <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
               {hasTorch && (
@@ -442,6 +453,16 @@ export function BarcodeScannerModal({
                   <Flashlight className="h-4 w-4" />
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setIsMirrored(prev => !prev)}
+                className={`p-2.5 rounded-full backdrop-blur-md transition-all shadow-lg ${
+                  isMirrored ? "bg-emerald-500 text-white" : "bg-black/50 text-white hover:bg-black/70"
+                }`}
+                title={isMirrored ? "Desativar Espelhamento" : "Espelhar Câmera"}
+              >
+                <FlipHorizontal className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 onClick={switchCamera}
