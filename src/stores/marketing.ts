@@ -116,35 +116,64 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
   
   loadMarketing: async () => {
     try {
-      const [ { data: cuponsData, error: cuponsErr }, { data: promocoesData, error: promosErr } ] = await Promise.all([
+      const [ { data: cuponsData, error: cuponsErr }, { data: promocoesData, error: promosErr }, { data: appStateData } ] = await Promise.all([
         supabase.from('cupons' as any).select('*').order('created_at', { ascending: false }),
-        supabase.from('promocoes' as any).select('*').order('created_at', { ascending: false })
+        supabase.from('promocoes' as any).select('*').order('created_at', { ascending: false }),
+        supabase.from('app_state' as any).select('value').eq('key', 'marketing_cupons').maybeSingle()
       ]);
+
+      const appStateCupons: Coupon[] = (appStateData?.value && Array.isArray(appStateData.value)) ? appStateData.value : [];
 
       let parsedCupons: Coupon[] = [];
       if (cuponsData && !cuponsErr && cuponsData.length > 0) {
-        parsedCupons = cuponsData.map((c: any) => ({
-          id: String(c.id),
-          codigo: String(c.codigo || '').toUpperCase(),
-          descricao: c.descricao || '',
-          ativo: c.ativo !== false,
-          totalDisponiveis: Number(c.total_disponiveis) || 0,
-          valorMinimo: parseFloat(c.valor_minimo) || 0,
-          dataInicio: c.data_inicio || '',
-          dataTermino: c.data_termino || '',
-          exigirMinItens: Boolean(c.exigir_min_itens),
-          tipoDesconto: c.tipo_desconto === "fixo" ? "fixo" : "percentual",
-          valorDesconto: parseFloat(c.valor_desconto) || 0,
-          aplicarFreteGratis: Boolean(c.aplicar_frete_gratis),
-          aplicacaoAutomatica: Boolean(c.aplicacao_automatica),
-          permiteAcumular: Boolean(c.permite_acumular),
-          usoUnico: Boolean(c.uso_unico),
-          cupomPrimeiraCompra: Boolean(c.cupom_primeira_compra),
-          numeroUtilizacoes: Number(c.numero_utilizacoes) || 0,
-          lojaId: c.loja_id || undefined,
-          tipoAlvo: c.tipo_alvo || "todos",
-          alvosId: c.alvos_id || []
-        }));
+        parsedCupons = cuponsData.map((c: any) => {
+          let alvos: string[] = [];
+          if (Array.isArray(c.alvos_id)) {
+            alvos = c.alvos_id;
+          } else if (typeof c.alvos_id === 'string') {
+            try { alvos = JSON.parse(c.alvos_id); } catch { alvos = []; }
+          } else if (c.produtos_ids && Array.isArray(c.produtos_ids)) {
+            alvos = c.produtos_ids;
+          } else if (c.categorias_ids && Array.isArray(c.categorias_ids)) {
+            alvos = c.categorias_ids;
+          }
+
+          // Merge com dados do app_state caso tenha mais detalhes
+          const matchAppState = appStateCupons.find(ac => 
+            (ac.id && String(ac.id) === String(c.id)) || 
+            (ac.codigo && ac.codigo.toUpperCase() === String(c.codigo || '').toUpperCase())
+          );
+          if (matchAppState && matchAppState.alvosId && matchAppState.alvosId.length > 0 && alvos.length === 0) {
+            alvos = matchAppState.alvosId;
+          }
+
+          const targetType = c.tipo_alvo || matchAppState?.tipoAlvo || (alvos.length > 0 ? "produtos" : "todos");
+
+          return {
+            id: String(c.id),
+            codigo: String(c.codigo || '').toUpperCase(),
+            descricao: c.descricao || '',
+            ativo: c.ativo !== false,
+            totalDisponiveis: Number(c.total_disponiveis) || 0,
+            valorMinimo: parseFloat(c.valor_minimo) || 0,
+            dataInicio: c.data_inicio || '',
+            dataTermino: c.data_termino || '',
+            exigirMinItens: Boolean(c.exigir_min_itens),
+            tipoDesconto: c.tipo_desconto === "fixo" ? "fixo" : "percentual",
+            valorDesconto: parseFloat(c.valor_desconto) || 0,
+            aplicarFreteGratis: Boolean(c.aplicar_frete_gratis),
+            aplicacaoAutomatica: Boolean(c.aplicacao_automatica),
+            permiteAcumular: Boolean(c.permite_acumular),
+            usoUnico: Boolean(c.uso_unico),
+            cupomPrimeiraCompra: Boolean(c.cupom_primeira_compra),
+            numeroUtilizacoes: Number(c.numero_utilizacoes) || 0,
+            lojaId: c.loja_id || undefined,
+            tipoAlvo: targetType,
+            alvosId: alvos
+          };
+        });
+      } else if (appStateCupons.length > 0) {
+        parsedCupons = appStateCupons;
       } else if (get().cupons.length > 0) {
         parsedCupons = get().cupons;
       } else {
@@ -224,12 +253,21 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       alvosId: coupon.alvosId || []
     };
 
-    // 1. Atualiza memória e localStorage imediatamente com ID temporário
+    // 1. Atualiza memória e localStorage imediatamente
     const updatedCupons = [newCoupon, ...get().cupons.filter(c => c.codigo !== newCoupon.codigo || c.lojaId !== newCoupon.lojaId)];
     set({ cupons: updatedCupons });
     saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
 
-    // 2. Persiste no Supabase e captura o ID real gerado pelo banco
+    // 2. Backup no app_state
+    try {
+      await supabase.from('app_state' as any).upsert({
+        key: 'marketing_cupons',
+        value: updatedCupons,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+    } catch {}
+
+    // 3. Persiste no Supabase cupons table
     try {
       const dbCoupon = {
         codigo: newCoupon.codigo,
@@ -253,7 +291,6 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
         alvos_id: newCoupon.alvosId || []
       };
       const { data: inserted } = await supabase.from('cupons' as any).insert(dbCoupon).select().single();
-      // Substitui o ID temporário pelo ID real do banco
       if (inserted?.id) {
         const realId = String(inserted.id);
         const cuponsWithRealId = get().cupons.map(c =>
@@ -261,6 +298,14 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
         );
         set({ cupons: cuponsWithRealId });
         saveMarketingCache(cuponsWithRealId, get().promocoes, get().lojaPromocoes);
+
+        try {
+          await supabase.from('app_state' as any).upsert({
+            key: 'marketing_cupons',
+            value: cuponsWithRealId,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' });
+        } catch {}
       }
     } catch (e) {
       console.error("Erro ao inserir cupom no Supabase:", e);
@@ -268,12 +313,16 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
   },
 
   updateCoupon: async (id, updatedFields) => {
+    const previousCoupon = get().cupons.find(c => c.id === id);
+
     const updatedCupons = get().cupons.map(c => {
       if (c.id === id) {
         return {
           ...c,
           ...updatedFields,
           codigo: updatedFields.codigo ? updatedFields.codigo.trim().toUpperCase() : c.codigo,
+          tipoAlvo: updatedFields.tipoAlvo !== undefined ? updatedFields.tipoAlvo : c.tipoAlvo,
+          alvosId: updatedFields.alvosId !== undefined ? updatedFields.alvosId : c.alvosId,
           numeroUtilizacoes: updatedFields.numeroUtilizacoes !== undefined ? Number(updatedFields.numeroUtilizacoes) : c.numeroUtilizacoes
         };
       }
@@ -283,6 +332,18 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
     set({ cupons: updatedCupons });
     saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
 
+    // 1. Salva no app_state como backup garantido
+    try {
+      await supabase.from('app_state' as any).upsert({
+        key: 'marketing_cupons',
+        value: updatedCupons,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+    } catch (e) {
+      console.warn("Aviso ao salvar cupons no app_state:", e);
+    }
+
+    // 2. Salva na tabela cupons
     try {
       const dbUpdate: any = {};
       if (updatedFields.codigo !== undefined) dbUpdate.codigo = updatedFields.codigo.trim().toUpperCase();
@@ -304,20 +365,16 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       if (updatedFields.tipoAlvo !== undefined) dbUpdate.tipo_alvo = updatedFields.tipoAlvo;
       if (updatedFields.alvosId !== undefined) dbUpdate.alvos_id = updatedFields.alvosId;
 
-      // Verifica se o id é um ID real do banco (numérico/UUID) ou um ID local temporário
       const isLocalId = id.startsWith('cupom-');
       if (isLocalId) {
-        // ID temporário: busca pelo código + loja para encontrar a linha correta no banco
-        const currentCoupon = get().cupons.find(c => c.id === id);
-        if (currentCoupon) {
-          let q = supabase.from('cupons' as any).update(dbUpdate).eq('codigo', currentCoupon.codigo);
-          if (currentCoupon.lojaId) {
-            q = q.eq('loja_id', currentCoupon.lojaId);
-          } else {
-            q = q.is('loja_id', null);
+        // Tenta atualizar usando o código anterior do cupom
+        const lookupCode = previousCoupon?.codigo || updatedFields.codigo;
+        if (lookupCode) {
+          let q = supabase.from('cupons' as any).update(dbUpdate).eq('codigo', lookupCode);
+          if (previousCoupon?.lojaId) {
+            q = q.eq('loja_id', previousCoupon.lojaId);
           }
-          const { data: updated } = await q.select().single();
-          // Atualiza o ID local com o ID real do banco
+          const { data: updated } = await q.select().maybeSingle();
           if (updated?.id) {
             const realId = String(updated.id);
             const cuponsWithRealId = get().cupons.map(c =>
@@ -325,10 +382,52 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
             );
             set({ cupons: cuponsWithRealId });
             saveMarketingCache(cuponsWithRealId, get().promocoes, get().lojaPromocoes);
+          } else {
+            // Se não encontrou no banco, insere o cupom completo
+            const currentFull = get().cupons.find(c => c.id === id);
+            if (currentFull) {
+              const insertData = {
+                codigo: currentFull.codigo,
+                descricao: currentFull.descricao,
+                ativo: currentFull.ativo,
+                total_disponiveis: currentFull.totalDisponiveis,
+                valor_minimo: currentFull.valorMinimo,
+                data_inicio: currentFull.dataInicio || null,
+                data_termino: currentFull.dataTermino || null,
+                exigir_min_itens: currentFull.exigirMinItens,
+                tipo_desconto: currentFull.tipoDesconto,
+                valor_desconto: currentFull.valorDesconto,
+                aplicar_frete_gratis: currentFull.aplicarFreteGratis,
+                aplicacao_automatica: currentFull.aplicacaoAutomatica,
+                permite_acumular: currentFull.permiteAcumular,
+                uso_unico: currentFull.usoUnico,
+                cupom_primeira_compra: currentFull.cupomPrimeiraCompra,
+                numero_utilizacoes: currentFull.numeroUtilizacoes || 0,
+                loja_id: currentFull.lojaId || null,
+                tipo_alvo: currentFull.tipoAlvo || "todos",
+                alvos_id: currentFull.alvosId || []
+              };
+              const { data: inserted } = await supabase.from('cupons' as any).insert(insertData).select().maybeSingle();
+              if (inserted?.id) {
+                const realId = String(inserted.id);
+                const cuponsWithRealId = get().cupons.map(c =>
+                  c.id === id ? { ...c, id: realId } : c
+                );
+                set({ cupons: cuponsWithRealId });
+                saveMarketingCache(cuponsWithRealId, get().promocoes, get().lojaPromocoes);
+              }
+            }
           }
         }
       } else {
-        await supabase.from('cupons' as any).update(dbUpdate).eq('id', id);
+        const { error } = await supabase.from('cupons' as any).update(dbUpdate).eq('id', id);
+        if (error) {
+          // Fallback por código
+          const lookupCode = previousCoupon?.codigo || updatedFields.codigo;
+          if (lookupCode) {
+            await supabase.from('cupons' as any).update(dbUpdate).eq('codigo', lookupCode);
+          }
+        }
       }
     } catch (e) {
       console.error("Erro ao atualizar cupom no Supabase:", e);
@@ -336,12 +435,25 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
   },
 
   removeCoupon: async (id) => {
+    const previous = get().cupons.find(c => c.id === id);
     const updatedCupons = get().cupons.filter(c => c.id !== id);
     set({ cupons: updatedCupons });
     saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
 
     try {
-      await supabase.from('cupons' as any).delete().eq('id', id);
+      await supabase.from('app_state' as any).upsert({
+        key: 'marketing_cupons',
+        value: updatedCupons,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+    } catch {}
+
+    try {
+      if (!id.startsWith('cupom-')) {
+        await supabase.from('cupons' as any).delete().eq('id', id);
+      } else if (previous?.codigo) {
+        await supabase.from('cupons' as any).delete().eq('codigo', previous.codigo);
+      }
     } catch (e) {
       console.error("Erro ao remover cupom do Supabase:", e);
     }

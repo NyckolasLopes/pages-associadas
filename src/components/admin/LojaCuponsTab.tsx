@@ -78,11 +78,12 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
     }
   };
 
-  // Carrega todos os produtos do catálogo para seleção completa
+  // Carrega todos os produtos do catálogo para seleção completa e cupons do marketing
   const [catalogProducts, setCatalogProducts] = useState<Produto[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
 
   useEffect(() => {
+    loadMarketing();
     let mounted = true;
     setLoadingProducts(true);
     catalog.listProducts().then((prods) => {
@@ -95,7 +96,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
       if (mounted) setLoadingProducts(false);
     });
     return () => { mounted = false; };
-  }, []);
+  }, [loadMarketing]);
 
   // Mescla produtos do catálogo com produtos personalizados
   const allProducts = useMemo(() => {
@@ -280,12 +281,14 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
     setEditValor(String(coupon.valorDesconto || coupon.valor || coupon.descontoPercentual || coupon.descontoFixo || ""));
     setEditValorMinimo(coupon.valorMinimo ? String(coupon.valorMinimo) : "");
     setEditValidade(coupon.dataTermino || coupon.validade || "");
-    setEditTipoAlvo(coupon.tipoAlvo || (coupon.produtosIds?.length ? "produtos" : (coupon.categoriasIds?.length ? "categorias" : "todos")));
-    setEditAlvosId(coupon.alvosId || coupon.produtosIds || coupon.categoriasIds || []);
+    const targetType = coupon.tipoAlvo || (coupon.produtosIds?.length ? "produtos" : (coupon.categoriasIds?.length ? "categorias" : (coupon.alvosId?.length ? "produtos" : "todos")));
+    const targets = Array.isArray(coupon.alvosId) ? coupon.alvosId : (coupon.produtosIds || coupon.categoriasIds || []);
+    setEditTipoAlvo(targetType);
+    setEditAlvosId(targets);
     setEditSearchTarget("");
   };
 
-  const handleSaveEditCoupon = () => {
+  const handleSaveEditCoupon = async () => {
     if (!editingCoupon) return;
     const cleanCode = sanitizeCouponCode(editCodigo);
     if (!cleanCode || cleanCode.length < 3) {
@@ -306,7 +309,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
 
     const numMinimo = editValorMinimo ? parseFloat(editValorMinimo.replace(",", ".")) : 0;
 
-    updateCoupon(editingCoupon.id, {
+    await updateCoupon(editingCoupon.id, {
       codigo: cleanCode,
       tipoDesconto: editTipo === "percent" ? "percentual" : "fixo",
       valorDesconto: numValor,
@@ -947,21 +950,21 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                 <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl text-xs">
                   <button
                     type="button"
-                    onClick={() => { setEditTipoAlvo("todos"); setEditAlvosId([]); }}
+                    onClick={() => { if (editTipoAlvo !== "todos") { setEditTipoAlvo("todos"); setEditAlvosId([]); } }}
                     className={`py-1.5 rounded-lg font-bold transition-all ${editTipoAlvo === "todos" ? "bg-white text-primary shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
                   >
                     Toda a Loja
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setEditTipoAlvo("categorias"); setEditAlvosId([]); }}
+                    onClick={() => { if (editTipoAlvo !== "categorias") { setEditTipoAlvo("categorias"); setEditAlvosId([]); } }}
                     className={`py-1.5 rounded-lg font-bold transition-all ${editTipoAlvo === "categorias" ? "bg-white text-primary shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
                   >
                     Categorias
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setEditTipoAlvo("produtos"); setEditAlvosId([]); }}
+                    onClick={() => { if (editTipoAlvo !== "produtos") { setEditTipoAlvo("produtos"); setEditAlvosId([]); } }}
                     className={`py-1.5 rounded-lg font-bold transition-all ${editTipoAlvo === "produtos" ? "bg-white text-primary shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
                   >
                     Produtos
@@ -985,49 +988,49 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                         editFilteredCategories.map(cat => {
                           const isChecked = editAlvosId.includes(cat.id);
                           return (
-                            <label
+                            <div
                               key={cat.id}
+                              onClick={() => handleToggleEditAlvo(cat.id)}
                               className={`flex items-center gap-2.5 p-2 rounded-lg text-xs cursor-pointer border transition-colors ${
                                 isChecked ? "bg-primary/5 border-primary/30 text-primary font-bold" : "hover:bg-slate-50 border-transparent text-slate-700"
                               }`}
                             >
                               <Checkbox
                                 checked={isChecked}
-                                onCheckedChange={() => handleToggleEditAlvo(cat.id)}
                               />
                               <span className="truncate flex-1">{cat.nome}</span>
-                            </label>
+                            </div>
                           );
                         })
                       ) : (
                         editFilteredProducts.map((prod: any) => {
                           const isChecked = editAlvosId.includes(prod.id);
                           return (
-                            <label
+                            <div
                               key={prod.id}
+                              onClick={() => handleToggleEditAlvo(prod.id)}
                               className={`flex items-center gap-2.5 p-1.5 rounded-lg text-xs cursor-pointer border transition-colors ${
-                                isChecked ? "bg-primary/5 border-primary/30 text-primary" : "hover:bg-slate-50 border-transparent text-slate-700"
+                                isChecked ? "bg-primary/5 border-primary/30 text-primary font-semibold" : "hover:bg-slate-50 border-transparent text-slate-700"
                               }`}
                             >
                               <Checkbox
                                 checked={isChecked}
-                                onCheckedChange={() => handleToggleEditAlvo(prod.id)}
                               />
                               <img
                                 src={productImage(prod)}
                                 alt=""
                                 className="h-7 w-7 object-contain rounded bg-white border shrink-0"
                               />
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-bold truncate text-slate-800">{prod.nome}</div>
-                                  <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                                    <span>{prod.marca || "Associadas"}</span>
-                                    {(prod.ean || prod.codigoBarras || prod.sku) && (
-                                      <span>EAN: {prod.ean || prod.codigoBarras || prod.sku}</span>
-                                    )}
-                                  </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-bold truncate text-slate-800">{prod.nome}</div>
+                                <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                  <span>{prod.marca || "Associadas"}</span>
+                                  {(prod.ean || prod.codigoBarras || prod.sku) && (
+                                    <span>EAN: {prod.ean || prod.codigoBarras || prod.sku}</span>
+                                  )}
                                 </div>
-                            </label>
+                              </div>
+                            </div>
                           );
                         })
                       )}

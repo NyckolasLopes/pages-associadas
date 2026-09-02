@@ -688,7 +688,9 @@ function CuponsIndexPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setEditingCupom({ ...editingCupom, tipoAlvo: "todos", alvosId: [] });
+                      if (editingCupom.tipoAlvo !== "todos") {
+                        setEditingCupom({ ...editingCupom, tipoAlvo: "todos", alvosId: [] });
+                      }
                       setEditSearchTarget("");
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
@@ -704,7 +706,9 @@ function CuponsIndexPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setEditingCupom({ ...editingCupom, tipoAlvo: "categorias", alvosId: [] });
+                      if (editingCupom.tipoAlvo !== "categorias") {
+                        setEditingCupom({ ...editingCupom, tipoAlvo: "categorias", alvosId: [] });
+                      }
                       setEditSearchTarget("");
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
@@ -720,7 +724,9 @@ function CuponsIndexPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setEditingCupom({ ...editingCupom, tipoAlvo: "produtos", alvosId: [] });
+                      if (editingCupom.tipoAlvo !== "produtos") {
+                        setEditingCupom({ ...editingCupom, tipoAlvo: "produtos", alvosId: [] });
+                      }
                       setEditSearchTarget("");
                     }}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
@@ -759,7 +765,7 @@ function CuponsIndexPage() {
                             }`}
                           >
                             <div className="flex items-center gap-2">
-                              <Checkbox checked={isSelected} onCheckedChange={() => handleToggleEditAlvo(cat.id)} />
+                              <Checkbox checked={isSelected} />
                               <span>{cat.nome}</span>
                             </div>
                             <span className="text-[10px] text-slate-400">ID: {cat.id}</span>
@@ -776,7 +782,7 @@ function CuponsIndexPage() {
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <Input
-                        placeholder="Buscar produto por nome, marca ou SKU..."
+                        placeholder="Buscar produto por nome, marca ou EAN..."
                         value={editSearchTarget}
                         onChange={(e) => setEditSearchTarget(e.target.value)}
                         className="pl-8 h-8 text-xs bg-white"
@@ -791,10 +797,10 @@ function CuponsIndexPage() {
                             key={prod.id}
                             onClick={() => handleToggleEditAlvo(prod.id)}
                             className={`flex items-center gap-2.5 p-1.5 rounded-lg cursor-pointer text-xs transition-colors border ${
-                              isSelected ? "bg-primary/5 border-primary/30 text-slate-900" : "hover:bg-slate-50 border-transparent text-slate-700"
+                              isSelected ? "bg-primary/5 border-primary/30 text-slate-900 font-semibold" : "hover:bg-slate-50 border-transparent text-slate-700"
                             }`}
                           >
-                            <Checkbox checked={isSelected} onCheckedChange={() => handleToggleEditAlvo(prod.id)} />
+                            <Checkbox checked={isSelected} />
                             <img
                               src={productImage(prod)}
                               alt={prod.nome}
