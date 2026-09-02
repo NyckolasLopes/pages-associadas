@@ -932,7 +932,20 @@ function PDP() {
   };
 
   const isGenerico = isGenericoProd;
-  const isMedication = String(cat?.nome || "").toLowerCase().includes("medicamento") || String(p.nome || "").toLowerCase().includes("medicamento") || p.categoriaId === "142" || (p.tarja && p.tarja.trim() !== "") || isGenerico;
+  const isMedication = String(cat?.nome || "").toLowerCase().includes("medicamento") || 
+    String(p.nome || "").toLowerCase().includes("medicamento") || 
+    String(p.categoriaId) === "142" || 
+    (p.subcategoriaId && String(p.subcategoriaId).startsWith("142")) ||
+    (Array.isArray(p.categoriasIds) && p.categoriasIds.some(id => String(id) === "142")) ||
+    (Array.isArray(p.categoriasAdicionais) && p.categoriasAdicionais.some(id => String(id) === "142")) ||
+    (p.tarja && p.tarja.trim() !== "" && p.tarja !== "Sem Tarja" && p.tarja !== "none") || 
+    isGenerico;
+
+  const isRetencaoAplica = isMedication && (
+    p.retemReceitaStatus === "retem" ||
+    p.retemReceitaStatus === "nao_retem" ||
+    (p.retemReceitaStatus !== "nao_aplica" && (p.retemReceita === true || (p.retemReceita === false && p.tarja && p.tarja !== "Sem Tarja" && p.tarja !== "none")))
+  );
   const showPrincipioAtivo = isMedication;
   const hideReviews = p.categoriaId === "142" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("142")) || p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"));
   const isService = p.tipoProduto === "servico" || (p.tipoProduto !== "fisico" && !!(p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
@@ -1283,7 +1296,7 @@ function PDP() {
                 maxStock={maxStock}
             />
 
-            {p.alertaRegulatorio && (
+            {p.alertaRegulatorio && isMedication && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-8 shadow-sm">
                 <div className="flex items-start gap-3">
                   <Info className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />
@@ -1305,21 +1318,27 @@ function PDP() {
                 <div className="overflow-hidden rounded-lg">
                   <table className="w-full text-sm text-left">
                     <tbody>
-                      {[
-                        { label: "Ref.", value: p.codigoInterno || p.sku || p.id },
-                        { label: "SKU", value: p.sku || 'Não informado' },
-                        { label: "Código de barras", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
-                        ...(p.eansSecundarios && p.eansSecundarios.length > 0 ? [{ label: "EANs Secundários", value: p.eansSecundarios.join(', ') }] : []),
+                      {(isMedication ? [
+                        { label: "Cód Interno:", value: p.codigoInterno || p.sku || p.id },
+                        { label: "Código de Barras/EAN", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
+                        ...(isRetencaoAplica ? [{ label: "Retém receita", value: p.retemReceita ? 'Sim' : 'Não' }] : []),
+                        ...(p.tarja && p.tarja !== "Sem Tarja" && p.tarja !== "none" ? [{ label: "Tarja", value: p.tarja }] : []),
+                        ...(p.tipoMedicamento && p.tipoMedicamento !== 'none' ? [{ label: "Tipo de medicamento", value: p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) }] : (checkIsGenerico(p) ? [{ label: "Tipo de medicamento", value: "Genérico" }] : [])),
                         { label: "Marca", value: p.marca || 'Não informada' },
+                        ...(p.registroAnvisa ? [{ label: "Registro ANVISA", value: p.registroAnvisa }] : []),
+                        ...((p.principiosAtivos && Array.isArray(p.principiosAtivos) && p.principiosAtivos.length > 0) ? [{
+                          label: "Princípios Ativos / Dosagem",
+                          value: p.principiosAtivos.map((pa: any) => {
+                            const nome = typeof pa === 'string' ? pa : (pa?.nome || '');
+                            const conc = typeof pa === 'object' && pa?.concentracao ? ` ${pa.concentracao}${pa?.unidadeMedida ? ` ${pa.unidadeMedida}` : ''}` : '';
+                            return `${nome}${conc}`;
+                          }).filter(Boolean).join(', ')
+                        }] : []),
                         ...(p.classeTerapeutica && p.classeTerapeutica !== 'none' ? [{ label: "Classe Terapêutica", value: p.classeTerapeutica }] : []),
                         ...(p.indicacaoTerapeutica && p.indicacaoTerapeutica !== 'none' ? [{ label: "Indicação Terapêutica", value: p.indicacaoTerapeutica }] : []),
-                        ...(p.ncm ? [{ label: "NCM", value: p.ncm }] : []),
-                        ...(p.registroAnvisa ? [{ label: "Registro ANVISA", value: p.registroAnvisa }] : []),
-                        ...(p.tarja && p.tarja !== "Sem Tarja" && p.tarja !== "none" ? [{ label: "Tarja", value: p.tarja }] : []),
                         ...(p.tipoReceita ? [{ label: "Tipo de Receita", value: p.tipoReceita }] : []),
-                        ...(p.retemReceita !== undefined ? [{ label: "Retém receita", value: p.retemReceita ? 'Sim' : 'Não' }] : []),
-                        ...(p.tipoMedicamento && p.tipoMedicamento !== 'none' ? [{ label: "Tipo de medicamento", value: p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) }] : (checkIsGenerico(p) ? [{ label: "Tipo de medicamento", value: "Genérico" }] : [])),
-                        ...(p.produtoNatureza ? [{ label: "Natureza", value: p.produtoNatureza === 'servico' ? 'Serviço' : 'Produto Físico' }] : []),
+                        ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo || "Característica Adicional", value: c.descricao })) : []),
+                        ...(p.classificacaoRegistro && p.classificacaoRegistro !== 'none' ? [{ label: "Classificação", value: p.classificacaoRegistro }] : []),
                         ...(p.categoriasIds && p.categoriasIds.length > 0 ? [
                           { 
                             label: "Categorias Adicionais", 
@@ -1333,9 +1352,25 @@ function PDP() {
                             }).filter(Boolean).join(" / ")
                           }
                         ] : []),
-                        { label: "É kit", value: String(p.tipoProduto || '').toLowerCase() === 'kit' ? 'Sim' : 'Não' },
-                        ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo, value: c.descricao })) : [])
-                      ].filter(row => row.value !== null && row.value !== '' && row.value !== undefined).map((row, idx) => (
+                      ] : [
+                        { label: "Cód Interno:", value: p.codigoInterno || p.sku || p.id },
+                        { label: "Código de Barras/EAN", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
+                        ...(p.marca ? [{ label: "Marca", value: p.marca }] : []),
+                        ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo || "Característica", value: c.descricao })) : []),
+                        ...(p.categoriasIds && p.categoriasIds.length > 0 ? [
+                          { 
+                            label: "Categorias Adicionais", 
+                            value: p.categoriasIds.map((catId: string, i: number) => {
+                              const cats = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
+                              const cat = cats.find((c: any) => String(c.id) === String(catId));
+                              const subId = p.subcategoriasIds?.[i];
+                              const sub = subId ? cats.find((c: any) => String(c.id) === String(subId)) : null;
+                              if (!cat) return null;
+                              return sub ? `${cat.nome} > ${sub.nome}` : cat.nome;
+                            }).filter(Boolean).join(" / ")
+                          }
+                        ] : []),
+                      ]).filter(row => row.value !== null && row.value !== '' && row.value !== undefined).map((row, idx) => (
                         <tr key={idx} className={`${idx % 2 === 0 ? 'bg-slate-50 ' : ''}border-b last:border-b-0`}>
                           <td className="py-3 px-4 text-slate-500 w-1/3">{row.label}</td>
                           <td className="py-3 px-4 font-bold text-slate-900">{row.value}</td>
@@ -1457,11 +1492,11 @@ function PDP() {
                 {p.tarja === "Vermelha" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
               </span>
             )}
-            {isMedication && p.retemReceita ? (
+            {isRetencaoAplica && p.retemReceita ? (
               <span className="text-[11px] px-2 py-0.5 rounded shadow-sm bg-red-600 text-white font-bold">
                 Retém receita
               </span>
-            ) : (isMedication && p.retemReceita === false ? (
+            ) : (isRetencaoAplica && p.retemReceita === false ? (
               <span className="text-[11px] px-2 py-0.5 rounded shadow-sm bg-slate-100 text-slate-700 font-bold border border-slate-200">
                 Não retém receita
               </span>
@@ -1747,83 +1782,72 @@ function PDP() {
             <div className="bg-muted/40 border rounded-xl p-5 text-sm leading-relaxed h-fit shadow-sm">
               <h3 className="font-bold text-base mb-4 border-b pb-2">Informações Técnicas</h3>
               <div className="space-y-3">
-                <div>
-                  <strong className="block text-xs text-muted-foreground">marca</strong>
-                  <div className="font-medium">{p.marca}</div>
-                </div>
-                <div>
-                  <strong className="block text-xs text-muted-foreground">EAN (Código de barras)</strong>
-                  <div className="font-medium">{p.ean}</div>
-                </div>
-                {p.ean2 && (
-                  <div>
-                    <strong className="block text-xs text-muted-foreground">EAN Secundário</strong>
-                    <div className="font-medium">{p.ean2}</div>
-                  </div>
-                )}
-                {p.ean3 && (
-                  <div>
-                    <strong className="block text-xs text-muted-foreground">EAN Terciário</strong>
-                    <div className="font-medium">{p.ean3}</div>
-                  </div>
-                )}
-                
-                {showPrincipioAtivo && (
+                {isMedication ? (
                   <>
-                    <div>
-                      <strong className="block text-xs text-muted-foreground">Princípios Ativos</strong>
-                      <div className="font-medium">
-                        {p.principiosAtivos && p.principiosAtivos.length > 0 
-                          ? p.principiosAtivos.map((pa: any) => typeof pa === 'string' ? pa : pa.nome).filter(Boolean).join(', ')
-                          : (p.nome || '').split(/[0-9]/)[0].replace(/COM|GOTAS|XAROPE|GENÉRICO|-/gi, '').trim() || 'Não informado'}
+                    {p.marca && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">Marca</strong>
+                        <div className="font-medium">{p.marca}</div>
                       </div>
-                    </div>
-                    <div>
-                      <strong className="block text-xs text-muted-foreground">Dosagem</strong>
-                      <div className="font-medium">
-                        {(p.principiosAtivos && p.principiosAtivos.length > 0 && p.principiosAtivos.some((pa: any) => typeof pa === 'object' && pa?.concentracao))
-                          ? p.principiosAtivos.filter((pa: any) => typeof pa === 'object' && pa?.concentracao).map((pa: any) => `${pa.concentracao}${pa.unidadeMedida ? ` ${pa.unidadeMedida}` : ''}`).join(', ')
-                          : ((p.nome || '').match(/\d+(?:,\d+)?\s*(?:MG\/ML|MG\/G|MG|G|ML|MCG|UI\/G|UI|UI\/ML|U)\b/gi)?.join(', ') || 'Não informada')
-                        }
+                    )}
+                    {p.ean && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">Código de Barras/EAN</strong>
+                        <div className="font-medium">{p.ean}</div>
                       </div>
-                    </div>
+                    )}
+                    {(p.ean2 || (p.eansSecundarios && p.eansSecundarios.length > 0)) && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">EAN Secundário</strong>
+                        <div className="font-medium">{[p.ean2, ...(p.eansSecundarios || [])].filter(Boolean).join(', ')}</div>
+                      </div>
+                    )}
+                    {p.ncm && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">NCM</strong>
+                        <div className="font-medium">{p.ncm}</div>
+                      </div>
+                    )}
                   </>
-                )}
-
-                {p.registroAnvisa && (
-                  <div>
-                    <strong className="block text-xs text-muted-foreground">Registro MS (ANVISA)</strong>
-                    <div className="font-medium">{p.registroAnvisa}</div>
-                  </div>
-                )}
-                {p.tipoMedicamento && p.tipoMedicamento !== 'none' && (
-                  <div>
-                    <strong className="block text-xs text-muted-foreground">Tipo de Medicamento</strong>
-                    <div className="font-medium capitalize">{p.tipoMedicamento.replace(/_/g, ' ')}</div>
-                  </div>
-                )}
-                {p.classificacaoRegistro && p.classificacaoRegistro !== 'none' && (
-                  <div>
-                    <strong className="block text-xs text-muted-foreground">Classificação</strong>
-                    <div className="font-medium capitalize">{p.classificacaoRegistro.replace(/_/g, ' ')}</div>
-                  </div>
-                )}
-                {p.classeTerapeutica && p.classeTerapeutica !== 'none' && (
-                  <div>
-                    <strong className="block text-xs text-muted-foreground">Classe Terapêutica</strong>
-                    <div className="font-medium capitalize">{p.classeTerapeutica.replace(/_/g, ' ')}</div>
-                  </div>
-                )}
-                {p.indicacaoTerapeutica && p.indicacaoTerapeutica !== 'none' && (
-                  <div>
-                    <strong className="block text-xs text-muted-foreground">Indicação Terapêutica</strong>
-                    <div className="font-medium capitalize">{p.indicacaoTerapeutica.replace(/_/g, ' ')}</div>
-                  </div>
+                ) : (
+                  <>
+                    {p.ncm && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">NCM</strong>
+                        <div className="font-medium">{p.ncm}</div>
+                      </div>
+                    )}
+                    {p.ean && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">Código de Barras/EAN</strong>
+                        <div className="font-medium">{p.ean}</div>
+                      </div>
+                    )}
+                    {(p.ean2 || (p.eansSecundarios && p.eansSecundarios.length > 0)) && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">EANs Secundários</strong>
+                        <div className="font-medium">{[p.ean2, ...(p.eansSecundarios || [])].filter(Boolean).join(', ')}</div>
+                      </div>
+                    )}
+                    {p.registroAnvisa && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">Número da ANVISA</strong>
+                        <div className="font-medium">{p.registroAnvisa}</div>
+                      </div>
+                    )}
+                    {p.classificacaoRegistro && p.classificacaoRegistro !== 'none' && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">Classificação</strong>
+                        <div className="font-medium capitalize">{p.classificacaoRegistro.replace(/_/g, ' ')}</div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               
               {p.alertaRegulatorio && (
                 <div className="mt-6 p-3.5 bg-amber-50 text-amber-900 rounded-xl text-xs font-bold text-center border border-amber-200 uppercase tracking-tight shadow-xs">
+                  <span className="block mb-1 text-[11px] text-amber-800 font-extrabold">ALERTA REGULATÓRIO</span>
                   {p.alertaTexto || '"AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."'}
                 </div>
               )}
