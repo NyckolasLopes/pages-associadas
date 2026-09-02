@@ -41,14 +41,22 @@ export function useCartSync() {
     }
   }, [user?.id]);
 
-  // 2. Sincroniza em tempo real as alterações do carrinho com o Supabase (para clientes logados e visitantes)
+  // 2. Sincroniza em tempo real as alterações do carrinho com o Supabase (EXCLUSIVAMENTE para clientes logados)
   useEffect(() => {
+    // SÓ SINCRONIZA CARRINHO ABANDONADO SE O USUÁRIO ESTIVER LOGADO
+    if (!user?.id) {
+      if (syncTimeout.current) clearTimeout(syncTimeout.current);
+      return;
+    }
+
     if (syncTimeout.current) {
       clearTimeout(syncTimeout.current);
     }
 
     syncTimeout.current = setTimeout(async () => {
       try {
+        if (!user?.id) return;
+
         let safeItems: any[] = [];
         if (Array.isArray(items)) {
           safeItems = items.map((item: any) => ({
@@ -61,48 +69,22 @@ export function useCartSync() {
           }));
         }
 
-        // Obtém dados de contato armazenados temporariamente pelo checkout ou login
-        let contact: { nome?: string; email?: string; telefone?: string } | null = null;
-        try {
-          const stored = localStorage.getItem('fa-customer-contact') || sessionStorage.getItem('fa-customer-contact');
-          if (stored) contact = JSON.parse(stored);
-        } catch {}
-
-        // Identificador de sessão para visitantes
-        let guestSessionId = '';
-        try {
-          guestSessionId = sessionStorage.getItem('fa-visitor-session') || localStorage.getItem('fa-visitor-session') || '';
-          if (!guestSessionId) {
-            guestSessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-            sessionStorage.setItem('fa-visitor-session', guestSessionId);
-            localStorage.setItem('fa-visitor-session', guestSessionId);
-          }
-        } catch {}
-
         // Se o carrinho foi esvaziado, atualiza status para recuperado
         if (safeItems.length === 0) {
-          if (user?.id) {
-            await supabase
-              .from('carrinhos_abandonados' as any)
-              .update({ status: 'recuperado', updated_at: new Date().toISOString() })
-              .eq('user_id', user.id)
-              .eq('status', 'abandonado');
-          } else if (guestSessionId) {
-            await supabase
-              .from('carrinhos_abandonados' as any)
-              .update({ status: 'recuperado', updated_at: new Date().toISOString() })
-              .eq('notes', `session:${guestSessionId}`)
-              .eq('status', 'abandonado');
-          }
+          await supabase
+            .from('carrinhos_abandonados' as any)
+            .update({ status: 'recuperado', updated_at: new Date().toISOString() })
+            .eq('user_id', user.id)
+            .eq('status', 'abandonado');
           return;
         }
 
-        const clienteNome = (user as any)?.nome || (user as any)?.name || contact?.nome || (user?.email ? user.email.split('@')[0] : 'Cliente Visitante');
-        const clienteEmail = user?.email || contact?.email || '';
-        const clienteTelefone = (user as any)?.celular || (user as any)?.telefone || contact?.telefone || '';
+        const clienteNome = (user as any)?.nome || (user as any)?.name || (user?.email ? user.email.split('@')[0] : 'Cliente');
+        const clienteEmail = user?.email || '';
+        const clienteTelefone = (user as any)?.celular || (user as any)?.telefone || '';
 
         const cartData: any = {
-          user_id: user?.id || null,
+          user_id: user.id,
           loja_id: selectedPharmacyId || null,
           nome_cliente: clienteNome,
           email_cliente: clienteEmail,
@@ -110,23 +92,18 @@ export function useCartSync() {
           items: safeItems,
           total: total || 0,
           status: 'abandonado',
-          notes: !user?.id ? `session:${guestSessionId}` : '',
+          notes: '',
           updated_at: new Date().toISOString()
         };
 
-        // Verifica se já existe um carrinho aberto para este usuário ou sessão
-        let query = (supabase
+        // Verifica se já existe um carrinho aberto para este usuário
+        const { data: existingCarts, error: fetchErr } = await (supabase
           .from('carrinhos_abandonados' as any) as any)
           .select('id')
-          .eq('status', 'abandonado');
-
-        if (user?.id) {
-          query = query.eq('user_id', user.id);
-        } else {
-          query = query.eq('notes', `session:${guestSessionId}`);
-        }
-
-        const { data: existingCarts, error: fetchErr } = await query.order('updated_at', { ascending: false }).limit(1);
+          .eq('status', 'abandonado')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
+          .limit(1);
 
         if (fetchErr) {
           console.error("[CartSync] Erro na verificação:", fetchErr.message);
@@ -141,13 +118,13 @@ export function useCartSync() {
             .from('carrinhos_abandonados' as any) as any)
             .update(cartData)
             .eq('id', existingCart.id);
-        } else if (user?.id && selectedPharmacyId) {
+        } else if (selectedPharmacyId) {
           // Usuário logado: upsert evitando conflito de chave única (user_id, loja_id)
           await (supabase
             .from('carrinhos_abandonados' as any) as any)
             .upsert(cartData, { onConflict: 'user_id, loja_id' });
         } else {
-          // Visitante: insere novo carrinho abandonado
+          // Insere novo carrinho abandonado
           await (supabase
             .from('carrinhos_abandonados' as any) as any)
             .insert(cartData);

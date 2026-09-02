@@ -213,7 +213,9 @@ export function PedidosAdmin() {
   // Apenas carrinhos abandonados reais (da tabela carrinhos_abandonados do Supabase)
   // NÃO inclui pedidos concluídos nem pendentes — esses ficam em admin/pedidos
   const abandonedCartItems: AbandonedCartItem[] = useMemo(() => {
-    return allAbandonedCarts.map(cart => {
+    return allAbandonedCarts
+      .filter(cart => cart.client !== 'Cliente Visitante' && cart.client !== 'Cliente Não Identificado')
+      .map(cart => {
       const cartItems = Array.isArray(cart.items) ? cart.items : Object.values(cart.items || {});
       const totalItemsCount = cartItems.reduce((acc: number, p: any) => acc + (p.qtd || p.quantidade || 1), 0) || cartItems.length || 0;
       const itemsListText = cartItems.map((p: any) => `${p.qtd || p.quantidade || 1}x ${p.nome}`).join(", ");
