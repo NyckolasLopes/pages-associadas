@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Apple, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { 
+  getLoginLockStatus, 
+  recordFailedLoginAttempt, 
+  resetLoginSecurity, 
+  formatTimeLeft 
+} from "@/utils/loginSecurity";
 
 const loginSchema = z.object({
   email: z.string().email("Por favor, insira um e-mail válido."),
@@ -44,25 +50,20 @@ function LoginPage() {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   
   useEffect(() => {
-    const lock = localStorage.getItem("fa_login_lock");
-    if (lock) {
-      const lockTime = parseInt(lock);
-      if (lockTime > Date.now()) {
-        setLockedUntil(lockTime);
-      } else {
-        localStorage.removeItem("fa_login_lock");
-        localStorage.setItem("fa_login_attempts", "0");
-      }
+    const status = getLoginLockStatus();
+    if (status.isLocked) {
+      setLockedUntil(status.lockedUntil);
+      setTimeLeft(status.timeLeftSeconds);
     }
     
     const interval = setInterval(() => {
-      if (lockedUntil > Date.now()) {
-        setTimeLeft(Math.ceil((lockedUntil - Date.now()) / 1000));
+      const s = getLoginLockStatus();
+      if (s.isLocked) {
+        setLockedUntil(s.lockedUntil);
+        setTimeLeft(s.timeLeftSeconds);
       } else if (lockedUntil > 0) {
         setLockedUntil(0);
         setTimeLeft(0);
-        localStorage.removeItem("fa_login_lock");
-        localStorage.setItem("fa_login_attempts", "0");
       }
     }, 1000);
     return () => clearInterval(interval);
@@ -70,8 +71,9 @@ function LoginPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (lockedUntil > Date.now()) {
-      toast.error(`Aguarde ${timeLeft} segundos antes de tentar novamente.`);
+    const currentLock = getLoginLockStatus();
+    if (currentLock.isLocked) {
+      toast.error(`Conta bloqueada por segurança. Aguarde ${formatTimeLeft(currentLock.timeLeftSeconds)} antes de tentar novamente.`);
       return;
     }
 
@@ -98,32 +100,27 @@ function LoginPage() {
     
     if (result === "rate_limit") {
       toast.error("Muitas tentativas detectadas pelos nossos servidores. Por segurança, aguarde alguns minutos.");
-      const lockTime = Date.now() + 5 * 60 * 1000;
-      localStorage.setItem("fa_login_lock", lockTime.toString());
-      setLockedUntil(lockTime);
       return;
     }
 
     const targetRedirect = (!redirect || redirect === "/") ? `/${storeSlug}` : redirect;
 
     if (result === "otp_required") {
-      localStorage.setItem("fa_login_attempts", "0");
+      resetLoginSecurity();
       setIsOtpMode(true);
       toast.success("Código de segurança enviado para o seu e-mail!");
     } else if (result === true) {
-      localStorage.setItem("fa_login_attempts", "0");
+      resetLoginSecurity();
       navigate({ to: targetRedirect as any, search: restSearch });
     } else {
-      const attempts = parseInt(localStorage.getItem("fa_login_attempts") || "0") + 1;
-      localStorage.setItem("fa_login_attempts", attempts.toString());
-      
-      if (attempts >= 3) {
-        const lockTime = Date.now() + 10 * 60 * 1000; // 10 minutes local lock
-        localStorage.setItem("fa_login_lock", lockTime.toString());
-        setLockedUntil(lockTime);
-        toast.error("Muitas tentativas falhas. Conta bloqueada temporariamente.");
+      const fail = recordFailedLoginAttempt();
+      if (fail.isLocked) {
+        const s = getLoginLockStatus();
+        setLockedUntil(s.lockedUntil);
+        setTimeLeft(s.timeLeftSeconds);
+        toast.error(`Muitas tentativas falhas. Conta bloqueada temporariamente por ${fail.formattedDuration}.`);
       } else {
-        toast.error(`E-mail ou senha incorretos. Tentativa ${attempts}/3`);
+        toast.error(`E-mail ou senha incorretos. Tentativa ${fail.attemptsInRound}/3`);
       }
     }
   };
@@ -280,7 +277,7 @@ function LoginPage() {
               </div>
 
               <Button type="submit" className="w-full h-11 text-base font-bold" disabled={lockedUntil > Date.now()}>
-                {lockedUntil > Date.now() ? `Bloqueado (${timeLeft}s)` : "Entrar"}
+                {lockedUntil > Date.now() ? `Bloqueado (${formatTimeLeft(timeLeft)})` : "Entrar"}
               </Button>
             </form>
             <div className="mt-8 text-center text-sm text-muted-foreground border-t pt-6">

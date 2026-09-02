@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,12 @@ import { toast } from "sonner";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { 
+  getLoginLockStatus, 
+  recordFailedLoginAttempt, 
+  resetLoginSecurity, 
+  formatTimeLeft 
+} from "@/utils/loginSecurity";
 
 export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boolean, onOpenChange: (open: boolean) => void, onLoginSuccess: () => void }) {
   const login = useAuth(s => s.login);
@@ -16,6 +22,16 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
   const [senha, setSenha] = useState("");
   const [step, setStep] = useState<"credentials" | "reset">("credentials");
   const [loading, setLoading] = useState(false);
+  const [lockStatus, setLockStatus] = useState(getLoginLockStatus());
+
+  useEffect(() => {
+    if (!open) return;
+    setLockStatus(getLoginLockStatus());
+    const interval = setInterval(() => {
+      setLockStatus(getLoginLockStatus());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,14 +41,28 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
     const cleanSenha = senha.trim();
 
     if (step === "credentials") {
+      const currentLock = getLoginLockStatus();
+      if (currentLock.isLocked) {
+        toast.error(`Conta bloqueada por segurança. Aguarde ${formatTimeLeft(currentLock.timeLeftSeconds)}.`);
+        setLoading(false);
+        return;
+      }
+
       const res = await login(cleanEmail, cleanSenha, activePharmacy?.slug || "loja-padrao");
       if (res === true) {
+        resetLoginSecurity();
         onOpenChange(false);
         onLoginSuccess();
       } else if (res === "rate_limit") {
         toast.error("Muitas tentativas. Tente novamente mais tarde.");
       } else {
-        toast.error("Credenciais inválidas");
+        const fail = recordFailedLoginAttempt();
+        setLockStatus(getLoginLockStatus());
+        if (fail.isLocked) {
+          toast.error(`Muitas tentativas falhas. Conta bloqueada temporariamente por ${fail.formattedDuration}.`);
+        } else {
+          toast.error(`Credenciais inválidas. Tentativa ${fail.attemptsInRound}/3`);
+        }
       }
     } else {
       const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
@@ -62,7 +92,7 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
                 <Label>E-mail</Label>
                 <Input 
                   required 
-                  type="email"
+                  type="email" 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
                   placeholder="voce@email.com" 
@@ -82,8 +112,8 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
                   onChange={e => setSenha(e.target.value)} 
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Entrando..." : "Entrar"}
+              <Button type="submit" className="w-full" disabled={loading || lockStatus.isLocked}>
+                {lockStatus.isLocked ? `Bloqueado (${formatTimeLeft(lockStatus.timeLeftSeconds)})` : loading ? "Entrando..." : "Entrar"}
               </Button>
               <div className="text-center text-sm mt-4 text-muted-foreground">
                 Ainda não tem conta?{" "}
