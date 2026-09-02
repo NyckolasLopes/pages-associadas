@@ -1,18 +1,23 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAdmin } from "@/stores/admin";
+import { useAdminCategories } from "@/stores/categories";
+import { useAdminProducts } from "@/stores/products";
 import { useMarketing, type Coupon } from "@/stores/marketing";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Tag, Plus, Trash2, Calendar, DollarSign, Percent, CheckCircle2, XCircle } from "lucide-react";
+import { Tag, Plus, Trash2, Calendar, DollarSign, Percent, CheckCircle2, XCircle, Search, Layers, Package, Check } from "lucide-react";
 import { sanitizeCouponCode, sanitizeText, validatePrice } from "@/lib/security";
 import { checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
 import { brl } from "@/lib/format";
 
 export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
   const { pharmacies } = useAdmin();
+  const { categories } = useAdminCategories();
+  const { customProducts } = useAdminProducts();
   const { cupons, addCoupon, removeCoupon, updateCoupon } = useMarketing();
   const pharmacy = pharmacies.find((p) => p.id === lojaId);
 
@@ -25,6 +30,28 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
   const [valorMinimo, setValorMinimo] = useState<string>("");
   const [validade, setValidade] = useState<string>("");
   const [limiteUsos, setLimiteUsos] = useState<string>("");
+
+  const [tipoAlvo, setTipoAlvo] = useState<"todos" | "categorias" | "produtos">("todos");
+  const [alvosId, setAlvosId] = useState<string[]>([]);
+  const [searchTarget, setSearchTarget] = useState("");
+
+  const filteredCategories = useMemo(() => {
+    if (!searchTarget) return categories;
+    const q = searchTarget.toLowerCase();
+    return categories.filter(c => c.nome.toLowerCase().includes(q));
+  }, [categories, searchTarget]);
+
+  const filteredProducts = useMemo(() => {
+    if (!searchTarget) return (customProducts || []).slice(0, 30);
+    const q = searchTarget.toLowerCase();
+    return (customProducts || []).filter((p: any) => p.nome.toLowerCase().includes(q) || (p.sku && p.sku.toLowerCase().includes(q))).slice(0, 30);
+  }, [customProducts, searchTarget]);
+
+  const handleToggleAlvo = (id: string) => {
+    setAlvosId(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
 
   const handleAddCoupon = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +71,11 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
       }
       if (tipo === "percent" && numValor > 90) {
         toast.error("O desconto percentual máximo permitido é de 90%.");
+        return;
+      }
+
+      if (tipoAlvo !== "todos" && alvosId.length === 0) {
+        toast.error(`Selecione ao menos um(a) ${tipoAlvo === "categorias" ? "categoria" : "produto"} para aplicar o cupom.`);
         return;
       }
 
@@ -67,6 +99,8 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
         usoUnico: false,
         cupomPrimeiraCompra: false,
         lojaId: lojaId,
+        tipoAlvo: tipoAlvo,
+        alvosId: tipoAlvo === "todos" ? [] : alvosId,
       };
 
       addCoupon(newCoupon as any);
@@ -77,6 +111,9 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
       setValorMinimo("");
       setValidade("");
       setLimiteUsos("");
+      setTipoAlvo("todos");
+      setAlvosId([]);
+      setSearchTarget("");
     } catch (err: any) {
       toast.error(err.message || "Erro ao cadastrar cupom.");
     }
@@ -113,7 +150,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
         <Card className="border-slate-200 shadow-sm lg:col-span-1">
           <CardHeader className="bg-slate-50/50 border-b">
             <CardTitle className="text-lg font-bold">Criar Novo Cupom</CardTitle>
-            <CardDescription>Defina as regras de desconto</CardDescription>
+            <CardDescription>Defina as regras e produtos/categorias</CardDescription>
           </CardHeader>
           <CardContent className="p-4">
             <form onSubmit={handleAddCoupon} className="space-y-3">
@@ -154,6 +191,75 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                 </div>
               </div>
 
+              {/* Onde aplicar o desconto */}
+              <div className="space-y-1.5 pt-1">
+                <Label className="text-xs font-bold">Aplicar desconto em:</Label>
+                <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-lg text-xs">
+                  <button
+                    type="button"
+                    onClick={() => { setTipoAlvo("todos"); setAlvosId([]); }}
+                    className={`py-1.5 rounded-md font-bold transition-colors ${tipoAlvo === "todos" ? "bg-white text-primary shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setTipoAlvo("categorias"); setAlvosId([]); }}
+                    className={`py-1.5 rounded-md font-bold transition-colors ${tipoAlvo === "categorias" ? "bg-white text-primary shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+                  >
+                    Categorias
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setTipoAlvo("produtos"); setAlvosId([]); }}
+                    className={`py-1.5 rounded-md font-bold transition-colors ${tipoAlvo === "produtos" ? "bg-white text-primary shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+                  >
+                    Produtos
+                  </button>
+                </div>
+
+                {tipoAlvo !== "todos" && (
+                  <div className="border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 space-y-2 mt-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                      <Input
+                        value={searchTarget}
+                        onChange={(e) => setSearchTarget(e.target.value)}
+                        placeholder={`Buscar ${tipoAlvo === "categorias" ? "categoria..." : "produto..."}`}
+                        className="pl-8 h-8 text-xs bg-white"
+                      />
+                    </div>
+                    
+                    <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                      {tipoAlvo === "categorias" ? (
+                        filteredCategories.map(cat => (
+                          <label key={cat.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-white text-xs cursor-pointer border border-transparent hover:border-slate-200">
+                            <Checkbox
+                              checked={alvosId.includes(cat.id)}
+                              onCheckedChange={() => handleToggleAlvo(cat.id)}
+                            />
+                            <span className="font-medium text-slate-700 truncate">{cat.nome}</span>
+                          </label>
+                        ))
+                      ) : (
+                        filteredProducts.map((prod: any) => (
+                          <label key={prod.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-white text-xs cursor-pointer border border-transparent hover:border-slate-200">
+                            <Checkbox
+                              checked={alvosId.includes(prod.id)}
+                              onCheckedChange={() => handleToggleAlvo(prod.id)}
+                            />
+                            <span className="font-medium text-slate-700 truncate">{prod.nome}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    <div className="text-[11px] font-bold text-primary text-right">
+                      {alvosId.length} selecionado(s)
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs font-bold">Pedido Mínimo (R$)</Label>
@@ -188,7 +294,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                 />
               </div>
 
-              <Button type="submit" className="w-full font-bold gap-2 mt-3">
+              <Button type="submit" className="w-full font-bold gap-2 mt-3 bg-primary text-white">
                 <Plus className="w-4 h-4" />
                 Criar Cupom
               </Button>
@@ -211,53 +317,64 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {lojaCoupons.map((c: any) => (
-                  <div key={c.id} className="border rounded-2xl p-4 bg-white shadow-sm flex flex-col justify-between space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-base text-primary bg-primary/10 px-2.5 py-0.5 rounded-lg border border-primary/20">
-                            {c.code}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            c.ativo ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
-                          }`}>
-                            {c.ativo ? "Ativo" : "Pausado"}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 font-medium">
-                          Desconto: <strong>{c.tipo === "percent" || c.descontoPercentual ? `${c.valor || c.descontoPercentual}%` : brl(c.valor || c.descontoFixo || 0)}</strong>
-                          {c.valorMinimo ? ` (Mín. ${brl(c.valorMinimo)})` : ""}
-                        </p>
-                        {c.validade && (
-                          <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" /> Válido até {c.validade}
+                {lojaCoupons.map((c: any) => {
+                  const targetLabel = !c.tipoAlvo || c.tipoAlvo === "todos"
+                    ? "Todos os produtos"
+                    : (c.tipoAlvo === "categorias"
+                      ? `${(c.alvosId || []).length} categoria(s)`
+                      : `${(c.alvosId || []).length} produto(s)`);
+
+                  return (
+                    <div key={c.id} className="border rounded-2xl p-4 bg-white shadow-sm flex flex-col justify-between space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-base text-primary bg-primary/10 px-2.5 py-0.5 rounded-lg border border-primary/20">
+                              {c.codigo || c.code}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              c.ativo ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                            }`}>
+                              {c.ativo ? "Ativo" : "Pausado"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 font-medium">
+                            Desconto: <strong>{c.tipoDesconto === "percentual" || c.tipo === "percent" || c.descontoPercentual ? `${c.valorDesconto || c.valor || c.descontoPercentual}%` : brl(c.valorDesconto || c.valor || c.descontoFixo || 0)}</strong>
+                            {c.valorMinimo ? ` (Mín. ${brl(c.valorMinimo)})` : ""}
                           </p>
-                        )}
+                          <p className="text-[11px] text-slate-500 font-medium">
+                            Alvo: <span className="font-bold text-slate-700">{targetLabel}</span>
+                          </p>
+                          {c.validade && (
+                            <p className="text-[11px] text-slate-400 flex items-center gap-1">
+                              <Calendar className="w-3 h-3" /> Válido até {c.validade}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t flex items-center justify-between">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleToggleCoupon(c)}
+                          className="text-xs font-bold h-8"
+                        >
+                          {c.ativo ? "Pausar" : "Ativar"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteCoupon(c.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs font-bold h-8"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" />
+                          Excluir
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="pt-2 border-t flex items-center justify-between">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleToggleCoupon(c)}
-                        className="text-xs font-bold h-8"
-                      >
-                        {c.ativo ? "Pausar" : "Ativar"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteCoupon(c.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs font-bold h-8"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-1" />
-                        Excluir
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

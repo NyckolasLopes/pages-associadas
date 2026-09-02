@@ -1,6 +1,6 @@
 import { Link, useParams, useNavigate } from "@tanstack/react-router";
 import { Heart, ShoppingBasket, Zap, Star, Calendar, Stethoscope, Bell, Flame, Gift, ShoppingBag, Youtube } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import type { Produto } from "@/types";
 import { brl, getInstallmentText, productImage, tarjaColor, checkIsGenerico, formatPbmName } from "@/lib/format";
 import { useCart } from "@/stores/cart";
@@ -61,6 +61,7 @@ function ProductCardComponent({
   const navigate = useNavigate();
   const promocoes = useMarketing((s) => s.promocoes);
   const lojaPromocoesMap = useMarketing((s) => s.lojaPromocoes);
+  const cupons = useMarketing((s) => s.cupons);
   const recentlyAdded = isRecentlyAdded(p);
   
   const add = useCart((s) => s.add);
@@ -287,6 +288,75 @@ function ProductCardComponent({
 
   const activePromo = isAvailable ? (padraoPromo || levePaguePromo) : null;
 
+  // Cupom da loja aplicável para este produto / categoria
+  const eligibleCoupon = useMemo(() => {
+    if (!isAvailable || finalPrecoPor <= 0 || !cupons || cupons.length === 0) return null;
+
+    const validCoupons = cupons.filter((c: any) => {
+      if (c.ativo === false) return false;
+
+      // Validação de Loja
+      const couponLojaId = c.lojaId || c.farmaciaId;
+      if (activeStoreId && couponLojaId && String(couponLojaId) !== String(activeStoreId)) {
+        return false;
+      }
+
+      // Validação de Data
+      const now = new Date();
+      if (c.dataInicio && new Date(c.dataInicio) > now) return false;
+      const validUntil = c.dataTermino || c.validade;
+      if (validUntil && new Date(validUntil + (validUntil.includes('T') ? '' : 'T23:59:59')) < now) return false;
+
+      // Validação de Alvo (Produtos ou Categorias escolhidas para aquele cupom)
+      const tipoAlvo = c.tipoAlvo || (c.produtosIds?.length ? "produtos" : (c.categoriasIds?.length ? "categorias" : "todos"));
+      const alvos: string[] = (c.alvosId || c.produtosIds || c.categoriasIds || []).map((id: any) => String(id).trim().toLowerCase());
+
+      if (tipoAlvo === "produtos" && alvos.length > 0) {
+        const pId = String(p.id).toLowerCase();
+        const pSku = p.sku ? String(p.sku).toLowerCase() : "";
+        if (!alvos.includes(pId) && !alvos.includes(pSku)) return false;
+      } else if (tipoAlvo === "categorias" && alvos.length > 0) {
+        const catId = p.categoriaId ? String(p.categoriaId).toLowerCase() : "";
+        const subId = p.subcategoriaId ? String(p.subcategoriaId).toLowerCase() : "";
+        const extraCats = (p.categoriasIds || []).map((id: any) => String(id).toLowerCase());
+        const matchCat = (catId && alvos.includes(catId)) || (subId && alvos.includes(subId)) || extraCats.some(id => alvos.includes(id));
+        if (!matchCat) return false;
+      }
+
+      return true;
+    });
+
+    if (validCoupons.length === 0) return null;
+
+    let bestCoupon: any = null;
+    let bestPrice = finalPrecoPor;
+
+    for (const c of (validCoupons as any[])) {
+      const isPercent = c.tipoDesconto === "percentual" || c.tipo === "percent" || Boolean(c.descontoPercentual);
+      const val = Number(c.valorDesconto || c.valor || c.descontoPercentual || c.descontoFixo || 0);
+      if (val <= 0) continue;
+
+      let discountedPrice = finalPrecoPor;
+      if (isPercent) {
+        discountedPrice = finalPrecoPor * (1 - val / 100);
+      } else {
+        discountedPrice = Math.max(0, finalPrecoPor - val);
+      }
+
+      if (discountedPrice < bestPrice) {
+        bestPrice = discountedPrice;
+        bestCoupon = {
+          ...c,
+          codigo: c.codigo || c.code,
+          finalPrice: discountedPrice,
+          savings: finalPrecoPor - discountedPrice
+        };
+      }
+    }
+
+    return bestCoupon;
+  }, [cupons, isAvailable, finalPrecoPor, activeStoreId, p]);
+
   const desconto =
     finalPrecoDe > finalPrecoPor ? Math.round((1 - finalPrecoPor / finalPrecoDe) * 100) : 0;
 
@@ -489,7 +559,7 @@ function ProductCardComponent({
                   >
                     {brl(finalPrecoPor)}
                   </div>
-                  {desconto > 0 && (
+                  {!eligibleCoupon && desconto > 0 && (
                     <span 
                       className="inline-flex shrink-0 items-center text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                       style={{
@@ -502,10 +572,24 @@ function ProductCardComponent({
                   )}
                 </div>
 
-                {getInstallmentText(finalPrecoPor) && (
-                  <div className="text-[10px] text-slate-500 font-medium leading-tight">
-                    {getInstallmentText(finalPrecoPor)}
+                {eligibleCoupon ? (
+                  <div 
+                    className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-bold tracking-tight bg-[#EBF3FE] text-[#1a73e8] border border-[#d2e3fc] shadow-2xs self-start"
+                    style={{
+                      backgroundColor: 'var(--coupon-badge-bg, #EBF3FE)',
+                      color: 'var(--coupon-badge-text, #1a73e8)',
+                      borderColor: 'var(--coupon-badge-border, #d2e3fc)',
+                    }}
+                    title={`Cupom da loja: ${eligibleCoupon.codigo || eligibleCoupon.code}`}
+                  >
+                    <span>{brl(eligibleCoupon.finalPrice)} com Cupom</span>
                   </div>
+                ) : (
+                  getInstallmentText(finalPrecoPor) && (
+                    <div className="text-[10px] text-slate-500 font-medium leading-tight">
+                      {getInstallmentText(finalPrecoPor)}
+                    </div>
+                  )
                 )}
               </>
             )}

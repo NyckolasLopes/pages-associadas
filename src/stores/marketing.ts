@@ -20,6 +20,8 @@ export interface Coupon {
   cupomPrimeiraCompra: boolean;
   numeroUtilizacoes: number; // for display & tracking
   lojaId?: string; // Se preenchido, cupom exclusivo da loja
+  tipoAlvo?: "todos" | "produtos" | "categorias";
+  alvosId?: string[];
 }
 
 export interface LevePagueProdutoConfig {
@@ -139,7 +141,9 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
           usoUnico: Boolean(c.uso_unico),
           cupomPrimeiraCompra: Boolean(c.cupom_primeira_compra),
           numeroUtilizacoes: Number(c.numero_utilizacoes) || 0,
-          lojaId: c.loja_id || undefined
+          lojaId: c.loja_id || undefined,
+          tipoAlvo: c.tipo_alvo || "todos",
+          alvosId: c.alvos_id || []
         }));
       } else if (get().cupons.length > 0) {
         parsedCupons = get().cupons;
@@ -215,7 +219,9 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       usoUnico: Boolean(coupon.usoUnico),
       cupomPrimeiraCompra: Boolean(coupon.cupomPrimeiraCompra),
       numeroUtilizacoes: 0,
-      lojaId: coupon.lojaId || undefined
+      lojaId: coupon.lojaId || undefined,
+      tipoAlvo: coupon.tipoAlvo || "todos",
+      alvosId: coupon.alvosId || []
     };
 
     // 1. Atualiza memória e localStorage imediatamente
@@ -242,7 +248,9 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
         uso_unico: newCoupon.usoUnico,
         cupom_primeira_compra: newCoupon.cupomPrimeiraCompra,
         numero_utilizacoes: 0,
-        loja_id: newCoupon.lojaId || null
+        loja_id: newCoupon.lojaId || null,
+        tipo_alvo: newCoupon.tipoAlvo || "todos",
+        alvos_id: newCoupon.alvosId || []
       };
       await supabase.from('cupons' as any).insert(dbCoupon);
     } catch (e) {
@@ -284,6 +292,8 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       if (updatedFields.usoUnico !== undefined) dbUpdate.uso_unico = updatedFields.usoUnico;
       if (updatedFields.cupomPrimeiraCompra !== undefined) dbUpdate.cupom_primeira_compra = updatedFields.cupomPrimeiraCompra;
       if (updatedFields.numeroUtilizacoes !== undefined) dbUpdate.numero_utilizacoes = updatedFields.numeroUtilizacoes;
+      if (updatedFields.tipoAlvo !== undefined) dbUpdate.tipo_alvo = updatedFields.tipoAlvo;
+      if (updatedFields.alvosId !== undefined) dbUpdate.alvos_id = updatedFields.alvosId;
       
       await supabase.from('cupons' as any).update(dbUpdate).eq('id', id);
     } catch (e) {

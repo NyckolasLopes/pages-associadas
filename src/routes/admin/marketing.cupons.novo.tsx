@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMarketing, Coupon } from "@/stores/marketing";
 import { useAdmin } from "@/stores/admin";
+import { useAdminCategories } from "@/stores/categories";
+import { useAdminProducts } from "@/stores/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Info, AlertTriangle, ChevronRight, Ticket, Percent, DollarSign, Truck, FileText, Store } from "lucide-react";
+import { Info, AlertTriangle, ChevronRight, Ticket, Percent, DollarSign, Truck, FileText, Store, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/marketing/cupons/novo")({
@@ -24,11 +26,16 @@ export const Route = createFileRoute("/admin/marketing/cupons/novo")({
 function NovoCupomPage() {
   const navigate = useNavigate();
   const { addCoupon } = useMarketing();
+  const { categories } = useAdminCategories();
+  const { customProducts } = useAdminProducts();
   const { currentUser, activeStoreId, grupos, pharmacies } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : activeStoreId;
 
   const [selectedStoreId, setSelectedStoreId] = useState<string>(effectiveStoreId || "");
+  const [tipoAlvo, setTipoAlvo] = useState<"todos" | "produtos" | "categorias">("todos");
+  const [alvosId, setAlvosId] = useState<string[]>([]);
+  const [searchTarget, setSearchTarget] = useState("");
   
   const [formData, setFormData] = useState<Omit<Coupon, "id" | "numeroUtilizacoes">>({
     codigo: "",
@@ -46,7 +53,27 @@ function NovoCupomPage() {
     permiteAcumular: false,
     usoUnico: false,
     cupomPrimeiraCompra: false,
+    tipoAlvo: "todos",
+    alvosId: []
   });
+
+  const filteredCategories = useMemo(() => {
+    if (!searchTarget) return categories;
+    const q = searchTarget.toLowerCase();
+    return categories.filter(c => c.nome.toLowerCase().includes(q));
+  }, [categories, searchTarget]);
+
+  const filteredProducts = useMemo(() => {
+    if (!searchTarget) return (customProducts || []).slice(0, 40);
+    const q = searchTarget.toLowerCase();
+    return (customProducts || []).filter((p: any) => p.nome.toLowerCase().includes(q) || (p.sku && p.sku.toLowerCase().includes(q))).slice(0, 40);
+  }, [customProducts, searchTarget]);
+
+  const handleToggleAlvo = (id: string) => {
+    setAlvosId(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -74,11 +101,18 @@ function NovoCupomPage() {
       toast.error("Selecione a farmácia vinculada a este cupom!");
       return;
     }
+
+    if (tipoAlvo !== "todos" && alvosId.length === 0) {
+      toast.error(`Selecione ao menos um(a) ${tipoAlvo === "categorias" ? "categoria" : "produto"} para este cupom.`);
+      return;
+    }
     
     const payload = {
       ...formData,
       codigo: formData.codigo.trim().toUpperCase(),
-      lojaId: targetLojaId
+      lojaId: targetLojaId,
+      tipoAlvo,
+      alvosId: tipoAlvo === "todos" ? [] : alvosId
     };
     
     await addCoupon(payload);
@@ -284,8 +318,84 @@ function NovoCupomPage() {
           </div>
         </div>
 
-        {/* REGRAS */}
+        {/* APLICAR EM (PRODUTOS / CATEGORIAS / TODOS) */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+            <h3 className="text-lg font-bold text-slate-800">Alvo do Cupom</h3>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              <Label className="font-bold text-slate-700">Onde este cupom será aplicado:</Label>
+              <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1.5 rounded-lg text-sm">
+                <button
+                  type="button"
+                  onClick={() => { setTipoAlvo("todos"); setAlvosId([]); }}
+                  className={`py-2 rounded-md font-bold transition-colors ${tipoAlvo === "todos" ? "bg-white text-primary shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+                >
+                  Todos os produtos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setTipoAlvo("categorias"); setAlvosId([]); }}
+                  className={`py-2 rounded-md font-bold transition-colors ${tipoAlvo === "categorias" ? "bg-white text-primary shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+                >
+                  Categorias específicas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setTipoAlvo("produtos"); setAlvosId([]); }}
+                  className={`py-2 rounded-md font-bold transition-colors ${tipoAlvo === "produtos" ? "bg-white text-primary shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+                >
+                  Produtos específicos
+                </button>
+              </div>
+            </div>
+
+            {tipoAlvo !== "todos" && (
+              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    value={searchTarget}
+                    onChange={(e) => setSearchTarget(e.target.value)}
+                    placeholder={`Buscar ${tipoAlvo === "categorias" ? "categoria por nome..." : "produto por nome ou SKU..."}`}
+                    className="pl-9 h-9 text-sm bg-white"
+                  />
+                </div>
+                
+                <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                  {tipoAlvo === "categorias" ? (
+                    filteredCategories.map(cat => (
+                      <label key={cat.id} className="flex items-center gap-2.5 p-2 rounded hover:bg-white text-sm cursor-pointer border border-transparent hover:border-slate-200">
+                        <Checkbox
+                          checked={alvosId.includes(cat.id)}
+                          onCheckedChange={() => handleToggleAlvo(cat.id)}
+                        />
+                        <span className="font-medium text-slate-700 truncate">{cat.nome}</span>
+                      </label>
+                    ))
+                  ) : (
+                    filteredProducts.map((prod: any) => (
+                      <label key={prod.id} className="flex items-center gap-2.5 p-2 rounded hover:bg-white text-sm cursor-pointer border border-transparent hover:border-slate-200">
+                        <Checkbox
+                          checked={alvosId.includes(prod.id)}
+                          onCheckedChange={() => handleToggleAlvo(prod.id)}
+                        />
+                        <span className="font-medium text-slate-700 truncate">{prod.nome}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <div className="text-xs font-bold text-primary text-right">
+                  {alvosId.length} selecionado(s)
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* REGRAS */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-16">
           <div className="p-5 border-b border-slate-100 bg-slate-50/50">
             <h3 className="text-lg font-bold text-slate-800">Regras</h3>
           </div>
@@ -377,47 +487,6 @@ function NovoCupomPage() {
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* APLICAR REGRA */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-16">
-          <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-            <h3 className="text-lg font-bold text-slate-800">Aplicar regra</h3>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-md flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
-              <div className="flex items-center gap-2 font-bold text-slate-800">
-                <ChevronRight className="h-4 w-4" /> Produtos específicos
-              </div>
-              <div className="text-xs font-bold text-slate-400 uppercase">
-                0 Produto
-              </div>
-            </div>
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-md flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
-              <div className="flex items-center gap-2 font-bold text-slate-800">
-                <ChevronRight className="h-4 w-4" /> Produtos de uma marca
-              </div>
-              <div className="text-xs font-bold text-slate-400 uppercase">
-                0 Marca
-              </div>
-            </div>
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-md flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
-              <div className="flex items-center gap-2 font-bold text-slate-800">
-                <ChevronRight className="h-4 w-4" /> Produtos de uma categoria
-              </div>
-              <div className="text-xs font-bold text-slate-400 uppercase">
-                0 Categoria
-              </div>
-            </div>
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-md flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
-              <div className="flex items-center gap-2 font-bold text-slate-800">
-                <ChevronRight className="h-4 w-4" /> Formas de pagamento
-              </div>
-              <div className="text-xs font-bold text-slate-400 uppercase">
-                0 Forma de pagamento
               </div>
             </div>
           </div>
