@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { 
   Flame, Store, Truck, X, MapPin, AlertTriangle, Bell, TrendingDown,
   MessageCircle, Send, CheckCircle2, Tag, Sparkles, DollarSign, CreditCard, ShoppingBag,
-  Building2, Clock, Edit2, ArrowLeft
+  Building2, Clock, Edit2, ArrowLeft, Home
 } from "lucide-react";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
 import { PixIcon } from "@/components/ui/pix-icon";
@@ -499,12 +499,13 @@ function CartPage() {
           }
 
           if (deliveryPrice !== null) {
+            const isMoto = (m.nome || "").toLowerCase().includes("moto") || (m.tipo || "").toLowerCase().includes("moto");
             opts.push({
                id: m.id,
                label: m.nome,
                price: deliveryPrice,
                eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], m.tempoEntrega || "60 minutos", "Entrega"),
-               icon: Truck
+               icon: isMoto ? (MotorcycleIcon as any) : Truck
             });
           }
         });
@@ -591,7 +592,7 @@ function CartPage() {
 
         if (isEligible && deliveryPrice !== null) {
           opts.push(
-            { id: "standard", label: "Receber em casa", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: MotorcycleIcon as any }
+            { id: "standard", label: "Receber em casa", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: Home as any }
           );
         }
 
@@ -602,7 +603,7 @@ function CartPage() {
           opts.push({ id: "99", label: "99 Entregas", price: Number(p.custo99), eta: "Em até 1 hora", icon: Truck });
         }
         if (p.aceitaMotoboy && p.custoMotoboy) {
-          opts.push({ id: "motoboy", label: "Motoboy Expresso", price: Number(p.custoMotoboy), eta: "Em até 2 horas", icon: MotorcycleIcon as any });
+          opts.push({ id: "motoboy", label: "Motoboy", price: Number(p.custoMotoboy), eta: "Em até 2 horas", icon: MotorcycleIcon as any });
         }
       }
     }
@@ -1487,7 +1488,7 @@ function CartPage() {
                           const firstDeliveryOption = freight?.find(f => f.id !== "pickup");
                           setSelected(firstDeliveryOption ? firstDeliveryOption.id : "delivery_placeholder");
                       }} />
-                      <MotorcycleIcon className="h-4 w-4 text-primary" />
+                      <Home className="h-4 w-4 text-primary" />
                       <div className="flex-1">
                         <div className="text-sm font-bold">Receber em casa</div>
                         <div className="text-xs text-muted-foreground">Receba no seu endereço</div>
@@ -1583,7 +1584,8 @@ function CartPage() {
                             {freight.filter(f => f.id !== "pickup").length} opção(ões) disponível(eis) para {cep}
                           </p>
                           {freight.filter(f => f.id !== "pickup").map(f => {
-                            const Icon = f.icon;
+                            const isMoto = (f.label || "").toLowerCase().includes("moto") || (f.id || "").toLowerCase().includes("moto");
+                            const Icon = isMoto ? MotorcycleIcon : (f.icon || Truck);
                             const active = selected === f.id || (selected === "delivery_placeholder" && f.id === freight.filter(x => x.id !== "pickup")[0]?.id);
                             return (
                               <label key={f.id} className={`flex items-center gap-2 border rounded-lg p-2.5 cursor-pointer bg-white transition-all ${active ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm" : "hover:border-primary/50 hover:shadow-sm"}`}>
@@ -1808,7 +1810,7 @@ function CartPage() {
                   disabled={items.some(i => i.retemReceita)}
                   className={`border rounded-lg p-2.5 text-xs font-bold flex flex-col items-center gap-1 transition-all ${deliveryMethod === "entrega" ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20" : "bg-white text-slate-700 hover:bg-slate-100"}`}
                 >
-                  <MotorcycleIcon className="h-4 w-4 text-emerald-600" />
+                  <Home className="h-4 w-4 text-emerald-600" />
                   <span>Receber em casa</span>
                 </button>
                 <button

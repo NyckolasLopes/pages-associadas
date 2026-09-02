@@ -730,7 +730,7 @@ function Checkout() {
                     }}
                     className="h-4 w-4 text-primary accent-primary" 
                   />
-                  <MotorcycleIcon className="h-5 w-5 text-primary" />
+                  <Home className="h-5 w-5 text-primary" />
                   <span className="font-bold text-sm">Receber em casa</span>
                 </div>
                 <p className="text-xs text-muted-foreground ml-7">A <strong>{activeStore?.razaoSocial || activeStore?.nome}</strong> fará a entrega no endereço cadastrado.</p>
@@ -752,7 +752,8 @@ function Checkout() {
                 <Label className="font-bold">Opção de Envio</Label>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {deliveryOpts.map(opt => {
-                    const Icon = opt.icon || Truck; // Fallback
+                    const isMoto = (opt.label || "").toLowerCase().includes("moto") || (opt.id || "").toLowerCase().includes("moto");
+                    const Icon = isMoto ? MotorcycleIcon : (opt.icon || Truck);
                     const active = selectedFreight === opt.id;
                     return (
                       <label key={opt.id} className={`flex items-center gap-2 border rounded-lg p-3 cursor-pointer transition ${active ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}>
