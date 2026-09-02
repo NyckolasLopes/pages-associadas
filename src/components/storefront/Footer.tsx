@@ -307,7 +307,6 @@ export function Footer() {
       )}
 
       <footer 
-        className="pb-24 md:pb-0"
         style={{ 
           backgroundColor: 'var(--footer-bg, var(--primary))',
           color: 'var(--footer-text, var(--primary-foreground))'
@@ -555,25 +554,25 @@ export function Footer() {
           </div>
         </div>
 
-          <div className="border-t border-slate-200/60 pb-6 md:pb-8">
-            <div className="container-fa py-8 flex flex-col gap-8">
+          <div className="border-t border-slate-200/60 pb-20 md:pb-6">
+            <div className="container-fa py-5 flex flex-col gap-4">
               {(activePharmacy?.anvisaLogoUrl || activePharmacy?.categoriaAssociado !== 'Parceiro') && (
-                <div className="flex flex-col md:flex-row items-center justify-center w-full gap-10">
-                <img
-                  src={activePharmacy?.anvisaLogoUrl || logoAnvisa}
-                  alt={activePharmacy?.anvisaLogoUrl ? "Selo da Anvisa" : "A Farmácias Associadas segue as normas e regulamentações da ANVISA"}
-                  className="h-12 md:h-[68px] w-auto object-contain"
-                  width={120}
-                  height={68}
-                  loading="lazy"
-                  decoding="async"
-                />
+                <div className="flex flex-col md:flex-row items-center justify-center w-full">
+                  <img
+                    src={activePharmacy?.anvisaLogoUrl || logoAnvisa}
+                    alt={activePharmacy?.anvisaLogoUrl ? "Selo da Anvisa" : "A Farmácias Associadas segue as normas e regulamentações da ANVISA"}
+                    className="h-10 md:h-[50px] w-auto object-contain"
+                    width={120}
+                    height={50}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
               )}
               
-              <div className="flex flex-col items-center justify-center gap-4 text-xs pt-6 border-t border-slate-100/50">
+              <div className="flex flex-col items-center justify-center text-xs pt-3 border-t border-slate-100/60">
                 <span 
-                  className="text-center pb-24 md:pb-0"
+                  className="text-center text-[11px] md:text-xs"
                   style={{ color: 'var(--footer-bottom-text, #64748B)' }}
                 >
                   © {new Date().getFullYear()} {activePharmacy?.nome || dadosLoja?.nomeLoja || "Farmácias Associadas"}. Todos os direitos reservados.
