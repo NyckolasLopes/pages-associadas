@@ -1,6 +1,8 @@
 import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldCheck, Scale, FileText } from "lucide-react";
+import { useAdmin } from "@/stores/admin";
+import { sanitizeHtml } from "@/lib/security";
 
 export const Route = createFileRoute("/_store/$storeSlug/politica-de-privacidade")({
   head: () => ({ meta: [{ title: `Política de Privacidade — ${getBrandNameForHead()}` }] }),
@@ -9,19 +11,30 @@ export const Route = createFileRoute("/_store/$storeSlug/politica-de-privacidade
 
 function PoliticaPrivacidadePage() {
   const { storeSlug } = Route.useParams();
+  const { contentPages } = useAdmin();
+  const globalPage = contentPages.find((p) => p.slug === "politica-de-privacidade");
+
   return (
     <div className="container-fa py-12 max-w-4xl mx-auto min-h-screen">
       <div className="text-center mb-12">
         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Scale className="w-8 h-8 text-slate-700" />
         </div>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Política de Privacidade e Termos de Uso</h1>
+        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">
+          {globalPage?.title || "Política de Privacidade e Termos de Uso"}
+        </h1>
         <p className="text-slate-600 text-lg">Documento oficial sobre o tratamento e proteção dos seus dados na plataforma.</p>
       </div>
 
       <div className="bg-white p-8 md:p-12 rounded-3xl border border-slate-200 shadow-sm space-y-8 text-slate-700 text-justify leading-relaxed">
-        
-        <section>
+        {globalPage?.content ? (
+          <div
+            className="prose prose-slate max-w-none text-slate-700 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(globalPage.content) }}
+          />
+        ) : (
+          <>
+            <section>
           <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" /> 1. Introdução e Natureza da Plataforma
           </h2>
@@ -78,10 +91,11 @@ function PoliticaPrivacidadePage() {
           </p>
         </section>
         
-        <div className="mt-8 pt-8 border-t border-slate-200 text-sm text-slate-500 text-center">
-          <p>Farmácias Associadas — Última atualização: Agosto de 2026.</p>
-        </div>
-
+            <div className="mt-8 pt-8 border-t border-slate-200 text-sm text-slate-500 text-center">
+              <p>Farmácias Associadas — Última atualização: Agosto de 2026.</p>
+            </div>
+          </>
+        )}
       </div>
       
       <div className="mt-8 text-center">

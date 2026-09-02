@@ -12,6 +12,18 @@ export const Route = createFileRoute("/_store/$storeSlug/pagina/$slug")({
   }
 });
 
+export const GLOBAL_PAGE_SLUGS = new Set([
+  "politica-de-privacidade",
+  "trocas-e-devolucoes",
+  "protecao-dados",
+  "termos-de-uso",
+  "cancelamento",
+  "reembolso",
+  "prazo-entrega",
+  "central-atendimento",
+  "como-comprar",
+]);
+
 function PaginaConteudo() {
   const { slug } = Route.useLoaderData();
   const { contentPages } = useAdmin();
@@ -19,10 +31,14 @@ function PaginaConteudo() {
   const params = useParams({ strict: false });
   const storeSlug = (params && (params as any).storeSlug) || (activePharmacy?.slug ? safeSlugify(activePharmacy.slug) : "loja-padrao");
   
-  // Prioridade: Conteúdo individual customizado da loja -> Conteúdo padrão da rede
+  // Regra de separação Global vs Individual:
+  // As 8 páginas institucionais globais cadastradas no admin global refletem para todas as lojas.
+  // As demais páginas (como quem-somos e páginas extras) são individuais da loja.
+  const isGlobalPage = GLOBAL_PAGE_SLUGS.has(slug);
   const customPage = (activePharmacy?.customPages || []).find((p: any) => p.slug === slug);
   const globalPage = contentPages.find(p => p.slug === slug);
-  const page = customPage || globalPage;
+
+  const page = isGlobalPage ? (globalPage || customPage) : (customPage || globalPage);
 
   if (!page || (page.type !== "text" && !page.content)) {
     return <NotFound type="page" />;

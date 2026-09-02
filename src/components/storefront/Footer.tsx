@@ -143,95 +143,123 @@ export function Footer() {
     }
   }, [activePharmacy?.id, getTopTerms]);
 
-  // Páginas do Rodapé dinâmicas por categoria de loja
+  // Páginas do Rodapé dinâmicas e padronizadas por loja
   const institucionalPages = useMemo(() => {
-    if (isParceiro) {
-      return [
-        { id: "quem-somos", title: "Quem Somos", slug: "quem-somos", type: "text" },
-        { id: "politica-de-privacidade", title: "Política de Privacidade", to: `/${storeSlug}/politica-de-privacidade` },
-        { id: "trocas-e-devolucoes", title: "Trocas e Devoluções", slug: "trocas-e-devolucoes", type: "text" },
-      ];
-    }
-    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Institucional");
-  }, [isParceiro, contentPages, storeSlug]);
+    return [
+      { id: "quem-somos", title: "Quem Somos", to: `/${storeSlug}/quem-somos` },
+      { id: "politica-de-privacidade", title: "Política de Privacidade", to: `/${storeSlug}/politica-de-privacidade` },
+      { id: "trocas-e-devolucoes", title: "Trocas e Devoluções", to: `/${storeSlug}/pagina/trocas-e-devolucoes` },
+    ];
+  }, [storeSlug]);
 
   const navegacaoPages = useMemo(() => {
-    if (isParceiro) {
-      const list: any[] = [
-        { id: "mapa-site", title: "Mapa do Site", to: `/${storeSlug}/mapa-site` },
-        { id: "todas-categorias", title: "Categorias", to: `/${storeSlug}/c` },
-        { id: "todas-marcas", title: "Marcas", to: `/${storeSlug}/m` },
-      ];
-      if (activePharmacy?.offersServices) {
-        list.push({ id: "servicos", title: "Serviços Farmacêuticos", to: `/${storeSlug}/servicos` });
-      }
-      return list;
+    const list: any[] = [
+      { id: "mapa-site", title: "Mapa do Site", to: `/${storeSlug}/mapa-site` },
+      { id: "todas-categorias", title: "Categorias", to: `/${storeSlug}/categorias` },
+      { id: "todas-marcas", title: "Marcas", to: `/${storeSlug}/marcas` },
+    ];
+    if (activePharmacy?.offersServices) {
+      list.push({ id: "servicos", title: "Serviços Farmacêuticos", to: `/${storeSlug}/servicos` });
     }
-    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Navegação");
-  }, [isParceiro, contentPages, activePharmacy?.offersServices, storeSlug]);
+    return list;
+  }, [activePharmacy?.offersServices, storeSlug]);
 
   const perfilPages = useMemo(() => {
-    if (isParceiro) {
-      return [
-        { id: "criar-cadastro", title: "Criar Cadastro", to: `/${storeSlug}/cadastro` },
-        { id: "alterar-dados", title: "Alterar Dados", to: `/${storeSlug}/perfil` },
-        { id: "enderecos", title: "Endereços", to: `/${storeSlug}/perfil` },
-        { id: "acompanhar-pedido", title: "Acompanhar Pedido", to: `/${storeSlug}/pedidos` },
-      ];
-    }
-    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Perfil");
-  }, [isParceiro, contentPages, storeSlug]);
+    return [
+      { id: "criar-cadastro", title: "Criar Cadastro", to: `/${storeSlug}/cadastro` },
+      { id: "alterar-dados", title: "Alterar Dados", to: `/${storeSlug}/perfil` },
+      { id: "enderecos", title: "Endereços", to: `/${storeSlug}/perfil` },
+      { id: "acompanhar-pedido", title: "Acompanhar Pedido", to: `/${storeSlug}/pedidos` },
+    ];
+  }, [storeSlug]);
 
   const atendimentoPages = useMemo(() => {
-    if (isParceiro) {
-      const partnerPhone = (activePharmacy?.whatsapp || activePharmacy?.telefone || "").replace(/\D/g, "");
-      const waUrl = partnerPhone ? `https://wa.me/55${partnerPhone}` : "https://wa.me/5551989444818";
-      return [
-        { id: "central-atendimento", title: "Central de Atendimento", slug: "central-atendimento", type: "text" },
-        { id: "whatsapp", title: "WhatsApp", type: "external", externalUrl: waUrl },
-        { id: "como-comprar", title: "Como Comprar", slug: "como-comprar", type: "text" },
-        { id: "prazo-entrega", title: "Prazos e Entrega", slug: "prazo-entrega", type: "text" },
-        { id: "reembolso", title: "Política de Reembolso", slug: "cancelamento", type: "text" },
-        { id: "faq", title: "FAQ", to: `/${storeSlug}/faq` },
-      ];
-    }
-    return contentPages.filter(p => 
-      (p.location === "footer" || p.location === "both") && 
-      p.footerColumn === "Atendimento" &&
-      p.slug !== "formas-pagamento" &&
-      p.slug !== "formas-de-pagamento" &&
-      p.title?.toLowerCase() !== "formas de pagamento" &&
-      p.title?.toLowerCase() !== "pagamento"
-    );
-  }, [isParceiro, contentPages, activePharmacy?.whatsapp, activePharmacy?.telefone, storeSlug]);
+    const partnerPhone = (activePharmacy?.whatsapp || activePharmacy?.telefone || "").replace(/\D/g, "");
+    const waUrl = partnerPhone ? `https://wa.me/55${partnerPhone}` : "https://wa.me/5551989444818";
+    return [
+      { id: "central-atendimento", title: "Central de Atendimento", to: `/${storeSlug}/pagina/central-atendimento` },
+      { id: "whatsapp", title: "WhatsApp", type: "external", externalUrl: waUrl },
+      { id: "como-comprar", title: "Como Comprar", to: `/${storeSlug}/pagina/como-comprar` },
+      { id: "prazo-entrega", title: "Prazos e Entrega", to: `/${storeSlug}/pagina/prazo-entrega` },
+      { id: "reembolso", title: "Política de Reembolso", to: `/${storeSlug}/pagina/cancelamento` },
+      { id: "faq", title: "FAQ", to: `/${storeSlug}/faq` },
+    ];
+  }, [activePharmacy?.whatsapp, activePharmacy?.telefone, storeSlug]);
 
   const segurancaPages = useMemo(() => {
-    if (isParceiro) {
-      return [
-        { id: "protecao-dados", title: "Proteção de Dados", slug: "protecao-dados", type: "text" },
-        { id: "termos-de-uso", title: "Termos de Uso", slug: "termos-de-uso", type: "text" },
-      ];
-    }
-    return contentPages.filter(p => (p.location === "footer" || p.location === "both") && p.footerColumn === "Segurança");
-  }, [isParceiro, contentPages]);
+    return [
+      { id: "politica-de-privacidade", title: "Política de Privacidade", to: `/${storeSlug}/politica-de-privacidade` },
+      { id: "protecao-dados", title: "Proteção de Dados", to: `/${storeSlug}/pagina/protecao-dados` },
+      { id: "termos-de-uso", title: "Termos de Uso", to: `/${storeSlug}/pagina/termos-de-uso` },
+    ];
+  }, [storeSlug]);
 
-  const renderPageItem = (p: any) => (
-    <li key={p.id}>
-      {p.to ? (
-        <Link to={p.to} className="hover:underline">
-          {p.title}
-        </Link>
-      ) : p.type === "external" ? (
-        <a href={p.externalUrl} target={p.externalUrl?.startsWith("/") ? "_self" : "_blank"} rel="noreferrer" className="hover:underline">
-          {p.title}
-        </a>
-      ) : (
-        <Link to={`/${storeSlug}/pagina/${p.slug}` as any} className="hover:underline">
-          {p.title}
-        </Link>
-      )}
-    </li>
-  );
+  const renderPageItem = (p: any) => {
+    // Interceptações de segurança para garantir rotas corretas por loja
+    if (p.slug === "quem-somos" || p.id === "quem-somos") {
+      return (
+        <li key={p.id}>
+          <Link to={`/${storeSlug}/quem-somos` as any} className="hover:underline">
+            {p.title || "Quem Somos"}
+          </Link>
+        </li>
+      );
+    }
+    if (p.slug === "mapa-site" || p.id === "mapa-site" || p.externalUrl === "/mapa" || p.to?.endsWith("/mapa")) {
+      return (
+        <li key={p.id}>
+          <Link to={`/${storeSlug}/mapa-site` as any} className="hover:underline">
+            {p.title || "Mapa do Site"}
+          </Link>
+        </li>
+      );
+    }
+    if (p.slug === "todas-categorias" || p.slug === "categorias" || p.externalUrl === "/c" || p.to?.endsWith("/c")) {
+      return (
+        <li key={p.id}>
+          <Link to={`/${storeSlug}/categorias` as any} className="hover:underline">
+            {p.title || "Categorias"}
+          </Link>
+        </li>
+      );
+    }
+    if (p.slug === "todas-marcas" || p.slug === "marcas" || p.externalUrl === "/m" || p.to?.endsWith("/m")) {
+      return (
+        <li key={p.id}>
+          <Link to={`/${storeSlug}/marcas` as any} className="hover:underline">
+            {p.title || "Marcas"}
+          </Link>
+        </li>
+      );
+    }
+    if (p.slug === "politica-de-privacidade" || p.id === "politica-de-privacidade") {
+      return (
+        <li key={p.id}>
+          <Link to={`/${storeSlug}/politica-de-privacidade` as any} className="hover:underline">
+            {p.title || "Política de Privacidade"}
+          </Link>
+        </li>
+      );
+    }
+
+    return (
+      <li key={p.id}>
+        {p.to ? (
+          <Link to={p.to} className="hover:underline">
+            {p.title}
+          </Link>
+        ) : p.type === "external" ? (
+          <a href={p.externalUrl} target={p.externalUrl?.startsWith("/") ? "_self" : "_blank"} rel="noreferrer" className="hover:underline">
+            {p.title}
+          </a>
+        ) : (
+          <Link to={`/${storeSlug}/pagina/${p.slug}` as any} className="hover:underline">
+            {p.title}
+          </Link>
+        )}
+      </li>
+    );
+  };
 
   return (
     <>

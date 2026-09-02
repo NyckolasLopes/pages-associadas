@@ -7,6 +7,7 @@ export const SYSTEM_PAGES = new Set([
   'login', 'cadastro', 'perfil', 'pedidos', 'checkout',
   'sucesso', 'compartilhado', 'faq', 'ajuda', 'mapa-site',
   'politica-de-privacidade', 'pagina', 'admin', 'cupons',
+  'categorias', 'c', 'marcas', 'm', 'quem-somos',
 ]);
 
 export function safeSlugify(text: string): string {

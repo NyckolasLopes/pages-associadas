@@ -84,15 +84,18 @@ import { Route as AdminCanaisIfoodRouteImport } from './routes/admin/canais.ifoo
 import { Route as AdminCanaisGoogleShoppingRouteImport } from './routes/admin/canais.google-shopping'
 import { Route as AdminCanaisFarmaciasappRouteImport } from './routes/admin/canais.farmaciasapp'
 import { Route as StoreStoreSlugSucessoRouteImport } from './routes/_store.$storeSlug.sucesso'
+import { Route as StoreStoreSlugQuemSomosRouteImport } from './routes/_store.$storeSlug.quem-somos'
 import { Route as StoreStoreSlugPoliticaDePrivacidadeRouteImport } from './routes/_store.$storeSlug.politica-de-privacidade'
 import { Route as StoreStoreSlugPerfilRouteImport } from './routes/_store.$storeSlug.perfil'
 import { Route as StoreStoreSlugPedidosRouteImport } from './routes/_store.$storeSlug.pedidos'
+import { Route as StoreStoreSlugMarcasRouteImport } from './routes/_store.$storeSlug.marcas'
 import { Route as StoreStoreSlugMapaSiteRouteImport } from './routes/_store.$storeSlug.mapa-site'
 import { Route as StoreStoreSlugLoginRouteImport } from './routes/_store.$storeSlug.login'
 import { Route as StoreStoreSlugFaqRouteImport } from './routes/_store.$storeSlug.faq'
 import { Route as StoreStoreSlugCuponsRouteImport } from './routes/_store.$storeSlug.cupons'
 import { Route as StoreStoreSlugCompartilhadoRouteImport } from './routes/_store.$storeSlug.compartilhado'
 import { Route as StoreStoreSlugCheckoutRouteImport } from './routes/_store.$storeSlug.checkout'
+import { Route as StoreStoreSlugCategoriasRouteImport } from './routes/_store.$storeSlug.categorias'
 import { Route as StoreStoreSlugCartRouteImport } from './routes/_store.$storeSlug.cart'
 import { Route as StoreStoreSlugCadastroRouteImport } from './routes/_store.$storeSlug.cadastro'
 import { Route as StoreStoreSlugBuscaRouteImport } from './routes/_store.$storeSlug.busca'
@@ -492,6 +495,11 @@ const StoreStoreSlugSucessoRoute = StoreStoreSlugSucessoRouteImport.update({
   path: '/$storeSlug/sucesso',
   getParentRoute: () => StoreRoute,
 } as any)
+const StoreStoreSlugQuemSomosRoute = StoreStoreSlugQuemSomosRouteImport.update({
+  id: '/$storeSlug/quem-somos',
+  path: '/$storeSlug/quem-somos',
+  getParentRoute: () => StoreRoute,
+} as any)
 const StoreStoreSlugPoliticaDePrivacidadeRoute =
   StoreStoreSlugPoliticaDePrivacidadeRouteImport.update({
     id: '/$storeSlug/politica-de-privacidade',
@@ -506,6 +514,11 @@ const StoreStoreSlugPerfilRoute = StoreStoreSlugPerfilRouteImport.update({
 const StoreStoreSlugPedidosRoute = StoreStoreSlugPedidosRouteImport.update({
   id: '/$storeSlug/pedidos',
   path: '/$storeSlug/pedidos',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreStoreSlugMarcasRoute = StoreStoreSlugMarcasRouteImport.update({
+  id: '/$storeSlug/marcas',
+  path: '/$storeSlug/marcas',
   getParentRoute: () => StoreRoute,
 } as any)
 const StoreStoreSlugMapaSiteRoute = StoreStoreSlugMapaSiteRouteImport.update({
@@ -539,6 +552,12 @@ const StoreStoreSlugCheckoutRoute = StoreStoreSlugCheckoutRouteImport.update({
   path: '/$storeSlug/checkout',
   getParentRoute: () => StoreRoute,
 } as any)
+const StoreStoreSlugCategoriasRoute =
+  StoreStoreSlugCategoriasRouteImport.update({
+    id: '/$storeSlug/categorias',
+    path: '/$storeSlug/categorias',
+    getParentRoute: () => StoreRoute,
+  } as any)
 const StoreStoreSlugCartRoute = StoreStoreSlugCartRouteImport.update({
   id: '/$storeSlug/cart',
   path: '/$storeSlug/cart',
@@ -648,15 +667,18 @@ export interface FileRoutesByFullPath {
   '/$storeSlug/busca': typeof StoreStoreSlugBuscaRoute
   '/$storeSlug/cadastro': typeof StoreStoreSlugCadastroRoute
   '/$storeSlug/cart': typeof StoreStoreSlugCartRoute
+  '/$storeSlug/categorias': typeof StoreStoreSlugCategoriasRoute
   '/$storeSlug/checkout': typeof StoreStoreSlugCheckoutRoute
   '/$storeSlug/compartilhado': typeof StoreStoreSlugCompartilhadoRoute
   '/$storeSlug/cupons': typeof StoreStoreSlugCuponsRoute
   '/$storeSlug/faq': typeof StoreStoreSlugFaqRoute
   '/$storeSlug/login': typeof StoreStoreSlugLoginRoute
   '/$storeSlug/mapa-site': typeof StoreStoreSlugMapaSiteRoute
+  '/$storeSlug/marcas': typeof StoreStoreSlugMarcasRoute
   '/$storeSlug/pedidos': typeof StoreStoreSlugPedidosRoute
   '/$storeSlug/perfil': typeof StoreStoreSlugPerfilRoute
   '/$storeSlug/politica-de-privacidade': typeof StoreStoreSlugPoliticaDePrivacidadeRoute
+  '/$storeSlug/quem-somos': typeof StoreStoreSlugQuemSomosRoute
   '/$storeSlug/sucesso': typeof StoreStoreSlugSucessoRoute
   '/admin/canais/farmaciasapp': typeof AdminCanaisFarmaciasappRoute
   '/admin/canais/google-shopping': typeof AdminCanaisGoogleShoppingRoute
@@ -745,15 +767,18 @@ export interface FileRoutesByTo {
   '/$storeSlug/busca': typeof StoreStoreSlugBuscaRoute
   '/$storeSlug/cadastro': typeof StoreStoreSlugCadastroRoute
   '/$storeSlug/cart': typeof StoreStoreSlugCartRoute
+  '/$storeSlug/categorias': typeof StoreStoreSlugCategoriasRoute
   '/$storeSlug/checkout': typeof StoreStoreSlugCheckoutRoute
   '/$storeSlug/compartilhado': typeof StoreStoreSlugCompartilhadoRoute
   '/$storeSlug/cupons': typeof StoreStoreSlugCuponsRoute
   '/$storeSlug/faq': typeof StoreStoreSlugFaqRoute
   '/$storeSlug/login': typeof StoreStoreSlugLoginRoute
   '/$storeSlug/mapa-site': typeof StoreStoreSlugMapaSiteRoute
+  '/$storeSlug/marcas': typeof StoreStoreSlugMarcasRoute
   '/$storeSlug/pedidos': typeof StoreStoreSlugPedidosRoute
   '/$storeSlug/perfil': typeof StoreStoreSlugPerfilRoute
   '/$storeSlug/politica-de-privacidade': typeof StoreStoreSlugPoliticaDePrivacidadeRoute
+  '/$storeSlug/quem-somos': typeof StoreStoreSlugQuemSomosRoute
   '/$storeSlug/sucesso': typeof StoreStoreSlugSucessoRoute
   '/admin/canais/farmaciasapp': typeof AdminCanaisFarmaciasappRoute
   '/admin/canais/google-shopping': typeof AdminCanaisGoogleShoppingRoute
@@ -845,15 +870,18 @@ export interface FileRoutesById {
   '/_store/$storeSlug/busca': typeof StoreStoreSlugBuscaRoute
   '/_store/$storeSlug/cadastro': typeof StoreStoreSlugCadastroRoute
   '/_store/$storeSlug/cart': typeof StoreStoreSlugCartRoute
+  '/_store/$storeSlug/categorias': typeof StoreStoreSlugCategoriasRoute
   '/_store/$storeSlug/checkout': typeof StoreStoreSlugCheckoutRoute
   '/_store/$storeSlug/compartilhado': typeof StoreStoreSlugCompartilhadoRoute
   '/_store/$storeSlug/cupons': typeof StoreStoreSlugCuponsRoute
   '/_store/$storeSlug/faq': typeof StoreStoreSlugFaqRoute
   '/_store/$storeSlug/login': typeof StoreStoreSlugLoginRoute
   '/_store/$storeSlug/mapa-site': typeof StoreStoreSlugMapaSiteRoute
+  '/_store/$storeSlug/marcas': typeof StoreStoreSlugMarcasRoute
   '/_store/$storeSlug/pedidos': typeof StoreStoreSlugPedidosRoute
   '/_store/$storeSlug/perfil': typeof StoreStoreSlugPerfilRoute
   '/_store/$storeSlug/politica-de-privacidade': typeof StoreStoreSlugPoliticaDePrivacidadeRoute
+  '/_store/$storeSlug/quem-somos': typeof StoreStoreSlugQuemSomosRoute
   '/_store/$storeSlug/sucesso': typeof StoreStoreSlugSucessoRoute
   '/admin/canais/farmaciasapp': typeof AdminCanaisFarmaciasappRoute
   '/admin/canais/google-shopping': typeof AdminCanaisGoogleShoppingRoute
@@ -945,15 +973,18 @@ export interface FileRouteTypes {
     | '/$storeSlug/busca'
     | '/$storeSlug/cadastro'
     | '/$storeSlug/cart'
+    | '/$storeSlug/categorias'
     | '/$storeSlug/checkout'
     | '/$storeSlug/compartilhado'
     | '/$storeSlug/cupons'
     | '/$storeSlug/faq'
     | '/$storeSlug/login'
     | '/$storeSlug/mapa-site'
+    | '/$storeSlug/marcas'
     | '/$storeSlug/pedidos'
     | '/$storeSlug/perfil'
     | '/$storeSlug/politica-de-privacidade'
+    | '/$storeSlug/quem-somos'
     | '/$storeSlug/sucesso'
     | '/admin/canais/farmaciasapp'
     | '/admin/canais/google-shopping'
@@ -1042,15 +1073,18 @@ export interface FileRouteTypes {
     | '/$storeSlug/busca'
     | '/$storeSlug/cadastro'
     | '/$storeSlug/cart'
+    | '/$storeSlug/categorias'
     | '/$storeSlug/checkout'
     | '/$storeSlug/compartilhado'
     | '/$storeSlug/cupons'
     | '/$storeSlug/faq'
     | '/$storeSlug/login'
     | '/$storeSlug/mapa-site'
+    | '/$storeSlug/marcas'
     | '/$storeSlug/pedidos'
     | '/$storeSlug/perfil'
     | '/$storeSlug/politica-de-privacidade'
+    | '/$storeSlug/quem-somos'
     | '/$storeSlug/sucesso'
     | '/admin/canais/farmaciasapp'
     | '/admin/canais/google-shopping'
@@ -1141,15 +1175,18 @@ export interface FileRouteTypes {
     | '/_store/$storeSlug/busca'
     | '/_store/$storeSlug/cadastro'
     | '/_store/$storeSlug/cart'
+    | '/_store/$storeSlug/categorias'
     | '/_store/$storeSlug/checkout'
     | '/_store/$storeSlug/compartilhado'
     | '/_store/$storeSlug/cupons'
     | '/_store/$storeSlug/faq'
     | '/_store/$storeSlug/login'
     | '/_store/$storeSlug/mapa-site'
+    | '/_store/$storeSlug/marcas'
     | '/_store/$storeSlug/pedidos'
     | '/_store/$storeSlug/perfil'
     | '/_store/$storeSlug/politica-de-privacidade'
+    | '/_store/$storeSlug/quem-somos'
     | '/_store/$storeSlug/sucesso'
     | '/admin/canais/farmaciasapp'
     | '/admin/canais/google-shopping'
@@ -1742,6 +1779,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreStoreSlugSucessoRouteImport
       parentRoute: typeof StoreRoute
     }
+    '/_store/$storeSlug/quem-somos': {
+      id: '/_store/$storeSlug/quem-somos'
+      path: '/$storeSlug/quem-somos'
+      fullPath: '/$storeSlug/quem-somos'
+      preLoaderRoute: typeof StoreStoreSlugQuemSomosRouteImport
+      parentRoute: typeof StoreRoute
+    }
     '/_store/$storeSlug/politica-de-privacidade': {
       id: '/_store/$storeSlug/politica-de-privacidade'
       path: '/$storeSlug/politica-de-privacidade'
@@ -1761,6 +1805,13 @@ declare module '@tanstack/react-router' {
       path: '/$storeSlug/pedidos'
       fullPath: '/$storeSlug/pedidos'
       preLoaderRoute: typeof StoreStoreSlugPedidosRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/_store/$storeSlug/marcas': {
+      id: '/_store/$storeSlug/marcas'
+      path: '/$storeSlug/marcas'
+      fullPath: '/$storeSlug/marcas'
+      preLoaderRoute: typeof StoreStoreSlugMarcasRouteImport
       parentRoute: typeof StoreRoute
     }
     '/_store/$storeSlug/mapa-site': {
@@ -1803,6 +1854,13 @@ declare module '@tanstack/react-router' {
       path: '/$storeSlug/checkout'
       fullPath: '/$storeSlug/checkout'
       preLoaderRoute: typeof StoreStoreSlugCheckoutRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/_store/$storeSlug/categorias': {
+      id: '/_store/$storeSlug/categorias'
+      path: '/$storeSlug/categorias'
+      fullPath: '/$storeSlug/categorias'
+      preLoaderRoute: typeof StoreStoreSlugCategoriasRouteImport
       parentRoute: typeof StoreRoute
     }
     '/_store/$storeSlug/cart': {
@@ -1903,15 +1961,18 @@ interface StoreRouteChildren {
   StoreStoreSlugBuscaRoute: typeof StoreStoreSlugBuscaRoute
   StoreStoreSlugCadastroRoute: typeof StoreStoreSlugCadastroRoute
   StoreStoreSlugCartRoute: typeof StoreStoreSlugCartRoute
+  StoreStoreSlugCategoriasRoute: typeof StoreStoreSlugCategoriasRoute
   StoreStoreSlugCheckoutRoute: typeof StoreStoreSlugCheckoutRoute
   StoreStoreSlugCompartilhadoRoute: typeof StoreStoreSlugCompartilhadoRoute
   StoreStoreSlugCuponsRoute: typeof StoreStoreSlugCuponsRoute
   StoreStoreSlugFaqRoute: typeof StoreStoreSlugFaqRoute
   StoreStoreSlugLoginRoute: typeof StoreStoreSlugLoginRoute
   StoreStoreSlugMapaSiteRoute: typeof StoreStoreSlugMapaSiteRoute
+  StoreStoreSlugMarcasRoute: typeof StoreStoreSlugMarcasRoute
   StoreStoreSlugPedidosRoute: typeof StoreStoreSlugPedidosRoute
   StoreStoreSlugPerfilRoute: typeof StoreStoreSlugPerfilRoute
   StoreStoreSlugPoliticaDePrivacidadeRoute: typeof StoreStoreSlugPoliticaDePrivacidadeRoute
+  StoreStoreSlugQuemSomosRoute: typeof StoreStoreSlugQuemSomosRoute
   StoreStoreSlugSucessoRoute: typeof StoreStoreSlugSucessoRoute
   StoreStoreSlugIndexRoute: typeof StoreStoreSlugIndexRoute
   StoreStoreSlugAjudaPageRoute: typeof StoreStoreSlugAjudaPageRoute
@@ -1926,16 +1987,19 @@ const StoreRouteChildren: StoreRouteChildren = {
   StoreStoreSlugBuscaRoute: StoreStoreSlugBuscaRoute,
   StoreStoreSlugCadastroRoute: StoreStoreSlugCadastroRoute,
   StoreStoreSlugCartRoute: StoreStoreSlugCartRoute,
+  StoreStoreSlugCategoriasRoute: StoreStoreSlugCategoriasRoute,
   StoreStoreSlugCheckoutRoute: StoreStoreSlugCheckoutRoute,
   StoreStoreSlugCompartilhadoRoute: StoreStoreSlugCompartilhadoRoute,
   StoreStoreSlugCuponsRoute: StoreStoreSlugCuponsRoute,
   StoreStoreSlugFaqRoute: StoreStoreSlugFaqRoute,
   StoreStoreSlugLoginRoute: StoreStoreSlugLoginRoute,
   StoreStoreSlugMapaSiteRoute: StoreStoreSlugMapaSiteRoute,
+  StoreStoreSlugMarcasRoute: StoreStoreSlugMarcasRoute,
   StoreStoreSlugPedidosRoute: StoreStoreSlugPedidosRoute,
   StoreStoreSlugPerfilRoute: StoreStoreSlugPerfilRoute,
   StoreStoreSlugPoliticaDePrivacidadeRoute:
     StoreStoreSlugPoliticaDePrivacidadeRoute,
+  StoreStoreSlugQuemSomosRoute: StoreStoreSlugQuemSomosRoute,
   StoreStoreSlugSucessoRoute: StoreStoreSlugSucessoRoute,
   StoreStoreSlugIndexRoute: StoreStoreSlugIndexRoute,
   StoreStoreSlugAjudaPageRoute: StoreStoreSlugAjudaPageRoute,

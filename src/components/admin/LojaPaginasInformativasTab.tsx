@@ -167,9 +167,8 @@ export function LojaPaginasInformativasTab({ lojaId }: LojaPaginasInformativasTa
           id: "reembolso",
           title: "Política de Reembolso",
           slug: "cancelamento",
-          isIndividual: true,
-          defaultContent: `<h1>Política de Reembolso</h1><p>Conheça os critérios e procedimentos para estorno e reembolso de compras realizadas na ${loja.nome}.</p>`,
-          description: "Regras de cancelamento e reembolso da sua unidade."
+          isIndividual: false,
+          description: "Regras de cancelamento e reembolso padronizadas pela rede."
         },
         {
           id: "faq",
