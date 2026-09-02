@@ -126,7 +126,7 @@ function VitrinePage() {
         </div>
       )}
 
-      <div className="mt-8 flex flex-col md:flex-row gap-8">
+      <div className="mt-6 md:mt-8 flex flex-col md:flex-row gap-4 md:gap-8">
         {/* Sidebar Filters */}
         <aside className="w-full md:w-[280px] shrink-0">
           <ProductFilterSidebar 
