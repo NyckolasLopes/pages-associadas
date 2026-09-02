@@ -56,7 +56,7 @@ export const Route = createFileRoute("/admin/marketing/cupons/")({
 
 function CuponsIndexPage() {
   const { cupons, addCoupon, updateCoupon, removeCoupon, loadMarketing } = useMarketing();
-  const { currentUser, activeStoreId, grupos, pharmacies } = useAdmin();
+  const { currentUser, activeStoreId, grupos, pharmacies, loadPharmacies } = useAdmin();
   const { categories } = useAdminCategories();
   const { customProducts } = useAdminProducts();
 
@@ -66,6 +66,7 @@ function CuponsIndexPage() {
 
   useEffect(() => {
     loadMarketing();
+    loadPharmacies();
     let mounted = true;
     setLoadingProducts(true);
     catalog.listProducts().then((prods) => {
@@ -78,7 +79,7 @@ function CuponsIndexPage() {
       if (mounted) setLoadingProducts(false);
     });
     return () => { mounted = false; };
-  }, [loadMarketing]);
+  }, [loadMarketing, loadPharmacies]);
 
   // Mescla produtos do catálogo com produtos personalizados
   const allProducts = useMemo(() => {
@@ -275,10 +276,12 @@ function CuponsIndexPage() {
                   <div className="grid gap-1.5">
                     <label className="text-xs font-bold text-slate-700">Loja Vinculada <span className="text-red-500">*</span></label>
                     <Select value={novoCupom.lojaId} onValueChange={(v: any) => setNovoCupom({...novoCupom, lojaId: v})}>
-                      <SelectTrigger><SelectValue placeholder="Selecione a Farmácia" /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione a Farmácia" /></SelectTrigger>
+                      <SelectContent className="z-[200] max-h-64">
                         {pharmacies.map(loja => (
-                          <SelectItem key={loja.id} value={loja.id}>{loja.nome}</SelectItem>
+                          <SelectItem key={loja.id} value={loja.id}>
+                            {loja.nome} {loja.cidade ? `(${loja.cidade} - ${loja.uf || "RS"})` : ""}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
