@@ -34,12 +34,22 @@ export function CookieBanner() {
   return (
     <aside 
       aria-label="Aviso de Privacidade e Cookies"
-      className="fixed bottom-2 inset-x-2 sm:bottom-3 sm:inset-x-4 md:bottom-4 md:inset-x-6 z-50 flex justify-center pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-400"
+      className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] inset-x-3 sm:bottom-4 sm:inset-x-4 md:bottom-5 md:inset-x-6 z-[110] flex justify-center pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-400"
     >
       <div 
-        className="pointer-events-auto w-full max-w-5xl bg-card/95 text-card-foreground backdrop-blur-md border border-border/80 rounded-2xl p-3 sm:p-4 shadow-elevated flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6"
+        className="pointer-events-auto w-full max-w-5xl bg-card/95 text-card-foreground backdrop-blur-md border border-border/80 rounded-2xl p-3.5 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 relative"
       >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={accept}
+          className="sm:hidden absolute top-2.5 right-2.5 p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition"
+          title="Fechar aviso de cookies"
+          aria-label="Fechar"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        <div className="flex items-center gap-3 min-w-0 flex-1 pr-6 sm:pr-0">
           <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Cookie className="h-5 w-5" />
           </div>
