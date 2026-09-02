@@ -64,6 +64,9 @@ function ProductCardComponent({
   const recentlyAdded = isRecentlyAdded(p);
   
   const add = useCart((s) => s.add);
+  const cartItems = useCart((s) => s.items);
+  const cartItem = cartItems.find((item) => String(item.id) === String(p.id));
+  const inCartQty = cartItem?.qty || 0;
   const pbm = isPbmEligible(p);
   const cep = useGeoCep((s) => s.cep);
   
@@ -355,15 +358,34 @@ function ProductCardComponent({
         </button>
         <button
           type="button"
-          aria-label={isService ? "Agendar serviço" : "Adicionar à cesta"}
+          aria-label={isService ? "Agendar serviço" : (inCartQty > 0 ? `${inCartQty} no carrinho` : "Adicionar à cesta")}
           onClick={(e) => {
             e.preventDefault();
             add({ ...p, estoque: maxStock });
           }}
-          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white/95 backdrop-blur border shadow-xs flex items-center justify-center hover:bg-white text-muted-foreground relative transition-transform active:scale-95"
+          className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full backdrop-blur border shadow-xs flex items-center justify-center transition-all duration-200 active:scale-95 relative ${
+            inCartQty > 0 
+              ? "bg-primary text-white border-primary shadow-sm hover:brightness-105" 
+              : "bg-white/95 hover:bg-white text-muted-foreground border-slate-200"
+          }`}
+          title={inCartQty > 0 ? `${inCartQty} no carrinho (clique para adicionar mais)` : "Adicionar ao carrinho"}
         >
-          {isService ? <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-teal-600" /> : <ShoppingBasket className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-          {!isService && <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-primary text-white flex items-center justify-center rounded-full text-[9px] font-bold">+</span>}
+          {isService ? (
+            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-teal-600" />
+          ) : (
+            <ShoppingBasket className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${inCartQty > 0 ? "text-white" : ""}`} />
+          )}
+          {!isService && (
+            <span 
+              className={`absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[9px] font-black shadow-xs transition-transform duration-200 ${
+                inCartQty > 0 
+                  ? "bg-red-600 text-white scale-110" 
+                  : "bg-primary text-white"
+              }`}
+            >
+              {inCartQty > 0 ? inCartQty : "+"}
+            </span>
+          )}
         </button>
       </div>
 
