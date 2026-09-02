@@ -1224,6 +1224,24 @@ export function StoreColorManager({
                   fallback="#FFFFFF"
                 />
                 <ColorField
+                  nameKey="--coupon-badge-bg"
+                  label="Fundo do Destaque 'Com Cupom'"
+                  description="Cor de fundo do badge de preço com cupom da loja (ex: R$ 15,19 com Cupom)."
+                  fallback="#EBF3FE"
+                />
+                <ColorField
+                  nameKey="--coupon-badge-text"
+                  label="Texto do Destaque 'Com Cupom'"
+                  description="Cor do texto e valor dentro do badge de cupom da loja."
+                  fallback="#1a73e8"
+                />
+                <ColorField
+                  nameKey="--coupon-badge-border"
+                  label="Borda do Destaque 'Com Cupom'"
+                  description="Cor da borda do badge de cupom da loja."
+                  fallback="#d2e3fc"
+                />
+                <ColorField
                   nameKey="--tarja-bg"
                   label="Fundo da Faixa de Benefícios"
                   description="Barra com 'Entrega Rápida', 'Farmacêutico Online', etc."
@@ -1643,6 +1661,16 @@ export function StoreColorManager({
                             <span className="text-sm font-black block" style={{ color: getColor("--price-main", "#00B5AD") }}>
                               R$ {item.por.toFixed(2)}
                             </span>
+                            <div 
+                              className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border shadow-2xs"
+                              style={{
+                                backgroundColor: getColor("--coupon-badge-bg", "#EBF3FE"),
+                                color: getColor("--coupon-badge-text", "#1a73e8"),
+                                borderColor: getColor("--coupon-badge-border", "#d2e3fc"),
+                              }}
+                            >
+                              R$ {(item.por * 0.9).toFixed(2)} com Cupom
+                            </div>
                           </div>
 
                           <button

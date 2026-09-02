@@ -412,7 +412,6 @@ function PDP() {
   const promocoes = marketingState.promocoes;
   const recentlyAdded = isRecentlyAdded(p);
 
-  const [couponConditionsOpen, setCouponConditionsOpen] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
 
   const [newQuestion, setNewQuestion] = useState("");
@@ -1018,6 +1017,13 @@ function PDP() {
     return bestCoupon;
   }, [marketingState.cupons, isAvailable, finalPrecoPor, activePharmacy?.id, currentLoja?.id, effectiveStoreId, loja?.id, activePharmacyId, p]);
 
+  const getTargetExplanation = (c: any) => {
+    const tipoAlvo = c?.tipoAlvo || (c?.produtosIds?.length ? "produtos" : (c?.categoriasIds?.length ? "categorias" : "todos"));
+    if (tipoAlvo === "produtos") return "Aplicável para produtos específicos";
+    if (tipoAlvo === "categorias") return "Aplicável para categorias selecionadas";
+    return "Válido para todos os produtos da loja";
+  };
+
   const handleApplyCoupon = () => {
     if (!eligibleCoupon) return;
     const code = eligibleCoupon.codigo || eligibleCoupon.code;
@@ -1484,13 +1490,13 @@ function PDP() {
                     </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setCouponConditionsOpen(true)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-800 underline underline-offset-2 transition-colors ml-auto cursor-pointer"
-                  >
-                    Ver condições
-                  </button>
+                  {/* Campo de explicação do cupom */}
+                  <div className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 ml-auto">
+                    <span>{getTargetExplanation(eligibleCoupon)}</span>
+                    {eligibleCoupon.valorMinimo > 0 && (
+                      <span className="text-slate-400 text-[11px] font-normal">• Mín. {brl(eligibleCoupon.valorMinimo)}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -1547,8 +1553,15 @@ function PDP() {
                   )}
                 </div>
                 {eligibleCoupon && (
-                  <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#EBF3FE] text-[#1a73e8] border border-[#d2e3fc] shadow-2xs self-start font-bold">
-                    <span className="text-xs sm:text-sm">{brl(eligibleCoupon.finalPrice)} com Cupom</span>
+                  <div 
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-md shadow-2xs self-start font-bold border text-xs sm:text-sm"
+                    style={{
+                      backgroundColor: 'var(--coupon-badge-bg, #EBF3FE)',
+                      color: 'var(--coupon-badge-text, #1a73e8)',
+                      borderColor: 'var(--coupon-badge-border, #d2e3fc)',
+                    }}
+                  >
+                    <span>{brl(eligibleCoupon.finalPrice)} com Cupom</span>
                   </div>
                 )}
                 {getInstallmentText(finalPrecoPor) && (
@@ -1982,51 +1995,7 @@ Quantidade desejada: ${wlQty}`}
         onLoginSuccess={() => setLoginOpen(false)} 
       />
 
-      {/* Modal de Condições do Cupom */}
-      <Dialog open={couponConditionsOpen} onOpenChange={setCouponConditionsOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Ticket className="h-5 w-5 text-primary" />
-              Regras do Cupom {eligibleCoupon?.codigo || eligibleCoupon?.code}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 text-sm text-slate-600 pt-2">
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
-              <p className="font-semibold text-slate-800 text-base">
-                Desconto: <span className="text-primary font-bold">{eligibleCoupon?.isPercent ? `${eligibleCoupon?.discountValue}% OFF` : `R$ ${Number(eligibleCoupon?.discountValue || 0).toFixed(2)} de desconto`}</span>
-              </p>
-              {eligibleCoupon?.valorMinimo > 0 && (
-                <p className="text-xs text-slate-600">
-                  • Valor mínimo do pedido: <strong>{brl(eligibleCoupon.valorMinimo)}</strong>
-                </p>
-              )}
-              {eligibleCoupon?.dataTermino && (
-                <p className="text-xs text-slate-600">
-                  • Válido até: <strong>{new Date(eligibleCoupon.dataTermino + (eligibleCoupon.dataTermino.includes('T') ? '' : 'T23:59:59')).toLocaleDateString('pt-BR')}</strong>
-                </p>
-              )}
-              <p className="text-xs text-slate-600">
-                • Válido para itens ou categorias selecionados nesta farmácia.
-              </p>
-              {eligibleCoupon?.descricao && (
-                <p className="text-xs text-slate-500 pt-1 italic border-t border-slate-200 mt-2">
-                  "{eligibleCoupon.descricao}"
-                </p>
-              )}
-            </div>
-            <Button 
-              onClick={() => {
-                handleApplyCoupon();
-                setCouponConditionsOpen(false);
-              }} 
-              className="w-full font-bold"
-            >
-              Copiar Código ({eligibleCoupon?.codigo || eligibleCoupon?.code})
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
       <Dialog open={isYoutubeModalOpen} onOpenChange={setIsYoutubeModalOpen}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none h-auto aspect-video sm:rounded-xl">

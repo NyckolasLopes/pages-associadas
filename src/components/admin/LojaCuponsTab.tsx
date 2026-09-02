@@ -29,7 +29,8 @@ import {
   ExternalLink,
   Sparkles,
   Loader2,
-  Clock
+  Clock,
+  Palette
 } from "lucide-react";
 import { sanitizeCouponCode } from "@/lib/security";
 import { checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
@@ -38,11 +39,44 @@ import { catalog } from "@/services/catalog";
 import type { Produto, Categoria } from "@/types";
 
 export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
-  const { pharmacies } = useAdmin();
+  const { pharmacies, updatePharmacy } = useAdmin();
   const { categories } = useAdminCategories();
   const { customProducts } = useAdminProducts();
   const { cupons, addCoupon, removeCoupon, updateCoupon } = useMarketing();
   const pharmacy = pharmacies.find((p) => p.id === lojaId);
+
+  // Cores personalizáveis do destaque do cupom da loja
+  const [badgeBg, setBadgeBg] = useState(pharmacy?.themeColors?.['--coupon-badge-bg'] || "#EBF3FE");
+  const [badgeText, setBadgeText] = useState(pharmacy?.themeColors?.['--coupon-badge-text'] || "#1a73e8");
+  const [badgeBorder, setBadgeBorder] = useState(pharmacy?.themeColors?.['--coupon-badge-border'] || "#d2e3fc");
+  const [isSavingColors, setIsSavingColors] = useState(false);
+
+  useEffect(() => {
+    if (pharmacy?.themeColors) {
+      if (pharmacy.themeColors['--coupon-badge-bg']) setBadgeBg(pharmacy.themeColors['--coupon-badge-bg']);
+      if (pharmacy.themeColors['--coupon-badge-text']) setBadgeText(pharmacy.themeColors['--coupon-badge-text']);
+      if (pharmacy.themeColors['--coupon-badge-border']) setBadgeBorder(pharmacy.themeColors['--coupon-badge-border']);
+    }
+  }, [pharmacy]);
+
+  const handleSaveBadgeColors = async () => {
+    if (!pharmacy) return;
+    setIsSavingColors(true);
+    try {
+      const updatedThemeColors = {
+        ...(pharmacy.themeColors || {}),
+        '--coupon-badge-bg': badgeBg,
+        '--coupon-badge-text': badgeText,
+        '--coupon-badge-border': badgeBorder,
+      };
+      await updatePharmacy(lojaId, { ...pharmacy, themeColors: updatedThemeColors });
+      toast.success("Cores do destaque de cupom salvas com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao salvar cores: " + (err.message || "Tente novamente"));
+    } finally {
+      setIsSavingColors(false);
+    }
+  };
 
   // Carrega todos os produtos do catálogo para seleção completa
   const [catalogProducts, setCatalogProducts] = useState<Produto[]>([]);
@@ -335,6 +369,83 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
           </div>
         </div>
       </div>
+
+      {/* CARD DE PERSONALIZAÇÃO DE CORES DO DESTAQUE DE CUPOM */}
+      <Card className="border-slate-200 shadow-sm bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-primary" />
+                <h3 className="font-bold text-slate-800 text-sm md:text-base">Personalizar Cores do Destaque do Cupom</h3>
+              </div>
+              <p className="text-xs text-slate-500">
+                Altere a cor do texto, do fundo e da borda do selo que aparece nos cards e na página dos produtos com cupom.
+              </p>
+            </div>
+
+            {/* Live Preview & Pickers */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-600">Fundo:</label>
+                  <input
+                    type="color"
+                    value={badgeBg}
+                    onChange={(e) => setBadgeBg(e.target.value)}
+                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    title="Cor de fundo do selo"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-600">Texto:</label>
+                  <input
+                    type="color"
+                    value={badgeText}
+                    onChange={(e) => setBadgeText(e.target.value)}
+                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    title="Cor do texto do selo"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-600">Borda:</label>
+                  <input
+                    type="color"
+                    value={badgeBorder}
+                    onChange={(e) => setBadgeBorder(e.target.value)}
+                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    title="Cor da borda do selo"
+                  />
+                </div>
+              </div>
+
+              {/* Preview do Selo */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-slate-400">Prévia:</span>
+                <div 
+                  className="px-3 py-1 rounded-md text-xs font-bold border shadow-2xs transition-all"
+                  style={{
+                    backgroundColor: badgeBg,
+                    color: badgeText,
+                    borderColor: badgeBorder,
+                  }}
+                >
+                  R$ 15,19 com Cupom
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                onClick={handleSaveBadgeColors}
+                disabled={isSavingColors}
+                className="bg-primary text-white font-bold text-xs h-8 px-3 ml-auto"
+              >
+                {isSavingColors ? "Salvando..." : "Salvar Cores"}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulário de Criação de Cupom */}
