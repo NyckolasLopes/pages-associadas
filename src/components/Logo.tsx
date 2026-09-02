@@ -3,6 +3,7 @@ import logoUrlDefault from "@/assets/logo.png";
 import { useAdmin } from "@/stores/admin";
 import { useMemo } from "react";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
+import { getSafeMediaUrl } from "@/utils/media";
 
 export function Logo({ className = "h-10" }: { className?: string }) {
   const { logoUrl: globalLogoUrl, pharmacies } = useAdmin();
@@ -30,7 +31,8 @@ export function Logo({ className = "h-10" }: { className?: string }) {
     return null;
   }, [activePharmacy, effectiveSlug]);
 
-  const partnerLogo = activePharmacy?.logoUrl || activePharmacy?.footerLogoUrl;
+  const rawPartnerLogo = activePharmacy?.logoUrl || activePharmacy?.footerLogoUrl;
+  const partnerLogo = getSafeMediaUrl(rawPartnerLogo);
   const storeDisplayName = activePharmacy?.nome || (effectiveSlug ? effectiveSlug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : "");
 
   return (
@@ -56,7 +58,7 @@ export function Logo({ className = "h-10" }: { className?: string }) {
         )
       ) : (
         <img
-          src={activePharmacy?.logoUrl || globalLogoUrl || logoUrlDefault}
+          src={getSafeMediaUrl(activePharmacy?.logoUrl || globalLogoUrl) || logoUrlDefault}
           alt={storeDisplayName || "Farmácias Associadas"}
           className={`${className} w-auto object-contain`}
           loading="eager"

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useActivePharmacy } from "@/hooks/useActivePharmacy";
 import { useAppInstallStore } from "@/stores/appInstall";
+import { getSafeMediaUrl } from "@/utils/media";
 import {
   Dialog,
   DialogContent,
@@ -113,7 +114,7 @@ export function InstallPrompt() {
   const cat = activePharmacy?.categoriaAssociado?.toString().toLowerCase() || '';
   const isParceiroOrAssociado = cat === 'parceiro' || cat === 'associado' || activePharmacy?.nome?.toLowerCase().includes('parceiro');
   const appTitle = isParceiroOrAssociado && activePharmacy?.nome ? activePharmacy.nome : (activePharmacy?.nome ? activePharmacy.nome : "Farmácias Associadas");
-  const iconUrl = activePharmacy?.faviconUrl || activePharmacy?.logoUrl || "/favicon.png";
+  const iconUrl = getSafeMediaUrl(activePharmacy?.faviconUrl || activePharmacy?.logoUrl) || "/favicon.png";
 
   const pathname = typeof window !== "undefined" ? window.location.pathname : "";
   const isRootHomePage = pathname === "" || pathname === "/";

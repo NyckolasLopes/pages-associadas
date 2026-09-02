@@ -30,6 +30,8 @@ import { InstallPrompt } from "@/components/storefront/InstallPrompt";
 import { FloatingElements } from "@/components/storefront/BackToTop";
 import { PriceDropTracker } from "@/components/storefront/PriceDropTracker";
 
+import { ErrorComponent as CustomErrorComponent } from "@/components/ErrorComponent";
+import { getSafeMediaUrl } from "@/utils/media";
 import { NotFound } from "@/components/storefront/NotFound";
 
 export function NotFoundComponent() {
@@ -129,7 +131,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
     const globalLogo = useConfig.getState().logo;
     const themeColor = currentPharmacy?.topBarBgColor || currentPharmacy?.themeColors?.['--primary'] || "#00B5AD";
-    const faviconHref = currentPharmacy?.faviconUrl || currentPharmacy?.logoUrl || globalLogo || "/favicon.png";
+    const faviconHref = getSafeMediaUrl(currentPharmacy?.faviconUrl || currentPharmacy?.logoUrl || globalLogo || "/favicon.png");
     return {
       meta: [
         { charSet: "utf-8" },

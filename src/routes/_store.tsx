@@ -5,6 +5,7 @@ import { Header } from "@/components/storefront/Header";
 import { Suspense, lazy, useMemo, useEffect, useState, type CSSProperties } from "react";
 import { CompleteProfileModal } from "@/components/storefront/CompleteProfileModal";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
+import { getSafeMediaUrl } from "@/utils/media";
 import { useAuth } from "@/stores/auth";
 import { NotFound } from "@/components/storefront/NotFound";
 import { GlobalLoading } from "@/components/ui/global-loading";
@@ -211,7 +212,8 @@ function StoreLayout() {
     const isParceiroOrAssociado = activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado' || activePharmacy.isPleno === false;
     
     // Identifica o favicon da loja (se não tiver favicon e for parceiro, pode usar o logo)
-    let storeFavicon = activePharmacy.faviconUrl || (isParceiroOrAssociado ? activePharmacy.logoUrl : null);
+    const rawFavicon = activePharmacy.faviconUrl || (isParceiroOrAssociado ? activePharmacy.logoUrl : null);
+    let storeFavicon = getSafeMediaUrl(rawFavicon);
     
     if (storeFavicon) {
       newLink.href = storeFavicon;
@@ -221,7 +223,7 @@ function StoreLayout() {
       const primaryColor = activePharmacy.themeColors?.primary || "#00B5AD";
       newLink.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='${encodeURIComponent(primaryColor)}'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='55' font-family='sans-serif' font-weight='bold' fill='#ffffff'>${initial}</text></svg>`;
     } else {
-      newLink.href = globalFavicon || '/favicon.png';
+      newLink.href = getSafeMediaUrl(globalFavicon) || '/favicon.png';
     }
     
     document.head.appendChild(newLink);
@@ -234,7 +236,7 @@ function StoreLayout() {
     // Ícone do Manifest: para parceiro, JAMAIS usar /favicon.png ou globalFavicon da rede!
     let manifestIcon = storeFavicon;
     if (!manifestIcon && !isParceiroOrAssociado) {
-      manifestIcon = globalFavicon || "/favicon.png";
+      manifestIcon = getSafeMediaUrl(globalFavicon) || "/favicon.png";
     }
 
     if (manifestIcon) {

@@ -5,7 +5,8 @@ import { useCart } from "@/stores/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Navigation, Search, Store, ArrowRight, Loader2, Building2, Compass, X, ChevronRight } from "lucide-react";
+import { Search, MapPin, Navigation, ArrowRight, Sparkles, Building2, Store, ExternalLink } from "lucide-react";
+import { getSafeMediaUrl } from "@/utils/media";
 import { getCepCoordsWithFallback, haversineKm } from "@/lib/distanceApis";
 import { toast } from "sonner";
 import AssociadasLogo from "@/assets/logo.png";
@@ -691,21 +692,32 @@ function IndexGateway() {
                           const isParceiro = store.categoriaAssociado === 'Parceiro' || store.isPleno === false;
                           const effectiveFavicon = store.faviconUrl || (!isParceiro ? globalFavicon : null);
                           const effectiveLogo = store.logoUrl || (!isParceiro ? globalLogo : null);
-                          const displaySrc = effectiveFavicon || effectiveLogo || (!isParceiro ? '/favicon.png' : null);
+                          const rawSrc = effectiveFavicon || effectiveLogo || (!isParceiro ? '/favicon.png' : null);
+                          const displaySrc = getSafeMediaUrl(rawSrc);
                           
                           if (displaySrc) {
                             return (
-                              <img 
-                                src={displaySrc} 
-                                alt="Logo da loja" 
-                                className="h-7 w-7 object-contain shrink-0 rounded" 
-                              />
+                              <div className="relative h-7 w-7 shrink-0">
+                                <img 
+                                  src={displaySrc} 
+                                  alt={store.nome || "Logo da loja"} 
+                                  className="h-7 w-7 object-contain rounded" 
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const fb = e.currentTarget.parentElement?.querySelector('.store-badge-fallback') as HTMLElement;
+                                    if (fb) fb.classList.remove('hidden');
+                                  }}
+                                />
+                                <div className="store-badge-fallback hidden h-7 w-7 bg-orange-50 border border-orange-200 rounded flex items-center justify-center text-[8px] font-extrabold text-orange-600 text-center leading-tight">
+                                  {store.nome ? store.nome.substring(0, 2).toUpperCase() : 'FA'}
+                                </div>
+                              </div>
                             );
                           }
                           
                           return (
-                            <div className="h-7 w-7 bg-slate-50 border border-slate-200 rounded flex items-center justify-center text-[6px] font-bold text-slate-400 text-center leading-tight shrink-0 overflow-hidden">
-                              Loja
+                            <div className="h-7 w-7 bg-slate-50 border border-slate-200 rounded flex items-center justify-center text-[7px] font-bold text-slate-500 text-center leading-tight shrink-0 overflow-hidden">
+                              {store.nome ? store.nome.substring(0, 2).toUpperCase() : 'Loja'}
                             </div>
                           );
                         })()}
