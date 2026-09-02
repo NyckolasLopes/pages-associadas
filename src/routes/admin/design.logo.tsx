@@ -10,6 +10,8 @@ import logoUrlDefault from "@/assets/logo.png";
 import logoAnvisaDefault from "@/assets/logo-anvisa.png";
 import { supabase } from "@/integrations/supabase/client";
 
+import { compressImageToBlob } from "@/utils/storageUpload";
+
 export const Route = createFileRoute("/admin/design/logo")({
   component: AdminDesignLogo,
 });
@@ -17,12 +19,19 @@ export const Route = createFileRoute("/admin/design/logo")({
 const LOGO_BUCKET = "logos";
 
 async function uploadLogoToStorage(file: File, path: string): Promise<string> {
-  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-  const filePath = `${path}.${ext}`;
+  let blobToUpload: Blob = file;
+  try {
+    // Converte para WebP mantendo transparência (alpha) e alta fidelidade
+    blobToUpload = await compressImageToBlob(file, 800, 800, 0.92);
+  } catch (err) {
+    console.warn("Falha ao converter logo para WebP, usando original:", err);
+  }
+
+  const filePath = `${path}.webp`;
 
   const { error: uploadError } = await supabase.storage
     .from(LOGO_BUCKET)
-    .upload(filePath, file, { upsert: true, contentType: file.type });
+    .upload(filePath, blobToUpload, { upsert: true, contentType: "image/webp" });
 
   if (uploadError) {
     throw new Error(uploadError.message);

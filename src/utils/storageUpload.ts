@@ -50,6 +50,7 @@ export async function compressImageToBlob(
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
+        ctx?.clearRect(0, 0, width, height);
         ctx?.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
@@ -87,28 +88,31 @@ export function fixBannerStorageUrl(url?: string | null): string {
 }
 
 /**
- * Faz o upload de um File ou Blob para o Supabase Storage e retorna a URL pública permanente
+ * Faz o upload de um File ou Blob para o Supabase Storage e retorna a URL pública permanente.
+ * Converte SEMPRE qualquer arquivo (PNG, JPG, JPEG) para WebP otimizado.
  */
 export async function uploadToStorage(
   fileOrBlob: File | Blob, 
   bucket = "banners", 
   prefix = "banner"
 ): Promise<string> {
-  const ext = fileOrBlob.type.includes("webp") 
-    ? "webp" 
-    : fileOrBlob.type.includes("png") 
-    ? "png" 
-    : fileOrBlob.type.includes("jpeg") || fileOrBlob.type.includes("jpg")
-    ? "jpg"
-    : "webp";
+  let finalBlob: Blob = fileOrBlob;
+  if (!fileOrBlob.type.includes("webp")) {
+    try {
+      finalBlob = await compressImageToBlob(fileOrBlob, 1920, 1080, 0.85);
+    } catch (err) {
+      console.warn("Falha ao converter para WebP, enviando original:", err);
+      finalBlob = fileOrBlob;
+    }
+  }
 
   const randomStr = Math.random().toString(36).substring(2, 8);
-  const fileName = `${prefix}_${Date.now()}_${randomStr}.${ext}`;
+  const fileName = `${prefix}_${Date.now()}_${randomStr}.webp`;
   const filePath = `${fileName}`;
 
   const uploadRes = await supabase.storage
     .from(bucket)
-    .upload(filePath, fileOrBlob, { upsert: true, contentType: fileOrBlob.type || 'image/webp' });
+    .upload(filePath, finalBlob, { upsert: true, contentType: 'image/webp' });
 
   if (uploadRes.error) {
     console.error(`Erro no upload para o bucket '${bucket}':`, uploadRes.error);
