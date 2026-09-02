@@ -957,7 +957,7 @@ function CartPage() {
   }
 
   return (
-    <div className="container-fa py-8">
+    <div className="container-fa py-8 pb-32 md:pb-12">
       <nav className="text-xs text-muted-foreground mb-3">
         <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }} className="hover:underline">Início</Link> /{" "}
         <span className="text-foreground">Carrinho</span>
@@ -1715,7 +1715,7 @@ function CartPage() {
 
       {/* Modal de Finalização via WhatsApp */}
       <Dialog open={whatsAppModalOpen} onOpenChange={setWhatsAppModalOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6 pb-8 z-[160]">
           <DialogHeader>
             <div className="flex items-center gap-2.5 text-primary">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -1730,7 +1730,7 @@ function CartPage() {
             </div>
           </DialogHeader>
 
-          <form onSubmit={handleConfirmWhatsAppOrder} className="space-y-4 pt-2">
+          <form onSubmit={handleConfirmWhatsAppOrder} className="space-y-4 pt-2 pb-6">
             {/* Seção 1: Dados do Cliente */}
             <div className="bg-slate-50 border rounded-lg p-3.5 space-y-3">
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">Seus Dados</div>
@@ -1969,14 +1969,16 @@ function CartPage() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              disabled={isSubmittingOrder || (deliveryMethod === "entrega" && (!deliveryNumber || isEditingAddress))}
-              className="w-full bg-primary hover:bg-primary-dark text-primary-foreground font-bold py-6 text-base shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
-            >
-              <Send className="h-5 w-5" />
-              {isSubmittingOrder ? "Processando..." : "Finalizar Pedido"}
-            </Button>
+            <div className="pt-2 pb-2">
+              <Button
+                type="submit"
+                disabled={isSubmittingOrder || (deliveryMethod === "entrega" && (!deliveryNumber || isEditingAddress))}
+                className="w-full bg-primary hover:bg-primary-dark text-primary-foreground font-bold py-6 text-base shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
+              >
+                <Send className="h-5 w-5" />
+                {isSubmittingOrder ? "Processando..." : "Finalizar Pedido"}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
