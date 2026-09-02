@@ -55,6 +55,7 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         method: request.method,
         headers: forwardHeaders,
         body: body,
+        redirect: "manual",
       });
 
       const responseHeaders = new Headers();
