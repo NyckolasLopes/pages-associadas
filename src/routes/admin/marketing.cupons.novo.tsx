@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useMarketing, Coupon } from "@/stores/marketing";
 import { useAdmin } from "@/stores/admin";
 import { useAdminCategories } from "@/stores/categories";
@@ -16,8 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Info, AlertTriangle, ChevronRight, Ticket, Percent, DollarSign, Truck, FileText, Store, Search } from "lucide-react";
+import { Info, AlertTriangle, ChevronRight, Ticket, Percent, DollarSign, Truck, FileText, Store, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { catalog } from "@/services/catalog";
+import { brl, productImage } from "@/lib/format";
+import type { Produto } from "@/types";
 
 export const Route = createFileRoute("/admin/marketing/cupons/novo")({
   component: NovoCupomPage,
@@ -37,6 +40,40 @@ function NovoCupomPage() {
   const [alvosId, setAlvosId] = useState<string[]>([]);
   const [searchTarget, setSearchTarget] = useState("");
   
+  // Carrega catálogo completo de produtos
+  const [catalogProducts, setCatalogProducts] = useState<Produto[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoadingProducts(true);
+    catalog.listProducts().then((prods) => {
+      if (mounted && prods) {
+        setCatalogProducts(prods);
+      }
+    }).catch((err) => {
+      console.error("Erro ao carregar produtos:", err);
+    }).finally(() => {
+      if (mounted) setLoadingProducts(false);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const allProducts = useMemo(() => {
+    const list = [...catalogProducts];
+    if (customProducts && customProducts.length > 0) {
+      customProducts.forEach(cp => {
+        const idx = list.findIndex(p => p.id === cp.id);
+        if (idx >= 0) {
+          list[idx] = cp;
+        } else {
+          list.push(cp);
+        }
+      });
+    }
+    return list;
+  }, [catalogProducts, customProducts]);
+
   const [formData, setFormData] = useState<Omit<Coupon, "id" | "numeroUtilizacoes">>({
     codigo: "",
     descricao: "",
@@ -64,10 +101,14 @@ function NovoCupomPage() {
   }, [categories, searchTarget]);
 
   const filteredProducts = useMemo(() => {
-    if (!searchTarget) return (customProducts || []).slice(0, 40);
+    if (!searchTarget) return allProducts.slice(0, 50);
     const q = searchTarget.toLowerCase();
-    return (customProducts || []).filter((p: any) => p.nome.toLowerCase().includes(q) || (p.sku && p.sku.toLowerCase().includes(q))).slice(0, 40);
-  }, [customProducts, searchTarget]);
+    return allProducts.filter((p: any) => 
+      (p.nome && p.nome.toLowerCase().includes(q)) || 
+      (p.marca && p.marca.toLowerCase().includes(q)) ||
+      (p.sku && p.sku.toLowerCase().includes(q))
+    ).slice(0, 50);
+  }, [allProducts, searchTarget]);
 
   const handleToggleAlvo = (id: string) => {
     setAlvosId(prev => 
@@ -358,20 +399,58 @@ function NovoCupomPage() {
                   <Input
                     value={searchTarget}
                     onChange={(e) => setSearchTarget(e.target.value)}
-                    placeholder={`Buscar ${tipoAlvo === "categorias" ? "categoria por nome..." : "produto por nome ou SKU..."}`}
+                    placeholder={`Buscar ${tipoAlvo === "categorias" ? "categoria por nome..." : "produto por nome, marca ou SKU..."}`}
                     className="pl-9 h-9 text-sm bg-white"
                   />
                 </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>
+                    {tipoAlvo === "categorias" ? `${filteredCategories.length} categorias` : `${filteredProducts.length} produtos`}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (tipoAlvo === "categorias") {
+                          const ids = filteredCategories.map(c => c.id);
+                          setAlvosId(prev => Array.from(new Set([...prev, ...ids])));
+                        } else {
+                          const ids = filteredProducts.map(p => p.id);
+                          setAlvosId(prev => Array.from(new Set([...prev, ...ids])));
+                        }
+                      }}
+                      className="text-primary font-bold hover:underline"
+                    >
+                      Selecionar listados
+                    </button>
+                    <span>•</span>
+                    <button
+                      type="button"
+                      onClick={() => setAlvosId([])}
+                      className="text-slate-500 hover:underline"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
                 
-                <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                  {tipoAlvo === "categorias" ? (
+                <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                  {loadingProducts && tipoAlvo === "produtos" ? (
+                    <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" /> Carregando produtos...
+                    </div>
+                  ) : tipoAlvo === "categorias" ? (
                     filteredCategories.map(cat => (
-                      <label key={cat.id} className="flex items-center gap-2.5 p-2 rounded hover:bg-white text-sm cursor-pointer border border-transparent hover:border-slate-200">
-                        <Checkbox
-                          checked={alvosId.includes(cat.id)}
-                          onCheckedChange={() => handleToggleAlvo(cat.id)}
-                        />
-                        <span className="font-medium text-slate-700 truncate">{cat.nome}</span>
+                      <label key={cat.id} className="flex items-center justify-between p-2 rounded hover:bg-white text-sm cursor-pointer border border-transparent hover:border-slate-200">
+                        <div className="flex items-center gap-2.5">
+                          <Checkbox
+                            checked={alvosId.includes(cat.id)}
+                            onCheckedChange={() => handleToggleAlvo(cat.id)}
+                          />
+                          <span className="font-medium text-slate-700 truncate">{cat.nome}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">ID: {cat.id}</span>
                       </label>
                     ))
                   ) : (
@@ -381,7 +460,19 @@ function NovoCupomPage() {
                           checked={alvosId.includes(prod.id)}
                           onCheckedChange={() => handleToggleAlvo(prod.id)}
                         />
-                        <span className="font-medium text-slate-700 truncate">{prod.nome}</span>
+                        <img
+                          src={productImage(prod)}
+                          alt={prod.nome}
+                          className="w-8 h-8 object-contain rounded bg-white p-0.5 border shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-700 truncate text-xs">{prod.nome}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                            {prod.marca && <span>{prod.marca}</span>}
+                            {prod.sku && <span>SKU: {prod.sku}</span>}
+                            <span className="font-bold text-primary ml-auto">{brl(prod.precoPor || prod.preco || 0)}</span>
+                          </div>
+                        </div>
                       </label>
                     ))
                   )}
