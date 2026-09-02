@@ -1620,26 +1620,80 @@ export const useAdmin = create<AdminState>()(
       networkDefaultTheme: null,
 
       loadNetworkTheme: async () => {
-        const { data } = await (supabase as any)
-          .from("theme_colors")
-          .select("*")
-          .eq("loja_id", "__network_default__")
-          .maybeSingle();
-        if (data) {
-          // Remove internal supabase-table fields, keep only theme vars
-          const { loja_id: _lid, id: _id, created_at: _ca, updated_at: _ua, ...themeVars } = data as any;
-          set({ networkDefaultTheme: themeVars as Record<string, string> });
+        // 1. Carrega do localStorage imediatamente
+        if (typeof window !== 'undefined') {
+          try {
+            const cached = localStorage.getItem("fa-network-default-theme");
+            if (cached) {
+              set({ networkDefaultTheme: JSON.parse(cached) });
+            }
+          } catch {}
         }
+
+        // 2. Busca do app_state no Supabase
+        try {
+          const { data, error } = await supabase
+            .from('app_state' as any)
+            .select('value')
+            .eq('key', 'network_default_theme')
+            .maybeSingle();
+
+          if (!error && data && (data as any).value) {
+            const theme = (data as any).value as Record<string, string>;
+            set({ networkDefaultTheme: theme });
+            if (typeof window !== 'undefined') {
+              localStorage.setItem("fa-network-default-theme", JSON.stringify(theme));
+            }
+            return;
+          }
+        } catch {}
+
+        // 3. Fallback: tabela theme_colors caso exista
+        try {
+          const { data } = await (supabase as any)
+            .from("theme_colors")
+            .select("*")
+            .eq("loja_id", "__network_default__")
+            .maybeSingle();
+          if (data) {
+            const { loja_id: _lid, id: _id, created_at: _ca, updated_at: _ua, ...themeVars } = data as any;
+            set({ networkDefaultTheme: themeVars as Record<string, string> });
+            if (typeof window !== 'undefined') {
+              localStorage.setItem("fa-network-default-theme", JSON.stringify(themeVars));
+            }
+          }
+        } catch {}
       },
 
       saveNetworkTheme: async (colors) => {
-        // Filter to only CSS variables and extra theme fields
-        const payload: Record<string, any> = { ...colors, loja_id: "__network_default__" };
-        const { error } = await (supabase as any)
-          .from("theme_colors")
-          .upsert(payload, { onConflict: "loja_id" });
-        if (error) throw new Error(error.message);
+        // 1. Atualiza estado e cache local imediatamente
         set({ networkDefaultTheme: colors });
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem("fa-network-default-theme", JSON.stringify(colors));
+          } catch {}
+        }
+
+        // 2. Salva no app_state (tabela Supabase oficial para estados da aplicação)
+        try {
+          await supabase
+            .from('app_state' as any)
+            .upsert({
+              key: 'network_default_theme',
+              value: colors,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'key' });
+        } catch (e) {
+          console.warn("Aviso ao sincronizar tema da rede com app_state:", e);
+        }
+
+        // 3. Fallback opcional para theme_colors caso a tabela exista
+        try {
+          const payload: Record<string, any> = { ...colors, loja_id: "__network_default__" };
+          await (supabase as any)
+            .from("theme_colors")
+            .upsert(payload, { onConflict: "loja_id" });
+        } catch {}
       },
 
       applyNetworkThemeToAllPleno: async () => {
