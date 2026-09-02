@@ -545,14 +545,8 @@ function ProductCardComponent({
             to="/$storeSlug/produto/$slug"
             preload="intent"
             params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
-            style={{ 
-              color: 'var(--headings, inherit)',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-            className="text-[12px] sm:text-sm font-bold line-clamp-2 h-[2.5em] sm:h-[2.7em] hover:text-primary-dark leading-tight sm:leading-snug"
+            style={{ color: 'var(--headings, inherit)' }}
+            className="product-title-clamp text-[12px] sm:text-sm font-bold text-slate-800 hover:text-primary-dark transition-colors"
             title={p.nome}
           >
             {p.nome}

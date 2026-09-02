@@ -226,3 +226,17 @@
   }
 }
 
+/* Strict 2-line product title clamping with ellipsis */
+.product-title-clamp {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word !important;
+  line-height: 1.25rem !important;
+  max-height: 2.5rem !important;
+  min-height: 2.5rem !important;
+}
+
+
