@@ -284,6 +284,8 @@ let storeCacheMap = new Map<string, {
   produtos: Produto[];
 }>();
 
+const searchCacheMap = new Map<string, { data: { results: Produto[]; didYouMean?: string }; timestamp: number }>();
+
 // Helper to get all merged products dynamically
 export const getAllProdutos = (lojaId?: string | null): Produto[] => {
   const storeState = useAdminProducts.getState();
@@ -815,8 +817,9 @@ export const catalog = {
     
     const page = filters?.page || 0;
     const pageSize = filters?.pageSize || 24;
+    const trimmedQ = (q || "").trim();
 
-    if (!q || !q.trim() || q.trim().length < 2) {
+    if (!trimmedQ || trimmedQ.length < 2) {
       if (filters && Object.keys(filters).length > 0) {
         let query = supabase.from('produtos').select('*').range(page * pageSize, (page + 1) * pageSize - 1);
         const products = await fetchFromSupabaseWithPrices(query, lojaId);
@@ -825,111 +828,90 @@ export const catalog = {
       return { results: [] };
     }
 
-    const profile = analyzeSearchQuery(q);
+    // Cache de pesquisa em memória (60 segundos)
+    const cacheKey = `sq:${trimmedQ.toLowerCase()}:${lojaId || 'global'}:${page}:${pageSize}:${JSON.stringify(filters || {})}`;
+    const cached = searchCacheMap.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < 60000)) {
+      return cached.data;
+    }
+
+    const profile = analyzeSearchQuery(trimmedQ);
     let candidates: Produto[] = [];
 
-    // Combine Supabase query and local effective products for maximum coverage
-    const localMatches = rankProductsBySearch(getAllProdutos(lojaId), q).ranked;
+    // Busca rápida em memória se produtos já estiverem carregados no cliente
+    const localEffective = getAllProdutos(lojaId);
+    let localMatches: Produto[] = [];
+    if (localEffective && localEffective.length > 0) {
+      localMatches = rankProductsBySearch(localEffective, trimmedQ).ranked;
+    }
 
     if (profile.isCodeLike && profile.digitsOnly.length >= 4) {
-      // EAN / SKU / Registro ANVISA / ID query
+      // Busca exata por código (EAN, ID ou código interno)
       const codeQuery = supabase.from('produtos').select('*')
-        .or(`ean.ilike.%${profile.digitsOnly}%,codigo_interno.ilike.%${profile.digitsOnly}%,registro_anvisa.ilike.%${profile.digitsOnly}%,id.eq.${profile.cleanQuery}`)
-        .limit(100);
+        .or(`ean.eq.${profile.digitsOnly},id.eq.${profile.cleanQuery},ean.ilike.%${profile.digitsOnly}%`)
+        .limit(30);
       candidates = await fetchFromSupabaseWithPrices(codeQuery, lojaId);
     } else {
-      // Multi-column and multi-token search clauses using existing Supabase columns
+      // Cláusulas SQL otimizadas com foco nos campos indexados (nome, marca, ean, slug)
       const orClauses: string[] = [];
       const cleanQ = profile.cleanQuery;
 
-      // 1. Full query matches across all relevant columns
       if (cleanQ) {
         orClauses.push(`nome.ilike.%${cleanQ}%`);
         orClauses.push(`marca.ilike.%${cleanQ}%`);
-        orClauses.push(`descricao.ilike.%${cleanQ}%`);
-        orClauses.push(`ean.ilike.%${cleanQ}%`);
-        orClauses.push(`codigo_interno.ilike.%${cleanQ}%`);
-        orClauses.push(`registro_anvisa.ilike.%${cleanQ}%`);
-        orClauses.push(`tarja.ilike.%${cleanQ}%`);
-        orClauses.push(`classe_terapeutica.ilike.%${cleanQ}%`);
-        orClauses.push(`indicacao_terapeutica.ilike.%${cleanQ}%`);
         orClauses.push(`slug.ilike.%${cleanQ}%`);
       }
 
-      // 2. Individual tokens (e.g. "dipirona", "500mg", "ems")
-      for (const token of profile.tokens) {
-        if (token.length >= 2) {
+      // Tokens principais (máximo 3 tokens para evitar sobrecarga no banco)
+      for (const token of profile.tokens.slice(0, 3)) {
+        if (token.length >= 3) {
           orClauses.push(`nome.ilike.%${token}%`);
           orClauses.push(`marca.ilike.%${token}%`);
-          orClauses.push(`descricao.ilike.%${token}%`);
-          orClauses.push(`ean.ilike.%${token}%`);
-          orClauses.push(`codigo_interno.ilike.%${token}%`);
-          orClauses.push(`registro_anvisa.ilike.%${token}%`);
-          orClauses.push(`tarja.ilike.%${token}%`);
-          orClauses.push(`classe_terapeutica.ilike.%${token}%`);
-          orClauses.push(`indicacao_terapeutica.ilike.%${token}%`);
         }
       }
 
-      // 3. Synonym / Indication expanded terms
-      for (const exp of profile.expandedTerms.slice(0, 8)) {
-        if (exp !== cleanQ && exp.length >= 3) {
-          orClauses.push(`nome.ilike.%${exp}%`);
-          orClauses.push(`marca.ilike.%${exp}%`);
-          orClauses.push(`descricao.ilike.%${exp}%`);
-          orClauses.push(`indicacao_terapeutica.ilike.%${exp}%`);
-        }
-      }
-
-      // 4. "Did you mean" typo correction term
-      if (profile.didYouMean) {
+      // Termo corrigido "você quis dizer" se houver
+      if (profile.didYouMean && profile.didYouMean !== cleanQ) {
         orClauses.push(`nome.ilike.%${profile.didYouMean}%`);
         orClauses.push(`marca.ilike.%${profile.didYouMean}%`);
-        orClauses.push(`descricao.ilike.%${profile.didYouMean}%`);
       }
 
-      const uniqueClauses = Array.from(new Set(orClauses));
+      const uniqueClauses = Array.from(new Set(orClauses)).slice(0, 8);
       if (uniqueClauses.length > 0) {
         const query = supabase.from('produtos').select('*')
           .or(uniqueClauses.join(','))
-          .limit(200);
+          .limit(60);
 
         candidates = await fetchFromSupabaseWithPrices(query, lojaId);
       }
-
-      // Fallback if broad search found 0 candidates: try matching first 2 tokens
-      if (candidates.length === 0 && profile.tokens.length > 0) {
-        const fallbackClauses = profile.tokens.slice(0, 2).map(t => `nome.ilike.%${t}%,marca.ilike.%${t}%,descricao.ilike.%${t}%`).join(',');
-        if (fallbackClauses) {
-          const fallbackQuery = supabase.from('produtos').select('*').or(fallbackClauses).limit(100);
-          candidates = await fetchFromSupabaseWithPrices(fallbackQuery, lojaId);
-        }
-      }
     }
 
-    // Merge Supabase candidates with local memory matches (deduplicate by id)
+    // Mescla candidatos do Supabase com resultados locais em memória
     const candidatesMap = new Map<string, Produto>();
     candidates.forEach(p => candidatesMap.set(p.id, p));
-    localMatches.forEach(p => {
+    localMatches.slice(0, 50).forEach(p => {
       if (!candidatesMap.has(p.id)) {
         candidatesMap.set(p.id, p);
       }
     });
     const allCandidates = Array.from(candidatesMap.values());
 
-    // Apply filters (categories, price, prescription, etc.)
+    // Aplica filtros adicionais (categorias, faixa de preço, retenção de receita)
     const filteredCandidates = applyFilters(allCandidates, filters);
 
-    // Score and rank candidates by relevance & typo tolerance
-    const { ranked, didYouMean } = rankProductsBySearch(filteredCandidates, q);
+    // Ranqueia por relevância fonética e semântica
+    const { ranked, didYouMean } = rankProductsBySearch(filteredCandidates, trimmedQ);
 
-    // Apply pagination
     const paginated = ranked.slice(page * pageSize, (page + 1) * pageSize);
-
-    return {
+    const resultObj = {
       results: paginated,
       didYouMean: didYouMean && didYouMean !== profile.cleanQuery ? didYouMean : undefined,
     };
+
+    // Salva no cache
+    searchCacheMap.set(cacheKey, { data: resultObj, timestamp: Date.now() });
+
+    return resultObj;
   },
   adminSearchProducts: async (params: { search: string, page: number, pageSize: number, listFilter: string, lojaId?: string | null }) => {
     const rawSearch = (params.search || "").trim();

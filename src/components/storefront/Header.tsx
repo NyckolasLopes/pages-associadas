@@ -349,19 +349,29 @@ export function Header() {
       return;
     }
     setIsSearching(true);
+    let cancelled = false;
     const t = setTimeout(() => {
       catalog.search(trimmed, { pageSize: 6 }, activePharmacy?.id || selectedPharmacyId)
         .then((res) => {
-          setResults(res || []);
+          if (!cancelled) {
+            setResults(res || []);
+          }
         })
         .catch(() => {
-          setResults([]);
+          if (!cancelled) {
+            setResults([]);
+          }
         })
         .finally(() => {
-          setIsSearching(false);
+          if (!cancelled) {
+            setIsSearching(false);
+          }
         });
-    }, 150);
-    return () => clearTimeout(t);
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [q, activePharmacy?.id, selectedPharmacyId]);
 
   useEffect(() => {
