@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { supabase } from '@/integrations/supabase/client';
+import { useAdmin } from "./admin";
 
 export interface Coupon {
   id: string;
@@ -173,9 +174,18 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
             lojaId: c.loja_id || undefined,
             tipoAlvo: targetType,
             alvosId: alvos,
-            badgeBg: c.badge_bg || matchAppState?.badgeBg,
-            badgeText: c.badge_text || matchAppState?.badgeText,
-            badgeBorder: c.badge_border || matchAppState?.badgeBorder,
+            badgeBg: c.badge_bg || matchAppState?.badgeBg || (() => {
+              const st = c.loja_id ? useAdmin.getState().pharmacies.find(p => p.id === c.loja_id) : undefined;
+              return st?.themeColors?.['--coupon-badge-bg'] || st?.themeColors?.couponBadgeBg || st?.themeColors?.['--primary'] || st?.themeColors?.primary;
+            })(),
+            badgeText: c.badge_text || matchAppState?.badgeText || (() => {
+              const st = c.loja_id ? useAdmin.getState().pharmacies.find(p => p.id === c.loja_id) : undefined;
+              return st?.themeColors?.['--coupon-badge-text'] || st?.themeColors?.couponBadgeText || st?.themeColors?.['--primary-foreground'] || st?.themeColors?.primaryForeground || '#ffffff';
+            })(),
+            badgeBorder: c.badge_border || matchAppState?.badgeBorder || (() => {
+              const st = c.loja_id ? useAdmin.getState().pharmacies.find(p => p.id === c.loja_id) : undefined;
+              return st?.themeColors?.['--coupon-badge-border'] || st?.themeColors?.couponBadgeBorder || st?.themeColors?.['--primary'] || st?.themeColors?.primary;
+            })(),
           };
         });
       } else if (appStateCupons.length > 0) {
@@ -267,6 +277,30 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
     set({ cupons: updatedCupons });
     saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
 
+    // Sincroniza cores com o tema da farmácia no banco de dados se houver lojaId
+    if (newCoupon.lojaId && newCoupon.badgeBg) {
+      try {
+        const adminStore = useAdmin.getState();
+        const targetStore = adminStore.pharmacies.find(p => p.id === newCoupon.lojaId);
+        if (targetStore) {
+          adminStore.updatePharmacy(targetStore.id, {
+            ...targetStore,
+            themeColors: {
+              ...(targetStore.themeColors || {}),
+              '--coupon-badge-bg': newCoupon.badgeBg,
+              '--coupon-badge-text': newCoupon.badgeText || '#ffffff',
+              '--coupon-badge-border': newCoupon.badgeBorder || newCoupon.badgeBg,
+              couponBadgeBg: newCoupon.badgeBg,
+              couponBadgeText: newCoupon.badgeText || '#ffffff',
+              couponBadgeBorder: newCoupon.badgeBorder || newCoupon.badgeBg,
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("Aviso ao sincronizar tema da loja:", err);
+      }
+    }
+
     // 2. Backup no app_state
     try {
       await supabase.from('app_state' as any).upsert({
@@ -332,7 +366,10 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
           codigo: updatedFields.codigo ? updatedFields.codigo.trim().toUpperCase() : c.codigo,
           tipoAlvo: updatedFields.tipoAlvo !== undefined ? updatedFields.tipoAlvo : c.tipoAlvo,
           alvosId: updatedFields.alvosId !== undefined ? updatedFields.alvosId : c.alvosId,
-          numeroUtilizacoes: updatedFields.numeroUtilizacoes !== undefined ? Number(updatedFields.numeroUtilizacoes) : c.numeroUtilizacoes
+          numeroUtilizacoes: updatedFields.numeroUtilizacoes !== undefined ? Number(updatedFields.numeroUtilizacoes) : c.numeroUtilizacoes,
+          badgeBg: updatedFields.badgeBg !== undefined ? updatedFields.badgeBg : c.badgeBg,
+          badgeText: updatedFields.badgeText !== undefined ? updatedFields.badgeText : c.badgeText,
+          badgeBorder: updatedFields.badgeBorder !== undefined ? updatedFields.badgeBorder : c.badgeBorder,
         };
       }
       return c;
@@ -340,6 +377,31 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
 
     set({ cupons: updatedCupons });
     saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
+
+    // Sincroniza cores com o tema da farmácia no banco de dados se houver lojaId
+    const targetLojaId = updatedFields.lojaId || previousCoupon?.lojaId;
+    if (targetLojaId && updatedFields.badgeBg) {
+      try {
+        const adminStore = useAdmin.getState();
+        const targetStore = adminStore.pharmacies.find(p => p.id === targetLojaId);
+        if (targetStore) {
+          adminStore.updatePharmacy(targetStore.id, {
+            ...targetStore,
+            themeColors: {
+              ...(targetStore.themeColors || {}),
+              '--coupon-badge-bg': updatedFields.badgeBg,
+              '--coupon-badge-text': updatedFields.badgeText || '#ffffff',
+              '--coupon-badge-border': updatedFields.badgeBorder || updatedFields.badgeBg,
+              couponBadgeBg: updatedFields.badgeBg,
+              couponBadgeText: updatedFields.badgeText || '#ffffff',
+              couponBadgeBorder: updatedFields.badgeBorder || updatedFields.badgeBg,
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("Aviso ao sincronizar tema da loja:", err);
+      }
+    }
 
     // 1. Salva no app_state como backup garantido
     try {

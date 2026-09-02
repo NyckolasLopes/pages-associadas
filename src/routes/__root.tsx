@@ -210,7 +210,7 @@ function RootComponent() {
     
     if (isAdmin) {
       colorsToInject = themeColors;
-    } else if (activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.categoriaAssociado === 'Associado') {
+    } else if (activePharmacy?.themeColors && Object.keys(activePharmacy.themeColors).length > 0) {
       colorsToInject = activePharmacy.themeColors;
     }
 

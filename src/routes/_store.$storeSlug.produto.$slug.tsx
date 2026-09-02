@@ -1567,19 +1567,30 @@ function PDP() {
                     </span>
                   )}
                 </div>
-                {eligibleCoupon && (
-                  <div 
-                    className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg shadow-2xs self-start font-bold border text-xs sm:text-sm transition-all"
-                    style={{
-                      backgroundColor: eligibleCoupon.badgeBg || 'var(--coupon-badge-bg, #EBF3FE)',
-                      color: eligibleCoupon.badgeText || 'var(--coupon-badge-text, #1a73e8)',
-                      borderColor: eligibleCoupon.badgeBorder || 'var(--coupon-badge-border, #d2e3fc)',
-                    }}
-                  >
-                    <Ticket className="w-3.5 h-3.5 shrink-0" />
-                    <span>{brl(eligibleCoupon.finalPrice)} com Cupom</span>
-                  </div>
-                )}
+                {eligibleCoupon && (() => {
+                  const targetPharmacy = allPharmacies.find(ph => ph.id === eligibleCoupon.lojaId) || currentLoja || loja;
+                  const storeBg = targetPharmacy?.themeColors?.['--coupon-badge-bg'] || targetPharmacy?.themeColors?.couponBadgeBg || targetPharmacy?.themeColors?.['--primary'] || targetPharmacy?.themeColors?.primary;
+                  const storeText = targetPharmacy?.themeColors?.['--coupon-badge-text'] || targetPharmacy?.themeColors?.couponBadgeText || targetPharmacy?.themeColors?.['--primary-foreground'] || targetPharmacy?.themeColors?.primaryForeground || '#ffffff';
+                  const storeBorder = targetPharmacy?.themeColors?.['--coupon-badge-border'] || targetPharmacy?.themeColors?.couponBadgeBorder || storeBg;
+
+                  const badgeBg = eligibleCoupon.badgeBg || storeBg || 'var(--coupon-badge-bg, #00b5ad)';
+                  const badgeText = eligibleCoupon.badgeText || storeText || 'var(--coupon-badge-text, #ffffff)';
+                  const badgeBorder = eligibleCoupon.badgeBorder || storeBorder || 'var(--coupon-badge-border, transparent)';
+
+                  return (
+                    <div 
+                      className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg shadow-2xs self-start font-bold border text-xs sm:text-sm transition-all"
+                      style={{
+                        backgroundColor: badgeBg,
+                        color: badgeText,
+                        borderColor: badgeBorder,
+                      }}
+                    >
+                      <Ticket className="w-3.5 h-3.5 shrink-0" />
+                      <span>{brl(eligibleCoupon.finalPrice)} com Cupom</span>
+                    </div>
+                  );
+                })()}
                 {getInstallmentText(finalPrecoPor) && (
                   <div className="text-sm text-slate-500 font-medium mt-2">
                     {getInstallmentText(finalPrecoPor)}

@@ -613,20 +613,31 @@ function ProductCardComponent({
                   )}
                 </div>
 
-                {eligibleCoupon ? (
-                  <div 
-                    className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-bold tracking-tight border shadow-2xs self-start transition-all"
-                    style={{
-                      backgroundColor: eligibleCoupon.badgeBg || 'var(--coupon-badge-bg, #EBF3FE)',
-                      color: eligibleCoupon.badgeText || 'var(--coupon-badge-text, #1a73e8)',
-                      borderColor: eligibleCoupon.badgeBorder || 'var(--coupon-badge-border, #d2e3fc)',
-                    }}
-                    title={`Cupom da loja: ${eligibleCoupon.codigo || eligibleCoupon.code}`}
-                  >
-                    <Ticket className="w-3 h-3 shrink-0" />
-                    <span>{brl(eligibleCoupon.finalPrice)} com Cupom</span>
-                  </div>
-                ) : (
+                {eligibleCoupon ? (() => {
+                  const targetPharmacy = pharmacies.find(ph => ph.id === (eligibleCoupon.lojaId || activeStoreId));
+                  const storeBg = targetPharmacy?.themeColors?.['--coupon-badge-bg'] || targetPharmacy?.themeColors?.couponBadgeBg || targetPharmacy?.themeColors?.['--primary'] || targetPharmacy?.themeColors?.primary;
+                  const storeText = targetPharmacy?.themeColors?.['--coupon-badge-text'] || targetPharmacy?.themeColors?.couponBadgeText || targetPharmacy?.themeColors?.['--primary-foreground'] || targetPharmacy?.themeColors?.primaryForeground || '#ffffff';
+                  const storeBorder = targetPharmacy?.themeColors?.['--coupon-badge-border'] || targetPharmacy?.themeColors?.couponBadgeBorder || storeBg;
+
+                  const badgeBg = eligibleCoupon.badgeBg || storeBg || 'var(--coupon-badge-bg, #00b5ad)';
+                  const badgeText = eligibleCoupon.badgeText || storeText || 'var(--coupon-badge-text, #ffffff)';
+                  const badgeBorder = eligibleCoupon.badgeBorder || storeBorder || 'var(--coupon-badge-border, transparent)';
+
+                  return (
+                    <div 
+                      className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-bold tracking-tight border shadow-2xs self-start transition-all"
+                      style={{
+                        backgroundColor: badgeBg,
+                        color: badgeText,
+                        borderColor: badgeBorder,
+                      }}
+                      title={`Cupom da loja: ${eligibleCoupon.codigo || eligibleCoupon.code}`}
+                    >
+                      <Ticket className="w-3 h-3 shrink-0" />
+                      <span>{brl(eligibleCoupon.finalPrice)} com Cupom</span>
+                    </div>
+                  );
+                })() : (
                   getInstallmentText(finalPrecoPor) && (
                     <div className="text-[10px] text-slate-500 font-medium leading-tight">
                       {getInstallmentText(finalPrecoPor)}

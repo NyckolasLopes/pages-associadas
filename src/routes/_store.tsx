@@ -61,7 +61,12 @@ function StoreLayout() {
     let themeToApply: Record<string, string | undefined> = {};
 
     if (isParceiro) {
-      themeToApply = { ...PARCEIRO_THEME };
+      themeToApply = { 
+        ...PARCEIRO_THEME,
+        "--coupon-badge-bg": "#1a1a1a",
+        "--coupon-badge-text": "#ffffff",
+        "--coupon-badge-border": "#1a1a1a",
+      };
     } else {
       // Pleno: ícones do cabeçalho em laranja (#f37021) e botão Cesta em branco com borda/texto teal (#00b5ad)
       themeToApply = {
@@ -70,6 +75,9 @@ function StoreLayout() {
         "--cart-btn-text": "#00b5ad",
         "--cart-badge-bg": "#f37021",
         "--cart-badge-text": "#ffffff",
+        "--coupon-badge-bg": "#00b5ad",
+        "--coupon-badge-text": "#ffffff",
+        "--coupon-badge-border": "#00b5ad",
       };
     }
 
@@ -128,6 +136,11 @@ function StoreLayout() {
         "--pwa-banner-text": pwaBannerText || "#ffffff",
         "--pwa-banner-btn-bg": pwaBannerBtnBg || "#ffffff",
         "--pwa-banner-btn-text": pwaBannerBtnText || primary,
+        "--coupon-badge-bg": t['--coupon-badge-bg'] || t.couponBadgeBg || primary,
+        "--coupon-badge-text": t['--coupon-badge-text'] || t.couponBadgeText || primaryFg || "#ffffff",
+        "--coupon-badge-border": t['--coupon-badge-border'] || t.couponBadgeBorder || primary,
+        "--price-discount-badge-bg": t['--price-discount-badge-bg'] || t.priceDiscountBadgeBg,
+        "--price-discount-badge-text": t['--price-discount-badge-text'] || t.priceDiscountBadgeText,
       };
 
       const cleanLegacyTheme = Object.fromEntries(
