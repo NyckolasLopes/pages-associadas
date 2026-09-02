@@ -68,6 +68,17 @@ export function mapRowToProduto(d: any): Produto {
     .filter((t: string) => t.startsWith("selo:"))
     .map((t: string) => t.replace("selo:", ""));
 
+  const tagFiltrosValores = rawInternalTags
+    .filter((t: string) => t.startsWith("filtro:"))
+    .map((t: string) => {
+      const parts = t.replace("filtro:", "").split(":");
+      return { filtroId: parts[0] || "", opcaoId: parts[1] || "" };
+    });
+
+  const tagCompreJunto = rawInternalTags
+    .find((t: string) => t.startsWith("comprejunto:"))
+    ?.replace("comprejunto:", "") || "";
+
   if (isGen && !rawSelosIds.includes("gen")) {
     rawSelosIds.push("gen");
   }
@@ -93,9 +104,9 @@ export function mapRowToProduto(d: any): Produto {
     categoriaId: d.categoria_id ? String(d.categoria_id) : "",
     subcategoriaId: d.subcategoria_id ? String(d.subcategoria_id) : "",
     categoriasAdicionais: Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : (Array.isArray(meta.categorias_adicionais) ? meta.categorias_adicionais : []),
-    categoriasIds: Array.isArray(d.categorias_ids) ? d.categorias_ids : (Array.isArray(meta.categorias_ids) ? meta.categorias_ids : []),
-    subcategoriasIds: Array.isArray(d.subcategorias_ids) ? d.subcategorias_ids : (Array.isArray(meta.subcategorias_ids) ? meta.subcategorias_ids : []),
-    internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:")),
+    categoriasIds: Array.isArray(d.categorias_ids) ? d.categorias_ids : (Array.isArray(meta.categorias_ids) ? meta.categorias_ids : (Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : [])),
+    subcategoriasIds: Array.isArray(d.subcategorias_adicionais) ? d.subcategorias_adicionais : (Array.isArray(d.subcategorias_ids) ? d.subcategorias_ids : (Array.isArray(meta.subcategorias_ids) ? meta.subcategorias_ids : [])),
+    internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:") && !t.startsWith("filtro:") && !t.startsWith("comprejunto:")),
     selosIds: rawSelosIds,
     principiosAtivos: Array.isArray(d.principios_ativos) ? d.principios_ativos : (Array.isArray(meta.principios_ativos) ? meta.principios_ativos : []),
     imagens: d.imagens || meta.imagens || [],
@@ -150,8 +161,8 @@ export function mapRowToProduto(d: any): Produto {
     sabor: meta.sabor || "",
     fps: meta.fps || 0,
     faixaEtaria: meta.faixa_etaria || "",
-    filtrosValores: Array.isArray(d.filtros_valores) ? d.filtros_valores : (Array.isArray(meta.filtros_valores) ? meta.filtros_valores : []),
-    compreJuntoProdutoId: meta.compre_junto_produto_id || d.compre_junto_produto_id || "",
+    filtrosValores: (Array.isArray(d.filtros_valores) && d.filtros_valores.length > 0) ? d.filtros_valores : (tagFiltrosValores.length > 0 ? tagFiltrosValores : (Array.isArray(meta.filtros_valores) ? meta.filtros_valores : [])),
+    compreJuntoProdutoId: tagCompreJunto || meta.compre_junto_produto_id || d.compre_junto_produto_id || "",
   } as Produto;
 }
 
@@ -208,8 +219,10 @@ export const useAdminProducts = create<ProductsState>()(
         });
 
         const allTags = new Set([
-          ...(formattedProduct.internalTags || []),
-          ...(formattedProduct.selosIds || []).map(id => `selo:${id}`)
+          ...(formattedProduct.internalTags || []).filter((t: string) => !t.startsWith("filtro:") && !t.startsWith("comprejunto:")),
+          ...(formattedProduct.selosIds || []).map(id => `selo:${id}`),
+          ...(formattedProduct.filtrosValores || []).map(fv => `filtro:${fv.filtroId}:${fv.opcaoId}`),
+          ...(formattedProduct.compreJuntoProdutoId ? [`comprejunto:${formattedProduct.compreJuntoProdutoId}`] : [])
         ]);
         if (isGen) {
           allTags.add("selo:gen");
@@ -270,7 +283,8 @@ export const useAdminProducts = create<ProductsState>()(
           possui_imagem: formattedProduct.possuiImagem || false,
           categoria_id: formattedProduct.categoriaId || null,
           subcategoria_id: formattedProduct.subcategoriaId || null,
-          categorias_adicionais: formattedProduct.categoriasAdicionais || [],
+          categorias_adicionais: formattedProduct.categoriasAdicionais || formattedProduct.categoriasIds || [],
+          subcategorias_adicionais: formattedProduct.subcategoriasIds || [],
           internal_tags: Array.from(allTags),
           principios_ativos: formattedProduct.principiosAtivos || [],
           imagens: formattedProduct.imagens || [],
@@ -298,10 +312,6 @@ export const useAdminProducts = create<ProductsState>()(
           nivel_relevancia: Number(formattedProduct.nivelRelevancia ?? formattedProduct.prioridade) || 1,
           prioridade: Number(formattedProduct.nivelRelevancia ?? formattedProduct.prioridade) || 1,
           imagem_alt: formattedProduct.imagemAlt || null,
-          filtros_valores: formattedProduct.filtrosValores || [],
-          categorias_ids: formattedProduct.categoriasIds || [],
-          subcategorias_ids: formattedProduct.subcategoriasIds || [],
-          compre_junto_produto_id: formattedProduct.compreJuntoProdutoId || null,
         });
         
         if (error) {
