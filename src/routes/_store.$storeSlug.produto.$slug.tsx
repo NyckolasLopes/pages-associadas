@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart, useGeoCep } from "@/stores/cart";
 import { useFavorites } from "@/stores/favorites";
-import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info } from "lucide-react";
+import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info, Ticket, Check } from "lucide-react";
 import { NotFound } from "@/components/storefront/NotFound";
 import categoriesData from "@/data/categories.json";
 import {
@@ -411,6 +411,9 @@ function PDP() {
   const marketingState = useMarketing();
   const promocoes = marketingState.promocoes;
   const recentlyAdded = isRecentlyAdded(p);
+
+  const [couponConditionsOpen, setCouponConditionsOpen] = useState(false);
+  const [couponCopied, setCouponCopied] = useState(false);
 
   const [newQuestion, setNewQuestion] = useState("");
   const { questions, addQuestion } = useQuestions();
@@ -918,6 +921,88 @@ function PDP() {
   const storeOffersServices = !currentLoja || currentLoja.offersServices !== false;
   const isAvailable = (maxStock > 0 || (isService && storeOffersServices)) && isGlobalActive && isLocalActive;
 
+  // Cupom da loja aplicável para este produto / categoria
+  const eligibleCoupon = React.useMemo(() => {
+    if (!isAvailable || finalPrecoPor <= 0 || !marketingState.cupons || marketingState.cupons.length === 0) return null;
+
+    const activeStoreId = activePharmacy?.id || currentLoja?.id || effectiveStoreId || loja?.id || activePharmacyId;
+
+    const validCoupons = (marketingState.cupons as any[]).filter((c: any) => {
+      if (c.ativo === false) return false;
+
+      // Validação de Loja
+      const couponLojaId = c.lojaId || c.farmaciaId;
+      if (activeStoreId && couponLojaId && String(couponLojaId) !== String(activeStoreId)) {
+        return false;
+      }
+
+      // Validação de Data
+      const now = new Date();
+      if (c.dataInicio && new Date(c.dataInicio) > now) return false;
+      const validUntil = c.dataTermino || c.validade;
+      if (validUntil && new Date(validUntil + (validUntil.includes('T') ? '' : 'T23:59:59')) < now) return false;
+
+      // Validação de Alvo (Produtos ou Categorias escolhidas para aquele cupom)
+      const tipoAlvo = c.tipoAlvo || (c.produtosIds?.length ? "produtos" : (c.categoriasIds?.length ? "categorias" : "todos"));
+      const alvos: string[] = (c.alvosId || c.produtosIds || c.categoriasIds || []).map((id: any) => String(id).trim().toLowerCase());
+
+      if (tipoAlvo === "produtos" && alvos.length > 0) {
+        const pId = String(p.id).toLowerCase();
+        const pSku = p.sku ? String(p.sku).toLowerCase() : "";
+        if (!alvos.includes(pId) && !alvos.includes(pSku)) return false;
+      } else if (tipoAlvo === "categorias" && alvos.length > 0) {
+        const catId = p.categoriaId ? String(p.categoriaId).toLowerCase() : "";
+        const subId = p.subcategoriaId ? String(p.subcategoriaId).toLowerCase() : "";
+        const extraCats = (p.categoriasIds || []).map((id: any) => String(id).toLowerCase());
+        const matchCat = (catId && alvos.includes(catId)) || (subId && alvos.includes(subId)) || extraCats.some(id => alvos.includes(id));
+        if (!matchCat) return false;
+      }
+
+      return true;
+    });
+
+    if (validCoupons.length === 0) return null;
+
+    let bestCoupon: any = null;
+    let bestPrice = finalPrecoPor;
+
+    for (const c of validCoupons) {
+      const isPercent = c.tipoDesconto === "percentual" || c.tipo === "percent" || Boolean(c.descontoPercentual);
+      const val = Number(c.valorDesconto || c.valor || c.descontoPercentual || c.descontoFixo || 0);
+      if (val <= 0) continue;
+
+      let discountedPrice = finalPrecoPor;
+      if (isPercent) {
+        discountedPrice = finalPrecoPor * (1 - val / 100);
+      } else {
+        discountedPrice = Math.max(0, finalPrecoPor - val);
+      }
+
+      if (discountedPrice < bestPrice) {
+        bestPrice = discountedPrice;
+        bestCoupon = {
+          ...c,
+          codigo: c.codigo || c.code,
+          finalPrice: discountedPrice,
+          savings: finalPrecoPor - discountedPrice,
+          isPercent,
+          discountValue: val,
+        };
+      }
+    }
+
+    return bestCoupon;
+  }, [marketingState.cupons, isAvailable, finalPrecoPor, activePharmacy?.id, currentLoja?.id, effectiveStoreId, loja?.id, activePharmacyId, p]);
+
+  const handleApplyCoupon = () => {
+    if (!eligibleCoupon) return;
+    const code = eligibleCoupon.codigo || eligibleCoupon.code;
+    navigator.clipboard.writeText(code);
+    setCouponCopied(true);
+    toast.success(`Cupom ${code} copiado com sucesso!`);
+    setTimeout(() => setCouponCopied(false), 3500);
+  };
+
 
   const marcasProprias = ["revitart", "santo habito", "santo hábito", "revigore", "revimel", "crescendo", "vita magna", "associadas"];
   // @ts-ignore
@@ -1352,6 +1437,40 @@ function PDP() {
 
 
           <div className="bg-card border rounded-xl p-5 shadow-elevated">
+            {eligibleCoupon && isAvailable && !p.precoSobConsulta && (
+              <div className="mb-4 pb-3 border-b border-slate-100">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#f1f3fd] text-[#334155] border border-dashed border-[#c7d2fe] font-mono font-black text-xs uppercase tracking-wide shadow-2xs">
+                      <Ticket className="h-3.5 w-3.5 text-primary" />
+                      <span>{eligibleCoupon.codigo || eligibleCoupon.code}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      className="text-xs font-bold text-primary hover:underline hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      {couponCopied ? (
+                        <span className="text-emerald-600 flex items-center gap-1 font-bold">
+                          <Check className="h-3.5 w-3.5" /> Cupom copiado!
+                        </span>
+                      ) : (
+                        "Aplicar cupom"
+                      )}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCouponConditionsOpen(true)}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-800 underline underline-offset-2 transition-colors ml-auto cursor-pointer"
+                  >
+                    Ver condições
+                  </button>
+                </div>
+              </div>
+            )}
+
             {!isAvailable ? (
               <div className="flex flex-col gap-1 min-h-[60px] justify-center">
                 <span className="text-xl font-bold text-slate-500">
@@ -1395,14 +1514,19 @@ function PDP() {
                 {finalPrecoDe > finalPrecoPor && (
                   <div className="text-sm text-muted-foreground line-through font-medium">{brl(finalPrecoDe)}</div>
                 )}
-                <div className="flex items-center gap-3 mt-1">
+                <div className="flex items-center gap-3 mt-1 flex-wrap">
                   <div className="text-4xl font-bold text-foreground">{brl(finalPrecoPor)}</div>
-                  {desconto > 0 && (
+                  {!eligibleCoupon && desconto > 0 && (
                     <span className="bg-[#e6f4ea] text-[#137333] text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                       -{desconto}%
                     </span>
                   )}
                 </div>
+                {eligibleCoupon && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#EBF3FE] text-[#1a73e8] border border-[#d2e3fc] shadow-2xs self-start font-bold">
+                    <span className="text-xs sm:text-sm">{brl(eligibleCoupon.finalPrice)} com Cupom</span>
+                  </div>
+                )}
                 {getInstallmentText(finalPrecoPor) && (
                   <div className="text-sm text-slate-500 font-medium mt-2">
                     {getInstallmentText(finalPrecoPor)}
@@ -1824,6 +1948,52 @@ Quantidade desejada: ${wlQty}`}
         onOpenChange={setLoginOpen} 
         onLoginSuccess={() => setLoginOpen(false)} 
       />
+
+      {/* Modal de Condições do Cupom */}
+      <Dialog open={couponConditionsOpen} onOpenChange={setCouponConditionsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Ticket className="h-5 w-5 text-primary" />
+              Regras do Cupom {eligibleCoupon?.codigo || eligibleCoupon?.code}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-slate-600 pt-2">
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+              <p className="font-semibold text-slate-800 text-base">
+                Desconto: <span className="text-primary font-bold">{eligibleCoupon?.isPercent ? `${eligibleCoupon?.discountValue}% OFF` : `R$ ${Number(eligibleCoupon?.discountValue || 0).toFixed(2)} de desconto`}</span>
+              </p>
+              {eligibleCoupon?.valorMinimo > 0 && (
+                <p className="text-xs text-slate-600">
+                  • Valor mínimo do pedido: <strong>{brl(eligibleCoupon.valorMinimo)}</strong>
+                </p>
+              )}
+              {eligibleCoupon?.dataTermino && (
+                <p className="text-xs text-slate-600">
+                  • Válido até: <strong>{new Date(eligibleCoupon.dataTermino + (eligibleCoupon.dataTermino.includes('T') ? '' : 'T23:59:59')).toLocaleDateString('pt-BR')}</strong>
+                </p>
+              )}
+              <p className="text-xs text-slate-600">
+                • Válido para itens ou categorias selecionados nesta farmácia.
+              </p>
+              {eligibleCoupon?.descricao && (
+                <p className="text-xs text-slate-500 pt-1 italic border-t border-slate-200 mt-2">
+                  "{eligibleCoupon.descricao}"
+                </p>
+              )}
+            </div>
+            <Button 
+              onClick={() => {
+                handleApplyCoupon();
+                setCouponConditionsOpen(false);
+              }} 
+              className="w-full font-bold"
+            >
+              Copiar Código ({eligibleCoupon?.codigo || eligibleCoupon?.code})
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isYoutubeModalOpen} onOpenChange={setIsYoutubeModalOpen}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none h-auto aspect-video sm:rounded-xl">
