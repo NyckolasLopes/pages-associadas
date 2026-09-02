@@ -970,13 +970,12 @@ function CartPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold">Meu carrinho</h1>
         <Button
-          variant="outline"
-          size="sm"
+          type="button"
           onClick={() => navigate({ to: "/$storeSlug", params: { storeSlug: storeSlug || "loja-padrao" } })}
-          className="self-start sm:self-auto gap-1.5 font-medium border-slate-300 text-slate-700 hover:text-primary hover:border-primary"
+          className="self-start sm:self-auto inline-flex items-center gap-2 h-10 px-4 rounded-xl font-bold text-xs sm:text-sm bg-white border border-slate-300 text-slate-700 shadow-xs hover:bg-primary/10 hover:border-primary hover:text-primary transition-all duration-200 group active:scale-98"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Continuar comprando
+          <ArrowLeft className="w-4 h-4 text-primary transition-transform duration-200 group-hover:-translate-x-1" />
+          <span>Continuar comprando</span>
         </Button>
       </div>
 
@@ -1725,11 +1724,12 @@ function CartPage() {
               Finalizar Pedido
             </Button>
             <Button
-              variant="outline"
-              className="w-full mt-2.5 h-11 text-sm font-semibold border-slate-300 text-slate-700 hover:bg-slate-50"
+              type="button"
+              className="w-full mt-2.5 h-11 text-sm font-bold rounded-xl bg-slate-100 hover:bg-primary/10 text-slate-700 hover:text-primary border border-slate-200 hover:border-primary transition-all flex items-center justify-center gap-2 group active:scale-98"
               onClick={() => navigate({ to: "/$storeSlug", params: { storeSlug: storeSlug || "loja-padrao" } })}
             >
-              Continuar comprando
+              <ArrowLeft className="w-4 h-4 text-primary transition-transform duration-200 group-hover:-translate-x-1" />
+              <span>Continuar comprando</span>
             </Button>
           </div>
 

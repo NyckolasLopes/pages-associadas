@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Search, MapPin, ShoppingBasket, Menu, Phone, User, X, Truck, Sparkles, Trash2,
   Pill, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Plus, Camera, Package, Home, Tag, ShieldCheck, ChevronDown, Flame, HeartPulse, Navigation,
-  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight, Ticket, TrendingDown
+  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight, ArrowLeft, Ticket, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScannerModal } from "./BarcodeScannerModal";
@@ -1887,11 +1887,12 @@ function CartDrawer({ onCheckoutClick, storeSlug }: { onCheckoutClick: () => voi
           Ir para a cesta
         </Button>
         <Button 
-          variant="outline"
-          className="w-full mt-2" 
+          type="button"
+          className="w-full mt-2 h-11 font-bold rounded-xl bg-slate-100 hover:bg-primary/10 text-slate-700 hover:text-primary border border-slate-200 hover:border-primary transition-all flex items-center justify-center gap-2 group active:scale-98" 
           onClick={handleContinueShopping}
         >
-          Continuar comprando
+          <ArrowLeft className="w-4 h-4 text-primary transition-transform duration-200 group-hover:-translate-x-1" />
+          <span>Continuar comprando</span>
         </Button>
       </div>
     </SheetContent>
