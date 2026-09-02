@@ -315,8 +315,10 @@ interface AdminState {
   loadUsers: () => Promise<void>;
 
   // Category Icons & Features
-  categoryIcons: Record<string, string>; // categoryId -> base64/url
+  categoryIcons: Record<string, string>; // categoryId -> icon name/base64/url
   setCategoryIcon: (categoryId: string, iconUrl: string) => void;
+  storeCategoryIcons: Record<string, Record<string, string>>; // lojaId -> { categoryId -> iconName }
+  setStoreCategoryIcon: (lojaId: string, categoryId: string, iconUrl: string) => void;
   featuredCategories: string[];
   toggleFeaturedCategory: (categoryId: string) => void;
   storeFeaturedCategories: Record<string, string[]>;
@@ -1503,6 +1505,16 @@ export const useAdmin = create<AdminState>()(
 
       categoryIcons: {},
       setCategoryIcon: (categoryId, iconUrl) => set((s) => ({ categoryIcons: { ...s.categoryIcons, [categoryId]: iconUrl } })),
+      storeCategoryIcons: {},
+      setStoreCategoryIcon: (lojaId, categoryId, iconUrl) => set((s) => ({
+        storeCategoryIcons: {
+          ...s.storeCategoryIcons,
+          [lojaId]: {
+            ...(s.storeCategoryIcons?.[lojaId] || {}),
+            [categoryId]: iconUrl
+          }
+        }
+      })),
       
       featuredCategories: ["142", "143", "200", "144", "300"],
       toggleFeaturedCategory: (id) => set((s) => {

@@ -51,7 +51,16 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
   const [destaque, setDestaque] = useState(false);
   const [icone, setIcone] = useState("");
   
-  const { featuredCategories, toggleFeaturedCategory, storeFeaturedCategories, toggleStoreFeaturedCategory, categoryIcons, setCategoryIcon } = useAdmin();
+  const { 
+    featuredCategories, 
+    toggleFeaturedCategory, 
+    storeFeaturedCategories, 
+    toggleStoreFeaturedCategory, 
+    categoryIcons, 
+    setCategoryIcon,
+    storeCategoryIcons,
+    setStoreCategoryIcon
+  } = useAdmin();
   
   const effectiveFeaturedCategories = lojaId 
     ? (storeFeaturedCategories[lojaId]?.length > 0 ? storeFeaturedCategories[lojaId] : featuredCategories)
@@ -69,7 +78,11 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
         setParentId(category.parentId || null);
         setAtiva(category.ativa !== false); // default true
         setDestaque(effectiveFeaturedCategories.includes(category.id));
-        setIcone(categoryIcons[category.id] || "");
+        const currentIcon = (lojaId && storeCategoryIcons?.[lojaId]?.[category.id])
+          || categoryIcons[category.id]
+          || category.icone
+          || "";
+        setIcone(currentIcon);
       } else {
         setNome("");
         setSlug("");
@@ -83,7 +96,7 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
         setIcone("");
       }
     }
-  }, [open, category]);
+  }, [open, category, lojaId]);
   
   const AVAILABLE_ICONS = [
     { id: "pill", icon: Pill, label: "Comprimido" },
@@ -147,7 +160,9 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
        }
     }
     
-    if (icone !== categoryIcons[id]) {
+    if (lojaId) {
+      setStoreCategoryIcon(lojaId, id, icone);
+    } else {
       setCategoryIcon(id, icone);
     }
 

@@ -94,7 +94,10 @@ const CAT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "300": ShieldCheck,
 };
 
+import { MENU_ICON_MAP } from "@/components/admin/CategoryMenuIconModal";
+
 const LUCIDE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  ...MENU_ICON_MAP,
   "pill": Pill,
   "sparkles": Sparkles,
   "leaf": Leaf,
@@ -1046,6 +1049,9 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
                      activePharmacy?.isPleno === false || 
                      ((params as any)?.storeSlug && (params as any)?.storeSlug !== 'loja-padrao');
   const allCategories = useAdminCategories(s => s.categories);
+  const storeCategoryIcons = useAdmin(s => s.storeCategoryIcons);
+  const categoryIcons = useAdmin(s => s.categoryIcons);
+  const selectedPharmacyId = useCart(s => s.selectedPharmacyId) || activePharmacy?.id;
   const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
   const user = useMemo(() => {
     if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
@@ -1167,7 +1173,10 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
           <div className="border-t my-2" />
 
           {cats.map((c) => {
-            const Icon = c.icone ? LUCIDE_ICONS[c.icone] : CAT_ICONS[c.id];
+            const storeIconKey = (selectedPharmacyId && storeCategoryIcons?.[selectedPharmacyId]?.[c.id])
+              || categoryIcons?.[c.id]
+              || c.icone;
+            const Icon = (storeIconKey && LUCIDE_ICONS[storeIconKey]) ? LUCIDE_ICONS[storeIconKey] : (CAT_ICONS[c.id] || getSubcategoryIcon(c.nome));
             const isNossasMarcas = c.id === "300" || c.slug === "nossas-marcas";
             const isOfertas = String(c.nome || "").toLowerCase().includes("oferta") || String(c.nome || "").toLowerCase().includes("promoç");
             
@@ -1263,8 +1272,11 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const marcas = useMarcasStore(s => s.marcas);
   const allCategories = useAdminCategories(s => s.categories);
+  const storeCategoryIcons = useAdmin(s => s.storeCategoryIcons);
+  const categoryIcons = useAdmin(s => s.categoryIcons);
   const params = useParams({ strict: false });
   const activePharmacy = useActivePharmacy();
+  const selectedPharmacyId = useCart(s => s.selectedPharmacyId) || activePharmacy?.id;
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
                      activePharmacy?.categoriaAssociado === 'Associado' || 
                      activePharmacy?.isPleno === false || 
@@ -1362,7 +1374,10 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
           </li>
           
           {cats.map((c) => {
-            const Icon = c.icone ? LUCIDE_ICONS[c.icone] : CAT_ICONS[c.id];
+            const storeIconKey = (selectedPharmacyId && storeCategoryIcons?.[selectedPharmacyId]?.[c.id])
+              || categoryIcons?.[c.id]
+              || c.icone;
+            const Icon = (storeIconKey && LUCIDE_ICONS[storeIconKey]) ? LUCIDE_ICONS[storeIconKey] : (CAT_ICONS[c.id] || getSubcategoryIcon(c.nome));
             const isOfertas = c.nome.toLowerCase().includes("oferta") || c.nome.toLowerCase().includes("promoç");
             const isNossasMarcas = c.id === "300" || c.slug === "nossas-marcas";
             return (
