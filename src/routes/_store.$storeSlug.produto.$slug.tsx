@@ -965,7 +965,7 @@ function PDP() {
       const validUntil = c.dataTermino || c.validade;
       if (validUntil && new Date(validUntil + (validUntil.includes('T') ? '' : 'T23:59:59')) < now) return false;
 
-      // Validação de Alvo (Produtos ou Categorias escolhidas para aquele cupom)
+      // Validação de Alvo (O selo no card/página SÓ deve aparecer para produtos ou categorias especificamente selecionados na loja)
       const tipoAlvo = c.tipoAlvo || (c.produtosIds?.length ? "produtos" : (c.categoriasIds?.length ? "categorias" : "todos"));
       const alvos: string[] = (c.alvosId || c.produtosIds || c.categoriasIds || []).map((id: any) => String(id).trim().toLowerCase());
 
@@ -973,15 +973,18 @@ function PDP() {
         const pId = String(p.id).toLowerCase();
         const pSku = p.sku ? String(p.sku).toLowerCase() : "";
         if (!alvos.includes(pId) && !alvos.includes(pSku)) return false;
+        return true;
       } else if (tipoAlvo === "categorias" && alvos.length > 0) {
         const catId = p.categoriaId ? String(p.categoriaId).toLowerCase() : "";
         const subId = p.subcategoriaId ? String(p.subcategoriaId).toLowerCase() : "";
         const extraCats = (p.categoriasIds || []).map((id: any) => String(id).toLowerCase());
         const matchCat = (catId && alvos.includes(catId)) || (subId && alvos.includes(subId)) || extraCats.some((id: string) => alvos.includes(id));
         if (!matchCat) return false;
+        return true;
       }
 
-      return true;
+      // Se for "todos" ou não tiver produtos/categorias específicos selecionados, NÃO exibe o selo
+      return false;
     });
 
     if (validCoupons.length === 0) return null;
