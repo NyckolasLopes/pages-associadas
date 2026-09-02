@@ -560,10 +560,18 @@ export function StoreColorManager({
 
   const handleResetToDefault = () => {
     if (isNetworkMode) {
-      setNetworkColors(defaultTheme);
-      toast.info("Tema da rede restaurado para o padrão oficial.");
+      // Restaura para o tema salvo da rede, ou o padrão oficial se não houver
+      const savedTheme = admin.networkDefaultTheme;
+      const restoreTarget = savedTheme && Object.keys(savedTheme).length > 0 ? savedTheme : defaultTheme;
+      setNetworkColors({ ...defaultTheme, ...restoreTarget });
+      toast.info("Cores restauradas para o último tema salvo da rede.");
     } else {
-      setColors(defaultTheme);
+      // Para lojas: usa o tema da rede como base, ou o padrão oficial
+      const networkTheme = admin.networkDefaultTheme;
+      const restoreTarget = networkTheme && Object.keys(networkTheme).length > 0
+        ? { ...defaultTheme, ...networkTheme }
+        : defaultTheme;
+      setColors(restoreTarget);
       toast.info("Cores restauradas para o padrão oficial das Farmácias Associadas.");
     }
   };
@@ -775,14 +783,6 @@ export function StoreColorManager({
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => { setNetworkColors(defaultTheme); toast.info("Restaurado para o padrão."); }}
-                className="border-indigo-200 text-indigo-700 hover:bg-indigo-100"
-              >
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Restaurar Padrão
-              </Button>
               <Button
                 size="sm"
                 onClick={handleSaveNetworkTheme}
