@@ -52,7 +52,7 @@ function ConfiguracoesPage() {
       url: "/admin/design/cores-rede",
       titulo: "Cores da Rede",
       descricao: "Defina a paleta de cores padrão da rede. Novas lojas Pleno herdam essas cores automaticamente.",
-      icon: <Palette className="h-5 w-5 text-indigo-600" />
+      icon: <Palette className="h-5 w-5 text-slate-600" />
     });
   }
 
