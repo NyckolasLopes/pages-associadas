@@ -748,7 +748,7 @@ export function Header() {
               )}
             </Button>
           </SheetTrigger>
-          <CartDrawer onCheckoutClick={handleCheckoutClick} />
+          <CartDrawer onCheckoutClick={handleCheckoutClick} storeSlug={storeSlug} />
         </Sheet>
       </div>
 
@@ -797,7 +797,7 @@ export function Header() {
                   )}
                 </button>
               </SheetTrigger>
-              <CartDrawer onCheckoutClick={handleCheckoutClick} />
+              <CartDrawer onCheckoutClick={handleCheckoutClick} storeSlug={storeSlug} />
             </Sheet>
             <MobileMenu cats={cats} />
           </div>
@@ -1667,7 +1667,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
   );
 }
 
-function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
+function CartDrawer({ onCheckoutClick, storeSlug }: { onCheckoutClick: () => void; storeSlug?: string }) {
     const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
     const items = useCart((s) => s.items);
   const remove = useCart((s) => s.remove);
@@ -1693,6 +1693,19 @@ function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
   }, [items]);
 
   const navigate = useNavigate();
+  const params = useParams({ strict: false });
+  const activePharmacy = useActivePharmacy();
+  const urlSlug = (params as any)?.storeSlug as string | undefined;
+  const effectiveStoreSlug = storeSlug || getEffectiveStoreSlug(urlSlug, activePharmacy);
+
+  const handleContinueShopping = () => {
+    useCart.getState().setDrawer(false);
+    if (effectiveStoreSlug) {
+      navigate({ to: "/$storeSlug", params: { storeSlug: effectiveStoreSlug } as any });
+    } else {
+      navigate({ to: "/" });
+    }
+  };
 
   return (
     <SheetContent className="flex flex-col w-full sm:max-w-md p-6">
@@ -1729,8 +1742,15 @@ function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
       )}
       <div className="flex-1 overflow-auto -mx-6 px-6 divide-y">
         {items.length === 0 && (
-          <div className="text-center text-muted-foreground py-12">
-            Seu carrinho está vazio.
+          <div className="text-center text-muted-foreground py-12 flex flex-col items-center gap-3">
+            <span>Seu carrinho está vazio.</span>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handleContinueShopping}
+            >
+              Continuar comprando
+            </Button>
           </div>
         )}
         {items.map((i) => {
@@ -1864,7 +1884,7 @@ function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
         <Button 
           variant="outline"
           className="w-full mt-2" 
-          onClick={() => useCart.getState().setDrawer(false)}
+          onClick={handleContinueShopping}
         >
           Continuar comprando
         </Button>

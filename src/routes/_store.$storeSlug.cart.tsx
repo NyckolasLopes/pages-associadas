@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { 
   Flame, Store, Truck, X, MapPin, AlertTriangle, Bell, TrendingDown,
   MessageCircle, Send, CheckCircle2, Tag, Sparkles, DollarSign, CreditCard, ShoppingBag,
-  Building2, Clock, Edit2
+  Building2, Clock, Edit2, ArrowLeft
 } from "lucide-react";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
 import { PixIcon } from "@/components/ui/pix-icon";
@@ -951,7 +951,12 @@ function CartPage() {
       <div className="container-fa py-16 text-center">
         <h1 className="text-2xl font-bold">Seu carrinho está vazio</h1>
         <p className="text-muted-foreground mt-2">Que tal começar pelas categorias?</p>
-        <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }}><Button className="mt-6">Voltar à loja</Button></Link>
+        <Button 
+          className="mt-6 font-semibold"
+          onClick={() => navigate({ to: "/$storeSlug", params: { storeSlug: storeSlug || "loja-padrao" } })}
+        >
+          Continuar comprando
+        </Button>
       </div>
     );
   }
@@ -962,7 +967,18 @@ function CartPage() {
         <Link to="/$storeSlug" params={{ storeSlug: storeSlug || "loja-padrao" }} className="hover:underline">Início</Link> /{" "}
         <span className="text-foreground">Carrinho</span>
       </nav>
-      <h1 className="text-2xl font-bold mb-6">Meu carrinho</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold">Meu carrinho</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate({ to: "/$storeSlug", params: { storeSlug: storeSlug || "loja-padrao" } })}
+          className="self-start sm:self-auto gap-1.5 font-medium border-slate-300 text-slate-700 hover:text-primary hover:border-primary"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Continuar comprando
+        </Button>
+      </div>
 
       <div className="grid lg:grid-cols-[1fr_380px] gap-8">
         <div className="space-y-4">
@@ -1707,6 +1723,13 @@ function CartPage() {
               onClick={goToCheckout}
             >
               Finalizar Pedido
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full mt-2.5 h-11 text-sm font-semibold border-slate-300 text-slate-700 hover:bg-slate-50"
+              onClick={() => navigate({ to: "/$storeSlug", params: { storeSlug: storeSlug || "loja-padrao" } })}
+            >
+              Continuar comprando
             </Button>
           </div>
 
