@@ -80,38 +80,37 @@ export function PriceDropTracker() {
           return null;
         };
 
-        // Verificação do carrinho
-        cartItems.forEach(item => {
-          const live = liveProducts.find(p => p.id === item.id);
-          if (live) {
-            const bestPharm = getBestPharmacyForProduct(live);
-            if (bestPharm) {
-              const { precoPor } = getEffectivePrice(live as any, bestPharm.id);
-              if (precoPor < item.preco) {
-                addCartNotification(item.id, item.preco, precoPor, bestPharm.nome);
-                if (updateCartItemPrice) {
-                  updateCartItemPrice(item.id, precoPor);
+        // Verificação do carrinho: APENAS dentro da farmácia que o cliente está acessando
+        if (selectedPharmacyId) {
+          const currentPharm = pharmacies.find((f: any) => String(f.id) === String(selectedPharmacyId));
+          if (currentPharm) {
+            cartItems.forEach(item => {
+              const live = liveProducts.find(p => p.id === item.id);
+              if (live && live.precosPorLoja?.[currentPharm.id]?.ativo !== false) {
+                const { precoPor } = getEffectivePrice(live as any, currentPharm.id);
+                if (precoPor < item.preco) {
+                  addCartNotification(item.id, item.preco, precoPor, "");
+                  if (updateCartItemPrice) {
+                    updateCartItemPrice(item.id, precoPor);
+                  }
                 }
               }
-            }
-          }
-        });
+            });
 
-        // Verificação dos favoritos
-        favIds.forEach(id => {
-          const live = liveProducts.find(p => p.id === id);
-          const precoSalvo = favPrices[id];
-          if (live && precoSalvo) {
-            const bestPharm = getBestPharmacyForProduct(live);
-            if (bestPharm) {
-              const { precoPor } = getEffectivePrice(live as any, bestPharm.id);
-              if (precoPor < precoSalvo) {
-                addFavNotification(id, precoSalvo, precoPor, bestPharm.nome);
-                updateFavPrice(id, precoPor);
+            // Verificação dos favoritos dentro da farmácia ativa
+            favIds.forEach(id => {
+              const live = liveProducts.find(p => p.id === id);
+              const precoSalvo = favPrices[id];
+              if (live && precoSalvo && live.precosPorLoja?.[currentPharm.id]?.ativo !== false) {
+                const { precoPor } = getEffectivePrice(live as any, currentPharm.id);
+                if (precoPor < precoSalvo) {
+                  addFavNotification(id, precoSalvo, precoPor, "");
+                  updateFavPrice(id, precoPor);
+                }
               }
-            }
+            });
           }
-        });
+        }
 
       } catch (error) {
         console.error("Failed to check price drops", error);

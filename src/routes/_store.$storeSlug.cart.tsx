@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
-  Flame, Store, Truck, X, MapPin, AlertTriangle, Bell,
+  Flame, Store, Truck, X, MapPin, AlertTriangle, Bell, TrendingDown,
   MessageCircle, Send, CheckCircle2, Tag, Sparkles, DollarSign, CreditCard, ShoppingBag,
   Building2, Clock, Edit2
 } from "lucide-react";
@@ -967,21 +967,21 @@ function CartPage() {
       <div className="grid lg:grid-cols-[1fr_380px] gap-8">
         <div className="space-y-4">
           {cartNotifications && cartNotifications.filter(n => items.some(i => i.id === n.id)).length > 0 && items.length > 0 && (
-            <div className="bg-emerald-50 text-emerald-800 text-sm p-4 rounded-xl border border-emerald-200 relative">
-              <button onClick={clearCartNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors">
+            <div className="bg-emerald-50 text-emerald-900 text-sm p-4 rounded-xl border border-emerald-200 relative shadow-2xs">
+              <button onClick={clearCartNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors" title="Fechar aviso">
                 <X className="h-4 w-4" />
               </button>
               <ul className="space-y-3">
                 {cartNotifications.filter(n => items.some(i => i.id === n.id)).map(n => {
                   const item = items.find(i => i.id === n.id)!;
                   return (
-                    <li key={n.id} className="flex flex-col gap-1">
-                      <div className="font-bold flex items-center gap-1.5">
-                        <Bell className="h-4 w-4 shrink-0" />
+                    <li key={n.id} className="flex flex-col gap-1 pr-6">
+                      <div className="font-bold flex items-center gap-2 text-emerald-800">
+                        <TrendingDown className="h-4 w-4 shrink-0 text-emerald-600" />
                         <span>O produto <strong>{item.nome}</strong> ficou mais barato!</span>
                       </div>
-                      <div className="text-emerald-700 pl-5.5">
-                        De <span className="line-through">{brl(n.oldPrice)}</span> para <strong>{brl(n.newPrice)}</strong> na farmácia <strong>{n.storeName}</strong>.
+                      <div className="text-emerald-700 pl-6 text-xs sm:text-sm">
+                        De <span className="line-through text-slate-500">{brl(n.oldPrice)}</span> por <strong className="text-emerald-800 font-black">{brl(n.newPrice)}</strong>
                       </div>
                     </li>
                   );

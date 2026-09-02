@@ -6,7 +6,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, KeyRound, Trash2, Plus, Home, Eye, EyeOff, Briefcase, Building2, Heart, Bell, X, Pencil } from "lucide-react";
+import { MapPin, KeyRound, Trash2, Plus, Home, Eye, EyeOff, Briefcase, Building2, Heart, Bell, X, Pencil, TrendingDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getGreeting, brl, productImage } from "@/lib/format";
@@ -608,27 +608,27 @@ function PerfilPage() {
                 <Heart className="h-6 w-6 text-red-500 fill-red-500" />
              </div>
              {favNotifications && favNotifications.filter(n => favoriteProducts.some(p => p.id === n.id)).length > 0 && favoriteProducts.length > 0 && (
-               <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl mb-6 relative">
-                 <button onClick={clearFavNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors">
-                   <X className="h-4 w-4" />
-                 </button>
-                 <ul className="text-sm text-emerald-700 space-y-3">
-                   {favNotifications.filter(n => favoriteProducts.some(p => p.id === n.id)).map(n => {
-                     const p = favoriteProducts.find(prod => prod.id === n.id)!;
-                     return (
-                        <li key={n.id} className="flex flex-col gap-1">
-                          <div className="font-bold flex items-center gap-1.5 text-base">
-                            <Bell className="h-4 w-4 shrink-0" />
-                            <span>O produto <strong>{p.nome}</strong> ficou mais barato!</span>
-                          </div>
-                          <div className="pl-5.5">
-                            De <span className="line-through">{brl(n.oldPrice)}</span> para <strong>{brl(n.newPrice)}</strong> na farmácia <strong>{n.storeName}</strong>.
-                          </div>
-                        </li>
-                     );
-                   })}
-                 </ul>
-               </div>
+                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl mb-6 relative shadow-2xs">
+                  <button onClick={clearFavNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors" title="Fechar aviso">
+                    <X className="h-4 w-4" />
+                  </button>
+                  <ul className="text-sm text-emerald-700 space-y-3">
+                    {favNotifications.filter(n => favoriteProducts.some(p => p.id === n.id)).map(n => {
+                      const p = favoriteProducts.find(prod => prod.id === n.id)!;
+                      return (
+                         <li key={n.id} className="flex flex-col gap-1 pr-6">
+                           <div className="font-bold flex items-center gap-2 text-base text-emerald-800">
+                             <TrendingDown className="h-4 w-4 shrink-0 text-emerald-600" />
+                             <span>O produto <strong>{p.nome}</strong> ficou mais barato!</span>
+                           </div>
+                           <div className="pl-6 text-xs sm:text-sm">
+                             De <span className="line-through text-slate-500">{brl(n.oldPrice)}</span> por <strong className="text-emerald-800 font-black">{brl(n.newPrice)}</strong>
+                           </div>
+                         </li>
+                      );
+                    })}
+                  </ul>
+                </div>
              )}
              
              {favoriteProducts.length === 0 ? (

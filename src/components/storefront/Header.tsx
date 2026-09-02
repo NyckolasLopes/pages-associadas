@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Search, MapPin, ShoppingBasket, Menu, Phone, User, X, Truck, Sparkles, Trash2,
   Pill, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Plus, Camera, Package, Home, Tag, ShieldCheck, ChevronDown, Flame, HeartPulse, Navigation,
-  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight, Ticket
+  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight, Ticket, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScannerModal } from "./BarcodeScannerModal";
@@ -1708,21 +1708,21 @@ function CartDrawer({ onCheckoutClick }: { onCheckoutClick: () => void }) {
         </div>
       )}
       {cartNotifications && cartNotifications.filter(n => items.some(i => i.id === n.id)).length > 0 && items.length > 0 && (
-        <div className="bg-emerald-50 text-emerald-800 text-xs p-3 -mx-6 mb-2 border-y border-emerald-200 relative">
-          <button onClick={clearCartNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors">
+        <div className="bg-emerald-50 text-emerald-900 text-xs p-3 -mx-6 mb-2 border-y border-emerald-200 relative shadow-2xs">
+          <button onClick={clearCartNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors" title="Fechar aviso">
             <X className="h-3 w-3" />
           </button>
           <ul className="space-y-3">
             {cartNotifications.filter(n => items.some(i => i.id === n.id)).map(n => {
               const item = items.find(i => i.id === n.id)!;
               return (
-                <li key={n.id} className="flex flex-col gap-1">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <Bell className="h-3.5 w-3.5 shrink-0" />
+                <li key={n.id} className="flex flex-col gap-1 pr-5">
+                  <div className="font-bold flex items-center gap-1.5 text-emerald-800">
+                    <TrendingDown className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
                     <span>O produto <strong>{item.nome}</strong> ficou mais barato!</span>
                   </div>
-                  <div className="text-emerald-700 pl-5">
-                    De <span className="line-through">{brl(n.oldPrice)}</span> para <strong>{brl(n.newPrice)}</strong> na farmácia <strong>{n.storeName}</strong>.
+                  <div className="text-emerald-700 pl-5 text-xs">
+                    De <span className="line-through text-slate-500">{brl(n.oldPrice)}</span> por <strong className="text-emerald-800 font-black">{brl(n.newPrice)}</strong>
                   </div>
                 </li>
               );
