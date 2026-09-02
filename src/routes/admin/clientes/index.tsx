@@ -229,12 +229,18 @@ function ClientesAdmin() {
 
   // Filtro de acordo com o contexto (Admin Global vs Admin da Loja)
   const storeFilteredCustomers = useMemo(() => {
-    if (isGlobalView) {
+    if (isGlobalView || !currentLojaId) {
       return allUnifiedCustomers;
     }
-    // No Admin da Loja: apenas clientes que geraram pedidos desta loja específica
-    return allUnifiedCustomers.filter(c => c.lojaId === currentLojaId || c.lojaId === String(currentLojaId));
-  }, [allUnifiedCustomers, isGlobalView, currentLojaId]);
+    // No Admin da Loja: clientes que compraram na loja, vinculados à loja ou clientes cadastrados
+    return allUnifiedCustomers.filter(c => 
+      !c.lojaId || 
+      c.lojaId === "1" ||
+      c.lojaId === currentLojaId || 
+      c.lojaId === String(currentLojaId) ||
+      c.pedidos.some(p => p.lojaNome === activeLoja?.nome)
+    );
+  }, [allUnifiedCustomers, isGlobalView, currentLojaId, activeLoja]);
 
   // Filtro de busca
   const filteredCustomers = useMemo(() => {

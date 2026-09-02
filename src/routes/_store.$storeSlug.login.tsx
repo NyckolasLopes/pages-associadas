@@ -82,8 +82,11 @@ function LoginPage() {
       return;
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = pass.trim();
+
     try {
-      loginSchema.parse({ email, pass });
+      loginSchema.parse({ email: cleanEmail, pass: cleanPass });
     } catch (err) {
       if (err instanceof z.ZodError) {
         toast.error(err.errors[0].message);
@@ -91,7 +94,7 @@ function LoginPage() {
       }
     }
     
-    const result = await login(email, pass, storeSlug);
+    const result = await login(cleanEmail, cleanPass, storeSlug);
     
     if (result === "rate_limit") {
       toast.error("Muitas tentativas detectadas pelos nossos servidores. Por segurança, aguarde alguns minutos.");

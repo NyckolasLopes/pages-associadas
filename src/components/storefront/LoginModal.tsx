@@ -21,8 +21,11 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
     e.preventDefault();
     setLoading(true);
     
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanSenha = senha.trim();
+
     if (step === "credentials") {
-      const res = await login(email, senha, activePharmacy?.slug || "loja-padrao");
+      const res = await login(cleanEmail, cleanSenha, activePharmacy?.slug || "loja-padrao");
       if (res === true) {
         onOpenChange(false);
         onLoginSuccess();
@@ -32,7 +35,7 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
         toast.error("Credenciais inválidas");
       }
     } else {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) {
