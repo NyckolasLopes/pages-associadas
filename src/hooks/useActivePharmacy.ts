@@ -6,7 +6,7 @@ import { useCart } from "@/stores/cart";
 export const SYSTEM_PAGES = new Set([
   'login', 'cadastro', 'perfil', 'pedidos', 'checkout',
   'sucesso', 'compartilhado', 'faq', 'ajuda', 'mapa-site',
-  'politica-de-privacidade', 'pagina', 'admin',
+  'politica-de-privacidade', 'pagina', 'admin', 'cupons',
 ]);
 
 export function safeSlugify(text: string): string {

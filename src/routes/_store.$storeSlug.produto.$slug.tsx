@@ -954,7 +954,7 @@ function PDP() {
         const catId = p.categoriaId ? String(p.categoriaId).toLowerCase() : "";
         const subId = p.subcategoriaId ? String(p.subcategoriaId).toLowerCase() : "";
         const extraCats = (p.categoriasIds || []).map((id: any) => String(id).toLowerCase());
-        const matchCat = (catId && alvos.includes(catId)) || (subId && alvos.includes(subId)) || extraCats.some(id => alvos.includes(id));
+        const matchCat = (catId && alvos.includes(catId)) || (subId && alvos.includes(subId)) || extraCats.some((id: string) => alvos.includes(id));
         if (!matchCat) return false;
       }
 

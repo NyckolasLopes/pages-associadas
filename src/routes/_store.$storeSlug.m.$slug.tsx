@@ -117,7 +117,7 @@ function BrandPage() {
     const nextPage = page + 1;
     try {
       const moreProducts = await catalog.productsByBrand(brand, { page: nextPage, pageSize: 24 });
-      setProductsList(prev => [...prev, ...moreProducts]);
+      setProductsList((prev: any) => [...prev, ...moreProducts]);
       setPage(nextPage);
       if (moreProducts.length < 24) setHasMore(false);
     } catch (e) {

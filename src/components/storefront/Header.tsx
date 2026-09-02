@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Search, MapPin, ShoppingBasket, Menu, Phone, User, X, Truck, Sparkles, Trash2,
   Pill, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Plus, Camera, Package, Home, Tag, ShieldCheck, ChevronDown, Flame, HeartPulse, Navigation,
-  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight
+  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight, Ticket
 } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScannerModal } from "./BarcodeScannerModal";
@@ -1053,6 +1053,21 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   const categoryIcons = useAdmin(s => s.categoryIcons);
   const selectedPharmacyId = useCart(s => s.selectedPharmacyId) || activePharmacy?.id;
   const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
+  const cupons = useMarketing(s => s.cupons);
+  const hasStoreCupons = useMemo(() => {
+    if (!cupons || cupons.length === 0) return false;
+    const now = new Date();
+    return cupons.some((c: any) => {
+      if (c.ativo === false) return false;
+      const cLoja = c.lojaId || c.farmaciaId;
+      if (selectedPharmacyId && cLoja && String(cLoja) !== String(selectedPharmacyId)) return false;
+      if (c.dataInicio && new Date(c.dataInicio) > now) return false;
+      const validUntil = c.dataTermino || c.validade;
+      if (validUntil && new Date(validUntil + (validUntil.includes('T') ? '' : 'T23:59:59')) < now) return false;
+      return true;
+    });
+  }, [cupons, selectedPharmacyId]);
+
   const user = useMemo(() => {
     if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
     return useAuth.getState().getUserForStore(storeSlug);
@@ -1172,6 +1187,23 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
           </div>
           <div className="border-t my-2" />
 
+          {hasStoreCupons && (
+            <Link
+              to="/$storeSlug/cupons"
+              params={{ storeSlug }}
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-bold bg-primary/10 text-primary hover:bg-primary/20 transition mb-2 border border-primary/20 shadow-2xs"
+            >
+              <div className="flex items-center gap-3">
+                <Ticket className="h-5 w-5 text-primary" />
+                <span>Cupons da Loja</span>
+              </div>
+              <span className="text-[10px] uppercase font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full shadow-2xs">
+                Descontos
+              </span>
+            </Link>
+          )}
+
           {cats.map((c) => {
             const storeIconKey = (selectedPharmacyId && storeCategoryIcons?.[selectedPharmacyId]?.[c.id])
               || categoryIcons?.[c.id]
@@ -1282,6 +1314,20 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                      activePharmacy?.isPleno === false || 
                      ((params as any)?.storeSlug && (params as any)?.storeSlug !== 'loja-padrao');
   const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
+  const cupons = useMarketing(s => s.cupons);
+  const hasStoreCupons = useMemo(() => {
+    if (!cupons || cupons.length === 0) return false;
+    const now = new Date();
+    return cupons.some((c: any) => {
+      if (c.ativo === false) return false;
+      const cLoja = c.lojaId || c.farmaciaId;
+      if (selectedPharmacyId && cLoja && String(cLoja) !== String(selectedPharmacyId)) return false;
+      if (c.dataInicio && new Date(c.dataInicio) > now) return false;
+      const validUntil = c.dataTermino || c.validade;
+      if (validUntil && new Date(validUntil + (validUntil.includes('T') ? '' : 'T23:59:59')) < now) return false;
+      return true;
+    });
+  }, [cupons, selectedPharmacyId]);
 
   const allSubs = useMemo(() => {
     const subs: Record<string, Categoria[]> = {};
@@ -1372,6 +1418,19 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
               Todas as categorias
             </Link>
           </li>
+
+          {hasStoreCupons && (
+            <li className="shrink-0 flex items-center">
+              <Link
+                to="/$storeSlug/cupons"
+                params={{ storeSlug }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] lg:text-[12px] xl:text-[13px] font-black bg-amber-400 text-slate-950 hover:bg-amber-300 transition-all shadow-xs border border-amber-300/60"
+              >
+                <Ticket className="h-3.5 w-3.5 text-slate-950" />
+                <span>Cupons</span>
+              </Link>
+            </li>
+          )}
           
           {cats.map((c) => {
             const storeIconKey = (selectedPharmacyId && storeCategoryIcons?.[selectedPharmacyId]?.[c.id])
@@ -1415,7 +1474,30 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
             key="all"
             className="absolute left-0 right-0 top-full z-50 bg-popover text-foreground border-b shadow-elevated max-h-[70vh] overflow-auto pointer-events-none animate-in slide-in-from-top-2 fade-in duration-200"
           >
-            <div className="container-fa py-8 flex flex-col gap-10 pointer-events-auto">
+            <div className="container-fa py-8 flex flex-col gap-8 pointer-events-auto">
+              {hasStoreCupons && (
+                <div className="bg-gradient-to-r from-primary/10 via-amber-500/10 to-emerald-500/10 p-4 rounded-xl border border-primary/20 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-primary text-white p-2.5 rounded-full shadow-2xs">
+                      <Ticket className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">Cupons da Loja</h4>
+                      <p className="text-xs text-slate-600">Confira todos os cupons de desconto ativos para esta loja.</p>
+                    </div>
+                  </div>
+                  <Link
+                    to="/$storeSlug/cupons"
+                    params={{ storeSlug }}
+                    onClick={() => setOpen(null)}
+                    className="inline-flex items-center gap-1.5 bg-primary text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
+                  >
+                    <span>Ver Cupons</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              )}
+
               <div className="columns-2 md:columns-4 lg:columns-5 gap-8">
                 {allRootCats.filter(c => c.id !== "300" && c.slug !== "nossas-marcas").map((c) => (
                   <div key={c.id} className="flex flex-col break-inside-avoid mb-10">
