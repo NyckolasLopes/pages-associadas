@@ -52,6 +52,7 @@ import {
   Globe,
   Network,
   AlertTriangle,
+  Ticket,
 } from "lucide-react";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
@@ -1529,7 +1530,8 @@ export function StoreColorManager({
                                 borderColor: getColor("--coupon-badge-border", "#d2e3fc"),
                               }}
                             >
-                              R$ {(item.por * 0.9).toFixed(2)} com Cupom
+                              <Ticket className="w-2.5 h-2.5 shrink-0" />
+                              <span>R$ {(item.por * 0.9).toFixed(2)} com Cupom</span>
                             </div>
                           </div>
 

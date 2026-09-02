@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from "@tanstack/react-router";
-import { Heart, ShoppingBasket, Zap, Star, Calendar, Stethoscope, Bell, Flame, Gift, ShoppingBag, Youtube, Minus, Plus } from "lucide-react";
+import { Heart, ShoppingBasket, Zap, Star, Calendar, Stethoscope, Bell, Flame, Gift, ShoppingBag, Youtube, Minus, Plus, Ticket } from "lucide-react";
 import React, { useEffect, useState, useMemo } from "react";
 import type { Produto } from "@/types";
 import { brl, getInstallmentText, productImage, tarjaColor, checkIsGenerico, formatPbmName } from "@/lib/format";
@@ -615,7 +615,7 @@ function ProductCardComponent({
 
                 {eligibleCoupon ? (
                   <div 
-                    className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-bold tracking-tight bg-[#EBF3FE] text-[#1a73e8] border border-[#d2e3fc] shadow-2xs self-start"
+                    className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-bold tracking-tight border shadow-2xs self-start transition-all"
                     style={{
                       backgroundColor: 'var(--coupon-badge-bg, #EBF3FE)',
                       color: 'var(--coupon-badge-text, #1a73e8)',
@@ -623,6 +623,7 @@ function ProductCardComponent({
                     }}
                     title={`Cupom da loja: ${eligibleCoupon.codigo || eligibleCoupon.code}`}
                   >
+                    <Ticket className="w-3 h-3 shrink-0" />
                     <span>{brl(eligibleCoupon.finalPrice)} com Cupom</span>
                   </div>
                 ) : (

@@ -30,7 +30,8 @@ import {
   Sparkles,
   Loader2,
   Clock,
-  Palette
+  Palette,
+  Ticket
 } from "lucide-react";
 import { sanitizeCouponCode } from "@/lib/security";
 import { checkRateLimitOrThrow, RATE_LIMIT_PRESETS } from "@/lib/rateLimit";
@@ -430,14 +431,15 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-semibold text-slate-400">Prévia:</span>
                 <div 
-                  className="px-3 py-1 rounded-md text-xs font-bold border shadow-2xs transition-all"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border shadow-2xs transition-all"
                   style={{
                     backgroundColor: badgeBg,
                     color: badgeText,
                     borderColor: badgeBorder,
                   }}
                 >
-                  R$ 15,19 com Cupom
+                  <Ticket className="w-3.5 h-3.5 shrink-0" />
+                  <span>R$ 27,54 com Cupom</span>
                 </div>
               </div>
 

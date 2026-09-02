@@ -27,12 +27,15 @@ import {
   X,
   ExternalLink,
   Sparkles,
-  Loader2
+  Loader2,
+  Palette,
+  Ticket
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +59,17 @@ export const Route = createFileRoute("/admin/marketing/cupons/")({
 
 function CuponsIndexPage() {
   const { cupons, addCoupon, updateCoupon, removeCoupon, loadMarketing } = useMarketing();
-  const { currentUser, activeStoreId, grupos, pharmacies, loadPharmacies } = useAdmin();
+  const { 
+    currentUser, 
+    activeStoreId, 
+    grupos, 
+    pharmacies, 
+    loadPharmacies, 
+    networkDefaultTheme, 
+    loadNetworkTheme, 
+    saveNetworkTheme, 
+    updatePharmacy 
+  } = useAdmin();
   const { categories } = useAdminCategories();
   const { customProducts } = useAdminProducts();
 
@@ -67,6 +80,7 @@ function CuponsIndexPage() {
   useEffect(() => {
     loadMarketing();
     loadPharmacies();
+    loadNetworkTheme();
     let mounted = true;
     setLoadingProducts(true);
     catalog.listProducts().then((prods) => {
@@ -79,7 +93,7 @@ function CuponsIndexPage() {
       if (mounted) setLoadingProducts(false);
     });
     return () => { mounted = false; };
-  }, [loadMarketing, loadPharmacies]);
+  }, [loadMarketing, loadPharmacies, loadNetworkTheme]);
 
   // Mescla produtos do catálogo com produtos personalizados
   const allProducts = useMemo(() => {
@@ -99,6 +113,70 @@ function CuponsIndexPage() {
 
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : activeStoreId;
+  const effectiveStore = pharmacies.find(p => p.id === effectiveStoreId);
+
+  // Estados para personalização das cores do selo de destaque "Com Cupom"
+  const [badgeBg, setBadgeBg] = useState(
+    effectiveStore?.themeColors?.['--coupon-badge-bg'] || 
+    networkDefaultTheme?.['--coupon-badge-bg'] || 
+    "#EBF3FE"
+  );
+  const [badgeText, setBadgeText] = useState(
+    effectiveStore?.themeColors?.['--coupon-badge-text'] || 
+    networkDefaultTheme?.['--coupon-badge-text'] || 
+    "#1a73e8"
+  );
+  const [badgeBorder, setBadgeBorder] = useState(
+    effectiveStore?.themeColors?.['--coupon-badge-border'] || 
+    networkDefaultTheme?.['--coupon-badge-border'] || 
+    "#d2e3fc"
+  );
+  const [isSavingBadgeColors, setIsSavingBadgeColors] = useState(false);
+
+  useEffect(() => {
+    if (effectiveStore?.themeColors) {
+      if (effectiveStore.themeColors['--coupon-badge-bg']) setBadgeBg(effectiveStore.themeColors['--coupon-badge-bg']);
+      if (effectiveStore.themeColors['--coupon-badge-text']) setBadgeText(effectiveStore.themeColors['--coupon-badge-text']);
+      if (effectiveStore.themeColors['--coupon-badge-border']) setBadgeBorder(effectiveStore.themeColors['--coupon-badge-border']);
+    } else if (networkDefaultTheme) {
+      if (networkDefaultTheme['--coupon-badge-bg']) setBadgeBg(networkDefaultTheme['--coupon-badge-bg']);
+      if (networkDefaultTheme['--coupon-badge-text']) setBadgeText(networkDefaultTheme['--coupon-badge-text']);
+      if (networkDefaultTheme['--coupon-badge-border']) setBadgeBorder(networkDefaultTheme['--coupon-badge-border']);
+    }
+  }, [effectiveStore, networkDefaultTheme]);
+
+  const handleSaveBadgeColors = async () => {
+    setIsSavingBadgeColors(true);
+    try {
+      if (effectiveStoreId && effectiveStore) {
+        const updatedTheme = {
+          ...(effectiveStore.themeColors || {}),
+          '--coupon-badge-bg': badgeBg,
+          '--coupon-badge-text': badgeText,
+          '--coupon-badge-border': badgeBorder,
+        };
+        await updatePharmacy(effectiveStoreId, {
+          ...effectiveStore,
+          themeColors: updatedTheme,
+        });
+        toast.success(`Cores do selo "Com Cupom" salvas para ${effectiveStore.nome}!`);
+      } else {
+        const updatedNetworkTheme = {
+          ...(networkDefaultTheme || {}),
+          '--coupon-badge-bg': badgeBg,
+          '--coupon-badge-text': badgeText,
+          '--coupon-badge-border': badgeBorder,
+        };
+        await saveNetworkTheme(updatedNetworkTheme);
+        toast.success("Cores padrão do selo \"Com Cupom\" salvas com sucesso!");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao salvar cores: " + (err.message || "Tente novamente"));
+    } finally {
+      setIsSavingBadgeColors(false);
+    }
+  };
+
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewingCoupon, setViewingCoupon] = useState<Coupon | null>(null);
@@ -923,6 +1001,87 @@ function CuponsIndexPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* CARD DE PERSONALIZAÇÃO DE CORES DO DESTAQUE 'COM CUPOM' */}
+      <Card className="border-slate-200 shadow-sm bg-gradient-to-r from-blue-50/60 via-indigo-50/40 to-white">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-primary" />
+                <h3 className="font-bold text-slate-800 text-sm md:text-base">
+                  Personalizar Cores do Destaque "Com Cupom"
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500">
+                Altere a cor do texto, do fundo e da borda do selo que aparece nos cards e na página dos produtos elegíveis.
+                {effectiveStore ? ` (Configurando para: ${effectiveStore.nome})` : " (Padrão da Rede)"}
+              </p>
+            </div>
+
+            {/* Live Preview & Pickers */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-600">Fundo:</label>
+                  <input
+                    type="color"
+                    value={badgeBg}
+                    onChange={(e) => setBadgeBg(e.target.value)}
+                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    title="Cor de fundo do selo"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-600">Texto:</label>
+                  <input
+                    type="color"
+                    value={badgeText}
+                    onChange={(e) => setBadgeText(e.target.value)}
+                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    title="Cor do texto do selo"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-600">Borda:</label>
+                  <input
+                    type="color"
+                    value={badgeBorder}
+                    onChange={(e) => setBadgeBorder(e.target.value)}
+                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    title="Cor da borda do selo"
+                  />
+                </div>
+              </div>
+
+              {/* Preview do Selo */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-slate-400">Prévia:</span>
+                <div 
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border shadow-2xs transition-all"
+                  style={{
+                    backgroundColor: badgeBg,
+                    color: badgeText,
+                    borderColor: badgeBorder,
+                  }}
+                >
+                  <Ticket className="w-3.5 h-3.5 shrink-0" />
+                  <span>R$ 27,54 com Cupom</span>
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                onClick={handleSaveBadgeColors}
+                disabled={isSavingBadgeColors}
+                className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-8 px-3 ml-auto"
+              >
+                {isSavingBadgeColors ? "Salvando..." : "Salvar Cores"}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
         <div className="p-4 border-b border-slate-100 flex items-center gap-4">

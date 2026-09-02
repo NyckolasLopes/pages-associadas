@@ -1,21 +1,19 @@
-const CACHE_NAME = 'fa-static-v2';
+const CACHE_NAME = 'fa-static-v5';
 
 const IMMUTABLE_URLS = [
   '/favicon.png',
   '/manifest.json',
 ];
 
-self.addEventListener('install', (e) => {
+self.addEventListener('install', (event) => {
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(IMMUTABLE_URLS).catch(() => {});
-    })
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(IMMUTABLE_URLS)).catch(() => {})
   );
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
@@ -24,63 +22,84 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-self.addEventListener('fetch', (e) => {
-  const { request } = e;
-  
-  // Apenas métodos GET
-  if (request.method !== 'GET') return;
-  
-  const url = new URL(request.url);
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (!request || request.method !== 'GET') return;
 
-  // Ignora chamadas administrativas, painéis e APIs dinâmicas para sempre consultar a rede
+  let url;
+  try {
+    url = new URL(request.url);
+  } catch {
+    return;
+  }
+
+  // Apenas esquemas HTTP/HTTPS
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+  // Não intercepta chamadas dinâmicas, admin, painel, api ou supabase
   if (
-    url.pathname.startsWith('/admin') || 
+    url.pathname.startsWith('/admin') ||
     url.pathname.startsWith('/painel-loja') ||
     url.pathname.startsWith('/api') ||
-    url.hostname.includes('supabase.co')
+    url.hostname.includes('supabase.co') ||
+    (url.hostname.includes('googleapis.com') && !url.hostname.includes('fonts'))
   ) {
     return;
   }
 
-  // 1. Cache-First para assets versionados e fontes do Google
+  // 1. Assets versionados e Google Fonts (Cache-First com fallback seguro)
   if (
     url.pathname.startsWith('/assets/') ||
     url.hostname === 'fonts.googleapis.com' ||
     url.hostname === 'fonts.gstatic.com'
   ) {
-    e.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) return cachedResponse;
-        return fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+    event.respondWith(
+      (async () => {
+        try {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+
+          const response = await fetch(request);
+          if (response && response.status === 200) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(request, response.clone()).catch(() => {});
           }
-          return networkResponse;
-        });
-      })
+          return response;
+        } catch {
+          return fetch(request);
+        }
+      })()
     );
     return;
   }
 
-  // 2. Stale-While-Revalidate para imagens e ícones
+  // 2. Imagens locais e estáticas (Stale-While-Revalidate seguro)
   if (
     request.destination === 'image' ||
     url.pathname.startsWith('/images/') ||
     url.pathname.match(/\.(png|jpg|jpeg|svg|webp|ico)$/i)
   ) {
-    e.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        const fetchPromise = fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return networkResponse;
-        }).catch(() => cachedResponse);
+    event.respondWith(
+      (async () => {
+        try {
+          const cached = await caches.match(request);
+          const networkFetch = fetch(request).then(async (response) => {
+            if (response && response.status === 200) {
+              const cache = await caches.open(CACHE_NAME);
+              cache.put(request, response.clone()).catch(() => {});
+            }
+            return response;
+          }).catch(() => null);
 
-        return cachedResponse || fetchPromise;
-      })
+          if (cached) return cached;
+          const networkResponse = await networkFetch;
+          if (networkResponse) return networkResponse;
+
+          return fetch(request);
+        } catch {
+          return fetch(request);
+        }
+      })()
     );
     return;
   }

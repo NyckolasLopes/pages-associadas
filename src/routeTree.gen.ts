@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as PainelLojaOldRouteImport } from './routes/painel-loja.old'
 import { Route as PainelLojaLojaIdRouteImport } from './routes/painel-loja.$lojaId'
+import { Route as LojaStoreSlugRouteImport } from './routes/loja.$storeSlug'
 import { Route as InscricaoTokenRouteImport } from './routes/inscricao.$token'
 import { Route as AdminVariacoesRouteImport } from './routes/admin/variacoes'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
@@ -143,6 +144,11 @@ const PainelLojaOldRoute = PainelLojaOldRouteImport.update({
 const PainelLojaLojaIdRoute = PainelLojaLojaIdRouteImport.update({
   id: '/painel-loja/$lojaId',
   path: '/painel-loja/$lojaId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LojaStoreSlugRoute = LojaStoreSlugRouteImport.update({
+  id: '/loja/$storeSlug',
+  path: '/loja/$storeSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InscricaoTokenRoute = InscricaoTokenRouteImport.update({
@@ -635,6 +641,7 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/variacoes': typeof AdminVariacoesRouteWithChildren
   '/inscricao/$token': typeof InscricaoTokenRoute
+  '/loja/$storeSlug': typeof LojaStoreSlugRoute
   '/painel-loja/$lojaId': typeof PainelLojaLojaIdRoute
   '/painel-loja/old': typeof PainelLojaOldRoute
   '/admin/': typeof AdminIndexRoute
@@ -731,6 +738,7 @@ export interface FileRoutesByTo {
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/variacoes': typeof AdminVariacoesRouteWithChildren
   '/inscricao/$token': typeof InscricaoTokenRoute
+  '/loja/$storeSlug': typeof LojaStoreSlugRoute
   '/painel-loja/$lojaId': typeof PainelLojaLojaIdRoute
   '/painel-loja/old': typeof PainelLojaOldRoute
   '/admin': typeof AdminIndexRoute
@@ -830,6 +838,7 @@ export interface FileRoutesById {
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/variacoes': typeof AdminVariacoesRouteWithChildren
   '/inscricao/$token': typeof InscricaoTokenRoute
+  '/loja/$storeSlug': typeof LojaStoreSlugRoute
   '/painel-loja/$lojaId': typeof PainelLojaLojaIdRoute
   '/painel-loja/old': typeof PainelLojaOldRoute
   '/admin/': typeof AdminIndexRoute
@@ -929,6 +938,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/admin/variacoes'
     | '/inscricao/$token'
+    | '/loja/$storeSlug'
     | '/painel-loja/$lojaId'
     | '/painel-loja/old'
     | '/admin/'
@@ -1025,6 +1035,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/admin/variacoes'
     | '/inscricao/$token'
+    | '/loja/$storeSlug'
     | '/painel-loja/$lojaId'
     | '/painel-loja/old'
     | '/admin'
@@ -1123,6 +1134,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/admin/variacoes'
     | '/inscricao/$token'
+    | '/loja/$storeSlug'
     | '/painel-loja/$lojaId'
     | '/painel-loja/old'
     | '/admin/'
@@ -1198,6 +1210,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SucessoRoute: typeof SucessoRoute
   InscricaoTokenRoute: typeof InscricaoTokenRoute
+  LojaStoreSlugRoute: typeof LojaStoreSlugRoute
   PainelLojaLojaIdRoute: typeof PainelLojaLojaIdRoute
   PainelLojaOldRoute: typeof PainelLojaOldRoute
 }
@@ -1258,6 +1271,13 @@ declare module '@tanstack/react-router' {
       path: '/painel-loja/$lojaId'
       fullPath: '/painel-loja/$lojaId'
       preLoaderRoute: typeof PainelLojaLojaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loja/$storeSlug': {
+      id: '/loja/$storeSlug'
+      path: '/loja/$storeSlug'
+      fullPath: '/loja/$storeSlug'
+      preLoaderRoute: typeof LojaStoreSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inscricao/$token': {
@@ -2128,6 +2148,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SucessoRoute: SucessoRoute,
   InscricaoTokenRoute: InscricaoTokenRoute,
+  LojaStoreSlugRoute: LojaStoreSlugRoute,
   PainelLojaLojaIdRoute: PainelLojaLojaIdRoute,
   PainelLojaOldRoute: PainelLojaOldRoute,
 }

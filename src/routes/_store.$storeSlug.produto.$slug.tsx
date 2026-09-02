@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart, useGeoCep } from "@/stores/cart";
 import { useFavorites } from "@/stores/favorites";
-import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info, Ticket, Check } from "lucide-react";
+import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info, Ticket, Check, Copy } from "lucide-react";
 import { NotFound } from "@/components/storefront/NotFound";
 import categoriesData from "@/data/categories.json";
 import {
@@ -1471,33 +1471,45 @@ function PDP() {
 
           <div className="bg-card border rounded-xl p-5 shadow-elevated">
             {eligibleCoupon && isAvailable && !p.precoSobConsulta && (
-              <div className="mb-4 pb-3 border-b border-slate-100">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#f1f3fd] text-[#334155] border border-dashed border-[#c7d2fe] font-mono font-black text-xs uppercase tracking-wide shadow-2xs">
-                      <Ticket className="h-3.5 w-3.5 text-primary" />
+              <div className="mb-5 pb-4 border-b border-slate-100">
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-50/70 via-indigo-50/50 to-blue-50/70 border border-dashed border-indigo-200/90 p-4 shadow-2xs">
+                  {/* Linha superior: Código do Cupom + Botão Copiar Cupom */}
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white text-indigo-950 border border-indigo-200 font-mono font-black text-sm uppercase tracking-wider shadow-2xs">
+                      <Ticket className="h-4 w-4 text-indigo-600 shrink-0" />
                       <span>{eligibleCoupon.codigo || eligibleCoupon.code}</span>
                     </div>
+
                     <button
                       type="button"
                       onClick={handleApplyCoupon}
-                      className="text-xs font-bold text-primary hover:underline hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer"
+                      className={cn(
+                        "inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all shadow-2xs cursor-pointer select-none",
+                        couponCopied
+                          ? "bg-emerald-600 text-white shadow-emerald-200"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 shadow-indigo-200"
+                      )}
+                      title="Clique para copiar o código do cupom"
                     >
                       {couponCopied ? (
-                        <span className="text-emerald-600 flex items-center gap-1 font-bold">
-                          <Check className="h-3.5 w-3.5" /> Cupom copiado!
-                        </span>
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          <span>Cupom copiado!</span>
+                        </>
                       ) : (
-                        "Aplicar cupom"
+                        <>
+                          <Copy className="h-3.5 w-3.5" />
+                          <span>Copiar cupom</span>
+                        </>
                       )}
                     </button>
                   </div>
 
-                  {/* Campo de explicação do cupom */}
-                  <div className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 ml-auto">
+                  {/* Informação explicativa CENTRALIZADA */}
+                  <div className="text-center text-xs font-medium text-slate-600 mt-2.5 flex items-center justify-center gap-1.5 flex-wrap">
                     <span>{getTargetExplanation(eligibleCoupon)}</span>
                     {eligibleCoupon.valorMinimo > 0 && (
-                      <span className="text-slate-400 text-[11px] font-normal">• Mín. {brl(eligibleCoupon.valorMinimo)}</span>
+                      <span className="text-slate-400 font-normal">• Mín. {brl(eligibleCoupon.valorMinimo)}</span>
                     )}
                   </div>
                 </div>
@@ -1557,13 +1569,14 @@ function PDP() {
                 </div>
                 {eligibleCoupon && (
                   <div 
-                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-md shadow-2xs self-start font-bold border text-xs sm:text-sm"
+                    className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg shadow-2xs self-start font-bold border text-xs sm:text-sm transition-all"
                     style={{
                       backgroundColor: 'var(--coupon-badge-bg, #EBF3FE)',
                       color: 'var(--coupon-badge-text, #1a73e8)',
                       borderColor: 'var(--coupon-badge-border, #d2e3fc)',
                     }}
                   >
+                    <Ticket className="w-3.5 h-3.5 shrink-0" />
                     <span>{brl(eligibleCoupon.finalPrice)} com Cupom</span>
                   </div>
                 )}
