@@ -219,7 +219,11 @@ function StoreLayout() {
     const storeSlug = activePharmacy.slug || "";
     const origin = typeof window !== 'undefined' ? window.location.origin : "https://pages-associadas.vercel.app";
     const rawIcon = activePharmacy.faviconUrl || globalFavicon || "/favicon.png";
-    const absoluteIcon = rawIcon.startsWith("http") ? rawIcon : `${origin}${rawIcon.startsWith("/") ? "" : "/"}${rawIcon}`;
+    
+    let manifestIcon = `${origin}/favicon.png`;
+    if (rawIcon && !rawIcon.startsWith("data:") && !rawIcon.startsWith("blob:")) {
+      manifestIcon = rawIcon.startsWith("http") ? rawIcon : `${origin}${rawIcon.startsWith("/") ? "" : "/"}${rawIcon}`;
+    }
     
     const manifest = {
       name: appName,
@@ -232,12 +236,12 @@ function StoreLayout() {
       theme_color: "#00B5AD",
       icons: [
         {
-          src: absoluteIcon,
+          src: manifestIcon,
           sizes: "192x192",
           type: "image/png"
         },
         {
-          src: absoluteIcon,
+          src: manifestIcon,
           sizes: "512x512",
           type: "image/png"
         }
