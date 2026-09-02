@@ -22,6 +22,9 @@ export interface Coupon {
   lojaId?: string; // Se preenchido, cupom exclusivo da loja
   tipoAlvo?: "todos" | "produtos" | "categorias";
   alvosId?: string[];
+  badgeBg?: string;
+  badgeText?: string;
+  badgeBorder?: string;
 }
 
 export interface LevePagueProdutoConfig {
@@ -169,7 +172,10 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
             numeroUtilizacoes: Number(c.numero_utilizacoes) || 0,
             lojaId: c.loja_id || undefined,
             tipoAlvo: targetType,
-            alvosId: alvos
+            alvosId: alvos,
+            badgeBg: c.badge_bg || matchAppState?.badgeBg,
+            badgeText: c.badge_text || matchAppState?.badgeText,
+            badgeBorder: c.badge_border || matchAppState?.badgeBorder,
           };
         });
       } else if (appStateCupons.length > 0) {
@@ -250,7 +256,10 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       numeroUtilizacoes: 0,
       lojaId: coupon.lojaId || undefined,
       tipoAlvo: coupon.tipoAlvo || "todos",
-      alvosId: coupon.alvosId || []
+      alvosId: coupon.alvosId || [],
+      badgeBg: coupon.badgeBg || undefined,
+      badgeText: coupon.badgeText || undefined,
+      badgeBorder: coupon.badgeBorder || undefined,
     };
 
     // 1. Atualiza memória e localStorage imediatamente

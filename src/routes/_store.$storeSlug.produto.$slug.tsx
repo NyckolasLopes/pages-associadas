@@ -1571,9 +1571,9 @@ function PDP() {
                   <div 
                     className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg shadow-2xs self-start font-bold border text-xs sm:text-sm transition-all"
                     style={{
-                      backgroundColor: 'var(--coupon-badge-bg, #EBF3FE)',
-                      color: 'var(--coupon-badge-text, #1a73e8)',
-                      borderColor: 'var(--coupon-badge-border, #d2e3fc)',
+                      backgroundColor: eligibleCoupon.badgeBg || 'var(--coupon-badge-bg, #EBF3FE)',
+                      color: eligibleCoupon.badgeText || 'var(--coupon-badge-text, #1a73e8)',
+                      borderColor: eligibleCoupon.badgeBorder || 'var(--coupon-badge-border, #d2e3fc)',
                     }}
                   >
                     <Ticket className="w-3.5 h-3.5 shrink-0" />

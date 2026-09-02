@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Info, AlertTriangle, ChevronRight, Ticket, Percent, DollarSign, Truck, FileText, Store, Search, Loader2 } from "lucide-react";
+import { Info, AlertTriangle, ChevronRight, Ticket, Percent, DollarSign, Truck, FileText, Store, Search, Loader2, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { catalog } from "@/services/catalog";
 import { brl, productImage } from "@/lib/format";
@@ -31,9 +31,19 @@ function NovoCupomPage() {
   const { addCoupon } = useMarketing();
   const { categories } = useAdminCategories();
   const { customProducts } = useAdminProducts();
-  const { currentUser, activeStoreId, grupos, pharmacies } = useAdmin();
+  const { currentUser, activeStoreId, grupos, pharmacies, updatePharmacy } = useAdmin();
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : activeStoreId;
+
+  const getStoreBadgeColors = (storeId?: string) => {
+    const store = pharmacies.find(p => p.id === storeId);
+    const bg = store?.themeColors?.['--coupon-badge-bg'] || store?.themeColors?.couponBadgeBg || "#ff0000";
+    const text = store?.themeColors?.['--coupon-badge-text'] || store?.themeColors?.couponBadgeText || "#ffffff";
+    const border = store?.themeColors?.['--coupon-badge-border'] || store?.themeColors?.couponBadgeBorder || "#ff0000";
+    return { bg, text, border };
+  };
+
+  const initialColors = getStoreBadgeColors(effectiveStoreId);
 
   const [selectedStoreId, setSelectedStoreId] = useState<string>(effectiveStoreId || "");
   const [tipoAlvo, setTipoAlvo] = useState<"todos" | "produtos" | "categorias">("todos");
@@ -91,7 +101,10 @@ function NovoCupomPage() {
     usoUnico: false,
     cupomPrimeiraCompra: false,
     tipoAlvo: "todos",
-    alvosId: []
+    alvosId: [],
+    badgeBg: initialColors.bg,
+    badgeText: initialColors.text,
+    badgeBorder: initialColors.border,
   });
 
   const filteredCategories = useMemo(() => {
@@ -155,10 +168,29 @@ function NovoCupomPage() {
       codigo: formData.codigo.trim().toUpperCase(),
       lojaId: targetLojaId,
       tipoAlvo,
-      alvosId: tipoAlvo === "todos" ? [] : alvosId
+      alvosId: tipoAlvo === "todos" ? [] : alvosId,
+      badgeBg: formData.badgeBg,
+      badgeText: formData.badgeText,
+      badgeBorder: formData.badgeBorder,
     };
     
     await addCoupon(payload);
+
+    if (targetLojaId) {
+      const targetStore = pharmacies.find(p => p.id === targetLojaId);
+      if (targetStore) {
+        updatePharmacy(targetStore.id, {
+          ...targetStore,
+          themeColors: {
+            ...(targetStore.themeColors || {}),
+            '--coupon-badge-bg': formData.badgeBg,
+            '--coupon-badge-text': formData.badgeText,
+            '--coupon-badge-border': formData.badgeBorder,
+          }
+        });
+      }
+    }
+
     toast.success("Cupom criado com sucesso para a farmácia!");
     navigate({ to: "/admin/marketing/cupons" });
   };
@@ -197,7 +229,16 @@ function NovoCupomPage() {
               <div className="space-y-2">
                 <Label className="font-bold">Loja Vinculada <span className="text-red-500">*</span></Label>
                 <div className="max-w-sm">
-                  <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
+                  <Select value={selectedStoreId} onValueChange={(val) => {
+                    setSelectedStoreId(val);
+                    const colors = getStoreBadgeColors(val);
+                    setFormData(prev => ({
+                      ...prev,
+                      badgeBg: colors.bg,
+                      badgeText: colors.text,
+                      badgeBorder: colors.border,
+                    }));
+                  }}>
                     <SelectTrigger className="bg-white border-slate-200"><SelectValue placeholder="Selecione a Farmácia" /></SelectTrigger>
                     <SelectContent>
                       {pharmacies.map(loja => (
@@ -486,6 +527,70 @@ function NovoCupomPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* PERSONALIZAÇÃO DE CORES DO DESTAQUE 'COM CUPOM' */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Palette className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-bold text-slate-800">Cor do Destaque "Com Cupom" (Desta Loja)</h3>
+            </div>
+            <p className="text-xs text-slate-500">Defina as cores do selo que aparece nos cards e no produto com este cupom</p>
+          </div>
+          
+          <div className="p-6">
+            <div className="flex items-center justify-between gap-4 flex-wrap bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-bold text-slate-700">Cor de Fundo:</Label>
+                  <input
+                    type="color"
+                    value={formData.badgeBg || "#ff0000"}
+                    onChange={(e) => setFormData(prev => ({ ...prev, badgeBg: e.target.value }))}
+                    className="w-8 h-8 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white shrink-0 shadow-2xs"
+                    title="Cor de fundo do selo"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-bold text-slate-700">Cor do Texto:</Label>
+                  <input
+                    type="color"
+                    value={formData.badgeText || "#ffffff"}
+                    onChange={(e) => setFormData(prev => ({ ...prev, badgeText: e.target.value }))}
+                    className="w-8 h-8 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white shrink-0 shadow-2xs"
+                    title="Cor do texto do selo"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-bold text-slate-700">Cor da Borda:</Label>
+                  <input
+                    type="color"
+                    value={formData.badgeBorder || "#ff0000"}
+                    onChange={(e) => setFormData(prev => ({ ...prev, badgeBorder: e.target.value }))}
+                    className="w-8 h-8 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white shrink-0 shadow-2xs"
+                    title="Cor da borda do selo"
+                  />
+                </div>
+              </div>
+
+              {/* Preview do Selo */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-slate-400">Prévia:</span>
+                <div 
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border shadow-2xs transition-all"
+                  style={{
+                    backgroundColor: formData.badgeBg || "#ff0000",
+                    color: formData.badgeText || "#ffffff",
+                    borderColor: formData.badgeBorder || "#ff0000",
+                  }}
+                >
+                  <Ticket className="w-3.5 h-3.5 shrink-0" />
+                  <span>R$ 27,54 com Cupom</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

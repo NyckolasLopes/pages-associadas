@@ -617,9 +617,9 @@ function ProductCardComponent({
                   <div 
                     className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-bold tracking-tight border shadow-2xs self-start transition-all"
                     style={{
-                      backgroundColor: 'var(--coupon-badge-bg, #EBF3FE)',
-                      color: 'var(--coupon-badge-text, #1a73e8)',
-                      borderColor: 'var(--coupon-badge-border, #d2e3fc)',
+                      backgroundColor: eligibleCoupon.badgeBg || 'var(--coupon-badge-bg, #EBF3FE)',
+                      color: eligibleCoupon.badgeText || 'var(--coupon-badge-text, #1a73e8)',
+                      borderColor: eligibleCoupon.badgeBorder || 'var(--coupon-badge-border, #d2e3fc)',
                     }}
                     title={`Cupom da loja: ${eligibleCoupon.codigo || eligibleCoupon.code}`}
                   >

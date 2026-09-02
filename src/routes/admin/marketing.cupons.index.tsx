@@ -115,66 +115,13 @@ function CuponsIndexPage() {
   const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : activeStoreId;
   const effectiveStore = pharmacies.find(p => p.id === effectiveStoreId);
 
-  // Estados para personalização das cores do selo de destaque "Com Cupom"
-  const [badgeBg, setBadgeBg] = useState(
-    effectiveStore?.themeColors?.['--coupon-badge-bg'] || 
-    networkDefaultTheme?.['--coupon-badge-bg'] || 
-    "#EBF3FE"
-  );
-  const [badgeText, setBadgeText] = useState(
-    effectiveStore?.themeColors?.['--coupon-badge-text'] || 
-    networkDefaultTheme?.['--coupon-badge-text'] || 
-    "#1a73e8"
-  );
-  const [badgeBorder, setBadgeBorder] = useState(
-    effectiveStore?.themeColors?.['--coupon-badge-border'] || 
-    networkDefaultTheme?.['--coupon-badge-border'] || 
-    "#d2e3fc"
-  );
-  const [isSavingBadgeColors, setIsSavingBadgeColors] = useState(false);
-
-  useEffect(() => {
-    if (effectiveStore?.themeColors) {
-      if (effectiveStore.themeColors['--coupon-badge-bg']) setBadgeBg(effectiveStore.themeColors['--coupon-badge-bg']);
-      if (effectiveStore.themeColors['--coupon-badge-text']) setBadgeText(effectiveStore.themeColors['--coupon-badge-text']);
-      if (effectiveStore.themeColors['--coupon-badge-border']) setBadgeBorder(effectiveStore.themeColors['--coupon-badge-border']);
-    } else if (networkDefaultTheme) {
-      if (networkDefaultTheme['--coupon-badge-bg']) setBadgeBg(networkDefaultTheme['--coupon-badge-bg']);
-      if (networkDefaultTheme['--coupon-badge-text']) setBadgeText(networkDefaultTheme['--coupon-badge-text']);
-      if (networkDefaultTheme['--coupon-badge-border']) setBadgeBorder(networkDefaultTheme['--coupon-badge-border']);
-    }
-  }, [effectiveStore, networkDefaultTheme]);
-
-  const handleSaveBadgeColors = async () => {
-    setIsSavingBadgeColors(true);
-    try {
-      if (effectiveStoreId && effectiveStore) {
-        const updatedTheme = {
-          ...(effectiveStore.themeColors || {}),
-          '--coupon-badge-bg': badgeBg,
-          '--coupon-badge-text': badgeText,
-          '--coupon-badge-border': badgeBorder,
-        };
-        await updatePharmacy(effectiveStoreId, {
-          ...effectiveStore,
-          themeColors: updatedTheme,
-        });
-        toast.success(`Cores do selo "Com Cupom" salvas para ${effectiveStore.nome}!`);
-      } else {
-        const updatedNetworkTheme = {
-          ...(networkDefaultTheme || {}),
-          '--coupon-badge-bg': badgeBg,
-          '--coupon-badge-text': badgeText,
-          '--coupon-badge-border': badgeBorder,
-        };
-        await saveNetworkTheme(updatedNetworkTheme);
-        toast.success("Cores padrão do selo \"Com Cupom\" salvas com sucesso!");
-      }
-    } catch (err: any) {
-      toast.error("Erro ao salvar cores: " + (err.message || "Tente novamente"));
-    } finally {
-      setIsSavingBadgeColors(false);
-    }
+  // Helper para obter as cores do selo "Com Cupom" de uma loja ou rede
+  const getStoreBadgeColors = (storeId?: string) => {
+    const store = pharmacies.find(p => p.id === storeId) || effectiveStore;
+    const bg = store?.themeColors?.['--coupon-badge-bg'] || store?.themeColors?.couponBadgeBg || networkDefaultTheme?.['--coupon-badge-bg'] || "#ff0000";
+    const text = store?.themeColors?.['--coupon-badge-text'] || store?.themeColors?.couponBadgeText || networkDefaultTheme?.['--coupon-badge-text'] || "#ffffff";
+    const border = store?.themeColors?.['--coupon-badge-border'] || store?.themeColors?.couponBadgeBorder || networkDefaultTheme?.['--coupon-badge-border'] || "#ff0000";
+    return { bg, text, border };
   };
 
   const [search, setSearch] = useState("");
@@ -182,6 +129,7 @@ function CuponsIndexPage() {
   const [viewingCoupon, setViewingCoupon] = useState<Coupon | null>(null);
 
   // Estados do formulário de criação
+  const initialColors = getStoreBadgeColors(effectiveStoreId);
   const [novoCupom, setNovoCupom] = useState({
     codigo: "",
     descricao: "",
@@ -193,8 +141,24 @@ function CuponsIndexPage() {
     lojaId: "",
     tipoAlvo: "todos" as "todos" | "categorias" | "produtos",
     alvosId: [] as string[],
+    badgeBg: initialColors.bg,
+    badgeText: initialColors.text,
+    badgeBorder: initialColors.border,
   });
   const [searchTarget, setSearchTarget] = useState("");
+
+  // Atualiza cores padrão ao mudar a loja efetiva
+  useEffect(() => {
+    if (!novoCupom.lojaId) {
+      const colors = getStoreBadgeColors(effectiveStoreId);
+      setNovoCupom(prev => ({
+        ...prev,
+        badgeBg: prev.badgeBg === "#ff0000" ? colors.bg : prev.badgeBg,
+        badgeText: prev.badgeText === "#ffffff" ? colors.text : prev.badgeText,
+        badgeBorder: prev.badgeBorder === "#ff0000" ? colors.border : prev.badgeBorder,
+      }));
+    }
+  }, [effectiveStore, networkDefaultTheme, effectiveStoreId]);
 
   // Estados do modal de edição
   const [editingCupom, setEditingCupom] = useState<Coupon | null>(null);
@@ -319,10 +283,14 @@ function CuponsIndexPage() {
     const anyCupom = cupom as any;
     const targetType = anyCupom.tipoAlvo || (anyCupom.produtosIds?.length ? "produtos" : (anyCupom.categoriasIds?.length ? "categorias" : "todos"));
     const targets = anyCupom.alvosId || anyCupom.produtosIds || anyCupom.categoriasIds || [];
+    const storeColors = getStoreBadgeColors(cupom.lojaId);
     setEditingCupom({
       ...cupom,
       tipoAlvo: targetType,
       alvosId: targets,
+      badgeBg: cupom.badgeBg || storeColors.bg,
+      badgeText: cupom.badgeText || storeColors.text,
+      badgeBorder: cupom.badgeBorder || storeColors.border,
     });
     setEditSearchTarget("");
   };
@@ -353,7 +321,16 @@ function CuponsIndexPage() {
                 {isGlobalAdmin && (
                   <div className="grid gap-1.5">
                     <label className="text-xs font-bold text-slate-700">Loja Vinculada <span className="text-red-500">*</span></label>
-                    <Select value={novoCupom.lojaId} onValueChange={(v: any) => setNovoCupom({...novoCupom, lojaId: v})}>
+                    <Select value={novoCupom.lojaId} onValueChange={(v: any) => {
+                      const colors = getStoreBadgeColors(v);
+                      setNovoCupom({
+                        ...novoCupom, 
+                        lojaId: v,
+                        badgeBg: colors.bg,
+                        badgeText: colors.text,
+                        badgeBorder: colors.border,
+                      });
+                    }}>
                       <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione a Farmácia" /></SelectTrigger>
                       <SelectContent className="z-[200] max-h-64">
                         {pharmacies.map(loja => (
@@ -620,6 +597,67 @@ function CuponsIndexPage() {
                     </div>
                   )}
                 </div>
+                {/* PERSONALIZAÇÃO DE CORES DO DESTAQUE 'COM CUPOM' POR LOJA */}
+                <div className="border border-slate-200 rounded-xl p-3.5 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Palette className="w-3.5 h-3.5 text-primary" />
+                      Cor do Destaque "Com Cupom" (Desta Loja)
+                    </label>
+                    <span className="text-[11px] text-slate-500">Defina as cores do selo deste cupom</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-2.5 rounded-lg border border-slate-200">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold text-slate-600">Fundo:</label>
+                        <input
+                          type="color"
+                          value={novoCupom.badgeBg || "#ff0000"}
+                          onChange={(e) => setNovoCupom({ ...novoCupom, badgeBg: e.target.value })}
+                          className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                          title="Cor de fundo do selo"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold text-slate-600">Texto:</label>
+                        <input
+                          type="color"
+                          value={novoCupom.badgeText || "#ffffff"}
+                          onChange={(e) => setNovoCupom({ ...novoCupom, badgeText: e.target.value })}
+                          className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                          title="Cor do texto do selo"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold text-slate-600">Borda:</label>
+                        <input
+                          type="color"
+                          value={novoCupom.badgeBorder || "#ff0000"}
+                          onChange={(e) => setNovoCupom({ ...novoCupom, badgeBorder: e.target.value })}
+                          className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                          title="Cor da borda do selo"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Preview do Selo */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold text-slate-400">Prévia:</span>
+                      <div 
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border shadow-2xs transition-all"
+                        style={{
+                          backgroundColor: novoCupom.badgeBg || "#ff0000",
+                          color: novoCupom.badgeText || "#ffffff",
+                          borderColor: novoCupom.badgeBorder || "#ff0000",
+                        }}
+                      >
+                        <Ticket className="w-3.5 h-3.5 shrink-0" />
+                        <span>R$ 27,54 com Cupom</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <DialogFooter className="gap-2 sm:gap-0 mt-2">
@@ -653,11 +691,33 @@ function CuponsIndexPage() {
                     lojaId: targetLojaId,
                     tipoAlvo: novoCupom.tipoAlvo,
                     alvosId: novoCupom.tipoAlvo === "todos" ? [] : novoCupom.alvosId,
+                    badgeBg: novoCupom.badgeBg,
+                    badgeText: novoCupom.badgeText,
+                    badgeBorder: novoCupom.badgeBorder,
                   });
+
+                  // Sincroniza cores com o tema da loja para consistência
+                  if (targetLojaId) {
+                    const targetStore = pharmacies.find(p => p.id === targetLojaId);
+                    if (targetStore) {
+                      updatePharmacy(targetStore.id, {
+                        ...targetStore,
+                        themeColors: {
+                          ...(targetStore.themeColors || {}),
+                          '--coupon-badge-bg': novoCupom.badgeBg,
+                          '--coupon-badge-text': novoCupom.badgeText,
+                          '--coupon-badge-border': novoCupom.badgeBorder,
+                        }
+                      });
+                    }
+                  }
+
                   toast.success("Cupom criado com sucesso para a farmácia!");
                   setIsModalOpen(false);
+                  const resetColors = getStoreBadgeColors(effectiveStoreId);
                   setNovoCupom({
-                    codigo: "", descricao: "", valorDesconto: 0, tipoDesconto: "percentual", valorMinimo: 0, totalDisponiveis: 100, dataTermino: "", lojaId: "", tipoAlvo: "todos", alvosId: []
+                    codigo: "", descricao: "", valorDesconto: 0, tipoDesconto: "percentual", valorMinimo: 0, totalDisponiveis: 100, dataTermino: "", lojaId: "", tipoAlvo: "todos", alvosId: [],
+                    badgeBg: resetColors.bg, badgeText: resetColors.text, badgeBorder: resetColors.border
                   });
                 }}>
                   Salvar Cupom
@@ -905,6 +965,68 @@ function CuponsIndexPage() {
                 )}
               </div>
 
+                {/* PERSONALIZAÇÃO DE CORES DO DESTAQUE 'COM CUPOM' POR LOJA */}
+                <div className="border border-slate-200 rounded-xl p-3.5 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Palette className="w-3.5 h-3.5 text-primary" />
+                      Cor do Destaque "Com Cupom" (Desta Loja)
+                    </label>
+                    <span className="text-[11px] text-slate-500">Defina as cores do selo deste cupom</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-2.5 rounded-lg border border-slate-200">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold text-slate-600">Fundo:</label>
+                        <input
+                          type="color"
+                          value={editingCupom.badgeBg || "#ff0000"}
+                          onChange={(e) => setEditingCupom({ ...editingCupom, badgeBg: e.target.value })}
+                          className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                          title="Cor de fundo do selo"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold text-slate-600">Texto:</label>
+                        <input
+                          type="color"
+                          value={editingCupom.badgeText || "#ffffff"}
+                          onChange={(e) => setEditingCupom({ ...editingCupom, badgeText: e.target.value })}
+                          className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                          title="Cor do texto do selo"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold text-slate-600">Borda:</label>
+                        <input
+                          type="color"
+                          value={editingCupom.badgeBorder || "#ff0000"}
+                          onChange={(e) => setEditingCupom({ ...editingCupom, badgeBorder: e.target.value })}
+                          className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                          title="Cor da borda do selo"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Preview do Selo */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold text-slate-400">Prévia:</span>
+                      <div 
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border shadow-2xs transition-all"
+                        style={{
+                          backgroundColor: editingCupom.badgeBg || "#ff0000",
+                          color: editingCupom.badgeText || "#ffffff",
+                          borderColor: editingCupom.badgeBorder || "#ff0000",
+                        }}
+                      >
+                        <Ticket className="w-3.5 h-3.5 shrink-0" />
+                        <span>R$ 27,54 com Cupom</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               <DialogFooter className="gap-2 sm:gap-0 mt-2">
                 <Button variant="outline" onClick={() => setEditingCupom(null)}>Cancelar</Button>
                 <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold" onClick={async () => {
@@ -913,8 +1035,27 @@ function CuponsIndexPage() {
                   }
                   await updateCoupon(editingCupom.id, {
                     ...editingCupom,
-                    alvosId: editingCupom.tipoAlvo === "todos" ? [] : editingCupom.alvosId
+                    alvosId: editingCupom.tipoAlvo === "todos" ? [] : editingCupom.alvosId,
+                    badgeBg: editingCupom.badgeBg,
+                    badgeText: editingCupom.badgeText,
+                    badgeBorder: editingCupom.badgeBorder,
                   });
+
+                  if (editingCupom.lojaId) {
+                    const targetStore = pharmacies.find(p => p.id === editingCupom.lojaId);
+                    if (targetStore) {
+                      updatePharmacy(targetStore.id, {
+                        ...targetStore,
+                        themeColors: {
+                          ...(targetStore.themeColors || {}),
+                          '--coupon-badge-bg': editingCupom.badgeBg,
+                          '--coupon-badge-text': editingCupom.badgeText,
+                          '--coupon-badge-border': editingCupom.badgeBorder,
+                        }
+                      });
+                    }
+                  }
+
                   toast.success("Cupom atualizado com sucesso!");
                   setEditingCupom(null);
                 }}>
@@ -1001,87 +1142,6 @@ function CuponsIndexPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* CARD DE PERSONALIZAÇÃO DE CORES DO DESTAQUE 'COM CUPOM' */}
-      <Card className="border-slate-200 shadow-sm bg-gradient-to-r from-blue-50/60 via-indigo-50/40 to-white">
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4 text-primary" />
-                <h3 className="font-bold text-slate-800 text-sm md:text-base">
-                  Personalizar Cores do Destaque "Com Cupom"
-                </h3>
-              </div>
-              <p className="text-xs text-slate-500">
-                Altere a cor do texto, do fundo e da borda do selo que aparece nos cards e na página dos produtos elegíveis.
-                {effectiveStore ? ` (Configurando para: ${effectiveStore.nome})` : " (Padrão da Rede)"}
-              </p>
-            </div>
-
-            {/* Live Preview & Pickers */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
-                <div className="flex items-center gap-1.5">
-                  <label className="text-[11px] font-bold text-slate-600">Fundo:</label>
-                  <input
-                    type="color"
-                    value={badgeBg}
-                    onChange={(e) => setBadgeBg(e.target.value)}
-                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
-                    title="Cor de fundo do selo"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <label className="text-[11px] font-bold text-slate-600">Texto:</label>
-                  <input
-                    type="color"
-                    value={badgeText}
-                    onChange={(e) => setBadgeText(e.target.value)}
-                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
-                    title="Cor do texto do selo"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <label className="text-[11px] font-bold text-slate-600">Borda:</label>
-                  <input
-                    type="color"
-                    value={badgeBorder}
-                    onChange={(e) => setBadgeBorder(e.target.value)}
-                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
-                    title="Cor da borda do selo"
-                  />
-                </div>
-              </div>
-
-              {/* Preview do Selo */}
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-slate-400">Prévia:</span>
-                <div 
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border shadow-2xs transition-all"
-                  style={{
-                    backgroundColor: badgeBg,
-                    color: badgeText,
-                    borderColor: badgeBorder,
-                  }}
-                >
-                  <Ticket className="w-3.5 h-3.5 shrink-0" />
-                  <span>R$ 27,54 com Cupom</span>
-                </div>
-              </div>
-
-              <Button
-                size="sm"
-                onClick={handleSaveBadgeColors}
-                disabled={isSavingBadgeColors}
-                className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-8 px-3 ml-auto"
-              >
-                {isSavingBadgeColors ? "Salvando..." : "Salvar Cores"}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
         <div className="p-4 border-b border-slate-100 flex items-center gap-4">

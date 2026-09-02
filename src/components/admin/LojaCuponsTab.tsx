@@ -142,6 +142,9 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
   const [editTipoAlvo, setEditTipoAlvo] = useState<"todos" | "categorias" | "produtos">("todos");
   const [editAlvosId, setEditAlvosId] = useState<string[]>([]);
   const [editSearchTarget, setEditSearchTarget] = useState("");
+  const [editBadgeBg, setEditBadgeBg] = useState("#ff0000");
+  const [editBadgeText, setEditBadgeText] = useState("#ffffff");
+  const [editBadgeBorder, setEditBadgeBorder] = useState("#ff0000");
 
   // Filtro de Categorias no formulário de criação
   const filteredCategories = useMemo(() => {
@@ -257,9 +260,25 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
         lojaId: lojaId,
         tipoAlvo: tipoAlvo,
         alvosId: tipoAlvo === "todos" ? [] : alvosId,
+        badgeBg: badgeBg,
+        badgeText: badgeText,
+        badgeBorder: badgeBorder,
       };
 
       addCoupon(newCoupon as any);
+
+      if (pharmacy) {
+        updatePharmacy(lojaId, {
+          ...pharmacy,
+          themeColors: {
+            ...(pharmacy.themeColors || {}),
+            '--coupon-badge-bg': badgeBg,
+            '--coupon-badge-text': badgeText,
+            '--coupon-badge-border': badgeBorder,
+          }
+        });
+      }
+
       toast.success(`Cupom "${cleanCode}" cadastrado com sucesso para sua unidade!`);
 
       setCodigo("");
@@ -287,6 +306,9 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
     setEditTipoAlvo(targetType);
     setEditAlvosId(targets);
     setEditSearchTarget("");
+    setEditBadgeBg(coupon.badgeBg || badgeBg || "#ff0000");
+    setEditBadgeText(coupon.badgeText || badgeText || "#ffffff");
+    setEditBadgeBorder(coupon.badgeBorder || badgeBorder || "#ff0000");
   };
 
   const handleSaveEditCoupon = async () => {
@@ -318,7 +340,22 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
       dataTermino: editValidade,
       tipoAlvo: editTipoAlvo,
       alvosId: editTipoAlvo === "todos" ? [] : editAlvosId,
+      badgeBg: editBadgeBg,
+      badgeText: editBadgeText,
+      badgeBorder: editBadgeBorder,
     });
+
+    if (pharmacy) {
+      updatePharmacy(lojaId, {
+        ...pharmacy,
+        themeColors: {
+          ...(pharmacy.themeColors || {}),
+          '--coupon-badge-bg': editBadgeBg,
+          '--coupon-badge-text': editBadgeText,
+          '--coupon-badge-border': editBadgeBorder,
+        }
+      });
+    }
 
     toast.success("Cupom atualizado com sucesso!");
     setEditingCoupon(null);
@@ -377,84 +414,6 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
           </div>
         </div>
       </div>
-
-      {/* CARD DE PERSONALIZAÇÃO DE CORES DO DESTAQUE DE CUPOM */}
-      <Card className="border-slate-200 shadow-sm bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white">
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4 text-primary" />
-                <h3 className="font-bold text-slate-800 text-sm md:text-base">Personalizar Cores do Destaque do Cupom</h3>
-              </div>
-              <p className="text-xs text-slate-500">
-                Altere a cor do texto, do fundo e da borda do selo que aparece nos cards e na página dos produtos com cupom.
-              </p>
-            </div>
-
-            {/* Live Preview & Pickers */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
-                <div className="flex items-center gap-1.5">
-                  <label className="text-[11px] font-bold text-slate-600">Fundo:</label>
-                  <input
-                    type="color"
-                    value={badgeBg}
-                    onChange={(e) => setBadgeBg(e.target.value)}
-                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
-                    title="Cor de fundo do selo"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <label className="text-[11px] font-bold text-slate-600">Texto:</label>
-                  <input
-                    type="color"
-                    value={badgeText}
-                    onChange={(e) => setBadgeText(e.target.value)}
-                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
-                    title="Cor do texto do selo"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <label className="text-[11px] font-bold text-slate-600">Borda:</label>
-                  <input
-                    type="color"
-                    value={badgeBorder}
-                    onChange={(e) => setBadgeBorder(e.target.value)}
-                    className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
-                    title="Cor da borda do selo"
-                  />
-                </div>
-              </div>
-
-              {/* Preview do Selo */}
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-slate-400">Prévia:</span>
-                <div 
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border shadow-2xs transition-all"
-                  style={{
-                    backgroundColor: badgeBg,
-                    color: badgeText,
-                    borderColor: badgeBorder,
-                  }}
-                >
-                  <Ticket className="w-3.5 h-3.5 shrink-0" />
-                  <span>R$ 27,54 com Cupom</span>
-                </div>
-              </div>
-
-              <Button
-                size="sm"
-                onClick={handleSaveBadgeColors}
-                disabled={isSavingColors}
-                className="bg-primary text-white font-bold text-xs h-8 px-3 ml-auto"
-              >
-                {isSavingColors ? "Salvando..." : "Salvar Cores"}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulário de Criação de Cupom */}
@@ -678,6 +637,64 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                   onChange={(e) => setValidade(e.target.value)}
                   className="text-sm bg-white"
                 />
+              </div>
+
+              {/* PERSONALIZAÇÃO DE CORES DO DESTAQUE 'COM CUPOM' */}
+              <div className="border border-slate-200 rounded-xl p-3 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-primary" />
+                    Cor do Destaque "Com Cupom"
+                  </Label>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 flex-wrap bg-white p-2 rounded-lg border border-slate-200">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <label className="text-[10px] font-bold text-slate-600">Fundo:</label>
+                      <input
+                        type="color"
+                        value={badgeBg}
+                        onChange={(e) => setBadgeBg(e.target.value)}
+                        className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                        title="Cor de fundo do selo"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <label className="text-[10px] font-bold text-slate-600">Texto:</label>
+                      <input
+                        type="color"
+                        value={badgeText}
+                        onChange={(e) => setBadgeText(e.target.value)}
+                        className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                        title="Cor do texto do selo"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <label className="text-[10px] font-bold text-slate-600">Borda:</label>
+                      <input
+                        type="color"
+                        value={badgeBorder}
+                        onChange={(e) => setBadgeBorder(e.target.value)}
+                        className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                        title="Cor da borda do selo"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preview do Selo */}
+                  <div 
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border shadow-2xs transition-all ml-auto"
+                    style={{
+                      backgroundColor: badgeBg,
+                      color: badgeText,
+                      borderColor: badgeBorder,
+                    }}
+                  >
+                    <Ticket className="w-3 h-3 shrink-0" />
+                    <span>R$ 27,54 com Cupom</span>
+                  </div>
+                </div>
               </div>
 
               <Button type="submit" className="w-full font-bold gap-2 mt-4 bg-primary text-white shadow-sm">
@@ -1060,6 +1077,64 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                     onChange={(e) => setEditValidade(e.target.value)}
                     className="text-sm bg-white"
                   />
+                </div>
+              </div>
+
+              {/* PERSONALIZAÇÃO DE CORES DO DESTAQUE 'COM CUPOM' */}
+              <div className="border border-slate-200 rounded-xl p-3 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-primary" />
+                    Cor do Destaque "Com Cupom"
+                  </Label>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 flex-wrap bg-white p-2 rounded-lg border border-slate-200">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <label className="text-[10px] font-bold text-slate-600">Fundo:</label>
+                      <input
+                        type="color"
+                        value={editBadgeBg}
+                        onChange={(e) => setEditBadgeBg(e.target.value)}
+                        className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                        title="Cor de fundo do selo"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <label className="text-[10px] font-bold text-slate-600">Texto:</label>
+                      <input
+                        type="color"
+                        value={editBadgeText}
+                        onChange={(e) => setEditBadgeText(e.target.value)}
+                        className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                        title="Cor do texto do selo"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <label className="text-[10px] font-bold text-slate-600">Borda:</label>
+                      <input
+                        type="color"
+                        value={editBadgeBorder}
+                        onChange={(e) => setEditBadgeBorder(e.target.value)}
+                        className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                        title="Cor da borda do selo"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preview do Selo */}
+                  <div 
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border shadow-2xs transition-all ml-auto"
+                    style={{
+                      backgroundColor: editBadgeBg,
+                      color: editBadgeText,
+                      borderColor: editBadgeBorder,
+                    }}
+                  >
+                    <Ticket className="w-3.5 h-3.5 shrink-0" />
+                    <span>R$ 27,54 com Cupom</span>
+                  </div>
                 </div>
               </div>
 
