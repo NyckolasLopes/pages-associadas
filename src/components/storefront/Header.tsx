@@ -1418,19 +1418,6 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
               Todas as categorias
             </Link>
           </li>
-
-          {hasStoreCupons && (
-            <li className="shrink-0 flex items-center">
-              <Link
-                to="/$storeSlug/cupons"
-                params={{ storeSlug }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] lg:text-[12px] xl:text-[13px] font-black bg-amber-400 text-slate-950 hover:bg-amber-300 transition-all shadow-xs border border-amber-300/60"
-              >
-                <Ticket className="h-3.5 w-3.5 text-slate-950" />
-                <span>Cupons</span>
-              </Link>
-            </li>
-          )}
           
           {cats.map((c) => {
             const storeIconKey = (selectedPharmacyId && storeCategoryIcons?.[selectedPharmacyId]?.[c.id])
