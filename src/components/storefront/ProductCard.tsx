@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from "@tanstack/react-router";
-import { Heart, ShoppingBasket, Zap, Star, StarHalf, Calendar, Stethoscope, Truck, Bell, Flame, Gift, ShoppingBag, Youtube } from "lucide-react";
+import { Heart, ShoppingBasket, Zap, Star, Calendar, Stethoscope, Bell, Flame, Gift, ShoppingBag, Youtube } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import type { Produto } from "@/types";
 import { brl, getInstallmentText, productImage, tarjaColor, checkIsGenerico, formatPbmName } from "@/lib/format";
@@ -18,15 +18,11 @@ import { useAdminProducts } from "@/stores/products";
 import { useReviews } from "@/stores/reviews";
 import { useSelos } from "@/stores/selos";
 import { getDeterministicStock } from "@/lib/stock";
-import { getCityFromCep, isCampanhaAtiva, calculateCepDistanceAsync, getDeliveryEstimation, isRecentlyAdded, getLevePaguePromotion, getPadraoPromotionWithTimer } from "@/lib/utils";
+import { getCityFromCep, isCampanhaAtiva, calculateCepDistanceAsync, isRecentlyAdded, getLevePaguePromotion, getPadraoPromotionWithTimer } from "@/lib/utils";
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
 import { PromoCardBadge } from "./PromoCountdown";
 import { safeSlugify, SYSTEM_PAGES } from "@/hooks/useActivePharmacy";
-
-// Removed isSameDayDeliveryWindow
-
-const WHATSAPP_PHONE = "5551999999999"; // mock
 
 const PromoIcon = ({ id, className, style }: { id: string, className?: string, style?: React.CSSProperties }) => {
   if (id === 'gift') return <Gift className={className} style={style} />;
@@ -294,7 +290,8 @@ function ProductCardComponent({
   const fav = useFavorites((s) => s.ids.includes(p.id));
   const toggleFav = useFavorites((s) => s.toggle);
 
-  const [mounted, setMounted] = useState(false);  const { getAvaliacoesPorProduto } = useReviews();
+  const [mounted, setMounted] = useState(false);
+  const { getAvaliacoesPorProduto } = useReviews();
   
   useEffect(() => {
     setMounted(true);
@@ -302,9 +299,6 @@ function ProductCardComponent({
   }, []);
 
   const isGenerico = checkIsGenerico(p);
-  const wppText = encodeURIComponent(
-    `Olá! Quero comprar: ${p.nome} (EAN ${p.ean}) — ${brl(p.precoPor)}`,
-  );
   
   const allSelos = useSelos((s) => s.selos);
   const productSelosIds = new Set(p.selosIds || []);
@@ -317,7 +311,6 @@ function ProductCardComponent({
       (isGenerico && (s.id === "gen" || s.nome.toLowerCase().includes("genérico") || s.nome.toLowerCase().includes("generico")))
     )
   );
-  const servicoSelo = allSelos.find(s => s.id === "servico");
   
   const normalizeForMatch = (text: string) => (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
   const activeSeloNormalizedNames = activeSelos.map(s => normalizeForMatch(s.nome));
@@ -328,14 +321,16 @@ function ProductCardComponent({
     ? safeSlugify(activePharm.slug)
     : (pharmacies[0]?.slug ? safeSlugify(pharmacies[0].slug) : "poa");
 
+  const hasMedicamentoTags = isMedicamento && ((p.tarja && p.tarja !== "none") || p.retemReceita !== undefined);
+
   return (
-    <article className="group/card bg-card rounded-xl border hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative h-full w-full">
+    <article className="group/card bg-card rounded-xl border border-slate-200/90 hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative h-full w-full">
       {/* Floating Actions */}
-      <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-2">
+      <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1.5">
         {p.youtubeVideoUrl && (
-          <div className="bg-black/80 backdrop-blur text-white text-[10px] font-bold px-2 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
-            <Youtube className="h-3.5 w-3.5 text-red-500 fill-current" />
-            <span className="tracking-wide">Vídeo do Produto</span>
+          <div className="bg-black/80 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm flex items-center gap-1">
+            <Youtube className="h-3 w-3 text-red-500 fill-current" />
+            <span className="tracking-wide">Vídeo</span>
           </div>
         )}
         <button
@@ -354,9 +349,9 @@ function ProductCardComponent({
             }
             toggleFav(p.id, finalPrecoPor);
           }}
-          className="h-8 w-8 rounded-full bg-white/90 backdrop-blur border shadow-sm flex items-center justify-center hover:bg-white text-muted-foreground"
+          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white/95 backdrop-blur border shadow-xs flex items-center justify-center hover:bg-white text-muted-foreground transition-transform active:scale-95"
         >
-          <Heart className={`h-4 w-4 transition ${mounted && fav ? "fill-red-500 text-red-500" : ""}`} />
+          <Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 transition ${mounted && fav ? "fill-red-500 text-red-500" : ""}`} />
         </button>
         <button
           type="button"
@@ -365,18 +360,19 @@ function ProductCardComponent({
             e.preventDefault();
             add({ ...p, estoque: maxStock });
           }}
-          className="h-8 w-8 rounded-full bg-white/90 backdrop-blur border shadow-sm flex items-center justify-center hover:bg-white text-muted-foreground relative"
+          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white/95 backdrop-blur border shadow-xs flex items-center justify-center hover:bg-white text-muted-foreground relative transition-transform active:scale-95"
         >
-          {isService ? <Calendar className="h-4 w-4 text-teal-600" /> : <ShoppingBasket className="h-4 w-4" />}
+          {isService ? <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-teal-600" /> : <ShoppingBasket className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
           {!isService && <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-primary text-white flex items-center justify-center rounded-full text-[9px] font-bold">+</span>}
         </button>
       </div>
 
+      {/* Product Image Link */}
       <Link
         to="/$storeSlug/produto/$slug"
         preload="intent"
         params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
-        className="relative aspect-square bg-white p-4 block"
+        className="relative aspect-square bg-white p-2.5 sm:p-3.5 block overflow-hidden"
       >
         <img
           src={productImage(p)}
@@ -385,63 +381,72 @@ function ProductCardComponent({
           decoding="async"
           width={400}
           height={400}
-          className={`w-full h-full object-contain transition-transform duration-500 md:group-hover/card:scale-110 ${maxStock === 0 && !isService ? 'grayscale opacity-75' : ''}`}
+          className={`w-full h-full object-contain transition-transform duration-300 md:group-hover/card:scale-105 ${maxStock === 0 && !isService ? 'grayscale opacity-75' : ''}`}
         />
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none items-start">
           {activeSelos.map(selo => (
-            <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 w-max">
-              {selo.id === 'servico' && <Stethoscope className="h-3 w-3" />}
+            <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1 w-max">
+              {selo.id === 'servico' && <Stethoscope className="h-2.5 w-2.5" />}
               {selo.id === 'servico' ? (selo.nome?.toUpperCase() || "SERVIÇO") : selo.nome}
             </span>
           ))}
         </div>
       </Link>
 
-      <div className="p-3 flex-1 flex flex-col">
-        {/* Promotional Badge (Timer / Leve + Pague) */}
-        {activePromo && (
-          <div className="mb-1.5">
-            <PromoCardBadge promo={activePromo} precoOriginal={finalPrecoDe} />
-          </div>
-        )}
+      {/* Product Content */}
+      <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between">
+        <div>
+          {/* Promotional Badge (Timer / Leve + Pague) */}
+          {activePromo && (
+            <div className="mb-1.5">
+              <PromoCardBadge promo={activePromo} precoOriginal={finalPrecoDe} />
+            </div>
+          )}
 
-        {/* Marca em negrito */}
-        <div className="text-[11px] uppercase font-bold text-muted-foreground truncate mb-1">
-          {p.marca}
-        </div>
-        <Link
-          to="/$storeSlug/produto/$slug"
-          preload="intent"
-          params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
-          style={{ color: 'var(--headings, inherit)' }}
-          className="text-sm md:text-[15px] font-bold line-clamp-2 h-[2.5em] hover:text-primary-dark leading-tight overflow-hidden"
-        >
-          {p.nome}
-        </Link>
+          {/* Marca */}
+          {p.marca && (
+            <div className="text-[10px] sm:text-[11px] uppercase font-bold text-muted-foreground truncate mb-0.5">
+              {p.marca}
+            </div>
+          )}
+
+          {/* Nome do Produto */}
+          <Link
+            to="/$storeSlug/produto/$slug"
+            preload="intent"
+            params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
+            style={{ color: 'var(--headings, inherit)' }}
+            className="text-xs sm:text-sm font-bold line-clamp-2 min-h-[2.4em] hover:text-primary-dark leading-snug overflow-hidden block"
+            title={p.nome}
+          >
+            {p.nome}
+          </Link>
+
+          {/* Preços */}
           <div className="flex flex-col mt-1">
             {!isAvailable ? (
-              <div className="min-h-[50px] flex flex-col justify-center">
-                <span className="text-sm font-semibold text-slate-400">
+              <div className="py-0.5 flex flex-col justify-center">
+                <span className="text-xs sm:text-sm font-semibold text-slate-400">
                   Preço indisponível
                 </span>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   Sem estoque no momento
                 </span>
               </div>
             ) : p.precoSobConsulta ? (
-              <div className="text-lg sm:text-xl font-bold text-slate-700 min-h-[50px] flex items-center">
+              <div className="text-sm sm:text-base font-bold text-slate-700 py-0.5 flex items-center">
                 Preço sob consulta
               </div>
             ) : levePaguePromo ? (
-              <div className="flex flex-col justify-center min-h-[50px] border-l-2 border-primary px-2">
+              <div className="flex flex-col justify-center border-l-2 border-primary px-2 py-0.5 my-0.5">
                 <div className="flex items-center gap-1">
-                  <span className="text-sm font-bold text-primary">{levePaguePromo.levePague_quantidade} por</span>
-                  <div className="text-lg sm:text-2xl font-bold text-foreground" style={{ color: 'var(--price-main, inherit)' }}>
+                  <span className="text-xs font-bold text-primary">{levePaguePromo.levePague_quantidade} por</span>
+                  <div className="text-base sm:text-xl font-bold text-foreground" style={{ color: 'var(--price-main, inherit)' }}>
                     {brl(levePaguePromo.levePague_precoPorItem || 0)}
                   </div>
-                  <span className="text-sm font-medium text-primary">cada</span>
+                  <span className="text-xs font-medium text-primary">cada</span>
                 </div>
-                <div className="text-[11px] text-muted-foreground font-semibold mt-0.5">
+                <div className="text-[10px] text-muted-foreground font-semibold">
                   1 por {brl(finalPrecoPor)}
                 </div>
               </div>
@@ -449,24 +454,22 @@ function ProductCardComponent({
               <>
                 {finalPrecoDe > finalPrecoPor ? (
                   <div 
-                    className="text-xs sm:text-sm text-muted-foreground line-through decoration-red-500/50 min-h-[20px]"
+                    className="text-[11px] sm:text-xs text-muted-foreground line-through decoration-red-500/50 leading-tight"
                     style={{ color: 'var(--price-old, inherit)' }}
                   >
                     {brl(finalPrecoDe)}
                   </div>
-                ) : (
-                  <div className="min-h-[20px]" aria-hidden="true" />
-                )}
-                <div className="flex items-center gap-2">
+                ) : null}
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <div 
-                    className="text-lg sm:text-2xl font-bold text-foreground truncate"
+                    className="text-base sm:text-xl font-bold text-foreground leading-tight"
                     style={{ color: 'var(--price-main, inherit)' }}
                   >
                     {brl(finalPrecoPor)}
                   </div>
                   {desconto > 0 && (
                     <span 
-                      className="inline-flex shrink-0 items-center text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full"
+                      className="inline-flex shrink-0 items-center text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                       style={{
                         backgroundColor: 'var(--price-discount-badge-bg, #e6f4ea)',
                         color: 'var(--price-discount-badge-text, #137333)',
@@ -478,7 +481,7 @@ function ProductCardComponent({
                 </div>
 
                 {getInstallmentText(finalPrecoPor) && (
-                  <div className="text-[10px] text-slate-500 font-medium h-[15px]">
+                  <div className="text-[10px] text-slate-500 font-medium leading-tight">
                     {getInstallmentText(finalPrecoPor)}
                   </div>
                 )}
@@ -486,111 +489,113 @@ function ProductCardComponent({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1 mt-1 mb-1 min-h-[18px]">
-            {isMedicamento && p.tarja && p.tarja !== "none" && (
-              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm ${tarjaColor(p.tarja)}`}>
-                {p.tarja === "Vermelha" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
-              </span>
-            )}
-            {isMedicamento && p.retemReceita ? (
-              <span className="text-[9px] px-1.5 py-0.5 rounded shadow-sm bg-red-600 text-white font-bold">
-                Retém receita
-              </span>
-            ) : (isMedicamento && p.retemReceita === false ? (
-              <span className="text-[9px] px-1.5 py-0.5 rounded shadow-sm bg-slate-100 text-slate-700 font-bold border border-slate-200">
-                Não retém receita
-              </span>
-            ) : null)}
-          </div>
+          {/* Tarjas e Receita */}
+          {hasMedicamentoTags && (
+            <div className="flex flex-wrap gap-1 mt-1 mb-0.5">
+              {p.tarja && p.tarja !== "none" && (
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shadow-2xs ${tarjaColor(p.tarja)}`}>
+                  {p.tarja === "Vermelha" || p.tarja === "Amarela" ? `Tarja ${p.tarja}` : p.tarja}
+                </span>
+              )}
+              {p.retemReceita === true ? (
+                <span className="text-[9px] px-1.5 py-0.5 rounded shadow-2xs bg-red-600 text-white font-bold">
+                  Retém receita
+                </span>
+              ) : p.retemReceita === false ? (
+                <span className="text-[9px] px-1.5 py-0.5 rounded shadow-2xs bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                  Não retém receita
+                </span>
+              ) : null}
+            </div>
+          )}
           
+          {/* Disclaimer para medicamentos */}
           {isMedicamento && (
-            <div className="text-[7.5px] leading-[1.2] font-semibold text-slate-500 uppercase mb-2 line-clamp-2" title="AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO.">
+            <div className="text-[7.5px] leading-tight font-semibold text-slate-400 uppercase mt-0.5 mb-1 line-clamp-1" title="AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO.">
               {p.alertaTexto || "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."}
             </div>
           )}
 
           {isService && (
-            <div className="text-[11px] text-primary font-bold mb-3 inline-flex items-center gap-1">
+            <div className="text-[10px] text-primary font-bold my-1 inline-flex items-center gap-1">
               Agendamento rápido <Zap className="h-3 w-3 fill-primary text-primary" />
             </div>
           )}
 
-          <div className="flex flex-col gap-2 mt-auto">
-            {isAvailable ? (
-              <button 
-                onClick={(e) => { 
-                  e.preventDefault(); 
-                  if (!p.precoSobConsulta) {
-                    add({ ...p, estoque: Math.max(1, maxStock) }); 
-                  } else {
-                    window.location.href = `/${(params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao"}/produto/${p.url || p.id}`;
-                  }
-                }}
-                style={
-                  activePromo?.corBotao
-                    ? { backgroundColor: activePromo.corBotao, color: activePromo.corTextoBotao || '#ffffff' }
-                    : (!isService && !p.precoSobConsulta
-                        ? { backgroundColor: 'var(--btn-primary-bg, var(--primary))', color: 'var(--btn-primary-text, var(--primary-foreground, #ffffff))' }
-                        : undefined)
-                }
-                className={`w-full font-bold text-xs py-2.5 rounded transition flex items-center justify-center gap-2 shadow-sm hover:brightness-110 active:scale-[0.99] ${
-                  activePromo?.corBotao
-                    ? ''
-                    : isService
-                    ? 'bg-teal-600 hover:bg-teal-700 text-white'
-                    : p.precoSobConsulta
-                    ? 'bg-slate-800 hover:bg-slate-900 text-white'
-                    : 'bg-primary hover:bg-primary-dark text-white'
-                }`}
-              >
-                {isService ? "AGENDAR" : (p.precoSobConsulta ? "CONSULTAR PREÇO" : (
-                  <>
-                    <ShoppingBasket className="h-4 w-4" />
-                    <span>{activePromo?.textoBotao || "COMPRAR"}</span>
-                  </>
-                ))}
-              </button>
-            ) : (
-              <div className="flex flex-col gap-2 w-full mt-auto">
-                <span className="w-full bg-slate-200 text-slate-500 font-bold text-xs py-1.5 rounded text-center">
-                  INDISPONÍVEL
-                </span>
-                <button 
-                  onClick={(e) => { e.preventDefault(); setWaitlistOpen(true); }}
-                  className="w-full bg-white border-2 border-slate-200 hover:border-primary hover:text-primary text-slate-600 font-bold text-xs py-2 rounded flex items-center justify-center gap-1.5 transition"
-                >
-                  <Bell className="h-3.5 w-3.5" />
-                  AVISE-ME
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-
-
-        <div className="mt-auto pt-3 flex flex-col gap-1">
+          {/* Oferta / Selo Extra */}
           {isLojaPromoActiva && isStoreContext && (
-              <span className="inline-block self-start text-[10px] font-black bg-red-600 text-white px-2 py-0.5 rounded uppercase tracking-wider mb-1">
-                EM OFERTA
-              </span>
-            )}
-            {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (() => {
-              const normalizedPSelo = normalizeForMatch(p.selo);
-              const isSeloServicoLinked = p.selosIds?.includes('servico');
-              const isSeloGenLinked = p.selosIds?.includes('gen');
-              
-              if (activeSeloNormalizedNames.includes(normalizedPSelo)) return false;
-              if (isSeloServicoLinked && normalizedPSelo.includes("SERVICO")) return false;
-              if (isSeloGenLinked && normalizedPSelo.includes("GENERICO")) return false;
-              
-              return true;
-            })() && (
-            <span className="inline-block self-start text-[10px] font-bold bg-accent text-accent-foreground px-2 py-0.5 rounded">
+            <span className="inline-block self-start text-[9px] font-black bg-red-600 text-white px-1.5 py-0.5 rounded uppercase tracking-wider my-0.5">
+              EM OFERTA
+            </span>
+          )}
+          {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && (() => {
+            const normalizedPSelo = normalizeForMatch(p.selo);
+            const isSeloServicoLinked = p.selosIds?.includes('servico');
+            const isSeloGenLinked = p.selosIds?.includes('gen');
+            
+            if (activeSeloNormalizedNames.includes(normalizedPSelo)) return false;
+            if (isSeloServicoLinked && normalizedPSelo.includes("SERVICO")) return false;
+            if (isSeloGenLinked && normalizedPSelo.includes("GENERICO")) return false;
+            
+            return true;
+          })() && (
+            <span className="inline-block self-start text-[9px] font-bold bg-accent text-accent-foreground px-1.5 py-0.5 rounded my-0.5">
               {formatPbmName(p.selo)}
             </span>
           )}
-          
+        </div>
+
+        {/* Botão de Compra */}
+        <div className="flex flex-col gap-1.5 mt-2 pt-1">
+          {isAvailable ? (
+            <button 
+              onClick={(e) => { 
+                e.preventDefault(); 
+                if (!p.precoSobConsulta) {
+                  add({ ...p, estoque: Math.max(1, maxStock) }); 
+                } else {
+                  window.location.href = `/${(params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao"}/produto/${p.url || p.id}`;
+                }
+              }}
+              style={
+                activePromo?.corBotao
+                  ? { backgroundColor: activePromo.corBotao, color: activePromo.corTextoBotao || '#ffffff' }
+                  : (!isService && !p.precoSobConsulta
+                      ? { backgroundColor: 'var(--btn-primary-bg, var(--primary))', color: 'var(--btn-primary-text, var(--primary-foreground, #ffffff))' }
+                      : undefined)
+              }
+              className={`w-full font-bold text-xs py-2 sm:py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs hover:brightness-110 active:scale-[0.99] ${
+                activePromo?.corBotao
+                  ? ''
+                  : isService
+                  ? 'bg-teal-600 hover:bg-teal-700 text-white'
+                  : p.precoSobConsulta
+                  ? 'bg-slate-800 hover:bg-slate-900 text-white'
+                  : 'bg-primary hover:bg-primary-dark text-white'
+              }`}
+            >
+              {isService ? "AGENDAR" : (p.precoSobConsulta ? "CONSULTAR PREÇO" : (
+                <>
+                  <ShoppingBasket className="h-3.5 w-3.5" />
+                  <span>{activePromo?.textoBotao || "COMPRAR"}</span>
+                </>
+              ))}
+            </button>
+          ) : (
+            <div className="flex flex-col gap-1.5 w-full">
+              <span className="w-full bg-slate-100 text-slate-500 font-bold text-[11px] py-1.5 rounded-lg text-center border border-slate-200">
+                INDISPONÍVEL
+              </span>
+              <button 
+                onClick={(e) => { e.preventDefault(); setWaitlistOpen(true); }}
+                className="w-full bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-600 font-bold text-[11px] py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition"
+              >
+                <Bell className="h-3 w-3" />
+                AVISE-ME
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <Dialog open={waitlistOpen} onOpenChange={setWaitlistOpen}>
@@ -620,5 +625,3 @@ function ProductCardComponent({
 }
 
 export const ProductCard = React.memo(ProductCardComponent);
-
-
