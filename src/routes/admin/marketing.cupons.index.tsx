@@ -134,6 +134,8 @@ function CuponsIndexPage() {
     return allProducts.filter((p: any) => 
       (p.nome && p.nome.toLowerCase().includes(q)) || 
       (p.marca && p.marca.toLowerCase().includes(q)) ||
+      (p.ean && p.ean.toLowerCase().includes(q)) ||
+      (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q))
     ).slice(0, 50);
   }, [allProducts, searchTarget]);
@@ -151,6 +153,8 @@ function CuponsIndexPage() {
     return allProducts.filter((p: any) => 
       (p.nome && p.nome.toLowerCase().includes(q)) || 
       (p.marca && p.marca.toLowerCase().includes(q)) ||
+      (p.ean && p.ean.toLowerCase().includes(q)) ||
+      (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q))
     ).slice(0, 50);
   }, [allProducts, editSearchTarget]);
@@ -427,10 +431,10 @@ function CuponsIndexPage() {
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <Input
-                          placeholder="Buscar categoria..."
+                          placeholder={`Buscar ${novoCupom.tipoAlvo === "categorias" ? "categoria por nome..." : "produto por nome, marca ou EAN..."}`}
                           value={searchTarget}
                           onChange={(e) => setSearchTarget(e.target.value)}
-                          className="pl-8 h-8 text-xs bg-white"
+                          className="pl-8 text-xs bg-white h-8"
                         />
                       </div>
 
@@ -476,10 +480,10 @@ function CuponsIndexPage() {
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <Input
-                          placeholder="Buscar produto por nome, marca ou SKU..."
+                          placeholder="Buscar produto por nome, marca ou EAN..."
                           value={searchTarget}
                           onChange={(e) => setSearchTarget(e.target.value)}
-                          className="pl-8 h-8 text-xs bg-white"
+                          className="pl-8 text-xs bg-white h-8"
                         />
                       </div>
 
@@ -522,7 +526,9 @@ function CuponsIndexPage() {
                                 <p className="font-semibold truncate text-[11px] leading-tight">{prod.nome}</p>
                                 <div className="flex items-center gap-2 text-[10px] text-slate-400">
                                   {prod.marca && <span>{prod.marca}</span>}
-                                  {prod.sku && <span>SKU: {prod.sku}</span>}
+                                  {(prod.ean || (prod as any).codigoBarras || prod.sku) && (
+                                    <span>EAN: {prod.ean || (prod as any).codigoBarras || prod.sku}</span>
+                                  )}
                                   <span className="font-bold text-primary ml-auto">{brl(prod.precoPor || prod.preco || 0)}</span>
                                 </div>
                               </div>
@@ -734,10 +740,10 @@ function CuponsIndexPage() {
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <Input
-                        placeholder="Buscar categoria..."
+                        placeholder={`Buscar ${editingCupom.tipoAlvo === "categorias" ? "categoria por nome..." : "produto por nome, marca ou EAN..."}`}
                         value={editSearchTarget}
                         onChange={(e) => setEditSearchTarget(e.target.value)}
-                        className="pl-8 h-8 text-xs bg-white"
+                        className="pl-8 text-xs bg-white h-8"
                       />
                     </div>
 
@@ -798,7 +804,9 @@ function CuponsIndexPage() {
                               <p className="font-semibold truncate text-[11px] leading-tight">{prod.nome}</p>
                               <div className="flex items-center gap-2 text-[10px] text-slate-400">
                                 {prod.marca && <span>{prod.marca}</span>}
-                                {prod.sku && <span>SKU: {prod.sku}</span>}
+                                {(prod.ean || (prod as any).codigoBarras || prod.sku) && (
+                                  <span>EAN: {prod.ean || (prod as any).codigoBarras || prod.sku}</span>
+                                )}
                                 <span className="font-bold text-primary ml-auto">{brl(prod.precoPor || prod.preco || 0)}</span>
                               </div>
                             </div>
@@ -884,7 +892,9 @@ function CuponsIndexPage() {
                             <p className="font-bold truncate text-slate-800 leading-tight">{prod.nome}</p>
                             <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
                               {prod.marca && <span>{prod.marca}</span>}
-                              {prod.sku && <span>SKU: {prod.sku}</span>}
+                              {(prod.ean || (prod as any).codigoBarras || prod.sku) && (
+                                <span>EAN: {prod.ean || (prod as any).codigoBarras || prod.sku}</span>
+                              )}
                               <span className="font-bold text-primary ml-auto">{brl(prod.precoPor || prod.preco || 0)}</span>
                             </div>
                           </div>

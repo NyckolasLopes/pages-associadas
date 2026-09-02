@@ -155,6 +155,8 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
     return allProducts.filter((p: any) => 
       (p.nome && p.nome.toLowerCase().includes(q)) || 
       (p.marca && p.marca.toLowerCase().includes(q)) ||
+      (p.ean && p.ean.toLowerCase().includes(q)) ||
+      (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q)) ||
       (Array.isArray(p.principiosAtivos) && p.principiosAtivos.some((pa: any) => String(typeof pa === 'string' ? pa : pa.nome).toLowerCase().includes(q)))
     ).slice(0, 50);
@@ -173,6 +175,8 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
     return allProducts.filter((p: any) => 
       (p.nome && p.nome.toLowerCase().includes(q)) || 
       (p.marca && p.marca.toLowerCase().includes(q)) ||
+      (p.ean && p.ean.toLowerCase().includes(q)) ||
+      (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q))
     ).slice(0, 50);
   }, [allProducts, editSearchTarget]);
@@ -540,7 +544,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                         <Input
                           value={searchTarget}
                           onChange={(e) => setSearchTarget(e.target.value)}
-                          placeholder={`Buscar ${tipoAlvo === "categorias" ? "categoria..." : "produto por nome, marca ou SKU..."}`}
+                          placeholder={`Buscar ${tipoAlvo === "categorias" ? "categoria por nome..." : "produto por nome, marca ou EAN..."}`}
                           className="pl-8 h-8 text-xs bg-white"
                         />
                       </div>
@@ -621,7 +625,10 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                                   <div className="font-bold truncate text-slate-800">{prod.nome}</div>
                                   <div className="flex items-center gap-2 text-[10px] text-slate-400">
                                     <span>{prod.marca || "Associadas"}</span>
-                                    {prod.precoPor ? <span className="font-bold text-slate-700">{brl(prod.precoPor)}</span> : null}
+                                    {(prod.ean || prod.codigoBarras || prod.sku) && (
+                                      <span>EAN: {prod.ean || prod.codigoBarras || prod.sku}</span>
+                                    )}
+                                    {prod.precoPor ? <span className="font-bold text-slate-700 ml-auto">{brl(prod.precoPor)}</span> : null}
                                   </div>
                                 </div>
                               </label>
@@ -852,7 +859,12 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-sm text-slate-800 truncate">{prod.nome}</div>
-                          <div className="text-xs text-slate-400">{prod.marca || "Associadas"}</div>
+                          <div className="text-xs text-slate-400 flex items-center gap-2">
+                            <span>{prod.marca || "Associadas"}</span>
+                            {(prod.ean || prod.codigoBarras || prod.sku) && (
+                              <span>EAN: {prod.ean || prod.codigoBarras || prod.sku}</span>
+                            )}
+                          </div>
                         </div>
                         {prod.precoPor ? (
                           <div className="text-right shrink-0 font-bold text-primary text-sm">
@@ -963,7 +975,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                       <Input
                         value={editSearchTarget}
                         onChange={(e) => setEditSearchTarget(e.target.value)}
-                        placeholder={`Buscar ${editTipoAlvo === "categorias" ? "categoria..." : "produto..."}`}
+                        placeholder={`Buscar ${editTipoAlvo === "categorias" ? "categoria por nome..." : "produto por nome, marca ou EAN..."}`}
                         className="pl-8 h-8 text-xs bg-white"
                       />
                     </div>
@@ -1006,10 +1018,15 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
                                 alt=""
                                 className="h-7 w-7 object-contain rounded bg-white border shrink-0"
                               />
-                              <div className="flex-1 min-w-0">
-                                <div className="font-bold truncate text-slate-800">{prod.nome}</div>
-                                <div className="text-[10px] text-slate-400">{prod.marca || "Associadas"}</div>
-                              </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold truncate text-slate-800">{prod.nome}</div>
+                                  <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                    <span>{prod.marca || "Associadas"}</span>
+                                    {(prod.ean || prod.codigoBarras || prod.sku) && (
+                                      <span>EAN: {prod.ean || prod.codigoBarras || prod.sku}</span>
+                                    )}
+                                  </div>
+                                </div>
                             </label>
                           );
                         })
