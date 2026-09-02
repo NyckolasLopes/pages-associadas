@@ -224,12 +224,12 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       alvosId: coupon.alvosId || []
     };
 
-    // 1. Atualiza memória e localStorage imediatamente
+    // 1. Atualiza memória e localStorage imediatamente com ID temporário
     const updatedCupons = [newCoupon, ...get().cupons.filter(c => c.codigo !== newCoupon.codigo || c.lojaId !== newCoupon.lojaId)];
     set({ cupons: updatedCupons });
     saveMarketingCache(updatedCupons, get().promocoes, get().lojaPromocoes);
 
-    // 2. Persiste no Supabase
+    // 2. Persiste no Supabase e captura o ID real gerado pelo banco
     try {
       const dbCoupon = {
         codigo: newCoupon.codigo,
@@ -252,7 +252,16 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
         tipo_alvo: newCoupon.tipoAlvo || "todos",
         alvos_id: newCoupon.alvosId || []
       };
-      await supabase.from('cupons' as any).insert(dbCoupon);
+      const { data: inserted } = await supabase.from('cupons' as any).insert(dbCoupon).select().single();
+      // Substitui o ID temporário pelo ID real do banco
+      if (inserted?.id) {
+        const realId = String(inserted.id);
+        const cuponsWithRealId = get().cupons.map(c =>
+          c.id === newCoupon.id ? { ...c, id: realId } : c
+        );
+        set({ cupons: cuponsWithRealId });
+        saveMarketingCache(cuponsWithRealId, get().promocoes, get().lojaPromocoes);
+      }
     } catch (e) {
       console.error("Erro ao inserir cupom no Supabase:", e);
     }
@@ -294,8 +303,33 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       if (updatedFields.numeroUtilizacoes !== undefined) dbUpdate.numero_utilizacoes = updatedFields.numeroUtilizacoes;
       if (updatedFields.tipoAlvo !== undefined) dbUpdate.tipo_alvo = updatedFields.tipoAlvo;
       if (updatedFields.alvosId !== undefined) dbUpdate.alvos_id = updatedFields.alvosId;
-      
-      await supabase.from('cupons' as any).update(dbUpdate).eq('id', id);
+
+      // Verifica se o id é um ID real do banco (numérico/UUID) ou um ID local temporário
+      const isLocalId = id.startsWith('cupom-');
+      if (isLocalId) {
+        // ID temporário: busca pelo código + loja para encontrar a linha correta no banco
+        const currentCoupon = get().cupons.find(c => c.id === id);
+        if (currentCoupon) {
+          let q = supabase.from('cupons' as any).update(dbUpdate).eq('codigo', currentCoupon.codigo);
+          if (currentCoupon.lojaId) {
+            q = q.eq('loja_id', currentCoupon.lojaId);
+          } else {
+            q = q.is('loja_id', null);
+          }
+          const { data: updated } = await q.select().single();
+          // Atualiza o ID local com o ID real do banco
+          if (updated?.id) {
+            const realId = String(updated.id);
+            const cuponsWithRealId = get().cupons.map(c =>
+              c.id === id ? { ...c, id: realId } : c
+            );
+            set({ cupons: cuponsWithRealId });
+            saveMarketingCache(cuponsWithRealId, get().promocoes, get().lojaPromocoes);
+          }
+        }
+      } else {
+        await supabase.from('cupons' as any).update(dbUpdate).eq('id', id);
+      }
     } catch (e) {
       console.error("Erro ao atualizar cupom no Supabase:", e);
     }
