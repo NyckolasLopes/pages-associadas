@@ -59,9 +59,9 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
       await updatePharmacy(pharmacy.id, { ...pharmacy, ...formData } as Pharmacy);
       toast.success("Configurações de logística salvas com sucesso!");
       onOpenChange(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao salvar configurações.");
+      toast.error(`Erro ao salvar configurações: ${err?.message || "Verifique os dados informados."}`);
     } finally {
       setIsSaving(false);
     }

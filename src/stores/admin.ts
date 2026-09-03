@@ -542,30 +542,7 @@ export function getInitialCachedPharmacies(): Pharmacy[] {
 export function saveCachedPharmacies(pharmacies: Pharmacy[]) {
   if (typeof window === 'undefined') return;
   try {
-    const minimal = pharmacies.map(p => ({
-      id: p.id,
-      slug: p.slug,
-      nome: p.nome,
-      apelido: p.apelido,
-      razaoSocial: p.razaoSocial,
-      categoriaAssociado: p.categoriaAssociado,
-      isPleno: p.isPleno,
-      logoUrl: p.logoUrl,
-      faviconUrl: p.faviconUrl,
-      loadingLogoUrl: p.loadingLogoUrl,
-      footerLogoUrl: p.footerLogoUrl,
-      topBarBgColor: p.topBarBgColor,
-      topBarTextColor: p.topBarTextColor,
-      themeColors: p.themeColors,
-      offersServices: p.offersServices,
-      virtualStoreStatus: p.virtualStoreStatus,
-      cidade: p.cidade,
-      uf: p.uf,
-      bairro: p.bairro,
-      telefone: p.telefone,
-      whatsapp: p.whatsapp,
-    }));
-    localStorage.setItem(PHARMACIES_CACHE_KEY, JSON.stringify(minimal));
+    localStorage.setItem(PHARMACIES_CACHE_KEY, JSON.stringify(pharmacies));
   } catch { /* ignore */ }
 }
 
@@ -1577,50 +1554,63 @@ export const useAdmin = create<AdminState>()(
         };
 
         const baseUpdatePayload = {
-          ativa: p.ativo ?? true,
-          categoria_associado: p.categoriaAssociado,
-          trabalha_com_encarte: p.trabalhaComEncarte,
-          cnpj: p.cnpj || null,
-          razao_social: p.razaoSocial,
-          nome_fantasia: p.nome,
-          email: p.email,
-          telefone: p.telefone,
-          horario_funcionamento: p.horarioFuncionamento,
-          farmaceutico_responsavel: p.respTecnico,
-          crf: p.inscricaoFarmaceutico,
-          alvara_sanitario: p.alvara,
-          afe: p.afe,
-          cep: p.cep,
-          logradouro: p.endereco,
-          numero: p.numero,
-          bairro: p.bairro,
-          cidade: p.cidade,
-          estado: p.uf,
-          whatsapp: p.whatsapp,
+          ativa: p.ativo !== undefined ? p.ativo : (currentPharmacy?.ativo ?? true),
+          categoria_associado: p.categoriaAssociado || currentPharmacy?.categoriaAssociado || "Pleno",
+          trabalha_com_encarte: p.trabalhaComEncarte !== undefined ? p.trabalhaComEncarte : (currentPharmacy?.trabalhaComEncarte ?? true),
+          cnpj: p.cnpj || currentPharmacy?.cnpj || null,
+          razao_social: p.razaoSocial || currentPharmacy?.razaoSocial || null,
+          nome_fantasia: p.nome || currentPharmacy?.nome || null,
+          email: p.email !== undefined ? p.email : (currentPharmacy?.email || null),
+          telefone: p.telefone !== undefined ? p.telefone : (currentPharmacy?.telefone || null),
+          horario_funcionamento: p.horarioFuncionamento || currentPharmacy?.horarioFuncionamento || null,
+          farmaceutico_responsavel: p.respTecnico || currentPharmacy?.respTecnico || null,
+          crf: p.inscricaoFarmaceutico || currentPharmacy?.inscricaoFarmaceutico || null,
+          alvara_sanitario: p.alvara || currentPharmacy?.alvara || null,
+          afe: p.afe || currentPharmacy?.afe || null,
+          cep: p.cep || currentPharmacy?.cep || null,
+          logradouro: p.endereco || currentPharmacy?.endereco || null,
+          numero: p.numero || currentPharmacy?.numero || null,
+          bairro: p.bairro || currentPharmacy?.bairro || null,
+          cidade: p.cidade || currentPharmacy?.cidade || null,
+          estado: p.uf || currentPharmacy?.uf || null,
+          whatsapp: p.whatsapp !== undefined ? p.whatsapp : (currentPharmacy?.whatsapp || ""),
           theme_colors: theme_colors_payload,
-          logo_url: p.logoUrl || null,
-          favicon_url: p.faviconUrl || null,
-          latitude: p.lat,
-          longitude: p.lng,
-          entrega_expressa: p.entregaExpressa,
-          status_loja_virtual: p.virtualStoreStatus,
-          sistema_utilizado: p.sistemaUtilizado,
+          logo_url: p.logoUrl !== undefined ? (p.logoUrl || null) : (currentPharmacy?.logoUrl || null),
+          favicon_url: p.faviconUrl !== undefined ? (p.faviconUrl || null) : (currentPharmacy?.faviconUrl || null),
+          latitude: p.lat !== undefined ? p.lat : (currentPharmacy?.latitude || null),
+          longitude: p.lng !== undefined ? p.lng : (currentPharmacy?.longitude || null),
+          entrega_expressa: p.entregaExpressa !== undefined ? p.entregaExpressa : (currentPharmacy?.entregaExpressa ?? false),
+          status_loja_virtual: p.virtualStoreStatus || currentPharmacy?.virtualStoreStatus || "Ativa",
+          sistema_utilizado: p.sistemaUtilizado || currentPharmacy?.sistemaUtilizado || "SPA",
         };
 
-        let { error } = await supabase.from('lojas').update({
-          ...baseUpdatePayload,
-          apelido: p.apelido || null,
-        } as any).eq('id', id);
+        let { error } = await supabase.from('lojas').update(baseUpdatePayload as any).eq('id', id);
 
-        if (error && error.message?.toLowerCase().includes("apelido")) {
-          const retry = await supabase.from('lojas').update(baseUpdatePayload as any).eq('id', id);
-          error = retry.error;
+        // Fallback para endpoint administrativo de backend caso haja bloqueio RLS ou falha de sessão
+        if (error) {
+          console.warn("Update direto em lojas falhou, tentando via /api/admin/save-pharmacy:", error.message);
+          try {
+            const apiRes = await fetch("/api/admin/save-pharmacy", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id, payload: baseUpdatePayload })
+            });
+            if (apiRes.ok) {
+              error = null;
+            } else {
+              const errData = await apiRes.json().catch(() => ({}));
+              error = { message: errData.error || error.message } as any;
+            }
+          } catch (apiErr: any) {
+            console.error("Fallback /api/admin/save-pharmacy falhou:", apiErr);
+          }
         }
 
         if (error) {
           console.error("Erro ao atualizar loja:", error);
           throw new Error(error.message || "Erro ao atualizar loja no banco de dados.");
         } else {
+          (loadPharmaciesThrottle as any)._lastCall = 0;
           await get().loadPharmacies();
         }
       },

@@ -63,6 +63,16 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const { marcas } = useMarcasStore();
   const { variacoes } = useVariacoesStore();
   const [activeTab, setActiveTab] = useState<"geral" | "precos" | "filtros" | "imagens" | "seo" | "todos">("geral");
+
+  useEffect(() => {
+    if (saveStep !== "idle") {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [saveStep]);
   const [filterSearch, setFilterSearch] = useState<Record<string, string>>({});
   const [comboOpen, setComboOpen] = useState(false);
   const [draggedImgIdx, setDraggedImgIdx] = useState<number | null>(null);
@@ -1929,19 +1939,23 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         </div>
 
         {saveStep !== "idle" && (
-          <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
-            <div className="bg-white p-8 rounded-xl shadow-xl flex flex-col items-center max-w-sm w-full text-center border border-slate-200 animate-in fade-in zoom-in duration-200">
+          <div className="fixed inset-0 z-[99999] bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 overflow-hidden select-none animate-in fade-in duration-200">
+            <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm w-full text-center border border-slate-200 animate-in zoom-in-95 duration-200">
               {saveStep === "done" ? (
                 <>
-                  <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4 animate-in zoom-in" />
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">Salvo com sucesso!</h3>
-                  <p className="text-slate-500 font-medium">As alterações foram registradas.</p>
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4 text-emerald-600">
+                    <CheckCircle2 className="w-10 h-10 animate-in zoom-in" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-1">Salvo com sucesso!</h3>
+                  <p className="text-sm text-slate-500 font-medium">As alterações foram registradas no catálogo.</p>
                 </>
               ) : (
                 <>
-                  <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mb-4" />
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">Aguarde um momento</h3>
-                  <p className="text-slate-500 font-medium">Estamos salvando seu produto na rede...</p>
+                  <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
+                    <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-1">Aguarde um momento</h3>
+                  <p className="text-sm text-slate-500 font-medium">Estamos salvando seu produto na rede...</p>
                 </>
               )}
             </div>
