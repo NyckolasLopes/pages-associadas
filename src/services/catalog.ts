@@ -846,13 +846,26 @@ export const catalog = {
     }
 
     if (profile.isCodeLike && profile.digitsOnly.length >= 4) {
-      // Busca exata por código (EAN, ID ou código interno)
+      // Busca por código: EAN principal, EANs secundários, ID, código interno, registro ANVISA
+      const digits = profile.digitsOnly;
+      const codeOrClauses = [
+        `ean.eq.${digits}`,
+        `ean.ilike.%${digits}%`,
+        `id.eq.${profile.cleanQuery}`,
+        `codigo_interno.eq.${digits}`,
+        `codigo_interno.ilike.%${digits}%`,
+      ];
+      // EANs secundários (JSONB array): usa operador @> (contains)
+      codeOrClauses.push(`eans_secundarios.cs.["${digits}"]`);
+      if (digits.length >= 6) {
+        codeOrClauses.push(`registro_anvisa.ilike.%${digits}%`);
+      }
       const codeQuery = supabase.from('produtos').select('*')
-        .or(`ean.eq.${profile.digitsOnly},id.eq.${profile.cleanQuery},ean.ilike.%${profile.digitsOnly}%`)
+        .or(codeOrClauses.join(','))
         .limit(30);
       candidates = await fetchFromSupabaseWithPrices(codeQuery, lojaId);
     } else {
-      // Cláusulas SQL otimizadas com foco nos campos indexados (nome, marca, ean, slug)
+      // Cláusulas SQL cobrindo todos os campos visíveis na página do produto
       const orClauses: string[] = [];
       const cleanQ = profile.cleanQuery;
 
@@ -860,6 +873,11 @@ export const catalog = {
         orClauses.push(`nome.ilike.%${cleanQ}%`);
         orClauses.push(`marca.ilike.%${cleanQ}%`);
         orClauses.push(`slug.ilike.%${cleanQ}%`);
+        orClauses.push(`codigo_interno.ilike.%${cleanQ}%`);
+        orClauses.push(`registro_anvisa.ilike.%${cleanQ}%`);
+        orClauses.push(`classe_terapeutica.ilike.%${cleanQ}%`);
+        orClauses.push(`indicacao_terapeutica.ilike.%${cleanQ}%`);
+        orClauses.push(`termos_pesquisa.ilike.%${cleanQ}%`);
       }
 
       // Tokens principais (máximo 3 tokens para evitar sobrecarga no banco)
@@ -867,6 +885,8 @@ export const catalog = {
         if (token.length >= 3) {
           orClauses.push(`nome.ilike.%${token}%`);
           orClauses.push(`marca.ilike.%${token}%`);
+          orClauses.push(`indicacao_terapeutica.ilike.%${token}%`);
+          orClauses.push(`classe_terapeutica.ilike.%${token}%`);
         }
       }
 
@@ -876,7 +896,7 @@ export const catalog = {
         orClauses.push(`marca.ilike.%${profile.didYouMean}%`);
       }
 
-      const uniqueClauses = Array.from(new Set(orClauses)).slice(0, 8);
+      const uniqueClauses = Array.from(new Set(orClauses)).slice(0, 16);
       if (uniqueClauses.length > 0) {
         const query = supabase.from('produtos').select('*')
           .or(uniqueClauses.join(','))
@@ -920,7 +940,20 @@ export const catalog = {
     if (rawSearch) {
       const profile = analyzeSearchQuery(rawSearch);
       if (profile.isNumeric) {
-        query = query.or(`ean.eq.${profile.cleanQuery},codigo_interno.eq.${profile.cleanQuery},id.eq.${profile.cleanQuery}`);
+        // Busca por código: EAN principal, EANs secundários, código interno, ID, registro ANVISA
+        const digits = profile.cleanQuery;
+        const numClauses = [
+          `ean.eq.${digits}`,
+          `ean.ilike.%${digits}%`,
+          `codigo_interno.eq.${digits}`,
+          `codigo_interno.ilike.%${digits}%`,
+          `id.eq.${digits}`,
+          `eans_secundarios.cs.["${digits}"]`,
+        ];
+        if (digits.length >= 6) {
+          numClauses.push(`registro_anvisa.ilike.%${digits}%`);
+        }
+        query = query.or(numClauses.join(','));
       } else {
         const clauses: string[] = [
           `nome.ilike.%${profile.cleanQuery}%`,
@@ -928,7 +961,10 @@ export const catalog = {
           `descricao.ilike.%${profile.cleanQuery}%`,
           `classe_terapeutica.ilike.%${profile.cleanQuery}%`,
           `indicacao_terapeutica.ilike.%${profile.cleanQuery}%`,
-          `slug.ilike.%${profile.cleanQuery}%`
+          `slug.ilike.%${profile.cleanQuery}%`,
+          `codigo_interno.ilike.%${profile.cleanQuery}%`,
+          `registro_anvisa.ilike.%${profile.cleanQuery}%`,
+          `termos_pesquisa.ilike.%${profile.cleanQuery}%`,
         ];
 
         for (const token of profile.tokens) {
@@ -937,6 +973,7 @@ export const catalog = {
             clauses.push(`marca.ilike.%${token}%`);
             clauses.push(`descricao.ilike.%${token}%`);
             clauses.push(`indicacao_terapeutica.ilike.%${token}%`);
+            clauses.push(`classe_terapeutica.ilike.%${token}%`);
           }
         }
 
