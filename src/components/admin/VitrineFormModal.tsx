@@ -54,7 +54,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
       if (vitrine) {
         setNome(vitrine.nome);
         setAtiva(vitrine.ativa);
-        setCategoriaId(vitrine.categoriaId);
+        setCategoriaId(vitrine.categoriaId ? String(vitrine.categoriaId) : "");
         setLocal(vitrine.local);
         setIcone(vitrine.icone || "Sparkles");
         setDescricaoSeo(vitrine.descricaoSeo || "");
@@ -133,7 +133,7 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
     const vitrineData = {
       nome,
       ativa,
-      categoriaId: modo === "categoria" ? categoriaId : "manual",
+      categoriaId: modo === "categoria" ? String(categoriaId) : "manual",
       local,
       icone,
       descricaoSeo,
@@ -263,18 +263,34 @@ export function VitrineFormModal({ isOpen, onClose, vitrine, lojaId }: VitrineFo
           {modo === "categoria" ? (
             <div className="space-y-2">
               <Label>Categoria Vinculada <span className="text-red-500">*</span></Label>
-              <Select value={categoriaId} onValueChange={setCategoriaId} disabled={loading}>
+              <Select value={categoriaId ? String(categoriaId) : ""} onValueChange={setCategoriaId} disabled={loading}>
                 <SelectTrigger>
-                  <SelectValue placeholder={loading ? "Carregando..." : "Selecione uma categoria"} />
+                  <SelectValue placeholder={loading ? "Carregando categorias..." : "Selecione uma categoria"} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   <SelectGroup>
-                    <SelectLabel className="font-bold text-primary">Categorias de Produtos</SelectLabel>
+                    <SelectLabel className="font-bold text-slate-500 text-xs uppercase tracking-wider">Coleções / Listas Automáticas</SelectLabel>
+                    <SelectItem value="all">Todas as Categorias (Mais Pedidos)</SelectItem>
+                    <SelectItem value="campanha">Ofertas do Mês (Campanha)</SelectItem>
+                    <SelectItem value="ofertas">Ofertas da Semana</SelectItem>
+                    <SelectItem value="destaques">Destaques da Loja</SelectItem>
+                    <SelectItem value="novidades">Novidades e Lançamentos</SelectItem>
+                    <SelectItem value="protetores">Protetores Solares e Bronzeadores</SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className="font-bold text-primary text-xs uppercase tracking-wider mt-2">Categorias de Produtos</SelectLabel>
                     {categoriasOpcoes.map(c => (
-                      <SelectItem key={c.id} value={c.id}>
+                      <SelectItem key={c.id} value={String(c.id)}>
                         {c.nome}
                       </SelectItem>
                     ))}
+                    {categoriaId && 
+                     !["all", "campanha", "ofertas", "destaques", "novidades", "protetores"].includes(String(categoriaId)) && 
+                     !categoriasOpcoes.some(c => String(c.id) === String(categoriaId)) && (
+                      <SelectItem value={String(categoriaId)}>
+                        Categoria ({categoriaId})
+                      </SelectItem>
+                    )}
                   </SelectGroup>
                 </SelectContent>
               </Select>

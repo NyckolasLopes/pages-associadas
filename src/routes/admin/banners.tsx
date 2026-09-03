@@ -636,6 +636,11 @@ function AdminBanners() {
       return;
     }
 
+    if (editingBanner.posicao === "Banner por Categoria" && !editingBanner.topicoVinculado) {
+      toast.error("Por favor, selecione a categoria vinculada ao banner.");
+      return;
+    }
+
     if (editingBanner.startDate) {
       const start = new Date(editingBanner.startDate);
       if (start.getTime() < Date.now() - 5 * 60000) {
@@ -1231,7 +1236,7 @@ function AdminBanners() {
                   <div className="space-y-2">
                     <Label className="font-bold text-slate-700">Categoria Vinculada <span className="text-red-500">*</span></Label>
                     <Select 
-                      value={editingBanner.topicoVinculado || ""} 
+                      value={editingBanner.topicoVinculado ? String(editingBanner.topicoVinculado) : ""} 
                       onValueChange={v => setEditingBanner({...editingBanner, topicoVinculado: v})}
                     >
                       <SelectTrigger className="h-11 border-slate-200 bg-white">
@@ -1239,8 +1244,13 @@ function AdminBanners() {
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                          <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
                         ))}
+                        {editingBanner.topicoVinculado && !categories.some(c => String(c.id) === String(editingBanner.topicoVinculado)) && (
+                          <SelectItem value={String(editingBanner.topicoVinculado)}>
+                            Categoria #{editingBanner.topicoVinculado}
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

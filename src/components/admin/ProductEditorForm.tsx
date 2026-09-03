@@ -63,6 +63,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const [filterSearch, setFilterSearch] = useState<Record<string, string>>({});
   const [comboOpen, setComboOpen] = useState(false);
   const [draggedImgIdx, setDraggedImgIdx] = useState<number | null>(null);
+  const [eansSecundariosInput, setEansSecundariosInput] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,8 +195,30 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         initialTipoProduto = "servico";
       }
 
+      let initialSecEans: string[] = [];
+      if (Array.isArray(product.eansSecundarios)) {
+        initialSecEans = product.eansSecundarios.map(String);
+      } else if (typeof (product as any).eansSecundarios === 'string' && (product as any).eansSecundarios.trim() !== '') {
+        try {
+          const parsed = JSON.parse((product as any).eansSecundarios);
+          if (Array.isArray(parsed)) initialSecEans = parsed.map(String);
+          else initialSecEans = (product as any).eansSecundarios.split(',').map((s: string) => s.trim());
+        } catch {
+          initialSecEans = (product as any).eansSecundarios.split(',').map((s: string) => s.trim());
+        }
+      } else if (Array.isArray((product as any).eans_secundarios)) {
+        initialSecEans = (product as any).eans_secundarios.map(String);
+      }
+      if (product.ean2) initialSecEans.push(String(product.ean2));
+      if (product.ean3) initialSecEans.push(String(product.ean3));
+      const cleanInitialSecEans = Array.from(new Set(initialSecEans.map(s => String(s).trim()).filter(Boolean)));
+      setEansSecundariosInput(cleanInitialSecEans.join(", "));
+
       setFormData({ 
         ...product, 
+        eansSecundarios: cleanInitialSecEans,
+        ean2: cleanInitialSecEans[0] || "",
+        ean3: cleanInitialSecEans[1] || "",
         imagens: initialImagens,
         categoriasAdicionais: product.categoriasAdicionais || [],
         ativo: product.ativo ?? true,
@@ -314,10 +337,14 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       finalFormData.precoDe = 0;
     }
     
-    // Limpeza de arrays vazios devido ao trailing comma antes de salvar
-    if (finalFormData.eansSecundarios) {
-      finalFormData.eansSecundarios = finalFormData.eansSecundarios.filter(Boolean);
-    }
+    // Limpeza e sincronização dos EANs secundários
+    const parsedEans = eansSecundariosInput
+      ? eansSecundariosInput.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : (finalFormData.eansSecundarios || []).filter(Boolean);
+    finalFormData.eansSecundarios = parsedEans;
+    finalFormData.ean2 = parsedEans[0] || "";
+    finalFormData.ean3 = parsedEans[1] || "";
+
     if (finalFormData.internalTags) {
       finalFormData.internalTags = finalFormData.internalTags.filter(Boolean);
     }
@@ -619,7 +646,27 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             
             <div className="space-y-2">
               <Label className="font-bold text-xs uppercase text-slate-500">EANs Secundários (separados por vírgula)</Label>
-              <Input disabled={!isGlobalAdmin} value={(formData.eansSecundarios || []).join(", ")} onChange={e => setFormData({...formData, eansSecundarios: e.target.value.split(',').map((s: string) => s.trim())})} className="bg-white" placeholder="Ex: 7891234567890, 7890987654321" />
+              <Input 
+                disabled={!isGlobalAdmin} 
+                value={eansSecundariosInput} 
+                onChange={e => {
+                  const val = e.target.value;
+                  setEansSecundariosInput(val);
+                  const parsed = val.split(',').map((s: string) => s.trim()).filter(Boolean);
+                  setFormData(prev => prev ? ({
+                    ...prev, 
+                    eansSecundarios: parsed,
+                    ean2: parsed[0] || "",
+                    ean3: parsed[1] || ""
+                  }) : null);
+                }}
+                onBlur={() => {
+                  const parsed = eansSecundariosInput.split(',').map((s: string) => s.trim()).filter(Boolean);
+                  setEansSecundariosInput(parsed.join(", "));
+                }}
+                className="bg-white" 
+                placeholder="Ex: 7891234567890, 7890987654321" 
+              />
             </div>
 
             <div className="space-y-2">

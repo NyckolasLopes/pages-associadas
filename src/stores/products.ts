@@ -140,14 +140,32 @@ export function mapRowToProduto(d: any): Produto {
     produtoNatureza: meta.natureza_produto || d.produto_natureza || (d.tipo_produto === "servico" ? "servico" : "fisico"),
     sku: (d.sku && d.sku !== d.ean ? d.sku : "") || d.codigo_interno || (meta.sku && meta.sku !== d.ean ? meta.sku : "") || "",
     codigoInterno: d.codigo_interno || meta.codigo_interno || "",
-    ean2: d.ean2 || meta.ean2 || "",
-    ean3: d.ean3 || meta.ean3 || "",
+    ean2: d.ean2 || meta.ean2 || (Array.isArray(d.eans_secundarios) ? d.eans_secundarios[0] : "") || "",
+    ean3: d.ean3 || meta.ean3 || (Array.isArray(d.eans_secundarios) ? d.eans_secundarios[1] : "") || "",
     youtubeVideoUrl: meta.youtube_video_url || d.youtube_video_url || "",
     tipoReceita: d.tipo_receita || meta.tipo_receita || "",
     alertaTexto: d.alerta_texto || meta.alerta_texto || "",
     alertaRegulatorio: d.alerta_regulatorio ?? meta.alerta_regulatorio ?? false,
     caracteristicas: Array.isArray(d.caracteristicas) ? d.caracteristicas : (Array.isArray(meta.caracteristicas) ? meta.caracteristicas : []),
-    eansSecundarios: Array.isArray(d.eans_secundarios) ? d.eans_secundarios : (Array.isArray(meta.eans_secundarios) ? meta.eans_secundarios : []),
+    eansSecundarios: (() => {
+      let list: string[] = [];
+      if (Array.isArray(d.eans_secundarios)) {
+        list = d.eans_secundarios.map(String);
+      } else if (typeof d.eans_secundarios === 'string' && d.eans_secundarios.trim() !== '') {
+        try {
+          const parsed = JSON.parse(d.eans_secundarios);
+          if (Array.isArray(parsed)) list = parsed.map(String);
+          else list = d.eans_secundarios.split(',').map((s: string) => s.trim());
+        } catch {
+          list = d.eans_secundarios.split(',').map((s: string) => s.trim());
+        }
+      } else if (Array.isArray(meta.eans_secundarios)) {
+        list = meta.eans_secundarios.map(String);
+      }
+      if (d.ean2) list.push(String(d.ean2));
+      if (d.ean3) list.push(String(d.ean3));
+      return Array.from(new Set(list.filter(Boolean)));
+    })(),
     resumoDescricao: meta.resumo_descricao || d.resumo_descricao || "",
     classeTerapeutica: d.classe_terapeutica || meta.classe_terapeutica || "",
     indicacaoTerapeutica: d.indicacao_terapeutica || meta.indicacao_terapeutica || "",
@@ -269,6 +287,7 @@ export const useAdminProducts = create<ProductsState>()(
         const { error } = await (supabase.from('produtos') as any).upsert({
           id: formattedProduct.id,
           ean: formattedProduct.ean || null,
+          eans_secundarios: formattedProduct.eansSecundarios || [],
           nome: formattedProduct.nome,
           descricao: formattedProduct.descricao || null,
           slug: formattedProduct.slug || formattedProduct.url || `${formattedProduct.nome?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${formattedProduct.id}`,
@@ -471,6 +490,7 @@ export const useAdminProducts = create<ProductsState>()(
             return {
               id: p.id,
               ean: p.ean || null,
+              eans_secundarios: p.eansSecundarios || [],
               nome: p.nome ? p.nome.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()) : "",
               descricao: p.descricao || null,
               slug: p.slug || p.url || `${(p.nome || 'produto').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${p.id}`,
@@ -620,7 +640,7 @@ export const useAdminProducts = create<ProductsState>()(
       removeFornecedor: (id) => set((s) => ({ fornecedores: s.fornecedores.filter(f => f.id !== id) })),
       addVitrine: (v, lojaId) => set((s) => {
         if (!lojaId) {
-          const nextId = s.vitrines.length > 0 ? Math.max(...s.vitrines.map(x => x.id)) + 1 : 1;
+          const nextId = s.vitrines.length > 0 ? Math.max(...s.vitrines.map(x => Number(x.id) || 0)) + 1 : 1;
           const maxOrdem = s.vitrines.filter(x => x.local === v.local).reduce((max, x) => Math.max(max, x.ordem || 0), 0);
           const newVitrine = { ...v, id: nextId, ordem: v.ordem || maxOrdem + 1 };
           
@@ -636,49 +656,56 @@ export const useAdminProducts = create<ProductsState>()(
         } else {
           const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
           const allVits = [...s.vitrines, ...Object.values(s.storeVitrines).flat()];
-          const nextId = allVits.length > 0 ? Math.max(...allVits.map(x => x.id)) + 1 : 1;
+          const nextId = allVits.length > 0 ? Math.max(...allVits.map(x => Number(x.id) || 0)) + 1 : 1;
           const maxOrdem = storeVits.filter(x => x.local === v.local).reduce((max, x) => Math.max(max, x.ordem || 0), 0);
           return { storeVitrines: { ...s.storeVitrines, [lojaId]: [...storeVits, { ...v, id: nextId, ordem: v.ordem || maxOrdem + 1 }] } };
         }
       }),
       updateVitrine: (v, lojaId) => set((s) => {
+        const idMatch = (item: any) => String(item.id) === String(v.id);
         if (!lojaId) {
           const newStoreVitrines = { ...s.storeVitrines };
           Object.keys(newStoreVitrines).forEach(key => {
-            if (newStoreVitrines[key] && newStoreVitrines[key].some(x => x.id === v.id)) {
-              newStoreVitrines[key] = newStoreVitrines[key].map(x => x.id === v.id ? v : x);
+            if (newStoreVitrines[key] && newStoreVitrines[key].some(idMatch)) {
+              newStoreVitrines[key] = newStoreVitrines[key].map(x => idMatch(x) ? v : x);
             }
           });
-          return { vitrines: s.vitrines.map(x => x.id === v.id ? v : x), storeVitrines: newStoreVitrines };
+          const hasInGlobal = s.vitrines.some(idMatch);
+          const nextVitrines = hasInGlobal ? s.vitrines.map(x => idMatch(x) ? v : x) : [...s.vitrines, v];
+          return { vitrines: nextVitrines, storeVitrines: newStoreVitrines };
         }
         const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
-        return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(x => x.id === v.id ? v : x) } };
+        const exists = storeVits.some(idMatch);
+        const nextStoreVits = exists ? storeVits.map(x => idMatch(x) ? v : x) : [...storeVits, v];
+        return { storeVitrines: { ...s.storeVitrines, [lojaId]: nextStoreVits } };
       }),
       removeVitrine: (id, lojaId) => set((s) => {
+        const idMatch = (item: any) => String(item.id) === String(id);
         if (!lojaId) {
           const newStoreVitrines = { ...s.storeVitrines };
           Object.keys(newStoreVitrines).forEach(key => {
             if (newStoreVitrines[key]) {
-              newStoreVitrines[key] = newStoreVitrines[key].filter(v => v.id !== id);
+              newStoreVitrines[key] = newStoreVitrines[key].filter(v => !idMatch(v));
             }
           });
-          return { vitrines: s.vitrines.filter(v => v.id !== id), storeVitrines: newStoreVitrines };
+          return { vitrines: s.vitrines.filter(v => !idMatch(v)), storeVitrines: newStoreVitrines };
         }
         const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
-        return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.filter(v => v.id !== id) } };
+        return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.filter(v => !idMatch(v)) } };
       }),
       toggleVitrine: (id, lojaId) => set((s) => {
+        const idMatch = (item: any) => String(item.id) === String(id);
         if (!lojaId) {
           const newStoreVitrines = { ...s.storeVitrines };
           Object.keys(newStoreVitrines).forEach(key => {
-            if (newStoreVitrines[key] && newStoreVitrines[key].some(v => v.id === id)) {
-              newStoreVitrines[key] = newStoreVitrines[key].map(v => v.id === id ? { ...v, ativa: !v.ativa } : v);
+            if (newStoreVitrines[key] && newStoreVitrines[key].some(idMatch)) {
+              newStoreVitrines[key] = newStoreVitrines[key].map(v => idMatch(v) ? { ...v, ativa: !v.ativa } : v);
             }
           });
-          return { vitrines: s.vitrines.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v), storeVitrines: newStoreVitrines };
+          return { vitrines: s.vitrines.map(v => idMatch(v) ? { ...v, ativa: !v.ativa } : v), storeVitrines: newStoreVitrines };
         }
         const storeVits = (s.storeVitrines[lojaId] && s.storeVitrines[lojaId].length > 0) ? s.storeVitrines[lojaId] : s.vitrines;
-        return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(v => v.id === id ? { ...v, ativa: !v.ativa } : v) } };
+        return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(v => idMatch(v) ? { ...v, ativa: !v.ativa } : v) } };
       }),
       updateProductDescriptions: async (updates, lojaId) => {
         const state = get();
@@ -1204,37 +1231,23 @@ export const useAdminProducts = create<ProductsState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // Add default vitrines if missing (migration for existing localStorage)
+          // Initialize default vitrines ONLY if vitrines is completely empty
           let currentVitrines = state.vitrines || [];
-          let hasChanged = false;
           
-          if (!currentVitrines.some(v => v.categoriaId === "campanha")) {
+          if (!currentVitrines || currentVitrines.length === 0) {
             currentVitrines = [
               { id: 1, nome: "Ofertas do Mês", categoriaId: "campanha", local: "espaco_1" as const, ativa: true, icone: "Flame", modo: "categoria" as const, ordem: 1, linkSeo: "ofertas-do-mes", tituloSeo: "Ofertas do Mês", descricaoSeo: "Preços exclusivos da campanha." },
               { id: 2, nome: "Destaques da Loja", categoriaId: "destaques", local: "espaco_1" as const, ativa: true, icone: "Sparkles", modo: "categoria" as const, ordem: 2, linkSeo: "destaques", tituloSeo: "Destaques da Loja", descricaoSeo: "Produtos em destaque na loja." },
-              ...currentVitrines
-            ];
-            hasChanged = true;
-          }
-          
-          if (!currentVitrines.some(v => v.categoriaId === "all")) {
-            const defaults = [
               { id: 3, nome: "Mais pedidos", categoriaId: "all", local: "espaco_2" as const, ativa: true, icone: "TrendingUp", modo: "categoria" as const, ordem: 1, linkSeo: "mais-vendidos", tituloSeo: "Mais Pedidos", descricaoSeo: "Os produtos mais pedidos e procurados nas Farmácias Associadas." },
               { id: 4, nome: "Ofertas da Semana", categoriaId: "ofertas", local: "espaco_2" as const, ativa: true, icone: "Percent", modo: "categoria" as const, ordem: 2, linkSeo: "ofertas-da-semana", tituloSeo: "Ofertas da Semana", descricaoSeo: "As melhores promoções da semana." },
               { id: 5, nome: "Novidades", categoriaId: "novidades", local: "espaco_3" as const, ativa: true, icone: "Sparkles", modo: "categoria" as const, ordem: 1, linkSeo: "novidades", tituloSeo: "Novidades", descricaoSeo: "Lançamentos e novos produtos." },
               { id: 6, nome: "Mamãe e Bebê", categoriaId: "144", local: "espaco_3" as const, ativa: true, icone: "Baby", modo: "categoria" as const, ordem: 2, linkSeo: "mamae-e-bebe", tituloSeo: "Mamãe e Bebê", descricaoSeo: "Produtos para o cuidado da mamãe e do bebê." },
               { id: 7, nome: "Protetores Solares e Bronzeadores", categoriaId: "protetores", local: "espaco_3" as const, ativa: true, icone: "Sun", modo: "categoria" as const, ordem: 3, linkSeo: "protetores-solares-e-bronzeadores", tituloSeo: "Protetores Solares", descricaoSeo: "Proteção solar e bronzeadores." },
             ];
-            currentVitrines = [...currentVitrines, ...defaults];
-            hasChanged = true;
-          }
-          if (hasChanged) {
-            // Deduplicate to clean up existing messed up state
-            const deduplicated = currentVitrines.filter((v, index, self) => index === self.findIndex((t) => t.id === v.id));
-            useAdminProducts.setState({ vitrines: deduplicated });
+            useAdminProducts.setState({ vitrines: currentVitrines });
           } else {
-            // Even if no defaults were added, let's run a deduplication pass just in case
-            const deduplicated = currentVitrines.filter((v, index, self) => index === self.findIndex((t) => t.id === v.id));
+            // Deduplicate safely without destroying user modifications
+            const deduplicated = currentVitrines.filter((v, index, self) => index === self.findIndex((t) => String(t.id) === String(v.id)));
             if (deduplicated.length !== currentVitrines.length) {
               useAdminProducts.setState({ vitrines: deduplicated });
             }

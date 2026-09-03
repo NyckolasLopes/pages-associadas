@@ -1137,7 +1137,9 @@ export const useAdmin = create<AdminState>()(
           start_date: (cleanBanner.startDate && cleanBanner.startDate.trim() !== "") ? new Date(cleanBanner.startDate).toISOString() : null,
           end_date: (cleanBanner.endDate && cleanBanner.endDate.trim() !== "") ? new Date(cleanBanner.endDate).toISOString() : null,
           loja_id: cleanBanner.lojaId || null,
-          vitrine_vinculada: cleanBanner.vitrineVinculada,
+          vitrine_vinculada: cleanBanner.vitrineVinculada || null,
+          banner_vinculado: cleanBanner.bannerVinculado || null,
+          topico_vinculado: cleanBanner.topicoVinculado || null,
           formato_extra: cleanBanner.formatoExtra,
           image_url2: cleanBanner.imageUrl2,
           mobile_image_url2: cleanBanner.mobileImageUrl2,
@@ -1171,9 +1173,9 @@ export const useAdmin = create<AdminState>()(
         if (cleanBanner.startDate !== undefined) payload.start_date = (cleanBanner.startDate && cleanBanner.startDate.trim() !== "") ? new Date(cleanBanner.startDate).toISOString() : null;
         if (cleanBanner.endDate !== undefined) payload.end_date = (cleanBanner.endDate && cleanBanner.endDate.trim() !== "") ? new Date(cleanBanner.endDate).toISOString() : null;
         if (cleanBanner.lojaId !== undefined) payload.loja_id = cleanBanner.lojaId;
-        if (cleanBanner.vitrineVinculada !== undefined) payload.vitrine_vinculada = cleanBanner.vitrineVinculada;
-        if (cleanBanner.bannerVinculado !== undefined) payload.banner_vinculado = cleanBanner.bannerVinculado;
-        if (cleanBanner.topicoVinculado !== undefined) payload.topico_vinculado = cleanBanner.topicoVinculado;
+        if (cleanBanner.vitrineVinculada !== undefined) payload.vitrine_vinculada = cleanBanner.vitrineVinculada || null;
+        if (cleanBanner.bannerVinculado !== undefined) payload.banner_vinculado = cleanBanner.bannerVinculado || null;
+        if (cleanBanner.topicoVinculado !== undefined) payload.topico_vinculado = cleanBanner.topicoVinculado || null;
         if (cleanBanner.formatoExtra !== undefined) payload.formato_extra = cleanBanner.formatoExtra;
         if (cleanBanner.imageUrl2 !== undefined) payload.image_url2 = cleanBanner.imageUrl2;
         if (cleanBanner.mobileImageUrl2 !== undefined) payload.mobile_image_url2 = cleanBanner.mobileImageUrl2;

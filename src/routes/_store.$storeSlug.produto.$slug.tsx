@@ -1913,7 +1913,7 @@ function PDP() {
                     {(p.ean2 || (p.eansSecundarios && p.eansSecundarios.length > 0)) && (
                       <div>
                         <strong className="block text-xs text-muted-foreground">EAN Secundário</strong>
-                        <div className="font-medium">{[p.ean2, ...(p.eansSecundarios || [])].filter(Boolean).join(', ')}</div>
+                        <div className="font-medium">{Array.from(new Set([p.ean2, ...(p.eansSecundarios || [])].filter(Boolean))).join(', ')}</div>
                       </div>
                     )}
                     {p.ncm && (
@@ -1940,7 +1940,7 @@ function PDP() {
                     {(p.ean2 || (p.eansSecundarios && p.eansSecundarios.length > 0)) && (
                       <div>
                         <strong className="block text-xs text-muted-foreground">EANs Secundários</strong>
-                        <div className="font-medium">{[p.ean2, ...(p.eansSecundarios || [])].filter(Boolean).join(', ')}</div>
+                        <div className="font-medium">{Array.from(new Set([p.ean2, ...(p.eansSecundarios || [])].filter(Boolean))).join(', ')}</div>
                       </div>
                     )}
                     {p.registroAnvisa && (
