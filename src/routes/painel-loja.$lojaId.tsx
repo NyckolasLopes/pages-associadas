@@ -1019,43 +1019,55 @@ function PainelLoja() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[280px] w-full flex items-center justify-center">
+                  <div className="h-[290px] w-full relative flex items-center justify-center">
                     {statusPieDataLoja.length === 0 ? (
                       <div className="text-center text-slate-400 text-sm">
                         Nenhum pedido registrado para gerar o gráfico.
                       </div>
                     ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={statusPieDataLoja}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={65}
-                            outerRadius={95}
-                            paddingAngle={0}
-                            dataKey="value"
-                            stroke="none"
-                          >
-                            {statusPieDataLoja.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value: number, name: string) => [
-                              `${value} pedidos (${totalPedidosLoja > 0 ? Math.round((value / totalPedidosLoja) * 100) : 0}%)`,
-                              name
-                            ]}
-                            contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                          />
-                          <Legend
-                            verticalAlign="bottom"
-                            height={36}
-                            iconType="circle"
-                            formatter={(value) => <span className="text-xs font-semibold text-slate-700">{value}</span>}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={statusPieDataLoja}
+                              cx="50%"
+                              cy="44%"
+                              innerRadius={72}
+                              outerRadius={112}
+                              paddingAngle={3}
+                              dataKey="value"
+                              stroke="none"
+                            >
+                              {statusPieDataLoja.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(value: number, name: string) => [
+                                `${value} pedidos (${totalPedidosLoja > 0 ? Math.round((value / totalPedidosLoja) * 100) : 0}%)`,
+                                name
+                              ]}
+                              contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                            />
+                            <Legend
+                              verticalAlign="bottom"
+                              height={36}
+                              iconType="circle"
+                              formatter={(value) => <span className="text-xs font-semibold text-slate-700">{value}</span>}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+
+                        {/* Indicador Central no Donut */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-9">
+                          <span className="text-3xl font-black text-slate-900 tracking-tight leading-none">
+                            {totalPedidosLoja}
+                          </span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">
+                            Pedidos
+                          </span>
+                        </div>
+                      </>
                     )}
                   </div>
                 </CardContent>
@@ -1070,7 +1082,7 @@ function PainelLoja() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[280px] w-full">
+                  <div className="h-[290px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={volumePedidosPeriodo} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />

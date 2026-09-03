@@ -551,8 +551,8 @@ function Metricas() {
       {/* Gráficos de Pedidos — Conforme Requisito: Sem Evolução de Receita */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Gráfico 1: Status dos Pedidos */}
-        <div className="bg-white rounded-2xl border shadow-sm p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl border shadow-sm p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <PackageCheck className="w-5 h-5 text-emerald-600" />
               <h3 className="font-bold text-slate-800 text-base">
@@ -564,36 +564,48 @@ function Metricas() {
             </span>
           </div>
 
-          <div className="flex-1 w-full min-h-[260px] flex items-center justify-center">
+          <div className="flex-1 w-full min-h-[290px] relative flex items-center justify-center py-2">
             {statusPieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie
-                    data={statusPieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {statusPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(val: number) => [`${val} registros`, "Quantidade"]}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={40} 
-                    iconType="circle"
-                    formatter={(value) => <span className="text-xs font-semibold text-slate-700">{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={290}>
+                  <PieChart>
+                    <Pie
+                      data={statusPieData}
+                      cx="50%"
+                      cy="44%"
+                      innerRadius={72}
+                      outerRadius={112}
+                      paddingAngle={3}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {statusPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(val: number) => [`${val} registros`, "Quantidade"]}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36} 
+                      iconType="circle"
+                      formatter={(value) => <span className="text-xs font-semibold text-slate-700">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+
+                {/* Destaque Central no Donut para preencher espaço */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-9">
+                  <span className="text-3xl font-black text-slate-900 tracking-tight leading-none">
+                    {totalPedidos}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">
+                    Total
+                  </span>
+                </div>
+              </>
             ) : (
               <div className="text-center text-slate-400 text-sm font-medium py-12">
                 Nenhum pedido ou carrinho registrado.
@@ -602,24 +614,24 @@ function Metricas() {
           </div>
 
           <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100 mt-2">
-            <div className="p-2 bg-emerald-50/70 rounded-xl border border-emerald-100 text-center">
+            <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-100 text-center">
               <div className="text-[10px] font-bold text-emerald-800 uppercase">Concluídos</div>
-              <div className="text-base font-black text-emerald-700 mt-0.5">{concluidosCount}</div>
+              <div className="text-lg font-black text-emerald-700 mt-0.5">{concluidosCount}</div>
             </div>
-            <div className="p-2 bg-blue-50/70 rounded-xl border border-blue-100 text-center">
+            <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-100 text-center">
               <div className="text-[10px] font-bold text-blue-800 uppercase">Pendentes</div>
-              <div className="text-base font-black text-blue-700 mt-0.5">{pendentesCount}</div>
+              <div className="text-lg font-black text-blue-700 mt-0.5">{pendentesCount}</div>
             </div>
-            <div className="p-2 bg-amber-50/70 rounded-xl border border-amber-100 text-center">
+            <div className="p-2.5 bg-amber-50/70 rounded-xl border border-amber-100 text-center">
               <div className="text-[10px] font-bold text-amber-800 uppercase">Abandonados</div>
-              <div className="text-base font-black text-amber-700 mt-0.5">{abandonadosCount}</div>
+              <div className="text-lg font-black text-amber-700 mt-0.5">{abandonadosCount}</div>
             </div>
           </div>
         </div>
 
         {/* Gráfico 2: Distribuição por Loja (Global) ou Resumo por Modalidade (Loja) */}
-        <div className="bg-white rounded-2xl border shadow-sm p-6 flex flex-col lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl border shadow-sm p-6 flex flex-col justify-between lg:col-span-2">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Store className="w-5 h-5 text-blue-600" />
               <h3 className="font-bold text-slate-800 text-base">
@@ -631,11 +643,11 @@ function Metricas() {
             </span>
           </div>
 
-          <div className="flex-1 w-full min-h-[260px]">
+          <div className="flex-1 w-full min-h-[290px] py-2">
             {isGlobalView ? (
               lojaBarData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={lojaBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height={290}>
+                  <BarChart data={lojaBarData} margin={{ top: 15, right: 15, left: -15, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis 
                       dataKey="name" 
@@ -664,9 +676,9 @@ function Metricas() {
                       iconType="circle"
                       formatter={(value) => <span className="text-xs font-semibold text-slate-700">{value}</span>}
                     />
-                    <Bar dataKey="concluidos" name="Concluídos (WhatsApp)" fill="#10b981" radius={[0, 0, 4, 4]} stackId="a" />
-                    <Bar dataKey="pendentes" name="Pendentes" fill="#3b82f6" stackId="a" />
-                    <Bar dataKey="abandonados" name="Carrinhos Abandonados" fill="#f59e0b" radius={[4, 4, 0, 0]} stackId="a" />
+                    <Bar dataKey="concluidos" name="Concluídos (WhatsApp)" fill="#10b981" radius={[0, 0, 4, 4]} stackId="a" maxBarSize={56} />
+                    <Bar dataKey="pendentes" name="Pendentes" fill="#3b82f6" stackId="a" maxBarSize={56} />
+                    <Bar dataKey="abandonados" name="Carrinhos Abandonados" fill="#f59e0b" radius={[4, 4, 0, 0]} stackId="a" maxBarSize={56} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
