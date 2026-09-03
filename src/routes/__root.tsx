@@ -29,6 +29,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/storefront/InstallPrompt";
 import { FloatingElements } from "@/components/storefront/BackToTop";
 import { PriceDropTracker } from "@/components/storefront/PriceDropTracker";
+import { AddToCartNotification } from "@/components/storefront/AddToCartNotification";
 
 import { ErrorComponent as CustomErrorComponent } from "@/components/ErrorComponent";
 import { getSafeMediaUrl } from "@/utils/media";
@@ -486,6 +487,7 @@ function RootComponent() {
 
       {!isAdmin && <FloatingElements />}
       {!isAdmin && <InstallPrompt />}
+      <AddToCartNotification />
       <Toaster 
         position="top-center" 
         toastOptions={{

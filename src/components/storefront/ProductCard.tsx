@@ -65,6 +65,18 @@ function ProductCardComponent({
   const recentlyAdded = isRecentlyAdded(p);
   
   const add = useCart((s) => s.add);
+  const showAddedNotification = useCart((s) => s.showAddedNotification);
+  const [justAdded, setJustAdded] = useState(false);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    add({ ...p, estoque: Math.max(1, maxStock) }, 1, true); // silent: true -> NÃO abre carrinho lateral
+    showAddedNotification(p.nome);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 3000);
+  };
+
   const cartItems = useCart((s) => s.items);
   const cartItem = cartItems.find((item) => String(item.id) === String(p.id));
   const inCartQty = cartItem?.qty || 0;
@@ -478,11 +490,8 @@ function ProductCardComponent({
         <button
           type="button"
           aria-label={isService ? "Agendar serviço" : (inCartQty > 0 ? `${inCartQty} no carrinho` : "Adicionar à cesta")}
-          onClick={(e) => {
-            e.preventDefault();
-            add({ ...p, estoque: maxStock });
-          }}
-          className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full backdrop-blur border shadow-xs flex items-center justify-center transition-all duration-200 active:scale-95 relative ${
+          onClick={isService ? undefined : handleAddToCart}
+          className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full backdrop-blur border shadow-xs flex items-center justify-center transition-all duration-200 active:scale-95 relative overflow-hidden ${
             inCartQty > 0 
               ? "bg-primary text-white border-primary shadow-sm hover:brightness-105" 
               : "bg-white/95 hover:bg-white text-muted-foreground border-slate-200"
@@ -504,6 +513,18 @@ function ProductCardComponent({
             >
               {inCartQty > 0 ? inCartQty : "+"}
             </span>
+          )}
+
+          {/* Barrinha de carregamento rápido (cerca de 3 segundos) no botão */}
+          {justAdded && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20 overflow-hidden">
+              <div 
+                className="h-full bg-emerald-400"
+                style={{
+                  animation: 'cartBtnProgress 3s linear forwards'
+                }}
+              />
+            </div>
           )}
         </button>
       </div>
@@ -717,10 +738,11 @@ function ProductCardComponent({
           {isAvailable ? (
             <button 
               onClick={(e) => { 
-                e.preventDefault(); 
+                if (isService) return;
                 if (!p.precoSobConsulta) {
-                  add({ ...p, estoque: Math.max(1, maxStock) }); 
+                  handleAddToCart(e);
                 } else {
+                  e.preventDefault();
                   window.location.href = `/${(params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao"}/produto/${p.url || p.id}`;
                 }
               }}
@@ -731,7 +753,7 @@ function ProductCardComponent({
                       ? { backgroundColor: 'var(--btn-primary-bg, var(--primary))', color: 'var(--btn-primary-text, var(--primary-foreground, #ffffff))' }
                       : undefined)
               }
-              className={`w-full font-bold text-xs py-2 sm:py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs hover:brightness-110 active:scale-[0.99] ${
+              className={`w-full font-bold text-xs py-2 sm:py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs hover:brightness-110 active:scale-[0.99] relative overflow-hidden ${
                 activePromo?.corBotao
                   ? ''
                   : isService
@@ -747,6 +769,18 @@ function ProductCardComponent({
                   <span>{activePromo?.textoBotao || "COMPRAR"}</span>
                 </>
               ))}
+
+              {/* Barrinha de carregamento rápido (cerca de 3 segundos) no botão */}
+              {justAdded && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30 overflow-hidden rounded-b-lg">
+                  <div 
+                    className="h-full bg-emerald-400"
+                    style={{
+                      animation: 'cartBtnProgress 3s linear forwards'
+                    }}
+                  />
+                </div>
+              )}
             </button>
           ) : (
             <div className="flex flex-col gap-1.5 w-full">

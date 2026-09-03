@@ -239,4 +239,14 @@
   min-height: 2.5rem !important;
 }
 
+@keyframes cartBtnProgress {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+
 

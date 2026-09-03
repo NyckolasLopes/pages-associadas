@@ -3,7 +3,7 @@ import { Fragment } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Search, MapPin, ShoppingBasket, Menu, Phone, User, X, Truck, Sparkles, Trash2,
-  Pill, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Plus, Camera, Package, Home, Tag, ShieldCheck, ChevronDown, Flame, HeartPulse, Navigation,
+  Pill, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Plus, Camera, Package, Home, Tag, ShieldCheck, ChevronDown, ChevronRight, LayoutGrid, Flame, HeartPulse, Navigation,
   Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight, ArrowLeft, Ticket, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
@@ -742,15 +742,15 @@ export function Header() {
               <ShoppingBasket className="h-5 w-5" />
               <span className="hidden sm:inline">Cesta</span>
               {mounted && count > 0 && (
-                <Badge 
+                <span 
                   style={isParceiro ? {
                     backgroundColor: 'var(--cart-badge-bg, var(--accent))',
                     color: 'var(--cart-badge-text, var(--accent-foreground))'
                   } : undefined}
-                  className="absolute -top-2 -right-2 bg-accent text-accent-foreground"
+                  className="absolute -top-2 -right-2 bg-accent text-accent-foreground h-5 min-w-5 px-1 rounded-full flex items-center justify-center text-[10.5px] font-black leading-none text-center shadow-xs border border-white/20"
                 >
                   {count}
-                </Badge>
+                </span>
               )}
             </Button>
           </SheetTrigger>
@@ -791,15 +791,15 @@ export function Header() {
                     style={isParceiro ? { color: 'var(--cart-btn-text, var(--primary))' } : undefined} 
                   />
                   {mounted && count > 0 && (
-                    <Badge 
+                    <span 
                       style={isParceiro ? {
                         backgroundColor: 'var(--cart-badge-bg, var(--accent))',
                         color: 'var(--cart-badge-text, var(--accent-foreground))'
                       } : undefined}
-                      className="absolute -top-1 -right-1 bg-accent text-accent-foreground h-5 min-w-5 text-[10px] px-1"
+                      className="absolute -top-1.5 -right-1.5 bg-accent text-accent-foreground h-5 min-w-5 px-1 rounded-full flex items-center justify-center text-[10.5px] font-black leading-none text-center shadow-xs border border-white/20"
                     >
                       {count}
-                    </Badge>
+                    </span>
                   )}
                 </button>
               </SheetTrigger>
@@ -988,9 +988,9 @@ export function Header() {
           <ShoppingBasket className="h-5 w-5" />
           <span className="text-[10px] font-bold">Cesta</span>
           {mounted && count > 0 && (
-            <Badge className="absolute -top-1 -right-2 bg-accent text-accent-foreground h-4 min-w-4 text-[9px] px-0.5 flex items-center justify-center">
+            <span className="absolute -top-1 -right-2 bg-accent text-accent-foreground h-4 min-w-4 px-0.5 rounded-full flex items-center justify-center text-[9px] font-black leading-none text-center shadow-xs">
               {count}
-            </Badge>
+            </span>
           )}
         </button>
         <a href={activePharmacy?.whatsapp ? (activePharmacy.whatsapp.startsWith('55') ? 'https://wa.me/' + activePharmacy.whatsapp.replace(/\D/g, '') : 'https://wa.me/55' + activePharmacy.whatsapp.replace(/\D/g, '')) : "https://wa.me/5508000000000"} className="flex flex-col items-center gap-1 text-primary">
@@ -1217,6 +1217,20 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
             </Link>
           )}
 
+          {/* Opção Todas as categorias no Mobile */}
+          <Link
+            to="/$storeSlug/categorias"
+            params={{ storeSlug }}
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-between px-3 py-3 rounded-lg text-sm font-bold hover:bg-muted transition text-foreground"
+          >
+            <div className="flex items-center gap-3">
+              <LayoutGrid className="h-5 w-5 text-primary shrink-0" />
+              <span>Todas as categorias</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+
           {cats.map((c) => {
             const storeIconKey = (selectedPharmacyId && storeCategoryIcons?.[selectedPharmacyId]?.[c.id])
               || categoryIcons?.[c.id]
@@ -1412,7 +1426,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
         <ul className="flex items-stretch justify-start lg:justify-between w-full gap-1 lg:gap-2 xl:gap-8 overflow-x-auto scrollbar-none">
           <li onMouseEnter={() => handleMouseEnter("all")} className="shrink-0 flex items-center">
             <Link
-              to="/$storeSlug/busca"
+              to="/$storeSlug/categorias"
               params={{ storeSlug }}
               style={isParceiro ? { color: 'var(--all-cats-text, var(--menu-text, inherit))' } : undefined}
               className={`inline-flex items-center gap-1 xl:gap-2 px-1 lg:px-2 py-3 text-[11px] lg:text-[12px] xl:text-[13px] font-bold transition border-b-2 whitespace-nowrap ${

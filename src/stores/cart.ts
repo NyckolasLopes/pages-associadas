@@ -135,7 +135,9 @@ interface CartState {
   drawerOpen: boolean;
   pbm: PBMCredential | null;
   lastUpdatedAt: number | null;
-  appliedCoupon: string | null;
+  addedNotification: { open: boolean; productName?: string } | null;
+  showAddedNotification: (productName?: string) => void;
+  hideAddedNotification: () => void;
   lastOrder: any | null;
   add: (p: Produto, qty?: number, silent?: boolean) => void;
   remove: (id: string) => void;
@@ -214,6 +216,9 @@ export const useCart = create<CartState>()(
       pbm: null,
       lastUpdatedAt: null,
       appliedCoupon: null,
+      addedNotification: null,
+      showAddedNotification: (productName?: string) => set({ addedNotification: { open: true, productName } }),
+      hideAddedNotification: () => set({ addedNotification: null }),
       lastOrder: null,
       selectedPharmacyId: null,
       selectedFreight: "pickup",
