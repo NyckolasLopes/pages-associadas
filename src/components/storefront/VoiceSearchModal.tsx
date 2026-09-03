@@ -227,36 +227,97 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
           {/* Estado: microfone bloqueado */}
           {state === "blocked" && (
             <>
-              <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <MicOff className="w-9 h-9 text-amber-500" />
+              <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <MicOff className="w-8 h-8 text-red-500" />
               </div>
-              <div className="text-center space-y-2">
-                <p className="font-bold text-lg">Microfone bloqueado</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Seu navegador bloqueou o acesso ao microfone. Clique no ícone{" "}
-                  <strong>🔒</strong> na barra de endereços, ative o{" "}
-                  <strong>Microfone</strong> para este site e recarregue a página.
-                </p>
+
+              <div className="w-full space-y-3">
+                <div className="text-center">
+                  <p className="font-bold text-base">Microfone bloqueado</p>
+                  <p className="text-xs text-muted-foreground mt-1">Siga UMA das opções abaixo:</p>
+                </div>
+
+                {/* Opção 1 — Edge/Chrome settings */}
+                <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-3 space-y-1.5">
+                  <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Opção 1 — Configurações do navegador</p>
+                  <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-1 list-decimal list-inside leading-relaxed">
+                    <li>Clique em <strong>"Configurações do site"</strong> no painel 🔒</li>
+                    <li>Encontre <strong>Microfone</strong> e clique em <strong>Permitir</strong></li>
+                    <li>Clique em <strong>"Tentar novamente"</strong> abaixo</li>
+                  </ol>
+                  <button
+                    type="button"
+                    className="mt-1 text-[11px] text-primary underline underline-offset-2"
+                    onClick={() => {
+                      const url = "edge://settings/content/microphone";
+                      navigator.clipboard?.writeText(url).catch(() => {});
+                      alert('Cole este endereço na barra do navegador:\n\nedge://settings/content/microphone\n\n(já copiado para sua área de transferência)');
+                    }}
+                  >
+                    Copiar endereço das configurações →
+                  </button>
+                </div>
+
+                {/* Opção 2 — Windows */}
+                <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-3 space-y-1">
+                  <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Opção 2 — Configurações do Windows</p>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    <strong>Iniciar</strong> → <strong>Configurações</strong> → <strong>Privacidade e Segurança</strong> → <strong>Microfone</strong> → ative para o Edge/Chrome
+                  </p>
+                </div>
               </div>
-              <div className="flex flex-col gap-2 w-full">
-                <a
-                  href={MIC_SETTINGS_URL}
-                  className="text-xs text-center text-primary underline underline-offset-2"
-                  onClick={(e) => {
-                    // Links chrome:// e edge:// não funcionam via <a> — copia para clipboard
-                    e.preventDefault();
-                    navigator.clipboard?.writeText(MIC_SETTINGS_URL).catch(() => {});
-                    toast?.info?.("Cole o endereço copiado na barra de endereços do seu navegador para acessar as configurações de microfone.");
-                  }}
-                >
-                  Abrir configurações de microfone →
-                </a>
+
+              <div className="flex gap-2 w-full">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="w-full py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:opacity-90 transition"
+                  className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition"
                 >
-                  Entendido
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setState("requesting");
+                    setTranscript("");
+                    setInterimText("");
+                    // Re-dispara o fluxo de permissão
+                    navigator.mediaDevices
+                      .getUserMedia({ audio: true })
+                      .then((stream) => {
+                        stream.getTracks().forEach((t) => t.stop());
+                        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                        if (!SR) { setState("error"); return; }
+                        const r = new SR();
+                        r.lang = "pt-BR";
+                        r.interimResults = true;
+                        r.maxAlternatives = 1;
+                        r.continuous = false;
+                        r.onstart = () => setState("listening");
+                        r.onresult = (event: any) => {
+                          let interim = "", final = "";
+                          for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const t = event.results[i][0].transcript;
+                            if (event.results[i].isFinal) final += t; else interim += t;
+                          }
+                          setInterimText(interim);
+                          if (final) {
+                            setTranscript(final);
+                            setInterimText("");
+                            setState("result");
+                            setTimeout(() => { onResult(final); handleClose(); }, 600);
+                          }
+                        };
+                        r.onerror = () => setState("blocked");
+                        r.onend = () => {};
+                        r.start();
+                        setState("listening");
+                      })
+                      .catch(() => setState("blocked"));
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:opacity-90 transition"
+                >
+                  Tentar novamente
                 </button>
               </div>
             </>
