@@ -215,6 +215,8 @@ export function Header() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
 
+  const [micBlockedOpen, setMicBlockedOpen] = useState(false);
+
   const handleVoiceSearch = async () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -223,18 +225,25 @@ export function Header() {
     }
     if (isListening) return;
 
-    // Solicitar permissão de microfone explicitamente antes de iniciar
-    // Isso garante que o popup nativo do browser apareça
+    // Verifica estado da permissão antes de tentar (evita falha silenciosa)
+    try {
+      const permStatus = await navigator.permissions.query({ name: "microphone" as PermissionName });
+      if (permStatus.state === "denied") {
+        setMicBlockedOpen(true);
+        return;
+      }
+    } catch {
+      // navigator.permissions não disponível — continua normalmente
+    }
+
+    // Solicita permissão explicitamente para disparar o popup nativo do browser
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Libera o stream imediatamente — o SpeechRecognition gerencia seu próprio áudio
       stream.getTracks().forEach((t) => t.stop());
     } catch (err: any) {
       const name = err?.name || "";
-      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        toast.error(
-          "Permissão de microfone negada. Clique no ícone 🔒 na barra de endereços e ative o Microfone."
-        );
+      if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
+        setMicBlockedOpen(true);
       } else {
         toast.error("Não foi possível acessar o microfone. Verifique seu dispositivo.");
       }
@@ -258,13 +267,11 @@ export function Header() {
       setIsListening(false);
       const code = event?.error || "";
       if (code === "not-allowed" || code === "service-not-allowed") {
-        toast.error(
-          "Permissão de microfone negada. Clique no ícone 🔒 na barra de endereços e ative o Microfone."
-        );
+        setMicBlockedOpen(true);
       } else if (code === "network") {
         toast.error("Sem conexão para reconhecimento de voz. Verifique sua internet.");
       } else if (code === "no-speech" || code === "aborted" || code === "audio-capture") {
-        // Silêncio ou cancelamento — não mostrar erro
+        // Silêncio ou cancelamento — sem toast
       } else {
         toast.error("Não foi possível reconhecer a voz. Tente novamente.");
       }
@@ -273,6 +280,56 @@ export function Header() {
       setIsListening(false);
     };
   };
+
+  // Modal de instrução para desbloquear o microfone no browser
+  const MicBlockedModal = micBlockedOpen ? (
+    <div
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={() => setMicBlockedOpen(false)}
+    >
+      <div
+        className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 animate-in slide-in-from-bottom-4 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+            <Mic className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <h3 className="font-bold text-base">Microfone bloqueado</h3>
+            <p className="text-xs text-muted-foreground">Siga os passos para ativar</p>
+          </div>
+        </div>
+
+        <ol className="space-y-2.5 text-sm text-foreground/90 mb-5">
+          <li className="flex gap-2.5 items-start">
+            <span className="w-5 h-5 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+            <span>Clique no ícone <strong>🔒</strong> (cadeado) na barra de endereços do navegador</span>
+          </li>
+          <li className="flex gap-2.5 items-start">
+            <span className="w-5 h-5 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+            <span>Procure <strong>"Microfone"</strong> na lista de permissões do site</span>
+          </li>
+          <li className="flex gap-2.5 items-start">
+            <span className="w-5 h-5 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+            <span>Se não aparecer, vá em <strong>Configurações do site</strong> → <strong>Microfone</strong> e remova o bloqueio</span>
+          </li>
+          <li className="flex gap-2.5 items-start">
+            <span className="w-5 h-5 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+            <span><strong>Recarregue a página</strong> e tente novamente</span>
+          </li>
+        </ol>
+
+        <button
+          type="button"
+          onClick={() => setMicBlockedOpen(false)}
+          className="w-full py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:opacity-90 transition active:scale-95"
+        >
+          Entendido
+        </button>
+      </div>
+    </div>
+  ) : null;
 
   const handleCheckoutClick = () => {
     if (!useAuth.getState().user) {
@@ -519,6 +576,7 @@ export function Header() {
 
   return (
     <>
+      {MicBlockedModal}
       <BarcodeScannerModal 
         open={scannerOpen} 
         onOpenChange={(open) => {
