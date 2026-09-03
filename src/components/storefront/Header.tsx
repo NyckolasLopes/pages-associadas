@@ -891,6 +891,18 @@ export function Header() {
 
       {/* === MOBILE HEADER (4 linhas) === */}
       <div className="md:hidden">
+        {/* Apelido — mobile (equivalente à top bar do desktop) */}
+        {activePharmacy?.apelido && (
+          <div
+            className="text-center text-xs py-1 font-bold tracking-wide truncate px-4"
+            style={{
+              backgroundColor: 'var(--info-bar-bg, var(--primary))',
+              color: 'var(--info-bar-text, var(--primary-foreground))',
+            }}
+          >
+            {activePharmacy.apelido}
+          </div>
+        )}
         {/* Linha 1: Logo | Cesta + Menu */}
         <div className="container-fa flex items-center justify-between py-2.5">
           <Logo className="max-h-12 h-auto max-w-[180px]" />
