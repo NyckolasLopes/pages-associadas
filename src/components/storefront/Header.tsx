@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Search, MapPin, ShoppingBasket, Menu, Phone, User, X, Truck, Sparkles, Trash2,
   Pill, Leaf, Stethoscope, Baby, Flower2, ShoppingBag, Plus, Camera, Package, Home, Tag, ShieldCheck, ChevronDown, ChevronRight, LayoutGrid, Flame, HeartPulse, Navigation,
-  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight, ArrowLeft, Ticket, TrendingDown
+  Eye, Smile, Scale, BriefcaseMedical, Coffee, Dumbbell, Droplets, Activity, Thermometer, Battery, Wind, Percent, Heart, Bell, Loader2, ArrowRight, ArrowLeft, Ticket, TrendingDown, Mic
 } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScannerModal } from "./BarcodeScannerModal";
@@ -213,6 +213,35 @@ export function Header() {
   const [isGeoLoading, setIsGeoLoading] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Seu navegador não suporta pesquisa por voz.");
+      return;
+    }
+    if (isListening) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    setIsListening(true);
+    recognition.start();
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setQ(transcript);
+      setSearchOpen(true);
+      setIsListening(false);
+    };
+    recognition.onerror = () => {
+      setIsListening(false);
+      toast.error("Não foi possível reconhecer a voz. Tente novamente.");
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+  };
 
   const handleCheckoutClick = () => {
     if (!useAuth.getState().user) {
@@ -557,17 +586,30 @@ export function Header() {
                     color: 'var(--search-text, inherit)',
                     borderColor: 'var(--search-border, var(--border))',
                   } : undefined}
-                  className="pl-10 h-11 rounded-full border-2 focus-visible:border-primary w-full pr-10"
+                  className="pl-10 h-11 rounded-full border-2 focus-visible:border-primary w-full pr-20"
                 />
-                <button
-                  type="button"
-                  aria-label="Escanear código"
-                  onClick={() => setScannerOpen(true)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
-                  style={isParceiro ? { color: 'var(--search-icon, var(--muted-foreground))' } : undefined}
-                >
-                  <Camera className="h-4 w-4" />
-                </button>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label="Pesquisar por voz"
+                    onClick={handleVoiceSearch}
+                    className={`text-muted-foreground hover:text-primary transition-colors ${
+                      isListening ? "text-red-500 animate-pulse" : ""
+                    }`}
+                    style={isParceiro ? { color: isListening ? undefined : 'var(--search-icon, var(--muted-foreground))' } : undefined}
+                  >
+                    <Mic className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Escanear código"
+                    onClick={() => setScannerOpen(true)}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    style={isParceiro ? { color: 'var(--search-icon, var(--muted-foreground))' } : undefined}
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </PopoverTrigger>
             <PopoverContent
@@ -825,16 +867,28 @@ export function Header() {
                         setSearchOpen(true);
                       }}
                       placeholder="Escreva o que procura ou escaneie o código de barras"
-                      className="pl-10 h-11 rounded-full border-2 w-full pr-12"
+                      className="pl-10 h-11 rounded-full border-2 w-full pr-20"
                     />
-                    <button
-                      type="button"
-                      aria-label="Escanear código"
-                      onClick={() => setScannerOpen(true)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
-                    >
-                      <Camera className="h-5 w-5" />
-                    </button>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label="Pesquisar por voz"
+                        onClick={handleVoiceSearch}
+                        className={`transition-colors ${
+                          isListening ? "text-red-500 animate-pulse" : "text-primary"
+                        }`}
+                      >
+                        <Mic className="h-5 w-5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Escanear código"
+                        onClick={() => setScannerOpen(true)}
+                        className="text-primary"
+                      >
+                        <Camera className="h-5 w-5" />
+                      </button>
+                    </div>
                   </div>
                 </PopoverTrigger>
                 <PopoverContent
