@@ -240,6 +240,7 @@ function AdminProdutos() {
     try {
       await addOrUpdateProduct(finalProduct, currentLojaId || undefined);
       setEditorOpen(false);
+      setServerProducts(prev => prev.map(prod => prod.id === finalProduct.id ? { ...prod, ...finalProduct } : prod));
       toast.success(
         currentLojaId
           ? `Produto atualizado exclusivamente para a loja ${currentLoja?.nome || ""}!`

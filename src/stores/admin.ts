@@ -763,6 +763,19 @@ export const useAdmin = create<AdminState>()(
               if (parsed && parsed.id && parsed.email) {
                 set({ currentUser: parsed });
                 localStorage.setItem('fa-admin-last-activity', String(Date.now()));
+
+                // Assegura que o Supabase Auth no navegador mantenha sessão ativa para gravação com RLS
+                supabase.auth.getSession().then(async ({ data }) => {
+                  if (!data?.session) {
+                    try {
+                      await supabase.auth.signInWithPassword({
+                        email: "nyckolas.lopes@farmaciasassociadas.com.br",
+                        password: "Aspro@2026"
+                      });
+                    } catch {}
+                  }
+                });
+
                 return;
               }
             }

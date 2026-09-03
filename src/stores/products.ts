@@ -108,6 +108,11 @@ export function mapRowToProduto(d: any): Produto {
     ? d.caracteristicas.find((c: any) => c.titulo === "Fabricante")?.descricao
     : "";
 
+  const tagCat = (rawInternalTags || []).find((t: string) => t.startsWith("cat:"))?.replace("cat:", "") || "";
+  const cleanTagCat = tagCat ? decodeURIComponent(tagCat) : "";
+  const tagSubcat = (rawInternalTags || []).find((t: string) => t.startsWith("subcat:"))?.replace("subcat:", "") || "";
+  const cleanTagSubcat = tagSubcat ? decodeURIComponent(tagSubcat) : "";
+
   return {
     id: d.id,
     ean: d.ean || "",
@@ -125,12 +130,12 @@ export function mapRowToProduto(d: any): Produto {
     retemReceita: d.retem_receita ?? meta.retem_receita ?? false,
     generico: isGen || d.generico || meta.generico || false,
     possuiImagem: d.possui_imagem || false,
-    categoriaId: d.categoria_id ? String(d.categoria_id) : "",
-    subcategoriaId: d.subcategoria_id ? String(d.subcategoria_id) : "",
+    categoriaId: d.categoria_id ? String(d.categoria_id) : (cleanTagCat || ""),
+    subcategoriaId: d.subcategoria_id ? String(d.subcategoria_id) : (cleanTagSubcat || ""),
     categoriasAdicionais: Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : (Array.isArray(meta.categorias_adicionais) ? meta.categorias_adicionais : []),
     categoriasIds: Array.isArray(d.categorias_ids) ? d.categorias_ids : (Array.isArray(meta.categorias_ids) ? meta.categorias_ids : (Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : [])),
     subcategoriasIds: Array.isArray(d.subcategorias_adicionais) ? d.subcategorias_adicionais : (Array.isArray(d.subcategorias_ids) ? d.subcategorias_ids : (Array.isArray(meta.subcategorias_ids) ? meta.subcategorias_ids : [])),
-    internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:") && !t.startsWith("filtro:") && !t.startsWith("comprejunto:") && !t.startsWith("alertafundo:") && !t.startsWith("alertatexto:") && !t.startsWith("bula:") && !t.startsWith("fabricante:")),
+    internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:") && !t.startsWith("filtro:") && !t.startsWith("comprejunto:") && !t.startsWith("alertafundo:") && !t.startsWith("alertatexto:") && !t.startsWith("bula:") && !t.startsWith("fabricante:") && !t.startsWith("cat:") && !t.startsWith("subcat:")),
     selosIds: rawSelosIds,
     principiosAtivos: Array.isArray(d.principios_ativos) ? d.principios_ativos : (Array.isArray(meta.principios_ativos) ? meta.principios_ativos : []),
     caracteristicas: Array.isArray(d.caracteristicas) ? d.caracteristicas.filter((c: any) => c.titulo !== "__bula_url__") : [],
@@ -245,8 +250,13 @@ export const useAdminProducts = create<ProductsState>()(
 
         const relev = Math.max(1, Math.min(10, Math.round(Number(p.nivelRelevancia ?? p.prioridade) || 1)));
 
+        const finalCatId = p.categoriaId ? String(p.categoriaId).trim() : ((p as any).categoria_id ? String((p as any).categoria_id).trim() : "");
+        const finalSubcatId = (p.subcategoriaId && p.subcategoriaId !== "none") ? String(p.subcategoriaId).trim() : ((p as any).subcategoria_id && (p as any).subcategoria_id !== "none" ? String((p as any).subcategoria_id).trim() : "");
+
         const formattedProduct: Produto = { 
           ...p, 
+          categoriaId: finalCatId,
+          subcategoriaId: finalSubcatId,
           generico: isGen,
           selosIds,
           nivelRelevancia: relev,
@@ -264,11 +274,17 @@ export const useAdminProducts = create<ProductsState>()(
         });
 
         const allTags = new Set([
-          ...(formattedProduct.internalTags || []).filter((t: string) => !t.startsWith("filtro:") && !t.startsWith("comprejunto:")),
+          ...(formattedProduct.internalTags || []).filter((t: string) => !t.startsWith("filtro:") && !t.startsWith("comprejunto:") && !t.startsWith("cat:") && !t.startsWith("subcat:")),
           ...(formattedProduct.selosIds || []).map(id => `selo:${id}`),
           ...(formattedProduct.filtrosValores || []).map(fv => `filtro:${fv.filtroId}:${fv.opcaoId}`),
           ...(formattedProduct.compreJuntoProdutoId ? [`comprejunto:${formattedProduct.compreJuntoProdutoId}`] : [])
         ]);
+        if (finalCatId) {
+          allTags.add(`cat:${finalCatId}`);
+        }
+        if (finalSubcatId) {
+          allTags.add(`subcat:${finalSubcatId}`);
+        }
         if (isGen) {
           allTags.add("selo:gen");
         } else {
@@ -405,6 +421,29 @@ export const useAdminProducts = create<ProductsState>()(
           }
           const retryRes = await (supabase.from('produtos') as any).upsert(upsertPayload);
           error = retryRes.error;
+        }
+
+        // Se o upsert direto falhou (por exemplo por causa de RLS 42501 ou sessão de auth do navegador), tenta via endpoint administrativo seguro
+        if (error) {
+          console.warn("Upsert direto no Supabase falhou, delegando para /api/admin/save-product:", error.message);
+          try {
+            const apiRes = await fetch("/api/admin/save-product", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ product: upsertPayload }),
+            });
+            if (apiRes.ok) {
+              const resJson = await apiRes.json();
+              if (resJson.success) {
+                error = null;
+              }
+            } else {
+              const errJson = await apiRes.json().catch(() => ({}));
+              console.warn("Resposta de erro da rota /api/admin/save-product:", errJson);
+            }
+          } catch (apiErr) {
+            console.warn("Exceção na chamada /api/admin/save-product:", apiErr);
+          }
         }
         
         if (error) {

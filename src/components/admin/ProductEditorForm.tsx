@@ -236,7 +236,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         ean2: cleanInitialSecEans[0] || "",
         ean3: cleanInitialSecEans[1] || "",
         imagens: initialImagens,
-        categoriasAdicionais: product.categoriasAdicionais || [],
+        categoriaId: product.categoriaId ? String(product.categoriaId) : ((product as any).categoria_id ? String((product as any).categoria_id) : ""),
+        subcategoriaId: (product.subcategoriaId && product.subcategoriaId !== "none") ? String(product.subcategoriaId) : (((product as any).subcategoria_id && (product as any).subcategoria_id !== "none") ? String((product as any).subcategoria_id) : ""),
         bulaUrl: product.bulaUrl ?? (product as any).bula_url ?? (product as any).metadata?.bula_url ?? (Array.isArray(product.caracteristicas) ? product.caracteristicas.find((c: any) => c.titulo === "__bula_url__")?.descricao : "") ?? "",
         fabricante: product.fabricante ?? (product as any).fabricante ?? (product as any).metadata?.fabricante ?? (Array.isArray(product.caracteristicas) ? product.caracteristicas.find((c: any) => c.titulo === "Fabricante")?.descricao : "") ?? "",
         ativo: product.ativo ?? true,
@@ -346,6 +347,11 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     finalFormData.retemReceita = finalFormData.retemReceitaStatus === "retem" || (finalFormData.retemReceitaStatus !== "nao_retem" && finalFormData.retemReceitaStatus !== "nao_aplica" && finalFormData.retemReceita === true);
     
     // Combina as categorias e subcategorias de volta no campo categoriasAdicionais antes de salvar
+    finalFormData.categoriaId = finalFormData.categoriaId ? String(finalFormData.categoriaId).trim() : "";
+    finalFormData.subcategoriaId = (finalFormData.subcategoriaId && finalFormData.subcategoriaId !== "none") ? String(finalFormData.subcategoriaId).trim() : "";
+    (finalFormData as any).categoria_id = finalFormData.categoriaId;
+    (finalFormData as any).subcategoria_id = finalFormData.subcategoriaId;
+
     finalFormData.categoriasAdicionais = [
       ...(finalFormData.categoriasIds || []),
       ...(finalFormData.subcategoriasIds || [])
