@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart, useGeoCep } from "@/stores/cart";
 import { useFavorites } from "@/stores/favorites";
-import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info, Ticket, Check, Copy, Bell } from "lucide-react";
+import { FileText, Download, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info, Ticket, Check, Copy, Bell } from "lucide-react";
 import { NotFound } from "@/components/storefront/NotFound";
 import categoriesData from "@/data/categories.json";
 import {
@@ -1439,7 +1439,7 @@ function PDP() {
                         ...(isRetencaoAplica ? [{ label: "Retém receita", value: p.retemReceita ? 'Sim' : 'Não' }] : []),
                         ...(p.tarja && p.tarja !== "Sem Tarja" && p.tarja !== "none" ? [{ label: "Tarja", value: p.tarja }] : []),
                         ...(p.tipoMedicamento && p.tipoMedicamento !== 'none' ? [{ label: "Tipo de medicamento", value: p.tipoMedicamento.charAt(0).toUpperCase() + p.tipoMedicamento.slice(1) }] : (checkIsGenerico(p) ? [{ label: "Tipo de medicamento", value: "Genérico" }] : [])),
-                        { label: "Marca", value: p.marca || 'Não informada' },
+                        { label: "Laboratório", value: p.marca || 'Não informado' },
                         ...(p.registroAnvisa ? [{ label: "Registro ANVISA", value: p.registroAnvisa }] : []),
                         ...((p.principiosAtivos && Array.isArray(p.principiosAtivos) && p.principiosAtivos.length > 0) ? [{
                           label: "Princípios Ativos / Dosagem",
@@ -1458,6 +1458,7 @@ function PDP() {
                         { label: "Cód Interno:", value: p.codigoInterno || (p as any).codigo_interno || (p.sku && p.sku !== p.ean ? p.sku : "") || (p.id && p.id !== p.ean ? p.id : '-') },
                         { label: "Código de Barras/EAN", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
                         ...(p.marca ? [{ label: "Marca", value: p.marca }] : []),
+                        ...(p.fabricante ? [{ label: "Fabricante", value: p.fabricante }] : []),
                         ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo || "Característica", value: c.descricao })) : []),
                       ]).filter(row => row.value !== null && row.value !== '' && row.value !== undefined).map((row, idx) => (
                         <tr key={idx} className={`${idx % 2 === 0 ? 'bg-slate-50 ' : ''}border-b last:border-b-0`}>
@@ -1468,6 +1469,31 @@ function PDP() {
                     </tbody>
                   </table>
                 </div>
+
+                {(p.bulaUrl || (p as any).bula_url) && (
+                  <div className="mt-4 p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: "#008000" }}>
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-sm text-slate-900 block">{isMedication ? "Bula do Medicamento" : "Bula do Produto"}</span>
+                        <span className="text-xs text-slate-500">Documento em PDF com posologia e instruções aprovadas</span>
+                      </div>
+                    </div>
+                    <a
+                      href={p.bulaUrl || (p as any).bula_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      className="px-4 py-2 rounded-lg text-white font-bold text-xs flex items-center gap-1.5 shrink-0 transition-transform active:scale-95 shadow-xs"
+                      style={{ backgroundColor: "#008000" }}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Baixar Bula (PDF)
+                    </a>
+                  </div>
+                )}
 
                 {p.principiosAtivos && Array.isArray(p.principiosAtivos) && p.principiosAtivos.length > 0 && (
                   <div className="pt-4 border-t">
@@ -1871,7 +1897,7 @@ function PDP() {
                   <>
                     {p.marca && (
                       <div>
-                        <strong className="block text-xs text-muted-foreground">Marca</strong>
+                        <strong className="block text-xs text-muted-foreground">Laboratório</strong>
                         <div className="font-medium">{p.marca}</div>
                       </div>
                     )}
@@ -1896,6 +1922,18 @@ function PDP() {
                   </>
                 ) : (
                   <>
+                    {p.marca && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">Marca</strong>
+                        <div className="font-medium">{p.marca}</div>
+                      </div>
+                    )}
+                    {p.fabricante && (
+                      <div>
+                        <strong className="block text-xs text-muted-foreground">Fabricante</strong>
+                        <div className="font-medium">{p.fabricante}</div>
+                      </div>
+                    )}
                     {p.ncm && (
                       <div>
                         <strong className="block text-xs text-muted-foreground">NCM</strong>
@@ -1949,6 +1987,40 @@ function PDP() {
                 </div>
               )}
             </div>
+
+            {/* Balão de Download da Bula abaixo do quadro de informações técnicas */}
+            {(p.bulaUrl || (p as any).bula_url) && (
+              <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm space-y-3">
+                <div className="flex items-start gap-3">
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs text-white"
+                    style={{ backgroundColor: "#008000" }}
+                  >
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                      {isMedication ? "Bula do Medicamento" : "Bula do Produto"}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
+                      Consulte as instruções de uso, posologia e precauções oficiais aprovadas pela ANVISA.
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href={p.bulaUrl || (p as any).bula_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="w-full py-2.5 px-4 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:brightness-110 active:scale-98 cursor-pointer text-center"
+                  style={{ backgroundColor: "#008000" }}
+                >
+                  <Download className="w-4 h-4" />
+                  Baixar Bula (PDF)
+                </a>
+              </div>
+            )}
           </aside>
         </div>
       </div>

@@ -337,6 +337,8 @@ export type Database = {
           indicacao_terapeutica: string | null
           internal_tags: Json | null
           marca: string | null
+          fabricante: string | null
+          bula_url: string | null
           nome: string
           possui_imagem: boolean
           preco_campanha: number | null
@@ -385,6 +387,8 @@ export type Database = {
           indicacao_terapeutica?: string | null
           internal_tags?: Json | null
           marca?: string | null
+          fabricante?: string | null
+          bula_url?: string | null
           nome: string
           possui_imagem?: boolean
           preco_campanha?: number | null
@@ -434,6 +438,8 @@ export type Database = {
           indicacao_terapeutica?: string | null
           internal_tags?: Json | null
           marca?: string | null
+          fabricante?: string | null
+          bula_url?: string | null
           nome?: string
           possui_imagem?: boolean
           preco_campanha?: number | null

@@ -69,8 +69,9 @@ const FIELD_MAPPINGS: FieldMapping[] = [
 
   // 4. Princípios Ativos & Características
   { key: "principiosAtivos", label: "Princípios Ativos", aliases: ["princípios ativos", "principios ativos", "princípios ativos / fórmula / dcb", "principio ativo", "farmaco", "dcb", "formula", "composição"], required: false, type: "string" },
-  { key: "caracteristicas", label: "Características Adicionais", aliases: ["características adicionais", "caracteristicas adicionais", "características", "caracteristicas", "atributos", "propriedades adicionais"], required: false, type: "string" },
-  { key: "marca", label: "Marca", aliases: ["marca", "marca / fabricante / laboratório", "marca (marca)", "laboratório", "laboratorio", "fabricante", "brand"], required: false, type: "string" },
+  { key: "marca", label: "Marca / Laboratório", aliases: ["marca", "marca / laboratório", "marca (marca)", "laboratório", "laboratorio", "brand", "lab"], required: false, type: "string" },
+  { key: "fabricante", label: "Fabricante", aliases: ["fabricante", "empresa fabricante", "nome fabricante", "manufacturer", "indústria fabricante"], required: false, type: "string" },
+  { key: "bulaUrl", label: "Link da Bula (URL / PDF)", aliases: ["bula", "link da bula", "bula url", "url da bula", "bula pdf", "anexo bula"], required: false, type: "string" },
   { key: "classeTerapeutica", label: "Classe Terapêutica", aliases: ["classe terapêutica", "classe terapeutica", "ação terapeutica", "acao terapeutica"], required: false, type: "string" },
 
   // 5. Regulatório & Farmacêutico
@@ -877,7 +878,9 @@ export function SpreadsheetImporter({ open, onOpenChange, onImport }: Spreadshee
             row["ean3"] = iden.ean_secundario_3 || item.ean3 || item.ean_secundario_3;
             row["eansSecundarios"] = Array.isArray(iden.eans_secundarios_adicionais) ? iden.eans_secundarios_adicionais.join(", ") : (item.eansSecundarios || "");
             row["nome"] = iden.nome_produto_descricao_comercial || iden.nome || item.nome || item.nome_produto || item.descricao_comercial;
-            row["marca"] = iden.marca_fabricante_laboratorio || iden.marca || item.marca || item.laboratorio;
+            row["marca"] = iden.marca_laboratorio || iden.marca || item.marca || item.laboratorio;
+            row["fabricante"] = iden.fabricante || item.fabricante || "";
+            row["bulaUrl"] = reg.bula_url || reg.bula || item.bulaUrl || item.bula_url || "";
 
             row["categoriaId"] = typeof cat === "string" ? cat : (cat.categoria_principal || cat.nome || cat.id || item.categoriaId || item.categoria);
             row["subcategoriaId"] = typeof cat.subcategoria_principal === "string" ? cat.subcategoria_principal : (cat.subcategoria?.nome || cat.subcategoria_principal || item.subcategoriaId || item.subcategoria);

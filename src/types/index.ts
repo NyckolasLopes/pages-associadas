@@ -80,6 +80,9 @@ export interface Produto {
   destaque?: boolean;
   orderBump?: boolean;
   marca?: string;
+  fabricante?: string;
+  bulaUrl?: string;
+  bula_url?: string;
   ncm?: string;
   disponibilidade?: string;
   acaoSemEstoque?: string;

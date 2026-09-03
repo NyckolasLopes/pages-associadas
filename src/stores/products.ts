@@ -99,8 +99,9 @@ export function mapRowToProduto(d: any): Produto {
     nome: toTitleCase(d.nome || ""),
     descricao: d.descricao || "",
     url: d.slug || "",
-    slug: d.slug || "",
     marca: d.marca || meta.marca || "",
+    fabricante: d.fabricante || meta.fabricante || "",
+    bulaUrl: d.bula_url || d.bulaUrl || meta.bula_url || meta.bulaUrl || "",
     precoDe: Number(d.preco_de) || 0,
     precoPor: Number(d.preco_por) || 0,
     estoque: d.estoque || 0,
@@ -267,6 +268,8 @@ export const useAdminProducts = create<ProductsState>()(
 
         const metadataPayload = {
           marca: formattedProduct.marca || null,
+          fabricante: formattedProduct.fabricante || null,
+          bula_url: formattedProduct.bulaUrl || (formattedProduct as any).bula_url || null,
           registro_anvisa: formattedProduct.registroAnvisa || null,
           tarja: formattedProduct.tarja || null,
           retem_receita: formattedProduct.retemReceita || false,
@@ -309,8 +312,9 @@ export const useAdminProducts = create<ProductsState>()(
           eans_secundarios: formattedProduct.eansSecundarios || [],
           nome: formattedProduct.nome,
           descricao: formattedProduct.descricao || null,
-          slug: formattedProduct.slug || formattedProduct.url || `${formattedProduct.nome?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${formattedProduct.id}`,
           marca: formattedProduct.marca || null,
+          fabricante: formattedProduct.fabricante || null,
+          bula_url: formattedProduct.bulaUrl || (formattedProduct as any).bula_url || null,
           preco_de: formattedProduct.precoDe || 0,
           preco_por: formattedProduct.precoPor || 0,
           estoque: formattedProduct.estoque || 0,
@@ -355,10 +359,18 @@ export const useAdminProducts = create<ProductsState>()(
         };
 
         let { error } = await (supabase.from('produtos') as any).upsert(upsertPayload);
-        if (error && error.message?.toLowerCase().includes("alerta_cor")) {
-          // Fallback resiliente se a coluna ainda não tiver sido criada no Supabase remoto
-          delete upsertPayload.alerta_cor_fundo;
-          delete upsertPayload.alerta_cor_texto;
+        if (error && (error.message?.toLowerCase().includes("alerta_cor") || error.message?.toLowerCase().includes("fabricante") || error.message?.toLowerCase().includes("bula_url"))) {
+          // Fallback resiliente se as novas colunas ainda não tiverem sido criadas no Supabase remoto
+          if (error.message?.toLowerCase().includes("alerta_cor")) {
+            delete upsertPayload.alerta_cor_fundo;
+            delete upsertPayload.alerta_cor_texto;
+          }
+          if (error.message?.toLowerCase().includes("fabricante")) {
+            delete upsertPayload.fabricante;
+          }
+          if (error.message?.toLowerCase().includes("bula_url")) {
+            delete upsertPayload.bula_url;
+          }
           const retryRes = await (supabase.from('produtos') as any).upsert(upsertPayload);
           error = retryRes.error;
         }
@@ -525,6 +537,8 @@ export const useAdminProducts = create<ProductsState>()(
               descricao: p.descricao || null,
               slug: p.slug || p.url || `${(p.nome || 'produto').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${p.id}`,
               marca: p.marca || null,
+              fabricante: p.fabricante || null,
+              bula_url: p.bulaUrl || (p as any).bula_url || null,
               preco_de: p.precoDe || 0,
               preco_por: p.precoPor || 0,
               estoque: p.estoque || 0,
@@ -541,7 +555,7 @@ export const useAdminProducts = create<ProductsState>()(
             };
           });
           
-          const { error } = await supabase.from('produtos').upsert(upsertData, { onConflict: 'id', ignoreDuplicates: false });
+          const { error } = await (supabase.from('produtos') as any).upsert(upsertData, { onConflict: 'id', ignoreDuplicates: false });
           if (error) {
             console.error('Error batch upserting products:', error);
             throw new Error(`Erro ao salvar no banco de dados: ${error.message}`);
