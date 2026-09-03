@@ -214,6 +214,7 @@ export function Header() {
   const [isGeoLoading, setIsGeoLoading] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
   const handleVoiceSearch = () => {
     setSearchOpen(false);
