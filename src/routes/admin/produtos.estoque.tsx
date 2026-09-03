@@ -427,7 +427,14 @@ function AdminProdutosEstoque() {
                           <span className="line-clamp-1 max-w-[200px] text-slate-800 font-medium">{p.nome}</span>
                         </div>
                       </td>
-                      <td className="p-3 text-slate-500 font-mono text-xs">{p.ean || p.codigoInterno || "-"}</td>
+                      <td className="p-3 text-slate-500 font-mono text-xs">
+                        <div>{p.ean || "-"}</div>
+                        {(p.codigoInterno || (p.sku && p.sku !== p.ean)) && (
+                          <div className="text-[10px] text-indigo-600 font-sans font-semibold">
+                            Cód: {p.codigoInterno || p.sku}
+                          </div>
+                        )}
+                      </td>
                       <td className="p-3 text-right bg-slate-50/50 border-x border-slate-100">
                         <span className={`inline-block font-bold px-2 py-0.5 rounded-full text-xs ${
                           total > 5 ? 'bg-emerald-50 text-emerald-800' : 

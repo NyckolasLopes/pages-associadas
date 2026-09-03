@@ -406,7 +406,12 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 {isNew ? (isServico ? "Novo Serviço" : "Novo Produto") : (isServico ? `Editar Serviço: ${product.nome}` : `Editar Produto: ${product.nome}`)}
               </h2>
             </div>
-            <div className="text-sm text-slate-500 mt-1">Código: {product.codigoInterno || product.sku || product.id} • Cadastrado via {product.origem || "Sistema"}</div>
+            <div className="text-sm text-slate-500 mt-1">
+              {product.codigoInterno || (product.sku && product.sku !== product.ean ? product.sku : null) ? (
+                <>Código Interno: <span className="font-bold text-slate-700">{product.codigoInterno || (product.sku && product.sku !== product.ean ? product.sku : "")}</span> • </>
+              ) : null}
+              ID: {product.id} • Cadastrado via {product.origem || "Sistema"}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {headerActions}
@@ -593,12 +598,18 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">ID / SKU / Código Interno</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.codigoInterno || formData.sku || ""} onChange={e => setFormData({...formData, codigoInterno: e.target.value, sku: e.target.value})} className="bg-white" />
+                <Label className="font-bold text-xs uppercase text-slate-500">Código Interno</Label>
+                <Input 
+                  disabled={!isGlobalAdmin} 
+                  value={formData.codigoInterno || (formData.sku && formData.sku !== formData.ean ? formData.sku : "") || ""} 
+                  onChange={e => setFormData({...formData, codigoInterno: e.target.value, sku: e.target.value})} 
+                  className="bg-white" 
+                  placeholder="Ex: 556974"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">EAN / Código de Barras*</Label>
-                <Input disabled={!isGlobalAdmin} value={formData.ean || ""} onChange={e => setFormData({...formData, ean: e.target.value})} className="bg-white" />
+                <Input disabled={!isGlobalAdmin} value={formData.ean || ""} onChange={e => setFormData({...formData, ean: e.target.value})} className="bg-white" placeholder="Ex: 7891234567890" />
               </div>
             </div>
             

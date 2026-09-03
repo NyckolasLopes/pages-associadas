@@ -1446,7 +1446,7 @@ export const useAdmin = create<AdminState>()(
           meiosEntregaPersonalizados: p.meiosEntregaPersonalizados,
         };
 
-        const { error } = await supabase.from('lojas').insert({
+        const baseInsertPayload = {
           id: p.id,
           ativa: p.ativo ?? true,
           categoria_associado: p.categoriaAssociado,
@@ -1454,7 +1454,6 @@ export const useAdmin = create<AdminState>()(
           cnpj: p.cnpj || null,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,
-          apelido: p.apelido || null,
           email: p.email,
           telefone: p.telefone,
           horario_funcionamento: p.horarioFuncionamento,
@@ -1474,7 +1473,17 @@ export const useAdmin = create<AdminState>()(
           longitude: p.lng,
           entrega_expressa: p.entregaExpressa,
           status_loja_virtual: p.virtualStoreStatus,
+        };
+
+        let { error } = await supabase.from('lojas').insert({
+          ...baseInsertPayload,
+          apelido: p.apelido || null,
         } as any);
+
+        if (error && error.message?.toLowerCase().includes("apelido")) {
+          const retry = await supabase.from('lojas').insert(baseInsertPayload as any);
+          error = retry.error;
+        }
 
         if (error) {
           console.error("Erro ao adicionar loja:", error);
@@ -1552,14 +1561,13 @@ export const useAdmin = create<AdminState>()(
           meiosEntregaPersonalizados: p.meiosEntregaPersonalizados,
         };
 
-        const { error } = await supabase.from('lojas').update({
+        const baseUpdatePayload = {
           ativa: p.ativo ?? true,
           categoria_associado: p.categoriaAssociado,
           trabalha_com_encarte: p.trabalhaComEncarte,
           cnpj: p.cnpj || null,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,
-          apelido: p.apelido || null,
           email: p.email,
           telefone: p.telefone,
           horario_funcionamento: p.horarioFuncionamento,
@@ -1582,7 +1590,17 @@ export const useAdmin = create<AdminState>()(
           entrega_expressa: p.entregaExpressa,
           status_loja_virtual: p.virtualStoreStatus,
           sistema_utilizado: p.sistemaUtilizado,
+        };
+
+        let { error } = await supabase.from('lojas').update({
+          ...baseUpdatePayload,
+          apelido: p.apelido || null,
         } as any).eq('id', id);
+
+        if (error && error.message?.toLowerCase().includes("apelido")) {
+          const retry = await supabase.from('lojas').update(baseUpdatePayload as any).eq('id', id);
+          error = retry.error;
+        }
 
         if (error) {
           console.error("Erro ao atualizar loja:", error);

@@ -1072,6 +1072,11 @@ function AdminProdutos() {
                                 {p.isRevisado && <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500 text-white border-none">Revisado</Badge>}
                               </div>
                               <div className="flex items-center gap-2 flex-wrap">
+                                {(p.codigoInterno || (p.sku && p.sku !== p.ean)) && (
+                                  <code className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1 py-0.5 rounded font-mono font-bold">
+                                    CÓD: {p.codigoInterno || p.sku}
+                                  </code>
+                                )}
                                 <code className="text-[10px] bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-500">EAN: {p.ean}</code>
                                 <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{p.marca || "Sem marca"}</span>
                                 <span className="text-[10px] text-muted-foreground truncate max-w-[150px] bg-slate-100 px-1.5 py-0.5 rounded">

@@ -1437,7 +1437,7 @@ function PDP() {
                   <table className="w-full text-sm text-left">
                     <tbody>
                       {(isMedication ? [
-                        { label: "Cód Interno:", value: p.codigoInterno || p.sku || p.id },
+                        { label: "Cód Interno:", value: p.codigoInterno || (p as any).codigo_interno || (p.sku && p.sku !== p.ean ? p.sku : "") || (p.id && p.id !== p.ean ? p.id : '-') },
                         { label: "Código de Barras/EAN", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
                         ...(isRetencaoAplica ? [{ label: "Retém receita", value: p.retemReceita ? 'Sim' : 'Não' }] : []),
                         ...(p.tarja && p.tarja !== "Sem Tarja" && p.tarja !== "none" ? [{ label: "Tarja", value: p.tarja }] : []),
@@ -1471,7 +1471,7 @@ function PDP() {
                           }
                         ] : []),
                       ] : [
-                        { label: "Cód Interno:", value: p.codigoInterno || p.sku || p.id },
+                        { label: "Cód Interno:", value: p.codigoInterno || (p as any).codigo_interno || (p.sku && p.sku !== p.ean ? p.sku : "") || (p.id && p.id !== p.ean ? p.id : '-') },
                         { label: "Código de Barras/EAN", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
                         ...(p.marca ? [{ label: "Marca", value: p.marca }] : []),
                         ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo || "Característica", value: c.descricao })) : []),
@@ -1598,10 +1598,8 @@ function PDP() {
             
             <div className="flex flex-wrap items-center gap-4">
               <div className="text-xs text-muted-foreground font-mono bg-muted/50 inline-block px-2 py-1 rounded">
-                CÓD: {(p.id || '').substring(0, 6)}
+                CÓD: {p.codigoInterno || (p as any).codigo_interno || (p.sku && p.sku !== p.ean ? p.sku : "") || p.id}
               </div>
-              
-
             </div>
 
           <div className="flex flex-wrap gap-2">
@@ -1789,7 +1787,7 @@ function PDP() {
                     }`}
                     onClick={() => {
                       if (p.precoSobConsulta) {
-                        const text = encodeURIComponent(`Olá! Gostaria de consultar o preço do produto: ${p.nome} (Ref: ${p.sku || p.id})`);
+                        const text = encodeURIComponent(`Olá! Gostaria de consultar o preço do produto: ${p.nome} (Ref: ${p.codigoInterno || (p.sku && p.sku !== p.ean ? p.sku : "") || p.id})`);
                         window.open(`https://wa.me/5551999999999?text=${text}`, "_blank");
                         return;
                       }

@@ -133,7 +133,14 @@ export function EstoqueLojaTab({ loja }: { loja: Loja }) {
                   return (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.nome}</TableCell>
-                      <TableCell className="text-slate-500">{item.ean || item.codigoInterno || "-"}</TableCell>
+                      <TableCell className="text-slate-500 font-mono text-xs">
+                        <div>{item.ean || "-"}</div>
+                        {(item.codigoInterno || (item.sku && item.sku !== item.ean)) && (
+                          <div className="text-[10px] text-indigo-600 font-sans font-semibold">
+                            Cód: {item.codigoInterno || item.sku}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <span className={`inline-block px-2 py-1 rounded text-sm font-semibold ${stock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
                           {stock} un
