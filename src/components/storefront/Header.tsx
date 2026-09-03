@@ -218,6 +218,7 @@ export function Header() {
   const [voiceOpen, setVoiceOpen] = useState(false);
 
   const handleVoiceSearch = () => {
+    setSearchOpen(false);
     setVoiceOpen(true);
   };
 
@@ -580,7 +581,7 @@ export function Header() {
                   <button
                     type="button"
                     aria-label="Pesquisar por voz"
-                    onClick={handleVoiceSearch}
+                    onClick={(e) => { e.stopPropagation(); handleVoiceSearch(); }}
                     className={`text-muted-foreground hover:text-primary transition-colors ${
                       voiceOpen ? "text-red-500 animate-pulse" : ""
                     }`}
@@ -873,7 +874,7 @@ export function Header() {
                       <button
                         type="button"
                         aria-label="Pesquisar por voz"
-                        onClick={handleVoiceSearch}
+                        onClick={(e) => { e.stopPropagation(); handleVoiceSearch(); }}
                         className={`transition-colors ${
                           voiceOpen ? "text-red-500 animate-pulse" : "text-primary"
                         }`}
