@@ -31,6 +31,7 @@ import { useMarcasStore } from "@/stores/marcas";
 import { useVariacoesStore } from "@/stores/variacoes";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
 import { Spinner } from "@/components/ui/spinner";
+import { compressImageToBlob, uploadToStorage, base64ToBlob, ensureUrlNotBase64 } from "@/utils/storageUpload";
 
 interface ProductEditorFormProps {
   open: boolean;
@@ -68,7 +69,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const [eansSecundariosInput, setEansSecundariosInput] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -78,27 +79,40 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          const webpDataUrl = canvas.toDataURL("image/webp", 0.8);
-          setFormData(prev => {
-            if (!prev) return prev;
-            const newImagens = [...(prev.imagens || []), { caminhoImagem: webpDataUrl }];
-            return { ...prev, imagens: newImagens, foto: newImagens[0]?.caminhoImagem || prev.foto };
-          });
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    try {
+      toast.loading("Otimizando e processando imagem...", { id: "upload-img" });
+      
+      // Comprime no cliente para no máximo 1000x1000 WebP (gera de 40KB a 70KB)
+      const compressedBlob = await compressImageToBlob(file, 1000, 1000, 0.8);
+      
+      let finalUrl = "";
+      try {
+        finalUrl = await uploadToStorage(compressedBlob, "banners", "prod");
+      } catch (err) {
+        console.warn("Storage upload fallback para base64 compactado:", err);
+      }
+
+      // Se falhar o upload direto para o bucket, utiliza o WebP compactado (~50KB, nunca multi-megabytes)
+      if (!finalUrl) {
+        finalUrl = await new Promise<string>((resolve) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.readAsDataURL(compressedBlob);
+        });
+      }
+
+      setFormData(prev => {
+        if (!prev) return prev;
+        const newImagens = [...(prev.imagens || []), { caminhoImagem: finalUrl }];
+        return { ...prev, imagens: newImagens, foto: newImagens[0]?.caminhoImagem || prev.foto };
+      });
+      toast.success("Imagem adicionada com sucesso!", { id: "upload-img" });
+    } catch (err) {
+      console.error("Erro ao carregar imagem:", err);
+      toast.error("Erro ao processar imagem.", { id: "upload-img" });
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const handleRemoveImage = (index: number) => {
@@ -406,6 +420,65 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
     setSaveStep("saving");
     
     try {
+      // 1. Otimizar imagens e desarmar Base64 gigante se o produto já continha imagens pesadas
+      if (finalFormData.imagens && Array.isArray(finalFormData.imagens)) {
+        const sanitizedImagens = await Promise.all(
+          finalFormData.imagens.map(async (imgObj: any) => {
+            const rawUrl = typeof imgObj === 'string' ? imgObj : imgObj?.caminhoImagem || "";
+            if (rawUrl && typeof rawUrl === 'string' && rawUrl.startsWith("data:image/")) {
+              try {
+                const blob = base64ToBlob(rawUrl);
+                const compressed = await compressImageToBlob(blob, 1000, 1000, 0.8);
+                try {
+                  const uploadedUrl = await uploadToStorage(compressed, "banners", "prod");
+                  return typeof imgObj === 'string' ? uploadedUrl : { ...imgObj, caminhoImagem: uploadedUrl };
+                } catch (uErr) {
+                  const smallDataUrl = await new Promise<string>(res => {
+                    const r = new FileReader();
+                    r.onload = () => res(r.result as string);
+                    r.readAsDataURL(compressed);
+                  });
+                  return typeof imgObj === 'string' ? smallDataUrl : { ...imgObj, caminhoImagem: smallDataUrl };
+                }
+              } catch (e) {
+                console.warn("Falha ao otimizar imagem existente:", e);
+                return imgObj;
+              }
+            }
+            return imgObj;
+          })
+        );
+        finalFormData.imagens = sanitizedImagens;
+        const firstImg = sanitizedImagens[0];
+        finalFormData.foto = typeof firstImg === 'string' ? firstImg : (firstImg?.caminhoImagem || finalFormData.foto || "");
+      }
+
+      // 2. Garantir que bulaUrl não seja base64 pesado
+      if (finalFormData.bulaUrl && typeof finalFormData.bulaUrl === 'string' && finalFormData.bulaUrl.startsWith("data:")) {
+        try {
+          const blob = base64ToBlob(finalFormData.bulaUrl);
+          if (blob.size > 3.5 * 1024 * 1024) {
+            toast.error("O arquivo da bula é muito pesado para salvar direto no produto. Use o campo 'URL direta da Bula'.");
+            setSaveStep("idle");
+            return;
+          }
+          const ext = finalFormData.bulaUrl.includes("pdf") ? "pdf" : "doc";
+          const fileName = `bula_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+          const { error: upErr } = await supabase.storage.from("banners").upload(fileName, blob, { upsert: true, contentType: blob.type || "application/pdf" });
+          if (!upErr) {
+            const { data } = supabase.storage.from("banners").getPublicUrl(fileName);
+            finalFormData.bulaUrl = data?.publicUrl || "";
+          } else {
+            toast.error("Falha ao salvar arquivo da bula no armazenamento. Use uma URL direta.");
+            setSaveStep("idle");
+            return;
+          }
+        } catch (e) {
+          console.warn("Erro ao processar bulaUrl:", e);
+          finalFormData.bulaUrl = "";
+        }
+      }
+
       await onSave(finalFormData);
       setSaveStep("done");
       setTimeout(() => {
@@ -413,7 +486,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       }, 1500);
     } catch (error: any) {
       setSaveStep("idle");
-      toast.error("Erro ao salvar produto. Verifique os dados e tente novamente.");
       console.error("Erro no onSave:", error);
     }
   };
@@ -939,6 +1011,10 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
+                            if (file.size > 4 * 1024 * 1024) {
+                              toast.error("O arquivo da bula deve ter no máximo 4MB. Por favor, utilize um arquivo menor ou informe uma URL direta.");
+                              return;
+                            }
                             try {
                               toast.loading("Enviando arquivo da bula...", { id: "upload-bula" });
                               let url = "";
@@ -950,24 +1026,23 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                                   if (!upErr) {
                                     const { data } = supabase.storage.from("banners").getPublicUrl(fileName);
                                     url = data?.publicUrl || "";
+                                  } else {
+                                    console.warn("Storage upload error:", upErr);
                                   }
                                 } catch (err) {
                                   console.warn("Storage upload fallback:", err);
                                 }
                               }
                               if (!url) {
-                                const reader = new FileReader();
-                                reader.onload = () => {
-                                  setFormData(prev => prev ? { ...prev, bulaUrl: reader.result as string } : prev);
-                                  toast.success("Bula anexada com sucesso!", { id: "upload-bula" });
-                                };
-                                reader.readAsDataURL(file);
+                                toast.error("Não foi possível enviar o arquivo ao armazenamento. Por favor, utilize o campo abaixo para informar a URL direta da bula.", { id: "upload-bula" });
                                 return;
                               }
                               setFormData(prev => prev ? { ...prev, bulaUrl: url } : prev);
                               toast.success("Bula anexada com sucesso!", { id: "upload-bula" });
                             } catch (err) {
                               toast.error("Erro ao enviar bula.", { id: "upload-bula" });
+                            } finally {
+                              e.target.value = "";
                             }
                           }}
                         />

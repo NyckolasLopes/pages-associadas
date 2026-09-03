@@ -14,14 +14,21 @@ import DOMPurify from 'isomorphic-dompurify';
 export function sanitizeHtml(dirtyHtml: string | undefined | null): string {
   if (!dirtyHtml) return "";
   
-  return DOMPurify.sanitize(dirtyHtml, {
+  // Remove document wrapper tags that break React DOM tree hydration when present in product descriptions
+  const cleaned = String(dirtyHtml)
+    .replace(/<!DOCTYPE[^>]*>/gi, '')
+    .replace(/<\/?html[^>]*>/gi, '')
+    .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+    .replace(/<\/?body[^>]*>/gi, '');
+
+  return DOMPurify.sanitize(cleaned, {
     ALLOWED_TAGS: [
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p', 'a', 'ul', 'ol',
       'nl', 'li', 'b', 'i', 'strong', 'em', 'strike', 'code', 'hr', 'br', 'div',
       'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td', 'pre', 'span', 'img'
     ],
     ALLOWED_ATTR: ['href', 'name', 'target', 'src', 'alt', 'class', 'style'],
-    FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'object', 'embed'],
+    FORBID_TAGS: ['html', 'head', 'body', 'script', 'style', 'iframe', 'form', 'object', 'embed'],
     FORBID_ATTR: ['onerror', 'onload', 'onmouseover', 'onclick']
   });
 }

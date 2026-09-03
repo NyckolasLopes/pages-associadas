@@ -56,48 +56,64 @@ export function AddToCartNotification() {
       aria-live="polite"
       className="fixed z-[9999] pointer-events-none"
       style={{
-        bottom: "env(safe-area-inset-bottom, 1rem)",
-        right: 0,
-        left: 0,
-        padding: "0 1rem 1rem",
+        top: "env(safe-area-inset-top, 1rem)",
+        right: "1rem",
+        padding: "0.5rem 0",
         display: "flex",
         justifyContent: "flex-end",
-        alignItems: "flex-end",
+        alignItems: "flex-start",
       }}
     >
       <div
-        className="pointer-events-auto w-full sm:w-auto sm:min-w-[300px] sm:max-w-sm"
+        className="pointer-events-auto w-full max-w-[340px] sm:max-w-md"
         style={{
-          transform: visible ? "translateY(0)" : "translateY(120%)",
+          transform: visible ? "translateY(0) scale(1)" : "translateY(-40px) scale(0.95)",
           opacity: visible ? 1 : 0,
-          transition: "transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease",
+          transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease",
         }}
       >
         <div
-          className="relative text-white rounded-2xl shadow-2xl border overflow-hidden"
-          style={{ backgroundColor: '#008000', borderColor: 'rgba(0,128,0,0.35)', boxShadow: '0 8px 32px rgba(0,128,0,0.35), 0 2px 8px rgba(0,0,0,0.18)' }}
+          className="relative rounded-2xl border shadow-2xl overflow-hidden"
+          style={{ 
+            backgroundColor: '#00f050', 
+            borderColor: 'rgba(0, 160, 50, 0.3)', 
+            boxShadow: '0 12px 36px -4px rgba(0, 240, 80, 0.4), 0 4px 16px rgba(0, 0, 0, 0.12)' 
+          }}
         >
           {/* Conteúdo */}
-          <div className="flex items-center gap-3 px-4 py-3 pr-10">
-            {/* Ícone */}
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border shadow-inner" style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.25)' }}>
-              <CheckCircle2 className="w-5 h-5 text-white" />
-            </div>
+          <div className="flex items-center gap-3 p-3 pr-9">
+            {/* Foto principal do produto */}
+            {notification.productImage ? (
+              <div className="w-12 h-12 rounded-xl bg-white p-1 shrink-0 border border-emerald-950/15 shadow-sm flex items-center justify-center overflow-hidden">
+                <img
+                  src={notification.productImage}
+                  alt={notification.productName || "Produto"}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            ) : (
+              <div className="w-11 h-11 rounded-xl bg-white/70 flex items-center justify-center shrink-0 border border-emerald-950/15 shadow-xs">
+                <CheckCircle2 className="w-6 h-6 text-emerald-950" />
+              </div>
+            )}
 
-            {/* Textos */}
+            {/* Textos com alto contraste sobre #00f050 */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold leading-tight whitespace-nowrap">
-                Adicionado ao carrinho!
-              </p>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-950 shrink-0" />
+                <p className="text-[11px] font-black text-emerald-950 uppercase tracking-wider leading-none">
+                  Adicionado ao carrinho!
+                </p>
+              </div>
               {notification.productName && (
-                <p className="text-xs mt-0.5 truncate opacity-90 max-w-[200px] sm:max-w-[240px]" style={{ color: '#b3ffb3' }}>
+                <p className="text-xs font-bold text-emerald-950 mt-1 truncate max-w-[210px] sm:max-w-[270px] leading-tight" title={notification.productName}>
                   {notification.productName}
                 </p>
               )}
             </div>
 
-            {/* Ícone carrinho decorativo */}
-            <ShoppingBasket className="w-4 h-4 text-white/60 shrink-0 hidden sm:block" />
+            {/* Ícone sutil de cesta */}
+            <ShoppingBasket className="w-4 h-4 text-emerald-950/40 shrink-0 hidden sm:block" />
           </div>
 
           {/* Botão fechar */}
@@ -105,15 +121,15 @@ export function AddToCartNotification() {
             type="button"
             onClick={hide}
             aria-label="Fechar notificação"
-            className="absolute top-2.5 right-2.5 p-1 rounded-full text-white/70 hover:text-white hover:bg-white/20 transition active:scale-90 cursor-pointer"
+            className="absolute top-2.5 right-2.5 p-1 rounded-full text-emerald-950/70 hover:text-emerald-950 hover:bg-black/10 transition active:scale-90 cursor-pointer"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
 
           {/* Barra de progresso */}
-          <div className="w-full bg-black/20 h-1">
+          <div className="w-full bg-emerald-950/20 h-1">
             <div
-              className="h-full bg-white/80 rounded-full transition-none"
+              className="h-full bg-emerald-950 rounded-full transition-none"
               style={{ width: `${progress}%` }}
             />
           </div>

@@ -76,7 +76,7 @@ function ProductCardComponent({
       return;
     }
     add({ ...p, estoque: maxStock }, 1, true); // silent: true -> NÃO abre carrinho lateral
-    showAddedNotification(p.nome);
+    showAddedNotification(p.nome, productImage(p));
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 3000);
   };

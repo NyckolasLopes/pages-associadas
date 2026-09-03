@@ -352,6 +352,7 @@ function AnvisaDisclaimer({
             </Button>
             <Button onClick={() => {
               add({ ...p, estoque: maxStock }, qty);
+              showAddedNotification(p.nome, productImage(p));
               setConfirmDeliveryOpen(false);
             }}>
               Sim, continuar
@@ -404,6 +405,7 @@ function PDP() {
   const search = Route.useSearch();
   const isShared = search.shared === "true";
   const add = useCart((s) => s.add);
+  const showAddedNotification = useCart((s) => s.showAddedNotification);
   const user = useAuth((s) => s.user);
   const setLoginOpen = useAuth((s) => s.setLoginOpen);
   const allSelos = useSelos((s) => s.selos);
@@ -1274,7 +1276,7 @@ function PDP() {
 
   return (
     <div className="container-fa py-6">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
+      <script suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       {(() => {
         const homeStoreSlug = (params?.storeSlug && params.storeSlug !== "loja-padrao" && !SYSTEM_PAGES.has(params.storeSlug))
           ? safeSlugify(params.storeSlug)
@@ -1532,6 +1534,7 @@ function PDP() {
               <h2 className="text-xl font-bold mb-4">Descrição do Produto</h2>
               <div className="bg-white border rounded-xl p-6 shadow-sm">
                 <div
+                  suppressHydrationWarning
                   className="prose prose-sm max-w-none text-muted-foreground"
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.descricao) }}
                 />
@@ -1792,7 +1795,7 @@ function PDP() {
                         setConfirmDeliveryOpen(true);
                       } else {
                         add({ ...p, estoque: maxStock }, qty);
-                        toast.success("Produto adicionado ao carrinho!");
+                        showAddedNotification(p.nome, productImage(p));
                       }
                     }}
                   >

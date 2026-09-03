@@ -267,6 +267,7 @@ function AdminProdutos() {
     } catch (error: any) {
       console.error("Erro ao salvar produto:", error);
       toast.error(`Erro ao salvar produto: ${error.message || "Verifique o console para mais detalhes."}`);
+      throw error;
     }
   };
 
