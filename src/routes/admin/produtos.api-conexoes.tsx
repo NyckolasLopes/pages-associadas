@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/stores/admin";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Activity, Key, Copy, Check, RefreshCw, Server, AlertCircle } from "lucide-react";
+import { Activity, Key, Copy, Check, RefreshCw, Server, AlertCircle, Download, FileCode2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -143,6 +143,176 @@ function ApiConexoes() {
     setTimeout(() => setCopiedHash(null), 2000);
   };
 
+  const downloadJsonFile = (filename: string, data: any) => {
+    const dataStr = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+    const dlAnchorElem = document.createElement("a");
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", filename);
+    document.body.appendChild(dlAnchorElem);
+    dlAnchorElem.click();
+    document.body.removeChild(dlAnchorElem);
+  };
+
+  const downloadModeloEstoquePreco = () => {
+    const data = [
+      {
+        "codigoInterno": "563003",
+        "ean": "7896523207360",
+        "nome": "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
+        "precoDe": 8.33,
+        "precoPor": 4.99,
+        "estoque": 100,
+        "ativo": true,
+        "lojaCnpj": "00.000.000/0001-91"
+      }
+    ];
+    downloadJsonFile("modelo_estoque_preco.json", data);
+    toast.success("Modelo JSON de Estoque e Preço baixado com sucesso!");
+  };
+
+  const downloadModeloCadastroProduto = () => {
+    const data = [
+      {
+        "Produto Ativo": "Sim",
+        "Buscável (Busca)": "Sim",
+        "Selo Lançamento": "Não",
+        "Selo Genérico": "Sim",
+        "Natureza do Produto": "Medicamento",
+        "ID / SKU / Código Interno": "563003",
+        "EAN / Código de Barras*": "7896523207360",
+        "EANs Secundários (separados por vírgula)": "7896523207361, 7896523207362",
+        "Descrição Comercial / Nome do Produto*": "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
+        "Descrição Longa": "<p><strong>Nevralgex</strong> é indicado no alívio da dor associada a contraturas musculares decorrentes de processos traumáticos ou inflamatórios e em cefaleias tensionais.</p>",
+        "Categoria (com ID)": "142 - Medicamentos",
+        "Subcategoria (com ID)": "14201 - Dor e Febre",
+        "Categoria Adicional": "",
+        "Subcategoria Adicional": "",
+        "Princípios Ativos": "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg",
+        "Características Adicionais": "Forma: Comprimidos; Quantidade: 10 comprimidos; Uso: Oral",
+        "Marca": "CIMED",
+        "Fabricante": "Cimed Indústria de Medicamentos Ltda.",
+        "Link da Bula (URL / PDF)": "https://consultas.anvisa.gov.br/api/consulta/bula/pdf/1438100510076",
+        "Classe Terapêutica": "Analgésico e Relaxante Muscular",
+        "Alerta Regulatório (Texto)": "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO.",
+        "Requer Exibição do Alerta Regulatório": "Sim",
+        "MS / Registro ANVISA": "1438100510076",
+        "Retém Receita?": "Não",
+        "Classificação / Tipo do Medicamento": "Similar",
+        "Tarja": "Sem Tarja",
+        "Tipo de Receita": "",
+        "NCM": "30049099",
+        "Nível de Relevância (Prioridade)": 80,
+        "Preço (de) (R$)": 8.33,
+        "Preço (por) (R$)": 4.99,
+        "Título da Página (SEO)": "Nevralgex 10 Comprimidos - Compre Online com Melhor Preço",
+        "Link da Página (Slug)": "nevralgex-300mg-50mg-35mg-10-comprimidos-563003",
+        "Palavras-Chave Foco (GEO / AEO)": "nevralgex, dor muscular, dor de cabeca, cimed",
+        "Descrição da Página (SEO / Meta Description)": "Compre Nevralgex com 10 comprimidos na Farmácias Associadas. Alívio rápido para dores musculares e dor de cabeça com entrega rápida.",
+        "Texto Alternativo da Imagem (Alt SEO)": "Nevralgex 10 comprimidos Cimed",
+        "Tags de Busca Internas": "nevralgex, dipirona, relaxante muscular, dor de cabeca, cimed"
+      }
+    ];
+    downloadJsonFile("modelo_cadastro_produto.json", data);
+    toast.success("Modelo JSON de Cadastro de Produto baixado com sucesso!");
+  };
+
+  const downloadModeloPedidos = () => {
+    const data = [
+      {
+        "id": "FA-260903-8492",
+        "data": "2026-09-03T14:30:00.000Z",
+        "status": "novo",
+        "lojaId": "loja-matriz",
+        "lojaNome": "Farmácias São Lucas Matriz",
+        "cliente": {
+          "nome": "João da Silva",
+          "email": "joao.silva@exemplo.com",
+          "telefone": "51999998888",
+          "cpf": "12345678900",
+          "endereco": {
+            "logradouro": "Rua Júlio de Castilhos",
+            "numero": "123",
+            "complemento": "Apto 402",
+            "bairro": "Centro",
+            "cidade": "Farroupilha",
+            "estado": "RS",
+            "cep": "95180-000"
+          }
+        },
+        "itens": [
+          {
+            "id": "563003",
+            "ean": "7896523207360",
+            "sku": "563003",
+            "nome": "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
+            "quantidade": 2,
+            "precoUnitario": 4.99,
+            "subtotal": 9.98
+          }
+        ],
+        "pagamento": {
+          "metodo": "Cartão de Crédito",
+          "status": "aprovado",
+          "parcelas": 1,
+          "total": 9.98
+        },
+        "entrega": {
+          "tipo": "Entrega Expressa Local",
+          "prazo": "Até 2 horas",
+          "valor": 5.00
+        },
+        "subtotal": 9.98,
+        "desconto": 0.00,
+        "taxaEntrega": 5.00,
+        "total": 14.98
+      }
+    ];
+    downloadJsonFile("modelo_pedidos.json", data);
+    toast.success("Modelo JSON de Pedidos baixado com sucesso!");
+  };
+
+  const downloadModeloCarrinhoAbandonado = () => {
+    const data = [
+      {
+        "id": "cart_abandoned_98231",
+        "data": "2026-09-03T15:00:00.000Z",
+        "lojaId": "loja-matriz",
+        "lojaNome": "Farmácias São Lucas Matriz",
+        "cliente": {
+          "nome": "Maria de Souza",
+          "email": "maria.souza@exemplo.com",
+          "telefone": "51988887777"
+        },
+        "itens": [
+          {
+            "id": "563003",
+            "ean": "7896523207360",
+            "nome": "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
+            "quantidade": 1,
+            "preco": 4.99
+          }
+        ],
+        "total": 4.99,
+        "linkRecuperacao": "https://loja.farmaciasassociadas.com.br/checkout?cart=cart_abandoned_98231"
+      }
+    ];
+    downloadJsonFile("modelo_carrinho_abandonado.json", data);
+    toast.success("Modelo JSON de Carrinho Abandonado baixado com sucesso!");
+  };
+
+  const downloadModeloDescricoes = () => {
+    const data = [
+      {
+        "ean": "7896523207360",
+        "nome": "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
+        "descricao": "<p><strong>Nevralgex</strong> é um medicamento com ação analgésica e relaxante muscular indicado para o alívio das dores associadas a contraturas musculares e cefaleias tensionais.</p>",
+        "bulaUrl": "https://consultas.anvisa.gov.br/api/consulta/bula/pdf/1438100510076"
+      }
+    ];
+    downloadJsonFile("modelo_importar_descricoes.json", data);
+    toast.success("Modelo JSON de Descrições e Bula baixado com sucesso!");
+  };
+
   if (!isGlobalAdmin) {
     return (
       <div className="p-8 flex flex-col items-center justify-center min-h-[400px]">
@@ -230,6 +400,19 @@ function ApiConexoes() {
             Último ping: {lastPing ? new Date(lastPing).toLocaleString('pt-BR') : 'Nunca'}
           </span>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (type === 'stock_price') downloadModeloEstoquePreco();
+                else if (type === 'catalog') downloadModeloCadastroProduto();
+                else downloadModeloPedidos();
+              }}
+              title="Baixar Modelo JSON desta API"
+              className="h-7 text-xs px-2.5 border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5 mr-1 text-slate-500" /> Modelo JSON
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 
@@ -263,6 +446,78 @@ function ApiConexoes() {
         <span className="text-sm font-medium text-slate-500">
           Gerencie as integrações e chaves de API individuais por loja (Estoque, Preços e Cadastro).
         </span>
+      </div>
+
+      {/* Bloco de Modelos JSON Oficiais para Integração */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div>
+            <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+              <FileCode2 className="w-4 h-4 text-emerald-600" />
+              Modelos Oficiais de Integração JSON (1 Exemplo por Arquivo)
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Baixe os arquivos de modelo estruturados com <strong>apenas 1 exemplo completo</strong> para testar e conectar seus sistemas externos.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* 1. JSON Estoque e Preço */}
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={downloadModeloEstoquePreco}
+            className="font-bold text-xs h-9 bg-blue-50/70 hover:bg-blue-100/70 border-blue-200 text-blue-800 flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Download className="w-3.5 h-3.5 text-blue-600" />
+            JSON de Estoque e Preço
+          </Button>
+
+          {/* 2. JSON Cadastro de Produto */}
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={downloadModeloCadastroProduto}
+            className="font-bold text-xs h-9 bg-emerald-50/70 hover:bg-emerald-100/70 border-emerald-200 text-emerald-800 flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600" />
+            JSON Cadastro de Produto
+          </Button>
+
+          {/* 3. JSON de Pedidos */}
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={downloadModeloPedidos}
+            className="font-bold text-xs h-9 bg-indigo-50/70 hover:bg-indigo-100/70 border-indigo-200 text-indigo-800 flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Download className="w-3.5 h-3.5 text-indigo-600" />
+            JSON de Pedidos
+          </Button>
+
+          {/* 4. JSON Carrinho Abandonado */}
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={downloadModeloCarrinhoAbandonado}
+            className="font-bold text-xs h-9 bg-amber-50/70 hover:bg-amber-100/70 border-amber-200 text-amber-800 flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-600" />
+            JSON Carrinho Abandonado
+          </Button>
+
+          {/* 5. JSON Descrições e Bula */}
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={downloadModeloDescricoes}
+            className="font-bold text-xs h-9 bg-purple-50/70 hover:bg-purple-100/70 border-purple-200 text-purple-800 flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Download className="w-3.5 h-3.5 text-purple-600" />
+            JSON Descrições e Bula
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
