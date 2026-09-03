@@ -188,6 +188,7 @@ export interface Loja {
   cnpj: string;
   razaoSocial: string;
   nomeFantasia: string;
+  apelido?: string;
   farmaceuticoResponsavel: string;
   crf: string;
   afe: string;

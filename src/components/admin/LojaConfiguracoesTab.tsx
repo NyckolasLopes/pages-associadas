@@ -70,6 +70,15 @@ AVISO LEGAL E RESPONSABILIDADE SANITÁRIA (RDC ANVISA 44/2009): As informações
             />
           </div>
           <div className="space-y-2">
+            <Label>Apelido da Loja</Label>
+            <Input 
+              value={formData.apelido || ""} 
+              onChange={(e) => handleChange("apelido", e.target.value)} 
+              placeholder="Ex: Canoas Centro (aparece no topo da página inicial)"
+            />
+            <p className="text-[11px] text-slate-400">Nome que aparece no topo da página inicial onde diz &apos;Aqui você tem amigos&apos;.</p>
+          </div>
+          <div className="space-y-2">
             <Label>Razão Social</Label>
             <Input 
               value={formData.razaoSocial || ""} 

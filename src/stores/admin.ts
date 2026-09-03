@@ -126,6 +126,7 @@ export interface Pharmacy {
   themeColors?: Record<string, string>;
   razaoSocial: string;
   nome: string; // Nome Fantasia
+  apelido?: string; // Apelido da Loja exibido na página inicial ("Aqui você tem amigos")
   tabelaPrecoId?: string; // Tabela de Preços Regional
   email: string;
   telefone: string;
@@ -545,6 +546,7 @@ export function saveCachedPharmacies(pharmacies: Pharmacy[]) {
       id: p.id,
       slug: p.slug,
       nome: p.nome,
+      apelido: p.apelido,
       razaoSocial: p.razaoSocial,
       categoriaAssociado: p.categoriaAssociado,
       isPleno: p.isPleno,
@@ -1295,6 +1297,7 @@ export const useAdmin = create<AdminState>()(
                 cnpj: l.cnpj,
                 razaoSocial: l.razao_social,
                 nome: l.nome_fantasia,
+                apelido: l.apelido || parsedThemeColors?.apelido || '',
                 email: l.email,
                 telefone: l.telefone,
                 horarioFuncionamento: l.horario_funcionamento || parsedThemeColors?.horario_funcionamento,
@@ -1383,6 +1386,7 @@ export const useAdmin = create<AdminState>()(
       addPharmacy: async (p) => {
         const theme_colors_payload = {
           ...(p.themeColors || {}),
+          apelido: p.apelido,
           complemento: p.complemento,
           sistemaUtilizado: p.sistemaUtilizado,
           offersServices: p.offersServices,
@@ -1450,6 +1454,7 @@ export const useAdmin = create<AdminState>()(
           cnpj: p.cnpj || null,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,
+          apelido: p.apelido || null,
           email: p.email,
           telefone: p.telefone,
           horario_funcionamento: p.horarioFuncionamento,
@@ -1485,6 +1490,7 @@ export const useAdmin = create<AdminState>()(
         const theme_colors_payload = {
           ...(currentPharmacy?.themeColors || {}),
           ...(updatedColors || {}),
+          apelido: p.apelido !== undefined ? p.apelido : currentPharmacy?.apelido,
           slug: p.slug,
           complemento: p.complemento,
           sistemaUtilizado: p.sistemaUtilizado,
@@ -1553,6 +1559,7 @@ export const useAdmin = create<AdminState>()(
           cnpj: p.cnpj || null,
           razao_social: p.razaoSocial,
           nome_fantasia: p.nome,
+          apelido: p.apelido || null,
           email: p.email,
           telefone: p.telefone,
           horario_funcionamento: p.horarioFuncionamento,

@@ -497,9 +497,13 @@ export function Header() {
         }}
       >
         <div className="container-fa flex items-center justify-between h-9 gap-4">
-          {!(activePharmacy?.categoriaAssociado === 'Parceiro' || activePharmacy?.isPleno === false) && (
-            <span className="hidden md:inline">Aqui você tem amigos.</span>
-          )}
+          <span className="hidden md:inline font-semibold">
+            {activePharmacy?.apelido || (
+              !(activePharmacy?.categoriaAssociado === 'Parceiro')
+                ? "Aqui você tem amigos."
+                : ""
+            )}
+          </span>
           <div className="flex items-center gap-2 md:gap-4 ml-auto overflow-x-auto whitespace-nowrap scrollbar-none">
             {contentPages.filter(p => p.location === "header" || p.location === "both").map(p => (
               p.type === "external" ? (

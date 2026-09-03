@@ -1040,8 +1040,10 @@ function StoreHome() {
             <section className="container-fa my-12">
               <div className="bg-orange-500 text-white rounded-2xl p-6 md:p-8">
                 <div className="text-center mb-8">
-                  <h2 className="text-2xl md:text-3xl font-bold">Farmácias Associadas</h2>
-                  <p className="text-orange-100 mt-2">Farmácias Associadas, muito mais que farmácia, aqui você tem amigos.</p>
+                  <h2 className="text-2xl md:text-3xl font-bold">{loja?.apelido || loja?.nome || "Farmácias Associadas"}</h2>
+                  <p className="text-orange-100 mt-2">
+                    {loja?.apelido ? `${loja.apelido}, muito mais que farmácia, aqui você tem amigos.` : "Farmácias Associadas, muito mais que farmácia, aqui você tem amigos."}
+                  </p>
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">

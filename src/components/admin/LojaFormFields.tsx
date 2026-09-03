@@ -141,7 +141,19 @@ export function LojaFormFields({
                 <Input
                   value={form.nome}
                   onChange={(e) => update({ nome: e.target.value })}
+                  placeholder="Ex: Farmácia Associadas Centro"
                 />
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>Apelido</FieldLabel>
+                <Input
+                  value={form.apelido || ""}
+                  onChange={(e) => update({ apelido: e.target.value })}
+                  placeholder="Ex: Canoas Centro (aparece no topo da página inicial)"
+                />
+                <p className="text-[11px] text-slate-500">
+                  Nome que aparecerá na página inicial onde diz &quot;Aqui você tem amigos&quot;.
+                </p>
               </div>
             </div>
 

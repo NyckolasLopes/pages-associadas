@@ -42,6 +42,7 @@ const EMPTY_PHARMACY: Pharmacy = {
   cnpj: "",
   razaoSocial: "",
   nome: "",
+  apelido: "",
   email: "",
   telefone: "",
   horarioFuncionamento: "",
