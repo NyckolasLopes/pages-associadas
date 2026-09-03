@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Mic, X, Search, AlertCircle, Volume2 } from "lucide-react";
+import { Mic, X, Search, RefreshCw, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 interface VoiceSearchModalProps {
@@ -12,8 +12,10 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimText, setInterimText] = useState("");
-  const [needsPermission, setNeedsPermission] = useState(false);
+  const [permissionBlocked, setPermissionBlocked] = useState(false);
+  const [noDeviceFound, setNoDeviceFound] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const recognitionRef = useRef<any>(null);
   const isClosingRef = useRef(false);
@@ -34,7 +36,8 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
     setIsListening(false);
     setTranscript("");
     setInterimText("");
-    setNeedsPermission(false);
+    setPermissionBlocked(false);
+    setNoDeviceFound(false);
     onClose();
   }, [stopRecognition, onClose]);
 
@@ -51,7 +54,8 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
     isClosingRef.current = false;
     setTranscript("");
     setInterimText("");
-    setNeedsPermission(false);
+    setPermissionBlocked(false);
+    setNoDeviceFound(false);
     setUnsupported(false);
 
     try {
@@ -65,7 +69,7 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
       recognition.onstart = () => {
         if (!isClosingRef.current) {
           setIsListening(true);
-          setNeedsPermission(false);
+          setPermissionBlocked(false);
         }
       };
 
@@ -106,9 +110,12 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
 
         if (err === "not-allowed" || err === "service-not-allowed") {
           setIsListening(false);
-          setNeedsPermission(true);
+          setPermissionBlocked(true);
         } else if (err === "no-speech") {
           setIsListening(false);
+        } else if (err === "audio-capture") {
+          setIsListening(false);
+          setNoDeviceFound(true);
         } else if (err === "network") {
           setIsListening(false);
           toast.error("Sem conexão com o serviço de reconhecimento de voz.");
@@ -131,21 +138,44 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
     }
   }, [stopRecognition, onResult, handleClose]);
 
-  // Função disparada no clique direto do usuário para solicitar permissão nativa
+  // Função para solicitar permissão nativa explicitamente via clique direto
   const handleRequestPermissionClick = async () => {
+    setIsLoading(true);
     try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      // 1. Verificar se há microfones conectados
+      if (navigator.mediaDevices?.enumerateDevices) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const mics = devices.filter((d) => d.kind === "audioinput");
+          if (mics.length === 0 && devices.length > 0) {
+            setNoDeviceFound(true);
+            setIsLoading(false);
+            return;
+          }
+        } catch {}
+      }
+
+      // 2. Tentar disparar o prompt nativo do navegador
+      if (navigator.mediaDevices?.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach((track) => track.stop());
-        setNeedsPermission(false);
+        setPermissionBlocked(false);
+        setNoDeviceFound(false);
+        setIsLoading(false);
         startListening();
-      } else {
-        startListening();
+        return;
       }
+
+      startListening();
     } catch (err: any) {
-      console.warn("Permissão negada:", err);
-      setNeedsPermission(true);
-      toast.error("Para usar a pesquisa por voz, permita o acesso ao microfone no navegador.");
+      console.warn("Permissão de áudio não obtida:", err);
+      setIsLoading(false);
+      const errName = err?.name || "";
+      if (errName === "NotFoundError" || errName === "DevicesNotFoundError") {
+        setNoDeviceFound(true);
+      } else {
+        setPermissionBlocked(true);
+      }
     }
   };
 
@@ -185,19 +215,23 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex flex-col items-center px-6 py-8 text-center">
+        <div className="flex flex-col items-center px-6 py-7 text-center">
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-4">
             <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
               Pesquisa por Voz
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Fale o produto que você deseja encontrar
+              {permissionBlocked
+                ? "Permissão bloqueada no navegador"
+                : noDeviceFound
+                ? "Microfone não encontrado"
+                : "Fale o produto que você deseja encontrar"}
             </p>
           </div>
 
           {/* Microfone Central com Animação */}
-          <div className="relative my-4 flex items-center justify-center">
+          <div className="relative my-3 flex items-center justify-center">
             {isListening && (
               <>
                 <span
@@ -213,10 +247,22 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
 
             <button
               type="button"
-              onClick={isListening ? stopRecognition : (needsPermission ? handleRequestPermissionClick : startListening)}
+              onClick={
+                isListening
+                  ? stopRecognition
+                  : permissionBlocked || noDeviceFound
+                  ? handleRequestPermissionClick
+                  : startListening
+              }
               className="relative w-20 h-20 rounded-full flex items-center justify-center text-white shadow-xl transition-all duration-300 active:scale-95 cursor-pointer"
               style={{
-                backgroundColor: isListening ? "#008000" : (needsPermission ? "#e11d48" : "#008000"),
+                backgroundColor: isListening
+                  ? "#008000"
+                  : permissionBlocked
+                  ? "#dc2626"
+                  : noDeviceFound
+                  ? "#f59e0b"
+                  : "#008000",
                 boxShadow: isListening ? "0 0 25px rgba(0,128,0,0.45)" : undefined,
               }}
               title={isListening ? "Ouvindo... Clique para pausar" : "Clique para falar"}
@@ -227,7 +273,7 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
 
           {/* Equalizador de Ondas Sonoras quando Ouvindo */}
           {isListening && (
-            <div className="flex items-center gap-1 my-3 h-6">
+            <div className="flex items-center gap-1 my-2 h-6">
               {[0.4, 0.8, 1.2, 0.6, 1.0, 0.5, 0.9].map((delay, idx) => (
                 <span
                   key={idx}
@@ -243,57 +289,96 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
             </div>
           )}
 
-          {/* Textos de Feedback */}
-          <div className="min-h-[56px] flex flex-col items-center justify-center mt-2 px-2 max-w-full">
-            {transcript ? (
-              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-base animate-in fade-in">
-                <Search className="w-4 h-4 shrink-0" />
-                <span className="truncate">"{transcript}"</span>
-              </div>
-            ) : interimText ? (
-              <p className="text-zinc-800 dark:text-zinc-200 text-sm font-medium italic animate-in fade-in">
-                "{interimText}"
+          {/* Estado: Sem microfone físico detectado */}
+          {noDeviceFound && (
+            <div className="my-3 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-left text-xs space-y-1.5 w-full">
+              <p className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                Nenhum microfone detectado
               </p>
-            ) : isListening ? (
-              <p className="text-emerald-700 dark:text-emerald-400 text-sm font-semibold animate-pulse">
-                Ouvindo... Pode falar agora
+              <p className="text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
+                Conecte um fone de ouvido com microfone ou um microfone USB ao computador e tente novamente.
               </p>
-            ) : needsPermission ? (
-              <div className="text-center">
-                <p className="text-rose-600 dark:text-rose-400 text-xs font-semibold">
-                  Acesso ao microfone necessário
-                </p>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  Toque no botão abaixo para permitir
-                </p>
-              </div>
-            ) : unsupported ? (
-              <p className="text-rose-600 text-xs font-medium">
-                Seu navegador não suporta pesquisa por voz. Tente usar Chrome ou Edge.
-              </p>
-            ) : (
-              <p className="text-zinc-500 dark:text-zinc-400 text-xs font-medium">
-                Toque no microfone acima para falar novamente
-              </p>
-            )}
-          </div>
-
-          {/* Ação para Permitir Microfone quando Necessário */}
-          {needsPermission && (
-            <button
-              type="button"
-              onClick={handleRequestPermissionClick}
-              className="mt-3 w-full py-2.5 px-4 rounded-xl text-white font-bold text-xs shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2"
-              style={{ backgroundColor: "#008000" }}
-            >
-              <Volume2 className="w-4 h-4" />
-              Permitir Microfone
-            </button>
+              <button
+                type="button"
+                onClick={handleRequestPermissionClick}
+                className="w-full mt-2 py-2 rounded-xl text-white font-bold text-xs transition"
+                style={{ backgroundColor: "#008000" }}
+              >
+                Verificar novamente
+              </button>
+            </div>
           )}
 
-          {/* Exemplos de busca */}
-          {!needsPermission && !transcript && (
-            <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 w-full flex items-center justify-center gap-1.5 text-[11px] text-zinc-400">
+          {/* Estado: Bloqueado nas configurações do navegador */}
+          {permissionBlocked && (
+            <div className="my-3 p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-left text-xs space-y-2 w-full">
+              <div className="flex items-center gap-2 font-bold text-red-900 dark:text-red-200">
+                <Lock className="w-4 h-4 text-red-600 shrink-0" />
+                <span>O navegador bloqueou o microfone</span>
+              </div>
+              <p className="text-zinc-600 dark:text-zinc-300 text-[11px] leading-relaxed">
+                Como liberar em 2 passos rápidos no Edge/Chrome:
+              </p>
+              <ol className="list-decimal list-inside space-y-1 text-[11px] text-zinc-700 dark:text-zinc-300">
+                <li>
+                  Clique no ícone de <strong>cadeado 🔒</strong> na barra de endereços (topo esquerdo).
+                </li>
+                <li>
+                  Clique no botão <strong>"Redefinir permissões"</strong>.
+                </li>
+              </ol>
+              <div className="pt-1 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="flex-1 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Recarregar Página
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRequestPermissionClick}
+                  disabled={isLoading}
+                  className="py-2 px-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95"
+                >
+                  {isLoading ? "Testando..." : "Testar"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Textos de Transcrição e Feedback quando não bloqueado */}
+          {!permissionBlocked && !noDeviceFound && (
+            <div className="min-h-[50px] flex flex-col items-center justify-center mt-1 px-2 max-w-full">
+              {transcript ? (
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-base animate-in fade-in">
+                  <Search className="w-4 h-4 shrink-0" />
+                  <span className="truncate">"{transcript}"</span>
+                </div>
+              ) : interimText ? (
+                <p className="text-zinc-800 dark:text-zinc-200 text-sm font-medium italic animate-in fade-in">
+                  "{interimText}"
+                </p>
+              ) : isListening ? (
+                <p className="text-emerald-700 dark:text-emerald-400 text-sm font-semibold animate-pulse">
+                  Ouvindo... Pode falar agora
+                </p>
+              ) : unsupported ? (
+                <p className="text-rose-600 text-xs font-medium">
+                  Seu navegador não suporta pesquisa por voz. Tente usar Chrome ou Edge.
+                </p>
+              ) : (
+                <p className="text-zinc-500 dark:text-zinc-400 text-xs font-medium">
+                  Toque no microfone acima para falar
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Exemplos de busca quando ouvindo normalmente */}
+          {!permissionBlocked && !noDeviceFound && !transcript && (
+            <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 w-full flex items-center justify-center gap-1.5 text-[11px] text-zinc-400">
               <span>Exemplos:</span>
               <button
                 type="button"
