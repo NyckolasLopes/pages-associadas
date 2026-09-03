@@ -20,6 +20,7 @@ import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { getSafeMediaUrl } from "@/utils/media";
 import { useAdmin } from "@/stores/admin";
 import { useAdminProducts } from "@/stores/products";
 import { useAdminFiltros } from "@/stores/filtros";
@@ -44,11 +45,14 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const [formData, setFormData] = useState<Produto | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [saveStep, setSaveStep] = useState<"idle" | "saving" | "syncing" | "done">("idle");
-  const { pharmacies, currentUser, grupos } = useAdmin();
+  const { pharmacies, currentUser, grupos, faviconUrl: globalFavicon } = useAdmin();
   const allSelos = useSelos(s => s.selos);
-  const isGlobalAdmin = !lojaId || currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || currentUser?.lojasVinculadas?.length === 0 || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total === true;
-  const currentLoja = lojaId ? pharmacies.find(l => l.id === lojaId) : null;
-  const canOfferServices = (isGlobalAdmin && !lojaId) ? true : currentLoja?.offersServices !== false;
+  const effectiveLojaId = lojaId || product?.lojaId || formData?.lojaId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas.length === 1 ? currentUser.lojasVinculadas[0] : null);
+  const isGlobalAdmin = !effectiveLojaId || currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || currentUser?.lojasVinculadas?.length === 0 || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total === true;
+  const currentLoja = effectiveLojaId ? pharmacies.find(l => l.id === effectiveLojaId) : null;
+  const storeRawFavicon = currentLoja?.faviconUrl || currentLoja?.loadingLogoUrl || currentLoja?.logoUrl || (currentLoja?.isPleno ? globalFavicon : null) || globalFavicon;
+  const storeFavicon = storeRawFavicon ? getSafeMediaUrl(storeRawFavicon) : null;
+  const canOfferServices = (isGlobalAdmin && !effectiveLojaId) ? true : currentLoja?.offersServices !== false;
   const { vitrines, customProducts } = useAdminProducts();
   const { getStoreFiltros, filtros: globalFiltros } = useAdminFiltros();
   const storeFiltros = getStoreFiltros ? getStoreFiltros(lojaId) : globalFiltros;
@@ -1529,15 +1533,28 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   {/* Google Header: Favicon + Brand + Breadcrumbs + 3 dots */}
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 shadow-xs">
-                        {currentLoja?.nome?.charAt(0) || "A"}
-                      </div>
+                      {storeFavicon ? (
+                        <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center bg-white border border-slate-200 shrink-0 p-0.5 shadow-xs">
+                          <img 
+                            src={storeFavicon} 
+                            alt={currentLoja?.apelido || currentLoja?.nome || "Favicon"} 
+                            className="w-full h-full object-contain rounded-full" 
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 shadow-xs">
+                          {(currentLoja?.apelido || currentLoja?.nome || "A").charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex flex-col min-w-0">
                         <span className="text-[13px] font-medium text-[#202124] leading-none truncate">
-                          {currentLoja?.nome || "Farmácias Associadas"}
+                          {currentLoja?.apelido || currentLoja?.nome || "Farmácias Associadas"}
                         </span>
                         <span className="text-[11px] text-[#4d5156] leading-tight truncate mt-0.5">
-                          https://www.farmaciasassociadas.com.br › produto › {formData.slug || formData.url || "produto"}
+                          https://www.farmaciasassociadas.com.br{currentLoja?.slug ? ` › ${currentLoja.slug}` : ''} › produto › {formData.slug || formData.url || "produto"}
                         </span>
                       </div>
                     </div>
@@ -1549,13 +1566,15 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     {formData.seoTitulo || formData.nome || "Título do Produto"}
                   </div>
 
-                  {/* Rich Snippet (Preço e Disponibilidade) */}
-                  <div className="flex items-center gap-2 text-[12px] text-[#006621] font-medium mb-1">
-                    <span>★★★★★ 4.9 (98)</span>
-                    <span>·</span>
-                    <span className="text-[#3c4043] font-bold">R$ {Number(formData.precoPor || formData.precoDe || 0).toFixed(2).replace('.', ',')}</span>
-                    <span>·</span>
-                    <span className="text-emerald-700 font-semibold">Em estoque</span>
+                  {/* Rich Snippet (Preço e Disponibilidade) - Sem estrelas e avaliações */}
+                  <div className="flex items-center gap-2 text-[12px] font-medium mb-1">
+                    <span className="text-[#3c4043] font-bold">
+                      R$ {Number(formData.precoPor || formData.precoDe || 0).toFixed(2).replace('.', ',')}
+                    </span>
+                    <span className="text-slate-400">·</span>
+                    <span className="text-emerald-700 font-semibold">
+                      {Number(formData.estoque ?? 1) > 0 ? "Em estoque" : "Consulte disponibilidade"}
+                    </span>
                   </div>
 
                   {/* Google Snippet Text */}
