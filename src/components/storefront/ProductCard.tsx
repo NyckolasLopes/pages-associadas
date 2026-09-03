@@ -98,11 +98,19 @@ function ProductCardComponent({
     }
     const safeQty = Math.max(1, Number(wlQty) || 1);
 
+    const targetLojaId = currentPharmacy?.id ? String(currentPharmacy.id) : "loja-padrao";
+    const targetLojaNome = currentPharmacy?.nome || (currentPharmacy?.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas");
+
     addWaitlistEntry({
+      lojaId: targetLojaId,
+      lojaNome: targetLojaNome,
       produtoId: p.id,
+      produtoNome: p.nome,
+      produtoImagem: p.imagem || p.foto || (p as any).fotos?.[0] || "",
       clienteNome: wlName.trim(),
       whatsapp: wlPhone.trim(),
-      quantidade: safeQty
+      quantidade: safeQty,
+      precoMomento: (p as any).precoPor || (p as any).preco || 0
     });
 
     const rawZap = currentPharmacy?.whatsapp || currentPharmacy?.telefone || "51989444818";

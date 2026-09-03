@@ -609,9 +609,10 @@ function AdminLayout() {
           )}
 
           {/* ---- CLIENTES ---- */}
-          {can('cli_todos') && (
+          {(can('cli_todos') || !isGlobalAdmin) && (
             <NavSection icon={<User className="h-4 w-4" />} label="Clientes" open={openNavSection === "Clientes"} onToggle={() => setOpenNavSection(openNavSection === "Clientes" ? "" : "Clientes")}>
               <Link to="/admin/clientes" className={subLinkClass} activeOptions={{ exact: true }}>Ver todos</Link>
+              <Link to="/admin/clientes" search={{ tab: "lista-espera" } as any} className={subLinkClass}>Lista de espera</Link>
             </NavSection>
           )}
 

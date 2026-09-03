@@ -474,15 +474,22 @@ function PDP() {
     const productPrice = (p as any).precoPromocional && isCampanhaAtiva((p as any).campanha) ? (p as any).precoPromocional : (p.precoPor || 0);
     const safeQty = Math.max(1, Number(wlQty) || 1);
 
+    const targetLoja = currentLoja || loja || allPharmacies[0];
+    const targetLojaId = targetLoja?.id ? String(targetLoja.id) : "loja-padrao";
+    const targetLojaNome = targetLoja?.nome || (targetLoja?.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas");
+
     addWaitlistEntry({
+      lojaId: targetLojaId,
+      lojaNome: targetLojaNome,
       produtoId: p.id,
+      produtoNome: p.nome,
+      produtoImagem: p.imagem || p.foto || (p as any).fotos?.[0] || "",
       clienteNome: wlName.trim(),
       whatsapp: wlPhone.trim(),
       quantidade: safeQty,
+      precoMomento: productPrice,
       mensagem: `Gostaria desse produto mas notei que não possui estoque, consegue me avisar quando voltar ao estoque?\nProduto: ${p.nome}\nValor: R$ ${productPrice.toFixed(2).replace('.', ',')}\nQuantidade desejada: ${safeQty}`
     });
-
-    const targetLoja = currentLoja || loja || allPharmacies[0];
     const rawZap = targetLoja?.whatsapp || targetLoja?.telefone || "51989444818";
     const cleanZap = rawZap.replace(/\D/g, "");
     const waNumber = cleanZap.startsWith("55") ? cleanZap : `55${cleanZap}`;

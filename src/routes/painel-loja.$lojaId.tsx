@@ -37,6 +37,7 @@ import { LojaSeoTab } from "@/components/admin/LojaSeoTab";
 import { LojaConfiguracoesTab } from "@/components/admin/LojaConfiguracoesTab";
 import { LojaPaginasInformativasTab } from "@/components/admin/LojaPaginasInformativasTab";
 import { AbandonedCartsWidget } from "@/components/admin/AbandonedCartsWidget";
+import { ListaEsperaTab } from "@/components/admin/ListaEsperaTab";
 import { LogOut, Image as ImageIcon, Tag as TagIcon, Compass, Sparkles, Store, Settings, Users, FileText } from "lucide-react";
 
 // Status sincronizados com o que o cliente vê em Meus Pedidos
@@ -651,9 +652,13 @@ function PainelLoja() {
             {can('loja_leads') && (
               <TabsTrigger value="leads" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm">
                 <Users className="w-4 h-4 mr-1.5 shrink-0" />
-                Leads
+                Clientes & Leads
               </TabsTrigger>
             )}
+            <TabsTrigger value="lista-espera" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-emerald-700 data-[state=active]:text-emerald-800">
+              <Clock className="w-4 h-4 mr-1.5 shrink-0 text-emerald-600" />
+              Lista de Espera
+            </TabsTrigger>
             <TabsTrigger value="carrinhos" className="flex-1 min-w-[120px] data-[state=active]:bg-slate-100 py-2 font-bold text-xs sm:text-sm text-amber-700 data-[state=active]:text-amber-800">
               <ShoppingCart className="w-4 h-4 mr-1.5 shrink-0 text-amber-600" />
               Carrinhos Abandonados
@@ -724,6 +729,10 @@ function PainelLoja() {
               <LojaLeadsTab lojaId={lojaId} />
             </TabsContent>
           )}
+
+          <TabsContent value="lista-espera" className="space-y-6 mt-4">
+            <ListaEsperaTab lojaId={lojaId} isGlobalAdmin={false} />
+          </TabsContent>
 
           <TabsContent value="carrinhos" className="space-y-6">
             <AbandonedCartsWidget lojaId={lojaId} />

@@ -41,7 +41,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+import { ListaEsperaTab } from "@/components/admin/ListaEsperaTab";
+import { useWaitlist } from "@/stores/waitlist";
+
 export const Route = createFileRoute("/admin/clientes/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: (search.tab as string) || "clientes",
+  }),
   component: ClientesAdmin,
 });
 
@@ -96,6 +102,19 @@ function ClientesAdmin() {
   const { orders } = useOrders();
   const { currentUser, pharmacies, activeStoreId, grupos } = useAdmin();
   const [search, setSearch] = useState("");
+  const searchParams = Route.useSearch();
+  const [activeTab, setActiveTab] = useState<"clientes" | "lista-espera">(
+    searchParams?.tab === "lista-espera" ? "lista-espera" : "clientes"
+  );
+  const waitlistEntries = useWaitlist((s) => s.entries);
+
+  useEffect(() => {
+    if (searchParams?.tab === "lista-espera") {
+      setActiveTab("lista-espera");
+    } else if (searchParams?.tab === "clientes") {
+      setActiveTab("clientes");
+    }
+  }, [searchParams?.tab]);
 
   useEffect(() => {
     loadCustomers();
@@ -397,6 +416,38 @@ function ClientesAdmin() {
         </div>
       </div>
 
+      {/* SELETOR DE ABAS: CLIENTES X LISTA DE ESPERA */}
+      <div className="flex items-center gap-2 border-b pb-3">
+        <Button
+          variant={activeTab === "clientes" ? "default" : "outline"}
+          onClick={() => setActiveTab("clientes")}
+          className={`font-bold text-sm gap-2 h-10 px-5 ${activeTab === "clientes" ? "shadow-xs" : "text-slate-600 hover:text-slate-900 bg-white"}`}
+        >
+          <Users className="w-4 h-4" />
+          Clientes Cadastrados
+        </Button>
+        <Button
+          variant={activeTab === "lista-espera" ? "default" : "outline"}
+          onClick={() => setActiveTab("lista-espera")}
+          className={`font-bold text-sm gap-2 h-10 px-5 relative ${activeTab === "lista-espera" ? "shadow-xs" : "text-slate-600 hover:text-slate-900 bg-white"}`}
+        >
+          <Clock className="w-4 h-4" />
+          Lista de espera
+          {waitlistEntries.filter(e => isGlobalView ? e.status === "pendente" : (e.lojaId === String(currentLojaId) && e.status === "pendente")).length > 0 && (
+            <Badge className="ml-1.5 bg-amber-500 text-white hover:bg-amber-600 text-[10px] px-1.5 py-0 h-4">
+              {waitlistEntries.filter(e => isGlobalView ? e.status === "pendente" : (e.lojaId === String(currentLojaId) && e.status === "pendente")).length}
+            </Badge>
+          )}
+        </Button>
+      </div>
+
+      {activeTab === "lista-espera" ? (
+        <ListaEsperaTab 
+          lojaId={isGlobalView ? undefined : (currentLojaId ? String(currentLojaId) : undefined)} 
+          isGlobalAdmin={isGlobalView} 
+        />
+      ) : (
+        <>
       {/* CARDS DE MÉTRICAS RÁPIDAS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border shadow-xs flex items-center gap-4">
@@ -760,6 +811,8 @@ function ClientesAdmin() {
           )}
         </SheetContent>
       </Sheet>
+        </>
+      )}
 
       <ConfirmDialog
         isOpen={confirmOpen}
