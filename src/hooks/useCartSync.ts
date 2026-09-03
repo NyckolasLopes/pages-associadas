@@ -113,18 +113,39 @@ export function useCartSync() {
         const existingCart = existingCarts?.[0];
 
         if (existingCart) {
-          // Atualiza carrinho existente
-          await (supabase
+          // Atualiza carrinho existente (apenas dados mutáveis para evitar conflito de índice único)
+          const updatePayload: any = {
+            loja_id: selectedPharmacyId || null,
+            nome_cliente: clienteNome,
+            email_cliente: clienteEmail,
+            telefone_cliente: clienteTelefone,
+            items: safeItems,
+            total: total || 0,
+            updated_at: new Date().toISOString()
+          };
+
+          const { error: updateErr } = await (supabase
             .from('carrinhos_abandonados' as any) as any)
-            .update(cartData)
+            .update(updatePayload)
             .eq('id', existingCart.id);
-        } else if (selectedPharmacyId) {
-          // Usuário logado: upsert evitando conflito de chave única (user_id, loja_id)
+
+          if (updateErr) {
+            // Se houver conflito de índice único, limpa duplicatas do usuário e reinsere
+            await (supabase.from('carrinhos_abandonados' as any) as any)
+              .delete()
+              .eq('user_id', user.id)
+              .eq('status', 'abandonado');
+            await (supabase.from('carrinhos_abandonados' as any) as any)
+              .insert(cartData);
+          }
+        } else {
+          // Garante que não há registros anteriores em conflito antes de inserir
           await (supabase
             .from('carrinhos_abandonados' as any) as any)
-            .upsert(cartData, { onConflict: 'user_id, loja_id' });
-        } else {
-          // Insere novo carrinho abandonado
+            .delete()
+            .eq('user_id', user.id)
+            .eq('status', 'abandonado');
+
           await (supabase
             .from('carrinhos_abandonados' as any) as any)
             .insert(cartData);

@@ -374,18 +374,22 @@ function StoreLayout() {
     );
   }
 
+  useEffect(() => {
+    if (activePharmacy && typeof document !== "undefined") {
+      const title = activePharmacy.pageTitle || activePharmacy.nome || (activePharmacy.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas");
+      document.title = title;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', activePharmacy.metaDescription || "Sua farmácia online de confiança.");
+      }
+    }
+  }, [activePharmacy?.pageTitle, activePharmacy?.nome, activePharmacy?.categoriaAssociado, activePharmacy?.metaDescription]);
+
   return (
     <div
       className="min-h-screen flex flex-col bg-background"
       style={storeTheme}
     >
-      {activePharmacy && (
-        <>
-          <title>{activePharmacy.pageTitle || activePharmacy.nome || (activePharmacy.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas")}</title>
-          <meta name="description" content={activePharmacy.metaDescription || "Sua farmácia online de confiança."} />
-        </>
-      )}
-
       <Header />
       <main className="flex-1">
         <Outlet />
