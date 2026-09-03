@@ -192,6 +192,8 @@ function ApiConexoes() {
         "Marca": "CIMED",
         "Fabricante": "Cimed Indústria de Medicamentos Ltda.",
         "Link da Bula (URL / PDF)": "https://consultas.anvisa.gov.br/api/consulta/bula/pdf/1438100510076",
+        "URL da Imagem Principal (Foto)": "https://loja.farmaciasassociadas.com/api/supabase/storage/v1/object/public/produtos/7896523207360.webp",
+        "Imagens da Galeria (URLs separadas por vírgula)": "https://loja.farmaciasassociadas.com/api/supabase/storage/v1/object/public/produtos/7896523207360-1.webp, https://loja.farmaciasassociadas.com/api/supabase/storage/v1/object/public/produtos/7896523207360-2.webp",
         "Classe Terapêutica": "Analgésico e Relaxante Muscular",
         "Alerta Regulatório (Texto)": "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO.",
         "Requer Exibição do Alerta Regulatório": "Sim",
