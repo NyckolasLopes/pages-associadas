@@ -4,6 +4,7 @@
   "description": "Muito mais farmácia. Sua farmácia online de confiança.",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#005CA9",
   "icons": [

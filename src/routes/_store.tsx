@@ -278,6 +278,7 @@ function StoreLayout() {
       scope: `${origin}/${storeSlug}/`,
       id: `/${storeSlug}/`,
       display: "standalone",
+      display_override: ["window-controls-overlay", "standalone", "minimal-ui"],
       background_color: "#ffffff",
       theme_color: activePharmacy.themeColors?.primary || "#00B5AD",
       icons: [
