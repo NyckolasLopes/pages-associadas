@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, X, Search } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Mic, X, Search, AlertCircle, Volume2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface VoiceSearchModalProps {
   open: boolean;
@@ -7,351 +8,317 @@ interface VoiceSearchModalProps {
   onResult: (transcript: string) => void;
 }
 
-type VoiceState = "requesting" | "listening" | "result" | "error" | "blocked";
-
-const MIC_SETTINGS_URL = (() => {
-  const ua = navigator.userAgent.toLowerCase();
-  if (ua.includes("edg/")) return "edge://settings/content/microphone";
-  if (ua.includes("firefox")) return "about:preferences#privacy";
-  return "chrome://settings/content/microphone";
-})();
-
 export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalProps) {
-  const [state, setState] = useState<VoiceState>("requesting");
+  const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimText, setInterimText] = useState("");
+  const [needsPermission, setNeedsPermission] = useState(false);
+  const [unsupported, setUnsupported] = useState(false);
+
   const recognitionRef = useRef<any>(null);
-  const animFrameRef = useRef<number | null>(null);
+  const isClosingRef = useRef(false);
 
-  const stopRecognition = () => {
-    try { recognitionRef.current?.abort(); } catch {}
-    recognitionRef.current = null;
-  };
+  const stopRecognition = useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {}
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    isClosingRef.current = true;
     stopRecognition();
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    setState("requesting");
+    setIsListening(false);
     setTranscript("");
     setInterimText("");
+    setNeedsPermission(false);
     onClose();
-  };
+  }, [stopRecognition, onClose]);
 
-  useEffect(() => {
-    if (!open) return;
-
+  const startListening = useCallback(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setState("error");
+      setUnsupported(true);
       return;
     }
 
-    setState("requesting");
+    stopRecognition();
+    isClosingRef.current = false;
     setTranscript("");
     setInterimText("");
+    setNeedsPermission(false);
+    setUnsupported(false);
 
-    let cancelled = false;
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "pt-BR";
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      recognition.continuous = false;
+      recognitionRef.current = recognition;
 
-    const startRecognition = () => {
-      if (cancelled) return;
-
-      const r = new SpeechRecognition();
-      r.lang = "pt-BR";
-      r.interimResults = true;
-      r.maxAlternatives = 1;
-      r.continuous = false;
-      recognitionRef.current = r;
-
-      r.onstart = () => {
-        if (!cancelled) setState("listening");
+      recognition.onstart = () => {
+        if (!isClosingRef.current) {
+          setIsListening(true);
+          setNeedsPermission(false);
+        }
       };
 
-      r.onresult = (event: any) => {
-        if (cancelled) return;
+      recognition.onresult = (event: any) => {
+        if (isClosingRef.current) return;
         let interim = "";
         let final = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const t = event.results[i][0].transcript;
-          if (event.results[i].isFinal) final += t;
-          else interim += t;
+          const text = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += text;
+          } else {
+            interim += text;
+          }
         }
-        setInterimText(interim);
+
+        if (interim) setInterimText(interim);
+
         if (final) {
-          setTranscript(final);
+          const cleanText = final.trim();
+          setTranscript(cleanText);
           setInterimText("");
-          setState("result");
-          // Fecha o modal e dispara a busca após pequeno delay visual
+          setIsListening(false);
+
+          // Aguarda breve confirmação visual e aciona busca
           setTimeout(() => {
-            if (!cancelled) {
-              onResult(final);
+            if (!isClosingRef.current) {
+              onResult(cleanText);
               handleClose();
             }
-          }, 600);
+          }, 450);
         }
       };
 
-      r.onerror = (event: any) => {
-        if (cancelled) return;
-        const code = event?.error || "";
-        if (code === "not-allowed" || code === "service-not-allowed") {
-          setState("blocked");
-        } else if (code === "no-speech") {
-          // Sem fala detectada — volta para listening se ainda aberto
-          setState("listening");
-          try { r.start(); } catch {}
-        } else if (code !== "aborted") {
-          setState("error");
+      recognition.onerror = (event: any) => {
+        if (isClosingRef.current) return;
+        const err = event.error;
+
+        if (err === "not-allowed" || err === "service-not-allowed") {
+          setIsListening(false);
+          setNeedsPermission(true);
+        } else if (err === "no-speech") {
+          setIsListening(false);
+        } else if (err === "network") {
+          setIsListening(false);
+          toast.error("Sem conexão com o serviço de reconhecimento de voz.");
+        } else if (err !== "aborted") {
+          setIsListening(false);
         }
       };
 
-      r.onend = () => {
-        if (cancelled || state === "result") return;
+      recognition.onend = () => {
+        if (!isClosingRef.current) {
+          setIsListening(false);
+        }
       };
 
-      try {
-        r.start();
-      } catch {
-        setState("error");
+      recognition.start();
+      setIsListening(true);
+    } catch (e) {
+      console.warn("Erro ao iniciar SpeechRecognition:", e);
+      setIsListening(false);
+    }
+  }, [stopRecognition, onResult, handleClose]);
+
+  // Função disparada no clique direto do usuário para solicitar permissão nativa
+  const handleRequestPermissionClick = async () => {
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+        setNeedsPermission(false);
+        startListening();
+      } else {
+        startListening();
       }
-    };
+    } catch (err: any) {
+      console.warn("Permissão negada:", err);
+      setNeedsPermission(true);
+      toast.error("Para usar a pesquisa por voz, permita o acesso ao microfone no navegador.");
+    }
+  };
 
-    // Solicita permissão explicitamente para disparar o popup nativo
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((stream) => {
-        stream.getTracks().forEach((t) => t.stop());
-        if (!cancelled) startRecognition();
-      })
-      .catch((err: any) => {
-        if (cancelled) return;
-        const name = err?.name || "";
-        if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
-          setState("blocked");
-        } else {
-          setState("error");
-        }
-      });
-
+  useEffect(() => {
+    if (open) {
+      isClosingRef.current = false;
+      startListening();
+    } else {
+      stopRecognition();
+    }
     return () => {
-      cancelled = true;
       stopRecognition();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, startListening, stopRecognition]);
 
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
       onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
-        className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden"
-        style={{
-          animation: "voiceModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both",
-        }}
+        className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Botão fechar */}
+        {/* Botão Fechar */}
         <button
           type="button"
           onClick={handleClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-zinc-500 z-10"
+          className="absolute top-4 right-4 p-2 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 z-10"
           aria-label="Fechar"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex flex-col items-center px-6 py-10 gap-6">
-          {/* Estado: solicitando permissão */}
-          {state === "requesting" && (
-            <>
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                <Mic className="w-9 h-9 text-primary animate-pulse" />
-              </div>
-              <div className="text-center">
-                <p className="font-bold text-lg">Aguardando permissão...</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Permita o uso do microfone quando o browser solicitar
-                </p>
-              </div>
-            </>
-          )}
+        <div className="flex flex-col items-center px-6 py-8 text-center">
+          {/* Header */}
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+              Pesquisa por Voz
+            </h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Fale o produto que você deseja encontrar
+            </p>
+          </div>
 
-          {/* Estado: ouvindo */}
-          {state === "listening" && (
-            <>
-              <div className="relative w-24 h-24 flex items-center justify-center">
-                {/* Ondas animadas */}
-                <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
-                <span className="absolute inset-2 rounded-full bg-primary/15 animate-ping" style={{ animationDelay: "0.15s" }} />
-                <div className="relative w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
-                  <Mic className="w-9 h-9 text-white" />
-                </div>
-              </div>
-              <div className="text-center min-h-[48px]">
-                <p className="font-bold text-lg text-primary">Ouvindo...</p>
-                {interimText ? (
-                  <p className="text-sm text-muted-foreground mt-1 italic">{interimText}</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground mt-1">Fale o nome do produto</p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="text-xs text-muted-foreground underline underline-offset-2"
-              >
-                Cancelar
-              </button>
-            </>
-          )}
+          {/* Microfone Central com Animação */}
+          <div className="relative my-4 flex items-center justify-center">
+            {isListening && (
+              <>
+                <span
+                  className="absolute w-28 h-28 rounded-full animate-ping opacity-35"
+                  style={{ backgroundColor: "#008000" }}
+                />
+                <span
+                  className="absolute w-36 h-36 rounded-full animate-pulse opacity-20"
+                  style={{ backgroundColor: "#008000" }}
+                />
+              </>
+            )}
 
-          {/* Estado: resultado capturado */}
-          {state === "result" && (
-            <>
-              <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <Search className="w-9 h-9 text-emerald-600" />
-              </div>
-              <div className="text-center">
-                <p className="font-bold text-lg text-emerald-600">Buscando...</p>
-                <p className="text-base font-semibold mt-1">{transcript}</p>
-              </div>
-            </>
-          )}
+            <button
+              type="button"
+              onClick={isListening ? stopRecognition : (needsPermission ? handleRequestPermissionClick : startListening)}
+              className="relative w-20 h-20 rounded-full flex items-center justify-center text-white shadow-xl transition-all duration-300 active:scale-95 cursor-pointer"
+              style={{
+                backgroundColor: isListening ? "#008000" : (needsPermission ? "#e11d48" : "#008000"),
+                boxShadow: isListening ? "0 0 25px rgba(0,128,0,0.45)" : undefined,
+              }}
+              title={isListening ? "Ouvindo... Clique para pausar" : "Clique para falar"}
+            >
+              <Mic className={`w-8 h-8 ${isListening ? "animate-pulse" : ""}`} />
+            </button>
+          </div>
 
-          {/* Estado: microfone bloqueado */}
-          {state === "blocked" && (
-            <>
-              <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <MicOff className="w-8 h-8 text-red-500" />
-              </div>
-
-              <div className="w-full space-y-3">
-                <div className="text-center">
-                  <p className="font-bold text-base">Microfone bloqueado</p>
-                  <p className="text-xs text-muted-foreground mt-1">Siga UMA das opções abaixo:</p>
-                </div>
-
-                {/* Opção 1 — Edge/Chrome settings */}
-                <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-3 space-y-1.5">
-                  <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Opção 1 — Configurações do navegador</p>
-                  <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-1 list-decimal list-inside leading-relaxed">
-                    <li>Clique em <strong>"Configurações do site"</strong> no painel 🔒</li>
-                    <li>Encontre <strong>Microfone</strong> e clique em <strong>Permitir</strong></li>
-                    <li>Clique em <strong>"Tentar novamente"</strong> abaixo</li>
-                  </ol>
-                  <button
-                    type="button"
-                    className="mt-1 text-[11px] text-primary underline underline-offset-2"
-                    onClick={() => {
-                      const url = "edge://settings/content/microphone";
-                      navigator.clipboard?.writeText(url).catch(() => {});
-                      alert('Cole este endereço na barra do navegador:\n\nedge://settings/content/microphone\n\n(já copiado para sua área de transferência)');
-                    }}
-                  >
-                    Copiar endereço das configurações →
-                  </button>
-                </div>
-
-                {/* Opção 2 — Windows */}
-                <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-3 space-y-1">
-                  <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Opção 2 — Configurações do Windows</p>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    <strong>Iniciar</strong> → <strong>Configurações</strong> → <strong>Privacidade e Segurança</strong> → <strong>Microfone</strong> → ative para o Edge/Chrome
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-2 w-full">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition"
-                >
-                  Fechar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setState("requesting");
-                    setTranscript("");
-                    setInterimText("");
-                    // Re-dispara o fluxo de permissão
-                    navigator.mediaDevices
-                      .getUserMedia({ audio: true })
-                      .then((stream) => {
-                        stream.getTracks().forEach((t) => t.stop());
-                        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-                        if (!SR) { setState("error"); return; }
-                        const r = new SR();
-                        r.lang = "pt-BR";
-                        r.interimResults = true;
-                        r.maxAlternatives = 1;
-                        r.continuous = false;
-                        r.onstart = () => setState("listening");
-                        r.onresult = (event: any) => {
-                          let interim = "", final = "";
-                          for (let i = event.resultIndex; i < event.results.length; i++) {
-                            const t = event.results[i][0].transcript;
-                            if (event.results[i].isFinal) final += t; else interim += t;
-                          }
-                          setInterimText(interim);
-                          if (final) {
-                            setTranscript(final);
-                            setInterimText("");
-                            setState("result");
-                            setTimeout(() => { onResult(final); handleClose(); }, 600);
-                          }
-                        };
-                        r.onerror = () => setState("blocked");
-                        r.onend = () => {};
-                        r.start();
-                        setState("listening");
-                      })
-                      .catch(() => setState("blocked"));
+          {/* Equalizador de Ondas Sonoras quando Ouvindo */}
+          {isListening && (
+            <div className="flex items-center gap-1 my-3 h-6">
+              {[0.4, 0.8, 1.2, 0.6, 1.0, 0.5, 0.9].map((delay, idx) => (
+                <span
+                  key={idx}
+                  className="w-1 rounded-full animate-pulse"
+                  style={{
+                    backgroundColor: "#008000",
+                    height: `${12 + (idx % 3) * 6}px`,
+                    animationDuration: `${0.6 + delay * 0.4}s`,
+                    animationDelay: `${delay * 0.15}s`,
                   }}
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:opacity-90 transition"
-                >
-                  Tentar novamente
-                </button>
-              </div>
-            </>
+                />
+              ))}
+            </div>
           )}
 
-          {/* Estado: erro genérico */}
-          {state === "error" && (
-            <>
-              <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <MicOff className="w-9 h-9 text-red-500" />
+          {/* Textos de Feedback */}
+          <div className="min-h-[56px] flex flex-col items-center justify-center mt-2 px-2 max-w-full">
+            {transcript ? (
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-base animate-in fade-in">
+                <Search className="w-4 h-4 shrink-0" />
+                <span className="truncate">"{transcript}"</span>
               </div>
+            ) : interimText ? (
+              <p className="text-zinc-800 dark:text-zinc-200 text-sm font-medium italic animate-in fade-in">
+                "{interimText}"
+              </p>
+            ) : isListening ? (
+              <p className="text-emerald-700 dark:text-emerald-400 text-sm font-semibold animate-pulse">
+                Ouvindo... Pode falar agora
+              </p>
+            ) : needsPermission ? (
               <div className="text-center">
-                <p className="font-bold text-lg">Voz não disponível</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Seu navegador não suporta pesquisa por voz. Use Chrome ou Edge.
+                <p className="text-rose-600 dark:text-rose-400 text-xs font-semibold">
+                  Acesso ao microfone necessário
+                </p>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Toque no botão abaixo para permitir
                 </p>
               </div>
+            ) : unsupported ? (
+              <p className="text-rose-600 text-xs font-medium">
+                Seu navegador não suporta pesquisa por voz. Tente usar Chrome ou Edge.
+              </p>
+            ) : (
+              <p className="text-zinc-500 dark:text-zinc-400 text-xs font-medium">
+                Toque no microfone acima para falar novamente
+              </p>
+            )}
+          </div>
+
+          {/* Ação para Permitir Microfone quando Necessário */}
+          {needsPermission && (
+            <button
+              type="button"
+              onClick={handleRequestPermissionClick}
+              className="mt-3 w-full py-2.5 px-4 rounded-xl text-white font-bold text-xs shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2"
+              style={{ backgroundColor: "#008000" }}
+            >
+              <Volume2 className="w-4 h-4" />
+              Permitir Microfone
+            </button>
+          )}
+
+          {/* Exemplos de busca */}
+          {!needsPermission && !transcript && (
+            <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 w-full flex items-center justify-center gap-1.5 text-[11px] text-zinc-400">
+              <span>Exemplos:</span>
               <button
                 type="button"
-                onClick={handleClose}
-                className="w-full py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:opacity-90 transition"
+                onClick={() => {
+                  onResult("Dipirona");
+                  handleClose();
+                }}
+                className="underline hover:text-zinc-700 dark:hover:text-zinc-200"
               >
-                Fechar
+                Dipirona
               </button>
-            </>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onResult("Protetor solar");
+                  handleClose();
+                }}
+                className="underline hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                Protetor solar
+              </button>
+            </div>
           )}
         </div>
-
-        <style>{`
-          @keyframes voiceModalIn {
-            from { transform: translateY(40px) scale(0.95); opacity: 0; }
-            to { transform: translateY(0) scale(1); opacity: 1; }
-          }
-        `}</style>
       </div>
     </div>
   );

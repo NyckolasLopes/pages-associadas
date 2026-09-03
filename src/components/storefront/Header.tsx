@@ -215,16 +215,38 @@ export function Header() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
-  const [voiceOpen, setVoiceOpen] = useState(false);
-
   const handleVoiceSearch = () => {
     setSearchOpen(false);
+    setMobileSearchOpen(false);
     setVoiceOpen(true);
+
+    // Dispara a solicitação de permissão nativa dentro do evento de clique direto do usuário
+    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          stream.getTracks().forEach((track) => track.stop());
+        })
+        .catch(() => {
+          // Se cancelado ou negado, o VoiceSearchModal exibe o botão de autorização
+        });
+    }
   };
 
   const handleVoiceResult = (transcript: string) => {
-    setQ(transcript);
-    setSearchOpen(true);
+    const clean = transcript.trim();
+    if (!clean) return;
+    setQ(clean);
+    setSearchOpen(false);
+    setMobileSearchOpen(false);
+    setVoiceOpen(false);
+
+    // Redireciona diretamente para os resultados de busca achando o produto
+    navigate({
+      to: "/$storeSlug/busca",
+      params: { storeSlug },
+      search: { q: clean } as any,
+    });
   };
 
   const handleCheckoutClick = () => {
