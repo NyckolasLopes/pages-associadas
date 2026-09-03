@@ -111,6 +111,18 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         password: "Aspro@2026"
       });
 
+      // Ensure slug is populated
+      if (!productPayload.slug) {
+        const baseSlug = String(productPayload.nome || "produto")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        productPayload.slug = (productPayload.url && !productPayload.url.includes('/') ? productPayload.url : '') || (baseSlug ? `${baseSlug}-${productPayload.id}` : String(productPayload.id));
+      }
+
       let { data, error } = await (adminClient.from('produtos') as any).upsert(productPayload).select();
 
       if (error && (error.message?.toLowerCase().includes("alerta_cor") || error.message?.toLowerCase().includes("fabricante") || error.message?.toLowerCase().includes("bula_url"))) {

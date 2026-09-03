@@ -353,13 +353,35 @@ export const useAdminProducts = create<ProductsState>()(
           compre_junto_produto_id: formattedProduct.compreJuntoProdutoId || null,
         };
 
+        const generateSlug = (name: string, id: string): string => {
+          const base = String(name || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+          return base ? `${base}-${id}` : String(id);
+        };
+
+        const finalSlug = (formattedProduct as any).slug || 
+          (formattedProduct.url && !formattedProduct.url.includes('/') ? formattedProduct.url : '') || 
+          generateSlug(formattedProduct.nome, formattedProduct.id);
+
+        formattedProduct.url = finalSlug;
+        (formattedProduct as any).slug = finalSlug;
+
+        const mainPhoto = formattedProduct.foto || (Array.isArray(formattedProduct.imagens) && formattedProduct.imagens[0] ? (formattedProduct.imagens[0].caminhoImagem || formattedProduct.imagens[0]) : null) || null;
+
         // Supabase DB Update
         let upsertPayload: any = {
           id: formattedProduct.id,
+          slug: finalSlug,
           ean: formattedProduct.ean || null,
           eans_secundarios: formattedProduct.eansSecundarios || [],
           nome: formattedProduct.nome,
           descricao: formattedProduct.descricao || null,
+          foto: mainPhoto,
           marca: formattedProduct.marca || null,
           fabricante: formattedProduct.fabricante || null,
           bula_url: formattedProduct.bulaUrl || (formattedProduct as any).bula_url || null,
