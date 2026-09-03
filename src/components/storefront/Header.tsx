@@ -215,13 +215,32 @@ export function Header() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
 
-  const handleVoiceSearch = () => {
+  const handleVoiceSearch = async () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast.error("Seu navegador não suporta pesquisa por voz. Use Chrome ou Edge.");
       return;
     }
     if (isListening) return;
+
+    // Solicitar permissão de microfone explicitamente antes de iniciar
+    // Isso garante que o popup nativo do browser apareça
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Libera o stream imediatamente — o SpeechRecognition gerencia seu próprio áudio
+      stream.getTracks().forEach((t) => t.stop());
+    } catch (err: any) {
+      const name = err?.name || "";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        toast.error(
+          "Permissão de microfone negada. Clique no ícone 🔒 na barra de endereços e ative o Microfone."
+        );
+      } else {
+        toast.error("Não foi possível acessar o microfone. Verifique seu dispositivo.");
+      }
+      return;
+    }
+
     const recognition = new SpeechRecognition();
     recognition.lang = "pt-BR";
     recognition.interimResults = false;
@@ -239,7 +258,9 @@ export function Header() {
       setIsListening(false);
       const code = event?.error || "";
       if (code === "not-allowed" || code === "service-not-allowed") {
-        toast.error("Permissão de microfone negada. Verifique as configurações do seu navegador.");
+        toast.error(
+          "Permissão de microfone negada. Clique no ícone 🔒 na barra de endereços e ative o Microfone."
+        );
       } else if (code === "network") {
         toast.error("Sem conexão para reconhecimento de voz. Verifique sua internet.");
       } else if (code === "no-speech" || code === "aborted" || code === "audio-capture") {
@@ -799,7 +820,7 @@ export function Header() {
                     backgroundColor: 'var(--cart-badge-bg, var(--accent))',
                     color: 'var(--cart-badge-text, var(--accent-foreground))'
                   } : undefined}
-                  className="absolute -top-2 -right-2 bg-accent text-accent-foreground h-5 min-w-5 px-1 rounded-full flex items-center justify-center text-[10.5px] font-black leading-none text-center shadow-xs border border-white/20"
+                  className="absolute -top-2 -right-2 bg-accent text-accent-foreground h-5 min-w-[1.25rem] px-1.5 rounded-full flex items-center justify-center text-[10px] font-black leading-none text-center shadow-sm border border-white/20"
                 >
                   {count}
                 </span>
@@ -848,7 +869,7 @@ export function Header() {
                         backgroundColor: 'var(--cart-badge-bg, var(--accent))',
                         color: 'var(--cart-badge-text, var(--accent-foreground))'
                       } : undefined}
-                      className="absolute -top-1.5 -right-1.5 bg-accent text-accent-foreground h-5 min-w-5 px-1 rounded-full flex items-center justify-center text-[10.5px] font-black leading-none text-center shadow-xs border border-white/20"
+                      className="absolute -top-1.5 -right-1.5 bg-accent text-accent-foreground h-5 min-w-[1.25rem] px-1.5 rounded-full flex items-center justify-center text-[10px] font-black leading-none text-center shadow-sm border border-white/20"
                     >
                       {count}
                     </span>

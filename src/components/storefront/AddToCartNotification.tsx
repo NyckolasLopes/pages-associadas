@@ -1,21 +1,26 @@
 import { useEffect, useState, useRef } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, X, ShoppingBasket } from "lucide-react";
 import { useCart } from "@/stores/cart";
 
 export function AddToCartNotification() {
   const notification = useCart((s) => s.addedNotification);
   const hide = useCart((s) => s.hideAddedNotification);
   const [progress, setProgress] = useState(100);
+  const [visible, setVisible] = useState(false);
   const animRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!notification?.open) {
       setProgress(100);
+      setVisible(false);
       if (animRef.current) cancelAnimationFrame(animRef.current);
       return;
     }
 
-    const duration = 3000; // 3 segundos
+    // Pequeno delay para acionar animação de entrada
+    requestAnimationFrame(() => setVisible(true));
+
+    const duration = 3500;
     const startTime = performance.now();
 
     const update = (now: number) => {
@@ -46,48 +51,72 @@ export function AddToCartNotification() {
   if (!notification?.open) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-200"
-      onClick={hide}
+    <div
+      role="alert"
+      aria-live="polite"
+      className="fixed z-[9999] pointer-events-none"
+      style={{
+        bottom: "env(safe-area-inset-bottom, 1rem)",
+        right: 0,
+        left: 0,
+        padding: "0 1rem 1rem",
+        display: "flex",
+        justifyContent: "flex-end",
+        alignItems: "flex-end",
+      }}
     >
       <div
-        className="relative w-full max-w-sm bg-emerald-600 text-white rounded-2xl shadow-2xl p-5 border border-emerald-400/40 animate-in zoom-in-95 duration-200 pointer-events-auto"
-        onClick={(e) => e.stopPropagation()}
-        role="alert"
-        aria-live="polite"
+        className="pointer-events-auto w-full sm:w-auto sm:min-w-[300px] sm:max-w-sm"
+        style={{
+          transform: visible ? "translateY(0)" : "translateY(120%)",
+          opacity: visible ? 1 : 0,
+          transition: "transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease",
+        }}
       >
-        {/* Botão X para fechar o aviso */}
-        <button
-          type="button"
-          onClick={hide}
-          aria-label="Fechar notificação"
-          className="absolute top-3 right-3 p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/20 transition active:scale-95 cursor-pointer"
+        <div
+          className="relative bg-emerald-600 text-white rounded-2xl shadow-2xl border border-emerald-400/30 overflow-hidden"
+          style={{ boxShadow: "0 8px 32px rgba(16,185,129,0.35), 0 2px 8px rgba(0,0,0,0.18)" }}
         >
-          <X className="w-5 h-5" />
-        </button>
+          {/* Conteúdo */}
+          <div className="flex items-center gap-3 px-4 py-3 pr-10">
+            {/* Ícone */}
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/25 shadow-inner">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
 
-        <div className="flex items-center gap-3.5 pr-6">
-          <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/30 shadow-inner">
-            <CheckCircle2 className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1">
-            <h4 className="text-base font-bold leading-tight">
-              Produto adicionado ao carrinho com sucesso
-            </h4>
-            {notification.productName && (
-              <p className="text-xs text-emerald-100 mt-1 line-clamp-1 opacity-90 font-medium">
-                {notification.productName}
+            {/* Textos */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold leading-tight whitespace-nowrap">
+                Adicionado ao carrinho!
               </p>
-            )}
-          </div>
-        </div>
+              {notification.productName && (
+                <p className="text-xs text-emerald-100 mt-0.5 truncate opacity-90 max-w-[200px] sm:max-w-[240px]">
+                  {notification.productName}
+                </p>
+              )}
+            </div>
 
-        {/* Barrinha de carregamento rápido (cerca de 3 segundos) */}
-        <div className="w-full bg-black/20 h-1.5 rounded-full overflow-hidden mt-4">
-          <div
-            className="h-full bg-white rounded-full"
-            style={{ width: `${progress}%` }}
-          />
+            {/* Ícone carrinho decorativo */}
+            <ShoppingBasket className="w-4 h-4 text-white/60 shrink-0 hidden sm:block" />
+          </div>
+
+          {/* Botão fechar */}
+          <button
+            type="button"
+            onClick={hide}
+            aria-label="Fechar notificação"
+            className="absolute top-2.5 right-2.5 p-1 rounded-full text-white/70 hover:text-white hover:bg-white/20 transition active:scale-90 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Barra de progresso */}
+          <div className="w-full bg-black/20 h-1">
+            <div
+              className="h-full bg-white/80 rounded-full transition-none"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
       </div>
     </div>
