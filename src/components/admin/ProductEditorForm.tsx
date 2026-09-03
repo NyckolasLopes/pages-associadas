@@ -240,6 +240,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
         compreJuntoProdutoId: product.compreJuntoProdutoId || "",
         alertaRegulatorio: product.alertaRegulatorio ?? (product as any).alerta_regulatorio ?? (product as any).metadata?.alerta_regulatorio ?? false,
         alertaTexto: product.alertaTexto ?? (product as any).alerta_texto ?? (product as any).metadata?.alerta_texto ?? "",
+        alertaCorFundo: product.alertaCorFundo ?? (product as any).alerta_cor_fundo ?? (product as any).metadata?.alerta_cor_fundo ?? "#fffbeb",
+        alertaCorTexto: product.alertaCorTexto ?? (product as any).alerta_cor_texto ?? (product as any).metadata?.alerta_cor_texto ?? "#78350f",
         tipoReceita: product.tipoReceita ?? (product as any).tipo_receita ?? (product as any).metadata?.tipo_receita ?? "",
         tipoMedicamento: product.tipoMedicamento ?? (product as any).tipo_medicamento ?? (product as any).metadata?.tipo_medicamento ?? "",
         classificacaoRegistro: product.classificacaoRegistro ?? (product as any).classificacao_registro ?? (product as any).metadata?.classificacao_registro ?? "",
@@ -962,16 +964,97 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               Alertas e Características
             </h3>
             
-            <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-2">
-                <Label className="font-bold text-xs uppercase text-slate-500">Alerta Regulatório (Texto)</Label>
+            {/* Bloco Alerta Regulatório */}
+            <div className="bg-slate-50/70 p-5 rounded-xl border border-slate-200 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3">
+                  <Switch 
+                    id="alertaRegulatorio" 
+                    checked={!!formData.alertaRegulatorio} 
+                    onCheckedChange={checked => {
+                      const nextText = (checked && !formData.alertaTexto?.trim())
+                        ? "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."
+                        : formData.alertaTexto;
+                      setFormData({
+                        ...formData, 
+                        alertaRegulatorio: checked,
+                        alertaTexto: nextText
+                      });
+                    }}
+                  />
+                  <div>
+                    <Label htmlFor="alertaRegulatorio" className="font-bold text-slate-800 cursor-pointer text-sm">
+                      Requer Exibição do Alerta Regulatório
+                    </Label>
+                    <p className="text-xs text-slate-500">Exibido na caixa de Informações Técnicas da página do produto</p>
+                  </div>
+                </div>
+
+                {/* Cores do Aviso Regulatório (Fundo e Texto) ao lado do campo */}
+                <div className="flex flex-wrap items-center gap-3 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-semibold text-slate-600">Cor Fundo:</Label>
+                    <input 
+                      type="color" 
+                      value={formData.alertaCorFundo || "#fffbeb"} 
+                      onChange={e => setFormData({...formData, alertaCorFundo: e.target.value})} 
+                      className="w-7 h-7 p-0.5 rounded border border-slate-300 cursor-pointer bg-white"
+                      title="Escolher cor de fundo do aviso"
+                    />
+                    <span className="text-[11px] font-mono text-slate-500 uppercase">{formData.alertaCorFundo || "#fffbeb"}</span>
+                  </div>
+
+                  <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-semibold text-slate-600">Cor Texto:</Label>
+                    <input 
+                      type="color" 
+                      value={formData.alertaCorTexto || "#78350f"} 
+                      onChange={e => setFormData({...formData, alertaCorTexto: e.target.value})} 
+                      className="w-7 h-7 p-0.5 rounded border border-slate-300 cursor-pointer bg-white"
+                      title="Escolher cor do texto do aviso"
+                    />
+                    <span className="text-[11px] font-mono text-slate-500 uppercase">{formData.alertaCorTexto || "#78350f"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <Label className="font-bold text-xs uppercase text-slate-500">Texto do Alerta Regulatório</Label>
                 <Textarea 
                   value={formData.alertaTexto ?? ""} 
                   onChange={e => setFormData({...formData, alertaTexto: e.target.value})} 
                   className="bg-white" 
+                  rows={2}
                   placeholder="Ex: AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO." 
                 />
               </div>
+
+              {/* Pré-visualização ao vivo */}
+              {formData.alertaRegulatorio && (
+                <div className="pt-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                    Pré-visualização do Aviso (como aparecerá em Informações Técnicas):
+                  </span>
+                  <div 
+                    className="p-3.5 rounded-xl text-xs font-bold text-center border uppercase tracking-tight shadow-xs transition-colors"
+                    style={{
+                      backgroundColor: formData.alertaCorFundo || "#fffbeb",
+                      color: formData.alertaCorTexto || "#78350f",
+                      borderColor: formData.alertaCorFundo ? `${formData.alertaCorFundo}cc` : "#fde68a"
+                    }}
+                  >
+                    <span 
+                      className="block mb-1 text-[11px] font-extrabold opacity-85"
+                      style={{ color: formData.alertaCorTexto || "#92400e" }}
+                    >
+                      ALERTA REGULATÓRIO
+                    </span>
+                    {formData.alertaTexto || '"AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."'}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 gap-6">
@@ -1024,26 +1107,6 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   )}
                 </div>
               </div>
-            </div>
-
-
-            
-            <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
-              <Switch 
-                id="alertaRegulatorio" 
-                checked={!!formData.alertaRegulatorio} 
-                onCheckedChange={checked => {
-                  const nextText = (checked && !formData.alertaTexto?.trim())
-                    ? "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."
-                    : formData.alertaTexto;
-                  setFormData({
-                    ...formData, 
-                    alertaRegulatorio: checked,
-                    alertaTexto: nextText
-                  });
-                }}
-              />
-              <Label htmlFor="alertaRegulatorio" className="font-medium cursor-pointer">Requer Exibição do Alerta Regulatório</Label>
             </div>
           </div>
 
@@ -1597,7 +1660,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                         </div>
                       )}
                       <div className="flex flex-col min-w-0">
-                        <span className="text-[13px] font-medium text-[#202124] leading-none truncate">
+                        <span className="text-[17px] font-semibold text-[#202124] leading-snug truncate">
                           {currentLoja?.apelido || currentLoja?.nome || "Farmácias Associadas"}
                         </span>
                         <span className="text-[11px] text-[#4d5156] leading-tight truncate mt-0.5">

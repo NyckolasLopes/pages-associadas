@@ -79,6 +79,14 @@ export function mapRowToProduto(d: any): Produto {
     .find((t: string) => t.startsWith("comprejunto:"))
     ?.replace("comprejunto:", "") || "";
 
+  const tagAlertaFundo = rawInternalTags
+    .find((t: string) => t.startsWith("alertafundo:"))
+    ?.replace("alertafundo:", "") || "";
+
+  const tagAlertaTexto = rawInternalTags
+    .find((t: string) => t.startsWith("alertatexto:"))
+    ?.replace("alertatexto:", "") || "";
+
   if (isGen && !rawSelosIds.includes("gen")) {
     rawSelosIds.push("gen");
   }
@@ -106,7 +114,7 @@ export function mapRowToProduto(d: any): Produto {
     categoriasAdicionais: Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : (Array.isArray(meta.categorias_adicionais) ? meta.categorias_adicionais : []),
     categoriasIds: Array.isArray(d.categorias_ids) ? d.categorias_ids : (Array.isArray(meta.categorias_ids) ? meta.categorias_ids : (Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : [])),
     subcategoriasIds: Array.isArray(d.subcategorias_adicionais) ? d.subcategorias_adicionais : (Array.isArray(d.subcategorias_ids) ? d.subcategorias_ids : (Array.isArray(meta.subcategorias_ids) ? meta.subcategorias_ids : [])),
-    internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:") && !t.startsWith("filtro:") && !t.startsWith("comprejunto:")),
+    internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:") && !t.startsWith("filtro:") && !t.startsWith("comprejunto:") && !t.startsWith("alertafundo:") && !t.startsWith("alertatexto:")),
     selosIds: rawSelosIds,
     principiosAtivos: Array.isArray(d.principios_ativos) ? d.principios_ativos : (Array.isArray(meta.principios_ativos) ? meta.principios_ativos : []),
     imagens: d.imagens || meta.imagens || [],
@@ -146,6 +154,8 @@ export function mapRowToProduto(d: any): Produto {
     tipoReceita: d.tipo_receita || meta.tipo_receita || "",
     alertaTexto: d.alerta_texto || meta.alerta_texto || "",
     alertaRegulatorio: d.alerta_regulatorio ?? meta.alerta_regulatorio ?? false,
+    alertaCorFundo: d.alerta_cor_fundo || tagAlertaFundo || meta.alerta_cor_fundo || meta.alertaCorFundo || "#fffbeb",
+    alertaCorTexto: d.alerta_cor_texto || tagAlertaTexto || meta.alerta_cor_texto || meta.alertaCorTexto || "#78350f",
     caracteristicas: Array.isArray(d.caracteristicas) ? d.caracteristicas : (Array.isArray(meta.caracteristicas) ? meta.caracteristicas : []),
     eansSecundarios: (() => {
       let list: string[] = [];
@@ -248,6 +258,13 @@ export const useAdminProducts = create<ProductsState>()(
           allTags.delete("selo:gen");
         }
 
+        if (formattedProduct.alertaCorFundo) {
+          allTags.add(`alertafundo:${formattedProduct.alertaCorFundo}`);
+        }
+        if (formattedProduct.alertaCorTexto) {
+          allTags.add(`alertatexto:${formattedProduct.alertaCorTexto}`);
+        }
+
         const metadataPayload = {
           marca: formattedProduct.marca || null,
           registro_anvisa: formattedProduct.registroAnvisa || null,
@@ -261,6 +278,8 @@ export const useAdminProducts = create<ProductsState>()(
           principios_ativos: formattedProduct.principiosAtivos || [],
           alerta_texto: formattedProduct.alertaTexto || null,
           alerta_regulatorio: formattedProduct.alertaRegulatorio || false,
+          alerta_cor_fundo: formattedProduct.alertaCorFundo || "#fffbeb",
+          alerta_cor_texto: formattedProduct.alertaCorTexto || "#78350f",
           caracteristicas: formattedProduct.caracteristicas || [],
           ncm: formattedProduct.ncm || null,
           nivel_relevancia: relev,
@@ -284,7 +303,7 @@ export const useAdminProducts = create<ProductsState>()(
         };
 
         // Supabase DB Update
-        const { error } = await (supabase.from('produtos') as any).upsert({
+        let upsertPayload: any = {
           id: formattedProduct.id,
           ean: formattedProduct.ean || null,
           eans_secundarios: formattedProduct.eansSecundarios || [],
@@ -324,6 +343,8 @@ export const useAdminProducts = create<ProductsState>()(
           meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
           alerta_regulatorio: formattedProduct.alertaRegulatorio === true,
           alerta_texto: formattedProduct.alertaTexto || null,
+          alerta_cor_fundo: formattedProduct.alertaCorFundo || "#fffbeb",
+          alerta_cor_texto: formattedProduct.alertaCorTexto || "#78350f",
           tipo_receita: formattedProduct.tipoReceita || null,
           resumo_descricao: formattedProduct.resumoDescricao || null,
           termos_pesquisa: formattedProduct.termosPesquisa || null,
@@ -331,7 +352,16 @@ export const useAdminProducts = create<ProductsState>()(
           nivel_relevancia: Number(formattedProduct.nivelRelevancia ?? formattedProduct.prioridade) || 1,
           prioridade: Number(formattedProduct.nivelRelevancia ?? formattedProduct.prioridade) || 1,
           imagem_alt: formattedProduct.imagemAlt || null,
-        });
+        };
+
+        let { error } = await (supabase.from('produtos') as any).upsert(upsertPayload);
+        if (error && error.message?.toLowerCase().includes("alerta_cor")) {
+          // Fallback resiliente se a coluna ainda não tiver sido criada no Supabase remoto
+          delete upsertPayload.alerta_cor_fundo;
+          delete upsertPayload.alerta_cor_texto;
+          const retryRes = await (supabase.from('produtos') as any).upsert(upsertPayload);
+          error = retryRes.error;
+        }
         
         if (error) {
           console.error("Erro ao salvar o produto no Supabase:", error);

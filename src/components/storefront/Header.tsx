@@ -497,7 +497,7 @@ export function Header() {
         }}
       >
         <div className="container-fa flex items-center justify-between h-9 gap-4">
-          <span className="hidden md:inline font-semibold">
+          <span className="hidden md:inline font-bold text-[15.5px] tracking-wide">
             {activePharmacy?.apelido || (
               !(activePharmacy?.categoriaAssociado === 'Parceiro')
                 ? "Aqui você tem amigos."

@@ -64,6 +64,8 @@ export interface Produto {
   metaDescription?: string;
   alertaRegulatorio?: boolean;
   alertaTexto?: string;
+  alertaCorFundo?: string;
+  alertaCorTexto?: string;
   kit?: boolean;
   quantidadeEmbalagem?: number;
   quantidadeConteudo?: number;

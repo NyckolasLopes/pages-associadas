@@ -164,23 +164,34 @@ function AnvisaDisclaimer({
 }: { 
   p: any, confirmDeliveryOpen: boolean, setConfirmDeliveryOpen: (o: boolean) => void, forcedPharmacyModal: boolean, setForcedPharmacyModal: (o: boolean) => void, isShared: boolean, globalCep: string | null, cep: string, setCep: (cep: string) => void, isCalcLoading: boolean, availablePharmacies: any[], selectedPharmacyId: string | null, setSelectedPharmacyId: (id: string) => void, setSelectedFreight: (f: string) => void, qty: number, isService: boolean, add: any, maxStock: number 
 }) {
-  if (p.categoriaId !== "142") return null;
+  const tarja = String(p.tarja || "").toLowerCase().trim();
+  const isPreta = tarja.includes("preta");
+  const isVermelha = tarja.includes("vermelha");
+  const isAmarela = tarja.includes("amarela");
+  const isRetencao = !!p.retemReceita || tarja.includes("retém") || tarja.includes("retem") || isPreta;
+  const isGenerico = checkIsGenerico(p) || isAmarela || p.tipoMedicamento === "generico";
 
-  const isGenerico = checkIsGenerico(p);
-  const isRetencao = !!p.retemReceita;
-  const tarja = String(p.tarja || "").toLowerCase();
+  // Os avisos ANVISA devem aparecer de acordo com a tarja escolhida no produto
+  const hasTarja = isPreta || isVermelha || isAmarela;
+  if (!hasTarja && !isRetencao && !isGenerico) {
+    return null;
+  }
 
   let text = "";
 
-  if (tarja.includes("preta")) {
+  if (isPreta) {
     text = "VENDA SOB PRESCRIÇÃO MÉDICA. O ABUSO DESTE MEDICAMENTO PODE CAUSAR DEPENDÊNCIA. ATENÇÃO: SÓ PODE SER VENDIDO COM RETENÇÃO DA RECEITA.";
     if (isGenerico) text += " Medicamento Genérico - Lei 9.787/99.";
     text += " Este produto é um medicamento. O seu uso pode trazer riscos. Procure o médico e o farmacêutico. Leia a bula. Se persistirem os sintomas, o médico deverá ser consultado.";
-  } else if (tarja.includes("vermelha")) {
+  } else if (isVermelha) {
     text = "VENDA SOB PRESCRIÇÃO MÉDICA.";
     if (isRetencao) text += " SÓ PODE SER VENDIDO COM RETENÇÃO DA RECEITA.";
     if (isGenerico) text += " Medicamento Genérico - Lei 9.787/99.";
     text += " Este produto é um medicamento. " + (isRetencao ? "O seu uso" : "Seu uso") + " pode trazer riscos. Procure o médico e o farmacêutico. Leia a bula. Se persistirem os sintomas, o médico deverá ser consultado.";
+  } else if (isGenerico || isAmarela) {
+    text = "VENDA SOB PRESCRIÇÃO MÉDICA. Medicamento Genérico - Lei 9.787/99.";
+    if (isRetencao) text += " SÓ PODE SER VENDIDO COM RETENÇÃO DA RECEITA.";
+    text += " Este produto é um medicamento. Seu uso pode trazer riscos. Procure o médico e o farmacêutico. Leia a bula. Se persistirem os sintomas, o médico deverá ser consultado.";
   } else {
     text = "MEDICAMENTO ISENTO DE PRESCRIÇÃO. Este produto é um medicamento. Seu uso pode trazer riscos. Procure o médico e o farmacêutico. Leia a bula. Se persistirem os sintomas, o médico deverá ser consultado.";
   }
@@ -1414,20 +1425,6 @@ function PDP() {
                 maxStock={maxStock}
             />
 
-            {p.alertaRegulatorio && isMedication && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-8 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <Info className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-[13px] font-bold text-amber-800 uppercase tracking-tight mb-1">ALERTA REGULATÓRIO:</p>
-                    <p className="text-[13px] text-amber-900 leading-relaxed font-semibold">
-                      {p.alertaTexto || "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <section>
               <h2 className="text-xl font-bold mb-4">
                 Características
@@ -1960,8 +1957,20 @@ function PDP() {
               </div>
               
               {p.alertaRegulatorio && (
-                <div className="mt-6 p-3.5 bg-amber-50 text-amber-900 rounded-xl text-xs font-bold text-center border border-amber-200 uppercase tracking-tight shadow-xs">
-                  <span className="block mb-1 text-[11px] text-amber-800 font-extrabold">ALERTA REGULATÓRIO</span>
+                <div 
+                  className="mt-6 p-3.5 rounded-xl text-xs font-bold text-center border uppercase tracking-tight shadow-xs transition-colors"
+                  style={{
+                    backgroundColor: p.alertaCorFundo || "#fffbeb",
+                    color: p.alertaCorTexto || "#78350f",
+                    borderColor: p.alertaCorFundo ? `${p.alertaCorFundo}cc` : "#fde68a",
+                  }}
+                >
+                  <span 
+                    className="block mb-1 text-[11px] font-extrabold opacity-85"
+                    style={{ color: p.alertaCorTexto || "#92400e" }}
+                  >
+                    ALERTA REGULATÓRIO
+                  </span>
                   {p.alertaTexto || '"AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO."'}
                 </div>
               )}
