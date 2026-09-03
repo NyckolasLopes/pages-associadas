@@ -220,18 +220,6 @@ export function Header() {
     setSearchOpen(false);
     setMobileSearchOpen(false);
     setVoiceOpen(true);
-
-    // Dispara a solicitação de permissão nativa dentro do evento de clique direto do usuário
-    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          stream.getTracks().forEach((track) => track.stop());
-        })
-        .catch(() => {
-          // Se cancelado ou negado, o VoiceSearchModal exibe o botão de autorização
-        });
-    }
   };
 
   const handleVoiceResult = (transcript: string) => {

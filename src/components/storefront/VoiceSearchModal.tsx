@@ -19,6 +19,9 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
 
   const recognitionRef = useRef<any>(null);
   const isClosingRef = useRef(false);
+  const latestTranscriptRef = useRef("");
+  const hasDispatchedRef = useRef(false);
+  const retryCountRef = useRef(0);
 
   const stopRecognition = useCallback(() => {
     if (recognitionRef.current) {
@@ -36,6 +39,8 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
     setIsListening(false);
     setTranscript("");
     setInterimText("");
+    latestTranscriptRef.current = "";
+    hasDispatchedRef.current = false;
     setPermissionBlocked(false);
     setNoDeviceFound(false);
     onClose();
@@ -52,6 +57,8 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
 
     stopRecognition();
     isClosingRef.current = false;
+    latestTranscriptRef.current = "";
+    hasDispatchedRef.current = false;
     setTranscript("");
     setInterimText("");
     setPermissionBlocked(false);
@@ -74,7 +81,7 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
       };
 
       recognition.onresult = (event: any) => {
-        if (isClosingRef.current) return;
+        if (isClosingRef.current || hasDispatchedRef.current) return;
         let interim = "";
         let final = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -86,13 +93,20 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
           }
         }
 
+        const candidate = (final || interim || "").trim();
+        if (candidate) {
+          latestTranscriptRef.current = candidate;
+        }
+
         if (interim) setInterimText(interim);
 
         if (final) {
           const cleanText = final.trim();
+          latestTranscriptRef.current = cleanText;
           setTranscript(cleanText);
           setInterimText("");
           setIsListening(false);
+          hasDispatchedRef.current = true;
 
           // Aguarda breve confirmação visual e aciona busca
           setTimeout(() => {
@@ -100,7 +114,7 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
               onResult(cleanText);
               handleClose();
             }
-          }, 450);
+          }, 400);
         }
       };
 
@@ -108,14 +122,49 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
         if (isClosingRef.current) return;
         const err = event.error;
 
+        // Se o usuário já falou algo e houve encerramento/erro, despacha o que foi falado
+        const recognized = latestTranscriptRef.current.trim();
+        if (recognized && !hasDispatchedRef.current) {
+          hasDispatchedRef.current = true;
+          setTranscript(recognized);
+          setInterimText("");
+          setIsListening(false);
+          setTimeout(() => {
+            if (!isClosingRef.current) {
+              onResult(recognized);
+              handleClose();
+            }
+          }, 400);
+          return;
+        }
+
         if (err === "not-allowed" || err === "service-not-allowed") {
           setIsListening(false);
           setPermissionBlocked(true);
         } else if (err === "no-speech") {
           setIsListening(false);
+          // No mobile, se o microfone fechar rapidamente por silêncio no início, tenta reiniciar 1x suavemente
+          if (!latestTranscriptRef.current && !hasDispatchedRef.current && !isClosingRef.current && retryCountRef.current < 2) {
+            retryCountRef.current += 1;
+            setTimeout(() => {
+              if (!isClosingRef.current) {
+                startListening();
+              }
+            }, 250);
+          }
         } else if (err === "audio-capture") {
           setIsListening(false);
-          setNoDeviceFound(true);
+          // Em mobile, se o hardware de áudio estava momentaneamente ocupado, tenta mais 1 vez
+          if (retryCountRef.current < 2 && !isClosingRef.current) {
+            retryCountRef.current += 1;
+            setTimeout(() => {
+              if (!isClosingRef.current) {
+                startListening();
+              }
+            }, 350);
+          } else {
+            setNoDeviceFound(true);
+          }
         } else if (err === "network") {
           setIsListening(false);
           toast.error("Sem conexão com o serviço de reconhecimento de voz.");
@@ -125,8 +174,22 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
       };
 
       recognition.onend = () => {
-        if (!isClosingRef.current) {
-          setIsListening(false);
+        if (isClosingRef.current) return;
+        setIsListening(false);
+
+        // No mobile (Android Chrome), é frequente emitir todo o texto como interim e encerrar via onend sem isFinal=true.
+        // Se temos texto gravado no buffer que ainda não foi despachado, conclui a busca com sucesso!
+        const recognized = latestTranscriptRef.current.trim();
+        if (recognized && !hasDispatchedRef.current) {
+          hasDispatchedRef.current = true;
+          setTranscript(recognized);
+          setInterimText("");
+          setTimeout(() => {
+            if (!isClosingRef.current) {
+              onResult(recognized);
+              handleClose();
+            }
+          }, 400);
         }
       };
 
@@ -162,7 +225,10 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
         setPermissionBlocked(false);
         setNoDeviceFound(false);
         setIsLoading(false);
-        startListening();
+        // Pequena pausa para o sistema operacional liberar a interface de áudio
+        setTimeout(() => {
+          startListening();
+        }, 250);
         return;
       }
 
@@ -182,7 +248,14 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
   useEffect(() => {
     if (open) {
       isClosingRef.current = false;
-      startListening();
+      retryCountRef.current = 0;
+      latestTranscriptRef.current = "";
+      hasDispatchedRef.current = false;
+      // Delay suave de 120ms para sincronizar com a montagem da janela no mobile
+      const timer = setTimeout(() => {
+        startListening();
+      }, 120);
+      return () => clearTimeout(timer);
     } else {
       stopRecognition();
     }
@@ -357,9 +430,21 @@ export function VoiceSearchModal({ open, onClose, onResult }: VoiceSearchModalPr
                   <span className="truncate">"{transcript}"</span>
                 </div>
               ) : interimText ? (
-                <p className="text-zinc-800 dark:text-zinc-200 text-sm font-medium italic animate-in fade-in">
-                  "{interimText}"
-                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const clean = interimText.trim();
+                    if (clean) {
+                      onResult(clean);
+                      handleClose();
+                    }
+                  }}
+                  className="text-zinc-800 dark:text-zinc-200 text-sm font-medium italic animate-in fade-in hover:underline cursor-pointer flex items-center gap-1.5"
+                  title="Clique para buscar agora"
+                >
+                  <span>"{interimText}"</span>
+                  <Search className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                </button>
               ) : isListening ? (
                 <p className="text-emerald-700 dark:text-emerald-400 text-sm font-semibold animate-pulse">
                   Ouvindo... Pode falar agora
