@@ -62,6 +62,16 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       proxyRes.headers.forEach((value, key) => {
         responseHeaders.set(key, value);
       });
+
+      if (responseHeaders.has("location")) {
+        const loc = responseHeaders.get("location") || "";
+        const originUrl = new URL(request.url).origin;
+        const rewrittenLoc = loc
+          .replace(/http:\/\/20\.7\.19\.49:3006\/auth\/v1\//g, `${originUrl}/api/supabase/auth/v1/`)
+          .replace(/http:\/\/20\.7\.19\.49:3006/g, originUrl);
+        responseHeaders.set("location", rewrittenLoc);
+      }
+
       responseHeaders.set("Access-Control-Allow-Origin", "*");
       responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
       responseHeaders.set("Access-Control-Allow-Headers", "*");
