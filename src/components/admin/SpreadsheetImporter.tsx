@@ -357,6 +357,8 @@ function rowToProduct(
   const caracteristicas = parseCaracteristicas(get("caracteristicas"));
 
   const marca = String(get("marca") || "").trim();
+  const fabricante = String(get("fabricante") || "").trim();
+  const bulaUrl = String(get("bulaUrl") || get("bula_url") || get("linkBula") || "").trim();
   const registroAnvisa = String(get("registroAnvisa") || "").trim();
   const tarja = parseTarja(get("tarja"));
   const retemReceita = parseBoolean(get("retemReceita"), tarja.includes("Retém"));
@@ -416,6 +418,9 @@ function rowToProduct(
     codigoInterno: codigoRaw || id,
     nome,
     marca,
+    fabricante,
+    bulaUrl,
+    bula_url: bulaUrl,
     categoriaId,
     subcategoriaId,
     categoriasAdicionais,
@@ -512,6 +517,8 @@ export const HEADERS_OFICIAIS = [
   "Princípios Ativos",
   "Características Adicionais",
   "Marca",
+  "Fabricante",
+  "Link da Bula (URL / PDF)",
   "Classe Terapêutica",
   "Alerta Regulatório (Texto)",
   "Requer Exibição do Alerta Regulatório",
@@ -608,6 +615,8 @@ export function formatProductRow(p: Produto): any[] {
     formatPrincipiosAtivos(p.principiosAtivos),
     formatCaracteristicas(p.caracteristicas),
     p.marca || "",
+    p.fabricante || "",
+    p.bulaUrl || (p as any).bula_url || "",
     p.classeTerapeutica || "",
     p.alertaTexto || "",
     p.alertaRegulatorio ? "Sim" : "Não",
@@ -638,7 +647,10 @@ const SAMPLE_ROWS = [
     "142 - Medicamentos", "14201 - Dor e Febre", "", "",
     "Dipirona 300mg, Cafeína 50mg, Orfenadrina 35mg",
     "Forma: Comprimidos; Quantidade: 10 comprimidos; Uso: Oral",
-    "CIMED", "Analgésico e Relaxante Muscular",
+    "CIMED",
+    "Cimed Indústria de Medicamentos Ltda.",
+    "https://consultas.anvisa.gov.br/api/consulta/bula/pdf/1438100510076",
+    "Analgésico e Relaxante Muscular",
     "AO PERSISTIREM OS SINTOMAS, O MÉDICO DEVERÁ SER CONSULTADO.", "Sim",
     "1438100510076", "Não", "Similar", "Sem Tarja", "", "30049099", 80,
     8.33, 4.99,

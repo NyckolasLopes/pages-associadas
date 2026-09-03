@@ -865,84 +865,96 @@ export const useAdminProducts = create<ProductsState>()(
         return { storeVitrines: { ...s.storeVitrines, [lojaId]: storeVits.map(v => idMatch(v) ? { ...v, ativa: !v.ativa } : v) } };
       }),
       updateProductDescriptions: async (updates, lojaId) => {
-        const state = get();
-        const updateMap = new Map(
-          updates
-            .filter(u => u.ean && u.nome)
-            .map(u => [`${u.ean.trim().toLowerCase()}-${u.nome.trim().toLowerCase()}`, u.descricao])
-        );
-        
+        if (!updates || updates.length === 0) {
+          return { successCount: 0, errorCount: 0, errors: [] };
+        }
+
         let successCount = 0;
         let errorCount = 0;
-        const errors: {ean: string, error: string}[] = [];
-        
-        // Find matched products against the base customProducts
-        const matchedProducts: Produto[] = [];
-        const notFound: {ean: string, nome: string}[] = [];
+        const errors: { ean: string; error: string }[] = [];
 
-        updates.forEach(u => {
-           const p = state.customProducts.find(cp => cp.ean?.trim().toLowerCase() === u.ean.trim().toLowerCase() && cp.nome.trim().toLowerCase() === u.nome.trim().toLowerCase());
-           if (p) {
-               matchedProducts.push({ ...p, descricao: u.descricao });
-           } else {
-               notFound.push(u);
-           }
-        });
+        // 1. Tentar primeiro via Endpoint dedicado de backend (para máxima velocidade e sem limites de timeout do cliente)
+        try {
+          const apiRes = await fetch("/api/admin/bulk-update-descriptions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ updates, lojaId })
+          });
 
-        notFound.forEach(u => {
-           errorCount++;
-           errors.push({ ean: u.ean, error: "Produto não encontrado no catálogo pelo EAN e Nome informados." });
-        });
-
-        if (matchedProducts.length > 0) {
-          if (!lojaId) {
-             // Sede updating global catalog
-             set((s) => ({
+          if (apiRes.ok) {
+            const data = await apiRes.json();
+            if (data && typeof data.successCount === "number") {
+              // Sincroniza em memória local caso haja produtos carregados
+              const descMap = new Map(updates.map(u => [String(u.ean || "").trim(), u.descricao]));
+              set((s) => ({
                 customProducts: s.customProducts.map(p => {
-                  const match = matchedProducts.find(m => m.id === p.id);
-                  return match ? { ...p, descricao: match.descricao } : p;
+                  const newDesc = p.ean ? descMap.get(String(p.ean).trim()) : undefined;
+                  return newDesc ? { ...p, descricao: newDesc } : p;
                 })
-             }));
-             
-             // Update Supabase in chunks
-             const chunkSize = 100;
-             for (let i = 0; i < matchedProducts.length; i += chunkSize) {
-               const chunk = matchedProducts.slice(i, i + chunkSize);
-               for (const product of chunk) {
-                  try {
-                     await supabase.from('produtos').update({ descricao: product.descricao }).eq('id', product.id);
-                     successCount++;
-                  } catch (e: any) {
-                     errorCount++;
-                     errors.push({ ean: product.ean || "", error: e.message || "Erro no banco" });
-                  }
-               }
-             }
-          } else {
-             // Loja Local overriding catalog
-             const updatesObj: Record<string, any> = {};
-             matchedProducts.forEach(m => {
-                 updatesObj[m.id] = { descricao: m.descricao };
-                 successCount++;
-             });
-             
-             set((s) => {
-               const storeCustom = s.storeCustomProducts[lojaId] || [];
-               const updatedCustom = storeCustom.map(p => updatesObj[p.id] ? { ...p, ...updatesObj[p.id] } : p);
-               const prevOverrides = s.storeProductOverrides[lojaId] || {};
-               const newOverrides = { ...prevOverrides };
-               
-               Object.keys(updatesObj).forEach(id => {
-                  if (!storeCustom.some(x => x.id === id)) {
-                      newOverrides[id] = { ...(newOverrides[id] || {}), ...updatesObj[id] };
-                  }
-               });
-               return {
-                  storeCustomProducts: { ...s.storeCustomProducts, [lojaId]: updatedCustom },
-                  storeProductOverrides: { ...s.storeProductOverrides, [lojaId]: newOverrides }
-               };
-             });
+              }));
+              return data;
+            }
           }
+        } catch (apiErr) {
+          console.warn("[updateProductDescriptions] API backend falhou, usando fallback Supabase direto:", apiErr);
+        }
+
+        // 2. Fallback direto via Supabase Client
+        const chunkSize = 100;
+        for (let i = 0; i < updates.length; i += chunkSize) {
+          const batch = updates.slice(i, i + chunkSize);
+          const eanList = Array.from(new Set(batch.map(u => String(u.ean || "").trim()).filter(Boolean)));
+
+          if (eanList.length === 0) continue;
+
+          // Busca produtos no banco por EAN
+          const { data: dbProducts, error: searchErr } = await supabase
+            .from("produtos")
+            .select("id, ean, nome")
+            .in("ean", eanList);
+
+          if (searchErr || !dbProducts) {
+            batch.forEach(u => {
+              errorCount++;
+              errors.push({ ean: u.ean, error: searchErr?.message || "Erro ao consultar banco" });
+            });
+            continue;
+          }
+
+          const dbByEan = new Map<string, { id: string; ean: string; nome: string }>();
+          dbProducts.forEach(p => {
+            if (p.ean) dbByEan.set(String(p.ean).trim(), p);
+          });
+
+          const updatePromises = batch.map(async (u) => {
+            const cleanEan = String(u.ean || "").trim();
+            const matched = dbByEan.get(cleanEan);
+
+            if (!matched) {
+              errorCount++;
+              errors.push({ ean: u.ean, error: "Produto com este EAN não encontrado no catálogo." });
+              return;
+            }
+
+            try {
+              const { error: updErr } = await supabase
+                .from("produtos")
+                .update({ descricao: u.descricao })
+                .eq("id", matched.id);
+
+              if (updErr) {
+                errorCount++;
+                errors.push({ ean: u.ean, error: updErr.message });
+              } else {
+                successCount++;
+              }
+            } catch (err: any) {
+              errorCount++;
+              errors.push({ ean: u.ean, error: err.message || "Erro ao atualizar descrição" });
+            }
+          });
+
+          await Promise.all(updatePromises);
         }
 
         return { successCount, errorCount, errors };

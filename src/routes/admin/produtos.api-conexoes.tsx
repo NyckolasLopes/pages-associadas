@@ -474,7 +474,7 @@ function ApiConexoes() {
             JSON de Estoque e Preço
           </Button>
 
-          {/* 2. JSON Cadastro de Produto */}
+          {/* 2. JSON Cadastro de Produto (inclui Descrição Longa e Link da Bula) */}
           <Button 
             variant="outline"
             size="sm"
@@ -482,7 +482,7 @@ function ApiConexoes() {
             className="font-bold text-xs h-9 bg-emerald-50/70 hover:bg-emerald-100/70 border-emerald-200 text-emerald-800 flex items-center gap-2 shadow-sm transition-all"
           >
             <Download className="w-3.5 h-3.5 text-emerald-600" />
-            JSON Cadastro de Produto
+            JSON Cadastro de Produto (com Descrição e Bula)
           </Button>
 
           {/* 3. JSON de Pedidos */}
@@ -494,28 +494,6 @@ function ApiConexoes() {
           >
             <Download className="w-3.5 h-3.5 text-indigo-600" />
             JSON de Pedidos
-          </Button>
-
-          {/* 4. JSON Carrinho Abandonado */}
-          <Button 
-            variant="outline"
-            size="sm"
-            onClick={downloadModeloCarrinhoAbandonado}
-            className="font-bold text-xs h-9 bg-amber-50/70 hover:bg-amber-100/70 border-amber-200 text-amber-800 flex items-center gap-2 shadow-sm transition-all"
-          >
-            <Download className="w-3.5 h-3.5 text-amber-600" />
-            JSON Carrinho Abandonado
-          </Button>
-
-          {/* 5. JSON Descrições e Bula */}
-          <Button 
-            variant="outline"
-            size="sm"
-            onClick={downloadModeloDescricoes}
-            className="font-bold text-xs h-9 bg-purple-50/70 hover:bg-purple-100/70 border-purple-200 text-purple-800 flex items-center gap-2 shadow-sm transition-all"
-          >
-            <Download className="w-3.5 h-3.5 text-purple-600" />
-            JSON Descrições e Bula
           </Button>
         </div>
       </div>

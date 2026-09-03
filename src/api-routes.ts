@@ -262,7 +262,106 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       });
     }
   }
-  
+
+  // 1.8. Dedicated Admin Bulk Update Descriptions Endpoint
+  if (url.pathname === "/api/admin/bulk-update-descriptions" && request.method === "POST") {
+    try {
+      const body = await request.json().catch(() => ({}));
+      const updates = body.updates || [];
+      const lojaId = body.lojaId;
+
+      if (!Array.isArray(updates) || updates.length === 0) {
+        return new Response(JSON.stringify({ successCount: 0, errorCount: 0, errors: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const adminClient = createClient(targetBase, publishableKey);
+      
+      await adminClient.auth.signInWithPassword({
+        email: "nyckolas.lopes@farmaciasassociadas.com.br",
+        password: "Aspro@2026"
+      });
+
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: { ean: string; error: string }[] = [];
+
+      // Process in batches of 200 items for high performance and stability
+      const chunkSize = 200;
+      for (let i = 0; i < updates.length; i += chunkSize) {
+        const batch = updates.slice(i, i + chunkSize);
+        const eanList = Array.from(new Set(batch.map((u: any) => String(u.ean || "").trim()).filter(Boolean)));
+
+        if (eanList.length === 0) continue;
+
+        // Fetch products by EAN in bulk from database
+        const { data: dbProducts, error: searchErr } = await adminClient
+          .from("produtos")
+          .select("id, ean, nome")
+          .in("ean", eanList);
+
+        if (searchErr || !dbProducts) {
+          batch.forEach((u: any) => {
+            errorCount++;
+            errors.push({ ean: u.ean, error: searchErr?.message || "Erro ao consultar banco" });
+          });
+          continue;
+        }
+
+        const dbByEan = new Map<string, { id: string; ean: string; nome: string }>();
+        dbProducts.forEach((p: any) => {
+          if (p.ean) dbByEan.set(String(p.ean).trim(), p);
+        });
+
+        // Parallel update batch with Promise.all
+        const updatePromises = batch.map(async (u: any) => {
+          const cleanEan = String(u.ean || "").trim();
+          const matched = dbByEan.get(cleanEan);
+
+          if (!matched) {
+            errorCount++;
+            errors.push({ ean: u.ean, error: "Produto com este EAN não encontrado no catálogo." });
+            return;
+          }
+
+          try {
+            const { error: updErr } = await adminClient
+              .from("produtos")
+              .update({ descricao: u.descricao })
+              .eq("id", matched.id);
+
+            if (updErr) {
+              errorCount++;
+              errors.push({ ean: u.ean, error: updErr.message });
+            } else {
+              successCount++;
+            }
+          } catch (err: any) {
+            errorCount++;
+            errors.push({ ean: u.ean, error: err.message || "Erro ao atualizar descrição" });
+          }
+        });
+
+        await Promise.all(updatePromises);
+      }
+
+      return new Response(JSON.stringify({ successCount, errorCount, errors }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (err: any) {
+      console.error("[bulk-update-descriptions error]:", err);
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }
+
   if (url.pathname.includes("/api/rpc/")) {
     const rpcName = url.pathname.split("/").pop();
     let apikey = url.searchParams.get("apikey") || url.searchParams.get("api_key");

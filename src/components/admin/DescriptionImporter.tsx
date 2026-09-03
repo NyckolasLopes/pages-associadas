@@ -99,21 +99,21 @@ export function DescriptionImporter({ open, onOpenChange, onImport }: Descriptio
           }
         });
 
-        if (!eanCol || !nomeCol || !descCol) {
-          toast.error("Não foi possível encontrar as colunas EAN, Nome do Produto e Descrição Longa na planilha.");
+        if (!eanCol || !descCol) {
+          toast.error("Não foi possível encontrar as colunas EAN e Descrição Longa na planilha.");
           return;
         }
 
         const extractedUpdates = jsonData
           .map(row => ({
             ean: String(row[eanCol] || "").trim(),
-            nome: String(row[nomeCol] || "").trim(),
+            nome: nomeCol ? String(row[nomeCol] || "").trim() : "",
             descricao: String(row[descCol] || "").trim()
           }))
-          .filter(u => u.ean && u.nome && u.descricao);
+          .filter(u => u.ean && u.descricao);
 
         if (extractedUpdates.length === 0) {
-          toast.error("Nenhuma linha com EAN, Nome e Descrição válidos foi encontrada.");
+          toast.error("Nenhuma linha com EAN e Descrição válidos foi encontrada.");
           return;
         }
 
