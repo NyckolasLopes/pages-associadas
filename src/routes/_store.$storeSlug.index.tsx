@@ -212,9 +212,14 @@ export const Route = createFileRoute("/_store/$storeSlug/")({
     const adminState = useAdmin.getState();
     const pharmacies = adminState.pharmacies;
     const storeSlug = params.storeSlug;
-    const pharmacy = pharmacies.find(
-      (p) => (p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id)) === storeSlug || p.id === storeSlug
-    );
+    const normalizedSlug = safeSlugify(storeSlug);
+    const pharmacy = pharmacies.find((p) => {
+      const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
+      const tcSlug = (p as any).themeColors?.slug ? safeSlugify((p as any).themeColors.slug) : "";
+      const city = p.cidade ? safeSlugify(p.cidade) : "";
+      const apelido = p.apelido ? safeSlugify(p.apelido) : "";
+      return slug === normalizedSlug || tcSlug === normalizedSlug || city === normalizedSlug || apelido === normalizedSlug || (p.slug || "").toLowerCase() === storeSlug.toLowerCase() || p.id === storeSlug;
+    });
     // Inicia carregamentos em segundo plano sem travar a navegação
     if (!adminState.pharmaciesLoaded) {
       adminState.loadPharmacies();
@@ -852,7 +857,17 @@ function StoreHome() {
   const { storeSlug } = Route.useParams();
   const loaderData = Route.useLoaderData();
   const { pharmacies, pharmaciesLoaded, fetchBanners } = useAdmin();
-  const loja = useMemo(() => loaderData?.pharmacy || pharmacies.find((p) => (p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id)) === storeSlug), [loaderData, pharmacies, storeSlug]);
+  const loja = useMemo(() => {
+    if (loaderData?.pharmacy) return loaderData.pharmacy;
+    const normalized = safeSlugify(storeSlug);
+    return pharmacies.find((p) => {
+      const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
+      const tcSlug = (p as any).themeColors?.slug ? safeSlugify((p as any).themeColors.slug) : "";
+      const city = p.cidade ? safeSlugify(p.cidade) : "";
+      const apelido = p.apelido ? safeSlugify(p.apelido) : "";
+      return slug === normalized || tcSlug === normalized || city === normalized || apelido === normalized || (p.slug || "").toLowerCase() === storeSlug.toLowerCase() || p.id === storeSlug;
+    });
+  }, [loaderData, pharmacies, storeSlug]);
   const lojaId = loja?.id;
 
   useEffect(() => {

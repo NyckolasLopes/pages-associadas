@@ -28,7 +28,10 @@ export function Spinner({ className, size = 32, style, forceGeneric, ...props }:
     const normalizedSlug = safeSlugify(potentialSlug);
     currentPharmacy = allPharmaciesList.find((p) => {
       const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
-      return slug === normalizedSlug || (p.slug || "").toLowerCase() === potentialSlug.toLowerCase() || String(p.id) === potentialSlug;
+      const tcSlug = (p as any).themeColors?.slug ? safeSlugify((p as any).themeColors.slug) : "";
+      const city = p.cidade ? safeSlugify(p.cidade) : "";
+      const apelido = p.apelido ? safeSlugify(p.apelido) : "";
+      return slug === normalizedSlug || tcSlug === normalizedSlug || city === normalizedSlug || apelido === normalizedSlug || (p.slug || "").toLowerCase() === potentialSlug.toLowerCase() || String(p.id) === potentialSlug;
     }) || null;
   }
 
@@ -49,8 +52,13 @@ export function Spinner({ className, size = 32, style, forceGeneric, ...props }:
     }
   }
 
-  // 1. Loja Parceiro: SOMENTE o círculo rodando
-  const isParceiro = !isAdminArea && (storeCategoria === 'Parceiro' || currentPharmacy?.categoriaAssociado === 'Parceiro');
+  // 1. Loja Parceiro: SOMENTE o círculo rodando se for explicitamente parceiro e não Pleno
+  const isParceiro = !isAdminArea && 
+    (storeCategoria === 'Parceiro' || currentPharmacy?.categoriaAssociado === 'Parceiro') && 
+    currentPharmacy?.categoriaAssociado !== 'Pleno' && 
+    currentPharmacy?.isPleno !== true &&
+    potentialSlug.toLowerCase() !== 'pelotas';
+
   if (!isAdminArea && (forceGeneric || isParceiro)) {
     return <Loader2 size={size} className={cn("animate-spin text-slate-800", className)} style={style} />;
   }

@@ -57,7 +57,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     if (isChunkError && typeof window !== "undefined") {
       const now = Date.now();
       const lastReload = parseInt(sessionStorage.getItem("last_chunk_reload") || "0", 10);
-      if (now - lastReload > 10000) {
+      if (now - lastReload > 3000) {
         sessionStorage.setItem("last_chunk_reload", now.toString());
         window.location.reload();
       }
@@ -75,27 +75,32 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-2xl text-center w-full px-6">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          {isChunkError ? "Nova Versão Disponível" : "Página não encontrada"}
+      <div className="max-w-md text-center w-full px-6 py-8 bg-white border border-slate-200 rounded-2xl shadow-sm">
+        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <img src="/icone-associadas.png" alt="Farmácias Associadas" className="w-8 h-8 animate-spin object-contain" />
+        </div>
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
+          {isChunkError ? "Nova Versão do Sistema Disponível" : "Ocorreu um problema ao carregar a página"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {isChunkError 
-            ? "Uma nova versão do sistema foi disponibilizada. Clique no botão abaixo para atualizar."
+            ? "Uma nova versão com melhorias e atualizações foi disponibilizada. Estamos atualizando sua tela..."
             : "Ocorreu um problema e a página parou de responder. O seu acesso não foi perdido."}
         </p>
-        <div className="mt-4 p-4 bg-red-50 text-red-900 border border-red-200 rounded text-left overflow-auto text-xs font-mono w-full">
-          <strong>Erro:</strong> {error?.message}
-          <br /><br />
-          <strong>Detalhes:</strong>
-          <pre className="whitespace-pre-wrap">{error?.stack}</pre>
-        </div>
+        {!isChunkError && (
+          <div className="mt-4 p-4 bg-red-50 text-red-900 border border-red-200 rounded text-left overflow-auto text-xs font-mono w-full">
+            <strong>Erro:</strong> {error?.message}
+            <br /><br />
+            <strong>Detalhes:</strong>
+            <pre className="whitespace-pre-wrap">{error?.stack}</pre>
+          </div>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={handleRetry}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-lg bg-[#00B5AD] text-white px-5 py-2.5 text-sm font-bold shadow-sm transition-colors hover:bg-[#009b94]"
           >
-            {isChunkError ? "Recarregar e Atualizar" : "Tentar novamente"}
+            {isChunkError ? "Atualizar Agora" : "Tentar novamente"}
           </button>
           <a
             href="/"
@@ -337,10 +342,11 @@ function RootComponent() {
     };
     window.addEventListener("unhandledrejection", handleDynamicImportError);
     window.addEventListener("error", handleDynamicImportError);
-    window.addEventListener("vite:preloadError", () => {
+    window.addEventListener("vite:preloadError", (event: any) => {
+      if (event?.preventDefault) event.preventDefault();
       const now = Date.now();
       const lastReload = parseInt(sessionStorage.getItem("last_chunk_reload") || "0", 10);
-      if (now - lastReload > 10000) {
+      if (now - lastReload > 3000) {
         sessionStorage.setItem("last_chunk_reload", now.toString());
         window.location.reload();
       }

@@ -1307,7 +1307,7 @@ export const useAdmin = create<AdminState>()(
               }
               return {
                 id: l.id,
-                slug: l.slug || parsedThemeColors?.slug,
+                slug: l.sub_domain || parsedThemeColors?.slug || l.slug || (l.cidade ? safeSlugify(l.cidade) : ''),
                 ativo: l.ativa ?? true,
                 cnpj: l.cnpj,
                 razaoSocial: l.razao_social,
@@ -1350,8 +1350,8 @@ export const useAdmin = create<AdminState>()(
                 faviconUrl: l.favicon_url || parsedThemeColors?.faviconUrl || l.configs?.faviconUrl || '',
                 loadingLogoUrl: parsedThemeColors?.loadingLogoUrl || '',
                 footerLogoUrl: parsedThemeColors?.footerLogoUrl || '',
-                anvisaLogoUrl: parsedThemeColors?.anvisaLogoUrl || '',
-                categoriaAssociado: l.categoria_associado || parsedThemeColors?.categoria_associado,
+                categoriaAssociado: l.categoria_associado || parsedThemeColors?.categoria_associado || 'Pleno',
+                isPleno: (l.categoria_associado || parsedThemeColors?.categoria_associado) === 'Pleno' || l.is_pleno === true,
                 customPages: parsedThemeColors?.customPages || [],
                 trabalhaComEncarte: l.trabalha_com_encarte || parsedThemeColors?.trabalha_com_encarte,
                 entregaExpressa: l.entrega_expressa || parsedThemeColors?.entrega_expressa,

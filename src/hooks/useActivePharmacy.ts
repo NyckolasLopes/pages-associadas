@@ -61,12 +61,18 @@ export function useActivePharmacy() {
       if (allPharmacies && allPharmacies.length > 0) {
         const bySlug = allPharmacies.find((p) => {
           const slugFormatted = p.slug ? safeSlugify(p.slug) : "";
+          const tcSlug = (p as any).themeColors?.slug ? safeSlugify((p as any).themeColors.slug) : "";
+          const cityFormatted = p.cidade ? safeSlugify(p.cidade) : "";
+          const apelidoFormatted = p.apelido ? safeSlugify(p.apelido) : "";
           const nameFormatted = p.nome ? safeSlugify(p.nome) : "";
           const idStr = String(p.id);
           const rawSlugLower = (p.slug || "").toLowerCase();
 
           return (
             slugFormatted === normalizedSearch ||
+            tcSlug === normalizedSearch ||
+            cityFormatted === normalizedSearch ||
+            apelidoFormatted === normalizedSearch ||
             rawSlugLower === lowerRaw ||
             nameFormatted === normalizedSearch ||
             idStr === slugToSearch
@@ -75,7 +81,7 @@ export function useActivePharmacy() {
         if (bySlug) return bySlug;
       }
 
-      // Se a URL aponta para uma loja específica (ex: /zona-sul), NUNCA fazer fallback para loja-padrao
+      // Se a URL aponta para uma loja específica (ex: /pelotas ou /zona-sul), NUNCA fazer fallback para loja-padrao
       // Retorna imediatamente o design individual da loja (com cache estável)
       if (normalizedSearch !== "loja-padrao") {
         if (!virtualStoresCache.has(slugToSearch)) {
@@ -88,8 +94,8 @@ export function useActivePharmacy() {
             id: slugToSearch,
             slug: slugToSearch,
             nome: formattedName,
-            categoriaAssociado: 'Parceiro',
-            isPleno: false,
+            categoriaAssociado: 'Pleno',
+            isPleno: true,
             ativo: true,
             virtualStoreStatus: 'Ativa',
           });
@@ -110,12 +116,18 @@ export function useActivePharmacy() {
         const lowerLast = lastSlug.toLowerCase();
         const byLastSlug = allPharmacies.find((p) => {
           const slugFormatted = p.slug ? safeSlugify(p.slug) : "";
+          const tcSlug = (p as any).themeColors?.slug ? safeSlugify((p as any).themeColors.slug) : "";
+          const cityFormatted = p.cidade ? safeSlugify(p.cidade) : "";
+          const apelidoFormatted = p.apelido ? safeSlugify(p.apelido) : "";
           const nameFormatted = p.nome ? safeSlugify(p.nome) : "";
           const idStr = String(p.id);
           const rawSlugLower = (p.slug || "").toLowerCase();
 
           return (
             slugFormatted === normalizedLast ||
+            tcSlug === normalizedLast ||
+            cityFormatted === normalizedLast ||
+            apelidoFormatted === normalizedLast ||
             rawSlugLower === lowerLast ||
             nameFormatted === normalizedLast ||
             idStr === lastSlug

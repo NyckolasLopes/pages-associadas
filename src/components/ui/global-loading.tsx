@@ -24,7 +24,10 @@ export function GlobalLoading() {
     const normalizedSlug = safeSlugify(potentialSlug);
     currentPharmacy = allPharmaciesList.find((p) => {
       const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
-      return slug === normalizedSlug || (p.slug || "").toLowerCase() === potentialSlug.toLowerCase() || String(p.id) === potentialSlug;
+      const tcSlug = (p as any).themeColors?.slug ? safeSlugify((p as any).themeColors.slug) : "";
+      const city = p.cidade ? safeSlugify(p.cidade) : "";
+      const apelido = p.apelido ? safeSlugify(p.apelido) : "";
+      return slug === normalizedSlug || tcSlug === normalizedSlug || city === normalizedSlug || apelido === normalizedSlug || (p.slug || "").toLowerCase() === potentialSlug.toLowerCase() || String(p.id) === potentialSlug;
     }) || null;
   }
 
@@ -36,7 +39,10 @@ export function GlobalLoading() {
         const normalizedLast = safeSlugify(lastSlug);
         currentPharmacy = allPharmaciesList.find((p) => {
           const slug = p.slug ? safeSlugify(p.slug) : safeSlugify(p.nome || p.id);
-          return slug === normalizedLast || (p.slug || "").toLowerCase() === lastSlug.toLowerCase();
+          const tcSlug = (p as any).themeColors?.slug ? safeSlugify((p as any).themeColors.slug) : "";
+          const city = p.cidade ? safeSlugify(p.cidade) : "";
+          const apelido = p.apelido ? safeSlugify(p.apelido) : "";
+          return slug === normalizedLast || tcSlug === normalizedLast || city === normalizedLast || apelido === normalizedLast || (p.slug || "").toLowerCase() === lastSlug.toLowerCase();
         }) || null;
       }
     } catch { /* ignore */ }
@@ -67,8 +73,14 @@ export function GlobalLoading() {
   }
 
   // Identificação exata das 3 categorias de loja
-  const isParceiro = !isAdminArea && (storeCategoria === 'Parceiro' || currentPharmacy?.categoriaAssociado === 'Parceiro');
+  const isParceiro = !isAdminArea && 
+    (storeCategoria === 'Parceiro' || currentPharmacy?.categoriaAssociado === 'Parceiro') &&
+    currentPharmacy?.categoriaAssociado !== 'Pleno' &&
+    currentPharmacy?.isPleno !== true &&
+    potentialSlug.toLowerCase() !== 'pelotas';
+
   const isPleno = !isAdminArea && !isParceiro && (
+    potentialSlug.toLowerCase() === 'pelotas' ||
     storeCategoria === 'Pleno' || 
     currentPharmacy?.categoriaAssociado === 'Pleno' || 
     storeIsPleno === true || 
