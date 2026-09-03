@@ -93,6 +93,21 @@ export function mapRowToProduto(d: any): Produto {
 
   const meta = d.metadata || {};
 
+  const tagBula = (rawInternalTags || [])
+    .find((t: string) => t.startsWith("bula:"))
+    ?.replace("bula:", "") || "";
+  const cleanTagBula = tagBula ? decodeURIComponent(tagBula) : "";
+  const caracBula = Array.isArray(d.caracteristicas)
+    ? d.caracteristicas.find((c: any) => c.titulo === "__bula_url__")?.descricao
+    : "";
+
+  const tagFabricante = (rawInternalTags || [])
+    .find((t: string) => t.startsWith("fabricante:"))
+    ?.replace("fabricante:", "") || "";
+  const caracFabricante = Array.isArray(d.caracteristicas)
+    ? d.caracteristicas.find((c: any) => c.titulo === "Fabricante")?.descricao
+    : "";
+
   return {
     id: d.id,
     ean: d.ean || "",
@@ -100,8 +115,8 @@ export function mapRowToProduto(d: any): Produto {
     descricao: d.descricao || "",
     url: d.slug || "",
     marca: d.marca || meta.marca || "",
-    fabricante: d.fabricante || meta.fabricante || "",
-    bulaUrl: d.bula_url || d.bulaUrl || meta.bula_url || meta.bulaUrl || "",
+    fabricante: d.fabricante || tagFabricante || caracFabricante || meta.fabricante || "",
+    bulaUrl: d.bula_url || d.bulaUrl || cleanTagBula || caracBula || meta.bula_url || meta.bulaUrl || "",
     precoDe: Number(d.preco_de) || 0,
     precoPor: Number(d.preco_por) || 0,
     estoque: d.estoque || 0,
@@ -115,9 +130,10 @@ export function mapRowToProduto(d: any): Produto {
     categoriasAdicionais: Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : (Array.isArray(meta.categorias_adicionais) ? meta.categorias_adicionais : []),
     categoriasIds: Array.isArray(d.categorias_ids) ? d.categorias_ids : (Array.isArray(meta.categorias_ids) ? meta.categorias_ids : (Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : [])),
     subcategoriasIds: Array.isArray(d.subcategorias_adicionais) ? d.subcategorias_adicionais : (Array.isArray(d.subcategorias_ids) ? d.subcategorias_ids : (Array.isArray(meta.subcategorias_ids) ? meta.subcategorias_ids : [])),
-    internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:") && !t.startsWith("filtro:") && !t.startsWith("comprejunto:") && !t.startsWith("alertafundo:") && !t.startsWith("alertatexto:")),
+    internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:") && !t.startsWith("filtro:") && !t.startsWith("comprejunto:") && !t.startsWith("alertafundo:") && !t.startsWith("alertatexto:") && !t.startsWith("bula:") && !t.startsWith("fabricante:")),
     selosIds: rawSelosIds,
     principiosAtivos: Array.isArray(d.principios_ativos) ? d.principios_ativos : (Array.isArray(meta.principios_ativos) ? meta.principios_ativos : []),
+    caracteristicas: Array.isArray(d.caracteristicas) ? d.caracteristicas.filter((c: any) => c.titulo !== "__bula_url__") : [],
     imagens: d.imagens || meta.imagens || [],
     foto: d.foto || (Array.isArray(d.imagens) && d.imagens[0] ? (d.imagens[0].caminhoImagem || d.imagens[0]) : "") || "",
     videoUrl: d.video_url || meta.video_url || "",
@@ -262,14 +278,30 @@ export const useAdminProducts = create<ProductsState>()(
         if (formattedProduct.alertaCorFundo) {
           allTags.add(`alertafundo:${formattedProduct.alertaCorFundo}`);
         }
-        if (formattedProduct.alertaCorTexto) {
-          allTags.add(`alertatexto:${formattedProduct.alertaCorTexto}`);
+        const bulaUrl = formattedProduct.bulaUrl || (formattedProduct as any).bula_url || "";
+        const fabricante = formattedProduct.fabricante || (formattedProduct as any).fabricante || "";
+
+        if (bulaUrl) {
+          allTags.add(`bula:${encodeURIComponent(bulaUrl)}`);
         }
+        if (fabricante) {
+          allTags.add(`fabricante:${fabricante}`);
+        }
+
+        let updatedCaracteristicas = Array.isArray(formattedProduct.caracteristicas) ? [...formattedProduct.caracteristicas] : [];
+        updatedCaracteristicas = updatedCaracteristicas.filter((c: any) => c.titulo !== "__bula_url__");
+        if (bulaUrl) {
+          updatedCaracteristicas.push({ titulo: "__bula_url__", descricao: bulaUrl });
+        }
+        if (fabricante && !updatedCaracteristicas.some((c: any) => c.titulo === "Fabricante")) {
+          updatedCaracteristicas.push({ titulo: "Fabricante", descricao: fabricante });
+        }
+        formattedProduct.caracteristicas = updatedCaracteristicas;
 
         const metadataPayload = {
           marca: formattedProduct.marca || null,
-          fabricante: formattedProduct.fabricante || null,
-          bula_url: formattedProduct.bulaUrl || (formattedProduct as any).bula_url || null,
+          fabricante: fabricante || null,
+          bula_url: bulaUrl || null,
           registro_anvisa: formattedProduct.registroAnvisa || null,
           tarja: formattedProduct.tarja || null,
           retem_receita: formattedProduct.retemReceita || false,

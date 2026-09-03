@@ -1454,14 +1454,14 @@ function PDP() {
                         ...(p.classeTerapeutica && p.classeTerapeutica !== 'none' ? [{ label: "Classe Terapêutica", value: p.classeTerapeutica }] : []),
                         ...(p.indicacaoTerapeutica && p.indicacaoTerapeutica !== 'none' ? [{ label: "Indicação Terapêutica", value: p.indicacaoTerapeutica }] : []),
                         ...(p.tipoReceita ? [{ label: "Tipo de Receita", value: p.tipoReceita }] : []),
-                        ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo || "Característica Adicional", value: c.descricao })) : []),
+                        ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.filter((c: any) => c.titulo !== "__bula_url__").map((c: any) => ({ label: c.titulo || "Característica Adicional", value: c.descricao })) : []),
                         ...(p.classificacaoRegistro && p.classificacaoRegistro !== 'none' ? [{ label: "Classificação", value: p.classificacaoRegistro }] : []),
                       ] : [
                         { label: "Cód Interno:", value: p.codigoInterno || (p as any).codigo_interno || (p.sku && p.sku !== p.ean ? p.sku : "") || (p.id && p.id !== p.ean ? p.id : '-') },
                         { label: "Código de Barras/EAN", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
                         ...(p.marca ? [{ label: "Marca", value: p.marca }] : []),
                         ...(p.fabricante ? [{ label: "Fabricante", value: p.fabricante }] : []),
-                        ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo || "Característica", value: c.descricao })) : []),
+                        ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.filter((c: any) => c.titulo !== "__bula_url__").map((c: any) => ({ label: c.titulo || "Característica", value: c.descricao })) : []),
                       ]).filter(row => row.value !== null && row.value !== '' && row.value !== undefined).map((row, idx) => (
                         <tr key={idx} className={`${idx % 2 === 0 ? 'bg-slate-50 ' : ''}border-b last:border-b-0`}>
                           <td className="py-3 px-4 text-slate-500 w-1/3">{row.label}</td>
@@ -1472,30 +1472,37 @@ function PDP() {
                   </table>
                 </div>
 
-                {isMedication && (p.bulaUrl || (p as any).bula_url) && (
-                  <div className="mt-4 p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: "#008000" }}>
-                        <FileText className="w-4 h-4" />
+                {(() => {
+                  const tagBula = (p.internalTags || []).find((t: string) => t.startsWith("bula:"))?.replace("bula:", "") || "";
+                  const caracBula = Array.isArray(p.caracteristicas) ? p.caracteristicas.find((c: any) => c.titulo === "__bula_url__")?.descricao : "";
+                  const effectiveBula = p.bulaUrl || (p as any).bula_url || caracBula || (tagBula ? decodeURIComponent(tagBula) : "") || "";
+                  if (!isMedication || !effectiveBula) return null;
+
+                  return (
+                    <div className="mt-4 p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: "#008000" }}>
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-sm text-slate-900 block">{isMedication ? "Bula do Medicamento" : "Bula do Produto"}</span>
+                          <span className="text-xs text-slate-500">Documento em PDF com posologia e instruções aprovadas</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-bold text-sm text-slate-900 block">{isMedication ? "Bula do Medicamento" : "Bula do Produto"}</span>
-                        <span className="text-xs text-slate-500">Documento em PDF com posologia e instruções aprovadas</span>
-                      </div>
+                      <a
+                        href={effectiveBula}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        className="px-4 py-2 rounded-lg text-white font-bold text-xs flex items-center gap-1.5 shrink-0 transition-transform active:scale-95 shadow-xs"
+                        style={{ backgroundColor: "#008000" }}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Baixar Bula (PDF)
+                      </a>
                     </div>
-                    <a
-                      href={p.bulaUrl || (p as any).bula_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
-                      className="px-4 py-2 rounded-lg text-white font-bold text-xs flex items-center gap-1.5 shrink-0 transition-transform active:scale-95 shadow-xs"
-                      style={{ backgroundColor: "#008000" }}
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Baixar Bula (PDF)
-                    </a>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {p.principiosAtivos && Array.isArray(p.principiosAtivos) && p.principiosAtivos.length > 0 && (
                   <div className="pt-4 border-t">
