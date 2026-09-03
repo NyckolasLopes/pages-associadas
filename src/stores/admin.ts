@@ -737,13 +737,13 @@ export const useAdmin = create<AdminState>()(
         try {
           if (get().currentUser) return;
 
-          // 0. Validação de Inatividade (15 minutos sem interação)
+          // 0. Validação de Inatividade (5 minutos sem interação)
           if (typeof window !== 'undefined') {
             const lastActivityStr = localStorage.getItem('fa-admin-last-activity');
             if (lastActivityStr) {
               const lastActivity = Number(lastActivityStr);
-              const FIFTEEN_MINUTES = 15 * 60 * 1000;
-              if (Date.now() - lastActivity > FIFTEEN_MINUTES) {
+              const FIVE_MINUTES = 5 * 60 * 1000;
+              if (Date.now() - lastActivity > FIVE_MINUTES) {
                 sessionStorage.removeItem('fa-admin-session');
                 localStorage.removeItem('fa-admin-last-activity');
                 try {

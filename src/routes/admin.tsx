@@ -154,9 +154,9 @@ const subLinkClass =
   "flex items-center gap-2.5 px-3 py-1.5 text-[13px] rounded-md text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary transition-colors";
 
 
-// ---- Inactivity Hook (15 minutos sem interação: clique, digitação, edição de campo) ----
-const ADMIN_INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutos
-const ADMIN_WARNING_LIMIT_MS = 14 * 60 * 1000; // 14 minutos (aviso 1 min antes)
+// ---- Inactivity Hook (5 minutos sem interação: clique, digitação, edição de campo) ----
+const ADMIN_INACTIVITY_LIMIT_MS = 5 * 60 * 1000; // 5 minutos
+const ADMIN_WARNING_LIMIT_MS = 4 * 60 * 1000; // 4 minutos (aviso 1 min antes)
 
 function useAdminInactivityTimeout(onTimeout: () => void, isActive: boolean) {
   const onTimeoutRef = useRef(onTimeout);
@@ -271,9 +271,9 @@ function AdminLayout() {
   const { orders } = useOrders();
   const prevOrdersRef = useRef(orders);
 
-  // Auto-logout por inatividade (15 minutos sem nenhuma interação: clique, digitação, edição de campo)
+  // Auto-logout por inatividade (5 minutos sem nenhuma interação: clique, digitação, edição de campo)
   const handleInactivityLogout = async () => {
-    toast.error("Sessão encerrada após 15 minutos de inatividade. Por favor, faça login novamente.", {
+    toast.error("Sessão encerrada após 5 minutos de inatividade. Por favor, faça login novamente.", {
       duration: 8000,
     });
     await logout();
