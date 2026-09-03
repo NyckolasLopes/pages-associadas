@@ -150,7 +150,7 @@ export function sanitizeCartItem(item: any): CartItem | null {
     categoriaId: String(item.categoriaId || ""),
     subcategoriaId: item.subcategoriaId ? String(item.subcategoriaId) : undefined,
     generico: !!item.generico,
-    estoque: Number(item.estoque || 999),
+    estoque: item.estoque !== undefined && item.estoque !== null ? Number(item.estoque) : 0,
     precosPorLoja: item.precosPorLoja || undefined,
     isOrderBump: !!item.isOrderBump,
   };
@@ -256,12 +256,23 @@ export const useCart = create<CartState>()(
       setFreightOptions: (opts) => set({ freightOptions: opts }),
       add: (p, qty = 1, silent = false) =>
         set((s) => {
+          const isService = (p as any).tipoProduto === "servico" || ((p as any).tipoProduto !== "fisico" && (p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
+          const rawStock = p.estoque !== undefined && p.estoque !== null ? Number(p.estoque) : 0;
+          const hasStock = rawStock > 0 || isService;
+          const isGlobalActive = p.ativo !== false && (p as any).aVenda !== false;
+
+          // Se o produto estiver indisponível ou sem estoque, NÃO permite adicionar ao carrinho
+          if (!hasStock || !isGlobalActive) {
+            return s;
+          }
+
+          const stock = isService ? 999 : rawStock;
           const ex = s.items.find((i) => i.id === p.id);
           if (ex) {
-            const newQty = Math.min(ex.qty + qty, p.estoque);
+            const newQty = isService ? (ex.qty + qty) : Math.min(ex.qty + qty, stock);
             return {
               items: s.items.map((i) =>
-                i.id === p.id ? { ...i, qty: newQty } : i,
+                i.id === p.id ? { ...i, qty: newQty, estoque: stock } : i,
               ),
               drawerOpen: silent ? s.drawerOpen : true,
               lastUpdatedAt: Date.now(),
@@ -277,12 +288,12 @@ export const useCart = create<CartState>()(
                 precoDe: p.precoDe || p.precoPor,
                 ean: p.ean || "",
                 possuiImagem: p.possuiImagem,
-                qty: Math.min(qty, p.estoque),
+                qty: isService ? qty : Math.min(qty, stock),
                 retemReceita: p.retemReceita,
                 tarja: String(p.tarja),
                 categoriaId: p.categoriaId,
                 generico: p.generico,
-                estoque: p.estoque,
+                estoque: stock,
                 precosPorLoja: (p as any).precosPorLoja || undefined,
                 isOrderBump: (p as any).isOrderBump || false,
               },
@@ -296,7 +307,10 @@ export const useCart = create<CartState>()(
         set((s) => {
           const item = s.items.find(i => i.id === id);
           if (!item) return s;
-          const safeQty = Math.min(Math.max(1, qty), item.estoque);
+          const isService = item.categoriaId === "200" || (item.subcategoriaId && String(item.subcategoriaId).startsWith("20"));
+          const stock = isService ? 999 : Number(item.estoque || 0);
+          if (stock <= 0) return s;
+          const safeQty = Math.min(Math.max(1, qty), stock);
           return {
             items: s.items.map((i) =>
               i.id === id ? { ...i, qty: safeQty } : i,

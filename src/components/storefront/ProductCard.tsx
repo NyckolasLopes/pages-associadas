@@ -71,7 +71,11 @@ function ProductCardComponent({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    add({ ...p, estoque: Math.max(1, maxStock) }, 1, true); // silent: true -> NÃO abre carrinho lateral
+    if (!isAvailable) {
+      toast.error("Produto indisponível no momento.");
+      return;
+    }
+    add({ ...p, estoque: maxStock }, 1, true); // silent: true -> NÃO abre carrinho lateral
     showAddedNotification(p.nome);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 3000);
@@ -488,27 +492,29 @@ function ProductCardComponent({
         >
           <Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 transition ${mounted && fav ? "fill-red-500 text-red-500" : ""}`} />
         </button>
-        <button
-          type="button"
-          aria-label={isService ? "Agendar serviço" : (inCartQty > 0 ? `${inCartQty} no carrinho` : "Adicionar à cesta")}
-          onClick={isService ? undefined : handleAddToCart}
-          className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full backdrop-blur border shadow-xs flex items-center justify-center transition-all duration-200 active:scale-95 relative overflow-hidden ${
-            inCartQty > 0 
-              ? "bg-primary text-white border-primary shadow-sm hover:brightness-105" 
-              : "bg-white/95 hover:bg-white text-muted-foreground border-slate-200"
-          }`}
-          title={inCartQty > 0 ? `${inCartQty} no carrinho (clique para adicionar mais)` : "Adicionar ao carrinho"}
-        >
-          {isService ? (
-            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-teal-600" />
-          ) : inCartQty > 0 ? (
-            <span className="text-white font-black text-[11px] leading-none">
-              {inCartQty > 99 ? "99+" : inCartQty}
-            </span>
-          ) : (
-            <ShoppingBasket className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          )}
-        </button>
+        {isAvailable && (
+          <button
+            type="button"
+            aria-label={isService ? "Agendar serviço" : (inCartQty > 0 ? `${inCartQty} no carrinho` : "Adicionar à cesta")}
+            onClick={isService ? undefined : handleAddToCart}
+            className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full backdrop-blur border shadow-xs flex items-center justify-center transition-all duration-200 active:scale-95 relative overflow-hidden ${
+              inCartQty > 0 
+                ? "bg-primary text-white border-primary shadow-sm hover:brightness-105" 
+                : "bg-white/95 hover:bg-white text-muted-foreground border-slate-200"
+            }`}
+            title={inCartQty > 0 ? `${inCartQty} no carrinho (clique para adicionar mais)` : "Adicionar ao carrinho"}
+          >
+            {isService ? (
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-teal-600" />
+            ) : inCartQty > 0 ? (
+              <span className="text-white font-black text-[11px] leading-none">
+                {inCartQty > 99 ? "99+" : inCartQty}
+              </span>
+            ) : (
+              <ShoppingBasket className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Product Image Link */}

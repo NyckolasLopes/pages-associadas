@@ -644,7 +644,9 @@ function CartPage() {
 
   useEffect(() => {
     if (items.length > 0) {
-      catalog.crossSell(items.map((i) => i.id), 4, items[0]?.categoriaId).then(setCrossSell);
+      catalog
+        .crossSell(items.map((i) => i.id), 8, items[0]?.categoriaId)
+        .then((res) => setCrossSell((res || []).filter((p) => Number(p.estoque || 0) > 0 && p.ativo !== false && p.aVenda !== false).slice(0, 4)));
     } else {
       setCrossSell([]);
     }
@@ -702,6 +704,18 @@ function CartPage() {
       return;
     }
     
+    const unavailableItems = items.filter(i => {
+      const isService = i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"));
+      return !isService && Number(i.estoque || 0) <= 0;
+    });
+
+    if (unavailableItems.length > 0) {
+      toast.error("Item indisponível no carrinho", {
+        description: `O produto "${unavailableItems[0].nome}" está sem estoque no momento. Por favor, remova-o para continuar.`
+      });
+      return;
+    }
+
     const forcePickup = items.some(i => i.retemReceita || i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")));
 
     if (!forcePickup && (selected === "delivery_placeholder" || (!selected && deliveryMethod === "entrega"))) {

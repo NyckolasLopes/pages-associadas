@@ -2026,7 +2026,7 @@ function PDP() {
       </div>
 
       {/* Compre Junto Fixo */}
-      {compreJuntoPartner && (
+      {isAvailable && compreJuntoPartner && (
         <section className="mt-16 border-t pt-10">
           <h2 className="text-2xl font-bold mb-6 text-slate-800">Aproveite e leve também</h2>
           <div className="bg-slate-50 border rounded-2xl p-6 lg:p-8 flex flex-col lg:flex-row items-center gap-8">
