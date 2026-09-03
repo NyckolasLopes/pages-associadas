@@ -66,9 +66,8 @@ function CuponsPage() {
   const { cupons } = useMarketing();
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId) || activePharmacy?.id;
 
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
-                     activePharmacy?.categoriaAssociado === 'Associado' || 
-                     activePharmacy?.isPleno === false;
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  const isPleno = activePharmacy?.categoriaAssociado === 'Pleno' || activePharmacy?.isPleno === true;
 
   const storeSlug = (activePharmacy?.slug && activePharmacy.slug !== "loja-padrao")
     ? safeSlugify(activePharmacy.slug)

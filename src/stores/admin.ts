@@ -550,6 +550,7 @@ export function saveCachedPharmacies(pharmacies: Pharmacy[]) {
       isPleno: p.isPleno,
       logoUrl: p.logoUrl,
       faviconUrl: p.faviconUrl,
+      loadingLogoUrl: p.loadingLogoUrl,
       footerLogoUrl: p.footerLogoUrl,
       topBarBgColor: p.topBarBgColor,
       topBarTextColor: p.topBarTextColor,

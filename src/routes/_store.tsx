@@ -55,9 +55,7 @@ function StoreLayout() {
   const storeTheme = useMemo(() => {
     if (!activePharmacy) return undefined;
 
-    const isParceiro = activePharmacy?.categoriaAssociado === "Parceiro" || 
-                       activePharmacy?.categoriaAssociado === "Associado" || 
-                       activePharmacy?.isPleno === false;
+    const isParceiro = activePharmacy?.categoriaAssociado === "Parceiro";
 
     let themeToApply: Record<string, string | undefined> = {};
 
@@ -209,19 +207,40 @@ function StoreLayout() {
     newLink.type = 'image/png';
     
     const globalFavicon = useAdmin.getState().faviconUrl;
-    const isParceiroOrAssociado = activePharmacy.categoriaAssociado === 'Parceiro' || activePharmacy.categoriaAssociado === 'Associado' || activePharmacy.isPleno === false;
+    const isParceiro = activePharmacy.categoriaAssociado === 'Parceiro';
+    const isPleno = activePharmacy.categoriaAssociado === 'Pleno' || activePharmacy.isPleno === true;
+    const isAssociado = !isParceiro && !isPleno;
+
+    // Cache síncrono para loading instantâneo nas abas e transições
+    if (activePharmacy?.slug) {
+      try {
+        sessionStorage.setItem(`fa-store-logo-${activePharmacy.slug}`, activePharmacy.logoUrl || "");
+        sessionStorage.setItem(`fa-store-favicon-${activePharmacy.slug}`, activePharmacy.faviconUrl || "");
+        sessionStorage.setItem(`fa-store-categoria-${activePharmacy.slug}`, activePharmacy.categoriaAssociado || (isPleno ? "Pleno" : isParceiro ? "Parceiro" : "Associado"));
+        sessionStorage.setItem('fa-last-store-logo', activePharmacy.logoUrl || "");
+        sessionStorage.setItem('fa-last-store-favicon', activePharmacy.faviconUrl || "");
+        sessionStorage.setItem('fa-last-store-categoria', activePharmacy.categoriaAssociado || (isPleno ? "Pleno" : isParceiro ? "Parceiro" : "Associado"));
+      } catch {}
+    }
     
-    // Identifica o favicon da loja (se não tiver favicon e for parceiro, pode usar o logo)
-    const rawFavicon = activePharmacy.faviconUrl || (isParceiroOrAssociado ? activePharmacy.logoUrl : null);
-    let storeFavicon = getSafeMediaUrl(rawFavicon);
-    
-    if (storeFavicon) {
+    // Identifica o favicon da loja:
+    // 1. Pleno: favicon ou logo do Pleno 100% das vezes
+    // 2. Parceiro: favicon ou logo da loja parceira, ou SVG com inicial
+    // 3. Associado: 100% comum da rede (/favicon.png)
+    let storeFavicon: string | null = null;
+    if (isPleno) {
+      storeFavicon = getSafeMediaUrl(activePharmacy.faviconUrl || activePharmacy.loadingLogoUrl || activePharmacy.logoUrl) || '/favicon.png';
       newLink.href = storeFavicon;
-    } else if (isParceiroOrAssociado) {
-      // Para parceiro sem ícone cadastrado: gera um favicon com a primeira letra da loja
-      const initial = (activePharmacy.nome || "F").trim().charAt(0).toUpperCase();
-      const primaryColor = activePharmacy.themeColors?.primary || "#00B5AD";
-      newLink.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='${encodeURIComponent(primaryColor)}'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='55' font-family='sans-serif' font-weight='bold' fill='#ffffff'>${initial}</text></svg>`;
+    } else if (isParceiro) {
+      const rawFavicon = activePharmacy.faviconUrl || activePharmacy.loadingLogoUrl || activePharmacy.logoUrl;
+      storeFavicon = getSafeMediaUrl(rawFavicon);
+      if (storeFavicon) {
+        newLink.href = storeFavicon;
+      } else {
+        const initial = (activePharmacy.nome || "F").trim().charAt(0).toUpperCase();
+        const primaryColor = activePharmacy.themeColors?.primary || "#00B5AD";
+        newLink.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='${encodeURIComponent(primaryColor)}'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='55' font-family='sans-serif' font-weight='bold' fill='#ffffff'>${initial}</text></svg>`;
+      }
     } else {
       newLink.href = getSafeMediaUrl(globalFavicon) || '/favicon.png';
     }
@@ -229,13 +248,13 @@ function StoreLayout() {
     document.head.appendChild(newLink);
 
     // Dynamic manifest update for PWA install prompt
-    const appName = isParceiroOrAssociado && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
+    const appName = isParceiro && activePharmacy.nome ? activePharmacy.nome : (activePharmacy.nome || "Farmácias Associadas");
     const storeSlug = activePharmacy.slug || "";
     const origin = typeof window !== 'undefined' ? window.location.origin : "https://pages-associadas.vercel.app";
     
     // Ícone do Manifest: para parceiro, JAMAIS usar /favicon.png ou globalFavicon da rede!
     let manifestIcon = storeFavicon;
-    if (!manifestIcon && !isParceiroOrAssociado) {
+    if (!manifestIcon && !isParceiro) {
       manifestIcon = getSafeMediaUrl(globalFavicon) || "/favicon.png";
     }
 
@@ -331,6 +350,10 @@ function StoreLayout() {
     setMounted(true);
   }, []);
 
+  if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && !activePharmacy && !pharmaciesLoaded) {
+    return <GlobalLoading />;
+  }
+
   if (mounted && potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && pharmaciesLoaded && pharmacies.length > 0 && !activePharmacy) {
     return <NotFound type="page" />;
   }
@@ -358,7 +381,7 @@ function StoreLayout() {
     >
       {activePharmacy && (
         <>
-          <title>{activePharmacy.pageTitle || activePharmacy.nome || (['Parceiro', 'Associado'].includes(activePharmacy.categoriaAssociado || '') ? "Loja Parceira" : "Farmácias Associadas")}</title>
+          <title>{activePharmacy.pageTitle || activePharmacy.nome || (activePharmacy.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas")}</title>
           <meta name="description" content={activePharmacy.metaDescription || "Sua farmácia online de confiança."} />
         </>
       )}

@@ -162,10 +162,7 @@ export function Header() {
   const urlSlug = (params as any)?.storeSlug as string | undefined;
   
   const activePharmacy = useActivePharmacy();
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
-                     activePharmacy?.categoriaAssociado === 'Associado' || 
-                     activePharmacy?.isPleno === false || 
-                     (isStoreContext && urlSlug !== 'loja-padrao');
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
   const storeSlug = getEffectiveStoreSlug(urlSlug, activePharmacy);
   const customProducts = useAdminProducts(s => s.customProducts);
   const { featuredCategories, storeFeaturedCategories } = useAdmin();
@@ -1059,10 +1056,7 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   const rawUser = useAuth((s) => s.user);
   const marcas = useMarcasStore((s) => s.marcas);
   const activePharmacy = useActivePharmacy();
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
-                     activePharmacy?.categoriaAssociado === 'Associado' || 
-                     activePharmacy?.isPleno === false || 
-                     ((params as any)?.storeSlug && (params as any)?.storeSlug !== 'loja-padrao');
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
   const allCategories = useAdminCategories(s => s.categories);
   const storeCategoryIcons = useAdmin(s => s.storeCategoryIcons);
   const categoryIcons = useAdmin(s => s.categoryIcons);
@@ -1324,10 +1318,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
   const params = useParams({ strict: false });
   const activePharmacy = useActivePharmacy();
   const selectedPharmacyId = useCart(s => s.selectedPharmacyId) || activePharmacy?.id;
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
-                     activePharmacy?.categoriaAssociado === 'Associado' || 
-                     activePharmacy?.isPleno === false || 
-                     ((params as any)?.storeSlug && (params as any)?.storeSlug !== 'loja-padrao');
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
   const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
   const cupons = useMarketing(s => s.cupons);
   const hasStoreCupons = useMemo(() => {

@@ -71,7 +71,7 @@ function AdminDesignLogo() {
 
   const currentLogo = currentPharmacy ? (currentPharmacy.logoUrl || defaultLogo) : (globalLogo || defaultLogo);
   const currentFavicon = currentPharmacy ? (currentPharmacy.faviconUrl || defaultFavicon) : defaultFavicon;
-  const currentLoadingLogo = isParceiro ? (currentPharmacy?.loadingLogoUrl || "") : defaultLoadingLogo;
+  const currentLoadingLogo = isParceiro ? (currentPharmacy?.loadingLogoUrl || "") : (currentPharmacy?.faviconUrl || defaultLoadingLogo);
   const currentFooterLogo = currentPharmacy ? (currentPharmacy.footerLogoUrl || defaultFooterLogo) : defaultFooterLogo;
   const currentAnvisaLogo = currentPharmacy ? (currentPharmacy.anvisaLogoUrl || defaultAnvisaLogo) : defaultAnvisaLogo;
 
@@ -287,7 +287,7 @@ function AdminDesignLogo() {
             </div>
             {isPleno && (
               <p className="text-xs font-medium text-slate-500 mt-4 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 max-w-[380px]">
-                Nas lojas Pleno, o logo de loading é automaticamente o favicon oficial da rede Farmácias Associadas (não editável).
+                Nas lojas Pleno, o carregamento exibe 100% das vezes o logo e o spin com o favicon exclusivo cadastrado da sua loja Pleno.
               </p>
             )}
             {!currentPharmacy?.loadingLogoUrl && isParceiro && (

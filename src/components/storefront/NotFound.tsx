@@ -11,9 +11,7 @@ interface NotFoundProps {
 
 export function NotFound({ type = "page", title, description }: NotFoundProps) {
   const activePharmacy = useActivePharmacy();
-  const isParceiro = activePharmacy?.categoriaAssociado === "Parceiro" || 
-                     activePharmacy?.categoriaAssociado === "Associado" || 
-                     activePharmacy?.isPleno === false;
+  const isParceiro = activePharmacy?.categoriaAssociado === "Parceiro";
 
   const storeSlug = activePharmacy?.slug ? safeSlugify(activePharmacy.slug) : "";
 

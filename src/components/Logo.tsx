@@ -16,9 +16,8 @@ export function Logo({ className = "h-10" }: { className?: string }) {
   const effectiveSlug = rawStoreSlug || (pathSlug && !SYSTEM_PAGES.has(pathSlug) ? pathSlug : "");
 
   const activePharmacy = useActivePharmacy();
-  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || 
-                     activePharmacy?.categoriaAssociado === 'Associado' || 
-                     activePharmacy?.isPleno === false;
+  const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
+  const isPleno = activePharmacy?.categoriaAssociado === 'Pleno' || activePharmacy?.isPleno === true;
 
   // Resolve target store slug safely
   const targetStoreSlug = useMemo(() => {
@@ -56,9 +55,17 @@ export function Logo({ className = "h-10" }: { className?: string }) {
             {storeDisplayName || "Loja Parceira"}
           </span>
         )
+      ) : isPleno ? (
+        <img
+          src={getSafeMediaUrl(activePharmacy?.logoUrl || activePharmacy?.loadingLogoUrl || globalLogoUrl) || logoUrlDefault}
+          alt={storeDisplayName || "Farmácias Associadas"}
+          className={`${className} w-auto object-contain`}
+          loading="eager"
+          decoding="async"
+        />
       ) : (
         <img
-          src={getSafeMediaUrl(activePharmacy?.logoUrl || globalLogoUrl) || logoUrlDefault}
+          src={getSafeMediaUrl(globalLogoUrl) || logoUrlDefault}
           alt={storeDisplayName || "Farmácias Associadas"}
           className={`${className} w-auto object-contain`}
           loading="eager"

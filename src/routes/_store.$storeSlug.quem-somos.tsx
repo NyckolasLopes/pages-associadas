@@ -40,9 +40,7 @@ function QuemSomosPage() {
   const farmaceutico = activePharmacy?.farmaceutico || "Farmacêutico(a) Responsável";
   const logoUrl = getSafeMediaUrl(activePharmacy?.logoUrl || activePharmacy?.faviconUrl);
 
-  const isParceiro = activePharmacy?.categoriaAssociado === "Parceiro" || 
-                     activePharmacy?.categoriaAssociado === "Associado" || 
-                     activePharmacy?.isPleno === false;
+  const isParceiro = activePharmacy?.categoriaAssociado === "Parceiro";
 
   return (
     <div className="bg-slate-50 min-h-[70vh] pb-24">
