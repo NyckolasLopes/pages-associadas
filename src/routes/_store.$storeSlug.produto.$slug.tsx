@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart, useGeoCep } from "@/stores/cart";
 import { useFavorites } from "@/stores/favorites";
-import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info, Ticket, Check, Copy } from "lucide-react";
+import { FileText, MapPin, Search, ChevronRight, ChevronLeft, X, Heart, Share2, Plus, Minus, Truck, Handshake, ShieldCheck, Store, CheckCircle2, AlertCircle, ChevronDown, Bike, Zap, Star, StarHalf, Calendar, Youtube, Play, ExternalLink, ShoppingBasket, Info, Ticket, Check, Copy, Bell } from "lucide-react";
 import { NotFound } from "@/components/storefront/NotFound";
 import categoriesData from "@/data/categories.json";
 import {
@@ -23,6 +23,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
 import { ProductStory } from "@/components/storefront/ProductStory";
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { supabase } from "@/integrations/supabase/client";
 import { Flame, Gift, ShoppingBag, Stethoscope } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAdmin } from "@/stores/admin";
@@ -58,8 +59,23 @@ export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
   loader: async ({ params }) => {
     const storeSlug = params.storeSlug;
     const { useAdmin } = await import("@/stores/admin");
-    const pharmacies = useAdmin.getState().pharmacies;
+    let pharmacies = useAdmin.getState().pharmacies;
+    if (!pharmacies || pharmacies.length === 0) {
+      await useAdmin.getState().loadPharmacies();
+      pharmacies = useAdmin.getState().pharmacies;
+    }
     let loja = pharmacies.find((ph: any) => (ph.slug || "").toLowerCase() === (storeSlug || "").toLowerCase());
+    if (!loja && storeSlug && storeSlug !== "loja-padrao") {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: lojaDb } = await supabase
+        .from('lojas')
+        .select('*')
+        .or(`slug.ilike.${storeSlug},id.eq.${storeSlug}`)
+        .maybeSingle();
+      if (lojaDb) {
+        loja = lojaDb;
+      }
+    }
     if (!loja) {
       loja = pharmacies.filter((ph: any) => ph.ativo !== false)[0] || pharmacies[0];
     }
@@ -351,7 +367,21 @@ function PDP() {
   const { p: initialProduct, loja, cat, subcat, crossSell, variations, compreJuntoPartner } = Route.useLoaderData();
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro' || loja?.categoriaAssociado === 'Parceiro';
   const customProducts = useAdminProducts(s => s.customProducts);
-  const p = customProducts?.find(c => c.id === initialProduct.id) || initialProduct;
+  const foundCustom = customProducts?.find(c => c.id === initialProduct.id);
+  
+  // Mescla customProducts mas PRESERVA os estoques e preços da loja já resolvidos
+  const p = React.useMemo(() => {
+    if (!foundCustom) return initialProduct;
+    return {
+      ...initialProduct,
+      ...foundCustom,
+      precosPorLoja: initialProduct.precosPorLoja || foundCustom.precosPorLoja,
+      estoquesPorLoja: initialProduct.estoquesPorLoja || foundCustom.estoquesPorLoja,
+      estoque: (initialProduct.estoquesPorLoja?.[loja?.id || ""] !== undefined)
+        ? initialProduct.estoquesPorLoja[loja?.id || ""]
+        : (initialProduct.estoque ?? foundCustom.estoque),
+    };
+  }, [foundCustom, initialProduct, loja?.id]);
   const { prices: regionalPrices } = useRegionsStore();
   
   const normalizeForVariation = (nome: any) => 
@@ -718,35 +748,109 @@ function PDP() {
   const currentLoja = loja || allPharmacies.find(ph => (ph.slug || "").toLowerCase() === (storeSlug || "").toLowerCase()) || (selectedPharmacyId ? allPharmacies.find(ph => ph.id === selectedPharmacyId) : null) || allPharmacies[0];
   const effectiveStoreId = selectedPharmacyId || currentLoja?.id;
 
-  // Priority 1: Check active store stock
+  // Estado de estoque e preço em tempo real sincronizado diretamente com Supabase (produto_precos_loja)
+  const [liveStoreStock, setLiveStoreStock] = useState<{
+    loaded: boolean;
+    stock: number;
+    ativo: boolean;
+    precoPor?: number;
+    precoDe?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const targetStoreId = effectiveStoreId || currentLoja?.id || loja?.id;
+    if (!p?.id || !targetStoreId) return;
+
+    let isMounted = true;
+    const fetchLiveStock = async () => {
+      try {
+        const { data } = await supabase
+          .from("produto_precos_loja")
+          .select("estoque, ativo, preco_por, preco_de")
+          .eq("produto_id", p.id)
+          .eq("loja_id", targetStoreId)
+          .maybeSingle();
+
+        if (isMounted && data) {
+          setLiveStoreStock({
+            loaded: true,
+            stock: data.estoque !== null && data.estoque !== undefined ? Number(data.estoque) : 0,
+            ativo: data.ativo !== false,
+            precoPor: data.preco_por ? Number(data.preco_por) : undefined,
+            precoDe: data.preco_de ? Number(data.preco_de) : undefined,
+          });
+        }
+      } catch (err) {
+        console.warn("[PDP] Falha ao sincronizar estoque em tempo real:", err);
+      }
+    };
+
+    fetchLiveStock();
+
+    const channel = supabase
+      .channel(`live-stock-${p.id}-${targetStoreId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "produto_precos_loja",
+          filter: `produto_id=eq.${p.id}`,
+        },
+        (payload: any) => {
+          if (payload.new && String(payload.new.loja_id) === String(targetStoreId)) {
+            setLiveStoreStock({
+              loaded: true,
+              stock: payload.new.estoque !== null && payload.new.estoque !== undefined ? Number(payload.new.estoque) : 0,
+              ativo: payload.new.ativo !== false,
+              precoPor: payload.new.preco_por ? Number(payload.new.preco_por) : undefined,
+              precoDe: payload.new.preco_de ? Number(payload.new.preco_de) : undefined,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [p?.id, effectiveStoreId, currentLoja?.id, loja?.id]);
+
+  // Priority 1: Check active store stock (No contexto de loja, o estoque é estritamente o daquela loja)
   let maxStock = 0;
   if (effectiveStoreId) {
-    const isAtivoLocal = p.precosPorLoja?.[effectiveStoreId]?.ativo !== false;
-    maxStock = isAtivoLocal ? getDeterministicStock(p, effectiveStoreId) : 0;
-  }
-
-  // Priority 2: Check any available pharmacy with stock
-  if (maxStock === 0 && availablePharmacies.length > 0) {
-    const highestStock = Math.max(0, ...availablePharmacies.map(f => f._calculatedStock || 0));
-    if (highestStock > 0) {
-      maxStock = highestStock;
+    if (liveStoreStock && liveStoreStock.loaded) {
+      maxStock = liveStoreStock.ativo ? liveStoreStock.stock : 0;
+    } else {
+      const isAtivoLocal = p.precosPorLoja?.[effectiveStoreId]?.ativo !== false;
+      maxStock = isAtivoLocal ? getDeterministicStock(p, effectiveStoreId) : 0;
     }
-  }
-
-  // Priority 3: Fallback to Suppliers / Infinite Shelf
-  let activeFornecedor = null;
-  if (maxStock === 0 && fornecedores && fornecedores.length > 0) {
-    const citySuppliers = fornecedores.filter(f => normalize(f.cidade).includes(currentCity));
-    activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
-    const supplierStock = getDeterministicStock(p, String(activeFornecedor.id) + "supp");
-    if (supplierStock > 0) {
-      maxStock = supplierStock;
+  } else {
+    // Apenas se NÃO estiver em contexto de loja (portal sem loja selecionada)
+    // Priority 2: Check any available pharmacy with stock
+    if (maxStock === 0 && availablePharmacies.length > 0) {
+      const highestStock = Math.max(0, ...availablePharmacies.map(f => f._calculatedStock || 0));
+      if (highestStock > 0) {
+        maxStock = highestStock;
+      }
     }
-  }
 
-  // Priority 4: Fallback to global product stock
-  if (maxStock === 0 && Number(p.estoque || 0) > 0) {
-    maxStock = Number(p.estoque);
+    // Priority 3: Fallback to Suppliers / Infinite Shelf
+    let activeFornecedor = null;
+    if (maxStock === 0 && fornecedores && fornecedores.length > 0) {
+      const citySuppliers = fornecedores.filter(f => normalize(f.cidade).includes(currentCity));
+      activeFornecedor = citySuppliers.length > 0 ? citySuppliers[0] : fornecedores[0];
+      const supplierStock = getDeterministicStock(p, String(activeFornecedor.id) + "supp");
+      if (supplierStock > 0) {
+        maxStock = supplierStock;
+      }
+    }
+
+    // Priority 4: Fallback to global product stock
+    if (maxStock === 0 && Number(p.estoque || 0) > 0) {
+      maxStock = Number(p.estoque);
+    }
   }
 
   let isLocalStock = maxStock > 0;
@@ -769,8 +873,13 @@ function PDP() {
       if (regPrice !== undefined && Number(regPrice) > 0) finalPrecoPor = Number(regPrice);
     }
     
-    // 2. Specific store override
-    if (p.precosPorLoja?.[activePharmacyId]) {
+    // 2. Specific store override (Prioridade máxima para o estoque e preço em tempo real)
+    if (liveStoreStock?.loaded && liveStoreStock.precoPor && liveStoreStock.precoPor > 0) {
+      finalPrecoPor = liveStoreStock.precoPor;
+      if (liveStoreStock.precoDe && liveStoreStock.precoDe > 0) {
+        finalPrecoDe = liveStoreStock.precoDe;
+      }
+    } else if (p.precosPorLoja?.[activePharmacyId]) {
       const pLoja = p.precosPorLoja[activePharmacyId];
       const lojaPrecoPor = pLoja.precoPor ? Number(pLoja.precoPor) : 0;
       const lojaPrecoDe = pLoja.precoDe ? Number(pLoja.precoDe) : 0;
@@ -960,7 +1069,9 @@ function PDP() {
   // Produto precisa ter estoque (ou ser serviço suportado pela loja) e estar ativo globalmente
   // Além disso, se uma farmácia foi selecionada, deve estar ativo nessa farmácia.
   const isGlobalActive = p.ativo !== false && p.aVenda !== false;
-  const isLocalActive = !activePharmacyId || p.precosPorLoja?.[activePharmacyId]?.ativo !== false;
+  const isLocalActive = liveStoreStock?.loaded
+    ? liveStoreStock.ativo
+    : (!activePharmacyId || p.precosPorLoja?.[activePharmacyId]?.ativo !== false);
   const storeOffersServices = !currentLoja || currentLoja.offersServices !== false;
   const isAvailable = (maxStock > 0 || (isService && storeOffersServices)) && isGlobalActive && isLocalActive;
 
@@ -1564,7 +1675,7 @@ function PDP() {
                   Preço indisponível
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Consulte a disponibilidade e valores quando o item retornar ao estoque.
+                  Sem estoque no momento
                 </span>
               </div>
             ) : p.precoSobConsulta ? (
@@ -1710,8 +1821,23 @@ function PDP() {
                 )}
               </div>
             ) : (
-              <div className="p-4 bg-slate-100 text-slate-500 rounded-lg text-center font-bold mt-6 border border-slate-200">
-                Produto Temporariamente Indisponível
+              <div className="mt-6 flex flex-col gap-3">
+                <Button 
+                  disabled 
+                  size="lg"
+                  className="w-full h-12 text-base font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed uppercase shadow-none"
+                >
+                  INDISPONÍVEL
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="lg"
+                  className="w-full h-12 text-base font-bold text-primary border-primary hover:bg-primary/5 cursor-pointer shadow-xs"
+                  onClick={() => setWaitlistOpen(true)}
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  Avise-me quando chegar
+                </Button>
               </div>
             )}
 
@@ -1733,23 +1859,6 @@ function PDP() {
                 Compartilhar
               </Button>
             </div>
-
-
-            {maxStock === 0 && (
-                <div className="mt-6 flex flex-col gap-3">
-                  <div className="p-3 bg-slate-100 text-slate-500 rounded-lg text-center font-bold border border-slate-200">
-                    Produto Indisponível
-                  </div>
-                  <Button 
-                    variant="outline"
-                    size="lg"
-                    className="w-full h-12 text-base font-bold text-primary border-primary hover:bg-primary/5"
-                    onClick={() => setWaitlistOpen(true)}
-                  >
-                    Avise-me quando chegar
-                  </Button>
-                </div>
-            )}
 
             <ul className="mt-6 space-y-3 text-xs font-medium bg-muted/30 p-4 rounded-lg">
               {isService ? (
