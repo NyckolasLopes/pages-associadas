@@ -138,6 +138,120 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       });
     }
   }
+
+  // 1.6. Dedicated Admin Delete Product Endpoint
+  if (url.pathname === "/api/admin/delete-product" && request.method === "POST") {
+    try {
+      const body = await request.json();
+      const { id, lojaId } = body;
+      if (!id) {
+        return new Response(JSON.stringify({ error: "Missing product id" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const adminClient = createClient(targetBase, publishableKey);
+      
+      await adminClient.auth.signInWithPassword({
+        email: "nyckolas.lopes@farmaciasassociadas.com.br",
+        password: "Aspro@2026"
+      });
+
+      if (lojaId) {
+        await adminClient.from('produto_precos_loja').delete().eq('produto_id', id).eq('loja_id', lojaId);
+      } else {
+        await adminClient.from('produto_precos_loja').delete().eq('produto_id', id);
+        const { error } = await adminClient.from('produtos').delete().eq('id', id);
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (err: any) {
+      console.error("[delete-product error]:", err);
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }
+
+  // 1.7. Dedicated Admin Delete All Products Endpoint
+  if (url.pathname === "/api/admin/delete-all-products" && request.method === "POST") {
+    try {
+      const body = await request.json().catch(() => ({}));
+      const { lojaId } = body;
+
+      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const adminClient = createClient(targetBase, publishableKey);
+      
+      await adminClient.auth.signInWithPassword({
+        email: "nyckolas.lopes@farmaciasassociadas.com.br",
+        password: "Aspro@2026"
+      });
+
+      if (lojaId) {
+        // Limpa apenas os preços e estoques vinculados a essa loja específica
+        await adminClient.from('produto_precos_loja').delete().eq('loja_id', lojaId);
+      } else {
+        // Limpeza geral de toda a rede: apaga produto_precos_loja e todos os produtos
+        await adminClient.from('produto_precos_loja').delete().not('id', 'is', null);
+
+        let hasMore = true;
+        let batchCount = 0;
+        while (hasMore) {
+          const { data: chunk, error: chunkErr } = await adminClient
+            .from('produtos')
+            .select('id')
+            .limit(1000);
+
+          if (chunkErr || !chunk || chunk.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          const ids = chunk.map((p: any) => p.id);
+          const { error: delErr } = await adminClient
+            .from('produtos')
+            .delete()
+            .in('id', ids);
+
+          if (delErr) {
+            console.error("Erro ao deletar lote de produtos:", delErr);
+            hasMore = false;
+            break;
+          }
+
+          batchCount += ids.length;
+          if (chunk.length < 1000) {
+            hasMore = false;
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (err: any) {
+      console.error("[delete-all-products error]:", err);
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }
   
   if (url.pathname.includes("/api/rpc/")) {
     const rpcName = url.pathname.split("/").pop();

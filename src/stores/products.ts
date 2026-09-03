@@ -37,12 +37,12 @@ interface ProductsState {
   _loaded: boolean;
   loadProducts: () => Promise<void>;
   addOrUpdateProduct: (p: Produto, lojaId?: string | null) => void;
-  removeProduct: (id: string, lojaId?: string | null) => void;
+  removeProduct: (id: string, lojaId?: string | null) => Promise<void>;
   getStoreEffectiveProducts: (lojaId?: string | null) => Produto[];
   resetStoreProductsToGeneral: (lojaId: string) => void;
   importProducts: (products: Produto[], lojaId?: string | null) => Promise<void>;
   applyBadgeToProducts: (badgeId: string, productIds: string[]) => void;
-  clearProducts: (lojaId?: string | null) => void;
+  clearProducts: (lojaId?: string | null) => Promise<void>;
   formatAllTitles: () => void;
   setFornecedores: (fornecedores: Fornecedor[]) => void;
   removeFornecedor: (id: number) => void;
@@ -495,8 +495,27 @@ export const useAdminProducts = create<ProductsState>()(
         // Optimistic
         set((s) => ({ customProducts: s.customProducts.filter(x => x.id !== id) }));
         
-        // DB Delete
-        await supabase.from('produtos').delete().eq('id', id);
+        // DB Delete via API / Supabase
+        try {
+          if (lojaId) {
+            await supabase.from('produto_precos_loja').delete().eq('produto_id', id).eq('loja_id', lojaId);
+          } else {
+            await supabase.from('produto_precos_loja').delete().eq('produto_id', id);
+            const { error } = await supabase.from('produtos').delete().eq('id', id);
+            if (error) throw error;
+          }
+        } catch (err: any) {
+          console.warn("Delete direto no Supabase falhou, tentando rota administrativa segura:", err?.message);
+          try {
+            await fetch("/api/admin/delete-product", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id, lojaId: lojaId || null })
+            });
+          } catch (apiErr) {
+            console.error("Erro ao deletar produto via rota admin:", apiErr);
+          }
+        }
       },
       getStoreEffectiveProducts: (lojaId) => {
         const state = get();
@@ -719,23 +738,46 @@ export const useAdminProducts = create<ProductsState>()(
           console.error("Erro ao salvar selos no supabase", e);
         }
       },
-      clearProducts: (lojaId) => set((s) => {
-        if (lojaId) {
-          const newStoreCustom = { ...s.storeCustomProducts };
-          delete newStoreCustom[lojaId];
-          const newOverrides = { ...s.storeProductOverrides };
-          delete newOverrides[lojaId];
-          return {
-            storeCustomProducts: newStoreCustom,
-            storeProductOverrides: newOverrides,
-            storeRemovedProductIds: {
-              ...s.storeRemovedProductIds,
-              [lojaId]: s.customProducts.map(p => p.id)
-            }
+      clearProducts: async (lojaId) => {
+        // 1. Optimistic UI update
+        set((s) => {
+          if (lojaId) {
+            const newStoreCustom = { ...s.storeCustomProducts };
+            delete newStoreCustom[lojaId];
+            const newOverrides = { ...s.storeProductOverrides };
+            delete newOverrides[lojaId];
+            return {
+              storeCustomProducts: newStoreCustom,
+              storeProductOverrides: newOverrides,
+              storeRemovedProductIds: {
+                ...s.storeRemovedProductIds,
+                [lojaId]: s.customProducts.map(p => p.id)
+              }
+            };
+          }
+          return { 
+            customProducts: [],
+            storeCustomProducts: {},
+            storeProductOverrides: {},
+            storeRemovedProductIds: {}
           };
+        });
+
+        // 2. Executa exclusão no banco de dados via API administrativa segura
+        try {
+          const res = await fetch("/api/admin/delete-all-products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lojaId: lojaId || null })
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            console.error("Falha ao excluir produtos em massa via API:", err);
+          }
+        } catch (e) {
+          console.error("Exceção ao chamar /api/admin/delete-all-products:", e);
         }
-        return { customProducts: [] };
-      }),
+      },
       formatAllTitles: () => set((s) => ({
         customProducts: s.customProducts.map(p => ({ ...p, nome: toTitleCase(p.nome) }))
       })),

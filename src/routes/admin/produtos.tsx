@@ -138,6 +138,8 @@ function AdminProdutos() {
   const [apiPrecosUrl, setApiPrecosUrl] = useState("");
   const [apiEstoqueUrl, setApiEstoqueUrl] = useState("");
   const [jsonFile, setJsonFile] = useState<File | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Produto | null>(null);
+  const [isDeletingSingle, setIsDeletingSingle] = useState(false);
   const [deleteAllModalOpen, setDeleteAllModalOpen] = useState(false);
   const [subirDadosOpen, setSubirDadosOpen] = useState(false);
   const [isSyncingApi, setIsSyncingApi] = useState(false);
@@ -498,18 +500,41 @@ function AdminProdutos() {
   };
 
   const confirmDeleteAll = async () => {
+    setDeleteAllModalOpen(false);
     await runWithMassLoading({
       title: "Excluindo Produtos em Massa",
-      message: "Limpando o catálogo de produtos e renderizando a interface vazia...",
+      message: "Excluindo os produtos do banco de dados e atualizando a interface...",
       icon: "spinner"
     }, async () => {
-      clearProducts(currentLojaId || undefined);
-      setDeleteAllModalOpen(false);
+      // 1. Limpa o estado no banco de dados e store
+      await clearProducts(currentLojaId || undefined);
+
+      // 2. Limpa imediatamente o estado da tabela na tela
+      setServerProducts([]);
+      setTotalProducts(0);
+      setLojaApiDataMap({});
+
       toast.success(
         currentLojaId
-          ? `Catálogo exclusivo da loja ${currentLoja?.nome || ""} foi limpo.`
-          : `Todos os produtos da rede foram excluídos.`
+          ? `Catálogo exclusivo da loja ${currentLoja?.nome || ""} foi limpo com sucesso.`
+          : `Todos os produtos da rede foram excluídos com sucesso.`
       );
+
+      // 3. Sincroniza com a busca para garantir que a lista reflita o banco
+      try {
+        const numericPageSize = parseInt(pageSize, 10);
+        const { results, count } = await catalog.adminSearchProducts({
+          search: "",
+          page: 0,
+          pageSize: numericPageSize,
+          listFilter: "all",
+          lojaId: currentLojaId || undefined
+        });
+        setServerProducts(results);
+        setTotalProducts(count);
+      } catch (err) {
+        console.error("Erro ao sincronizar após exclusão em massa:", err);
+      }
     });
   };
 
@@ -1225,13 +1250,8 @@ function AdminProdutos() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                  onClick={() => {
-                                    if (window.confirm("Tem certeza que deseja excluir este produto?")) {
-                                      setServerProducts(prev => prev.filter(prod => prod.id !== p.id));
-                                      removeProduct(p.id, currentLojaId || undefined);
-                                      toast.success(currentLojaId ? "Produto removido da sua loja!" : "Produto removido da rede!");
-                                    }
-                                  }}
+                                  onClick={() => setProductToDelete(p)}
+                                  title="Excluir Produto"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -1464,6 +1484,76 @@ function AdminProdutos() {
               </Button>
             </DialogFooter>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Exclusão de Produto Individual */}
+      <Dialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Excluir Produto
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <p className="text-slate-700 font-medium">
+              Tem certeza que deseja excluir este produto do catálogo?
+            </p>
+            {productToDelete && (
+              <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                {productToDelete.foto || (productToDelete.imagens && productToDelete.imagens[0]) ? (
+                  <img
+                    src={productToDelete.foto || (productToDelete.imagens[0]?.caminhoImagem || productToDelete.imagens[0])}
+                    alt={productToDelete.nome}
+                    className="w-12 h-12 object-contain rounded bg-white border p-1 shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded bg-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                    <Package className="w-6 h-6" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-sm text-slate-800 truncate">{productToDelete.nome}</p>
+                  <p className="text-xs text-slate-500">EAN: {productToDelete.ean || "Sem EAN"}</p>
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-slate-500">
+              {currentLojaId 
+                ? `O produto será removido exclusivamente da loja ${currentLoja?.nome || ""}.`
+                : "Esta ação removerá o produto permanentemente do banco de dados e do catálogo da rede."}
+            </p>
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="outline" disabled={isDeletingSingle} onClick={() => setProductToDelete(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isDeletingSingle}
+              onClick={async () => {
+                if (!productToDelete) return;
+                try {
+                  setIsDeletingSingle(true);
+                  const pId = productToDelete.id;
+                  setServerProducts(prev => prev.filter(prod => prod.id !== pId));
+                  setTotalProducts(prev => Math.max(0, prev - 1));
+                  setProductToDelete(null);
+                  await removeProduct(pId, currentLojaId || undefined);
+                  toast.success(currentLojaId ? "Produto removido da sua loja!" : "Produto removido da rede!");
+                } catch (err: any) {
+                  console.error("Erro ao excluir produto:", err);
+                  toast.error(`Erro ao excluir produto: ${err.message || "Verifique o console"}`);
+                } finally {
+                  setIsDeletingSingle(false);
+                }
+              }}
+              className="font-bold bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeletingSingle ? "Excluindo..." : "Sim, Excluir Produto"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
