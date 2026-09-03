@@ -123,7 +123,7 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
     { id: "tag", icon: Tag, label: "Etiqueta / Oferta" },
   ];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!nome.trim()) {
       toast.error("O nome da categoria é obrigatório");
       return;
@@ -146,9 +146,9 @@ export function CategoryFormModal({ open, onOpenChange, category, lojaId }: Cate
     };
 
     if (lojaId) {
-      addOrUpdateStoreCategory(lojaId, categoryData);
+      await addOrUpdateStoreCategory(lojaId, categoryData);
     } else {
-      addOrUpdateCategory(categoryData);
+      await addOrUpdateCategory(categoryData);
     }
     
     const isCurrentlyFeatured = effectiveFeaturedCategories.includes(id);

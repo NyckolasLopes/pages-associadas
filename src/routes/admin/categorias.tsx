@@ -3,7 +3,7 @@ import { StoreSelector } from "@/components/admin/StoreSelector";
 import { Search, ChevronDown, Eye, ChevronRight, Folder, FolderOpen, Tag, Star, Trash2, DownloadCloud, RotateCcw, Info, Check, ShieldCheck, Sparkles, Plus, FileUp, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Categoria } from "@/types";
 import { useAdmin } from "@/stores/admin";
@@ -38,8 +38,14 @@ function AdminCategorias() {
   } = useAdmin();
   const { 
     categories: networkCategories, 
-    removeCategory 
+    removeCategory,
+    loadCategories,
+    getStoreCategories
   } = useAdminCategories();
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
   
   const search = Route.useSearch().q || "";
   const setSearch = (q: string) => navigate({ search: { q } as any });
@@ -59,7 +65,7 @@ function AdminCategorias() {
   const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas?.length === 0;
 
   // Effective categories for current view
-  const allCategories: Categoria[] = networkCategories;
+  const allCategories: Categoria[] = getStoreCategories(currentLojaId);
   
   // Effective featured categories (fallback to network if store hasn't customized)
   const effectiveFeaturedCategories = (!isGlobalAdmin && currentLojaId) 

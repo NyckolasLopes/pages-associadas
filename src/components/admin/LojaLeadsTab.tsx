@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLeads } from "@/stores/leads";
 import { 
   Megaphone, 
@@ -31,8 +31,13 @@ import {
 } from "@/components/ui/select";
 
 export function LojaLeadsTab({ lojaId }: { lojaId?: string }) {
-  const { leads, toggleStatus, removeLead } = useLeads();
+  const { leads, toggleStatus, removeLead, loadLeads } = useLeads();
   const { currentUser } = useAdmin();
+
+  useEffect(() => {
+    loadLeads();
+  }, [loadLeads]);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
   const [activeTab, setActiveTab] = useState<"leads" | "espera">("leads");

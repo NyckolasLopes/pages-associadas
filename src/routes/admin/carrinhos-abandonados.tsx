@@ -74,8 +74,10 @@ export function PedidosAdmin() {
     
   const isGlobalAdmin = () => {
     if (currentUser?.proprietario) return true;
+    if (currentUser?.grupoId === "grupo-admin") return true;
+    if (!currentUser?.lojasVinculadas || currentUser.lojasVinculadas.length === 0) return true;
     const userGroup = grupos.find(g => g.id === currentUser?.grupoId);
-    return userGroup?.permissao_total || false;
+    return userGroup?.permissao_total || userGroup?.permissoes?.includes("*") || false;
   };
 
   const isGlobalView = isGlobalAdmin() && !activeStoreId;

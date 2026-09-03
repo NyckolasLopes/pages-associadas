@@ -33,19 +33,10 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
   loadCarts: async (lojaId?: string) => {
     set({ isLoading: true });
     try {
-      // Limpa registros legados de visitantes sem user_id se existirem
-      try {
-        await supabase
-          .from('carrinhos_abandonados' as any)
-          .delete()
-          .is('user_id', null);
-      } catch {}
-
       let query = supabase
         .from('carrinhos_abandonados' as any)
         .select('*')
         .eq('status', 'abandonado')
-        .not('user_id', 'is', null)
         .order('updated_at', { ascending: false });
 
       if (lojaId) {
@@ -62,7 +53,6 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
       const pharmacies = useAdmin.getState().pharmacies || [];
 
       const mapped: AbandonedCart[] = (data || [])
-        .filter((row: any) => row.user_id && row.user_id !== 'null' && row.nome_cliente !== 'Cliente Visitante')
         .map((row: any) => {
           const loja = pharmacies.find(p => p.id === row.loja_id);
           const lojaNome = loja?.nome || (loja?.categoriaAssociado === 'Parceiro' ? 'Loja Parceira' : 'Farmácias Associadas');

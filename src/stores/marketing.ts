@@ -312,7 +312,7 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
 
     // 3. Persiste no Supabase cupons table
     try {
-      const dbCoupon = {
+      const dbCoupon: any = {
         codigo: newCoupon.codigo,
         descricao: newCoupon.descricao,
         ativo: newCoupon.ativo,
@@ -329,11 +329,12 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
         uso_unico: newCoupon.usoUnico,
         cupom_primeira_compra: newCoupon.cupomPrimeiraCompra,
         numero_utilizacoes: 0,
-        loja_id: newCoupon.lojaId || null,
-        tipo_alvo: newCoupon.tipoAlvo || "todos",
-        alvos_id: newCoupon.alvosId || []
+        loja_id: newCoupon.lojaId || null
       };
-      const { data: inserted } = await supabase.from('cupons' as any).insert(dbCoupon).select().single();
+      const { data: inserted, error: insertError } = await supabase.from('cupons' as any).insert(dbCoupon).select().single();
+      if (insertError) {
+        console.warn("Erro ao inserir cupom na tabela cupons:", insertError.message);
+      }
       if (inserted?.id) {
         const realId = String(inserted.id);
         const cuponsWithRealId = get().cupons.map(c =>
@@ -433,8 +434,6 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       if (updatedFields.usoUnico !== undefined) dbUpdate.uso_unico = updatedFields.usoUnico;
       if (updatedFields.cupomPrimeiraCompra !== undefined) dbUpdate.cupom_primeira_compra = updatedFields.cupomPrimeiraCompra;
       if (updatedFields.numeroUtilizacoes !== undefined) dbUpdate.numero_utilizacoes = updatedFields.numeroUtilizacoes;
-      if (updatedFields.tipoAlvo !== undefined) dbUpdate.tipo_alvo = updatedFields.tipoAlvo;
-      if (updatedFields.alvosId !== undefined) dbUpdate.alvos_id = updatedFields.alvosId;
 
       const isLocalId = id.startsWith('cupom-');
       if (isLocalId) {
@@ -474,9 +473,7 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
                 uso_unico: currentFull.usoUnico,
                 cupom_primeira_compra: currentFull.cupomPrimeiraCompra,
                 numero_utilizacoes: currentFull.numeroUtilizacoes || 0,
-                loja_id: currentFull.lojaId || null,
-                tipo_alvo: currentFull.tipoAlvo || "todos",
-                alvos_id: currentFull.alvosId || []
+                loja_id: currentFull.lojaId || null
               };
               const { data: inserted } = await supabase.from('cupons' as any).insert(insertData).select().maybeSingle();
               if (inserted?.id) {

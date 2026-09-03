@@ -138,11 +138,11 @@ function ClientesAdmin() {
     customers.forEach((c) => {
       const cleanPhone = (c.telefone || "").replace(/\D/g, "");
       const cleanEmail = (c.email || "").toLowerCase().trim();
-      const targetLojaId = (c as any).lojaId || "1";
+      const targetLojaId = (c as any).lojaId || undefined;
       const key = `${cleanPhone || cleanEmail || c.id}`;
 
-      const loja = pharmacies.find((p) => p.id === targetLojaId);
-      const lojaNome = loja?.nome || (c as any).lojaNome || (loja?.categoriaAssociado === 'Parceiro' ? `Loja Parceira #${targetLojaId}` : `Farmácias Associadas #${targetLojaId}`);
+      const loja = targetLojaId ? pharmacies.find((p) => p.id === targetLojaId) : null;
+      const lojaNome = loja?.nome || (c as any).lojaNome || (targetLojaId ? `Loja ${targetLojaId}` : "Rede Geral");
 
       customerMap.set(key, {
         id: c.id,
@@ -173,11 +173,11 @@ function ClientesAdmin() {
 
       const cleanPhone = (order.cliente.telefone || "").replace(/\D/g, "");
       const cleanEmail = (order.cliente.email || "").toLowerCase().trim();
-      const orderLojaId = order.lojaId || "1";
+      const orderLojaId = order.lojaId || undefined;
       const key = `${cleanPhone || cleanEmail || order.cliente.nome}`;
 
-      const loja = pharmacies.find((p) => p.id === orderLojaId);
-      const lojaNome = loja?.nome || order.lojaNome || (loja?.categoriaAssociado === 'Parceiro' ? `Loja Parceira #${orderLojaId}` : `Farmácias Associadas #${orderLojaId}`);
+      const loja = orderLojaId ? pharmacies.find((p) => p.id === orderLojaId) : null;
+      const lojaNome = loja?.nome || order.lojaNome || (orderLojaId ? `Loja ${orderLojaId}` : "Rede Geral");
       const orderTotal = Number(order.valores?.total || 0);
       const orderData = order.data || new Date().toISOString();
       const itensCount = (order.produtos || order.itens || []).reduce((acc, it) => acc + (it.qtd || it.quantidade || 1), 0);

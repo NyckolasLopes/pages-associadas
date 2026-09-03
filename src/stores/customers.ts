@@ -22,84 +22,7 @@ export interface Customer {
   enderecos?: any[];
 }
 
-export const INITIAL_CUSTOMERS: Customer[] = [
-  {
-    id: "c1",
-    nome: "Nyckolas Lopes",
-    email: "nyckolas.lopes@gmail.com",
-    telefone: "(51) 98173-1656",
-    cpf: "600.117.090-81",
-    endereco: "Rua Dos Andradas, 59",
-    cidade: "Porto Alegre",
-    uf: "RS",
-    cep: "90020-015",
-    dataCadastro: "10/05/2026",
-    metodoLogin: "Google",
-    totalPedidos: 12,
-    valorUltimoPedido: 148.50,
-    anotacoes: "Cliente frequente.",
-    enderecos: [
-      { logradouro: "Rua Dos Andradas", numero: "59", bairro: "Centro", cidade: "Porto Alegre", estado: "RS", cep: "90020-015", principal: true }
-    ]
-  },
-  {
-    id: "c2",
-    nome: "Maria Oliveira",
-    email: "maria.oliveira@gmail.com",
-    telefone: "(11) 99822-3444",
-    cpf: "123.456.789-00",
-    endereco: "Av Paulista, 1000",
-    cidade: "São Paulo",
-    uf: "SP",
-    cep: "01310-100",
-    dataCadastro: "15/06/2026",
-    metodoLogin: "Email",
-    totalPedidos: 3,
-    valorUltimoPedido: 64.90,
-    anotacoes: "Cliente cadastrada no e-commerce.",
-    enderecos: [
-      { logradouro: "Av Paulista", numero: "1000", bairro: "Bela Vista", cidade: "São Paulo", estado: "SP", cep: "01310-100", principal: true }
-    ]
-  },
-  {
-    id: "c3",
-    nome: "João Silva",
-    email: "joao.silva@hotmail.com",
-    telefone: "(53) 99123-4567",
-    cpf: "000.111.222-33",
-    endereco: "Rua Quinze de Novembro, 200",
-    cidade: "Pelotas",
-    uf: "RS",
-    cep: "96015-000",
-    dataCadastro: "02/07/2026",
-    metodoLogin: "Facebook",
-    totalPedidos: 1,
-    valorUltimoPedido: 39.90,
-    anotacoes: "Primeira compra via Facebook Ads.",
-    enderecos: [
-      { logradouro: "Rua Quinze de Novembro", numero: "200", bairro: "Centro", cidade: "Pelotas", estado: "RS", cep: "96015-000", principal: true }
-    ]
-  },
-  {
-    id: "c4",
-    nome: "Ana Paula Souza",
-    email: "anapaula.apple@icloud.com",
-    telefone: "(21) 98765-4321",
-    cpf: "333.444.555-66",
-    endereco: "Rua Copacabana, 50",
-    cidade: "Rio de Janeiro",
-    uf: "RJ",
-    cep: "22020-001",
-    dataCadastro: "20/06/2026",
-    metodoLogin: "Apple",
-    totalPedidos: 5,
-    valorUltimoPedido: 215.00,
-    anotacoes: "Cliente frequente via aplicativo.",
-    enderecos: [
-      { logradouro: "Rua Copacabana", numero: "50", bairro: "Copacabana", cidade: "Rio de Janeiro", estado: "RJ", cep: "22020-001", principal: true }
-    ]
-  },
-];
+export const INITIAL_CUSTOMERS: Customer[] = [];
 
 interface CustomersStore {
   customers: Customer[];
@@ -110,7 +33,7 @@ interface CustomersStore {
 }
 
 export const useCustomers = create<CustomersStore>((set, get) => ({
-  customers: INITIAL_CUSTOMERS,
+  customers: [],
   loadCustomers: async () => {
     try {
       // Buscar perfis reais do banco de dados (Supabase)
@@ -151,16 +74,10 @@ export const useCustomers = create<CustomersStore>((set, get) => ({
           return !(profile?.is_admin || profile?.grupo_id);
         });
 
-        // Unifica os clientes reais do banco com a base inicial sem duplicar
-        const combined = [...clientesReais];
-        INITIAL_CUSTOMERS.forEach(init => {
-          if (!combined.some(c => (c.email || "").toLowerCase().trim() === init.email.toLowerCase().trim())) {
-            combined.push(init);
-          }
-        });
-
-        set({ customers: combined });
+        set({ customers: clientesReais });
         return;
+      } else {
+        set({ customers: [] });
       }
     } catch (e) {
       console.warn("Erro ao carregar clientes do banco:", e);

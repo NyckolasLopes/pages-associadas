@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Lead {
   id: string;
@@ -12,88 +13,87 @@ export interface Lead {
   lojaNome?: string;
 }
 
-const INITIAL_LEADS: Lead[] = [
-  {
-    id: "l1",
-    email: "nyckolas.lopes@gmail.com",
-    nome: "Nyckolas",
-    dataCadastro: "10/05/2026 14:30",
-    origem: "Newsletter",
-    status: "Ativo",
-    lojaId: "loja-1",
-    lojaNome: "Farmácia Associadas - Centro",
-  },
-  {
-    id: "l2",
-    email: "contato.maria@empresa.com",
-    dataCadastro: "12/06/2026 09:15",
-    origem: "Newsletter",
-    status: "Ativo",
-    lojaId: "loja-2",
-    lojaNome: "Farmácia Associadas - Zona Sul",
-  },
-  {
-    id: "l3",
-    email: "joao.silva@hotmail.com",
-    nome: "João Silva",
-    dataCadastro: "02/07/2026 11:20",
-    origem: "Newsletter",
-    status: "Inativo",
-    lojaId: "loja-1",
-    lojaNome: "Farmácia Associadas - Centro",
-  },
-  {
-    id: "l4",
-    email: "anapaula.apple@icloud.com",
-    dataCadastro: "18/06/2026 18:45",
-    origem: "Newsletter",
-    status: "Ativo"
-  },
-  {
-    id: "l5",
-    email: "contato@agenciavtx.com.br",
-    nome: "Agência VTX",
-    dataCadastro: "25/06/2026 10:00",
-    origem: "Newsletter",
-    status: "Ativo"
-  }
-];
+export const INITIAL_LEADS: Lead[] = [];
 
 interface LeadsStore {
   leads: Lead[];
-  addLead: (lead: Omit<Lead, 'id'>) => void;
-  updateLead: (id: string, lead: Partial<Lead>) => void;
-  removeLead: (id: string) => void;
-  toggleStatus: (id: string) => void;
+  loadLeads: () => Promise<void>;
+  addLead: (lead: Omit<Lead, 'id'>) => Promise<void>;
+  updateLead: (id: string, lead: Partial<Lead>) => Promise<void>;
+  removeLead: (id: string) => Promise<void>;
+  toggleStatus: (id: string) => Promise<void>;
 }
 
 export const useLeads = create<LeadsStore>()(
   persist(
-    (set) => ({
-      leads: INITIAL_LEADS,
-      addLead: (lead) =>
-        set((state) => ({ 
-          leads: [{ ...lead, id: Math.random().toString(36).substr(2, 9) }, ...state.leads] 
-        })),
-      updateLead: (id, update) =>
-        set((state) => ({
-          leads: state.leads.map((l) =>
-            l.id === id ? { ...l, ...update } : l
-          ),
-        })),
-      removeLead: (id) =>
-        set((state) => ({
-          leads: state.leads.filter((l) => l.id !== id),
-        })),
-      toggleStatus: (id) =>
-        set((state) => ({
-          leads: state.leads.map((l) => 
-            l.id === id ? { ...l, status: l.status === 'Ativo' ? 'Inativo' : 'Ativo' } : l
-          )
-        }))
+    (set, get) => ({
+      leads: [],
+      loadLeads: async () => {
+        try {
+          const { data } = await supabase.from('app_state' as any).select('value').eq('key', 'leads_data').maybeSingle();
+          if (data?.value && Array.isArray(data.value)) {
+            set({ leads: data.value });
+          }
+        } catch (err) {
+          console.warn("Erro ao carregar leads:", err);
+        }
+      },
+      addLead: async (lead) => {
+        const newLead: Lead = {
+          ...lead,
+          id: Math.random().toString(36).substring(2, 9),
+          dataCadastro: lead.dataCadastro || new Date().toLocaleString('pt-BR'),
+          status: lead.status || 'Ativo',
+          origem: lead.origem || 'Newsletter'
+        };
+        const updated = [newLead, ...get().leads.filter(l => l.email.toLowerCase() !== newLead.email.toLowerCase())];
+        set({ leads: updated });
+        try {
+          await supabase.from('app_state' as any).upsert({
+            key: 'leads_data',
+            value: updated,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' });
+        } catch {}
+      },
+      updateLead: async (id, update) => {
+        const updated = get().leads.map((l) => (l.id === id ? { ...l, ...update } : l));
+        set({ leads: updated });
+        try {
+          await supabase.from('app_state' as any).upsert({
+            key: 'leads_data',
+            value: updated,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' });
+        } catch {}
+      },
+      removeLead: async (id) => {
+        const updated = get().leads.filter((l) => l.id !== id);
+        set({ leads: updated });
+        try {
+          await supabase.from('app_state' as any).upsert({
+            key: 'leads_data',
+            value: updated,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' });
+        } catch {}
+      },
+      toggleStatus: async (id) => {
+        const updated = get().leads.map((l) =>
+          l.id === id ? { ...l, status: (l.status === 'Ativo' ? 'Inativo' : 'Ativo') as 'Ativo' | 'Inativo' } : l
+        );
+        set({ leads: updated });
+        try {
+          await supabase.from('app_state' as any).upsert({
+            key: 'leads_data',
+            value: updated,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' });
+        } catch {}
+      },
     }),
     {
-      name: 'leads-storage',
+      name: 'leads-storage-v2',
     }
   )
 );

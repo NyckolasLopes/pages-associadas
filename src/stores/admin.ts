@@ -1675,16 +1675,35 @@ export const useAdmin = create<AdminState>()(
       togglePharmacyStatus: async (id) => {
         const p = get().pharmacies.find(x => x.id === id);
         if (p) {
-          const { error } = await supabase.from('lojas').update({ ativa: !(p.ativo ?? true) }).eq('id', id);
+          const newStatus = !(p.ativo ?? true);
+          let { error } = await supabase.from('lojas').update({ ativa: newStatus }).eq('id', id);
+          if (error) {
+            try {
+              const res = await fetch('/api/admin/save-pharmacy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, payload: { ativa: newStatus } })
+              });
+              if (res.ok) error = null;
+            } catch {}
+          }
           if (!error) {
-            set((s) => ({ pharmacies: s.pharmacies.map(x => x.id === id ? { ...x, ativo: !(x.ativo ?? true) } : x) }));
+            set((s) => {
+              const updated = s.pharmacies.map(x => x.id === id ? { ...x, ativo: newStatus } : x);
+              saveCachedPharmacies(updated);
+              return { pharmacies: updated };
+            });
           }
         }
       },
       removePharmacy: async (id) => {
         const { error } = await supabase.from('lojas').delete().eq('id', id);
         if (!error) {
-          set((s) => ({ pharmacies: s.pharmacies.filter(x => x.id !== id) }));
+          set((s) => {
+            const updated = s.pharmacies.filter(x => x.id !== id);
+            saveCachedPharmacies(updated);
+            return { pharmacies: updated };
+          });
         }
       },
 

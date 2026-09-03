@@ -447,19 +447,25 @@ function AdminProdutosEstoque() {
                       {activePharmacies.map(loja => {
                         const stock = getStock(p.id, loja.id);
                         const isPending = pendingChanges[p.id]?.[loja.id] !== undefined;
+                        const currentVal = isPending ? pendingChanges[p.id][loja.id] : stock;
                         return (
                           <td key={loja.id} className="p-1 text-center">
                             <input
-                              type="number"
-                              min="0"
-                              value={stock}
-                              onChange={(e) => handleStockChange(p.id, loja.id, e.target.value)}
-                              className={`w-full text-center text-sm py-1.5 px-1 rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={currentVal}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) => {
+                                const clean = e.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+                                handleStockChange(p.id, loja.id, clean);
+                              }}
+                              className={`w-full text-center text-sm py-1.5 px-1 rounded border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
                                 isPending 
-                                  ? 'border-amber-400 bg-amber-50 font-bold text-amber-900' 
+                                  ? 'border-amber-400 bg-amber-50 font-bold text-amber-900 shadow-xs' 
                                   : stock > 0 
-                                    ? 'border-slate-200 bg-white text-slate-700'
-                                    : 'border-slate-200 bg-red-50/50 text-red-400'
+                                    ? 'border-slate-200 bg-white text-slate-700 hover:border-slate-300' 
+                                    : 'border-slate-200 bg-red-50/50 text-red-500 hover:border-slate-300'
                               }`}
                             />
                           </td>
