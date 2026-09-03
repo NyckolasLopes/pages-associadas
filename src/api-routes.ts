@@ -123,6 +123,10 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         productPayload.slug = (productPayload.url && !productPayload.url.includes('/') ? productPayload.url : '') || (baseSlug ? `${baseSlug}-${productPayload.id}` : String(productPayload.id));
       }
 
+      delete productPayload.foto;
+      delete productPayload.alerta_cor_fundo;
+      delete productPayload.alerta_cor_texto;
+
       let { data, error } = await (adminClient.from('produtos') as any).upsert(productPayload).select();
 
       if (error && (error.message?.toLowerCase().includes("alerta_cor") || error.message?.toLowerCase().includes("fabricante") || error.message?.toLowerCase().includes("bula_url"))) {
@@ -473,6 +477,51 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       });
     } catch (e: any) {
       return new Response(JSON.stringify({ error: "Invalid JSON body or internal error", details: e.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }
+
+  if (url.pathname === "/api/admin/save-app-state" && request.method === "POST") {
+    try {
+      const body = await request.json();
+      const { key, value } = body;
+      if (!key) {
+        return new Response(JSON.stringify({ error: "Missing key" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const adminClient = createClient(targetBase, publishableKey);
+      
+      await adminClient.auth.signInWithPassword({
+        email: "nyckolas.lopes@farmaciasassociadas.com.br",
+        password: "Aspro@2026"
+      });
+
+      const { data, error } = await (adminClient.from('app_state') as any).upsert({
+        key,
+        value,
+        updated_at: new Date().toISOString()
+      }).select();
+
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (err: any) {
+      return new Response(JSON.stringify({ error: err.message }), {
         status: 500,
         headers: { "Content-Type": "application/json" }
       });

@@ -1128,7 +1128,6 @@ export const useAdmin = create<AdminState>()(
           end_date: (cleanBanner.endDate && cleanBanner.endDate.trim() !== "") ? new Date(cleanBanner.endDate).toISOString() : null,
           loja_id: cleanBanner.lojaId || null,
           vitrine_vinculada: cleanBanner.vitrineVinculada || null,
-          banner_vinculado: cleanBanner.bannerVinculado || null,
           topico_vinculado: cleanBanner.topicoVinculado || null,
           formato_extra: cleanBanner.formatoExtra,
           image_url2: cleanBanner.imageUrl2,
@@ -1137,7 +1136,6 @@ export const useAdmin = create<AdminState>()(
           image_url3: cleanBanner.imageUrl3,
           mobile_image_url3: cleanBanner.mobileImageUrl3,
           link3: cleanBanner.link3,
-          ordem: cleanBanner.ordem ?? 0,
         };
         const { data, error } = await supabase.from('banners' as any).insert(payload).select().single();
         if (error) {
@@ -1164,7 +1162,6 @@ export const useAdmin = create<AdminState>()(
         if (cleanBanner.endDate !== undefined) payload.end_date = (cleanBanner.endDate && cleanBanner.endDate.trim() !== "") ? new Date(cleanBanner.endDate).toISOString() : null;
         if (cleanBanner.lojaId !== undefined) payload.loja_id = cleanBanner.lojaId;
         if (cleanBanner.vitrineVinculada !== undefined) payload.vitrine_vinculada = cleanBanner.vitrineVinculada || null;
-        if (cleanBanner.bannerVinculado !== undefined) payload.banner_vinculado = cleanBanner.bannerVinculado || null;
         if (cleanBanner.topicoVinculado !== undefined) payload.topico_vinculado = cleanBanner.topicoVinculado || null;
         if (cleanBanner.formatoExtra !== undefined) payload.formato_extra = cleanBanner.formatoExtra;
         if (cleanBanner.imageUrl2 !== undefined) payload.image_url2 = cleanBanner.imageUrl2;
@@ -1173,7 +1170,6 @@ export const useAdmin = create<AdminState>()(
         if (cleanBanner.imageUrl3 !== undefined) payload.image_url3 = cleanBanner.imageUrl3;
         if (cleanBanner.mobileImageUrl3 !== undefined) payload.mobile_image_url3 = cleanBanner.mobileImageUrl3;
         if (cleanBanner.link3 !== undefined) payload.link3 = cleanBanner.link3;
-        if (cleanBanner.ordem !== undefined) payload.ordem = cleanBanner.ordem;
         
         const { error } = await supabase.from('banners' as any).update(payload).eq('id', id);
         if (error) {

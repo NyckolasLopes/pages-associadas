@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { idbStorage } from "@/lib/idb";
+import { supabaseStorage } from "@/lib/supabaseStorage";
 
 export interface Question {
   id: string;
@@ -15,34 +15,30 @@ export interface Question {
 
 interface QuestionsState {
   questions: Question[];
+  loadQuestions: () => Promise<void>;
   addQuestion: (q: Omit<Question, "id" | "data">) => void;
   answerQuestion: (id: string, resposta: string) => void;
   deleteQuestion: (id: string) => void;
 }
 
-const MOCK_QUESTIONS: Question[] = [
-  {
-    id: "q1",
-    produtoId: "563003",
-    produtoNome: "NEVRALGEX 300MG + 50MG + 35MG COM 10 COMPRIMIDOS",
-    clienteNome: "João Silva",
-    pergunta: "Qual é a data de validade desse lote?",
-    data: "2026-07-01T10:00:00Z"
-  },
-  {
-    id: "q2",
-    produtoId: "558600",
-    produtoNome: "DIAD 1.5MG COM 1 COMPRIMIDO",
-    clienteNome: "Maria Souza",
-    pergunta: "Como devo tomar este medicamento?",
-    data: "2026-07-05T14:30:00Z"
-  }
-];
-
 export const useQuestions = create<QuestionsState>()(
   persist(
-    (set) => ({
-      questions: MOCK_QUESTIONS,
+    (set, get) => ({
+      questions: [],
+      loadQuestions: async () => {
+        try {
+          const raw = await supabaseStorage.getItem("fa-questions-storage");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const stateData = parsed.state || parsed;
+            if (stateData.questions && Array.isArray(stateData.questions)) {
+              set({ questions: stateData.questions });
+            }
+          }
+        } catch (e) {
+          console.warn("Erro ao carregar perguntas compartilhadas:", e);
+        }
+      },
       addQuestion: (q) =>
         set((state) => ({
           questions: [
@@ -62,8 +58,9 @@ export const useQuestions = create<QuestionsState>()(
         })),
     }),
     { 
-      name: "fa-questions",
-      storage: createJSONStorage(() => idbStorage)
+      name: "fa-questions-storage",
+      storage: createJSONStorage(() => supabaseStorage)
     }
   )
 );
+

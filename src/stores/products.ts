@@ -372,6 +372,9 @@ export const useAdminProducts = create<ProductsState>()(
         (formattedProduct as any).slug = finalSlug;
 
         const mainPhoto = formattedProduct.foto || (Array.isArray(formattedProduct.imagens) && formattedProduct.imagens[0] ? (formattedProduct.imagens[0].caminhoImagem || formattedProduct.imagens[0]) : null) || null;
+        const imagensPayload = Array.isArray(formattedProduct.imagens) && formattedProduct.imagens.length > 0
+          ? formattedProduct.imagens
+          : (mainPhoto ? [{ caminhoImagem: mainPhoto }] : []);
 
         // Supabase DB Update
         let upsertPayload: any = {
@@ -381,7 +384,6 @@ export const useAdminProducts = create<ProductsState>()(
           eans_secundarios: formattedProduct.eansSecundarios || [],
           nome: formattedProduct.nome,
           descricao: formattedProduct.descricao || null,
-          foto: mainPhoto,
           marca: formattedProduct.marca || null,
           fabricante: formattedProduct.fabricante || null,
           bula_url: formattedProduct.bulaUrl || (formattedProduct as any).bula_url || null,
@@ -392,14 +394,14 @@ export const useAdminProducts = create<ProductsState>()(
           tarja: formattedProduct.tarja || null,
           retem_receita: formattedProduct.retemReceita || false,
           generico: isGen,
-          possui_imagem: formattedProduct.possuiImagem || false,
+          possui_imagem: formattedProduct.possuiImagem || (imagensPayload.length > 0),
           categoria_id: formattedProduct.categoriaId || null,
           subcategoria_id: formattedProduct.subcategoriaId || null,
           categorias_adicionais: formattedProduct.categoriasAdicionais || formattedProduct.categoriasIds || [],
           subcategorias_adicionais: formattedProduct.subcategoriasIds || [],
           internal_tags: Array.from(allTags),
           principios_ativos: formattedProduct.principiosAtivos || [],
-          imagens: formattedProduct.imagens || [],
+          imagens: imagensPayload,
           video_url: formattedProduct.videoUrl || null,
           destaque: formattedProduct.destaque || false,
           ativo: formattedProduct.ativo !== false,
@@ -417,8 +419,6 @@ export const useAdminProducts = create<ProductsState>()(
           meta_description: formattedProduct.metaDescription || formattedProduct.seoDescricao || null,
           alerta_regulatorio: formattedProduct.alertaRegulatorio === true,
           alerta_texto: formattedProduct.alertaTexto || null,
-          alerta_cor_fundo: formattedProduct.alertaCorFundo || "#fffbeb",
-          alerta_cor_texto: formattedProduct.alertaCorTexto || "#78350f",
           tipo_receita: formattedProduct.tipoReceita || null,
           resumo_descricao: formattedProduct.resumoDescricao || null,
           termos_pesquisa: formattedProduct.termosPesquisa || null,
@@ -429,12 +429,7 @@ export const useAdminProducts = create<ProductsState>()(
         };
 
         let { error } = await (supabase.from('produtos') as any).upsert(upsertPayload);
-        if (error && (error.message?.toLowerCase().includes("alerta_cor") || error.message?.toLowerCase().includes("fabricante") || error.message?.toLowerCase().includes("bula_url"))) {
-          // Fallback resiliente se as novas colunas ainda não tiverem sido criadas no Supabase remoto
-          if (error.message?.toLowerCase().includes("alerta_cor")) {
-            delete upsertPayload.alerta_cor_fundo;
-            delete upsertPayload.alerta_cor_texto;
-          }
+        if (error && (error.message?.toLowerCase().includes("fabricante") || error.message?.toLowerCase().includes("bula_url"))) {
           if (error.message?.toLowerCase().includes("fabricante")) {
             delete upsertPayload.fabricante;
           }

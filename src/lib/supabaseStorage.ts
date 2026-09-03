@@ -30,29 +30,38 @@ function scheduleSupabaseWrite(name: string, parsedValue: any) {
     if (val === undefined) return;
 
     try {
-      // Somente tenta salvar estado compartilhado no banco se houver sessão autenticada
+      let saved = false;
       const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session) {
-        return;
+      if (sessionData?.session) {
+        const { error } = await supabase
+          // @ts-ignore
+          .from('app_state')
+          .upsert({
+            // @ts-ignore
+            key: name,
+            value: val,
+            updated_at: new Date().toISOString(),
+          });
+
+        if (!error) {
+          saved = true;
+        }
       }
 
-      const { error } = await supabase
-        // @ts-ignore
-        .from('app_state')
-        .upsert({
-          // @ts-ignore
-          key: name,
-          value: val,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (error && error.code !== '42501') {
-        console.error(`Erro ao salvar estado '${name}' no Supabase:`, error);
+      // Se não conseguiu via cliente direto (ex: sem sessão ou bloqueio RLS), aciona fallback do backend
+      if (!saved && typeof window !== 'undefined') {
+        try {
+          await fetch('/api/admin/save-app-state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: name, value: val })
+          });
+        } catch (apiErr) {}
       }
     } catch (err) {
       // Fallback silencioso
     }
-  }, 2000); // 2 segundos de debounce
+  }, 1500);
 
   pendingWrites.set(name, timer);
 }

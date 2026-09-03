@@ -68,7 +68,12 @@ export function ProductFilterSidebar({
   const currentPharmacy = storeSlug ? pharmacies.find(p => p.slug === storeSlug || (p.cidade && p.cidade.toLowerCase().replace(/[^a-z0-9]+/g, '-') === storeSlug)) : null;
   const lojaId = currentPharmacy?.id;
 
-  const { getStoreFiltros, filtros: defaultFiltros } = useAdminFiltros();
+  const { getStoreFiltros, filtros: defaultFiltros, loadFiltros } = useAdminFiltros();
+
+  useEffect(() => {
+    if (loadFiltros) loadFiltros();
+  }, [loadFiltros]);
+
   const storeFiltros = getStoreFiltros ? getStoreFiltros(lojaId) : defaultFiltros;
   const filtros = (storeFiltros && storeFiltros.length > 0) ? storeFiltros : (defaultFiltros || []);
 

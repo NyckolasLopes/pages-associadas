@@ -613,11 +613,11 @@ export const useMarketing = create<MarketingStore>((set, get) => ({
       leve_pague_quantidade: promocao.levePague_quantidade,
       leve_pague_preco_por_item: promocao.levePague_precoPorItem,
       produtos_config: conf,
-      cor_selo: promocao.corSelo,
-      corIcone: promocao.corIcone,
-      corTextoBotao: promocao.corTextoBotao,
-      corBotao: promocao.corBotao,
-      texto_botao: promocao.textoBotao,
+      cor_selo: promocao.corSelo || null,
+      cor_icone: promocao.corIcone || null,
+      cor_texto_botao: promocao.corTextoBotao || null,
+      cor_botao: promocao.corBotao || null,
+      texto_botao: promocao.textoBotao || null,
       loja_id: promocao.lojaId || null
     };
 

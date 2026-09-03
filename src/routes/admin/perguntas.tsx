@@ -12,7 +12,7 @@ export const Route = createFileRoute("/admin/perguntas")({
 });
 
 function AdminPerguntas() {
-  const { questions, answerQuestion, deleteQuestion } = useQuestions();
+  const { questions, answerQuestion, deleteQuestion, loadQuestions } = useQuestions();
   const [answeringId, setAnsweringId] = useState<string | null>(null);
   const [resposta, setResposta] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -20,7 +20,8 @@ function AdminPerguntas() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (loadQuestions) loadQuestions();
+  }, [loadQuestions]);
 
   const pendingQuestions = questions.filter(q => !q.resposta);
   const answeredQuestions = questions.filter(q => q.resposta);
