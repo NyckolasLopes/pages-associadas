@@ -718,7 +718,7 @@ export function generateTemplate() {
 
 // ---- Generate Template JSON (.JSON) ----
 export function generateJsonTemplate() {
-  const jsonSample = SAMPLE_ROWS.map(row => {
+  const jsonSample = SAMPLE_ROWS.slice(0, 1).map(row => {
     const obj: Record<string, any> = {};
     HEADERS_OFICIAIS.forEach((header, idx) => {
       obj[header] = row[idx] !== undefined ? row[idx] : "";
@@ -729,7 +729,7 @@ export function generateJsonTemplate() {
   const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonSample, null, 2));
   const dlAnchorElem = document.createElement("a");
   dlAnchorElem.setAttribute("href", dataStr);
-  dlAnchorElem.setAttribute("download", "modelo_produtos_completo.json");
+  dlAnchorElem.setAttribute("download", "modelo_produto_exemplo.json");
   document.body.appendChild(dlAnchorElem);
   dlAnchorElem.click();
   document.body.removeChild(dlAnchorElem);

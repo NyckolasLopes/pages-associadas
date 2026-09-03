@@ -445,7 +445,7 @@ function AdminProdutos() {
   const handleDownloadJsonTemplate = async () => {
     await runWithMassLoading({
       title: "Gerando Modelo JSON (.json)",
-      message: "Gerando modelo estruturado JSON de produtos com os 35 campos oficiais...",
+      message: "Gerando modelo estruturado JSON com exemplo de 1 produto e os 35 campos oficiais...",
       icon: "download"
     }, async () => {
       generateJsonTemplate();
