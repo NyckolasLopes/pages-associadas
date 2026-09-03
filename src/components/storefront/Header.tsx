@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScannerModal } from "./BarcodeScannerModal";
+import { VoiceSearchModal } from "./VoiceSearchModal";
 import { PBMAuthModal } from "@/components/storefront/PBMAuthModal";
 import { useSmartSticky } from "@/hooks/useSmartSticky";
 import { Logo } from "@/components/Logo";
@@ -213,123 +214,17 @@ export function Header() {
   const [isGeoLoading, setIsGeoLoading] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
-  const [isListening, setIsListening] = useState(false);
 
-  const [micBlockedOpen, setMicBlockedOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
-  const handleVoiceSearch = async () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast.error("Seu navegador não suporta pesquisa por voz. Use Chrome ou Edge.");
-      return;
-    }
-    if (isListening) return;
-
-    // Verifica estado da permissão antes de tentar (evita falha silenciosa)
-    try {
-      const permStatus = await navigator.permissions.query({ name: "microphone" as PermissionName });
-      if (permStatus.state === "denied") {
-        setMicBlockedOpen(true);
-        return;
-      }
-    } catch {
-      // navigator.permissions não disponível — continua normalmente
-    }
-
-    // Solicita permissão explicitamente para disparar o popup nativo do browser
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((t) => t.stop());
-    } catch (err: any) {
-      const name = err?.name || "";
-      if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
-        setMicBlockedOpen(true);
-      } else {
-        toast.error("Não foi possível acessar o microfone. Verifique seu dispositivo.");
-      }
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "pt-BR";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false;
-    setIsListening(true);
-    recognition.start();
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setQ(transcript);
-      setSearchOpen(true);
-      setIsListening(false);
-    };
-    recognition.onerror = (event: any) => {
-      setIsListening(false);
-      const code = event?.error || "";
-      if (code === "not-allowed" || code === "service-not-allowed") {
-        setMicBlockedOpen(true);
-      } else if (code === "network") {
-        toast.error("Sem conexão para reconhecimento de voz. Verifique sua internet.");
-      } else if (code === "no-speech" || code === "aborted" || code === "audio-capture") {
-        // Silêncio ou cancelamento — sem toast
-      } else {
-        toast.error("Não foi possível reconhecer a voz. Tente novamente.");
-      }
-    };
-    recognition.onend = () => {
-      setIsListening(false);
-    };
+  const handleVoiceSearch = () => {
+    setVoiceOpen(true);
   };
 
-  // Modal de instrução para desbloquear o microfone no browser
-  const MicBlockedModal = micBlockedOpen ? (
-    <div
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      onClick={() => setMicBlockedOpen(false)}
-    >
-      <div
-        className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 animate-in slide-in-from-bottom-4 duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
-            <Mic className="w-5 h-5 text-red-500" />
-          </div>
-          <div>
-            <h3 className="font-bold text-base">Microfone bloqueado</h3>
-            <p className="text-xs text-muted-foreground">Siga os passos para ativar</p>
-          </div>
-        </div>
-
-        <ol className="space-y-2.5 text-sm text-foreground/90 mb-5">
-          <li className="flex gap-2.5 items-start">
-            <span className="w-5 h-5 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-            <span>Clique no ícone <strong>🔒</strong> (cadeado) na barra de endereços do navegador</span>
-          </li>
-          <li className="flex gap-2.5 items-start">
-            <span className="w-5 h-5 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
-            <span>Procure <strong>"Microfone"</strong> na lista de permissões do site</span>
-          </li>
-          <li className="flex gap-2.5 items-start">
-            <span className="w-5 h-5 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
-            <span>Se não aparecer, vá em <strong>Configurações do site</strong> → <strong>Microfone</strong> e remova o bloqueio</span>
-          </li>
-          <li className="flex gap-2.5 items-start">
-            <span className="w-5 h-5 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
-            <span><strong>Recarregue a página</strong> e tente novamente</span>
-          </li>
-        </ol>
-
-        <button
-          type="button"
-          onClick={() => setMicBlockedOpen(false)}
-          className="w-full py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:opacity-90 transition active:scale-95"
-        >
-          Entendido
-        </button>
-      </div>
-    </div>
-  ) : null;
+  const handleVoiceResult = (transcript: string) => {
+    setQ(transcript);
+    setSearchOpen(true);
+  };
 
   const handleCheckoutClick = () => {
     if (!useAuth.getState().user) {
@@ -576,7 +471,11 @@ export function Header() {
 
   return (
     <>
-      {MicBlockedModal}
+      <VoiceSearchModal
+        open={voiceOpen}
+        onClose={() => setVoiceOpen(false)}
+        onResult={handleVoiceResult}
+      />
       <BarcodeScannerModal 
         open={scannerOpen} 
         onOpenChange={(open) => {
@@ -683,9 +582,9 @@ export function Header() {
                     aria-label="Pesquisar por voz"
                     onClick={handleVoiceSearch}
                     className={`text-muted-foreground hover:text-primary transition-colors ${
-                      isListening ? "text-red-500 animate-pulse" : ""
+                      voiceOpen ? "text-red-500 animate-pulse" : ""
                     }`}
-                    style={isParceiro ? { color: isListening ? undefined : 'var(--search-icon, var(--muted-foreground))' } : undefined}
+                    style={isParceiro ? { color: voiceOpen ? undefined : 'var(--search-icon, var(--muted-foreground))' } : undefined}
                   >
                     <Mic className="h-4 w-4" />
                   </button>
@@ -976,7 +875,7 @@ export function Header() {
                         aria-label="Pesquisar por voz"
                         onClick={handleVoiceSearch}
                         className={`transition-colors ${
-                          isListening ? "text-red-500 animate-pulse" : "text-primary"
+                          voiceOpen ? "text-red-500 animate-pulse" : "text-primary"
                         }`}
                       >
                         <Mic className="h-5 w-5" />

@@ -501,31 +501,12 @@ function ProductCardComponent({
         >
           {isService ? (
             <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-teal-600" />
-          ) : (
-            <ShoppingBasket className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${inCartQty > 0 ? "text-white" : ""}`} />
-          )}
-          {!isService && (
-            <span 
-              className={`absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[9px] font-black shadow-xs transition-transform duration-200 ${
-                inCartQty > 0 
-                  ? "bg-red-600 text-white scale-110" 
-                  : "bg-primary text-white"
-              }`}
-            >
-              {inCartQty > 0 ? inCartQty : "+"}
+          ) : inCartQty > 0 ? (
+            <span className="text-white font-black text-[11px] leading-none">
+              {inCartQty > 99 ? "99+" : inCartQty}
             </span>
-          )}
-
-          {/* Barrinha de carregamento rápido (cerca de 3 segundos) no botão */}
-          {justAdded && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20 overflow-hidden">
-              <div 
-                className="h-full bg-emerald-400"
-                style={{
-                  animation: 'cartBtnProgress 3s linear forwards'
-                }}
-              />
-            </div>
+          ) : (
+            <ShoppingBasket className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           )}
         </button>
       </div>
