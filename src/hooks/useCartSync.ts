@@ -9,37 +9,6 @@ export function useCartSync() {
   const selectedPharmacyId = useCart(s => s.selectedPharmacyId);
   const { user } = useAuth();
   const syncTimeout = useRef<any>(undefined);
-  const initialRestoreDone = useRef(false);
-
-  // 1. Restaura carrinho ao fazer login caso o carrinho local esteja vazio
-  useEffect(() => {
-    if (user?.id && !initialRestoreDone.current) {
-      initialRestoreDone.current = true;
-      (supabase
-        .from('carrinhos_abandonados' as any) as any)
-        .select('items, id')
-        .eq('user_id', user.id)
-        .eq('status', 'abandonado')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .then(({ data, error }: any) => {
-          if (error) {
-            console.error("Erro ao verificar carrinho anterior:", error);
-            return;
-          }
-          const cart = data?.[0];
-          if (cart && cart.items && Array.isArray(cart.items) && cart.items.length > 0) {
-            if (useCart.getState().items.length === 0) {
-              useCart.getState().restoreCart(cart.items);
-            }
-          }
-        });
-    }
-
-    if (!user?.id) {
-      initialRestoreDone.current = false;
-    }
-  }, [user?.id]);
 
   // 2. Sincroniza em tempo real as alterações do carrinho com o Supabase (EXCLUSIVAMENTE para clientes logados)
   useEffect(() => {
@@ -59,14 +28,16 @@ export function useCartSync() {
 
         let safeItems: any[] = [];
         if (Array.isArray(items)) {
-          safeItems = items.map((item: any) => ({
-            id: item.id,
-            nome: item.nome || item.name || "Produto",
-            qtd: item.qtd || item.quantidade || 1,
-            valorUnitario: item.precoPor || item.preco || item.price || 0,
-            foto: item.foto || item.imagem || item.image || "",
-            ean: item.ean || "",
-          }));
+          safeItems = items
+            .filter((item: any) => item && item.id && (Number(item.qty || item.qtd || 0) > 0))
+            .map((item: any) => ({
+              id: item.id,
+              nome: item.nome || item.name || "Produto",
+              qtd: item.qty || item.qtd || item.quantidade || 1,
+              valorUnitario: item.precoPor || item.preco || item.price || 0,
+              foto: item.foto || item.imagem || item.image || "",
+              ean: item.ean || "",
+            }));
         }
 
         // Se o carrinho foi esvaziado, atualiza status para recuperado

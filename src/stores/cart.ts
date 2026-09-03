@@ -129,6 +129,33 @@ export function getEffectivePrice(item: any, pharmacyId: string | null): { preco
   return { precoPor, precoDe };
 }
 
+export function sanitizeCartItem(item: any): CartItem | null {
+  if (!item || typeof item !== "object" || !item.id || !item.nome) return null;
+  const rawQty = Number(item.qty || item.qtd || item.quantidade || 0);
+  if (!rawQty || isNaN(rawQty) || rawQty <= 0) return null;
+
+  const preco = Number(item.preco ?? item.precoPor ?? item.valorUnitario ?? 0);
+  const precoDe = Number(item.precoDe ?? item.de ?? preco);
+
+  return {
+    id: String(item.id),
+    nome: String(item.nome),
+    preco: isNaN(preco) ? 0 : preco,
+    precoDe: isNaN(precoDe) ? preco : precoDe,
+    ean: item.ean || "",
+    possuiImagem: !!item.possuiImagem,
+    qty: rawQty,
+    retemReceita: !!item.retemReceita,
+    tarja: String(item.tarja || ""),
+    categoriaId: String(item.categoriaId || ""),
+    subcategoriaId: item.subcategoriaId ? String(item.subcategoriaId) : undefined,
+    generico: !!item.generico,
+    estoque: Number(item.estoque || 999),
+    precosPorLoja: item.precosPorLoja || undefined,
+    isOrderBump: !!item.isOrderBump,
+  };
+}
+
 interface CartState {
   items: CartItem[];
   notifications: { id: string; oldPrice: number; newPrice: number; storeName: string }[];
@@ -291,16 +318,21 @@ export const useCart = create<CartState>()(
         }),
       clearNotifications: () => set({ notifications: [] }),
       clear: () => set({ items: [], appliedCoupon: null, lastUpdatedAt: null }),
-      restoreCart: (items) => set({ items, lastUpdatedAt: Date.now() }),
+      restoreCart: (items) => {
+        const clean = (Array.isArray(items) ? items : [])
+          .map(sanitizeCartItem)
+          .filter((i): i is CartItem => i !== null);
+        set({ items: clean, lastUpdatedAt: Date.now() });
+      },
       setDrawer: (open) => set({ drawerOpen: open }),
       connectPbm: (c) => set({ pbm: c }),
       disconnectPbm: () => set({ pbm: null }),
-      count: () => get().items.reduce((a, i) => a + i.qty, 0),
+      count: () => get().items.reduce((a, i) => a + (Number(i.qty) || 0), 0),
       subtotal: () => {
         const pid = get().selectedPharmacyId;
         return get().items.reduce((a, i) => {
           const { precoDe } = getEffectivePrice(i, pid);
-          return a + i.qty * (precoDe || i.preco);
+          return a + (Number(i.qty) || 0) * (precoDe || i.preco || 0);
         }, 0);
       },
       storeDiscount: () => {
@@ -398,7 +430,17 @@ export const useCart = create<CartState>()(
         return Math.max(0, s.subtotal() - s.storeDiscount() - s.pbmDiscount() - s.couponDiscount());
       },
     }),
-    { name: "fa-cart", skipHydration: true },
+    { 
+      name: "fa-cart", 
+      skipHydration: true,
+      onRehydrateStorage: () => (state) => {
+        if (state && Array.isArray(state.items)) {
+          state.items = state.items
+            .map(sanitizeCartItem)
+            .filter((i): i is CartItem => i !== null);
+        }
+      }
+    },
   ),
 );
 

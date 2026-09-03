@@ -429,7 +429,7 @@ function Checkout() {
     fretePrice = 0;
   }
 
-  const visibleItems = mounted ? items : [];
+  const visibleItems = mounted ? items.filter(i => i && i.id && Number(i.qty) > 0) : [];
   const orderBumpDiscount = visibleItems.reduce((acc, i) => {
     if (i.isOrderBump) {
       return acc + ((i.precoDe - i.preco) * i.qty);

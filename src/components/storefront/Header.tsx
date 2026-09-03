@@ -1767,9 +1767,10 @@ function CartDrawer({ onCheckoutClick, storeSlug }: { onCheckoutClick: () => voi
             </Button>
           </div>
         )}
-        {items.map((i) => {
+        {items.filter(i => i && i.id && Number(i.qty) > 0).map((i) => {
           const fakeStock = getDeterministicStock(i, selectedPharmacyId!);
           const scarce = fakeStock > 0 && fakeStock <= 5;
+          const itemQty = Number(i.qty) || 1;
           return (
           <div key={i.id} className="py-4 flex gap-3">
             <img
@@ -1791,20 +1792,20 @@ function CartDrawer({ onCheckoutClick, storeSlug }: { onCheckoutClick: () => voi
                 <div className="flex items-center gap-1.5">
                   <button 
                     onClick={() => {
-                      if (i.qty <= 1) {
+                      if (itemQty <= 1) {
                         toast.info("Atenção", { description: "Clique no botão 'Remover' para limpar seu carrinho." });
                       } else {
-                        setQty(i.id, i.qty - 1);
+                        setQty(i.id, itemQty - 1);
                       }
                     }} 
                     className="h-8 w-8 border rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                   >
                     −
                   </button>
-                  <div className="w-8 text-center text-sm font-bold text-slate-800">{i.qty}</div>
+                  <div className="w-8 text-center text-sm font-bold text-slate-800">{itemQty}</div>
                   <button 
-                    onClick={() => setQty(i.id, i.qty + 1)} 
-                    disabled={i.qty >= i.estoque}
+                    onClick={() => setQty(i.id, itemQty + 1)} 
+                    disabled={itemQty >= (i.estoque || 999)}
                     className="h-8 w-8 border rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     +
@@ -1823,9 +1824,9 @@ function CartDrawer({ onCheckoutClick, storeSlug }: { onCheckoutClick: () => voi
               const ep = getEffectivePrice(i, selectedPharmacyId);
               const lojaPromos = selectedPharmacyId ? (useMarketing.getState().lojaPromocoes[selectedPharmacyId] || []) : [];
               const promo = getLevePaguePromotion(i, promocoes, lojaPromos);
-              if (promo && i.qty >= promo.levePague_quantidade) {
-                const promoItemsCount = Math.floor(i.qty / promo.levePague_quantidade) * promo.levePague_quantidade;
-                const regularItemsCount = i.qty - promoItemsCount;
+              if (promo && itemQty >= promo.levePague_quantidade) {
+                const promoItemsCount = Math.floor(itemQty / promo.levePague_quantidade) * promo.levePague_quantidade;
+                const regularItemsCount = itemQty - promoItemsCount;
                 const promoTotal = promoItemsCount * promo.levePague_precoPorItem!;
                 const regularTotal = regularItemsCount * ep.precoPor;
                 const totalWithPromo = promoTotal + regularTotal;
@@ -1833,12 +1834,12 @@ function CartDrawer({ onCheckoutClick, storeSlug }: { onCheckoutClick: () => voi
                 return (
                   <div className="flex flex-col items-end">
                     <div className="text-sm font-bold text-foreground">{brl(totalWithPromo)}</div>
-                    <div className="text-[10px] text-muted-foreground line-through">{brl(ep.precoPor * i.qty)}</div>
+                    <div className="text-[10px] text-muted-foreground line-through">{brl(ep.precoPor * itemQty)}</div>
                     <div className="text-[9px] font-bold text-orange-600">Promoção aplicada!</div>
                   </div>
                 );
               }
-              return <div className="text-sm font-bold text-foreground">{brl(ep.precoPor * i.qty)}</div>;
+              return <div className="text-sm font-bold text-foreground">{brl(ep.precoPor * itemQty)}</div>;
             })()}
           </div>
         )})}

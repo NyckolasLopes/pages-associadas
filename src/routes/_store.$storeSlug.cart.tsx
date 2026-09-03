@@ -1318,8 +1318,8 @@ function CartPage() {
             )}
           </div>
 
-          {items.map((i) => {
-            const low = i.qty >= 3 || Math.random() < 0; // scarcity trigger
+          {items.filter(i => i && i.id && Number(i.qty) > 0).map((i) => {
+            const low = (Number(i.qty) || 1) >= 3 || Math.random() < 0; // scarcity trigger
             const fakeStock = 3 + (parseInt(i.id, 10) % 5);
             const scarce = fakeStock <= 5;
             return (
