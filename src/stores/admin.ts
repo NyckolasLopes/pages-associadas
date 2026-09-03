@@ -1486,103 +1486,161 @@ export const useAdmin = create<AdminState>()(
       },
       updatePharmacy: async (id, p) => {
         const s = get();
-        const currentPharmacy = s.pharmacies.find(x => x.id === id);
+        let currentPharmacy = s.pharmacies.find(x => x.id === id);
+
+        // Busca dados reais e atualizados do banco para nunca enviar campos vazios ou nulos
+        let dbLoja: any = null;
+        let dbThemeColors: any = {};
+        try {
+          const { data } = await supabase.from('lojas').select('*').eq('id', id).maybeSingle();
+          if (data) {
+            dbLoja = data;
+            dbThemeColors = typeof data.theme_colors === 'string' ? JSON.parse(data.theme_colors) : (data.theme_colors || {});
+          }
+        } catch (e) {
+          console.warn("Aviso ao buscar loja no banco:", e);
+        }
+
         const updatedColors = p.themeColors !== undefined ? p.themeColors : (currentPharmacy?.themeColors || {});
         const theme_colors_payload = {
+          ...dbThemeColors,
           ...(currentPharmacy?.themeColors || {}),
           ...(updatedColors || {}),
-          apelido: p.apelido !== undefined ? p.apelido : currentPharmacy?.apelido,
-          slug: p.slug,
-          complemento: p.complemento,
-          sistemaUtilizado: p.sistemaUtilizado,
-          offersServices: p.offersServices,
-          footer_plataforma_texto: p.footerPlataformaTexto,
-          footer_descricao: p.footerDescricao,
-          customPages: p.customPages,
-          footer_titulo_contato: p.footerTituloContato,
-          social_links: p.socialLinks,
-          topBarText: p.topBarText,
-          topBarBgColor: p.topBarBgColor,
-          topBarTextColor: p.topBarTextColor,
-          pageTitle: p.pageTitle,
-          metaDescription: p.metaDescription,
-          seoDescricao: p.seoDescricao,
-          facebookPixelId: p.facebookPixelId,
-          googleAnalyticsId: p.googleAnalyticsId,
-          googleTagManagerId: p.googleTagManagerId,
-          whatsapp: p.whatsapp,
-          logoUrl: p.logoUrl,
-          faviconUrl: p.faviconUrl,
-          loadingLogoUrl: p.loadingLogoUrl,
-          footerLogoUrl: p.footerLogoUrl,
-          anvisaLogoUrl: p.anvisaLogoUrl,
-          horario_funcionamento: p.horarioFuncionamento,
-          diasFuncionamento: p.diasFuncionamento,
-            horariosPorDia: p.horariosPorDia,
-            datasEspeciais: p.datasEspeciais,
-          farmaceutico_responsavel: p.respTecnico,
-          crf: p.inscricaoFarmaceutico,
-          alvara_sanitario: p.alvara,
-          afe: p.afe,
-          entrega_expressa: p.entregaExpressa,
-          status_loja_virtual: p.virtualStoreStatus,
-          categoria_associado: p.categoriaAssociado,
-          trabalha_com_encarte: p.trabalhaComEncarte,
-          aceitaEntrega: p.aceitaEntrega,
-          modeloFrete: p.modeloFrete,
-          horarioInicioEntrega: p.horarioInicioEntrega,
-          horarioFimEntrega: p.horarioFimEntrega,
-          horarioFimEntregaRisco: p.horarioFimEntregaRisco,
-          tempoEntrega: p.tempoEntrega,
-          custoEntrega: p.custoEntrega,
-          raioEntregaKm: p.raioEntregaKm,
-          faixasCep: p.faixasCep,
-          aceitaRetirada: p.aceitaRetirada,
-          horarioInicioRetirada: p.horarioInicioRetirada,
-          horarioFimRetirada: p.horarioFimRetirada,
-          tempoRetirada: p.tempoRetirada,
-          aceitaUber: p.aceitaUber,
-          custoUber: p.custoUber,
-          aceita99: p.aceita99,
-          custo99: p.custo99,
-          aceitaMotoboy: p.aceitaMotoboy,
-          custoMotoboy: p.custoMotoboy,
-          custoEntregaExpressa: p.custoEntregaExpressa,
-          raiosEntrega: p.raiosEntrega,
-          faixasValorPedido: p.faixasValorPedido,
-          meiosEntregaPersonalizados: p.meiosEntregaPersonalizados,
+          apelido: p.apelido !== undefined ? p.apelido : (currentPharmacy?.apelido || dbThemeColors?.apelido),
+          slug: p.slug !== undefined ? p.slug : (currentPharmacy?.slug || dbThemeColors?.slug),
+          complemento: p.complemento !== undefined ? p.complemento : (currentPharmacy?.complemento || dbThemeColors?.complemento),
+          sistemaUtilizado: p.sistemaUtilizado !== undefined ? p.sistemaUtilizado : (currentPharmacy?.sistemaUtilizado || dbThemeColors?.sistemaUtilizado),
+          offersServices: p.offersServices !== undefined ? p.offersServices : (currentPharmacy?.offersServices ?? dbThemeColors?.offersServices),
+          footer_plataforma_texto: p.footerPlataformaTexto !== undefined ? p.footerPlataformaTexto : (currentPharmacy?.footerPlataformaTexto || dbThemeColors?.footer_plataforma_texto),
+          footer_descricao: p.footerDescricao !== undefined ? p.footerDescricao : (currentPharmacy?.footerDescricao || dbThemeColors?.footer_descricao),
+          customPages: p.customPages !== undefined ? p.customPages : (currentPharmacy?.customPages || dbThemeColors?.customPages),
+          footer_titulo_contato: p.footerTituloContato !== undefined ? p.footerTituloContato : (currentPharmacy?.footerTituloContato || dbThemeColors?.footer_titulo_contato),
+          social_links: p.socialLinks !== undefined ? p.socialLinks : (currentPharmacy?.socialLinks || dbThemeColors?.social_links),
+          topBarText: p.topBarText !== undefined ? p.topBarText : (currentPharmacy?.topBarText || dbThemeColors?.topBarText),
+          topBarBgColor: p.topBarBgColor !== undefined ? p.topBarBgColor : (currentPharmacy?.topBarBgColor || dbThemeColors?.topBarBgColor),
+          topBarTextColor: p.topBarTextColor !== undefined ? p.topBarTextColor : (currentPharmacy?.topBarTextColor || dbThemeColors?.topBarTextColor),
+          pageTitle: p.pageTitle !== undefined ? p.pageTitle : (currentPharmacy?.pageTitle || dbThemeColors?.pageTitle),
+          metaDescription: p.metaDescription !== undefined ? p.metaDescription : (currentPharmacy?.metaDescription || dbThemeColors?.metaDescription),
+          seoDescricao: p.seoDescricao !== undefined ? p.seoDescricao : (currentPharmacy?.seoDescricao || dbThemeColors?.seoDescricao),
+          facebookPixelId: p.facebookPixelId !== undefined ? p.facebookPixelId : (currentPharmacy?.facebookPixelId || dbThemeColors?.facebookPixelId),
+          googleAnalyticsId: p.googleAnalyticsId !== undefined ? p.googleAnalyticsId : (currentPharmacy?.googleAnalyticsId || dbThemeColors?.googleAnalyticsId),
+          googleTagManagerId: p.googleTagManagerId !== undefined ? p.googleTagManagerId : (currentPharmacy?.googleTagManagerId || dbThemeColors?.googleTagManagerId),
+          whatsapp: p.whatsapp !== undefined ? p.whatsapp : (currentPharmacy?.whatsapp || dbThemeColors?.whatsapp),
+          logoUrl: p.logoUrl !== undefined ? p.logoUrl : (currentPharmacy?.logoUrl || dbThemeColors?.logoUrl),
+          faviconUrl: p.faviconUrl !== undefined ? p.faviconUrl : (currentPharmacy?.faviconUrl || dbThemeColors?.faviconUrl),
+          loadingLogoUrl: p.loadingLogoUrl !== undefined ? p.loadingLogoUrl : (currentPharmacy?.loadingLogoUrl || dbThemeColors?.loadingLogoUrl),
+          footerLogoUrl: p.footerLogoUrl !== undefined ? p.footerLogoUrl : (currentPharmacy?.footerLogoUrl || dbThemeColors?.footerLogoUrl),
+          anvisaLogoUrl: p.anvisaLogoUrl !== undefined ? p.anvisaLogoUrl : (currentPharmacy?.anvisaLogoUrl || dbThemeColors?.anvisaLogoUrl),
+          horario_funcionamento: p.horarioFuncionamento !== undefined ? p.horarioFuncionamento : (currentPharmacy?.horarioFuncionamento || dbThemeColors?.horario_funcionamento),
+          diasFuncionamento: p.diasFuncionamento !== undefined ? p.diasFuncionamento : (currentPharmacy?.diasFuncionamento || dbThemeColors?.diasFuncionamento),
+          horariosPorDia: p.horariosPorDia !== undefined ? p.horariosPorDia : (currentPharmacy?.horariosPorDia || dbThemeColors?.horariosPorDia),
+          datasEspeciais: p.datasEspeciais !== undefined ? p.datasEspeciais : (currentPharmacy?.datasEspeciais || dbThemeColors?.datasEspeciais),
+          farmaceutico_responsavel: p.respTecnico !== undefined ? p.respTecnico : (currentPharmacy?.respTecnico || dbThemeColors?.farmaceutico_responsavel),
+          crf: p.inscricaoFarmaceutico !== undefined ? p.inscricaoFarmaceutico : (currentPharmacy?.inscricaoFarmaceutico || dbThemeColors?.crf),
+          alvara_sanitario: p.alvara !== undefined ? p.alvara : (currentPharmacy?.alvara || dbThemeColors?.alvara_sanitario),
+          afe: p.afe !== undefined ? p.afe : (currentPharmacy?.afe || dbThemeColors?.afe),
+          entrega_expressa: p.entregaExpressa !== undefined ? p.entregaExpressa : (currentPharmacy?.entregaExpressa ?? dbThemeColors?.entrega_expressa),
+          status_loja_virtual: p.virtualStoreStatus !== undefined ? p.virtualStoreStatus : (currentPharmacy?.virtualStoreStatus || dbThemeColors?.status_loja_virtual),
+          categoria_associado: p.categoriaAssociado !== undefined ? p.categoriaAssociado : (currentPharmacy?.categoriaAssociado || dbThemeColors?.categoria_associado),
+          trabalha_com_encarte: p.trabalhaComEncarte !== undefined ? p.trabalhaComEncarte : (currentPharmacy?.trabalhaComEncarte ?? dbThemeColors?.trabalha_com_encarte),
+          aceitaEntrega: p.aceitaEntrega !== undefined ? p.aceitaEntrega : (currentPharmacy?.aceitaEntrega ?? dbThemeColors?.aceitaEntrega),
+          modeloFrete: p.modeloFrete !== undefined ? p.modeloFrete : (currentPharmacy?.modeloFrete || dbThemeColors?.modeloFrete),
+          horarioInicioEntrega: p.horarioInicioEntrega !== undefined ? p.horarioInicioEntrega : (currentPharmacy?.horarioInicioEntrega || dbThemeColors?.horarioInicioEntrega),
+          horarioFimEntrega: p.horarioFimEntrega !== undefined ? p.horarioFimEntrega : (currentPharmacy?.horarioFimEntrega || dbThemeColors?.horarioFimEntrega),
+          horarioFimEntregaRisco: p.horarioFimEntregaRisco !== undefined ? p.horarioFimEntregaRisco : (currentPharmacy?.horarioFimEntregaRisco || dbThemeColors?.horarioFimEntregaRisco),
+          tempoEntrega: p.tempoEntrega !== undefined ? p.tempoEntrega : (currentPharmacy?.tempoEntrega || dbThemeColors?.tempoEntrega),
+          custoEntrega: p.custoEntrega !== undefined ? p.custoEntrega : (currentPharmacy?.custoEntrega ?? dbThemeColors?.custoEntrega),
+          raioEntregaKm: p.raioEntregaKm !== undefined ? p.raioEntregaKm : (currentPharmacy?.raioEntregaKm ?? dbThemeColors?.raioEntregaKm),
+          faixasCep: p.faixasCep !== undefined ? p.faixasCep : (currentPharmacy?.faixasCep || dbThemeColors?.faixasCep),
+          aceitaRetirada: p.aceitaRetirada !== undefined ? p.aceitaRetirada : (currentPharmacy?.aceitaRetirada ?? dbThemeColors?.aceitaRetirada),
+          horarioInicioRetirada: p.horarioInicioRetirada !== undefined ? p.horarioInicioRetirada : (currentPharmacy?.horarioInicioRetirada || dbThemeColors?.horarioInicioRetirada),
+          horarioFimRetirada: p.horarioFimRetirada !== undefined ? p.horarioFimRetirada : (currentPharmacy?.horarioFimRetirada || dbThemeColors?.horarioFimRetirada),
+          tempoRetirada: p.tempoRetirada !== undefined ? p.tempoRetirada : (currentPharmacy?.tempoRetirada || dbThemeColors?.tempoRetirada),
+          aceitaUber: p.aceitaUber !== undefined ? p.aceitaUber : (currentPharmacy?.aceitaUber ?? dbThemeColors?.aceitaUber),
+          custoUber: p.custoUber !== undefined ? p.custoUber : (currentPharmacy?.custoUber ?? dbThemeColors?.custoUber),
+          aceita99: p.aceita99 !== undefined ? p.aceita99 : (currentPharmacy?.aceita99 ?? dbThemeColors?.aceita99),
+          custo99: p.custo99 !== undefined ? p.custo99 : (currentPharmacy?.custo99 ?? dbThemeColors?.custo99),
+          aceitaMotoboy: p.aceitaMotoboy !== undefined ? p.aceitaMotoboy : (currentPharmacy?.aceitaMotoboy ?? dbThemeColors?.aceitaMotoboy),
+          custoMotoboy: p.custoMotoboy !== undefined ? p.custoMotoboy : (currentPharmacy?.custoMotoboy ?? dbThemeColors?.custoMotoboy),
+          custoEntregaExpressa: p.custoEntregaExpressa !== undefined ? p.custoEntregaExpressa : (currentPharmacy?.custoEntregaExpressa ?? dbThemeColors?.custoEntregaExpressa),
+          raiosEntrega: p.raiosEntrega !== undefined ? p.raiosEntrega : (currentPharmacy?.raiosEntrega || dbThemeColors?.raiosEntrega),
+          faixasValorPedido: p.faixasValorPedido !== undefined ? p.faixasValorPedido : (currentPharmacy?.faixasValorPedido || dbThemeColors?.faixasValorPedido),
+          meiosEntregaPersonalizados: p.meiosEntregaPersonalizados !== undefined ? p.meiosEntregaPersonalizados : (currentPharmacy?.meiosEntregaPersonalizados || dbThemeColors?.meiosEntregaPersonalizados),
         };
 
-        const baseUpdatePayload = {
-          ativa: p.ativo !== undefined ? p.ativo : (currentPharmacy?.ativo ?? true),
-          categoria_associado: p.categoriaAssociado || currentPharmacy?.categoriaAssociado || "Pleno",
-          trabalha_com_encarte: p.trabalhaComEncarte !== undefined ? p.trabalhaComEncarte : (currentPharmacy?.trabalhaComEncarte ?? true),
-          cnpj: p.cnpj || currentPharmacy?.cnpj || null,
-          razao_social: p.razaoSocial || currentPharmacy?.razaoSocial || null,
-          nome_fantasia: p.nome || currentPharmacy?.nome || null,
-          email: p.email !== undefined ? p.email : (currentPharmacy?.email || null),
-          telefone: p.telefone !== undefined ? p.telefone : (currentPharmacy?.telefone || null),
-          horario_funcionamento: p.horarioFuncionamento || currentPharmacy?.horarioFuncionamento || null,
-          farmaceutico_responsavel: p.respTecnico || currentPharmacy?.respTecnico || null,
-          crf: p.inscricaoFarmaceutico || currentPharmacy?.inscricaoFarmaceutico || null,
-          alvara_sanitario: p.alvara || currentPharmacy?.alvara || null,
-          afe: p.afe || currentPharmacy?.afe || null,
-          cep: p.cep || currentPharmacy?.cep || null,
-          logradouro: p.endereco || currentPharmacy?.endereco || null,
-          numero: p.numero || currentPharmacy?.numero || null,
-          bairro: p.bairro || currentPharmacy?.bairro || null,
-          cidade: p.cidade || currentPharmacy?.cidade || null,
-          estado: p.uf || currentPharmacy?.uf || null,
-          whatsapp: p.whatsapp !== undefined ? p.whatsapp : (currentPharmacy?.whatsapp || ""),
+        const baseUpdatePayload: Record<string, any> = {
           theme_colors: theme_colors_payload,
-          logo_url: p.logoUrl !== undefined ? (p.logoUrl || null) : (currentPharmacy?.logoUrl || null),
-          favicon_url: p.faviconUrl !== undefined ? (p.faviconUrl || null) : (currentPharmacy?.faviconUrl || null),
-          latitude: p.lat !== undefined ? p.lat : (currentPharmacy?.latitude || null),
-          longitude: p.lng !== undefined ? p.lng : (currentPharmacy?.longitude || null),
-          entrega_expressa: p.entregaExpressa !== undefined ? p.entregaExpressa : (currentPharmacy?.entregaExpressa ?? false),
-          status_loja_virtual: p.virtualStoreStatus || currentPharmacy?.virtualStoreStatus || "Ativa",
-          sistema_utilizado: p.sistemaUtilizado || currentPharmacy?.sistemaUtilizado || "SPA",
         };
+
+        const finalCnpj = p.cnpj || currentPharmacy?.cnpj || dbLoja?.cnpj;
+        if (finalCnpj) baseUpdatePayload.cnpj = finalCnpj;
+
+        const finalRazao = p.razaoSocial || currentPharmacy?.razaoSocial || dbLoja?.razao_social;
+        if (finalRazao) baseUpdatePayload.razao_social = finalRazao;
+
+        const finalNome = p.nome || currentPharmacy?.nome || dbLoja?.nome_fantasia;
+        if (finalNome) baseUpdatePayload.nome_fantasia = finalNome;
+
+        const finalCep = p.cep || currentPharmacy?.cep || dbLoja?.cep;
+        if (finalCep) baseUpdatePayload.cep = finalCep;
+
+        const finalEndereco = p.endereco || currentPharmacy?.endereco || dbLoja?.logradouro;
+        if (finalEndereco) baseUpdatePayload.logradouro = finalEndereco;
+
+        const finalNumero = p.numero || currentPharmacy?.numero || dbLoja?.numero;
+        if (finalNumero) baseUpdatePayload.numero = finalNumero;
+
+        const finalBairro = p.bairro || currentPharmacy?.bairro || dbLoja?.bairro;
+        if (finalBairro) baseUpdatePayload.bairro = finalBairro;
+
+        const finalCidade = p.cidade || currentPharmacy?.cidade || dbLoja?.cidade;
+        if (finalCidade) baseUpdatePayload.cidade = finalCidade;
+
+        const finalEstado = p.uf || currentPharmacy?.uf || dbLoja?.estado;
+        if (finalEstado) baseUpdatePayload.estado = finalEstado;
+
+        if (p.ativo !== undefined) baseUpdatePayload.ativa = p.ativo;
+        else if (currentPharmacy?.ativo !== undefined) baseUpdatePayload.ativa = currentPharmacy.ativo;
+        else if (dbLoja?.ativa !== undefined) baseUpdatePayload.ativa = dbLoja.ativa;
+
+        const finalCategoria = p.categoriaAssociado || currentPharmacy?.categoriaAssociado || dbLoja?.categoria_associado;
+        if (finalCategoria) baseUpdatePayload.categoria_associado = finalCategoria;
+
+        if (p.trabalhaComEncarte !== undefined) baseUpdatePayload.trabalha_com_encarte = p.trabalhaComEncarte;
+        else if (currentPharmacy?.trabalhaComEncarte !== undefined) baseUpdatePayload.trabalha_com_encarte = currentPharmacy.trabalhaComEncarte;
+        else if (dbLoja?.trabalha_com_encarte !== undefined) baseUpdatePayload.trabalha_com_encarte = dbLoja.trabalha_com_encarte;
+
+        if (p.email !== undefined) baseUpdatePayload.email = p.email;
+        else if (dbLoja?.email) baseUpdatePayload.email = dbLoja.email;
+
+        if (p.telefone !== undefined) baseUpdatePayload.telefone = p.telefone;
+        else if (dbLoja?.telefone) baseUpdatePayload.telefone = dbLoja.telefone;
+
+        if (p.horarioFuncionamento !== undefined) baseUpdatePayload.horario_funcionamento = p.horarioFuncionamento;
+        else if (dbLoja?.horario_funcionamento) baseUpdatePayload.horario_funcionamento = dbLoja.horario_funcionamento;
+
+        if (p.respTecnico !== undefined) baseUpdatePayload.farmaceutico_responsavel = p.respTecnico;
+        else if (dbLoja?.farmaceutico_responsavel) baseUpdatePayload.farmaceutico_responsavel = dbLoja.farmaceutico_responsavel;
+
+        if (p.inscricaoFarmaceutico !== undefined) baseUpdatePayload.crf = p.inscricaoFarmaceutico;
+        else if (dbLoja?.crf) baseUpdatePayload.crf = dbLoja.crf;
+
+        if (p.alvara !== undefined) baseUpdatePayload.alvara_sanitario = p.alvara;
+        else if (dbLoja?.alvara_sanitario) baseUpdatePayload.alvara_sanitario = dbLoja.alvara_sanitario;
+
+        if (p.afe !== undefined) baseUpdatePayload.afe = p.afe;
+        else if (dbLoja?.afe) baseUpdatePayload.afe = dbLoja.afe;
+
+        if (p.whatsapp !== undefined) baseUpdatePayload.whatsapp = p.whatsapp;
+        else if (dbLoja?.whatsapp) baseUpdatePayload.whatsapp = dbLoja.whatsapp;
+
+        if (p.logoUrl !== undefined) baseUpdatePayload.logo_url = p.logoUrl || null;
+        if (p.faviconUrl !== undefined) baseUpdatePayload.favicon_url = p.faviconUrl || null;
+        if (p.lat !== undefined) baseUpdatePayload.latitude = p.lat;
+        if (p.lng !== undefined) baseUpdatePayload.longitude = p.lng;
+        if (p.entregaExpressa !== undefined) baseUpdatePayload.entrega_expressa = p.entregaExpressa;
+        if (p.virtualStoreStatus || dbLoja?.status_loja_virtual) baseUpdatePayload.status_loja_virtual = p.virtualStoreStatus || dbLoja?.status_loja_virtual;
+        if (p.sistemaUtilizado || dbLoja?.sistema_utilizado) baseUpdatePayload.sistema_utilizado = p.sistemaUtilizado || dbLoja?.sistema_utilizado;
 
         let { error } = await supabase.from('lojas').update(baseUpdatePayload as any).eq('id', id);
 

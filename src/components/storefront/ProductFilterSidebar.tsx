@@ -12,7 +12,40 @@ import { FilterOptions } from "@/services/catalog";
 import { useState, useEffect } from "react";
 import type { Produto } from "@/types";
 import { useAdminFiltros } from "@/stores/filtros";
+import { useAdmin } from "@/stores/admin";
+import { useParams } from "@tanstack/react-router";
 import { SlidersHorizontal } from "lucide-react";
+
+function parsePriceRange(option: { id: string; nome: string }): { id: string; label: string; min?: number; max?: number } {
+  const name = option.nome.trim();
+
+  // Pattern 1: Range like "R$ 50,00 a R$ 99,99" or "50 a 100" or "50 - 100"
+  const rangeMatch = name.match(/(?:de\s*)?(?:r\$\s*)?([0-9]+(?:[.,][0-9]{1,2})?)\s*(?:a|at[eé]|-)\s*(?:r\$\s*)?([0-9]+(?:[.,][0-9]{1,2})?)/i);
+  if (rangeMatch) {
+    const min = parseFloat(rangeMatch[1].replace(',', '.'));
+    const max = parseFloat(rangeMatch[2].replace(',', '.'));
+    return { id: option.id, label: name, min, max };
+  }
+
+  // Pattern 2: Upper open range like "Acima de R$ 150,00" or "Maior que 100" or "> 100"
+  const acimaMatch = name.match(/(?:acima\s*de|maior\s*que|a\s*partir\s*de|mais\s*de|>|>=)\s*(?:r\$\s*)?([0-9]+(?:[.,][0-9]{1,2})?)/i);
+  if (acimaMatch) {
+    const min = parseFloat(acimaMatch[1].replace(',', '.'));
+    return { id: option.id, label: name, min, max: undefined };
+  }
+
+  // Pattern 3: Lower range like "Até R$ 29,99" or "Abaixo de 30" or "<= 29.99" or "29,99"
+  const ateMatch = name.match(/^(?:at[eé]|abaixo\s*de|menor\s*que|<|<=)?\s*(?:r\$\s*)?([0-9]+(?:[.,][0-9]{1,2})?)$/i);
+  if (ateMatch) {
+    const max = parseFloat(ateMatch[1].replace(',', '.'));
+    const label = name.toLowerCase().includes('até') || name.toLowerCase().includes('ate') 
+      ? name 
+      : `Até R$ ${parseFloat(ateMatch[1].replace(',', '.')).toFixed(2).replace('.', ',')}`;
+    return { id: option.id, label, min: undefined, max };
+  }
+
+  return { id: option.id, label: name, min: undefined, max: undefined };
+}
 
 interface ProductFilterSidebarProps {
   unfilteredProducts: Produto[];
@@ -29,11 +62,30 @@ export function ProductFilterSidebar({
   className = "",
   isCategory = false
 }: ProductFilterSidebarProps) {
-  const { filtros } = useAdminFiltros();
+  const params = useParams({ strict: false }) as any;
+  const storeSlug = params?.storeSlug;
+  const { pharmacies } = useAdmin();
+  const currentPharmacy = storeSlug ? pharmacies.find(p => p.slug === storeSlug || (p.cidade && p.cidade.toLowerCase().replace(/[^a-z0-9]+/g, '-') === storeSlug)) : null;
+  const lojaId = currentPharmacy?.id;
+
+  const { getStoreFiltros, filtros: defaultFiltros } = useAdminFiltros();
+  const storeFiltros = getStoreFiltros ? getStoreFiltros(lojaId) : defaultFiltros;
+  const filtros = (storeFiltros && storeFiltros.length > 0) ? storeFiltros : (defaultFiltros || []);
+
   const [mobileOpen, setMobileOpen] = useState(false);
-  const showPrice = filtros.find(f => f.id === 'price')?.buscavel ?? true;
+  const priceFiltro = filtros.find(f => f.id === 'price');
+  const showPrice = priceFiltro?.buscavel ?? true;
   const showBrand = filtros.find(f => f.id === 'brand')?.buscavel ?? true;
   const filtrosDinamicos = filtros.filter(f => f.buscavel && !['price', 'brand'].includes(f.id));
+
+  const priceRanges = (priceFiltro?.opcoes && priceFiltro.opcoes.length > 0)
+    ? priceFiltro.opcoes.map(parsePriceRange)
+    : [
+        { id: "p1", label: "Até R$ 49,99", min: undefined, max: 49.99 },
+        { id: "p2", label: "R$ 50,00 a R$ 99,99", min: 50, max: 99.99 },
+        { id: "p3", label: "R$ 100,00 a R$ 149,99", min: 100, max: 149.99 },
+        { id: "p4", label: "Acima de R$ 150,00", min: 150, max: undefined }
+      ];
 
   const [localPrice, setLocalPrice] = useState<{ min?: string, max?: string }>({
     min: currentFilters.minPrice?.toString() || "",
@@ -106,15 +158,10 @@ export function ProductFilterSidebar({
               <Button size="sm" className="h-8 px-2.5 font-bold" onClick={applyPriceFilter}>Ok</Button>
             </div>
             <div className="space-y-2">
-              {[
-                { label: "Até R$ 49,99", min: undefined, max: 49.99 },
-                { label: "R$ 50,00 a R$ 99,99", min: 50, max: 99.99 },
-                { label: "R$ 100,00 a R$ 149,99", min: 100, max: 149.99 },
-                { label: "Acima de R$ 150,00", min: 150, max: undefined }
-              ].map((range, i) => {
+              {priceRanges.map((range, i) => {
                 const isActive = currentFilters.minPrice === range.min && currentFilters.maxPrice === range.max;
                 return (
-                  <div key={i} className="flex items-center space-x-2">
+                  <div key={range.id || i} className="flex items-center space-x-2">
                     <Checkbox 
                       id={`${idPrefix}-price-${i}`} 
                       checked={isActive}
