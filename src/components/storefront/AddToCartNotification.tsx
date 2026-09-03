@@ -74,13 +74,13 @@ export function AddToCartNotification() {
         }}
       >
         <div
-          className="relative bg-emerald-600 text-white rounded-2xl shadow-2xl border border-emerald-400/30 overflow-hidden"
-          style={{ boxShadow: "0 8px 32px rgba(16,185,129,0.35), 0 2px 8px rgba(0,0,0,0.18)" }}
+          className="relative text-white rounded-2xl shadow-2xl border overflow-hidden"
+          style={{ backgroundColor: '#008000', borderColor: 'rgba(0,128,0,0.35)', boxShadow: '0 8px 32px rgba(0,128,0,0.35), 0 2px 8px rgba(0,0,0,0.18)' }}
         >
           {/* Conteúdo */}
           <div className="flex items-center gap-3 px-4 py-3 pr-10">
             {/* Ícone */}
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/25 shadow-inner">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border shadow-inner" style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.25)' }}>
               <CheckCircle2 className="w-5 h-5 text-white" />
             </div>
 
@@ -90,7 +90,7 @@ export function AddToCartNotification() {
                 Adicionado ao carrinho!
               </p>
               {notification.productName && (
-                <p className="text-xs text-emerald-100 mt-0.5 truncate opacity-90 max-w-[200px] sm:max-w-[240px]">
+                <p className="text-xs mt-0.5 truncate opacity-90 max-w-[200px] sm:max-w-[240px]" style={{ color: '#b3ffb3' }}>
                   {notification.productName}
                 </p>
               )}
