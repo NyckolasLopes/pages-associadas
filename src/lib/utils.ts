@@ -12,7 +12,7 @@ export function toTitleCase(str: string) {
 
 export function getCityFromCep(cep: string, pharmacies?: { cep: string, cidade: string }[]): string {
   if (!cep || !pharmacies || pharmacies.length === 0) return "Porto Alegre";
-  const userCepNum = parseInt(cep.replace(/\D/g, ""), 10);
+  const userCepNum = parseInt(String(cep || "").replace(/\D/g, ""), 10);
   if (isNaN(userCepNum)) return "Porto Alegre";
   
   let closestCity = pharmacies[0]?.cidade || "Porto Alegre";
@@ -20,7 +20,7 @@ export function getCityFromCep(cep: string, pharmacies?: { cep: string, cidade: 
   
   for (const p of pharmacies) {
     if (!p.cep || !p.cidade) continue;
-    const pCepNum = parseInt(p.cep.replace(/\D/g, ""), 10);
+    const pCepNum = parseInt(String(p.cep || "").replace(/\D/g, ""), 10);
     if (isNaN(pCepNum)) continue;
     const diff = Math.abs(userCepNum - pCepNum);
     if (diff < minDiff) {
@@ -204,6 +204,7 @@ const _pendingPromises: Record<string, Promise<{ lat: number; lng: number } | nu
  * Retorna null se não encontrar.
  */
 export async function getCepCoordinates(cep: string): Promise<{ lat: number; lng: number } | null> {
+  if (!cep || typeof cep !== "string") return null;
   const clean = cep.replace(/\D/g, "");
   if (clean.length !== 8) return null;
   
@@ -212,10 +213,14 @@ export async function getCepCoordinates(cep: string): Promise<{ lat: number; lng
   const promise = getCepCoordsWithFallback(clean);
   _pendingPromises[clean] = promise;
   
-  const result = await promise;
-  delete _pendingPromises[clean];
-  
-  return result;
+  try {
+    const result = await promise;
+    delete _pendingPromises[clean];
+    return result;
+  } catch {
+    delete _pendingPromises[clean];
+    return null;
+  }
 }
 
 /**
@@ -223,13 +228,18 @@ export async function getCepCoordinates(cep: string): Promise<{ lat: number; lng
  * roteando por estrada (ORS) com fallback para Haversine.
  */
 export async function calculateCepDistanceAsync(cep1: string, cep2: string): Promise<number> {
-  const [coords1, coords2] = await Promise.all([
-    getCepCoordinates(cep1),
-    getCepCoordinates(cep2),
-  ]);
-  
-  if (coords1 && coords2) {
-    return getRoadDistanceKm(coords1.lat, coords1.lng, coords2.lat, coords2.lng);
+  if (!cep1 || !cep2) return 1.5;
+  try {
+    const [coords1, coords2] = await Promise.all([
+      getCepCoordinates(cep1),
+      getCepCoordinates(cep2),
+    ]);
+    
+    if (coords1 && coords2) {
+      return getRoadDistanceKm(coords1.lat, coords1.lng, coords2.lat, coords2.lng);
+    }
+  } catch {
+    return 1.5;
   }
   
   // Fallback: se não conseguir as coordenadas, retorna valor genérico

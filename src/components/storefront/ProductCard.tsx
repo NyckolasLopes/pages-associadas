@@ -163,6 +163,7 @@ function ProductCardComponent({
     if (isStoreContext || !cep || pharmacies.length === 0) return;
     let mounted = true;
     Promise.all(pharmacies.map(async (ph) => {
+      if (!ph?.cep || !cep) return { id: ph.id, d: 1.5 };
       const d = await calculateCepDistanceAsync(cep, ph.cep);
       return { id: ph.id, d };
     })).then(results => {
@@ -170,7 +171,7 @@ function ProductCardComponent({
       const dists: Record<string, number> = {};
       results.forEach(r => dists[r.id] = r.d);
       setDistances(dists);
-    });
+    }).catch(() => {});
     return () => { mounted = false; };
   }, [cep, pharmacies, isStoreContext]);
   

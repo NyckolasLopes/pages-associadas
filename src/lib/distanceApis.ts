@@ -109,6 +109,7 @@ const _cepCoordsExtCache: Record<string, { lat: number; lng: number } | null> = 
 export async function getCepCoordsWithFallback(
   cep: string
 ): Promise<{ lat: number; lng: number } | null> {
+  if (!cep || typeof cep !== "string") return null;
   const clean = cep.replace(/\D/g, '');
   if (clean.length !== 8) return null;
   if (clean in _cepCoordsExtCache) return _cepCoordsExtCache[clean];

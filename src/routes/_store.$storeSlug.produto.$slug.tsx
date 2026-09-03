@@ -1454,37 +1454,11 @@ function PDP() {
                         ...(p.tipoReceita ? [{ label: "Tipo de Receita", value: p.tipoReceita }] : []),
                         ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo || "Característica Adicional", value: c.descricao })) : []),
                         ...(p.classificacaoRegistro && p.classificacaoRegistro !== 'none' ? [{ label: "Classificação", value: p.classificacaoRegistro }] : []),
-                        ...(p.categoriasIds && p.categoriasIds.length > 0 ? [
-                          { 
-                            label: "Categorias Adicionais", 
-                            value: p.categoriasIds.map((catId: string, i: number) => {
-                              const cats = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
-                              const cat = cats.find((c: any) => String(c.id) === String(catId));
-                              const subId = p.subcategoriasIds?.[i];
-                              const sub = subId ? cats.find((c: any) => String(c.id) === String(subId)) : null;
-                              if (!cat) return null;
-                              return sub ? `${cat.nome} > ${sub.nome}` : cat.nome;
-                            }).filter(Boolean).join(" / ")
-                          }
-                        ] : []),
                       ] : [
                         { label: "Cód Interno:", value: p.codigoInterno || (p as any).codigo_interno || (p.sku && p.sku !== p.ean ? p.sku : "") || (p.id && p.id !== p.ean ? p.id : '-') },
                         { label: "Código de Barras/EAN", value: p.ean || p.ean2 || p.ean3 || 'Não informado' },
                         ...(p.marca ? [{ label: "Marca", value: p.marca }] : []),
                         ...(Array.isArray(p.caracteristicas) ? p.caracteristicas.map((c: any) => ({ label: c.titulo || "Característica", value: c.descricao })) : []),
-                        ...(p.categoriasIds && p.categoriasIds.length > 0 ? [
-                          { 
-                            label: "Categorias Adicionais", 
-                            value: p.categoriasIds.map((catId: string, i: number) => {
-                              const cats = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.default || [];
-                              const cat = cats.find((c: any) => String(c.id) === String(catId));
-                              const subId = p.subcategoriasIds?.[i];
-                              const sub = subId ? cats.find((c: any) => String(c.id) === String(subId)) : null;
-                              if (!cat) return null;
-                              return sub ? `${cat.nome} > ${sub.nome}` : cat.nome;
-                            }).filter(Boolean).join(" / ")
-                          }
-                        ] : []),
                       ]).filter(row => row.value !== null && row.value !== '' && row.value !== undefined).map((row, idx) => (
                         <tr key={idx} className={`${idx % 2 === 0 ? 'bg-slate-50 ' : ''}border-b last:border-b-0`}>
                           <td className="py-3 px-4 text-slate-500 w-1/3">{row.label}</td>
