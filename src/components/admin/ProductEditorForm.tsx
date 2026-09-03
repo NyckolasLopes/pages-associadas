@@ -893,7 +893,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           {/* Card: Marca, Fabricante e Bula */}
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <h3 className="font-bold text-2xl text-slate-800 pb-4 border-b">
-              {isMedicamento ? "Laboratório e Informações Técnicas" : "Marca, Fabricante e Especificações"}
+              {isMedicamento ? "Laboratório e Bula" : "Marca e Fabricante"}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-6">
@@ -939,106 +939,108 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   <Input value={formData.classeTerapeutica || ""} onChange={e => setFormData({...formData, classeTerapeutica: e.target.value})} className="bg-white" placeholder="Ex: Analgésico, Antitérmico" />
                 </div>
 
-                {/* Campo de Anexo da Bula */}
-                <div className="space-y-3 pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <Label className="font-bold text-xs uppercase text-slate-500 flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                      Anexo da Bula (PDF / Documento)
-                    </Label>
-                    {formData.bulaUrl && (
-                      <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200 text-[10px] font-bold">
-                        Bula Anexada
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        type="file"
-                        id="bulaFileInputAdmin"
-                        accept=".pdf,.doc,.docx,application/pdf"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            toast.loading("Enviando arquivo da bula...", { id: "upload-bula" });
-                            let url = "";
-                            if (supabase?.storage) {
-                              try {
-                                const ext = file.name.split('.').pop() || 'pdf';
-                                const fileName = `bula_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
-                                const { error: upErr } = await supabase.storage.from("banners").upload(fileName, file, { upsert: true, contentType: file.type || "application/pdf" });
-                                if (!upErr) {
-                                  const { data } = supabase.storage.from("banners").getPublicUrl(fileName);
-                                  url = data?.publicUrl || "";
-                                }
-                              } catch (err) {
-                                console.warn("Storage upload fallback:", err);
-                              }
-                            }
-                            if (!url) {
-                              const reader = new FileReader();
-                              reader.onload = () => {
-                                setFormData(prev => prev ? { ...prev, bulaUrl: reader.result as string } : prev);
-                                toast.success("Bula anexada com sucesso!", { id: "upload-bula" });
-                              };
-                              reader.readAsDataURL(file);
-                              return;
-                            }
-                            setFormData(prev => prev ? { ...prev, bulaUrl: url } : prev);
-                            toast.success("Bula anexada com sucesso!", { id: "upload-bula" });
-                          } catch (err) {
-                            toast.error("Erro ao enviar bula.", { id: "upload-bula" });
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById("bulaFileInputAdmin")?.click()}
-                        className="font-bold text-xs h-9 border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5"
-                      >
-                        <Upload className="w-3.5 h-3.5 text-slate-500" />
-                        {formData.bulaUrl ? "Substituir Arquivo da Bula" : "Selecionar Arquivo da Bula (PDF)"}
-                      </Button>
-
+                {/* Campo de Anexo da Bula (apenas para Medicamentos) */}
+                {isMedicamento && (
+                  <div className="space-y-3 pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-bold text-xs uppercase text-slate-500 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                        Anexo da Bula (PDF / Documento)
+                      </Label>
                       {formData.bulaUrl && (
-                        <div className="flex items-center gap-1">
-                          <a
-                            href={formData.bulaUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-primary underline px-2 py-1 font-medium hover:text-primary/80"
-                          >
-                            <Eye className="w-3.5 h-3.5" /> Visualizar Bula
-                          </a>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setFormData({ ...formData, bulaUrl: "" })}
-                            className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50 text-xs px-2"
-                          >
-                            <X className="w-3.5 h-3.5 mr-1" /> Remover
-                          </Button>
-                        </div>
+                        <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200 text-[10px] font-bold">
+                          Bula Anexada
+                        </Badge>
                       )}
                     </div>
 
-                    <div className="space-y-1">
-                      <Label className="text-[11px] text-slate-400 font-medium">Ou informe a URL direta da Bula (link externo / ANVISA):</Label>
-                      <Input
-                        value={formData.bulaUrl || ""}
-                        onChange={e => setFormData({ ...formData, bulaUrl: e.target.value })}
-                        placeholder="https://exemplo.com/bula-produto.pdf"
-                        className="bg-white text-xs h-8"
-                      />
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="file"
+                          id="bulaFileInputAdmin"
+                          accept=".pdf,.doc,.docx,application/pdf"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              toast.loading("Enviando arquivo da bula...", { id: "upload-bula" });
+                              let url = "";
+                              if (supabase?.storage) {
+                                try {
+                                  const ext = file.name.split('.').pop() || 'pdf';
+                                  const fileName = `bula_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+                                  const { error: upErr } = await supabase.storage.from("banners").upload(fileName, file, { upsert: true, contentType: file.type || "application/pdf" });
+                                  if (!upErr) {
+                                    const { data } = supabase.storage.from("banners").getPublicUrl(fileName);
+                                    url = data?.publicUrl || "";
+                                  }
+                                } catch (err) {
+                                  console.warn("Storage upload fallback:", err);
+                                }
+                              }
+                              if (!url) {
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                  setFormData(prev => prev ? { ...prev, bulaUrl: reader.result as string } : prev);
+                                  toast.success("Bula anexada com sucesso!", { id: "upload-bula" });
+                                };
+                                reader.readAsDataURL(file);
+                                return;
+                              }
+                              setFormData(prev => prev ? { ...prev, bulaUrl: url } : prev);
+                              toast.success("Bula anexada com sucesso!", { id: "upload-bula" });
+                            } catch (err) {
+                              toast.error("Erro ao enviar bula.", { id: "upload-bula" });
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById("bulaFileInputAdmin")?.click()}
+                          className="font-bold text-xs h-9 border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-slate-500" />
+                          {formData.bulaUrl ? "Substituir Arquivo da Bula" : "Selecionar Arquivo da Bula (PDF)"}
+                        </Button>
+
+                        {formData.bulaUrl && (
+                          <div className="flex items-center gap-1">
+                            <a
+                              href={formData.bulaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary underline px-2 py-1 font-medium hover:text-primary/80"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Visualizar Bula
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setFormData({ ...formData, bulaUrl: "" })}
+                              className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50 text-xs px-2"
+                            >
+                              <X className="w-3.5 h-3.5 mr-1" /> Remover
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-slate-400 font-medium">Ou informe a URL direta da Bula (link externo / ANVISA):</Label>
+                        <Input
+                          value={formData.bulaUrl || ""}
+                          onChange={e => setFormData({ ...formData, bulaUrl: e.target.value })}
+                          placeholder="https://exemplo.com/bula-produto.pdf"
+                          className="bg-white text-xs h-8"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
               <div className="space-y-6">
                 <div className="space-y-2">

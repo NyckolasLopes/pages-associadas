@@ -46,6 +46,8 @@ async function seed() {
     descricao: p.descricao || null,
     slug: p.url || p.slug || p.id,
     fabricante: p.fabricante || null,
+    marca: p.marca || null,
+    bula_url: p.bulaUrl || null,
     preco_de: p.precoDe || 0,
     preco_por: p.precoPor || 0,
     estoque: p.estoque || 0,

@@ -1470,7 +1470,7 @@ function PDP() {
                   </table>
                 </div>
 
-                {(p.bulaUrl || (p as any).bula_url) && (
+                {isMedication && (p.bulaUrl || (p as any).bula_url) && (
                   <div className="mt-4 p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: "#008000" }}>
@@ -1988,8 +1988,8 @@ function PDP() {
               )}
             </div>
 
-            {/* Balão de Download da Bula abaixo do quadro de informações técnicas */}
-            {(p.bulaUrl || (p as any).bula_url) && (
+            {/* Balão de Download da Bula abaixo do quadro de informações técnicas (apenas para medicamentos) */}
+            {isMedication && (p.bulaUrl || (p as any).bula_url) && (
               <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm space-y-3">
                 <div className="flex items-start gap-3">
                   <div 
