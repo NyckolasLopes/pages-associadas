@@ -218,7 +218,7 @@ export function Header() {
   const handleVoiceSearch = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast.error("Seu navegador não suporta pesquisa por voz.");
+      toast.error("Seu navegador não suporta pesquisa por voz. Use Chrome ou Edge.");
       return;
     }
     if (isListening) return;
@@ -226,6 +226,7 @@ export function Header() {
     recognition.lang = "pt-BR";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+    recognition.continuous = false;
     setIsListening(true);
     recognition.start();
     recognition.onresult = (event: any) => {
@@ -234,9 +235,18 @@ export function Header() {
       setSearchOpen(true);
       setIsListening(false);
     };
-    recognition.onerror = () => {
+    recognition.onerror = (event: any) => {
       setIsListening(false);
-      toast.error("Não foi possível reconhecer a voz. Tente novamente.");
+      const code = event?.error || "";
+      if (code === "not-allowed" || code === "service-not-allowed") {
+        toast.error("Permissão de microfone negada. Verifique as configurações do seu navegador.");
+      } else if (code === "network") {
+        toast.error("Sem conexão para reconhecimento de voz. Verifique sua internet.");
+      } else if (code === "no-speech" || code === "aborted" || code === "audio-capture") {
+        // Silêncio ou cancelamento — não mostrar erro
+      } else {
+        toast.error("Não foi possível reconhecer a voz. Tente novamente.");
+      }
     };
     recognition.onend = () => {
       setIsListening(false);
