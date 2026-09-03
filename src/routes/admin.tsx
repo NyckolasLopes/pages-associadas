@@ -154,45 +154,106 @@ const subLinkClass =
   "flex items-center gap-2.5 px-3 py-1.5 text-[13px] rounded-md text-muted-foreground hover:text-primary hover:bg-primary/5 [&.active]:bg-primary/10 [&.active]:text-primary transition-colors";
 
 
-// ---- Inactivity Hook ----
-function useInactivityTimeout(timeoutMs: number, onTimeout: () => void, isActive: boolean) {
-  useEffect(() => {
-    if (!isActive) return;
+// ---- Inactivity Hook (15 minutos sem interação: clique, digitação, edição de campo) ----
+const ADMIN_INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutos
+const ADMIN_WARNING_LIMIT_MS = 14 * 60 * 1000; // 14 minutos (aviso 1 min antes)
 
-    let timeoutId: NodeJS.Timeout;
+function useAdminInactivityTimeout(onTimeout: () => void, isActive: boolean) {
+  const onTimeoutRef = useRef(onTimeout);
+  onTimeoutRef.current = onTimeout;
+
+  useEffect(() => {
+    if (!isActive || typeof window === "undefined") return;
+
+    let warningShown = false;
     let lastActivity = Date.now();
 
-    const resetTimer = () => {
-      if (Date.now() - lastActivity > timeoutMs) {
-         onTimeout();
-         return;
-      }
-      lastActivity = Date.now();
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        onTimeout();
-      }, timeoutMs);
-    };
+    const stored = Number(localStorage.getItem("fa-admin-last-activity"));
+    if (stored && !isNaN(stored)) {
+      lastActivity = Math.max(lastActivity, stored);
+    } else {
+      localStorage.setItem("fa-admin-last-activity", String(lastActivity));
+    }
 
-    resetTimer();
-
-    let lastEventTime = 0;
-    const handleEvent = () => {
+    const checkInactivity = () => {
       const now = Date.now();
-      if (now - lastEventTime > 1000) {
-        lastEventTime = now;
-        resetTimer();
+      const currentStored = Number(localStorage.getItem("fa-admin-last-activity"));
+      const effectiveLast = Math.max(lastActivity, isNaN(currentStored) ? 0 : currentStored);
+      const elapsed = now - effectiveLast;
+
+      if (elapsed >= ADMIN_INACTIVITY_LIMIT_MS) {
+        toast.dismiss("admin-inactivity-warning");
+        onTimeoutRef.current();
+        return;
+      }
+
+      if (elapsed >= ADMIN_WARNING_LIMIT_MS && !warningShown) {
+        warningShown = true;
+        toast.warning(
+          "Sua sessão no painel administrativo expirará em 1 minuto por inatividade.",
+          {
+            id: "admin-inactivity-warning",
+            duration: 60000,
+            action: {
+              label: "Continuar conectado",
+              onClick: () => recordActivity(),
+            },
+          }
+        );
       }
     };
-    
-    const events = ['mousedown', 'keydown', 'touchstart', 'click'];
-    events.forEach(e => window.addEventListener(e, handleEvent));
+
+    let lastRecordTime = 0;
+    const recordActivity = () => {
+      const now = Date.now();
+      lastActivity = now;
+
+      if (warningShown) {
+        warningShown = false;
+        toast.dismiss("admin-inactivity-warning");
+      }
+
+      if (now - lastRecordTime > 1000) {
+        lastRecordTime = now;
+        try {
+          localStorage.setItem("fa-admin-last-activity", String(now));
+        } catch {}
+      }
+    };
+
+    const events = [
+      "mousedown",
+      "click",
+      "keydown",
+      "input",
+      "change",
+      "focusin",
+      "touchstart",
+      "scroll",
+      "wheel",
+    ];
+
+    const eventOptions = { capture: true, passive: true };
+    events.forEach((evt) => window.addEventListener(evt, recordActivity, eventOptions));
+
+    const intervalId = setInterval(checkInactivity, 5000);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkInactivity();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", checkInactivity);
 
     return () => {
-      clearTimeout(timeoutId);
-      events.forEach(e => window.removeEventListener(e, handleEvent));
+      clearInterval(intervalId);
+      events.forEach((evt) => window.removeEventListener(evt, recordActivity, eventOptions as any));
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", checkInactivity);
+      toast.dismiss("admin-inactivity-warning");
     };
-  }, [timeoutMs, onTimeout, isActive]);
+  }, [isActive]);
 }
 
 function AdminLayout() {
@@ -210,7 +271,16 @@ function AdminLayout() {
   const { orders } = useOrders();
   const prevOrdersRef = useRef(orders);
 
-  // Auto-logout por inatividade removido a pedido do usuário ("NUNCA DERRUBAR")
+  // Auto-logout por inatividade (15 minutos sem nenhuma interação: clique, digitação, edição de campo)
+  const handleInactivityLogout = async () => {
+    toast.error("Sessão encerrada após 15 minutos de inatividade. Por favor, faça login novamente.", {
+      duration: 8000,
+    });
+    await logout();
+    navigate({ to: "/admin" });
+  };
+
+  useAdminInactivityTimeout(handleInactivityLogout, Boolean(currentUser));
 
   // Garante que o painel admin nunca herde o tema de cor de nenhuma loja
   useEffect(() => {
