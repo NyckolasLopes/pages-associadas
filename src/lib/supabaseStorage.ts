@@ -30,9 +30,18 @@ function scheduleSupabaseWrite(name: string, parsedValue: any) {
     if (val === undefined) return;
 
     try {
-      let saved = false;
+      // Se não houver nenhuma sessão ativa (nem Supabase Auth nem sessionStorage de admin),
+      // não tenta salvar no banco — evita requisições 400 de visitantes anônimos ou tela de login
+      const hasLocalAdminSession = typeof window !== 'undefined' && !!sessionStorage.getItem('fa-admin-session');
       const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData?.session) {
+      const hasSupabaseSession = !!sessionData?.session;
+
+      if (!hasLocalAdminSession && !hasSupabaseSession) {
+        return;
+      }
+
+      let saved = false;
+      if (hasSupabaseSession) {
         const { error } = await supabase
           // @ts-ignore
           .from('app_state')
@@ -48,12 +57,12 @@ function scheduleSupabaseWrite(name: string, parsedValue: any) {
         }
       }
 
-      // Se não conseguiu via cliente direto (ex: sem sessão ou bloqueio RLS), aciona fallback do backend
-      // APENAS se estiver navegando em rotas administrativas (/admin ou /painel-loja)
+      // Se não conseguiu via cliente direto (ex: admin local sem Supabase Auth), aciona endpoint do backend
+      // APENAS se estiver autenticado como admin
       if (!saved && typeof window !== 'undefined') {
         const pathname = window.location.pathname;
         const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/painel-loja');
-        if (isAdminRoute) {
+        if (isAdminRoute && (hasLocalAdminSession || hasSupabaseSession)) {
           try {
             const token = sessionData?.session?.access_token;
             await fetch('/api/admin/save-app-state', {

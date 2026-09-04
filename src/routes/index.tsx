@@ -560,17 +560,23 @@ function IndexGateway() {
                     </label>
                     <Select value={selectedCity} onValueChange={handleCityChange}>
                       <SelectTrigger className="w-full h-12 bg-slate-50/70 hover:bg-slate-50 border-slate-200 rounded-xl font-medium text-slate-800 shadow-sm focus:ring-orange-500/30">
-                        <SelectValue placeholder="Escolha a sua cidade..." />
+                        <SelectValue placeholder={!pharmaciesLoaded ? "Carregando cidades..." : "Escolha a sua cidade..."} />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-slate-100 shadow-xl max-h-[280px]">
-                        {cidades.map(c => (
-                          <SelectItem key={c.nome} value={c.nome} className="cursor-pointer py-2.5 text-xs font-medium focus:bg-orange-50 focus:text-orange-900">
-                            <div className="flex items-center justify-between w-full gap-4">
-                              <span>{c.nome} {c.uf ? `(${c.uf})` : ''}</span>
-                              <span className="text-[10px] text-slate-400 font-semibold">{c.count} {c.count === 1 ? 'loja' : 'lojas'}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {cidades.length === 0 ? (
+                          <div className="p-3 text-center text-xs text-slate-400 font-medium">
+                            {!pharmaciesLoaded ? "Carregando farmácias..." : "Nenhuma cidade encontrada"}
+                          </div>
+                        ) : (
+                          cidades.map(c => (
+                            <SelectItem key={c.nome} value={c.nome} className="cursor-pointer py-2.5 text-xs font-medium focus:bg-orange-50 focus:text-orange-900">
+                              <div className="flex items-center justify-between w-full gap-4">
+                                <span>{c.nome} {c.uf ? `(${c.uf})` : ''}</span>
+                                <span className="text-[10px] text-slate-400 font-semibold">{c.count} {c.count === 1 ? 'loja' : 'lojas'}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
