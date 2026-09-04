@@ -844,7 +844,7 @@ export function Header() {
                   className="relative h-10 w-10 rounded-full border flex items-center justify-center bg-background"
                 >
                   <ShoppingBasket 
-                    className="h-5 w-5" 
+                    className={`h-5 w-5 ${!isParceiro ? 'text-primary' : ''}`}
                     style={isParceiro ? { color: 'var(--cart-btn-text, var(--primary))' } : undefined} 
                   />
                   {mounted && count > 0 && (
