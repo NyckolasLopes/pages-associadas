@@ -727,7 +727,14 @@ function IndexGateway() {
                             </div>
                           );
                         })()}
-                        <h3 className="font-extrabold text-slate-800 text-base group-hover:text-[#F37021] transition-colors leading-tight truncate">{store.nome}</h3>
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <h3 className="font-extrabold text-slate-800 text-base group-hover:text-[#F37021] transition-colors leading-tight truncate">{store.nome}</h3>
+                          {isParceiro && (
+                            <span className="text-[10px] bg-orange-100 text-orange-800 border border-orange-200 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                              Loja Parceira
+                            </span>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="space-y-1.5 text-xs text-slate-600 font-medium">

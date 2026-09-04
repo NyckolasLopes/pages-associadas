@@ -68,6 +68,9 @@ export function useActivePharmacy() {
           const idStr = String(p.id);
           const rawSlugLower = (p.slug || "").toLowerCase();
 
+          const catFormatted = p.categoriaAssociado ? safeSlugify(p.categoriaAssociado) : "";
+          const isParceiroMatch = (normalizedSearch === "parceiro" || normalizedSearch === "loja-parceira") && p.categoriaAssociado === "Parceiro";
+
           return (
             slugFormatted === normalizedSearch ||
             tcSlug === normalizedSearch ||
@@ -75,13 +78,15 @@ export function useActivePharmacy() {
             apelidoFormatted === normalizedSearch ||
             rawSlugLower === lowerRaw ||
             nameFormatted === normalizedSearch ||
-            idStr === slugToSearch
+            idStr === slugToSearch ||
+            catFormatted === normalizedSearch ||
+            isParceiroMatch
           );
         });
         if (bySlug) return bySlug;
       }
 
-      // Se a URL aponta para uma loja específica (ex: /pelotas ou /zona-sul), NUNCA fazer fallback para loja-padrao
+      // Se a URL aponta para uma loja específica (ex: /pelotas ou /zona-sul ou /parceiro), NUNCA fazer fallback para loja-padrao
       // Retorna imediatamente o design individual da loja (com cache estável)
       if (normalizedSearch !== "loja-padrao") {
         if (!virtualStoresCache.has(slugToSearch)) {
@@ -90,12 +95,14 @@ export function useActivePharmacy() {
             .map(w => w.charAt(0).toUpperCase() + w.slice(1))
             .join(' ');
 
+          const isParceiroVirtual = normalizedSearch === "parceiro" || normalizedSearch === "loja-parceira";
+
           virtualStoresCache.set(slugToSearch, {
             id: slugToSearch,
             slug: slugToSearch,
             nome: formattedName,
-            categoriaAssociado: 'Pleno',
-            isPleno: true,
+            categoriaAssociado: isParceiroVirtual ? 'Parceiro' : 'Pleno',
+            isPleno: !isParceiroVirtual,
             ativo: true,
             virtualStoreStatus: 'Ativa',
           });
