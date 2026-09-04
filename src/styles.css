@@ -79,6 +79,14 @@
   --color-orange-700: color-mix(in srgb, #f37021 60%, black);
   --color-orange-800: color-mix(in srgb, #f37021 40%, black);
   --color-orange-900: color-mix(in srgb, #f37021 20%, black);
+
+  /* Cor do termo GRÁTIS (#2CFF05) */
+  --color-gratis: #2CFF05;
+}
+
+.text-gratis,
+[data-gratis] {
+  color: #2CFF05 !important;
 }
 
 :root {
@@ -226,7 +234,7 @@
   }
 }
 
-/* Strict 2-line product title clamping with ellipsis */
+/* Strict 2-line product title clamping with ellipsis (dynamic on mobile, uniform on desktop) */
 .product-title-clamp {
   display: -webkit-box !important;
   -webkit-line-clamp: 2 !important;
@@ -236,7 +244,12 @@
   word-break: break-word !important;
   line-height: 1.25rem !important;
   max-height: 2.5rem !important;
-  min-height: 2.5rem !important;
+}
+
+@media (min-width: 640px) {
+  .product-title-clamp {
+    min-height: 2.5rem !important;
+  }
 }
 
 @keyframes cartBtnProgress {

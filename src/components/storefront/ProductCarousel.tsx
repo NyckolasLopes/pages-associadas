@@ -65,9 +65,9 @@ export function ProductCarousel({ products, selectedStoreId }: { products: Produ
           {visibleProducts.map((p) => (
             <CarouselItem
               key={p.id}
-              className="pl-3 basis-[44vw] sm:basis-[30vw] md:basis-[25%] lg:basis-[20%] flex"
+              className="pl-3 basis-[44vw] sm:basis-[30vw] md:basis-[25%] lg:basis-[20%] flex items-start sm:items-stretch"
             >
-              <div className="w-full h-full pb-1">
+              <div className="w-full sm:h-full pb-1">
                 <ProductCard p={p} selectedStoreId={selectedStoreId} />
               </div>
             </CarouselItem>

@@ -2,7 +2,7 @@ import { getBrandNameForHead } from "@/utils/brand";
 import { createFileRoute, notFound, Link, useParams } from "@tanstack/react-router";
 import mascotNotFound from "@/assets/produto-nao-encontrado.png";
 import { catalog } from "@/services/catalog";
-import { brl, productImage, tarjaColor, checkIsGenerico, getInstallmentText, formatPbmName } from "@/lib/format";
+import { brl, productImage, tarjaColor, checkIsGenerico, getInstallmentText, formatPbmName, highlightGratis } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart, useGeoCep } from "@/stores/cart";
@@ -1359,7 +1359,7 @@ function PDP() {
                 {activeSelos.length > 0 && activeSelos.map(selo => (
                   <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-xs font-bold px-3 py-1 rounded shadow-sm flex items-center gap-1 w-max">
                     {selo.id === 'servico' && <Stethoscope className="h-3 w-3" />}
-                    {selo.id === 'servico' ? (selo.nome?.toUpperCase() || "SERVIÇO") : selo.nome}
+                    {selo.id === 'servico' ? (selo.nome?.toUpperCase() || "SERVIÇO") : highlightGratis(selo.nome)}
                   </span>
                 ))}
               </div>
@@ -1473,38 +1473,6 @@ function PDP() {
                     </tbody>
                   </table>
                 </div>
-
-                {(() => {
-                  const tagBula = (p.internalTags || []).find((t: string) => t.startsWith("bula:"))?.replace("bula:", "") || "";
-                  const caracBula = Array.isArray(p.caracteristicas) ? p.caracteristicas.find((c: any) => c.titulo === "__bula_url__")?.descricao : "";
-                  const effectiveBula = p.bulaUrl || (p as any).bula_url || caracBula || (tagBula ? decodeURIComponent(tagBula) : "") || "";
-                  if (!isMedication || !effectiveBula) return null;
-
-                  return (
-                    <div className="mt-4 p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: "#008000" }}>
-                          <FileText className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-sm text-slate-900 block">{isMedication ? "Bula do Medicamento" : "Bula do Produto"}</span>
-                          <span className="text-xs text-slate-500">Documento em PDF com posologia e instruções aprovadas</span>
-                        </div>
-                      </div>
-                      <a
-                        href={effectiveBula}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
-                        className="px-4 py-2 rounded-lg text-white font-bold text-xs flex items-center gap-1.5 shrink-0 transition-transform active:scale-95 shadow-xs"
-                        style={{ backgroundColor: "#008000" }}
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Baixar Bula (PDF)
-                      </a>
-                    </div>
-                  );
-                })()}
 
                 {p.principiosAtivos && Array.isArray(p.principiosAtivos) && p.principiosAtivos.length > 0 && (
                   <div className="pt-4 border-t">
@@ -1712,7 +1680,7 @@ function PDP() {
               {p.selo && p.selo.toUpperCase() !== "SEM SELO" && p.selo.toUpperCase() !== "NENHUMA AÇÃO" && !activeSeloNormalizedNames.includes(normalizeForMatch(p.selo)) && (
                   <div className="mb-1">
                     <span className="inline-block text-[11px] font-bold bg-accent text-accent-foreground px-2 py-0.5 rounded">
-                      {formatPbmName(p.selo)}
+                      {highlightGratis(formatPbmName(p.selo))}
                     </span>
                   </div>
                 )}
@@ -2008,38 +1976,45 @@ function PDP() {
             </div>
 
             {/* Balão de Download da Bula abaixo do quadro de informações técnicas (apenas para medicamentos) */}
-            {isMedication && (p.bulaUrl || (p as any).bula_url) && (
-              <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm space-y-3">
-                <div className="flex items-start gap-3">
-                  <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs text-white"
+            {(() => {
+              const tagBula = (p.internalTags || []).find((t: string) => t.startsWith("bula:"))?.replace("bula:", "") || "";
+              const caracBula = Array.isArray(p.caracteristicas) ? p.caracteristicas.find((c: any) => c.titulo === "__bula_url__")?.descricao : "";
+              const effectiveBula = p.bulaUrl || (p as any).bula_url || caracBula || (tagBula ? decodeURIComponent(tagBula) : "") || "";
+              if (!isMedication || !effectiveBula) return null;
+
+              return (
+                <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs text-white"
+                      style={{ backgroundColor: "#008000" }}
+                    >
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                        {isMedication ? "Bula do Medicamento" : "Bula do Produto"}
+                      </h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
+                        Consulte as instruções de uso, posologia e precauções oficiais aprovadas pela ANVISA.
+                      </p>
+                    </div>
+                  </div>
+
+                  <a
+                    href={effectiveBula}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="w-full py-2.5 px-4 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:brightness-110 active:scale-98 cursor-pointer text-center"
                     style={{ backgroundColor: "#008000" }}
                   >
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                      {isMedication ? "Bula do Medicamento" : "Bula do Produto"}
-                    </h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                      Consulte as instruções de uso, posologia e precauções oficiais aprovadas pela ANVISA.
-                    </p>
-                  </div>
+                    <Download className="w-4 h-4" />
+                    Baixar Bula (PDF)
+                  </a>
                 </div>
-
-                <a
-                  href={p.bulaUrl || (p as any).bula_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  className="w-full py-2.5 px-4 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:brightness-110 active:scale-98 cursor-pointer text-center"
-                  style={{ backgroundColor: "#008000" }}
-                >
-                  <Download className="w-4 h-4" />
-                  Baixar Bula (PDF)
-                </a>
-              </div>
-            )}
+              );
+            })()}
           </aside>
         </div>
       </div>
@@ -2130,7 +2105,7 @@ function PDP() {
           <h2 className="text-2xl font-bold mb-6">Produtos da mesma categoria</h2>
           <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-5 md:overflow-visible md:pb-0 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
             {crossSell.map((cp: any) => (
-              <div key={cp.id} className="shrink-0 w-[40vw] md:w-auto snap-start">
+              <div key={cp.id} className="shrink-0 w-[40vw] md:w-auto snap-start flex items-start sm:items-stretch">
                 <ProductCard p={cp} />
               </div>
             ))}

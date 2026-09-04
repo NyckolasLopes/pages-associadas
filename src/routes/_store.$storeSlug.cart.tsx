@@ -13,7 +13,7 @@ import { getDeterministicStock } from "@/lib/stock";
 import { getLevePaguePromotion } from "@/lib/utils";
 import { catalog } from "@/services/catalog";
 import { getStoreStatus } from "@/lib/storeHours";
-import { brl, productImage, tarjaColor } from "@/lib/format";
+import { brl, productImage, tarjaColor, highlightGratis } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1255,7 +1255,7 @@ function CartPage() {
                           {!isServiceCart && (
                             <div className="w-full mt-1 flex flex-wrap items-center gap-2">
                               <div className="font-bold text-primary text-[10px] bg-primary/10 px-1.5 py-0.5 rounded">
-                                Retirada: Grátis ({p.horarioInicioRetirada || "08:00"} às {p.horarioFimRetirada || "20:00"})
+                                Retirada: <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> ({p.horarioInicioRetirada || "08:00"} às {p.horarioFimRetirada || "20:00"})
                               </div>
                               {p.aceitaEntrega && (() => {
                                 let displayDeliveryPrice = null;
@@ -1522,7 +1522,7 @@ function CartPage() {
                       <Store className="h-4 w-4 text-primary" />
                       <div className="flex-1">
                         <div className="text-sm font-bold">Retirada na loja</div>
-                        <div className="text-xs text-muted-foreground">Retirar grátis na loja</div>
+                        <div className="text-xs text-muted-foreground">Retirar <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">grátis</span> na loja</div>
                       </div>
                     </label>
 
@@ -1638,7 +1638,7 @@ function CartPage() {
                                   <div className="text-sm font-bold">{f.label}</div>
                                   <div className="text-xs text-primary font-medium">{f.eta}</div>
                                 </div>
-                                <span className="text-sm font-bold">{f.price === 0 ? <span className="text-primary font-bold">Grátis</span> : brl(f.price)}</span>
+                                <span className="text-sm font-bold">{f.price === 0 ? <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> : brl(f.price)}</span>
                               </label>
                             )
                           })}
@@ -1704,9 +1704,9 @@ function CartPage() {
               <span className="text-muted-foreground">{isDelivery ? "Entrega" : "Retirada"}</span>
               <span>
                 {!isDelivery ? (
-                  <span className="text-primary font-bold">Grátis</span>
+                  <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span>
                 ) : (selectedFreight && selectedFreight.id !== "pickup") ? (
-                  freightPrice === 0 ? <span className="text-primary font-bold">Grátis</span> : brl(freightPrice)
+                  freightPrice === 0 ? <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> : brl(freightPrice)
                 ) : (
                   <span className="text-muted-foreground text-xs">A calcular</span>
                 )}
@@ -2029,7 +2029,7 @@ function CartPage() {
                 {deliveryMethod === "entrega" && (
                   <div className="flex justify-between text-sm text-primary-dark">
                     <span>Frete</span>
-                    <span>{(selectedFreight && selectedFreight.id !== "pickup") ? (freightPrice === 0 ? <span className="text-primary font-bold">Grátis</span> : brl(freightPrice)) : <span className="text-primary/70 text-xs">A calcular</span>}</span>
+                    <span>{(selectedFreight && selectedFreight.id !== "pickup") ? (freightPrice === 0 ? <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> : brl(freightPrice)) : <span className="text-primary/70 text-xs">A calcular</span>}</span>
                   </div>
                 )}
               </div>

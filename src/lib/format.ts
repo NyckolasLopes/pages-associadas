@@ -1,6 +1,29 @@
+import React from "react";
+
 export const brl = (n: number | undefined | null) => {
   if (n === undefined || n === null || isNaN(n)) return "R$ 0,00";
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+};
+
+export const highlightGratis = (text: string | null | undefined): React.ReactNode => {
+  if (!text) return text;
+  const str = String(text);
+  const parts = str.split(/(gr[aá]tis)/gi);
+  if (parts.length === 1) return text;
+  return parts.map((part, index) => {
+    if (/^gr[aá]tis$/i.test(part)) {
+      return React.createElement(
+        "span",
+        {
+          key: index,
+          style: { color: "#2CFF05" },
+          className: "text-[#2CFF05] text-gratis font-bold",
+        },
+        part
+      );
+    }
+    return part;
+  });
 };
 
 export const getInstallmentText = (price: number | undefined | null) => {

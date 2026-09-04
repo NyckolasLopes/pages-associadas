@@ -396,21 +396,27 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
 
       const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
       const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
-      const adminClient = createClient(targetBase, publishableKey);
       
-      await adminClient.auth.signInWithPassword({
-        email: "nyckolas.lopes@farmaciasassociadas.com.br",
-        password: "Aspro@2026"
+      const patchRes = await fetch(`${targetBase}/rest/v1/lojas?id=eq.${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": publishableKey,
+          "Authorization": `Bearer ${publishableKey}`,
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify(payload)
       });
 
-      const { data, error } = await adminClient.from('lojas').update(payload).eq('id', id).select();
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400,
+      if (!patchRes.ok) {
+        const errText = await patchRes.text();
+        return new Response(JSON.stringify({ error: errText || "Falha ao salvar loja no banco de dados." }), {
+          status: patchRes.status,
           headers: { "Content-Type": "application/json" }
         });
       }
 
+      const data = await patchRes.json().catch(() => []);
       return new Response(JSON.stringify({ success: true, data }), {
         status: 200,
         headers: { "Content-Type": "application/json" }

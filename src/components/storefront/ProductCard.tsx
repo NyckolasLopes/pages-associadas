@@ -2,7 +2,7 @@ import { Link, useParams, useNavigate } from "@tanstack/react-router";
 import { Heart, ShoppingBasket, Zap, Star, Calendar, Stethoscope, Bell, Flame, Gift, ShoppingBag, Youtube, Minus, Plus, Ticket } from "lucide-react";
 import React, { useEffect, useState, useMemo } from "react";
 import type { Produto } from "@/types";
-import { brl, getInstallmentText, productImage, tarjaColor, checkIsGenerico, formatPbmName } from "@/lib/format";
+import { brl, getInstallmentText, productImage, tarjaColor, checkIsGenerico, formatPbmName, highlightGratis } from "@/lib/format";
 import { useCart } from "@/stores/cart";
 import { useWaitlist } from "@/stores/waitlist";
 import { toast } from "sonner";
@@ -488,7 +488,7 @@ function ProductCardComponent({
   const hasMedicamentoTags = isMedicamento && ((p.tarja && p.tarja !== "none") || p.retemReceita !== undefined);
 
   return (
-    <article className="group/card bg-card rounded-xl border border-slate-200/90 hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative h-full w-full">
+    <article className="group/card bg-card rounded-xl border border-slate-200/90 hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative w-full sm:h-full">
       {/* Floating Actions */}
       <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1.5">
         {p.youtubeVideoUrl && (
@@ -568,14 +568,14 @@ function ProductCardComponent({
           {activeSelos.map(selo => (
             <span key={selo.id} style={{ backgroundColor: selo.corFundo, color: selo.corTexto }} className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1 w-max">
               {selo.id === 'servico' && <Stethoscope className="h-2.5 w-2.5" />}
-              {selo.id === 'servico' ? (selo.nome?.toUpperCase() || "SERVIÇO") : selo.nome}
+              {selo.id === 'servico' ? (selo.nome?.toUpperCase() || "SERVIÇO") : highlightGratis(selo.nome)}
             </span>
           ))}
         </div>
       </Link>
 
       {/* Product Content */}
-      <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between">
+      <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-start sm:justify-between">
         <div>
           {/* Promotional Badge (Timer / Leve + Pague) */}
           {activePromo && (
@@ -747,13 +747,13 @@ function ProductCardComponent({
             return true;
           })() && (
             <span className="inline-block self-start text-[9px] font-bold bg-accent text-accent-foreground px-1.5 py-0.5 rounded my-0.5">
-              {formatPbmName(p.selo)}
+              {highlightGratis(formatPbmName(p.selo))}
             </span>
           )}
         </div>
 
         {/* Botão de Compra */}
-        <div className="flex flex-col gap-1.5 mt-2 pt-1">
+        <div className="flex flex-col gap-1.5 mt-2.5 sm:mt-auto pt-1">
           {isAvailable ? (
             <button 
               onClick={(e) => { 

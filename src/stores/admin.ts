@@ -312,7 +312,7 @@ interface AdminState {
   updatePharmacy: (id: string, p: Pharmacy) => Promise<void>;
   togglePharmacyStatus: (id: string) => Promise<void>;
   removePharmacy: (id: string) => Promise<void>;
-  loadPharmacies: () => Promise<void>;
+  loadPharmacies: (force?: boolean) => Promise<void>;
   loadUsers: () => Promise<void>;
 
   // Category Icons & Features
@@ -555,6 +555,27 @@ export function safeSlugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+export function normalizeHorariosPorDia(raw: any): { dia: number; abre: string; fecha: string; fechado: boolean }[] {
+  const existing = Array.isArray(raw) ? raw : [];
+  return [0, 1, 2, 3, 4, 5, 6].map((dia) => {
+    const found = existing.find((h: any) => h && Number(h.dia) === dia);
+    if (found) {
+      return {
+        dia,
+        abre: found.abre || '08:00',
+        fecha: found.fecha || '18:00',
+        fechado: Boolean(found.fechado),
+      };
+    }
+    return {
+      dia,
+      abre: '08:00',
+      fecha: '18:00',
+      fechado: dia === 0,
+    };
+  });
+}
+
 export function mapLojaRowToPharmacy(l: any): Pharmacy {
   let parsedThemeColors: any = {};
   try {
@@ -574,8 +595,8 @@ export function mapLojaRowToPharmacy(l: any): Pharmacy {
     telefone: l.telefone,
     horarioFuncionamento: l.horario_funcionamento || parsedThemeColors?.horario_funcionamento,
     diasFuncionamento: parsedThemeColors?.diasFuncionamento || [1,2,3,4,5,6],
-    horariosPorDia: parsedThemeColors?.horariosPorDia || [],
-    datasEspeciais: parsedThemeColors?.datasEspeciais || [],
+    horariosPorDia: normalizeHorariosPorDia(parsedThemeColors?.horariosPorDia),
+    datasEspeciais: Array.isArray(parsedThemeColors?.datasEspeciais) ? parsedThemeColors.datasEspeciais : [],
     respTecnico: l.farmaceutico_responsavel || parsedThemeColors?.farmaceutico_responsavel,
     inscricaoFarmaceutico: l.crf || parsedThemeColors?.crf,
     alvara: l.alvara_sanitario || parsedThemeColors?.alvara_sanitario,
@@ -615,29 +636,29 @@ export function mapLojaRowToPharmacy(l: any): Pharmacy {
     virtualStoreStatus: l.status_loja_virtual || parsedThemeColors?.status_loja_virtual,
     isVirtualStoreGenerated: !!l.status_loja_virtual,
     api_key: l.api_key,
-    aceitaEntrega: parsedThemeColors?.aceitaEntrega === true,
+    aceitaEntrega: Boolean(parsedThemeColors?.aceitaEntrega),
     modeloFrete: parsedThemeColors?.modeloFrete ?? 'raio',
     horarioInicioEntrega: parsedThemeColors?.horarioInicioEntrega ?? '',
     horarioFimEntrega: parsedThemeColors?.horarioFimEntrega ?? '',
     horarioFimEntregaRisco: parsedThemeColors?.horarioFimEntregaRisco ?? '',
-    tempoEntrega: parsedThemeColors?.tempoEntrega ?? '',
+    tempoEntrega: parsedThemeColors?.tempoEntrega !== undefined ? String(parsedThemeColors.tempoEntrega) : '',
     custoEntrega: parsedThemeColors?.custoEntrega ?? 0,
     raioEntregaKm: parsedThemeColors?.raioEntregaKm,
     faixasCep: parsedThemeColors?.faixasCep ?? [],
-    aceitaRetirada: parsedThemeColors?.aceitaRetirada === true,
+    aceitaRetirada: Boolean(parsedThemeColors?.aceitaRetirada),
     horarioInicioRetirada: parsedThemeColors?.horarioInicioRetirada ?? '',
     horarioFimRetirada: parsedThemeColors?.horarioFimRetirada ?? '',
-    tempoRetirada: parsedThemeColors?.tempoRetirada ?? '',
-    aceitaUber: parsedThemeColors?.aceitaUber ?? false,
+    tempoRetirada: parsedThemeColors?.tempoRetirada !== undefined ? String(parsedThemeColors.tempoRetirada) : '',
+    aceitaUber: Boolean(parsedThemeColors?.aceitaUber),
     custoUber: parsedThemeColors?.custoUber ?? 0,
-    aceita99: parsedThemeColors?.aceita99 ?? false,
+    aceita99: Boolean(parsedThemeColors?.aceita99),
     custo99: parsedThemeColors?.custo99 ?? 0,
-    aceitaMotoboy: parsedThemeColors?.aceitaMotoboy ?? false,
+    aceitaMotoboy: Boolean(parsedThemeColors?.aceitaMotoboy),
     custoMotoboy: parsedThemeColors?.custoMotoboy ?? 0,
     custoEntregaExpressa: parsedThemeColors?.custoEntregaExpressa ?? 0,
-    raiosEntrega: parsedThemeColors?.raiosEntrega ?? [],
-    faixasValorPedido: parsedThemeColors?.faixasValorPedido ?? [],
-    meiosEntregaPersonalizados: parsedThemeColors?.meiosEntregaPersonalizados ?? [],
+    raiosEntrega: Array.isArray(parsedThemeColors?.raiosEntrega) ? parsedThemeColors.raiosEntrega : [],
+    faixasValorPedido: Array.isArray(parsedThemeColors?.faixasValorPedido) ? parsedThemeColors.faixasValorPedido : [],
+    meiosEntregaPersonalizados: Array.isArray(parsedThemeColors?.meiosEntregaPersonalizados) ? parsedThemeColors.meiosEntregaPersonalizados : [],
     themeColors: parsedThemeColors && Object.keys(parsedThemeColors).length > 0 ? parsedThemeColors : undefined,
     sistemaUtilizado: l.sistema_utilizado || parsedThemeColors?.sistemaUtilizado || '',
     offersServices: parsedThemeColors?.offersServices ?? false,
@@ -1341,14 +1362,14 @@ export const useAdmin = create<AdminState>()(
       pharmacies: getInitialCachedPharmacies(),
       pharmaciesLoaded: getInitialCachedPharmacies().length > 0,
       pharmaciesFresh: false,
-      loadPharmacies: async () => {
-        // Se já há um carregamento em andamento, aguarda ele para não duplicar requisições
-        if (loadPharmaciesPromise) {
+      loadPharmacies: async (force = false) => {
+        // Se já há um carregamento em andamento e não forçamos recarga, aguarda ele para não duplicar requisições
+        if (loadPharmaciesPromise && !force) {
           return loadPharmaciesPromise;
         }
 
-        // Se já carregou e temos farmácias na memória e frescas, não precisa refazer fetch
-        if (get().pharmacies && get().pharmacies.length > 0 && get().pharmaciesFresh) {
+        // Se já carregou e temos farmácias na memória e frescas, não precisa refazer fetch (a menos que seja forçado)
+        if (!force && get().pharmacies && get().pharmacies.length > 0 && get().pharmaciesFresh) {
           return;
         }
 
@@ -1536,8 +1557,9 @@ export const useAdmin = create<AdminState>()(
         try {
           const { data } = await supabase.from('lojas').select('*').eq('id', id).maybeSingle();
           if (data) {
-            dbLoja = data;
-            dbThemeColors = typeof data.theme_colors === 'string' ? JSON.parse(data.theme_colors) : (data.theme_colors || {});
+            const anyData = data as any;
+            dbLoja = anyData;
+            dbThemeColors = typeof anyData.theme_colors === 'string' ? JSON.parse(anyData.theme_colors) : (anyData.theme_colors || {});
           }
         } catch (e) {
           console.warn("Aviso ao buscar loja no banco:", e);
@@ -1585,19 +1607,19 @@ export const useAdmin = create<AdminState>()(
           status_loja_virtual: p.virtualStoreStatus !== undefined ? p.virtualStoreStatus : (currentPharmacy?.virtualStoreStatus || dbThemeColors?.status_loja_virtual),
           categoria_associado: p.categoriaAssociado !== undefined ? p.categoriaAssociado : (currentPharmacy?.categoriaAssociado || dbThemeColors?.categoria_associado),
           trabalha_com_encarte: p.trabalhaComEncarte !== undefined ? p.trabalhaComEncarte : (currentPharmacy?.trabalhaComEncarte ?? dbThemeColors?.trabalha_com_encarte),
-          aceitaEntrega: p.aceitaEntrega !== undefined ? p.aceitaEntrega : (currentPharmacy?.aceitaEntrega ?? dbThemeColors?.aceitaEntrega),
+          aceitaEntrega: p.aceitaEntrega !== undefined ? Boolean(p.aceitaEntrega) : (currentPharmacy?.aceitaEntrega !== undefined ? Boolean(currentPharmacy.aceitaEntrega) : Boolean(dbThemeColors?.aceitaEntrega)),
           modeloFrete: p.modeloFrete !== undefined ? p.modeloFrete : (currentPharmacy?.modeloFrete || dbThemeColors?.modeloFrete),
           horarioInicioEntrega: p.horarioInicioEntrega !== undefined ? p.horarioInicioEntrega : (currentPharmacy?.horarioInicioEntrega || dbThemeColors?.horarioInicioEntrega),
           horarioFimEntrega: p.horarioFimEntrega !== undefined ? p.horarioFimEntrega : (currentPharmacy?.horarioFimEntrega || dbThemeColors?.horarioFimEntrega),
           horarioFimEntregaRisco: p.horarioFimEntregaRisco !== undefined ? p.horarioFimEntregaRisco : (currentPharmacy?.horarioFimEntregaRisco || dbThemeColors?.horarioFimEntregaRisco),
-          tempoEntrega: p.tempoEntrega !== undefined ? p.tempoEntrega : (currentPharmacy?.tempoEntrega || dbThemeColors?.tempoEntrega),
+          tempoEntrega: p.tempoEntrega !== undefined ? String(p.tempoEntrega) : (currentPharmacy?.tempoEntrega !== undefined ? String(currentPharmacy.tempoEntrega) : (dbThemeColors?.tempoEntrega || '')),
           custoEntrega: p.custoEntrega !== undefined ? p.custoEntrega : (currentPharmacy?.custoEntrega ?? dbThemeColors?.custoEntrega),
           raioEntregaKm: p.raioEntregaKm !== undefined ? p.raioEntregaKm : (currentPharmacy?.raioEntregaKm ?? dbThemeColors?.raioEntregaKm),
           faixasCep: p.faixasCep !== undefined ? p.faixasCep : (currentPharmacy?.faixasCep || dbThemeColors?.faixasCep),
-          aceitaRetirada: p.aceitaRetirada !== undefined ? p.aceitaRetirada : (currentPharmacy?.aceitaRetirada ?? dbThemeColors?.aceitaRetirada),
+          aceitaRetirada: p.aceitaRetirada !== undefined ? Boolean(p.aceitaRetirada) : (currentPharmacy?.aceitaRetirada !== undefined ? Boolean(currentPharmacy.aceitaRetirada) : Boolean(dbThemeColors?.aceitaRetirada)),
           horarioInicioRetirada: p.horarioInicioRetirada !== undefined ? p.horarioInicioRetirada : (currentPharmacy?.horarioInicioRetirada || dbThemeColors?.horarioInicioRetirada),
           horarioFimRetirada: p.horarioFimRetirada !== undefined ? p.horarioFimRetirada : (currentPharmacy?.horarioFimRetirada || dbThemeColors?.horarioFimRetirada),
-          tempoRetirada: p.tempoRetirada !== undefined ? p.tempoRetirada : (currentPharmacy?.tempoRetirada || dbThemeColors?.tempoRetirada),
+          tempoRetirada: p.tempoRetirada !== undefined ? String(p.tempoRetirada) : (currentPharmacy?.tempoRetirada !== undefined ? String(currentPharmacy.tempoRetirada) : (dbThemeColors?.tempoRetirada || '')),
           aceitaUber: p.aceitaUber !== undefined ? p.aceitaUber : (currentPharmacy?.aceitaUber ?? dbThemeColors?.aceitaUber),
           custoUber: p.custoUber !== undefined ? p.custoUber : (currentPharmacy?.custoUber ?? dbThemeColors?.custoUber),
           aceita99: p.aceita99 !== undefined ? p.aceita99 : (currentPharmacy?.aceita99 ?? dbThemeColors?.aceita99),
@@ -1710,8 +1732,37 @@ export const useAdmin = create<AdminState>()(
           console.error("Erro ao atualizar loja:", error);
           throw new Error(error.message || "Erro ao atualizar loja no banco de dados.");
         } else {
+          // Atualiza o estado local do Zustand imediatamente de forma otimista
+          set((state) => {
+            const updatedPharmacies = state.pharmacies.map((item) => {
+              if (item.id === id) {
+                return {
+                  ...item,
+                  ...p,
+                  aceitaEntrega: theme_colors_payload.aceitaEntrega,
+                  horarioInicioEntrega: theme_colors_payload.horarioInicioEntrega,
+                  horarioFimEntrega: theme_colors_payload.horarioFimEntrega,
+                  tempoEntrega: theme_colors_payload.tempoEntrega,
+                  aceitaRetirada: theme_colors_payload.aceitaRetirada,
+                  horarioInicioRetirada: theme_colors_payload.horarioInicioRetirada,
+                  horarioFimRetirada: theme_colors_payload.horarioFimRetirada,
+                  tempoRetirada: theme_colors_payload.tempoRetirada,
+                  horariosPorDia: normalizeHorariosPorDia(theme_colors_payload.horariosPorDia),
+                  datasEspeciais: Array.isArray(theme_colors_payload.datasEspeciais) ? theme_colors_payload.datasEspeciais : [],
+                  meiosEntregaPersonalizados: Array.isArray(theme_colors_payload.meiosEntregaPersonalizados) ? theme_colors_payload.meiosEntregaPersonalizados : [],
+                  raiosEntrega: Array.isArray(theme_colors_payload.raiosEntrega) ? theme_colors_payload.raiosEntrega : [],
+                  faixasValorPedido: Array.isArray(theme_colors_payload.faixasValorPedido) ? theme_colors_payload.faixasValorPedido : [],
+                  themeColors: theme_colors_payload,
+                };
+              }
+              return item;
+            });
+            saveCachedPharmacies(updatedPharmacies);
+            return { pharmacies: updatedPharmacies };
+          });
+
           (loadPharmaciesThrottle as any)._lastCall = 0;
-          await get().loadPharmacies();
+          await get().loadPharmacies(true);
         }
       },
       togglePharmacyStatus: async (id) => {

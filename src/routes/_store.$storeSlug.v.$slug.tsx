@@ -146,7 +146,7 @@ function VitrinePage() {
             {filteredProducts.length} produto{filteredProducts.length === 1 ? "" : "s"} encontrado{filteredProducts.length === 1 ? "" : "s"}
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start sm:items-stretch">
             {displayedProducts.map((p: Produto) => (
               <ProductCard key={p.id} p={p} />
             ))}

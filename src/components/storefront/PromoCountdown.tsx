@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Clock, Flame, Zap, Gift, Star, ShoppingBag, ShoppingBasket, Percent, Tag, CheckCircle2 } from "lucide-react";
 import { Promocao } from "@/stores/marketing";
-import { brl } from "@/lib/format";
+import { brl, highlightGratis } from "@/lib/format";
 import { calculatePromoTimeRemaining } from "@/lib/utils";
 
 export const PROMO_ICONS: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -87,7 +87,7 @@ export function PromoCardBadge({
         <div className="flex items-center gap-1 truncate">
           <Clock className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate text-[10px] uppercase font-black">
-            {promo.titulo ? promo.titulo.slice(0, 18) : "OFERTA"}
+            {highlightGratis(promo.titulo ? promo.titulo.slice(0, 18) : "OFERTA")}
           </span>
         </div>
         <div 
@@ -107,7 +107,7 @@ export function PromoCardBadge({
       style={{ backgroundColor: themeColor }}
     >
       <IconComponent className="w-3 h-3 shrink-0" />
-      <span className="uppercase">{promo.titulo || "OFERTA ESPECIAL"}</span>
+      <span className="uppercase">{highlightGratis(promo.titulo || "OFERTA ESPECIAL")}</span>
     </div>
   );
 }
@@ -284,7 +284,7 @@ export function PromoLevePagueOfferBox({
         <div className="flex items-center gap-2">
           <Tag className="w-5 h-5" />
           <span className="font-black text-sm uppercase tracking-wide">
-            {promo.titulo || `Leve ${qtd} e Pague Menos`}
+            {highlightGratis(promo.titulo || `Leve ${qtd} e Pague Menos`)}
           </span>
         </div>
         {economia > 0 && (

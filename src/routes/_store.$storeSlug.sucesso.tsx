@@ -270,7 +270,7 @@ function SucessoPage() {
                 )}
                 <div className="flex justify-between text-sm text-slate-600">
                   <span>Frete</span>
-                  <span className="font-medium">{order.valores?.frete === 0 ? <span className="text-green-600 font-bold">Grátis</span> : brl(order.valores?.frete || 0)}</span>
+                  <span className="font-medium">{order.valores?.frete === 0 ? <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> : brl(order.valores?.frete || 0)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-black text-slate-900 pt-3 border-t">
                   <span>Total</span>

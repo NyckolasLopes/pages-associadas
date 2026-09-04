@@ -158,7 +158,7 @@ function BrandPage() {
 
       {productsList.length > 0 ? (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 items-start sm:items-stretch">
             {productsList.map((p: any) => (
               <ProductCard key={p.id} p={p} />
             ))}
