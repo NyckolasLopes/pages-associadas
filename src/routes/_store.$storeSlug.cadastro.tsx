@@ -26,7 +26,13 @@ function CadastroPage() {
   const loginWithProvider = useAuth((s) => s.loginWithProvider);
 
   const social = async (provider: "google" | "apple" | "facebook") => {
-    toast.info("O cadastro com " + (provider === "google" ? "Google" : provider) + " está sendo configurado. Por favor, cadastre-se preenchendo os dados abaixo.");
+    try {
+      toast.loading(`Redirecionando para cadastro com ${provider === "google" ? "Google" : provider}...`, { id: "oauth-cadastro" });
+      await loginWithProvider(provider, redirect || `/${storeSlug}`, storeSlug);
+    } catch (err: any) {
+      console.error("Erro no cadastro social:", err);
+      toast.error(`Falha ao iniciar o cadastro com ${provider === "google" ? "Google" : provider}. Tente novamente.`, { id: "oauth-cadastro" });
+    }
   };
 
   const [nome, setNome] = useState("");

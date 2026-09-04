@@ -154,7 +154,13 @@ function LoginPage() {
   };
 
   const social = async (provider: "google" | "apple" | "facebook") => {
-    toast.info("O login social com " + (provider === "google" ? "Google" : provider) + " está sendo configurado. Por favor, acesse com seu e-mail e senha.");
+    try {
+      toast.loading(`Redirecionando para login com ${provider === "google" ? "Google" : provider}...`, { id: "oauth-login" });
+      await loginWithProvider(provider, redirect || `/${storeSlug}`, storeSlug);
+    } catch (err: any) {
+      console.error("Erro no login social:", err);
+      toast.error(`Falha ao iniciar o login com ${provider === "google" ? "Google" : provider}. Tente novamente.`, { id: "oauth-login" });
+    }
   };
 
   return (

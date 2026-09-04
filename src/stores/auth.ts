@@ -379,6 +379,10 @@ export const useAuth = create<AuthState>((set, get) => {
         toast.error(`Falha no login com ${provider}: ${error.message}`);
         throw error;
       }
+
+      if (data?.url && typeof window !== "undefined") {
+        window.location.href = data.url;
+      }
     },
 
     logout: async (explicitStoreSlug?: string) => {
@@ -543,17 +547,33 @@ export const useAuth = create<AuthState>((set, get) => {
 
             if (_isLoggingOut) return;
 
+            const fullName = profile?.nome || u.user_metadata?.full_name || u.user_metadata?.name || u.email!.split("@")[0];
+
             const userObj: User = {
               id: u.id,
               email: u.email!,
-              name: profile?.nome || u.email!.split("@")[0],
-              nome: profile?.nome || undefined,
+              name: fullName,
+              nome: profile?.nome || u.user_metadata?.full_name || u.user_metadata?.name || undefined,
               cpf: profile?.cpf || undefined,
               celular: profile?.telefone || undefined,
               provider: u.app_metadata?.provider as any,
               storeSlug: currentStore,
               loggedAt: Date.now(),
             };
+
+            // Se o profile ainda não possui nome no banco, atualiza suavemente
+            if (!profile?.nome && (u.user_metadata?.full_name || u.user_metadata?.name)) {
+              supabase
+                .from("profiles")
+                .upsert({
+                  id: u.id,
+                  nome: fullName,
+                  email: u.email,
+                  updated_at: new Date().toISOString()
+                }, { onConflict: "id" })
+                .then(() => {})
+                .catch((e) => console.warn("Erro ao registrar profile do Google:", e));
+            }
 
             sessions[currentStore] = userObj;
             saveStoreSessions(sessions);
