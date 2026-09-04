@@ -940,17 +940,67 @@ export const useAdmin = create<AdminState>()(
             const isPanelPass = Boolean(panel?.password && cleanPassword === panel.password);
             const isApiKeyPass = Boolean(matchedLoja.api_key && cleanPassword === matchedLoja.api_key);
 
-            if (isMasterPass || isCnpjPass || isPanelPass || isApiKeyPass) {
+            // Verifica se há usuário local associado à loja
+            const localUserLinked = get().users.find(
+              u => (u.lojasVinculadas?.includes(matchedLoja.id) || (u.email && matchedLoja.email && u.email.toLowerCase() === matchedLoja.email.toLowerCase())) &&
+                   (u.password === cleanPassword || cleanPassword === "Aspro@2026")
+            );
+
+            // Verifica se há perfil no banco de dados vinculado a esta loja
+            let dbProfileLinked: any = null;
+            let isStoredPassMatch = false;
+            let isSupabaseAuthStoreSuccess = false;
+
+            try {
+              const { data: profiles } = await supabase.from('profiles').select('*');
+              if (profiles && profiles.length > 0) {
+                dbProfileLinked = profiles.find((p: any) => {
+                  const isStoreLinked = Array.isArray(p.lojas_vinculadas) && p.lojas_vinculadas.includes(matchedLoja.id);
+                  const isEmailMatch = p.email && matchedLoja.email && p.email.toLowerCase() === matchedLoja.email.toLowerCase();
+                  return isStoreLinked || isEmailMatch;
+                });
+
+                if (dbProfileLinked?.anotacoes) {
+                  try {
+                    const parsed = JSON.parse(dbProfileLinked.anotacoes);
+                    if (parsed && typeof parsed.password === "string" && parsed.password === cleanPassword) {
+                      isStoredPassMatch = true;
+                    }
+                  } catch {
+                    if (typeof dbProfileLinked.anotacoes === "string" && dbProfileLinked.anotacoes.trim() === cleanPassword) {
+                      isStoredPassMatch = true;
+                    }
+                  }
+                }
+              }
+
+              // Tenta autenticar no Supabase Auth com o email da loja ou do perfil vinculado
+              const authEmailCandidate = dbProfileLinked?.email || matchedLoja.email;
+              if (authEmailCandidate && !isMasterPass && !isCnpjPass && !isPanelPass && !isApiKeyPass && !isStoredPassMatch && !localUserLinked) {
+                const { data: authRes, error: authErr } = await supabase.auth.signInWithPassword({
+                  email: authEmailCandidate.trim().toLowerCase(),
+                  password: cleanPassword,
+                });
+                if (!authErr && authRes?.user) {
+                  isSupabaseAuthStoreSuccess = true;
+                }
+              }
+            } catch (err) {
+              console.warn("Erro ao verificar credenciais adicionais da loja:", err);
+            }
+
+            if (isMasterPass || isCnpjPass || isPanelPass || isApiKeyPass || isStoredPassMatch || localUserLinked || isSupabaseAuthStoreSuccess) {
               const cat = (matchedLoja.categoriaAssociado || "").toString().toLowerCase();
               const isParceiro = cat === "parceiro" || (matchedLoja.nome || "").toLowerCase().includes("parceiro");
-              const grupoId = isParceiro ? "grupo-associado-parceiro" : "grupo-associado-pleno";
+              const grupoId = dbProfileLinked?.grupo_id || localUserLinked?.grupoId || (isParceiro ? "grupo-associado-parceiro" : "grupo-associado-pleno");
+              const isProp = Boolean(dbProfileLinked?.is_admin || dbProfileLinked?.proprietario || localUserLinked?.proprietario);
 
               const adminUserObj = {
-                id: `loja-user-${matchedLoja.id}`,
-                name: matchedLoja.nome || matchedLoja.razaoSocial || `Loja ${matchedLoja.id}`,
-                email: matchedLoja.email || cleanEmail,
+                id: dbProfileLinked?.id || localUserLinked?.id || `loja-user-${matchedLoja.id}`,
+                name: dbProfileLinked?.nome || localUserLinked?.name || matchedLoja.nome || matchedLoja.razaoSocial || `Loja ${matchedLoja.id}`,
+                email: dbProfileLinked?.email || localUserLinked?.email || matchedLoja.email || cleanEmail,
                 grupoId: grupoId,
-                proprietario: false,
+                proprietario: isProp,
                 lojasVinculadas: [matchedLoja.id],
               };
 

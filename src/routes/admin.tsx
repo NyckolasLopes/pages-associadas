@@ -265,6 +265,7 @@ function AdminLayout() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [openNavSection, setOpenNavSection] = useState<string>("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -400,12 +401,19 @@ function AdminLayout() {
                 }
               }
 
-              const result = await login(email, pass);
-              if(!result.success) {
-                toast.error(result.message || "Credenciais inválidas");
-              } else {
-                toast.success("Login realizado com sucesso!");
-                navigate({ to: "/admin" });
+              setIsSubmitting(true);
+              try {
+                const result = await login(email, pass);
+                if (!result.success) {
+                  toast.error(result.message || "Credenciais inválidas");
+                } else {
+                  toast.success("Login realizado com sucesso!");
+                  navigate({ to: "/admin" });
+                }
+              } catch (err: any) {
+                toast.error(err?.message || "Erro ao tentar realizar login");
+              } finally {
+                setIsSubmitting(false);
               }
             }}>
               <div className="space-y-2">
@@ -417,6 +425,7 @@ function AdminLayout() {
                   placeholder="Digite seu e-mail ou CNPJ da loja" 
                   className="h-12 bg-[#eaf2fd] border-transparent focus-visible:ring-primary/20"
                   required 
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
@@ -429,6 +438,7 @@ function AdminLayout() {
                     className="h-12 pr-10"
                     placeholder="Digite sua senha"
                     required 
+                    disabled={isSubmitting}
                   />
                   <div 
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-slate-700 p-1"
@@ -443,8 +453,12 @@ function AdminLayout() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full font-bold h-12 bg-primary hover:bg-primary/90 text-primary-foreground border-0">
-                Entrar
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full font-bold h-12 bg-primary hover:bg-primary/90 text-primary-foreground border-0 transition-opacity disabled:opacity-70"
+              >
+                {isSubmitting ? "Entrando..." : "Entrar"}
               </Button>
             </form>
 

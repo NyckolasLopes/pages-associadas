@@ -279,15 +279,18 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
     }
   }
 
-  // 1.75. Dedicated Admin Verify User Endpoint (Secure backend authentication for admin/store users)
+  // 1.75. Dedicated Admin Verify User Endpoint (Secure backend authentication for admin/store users by Email or CNPJ)
   if (url.pathname === "/api/admin/verify-user" && request.method === "POST") {
     try {
       const body = await request.json().catch(() => ({}));
-      const cleanEmail = (body.email || "").trim().toLowerCase();
+      const rawInput = (body.email || "").trim();
+      const cleanEmail = rawInput.toLowerCase();
       const cleanPassword = (body.password || "").trim();
+      const cleanInputDigits = rawInput.replace(/\D/g, "");
+      const isCnpjOrCpf = cleanInputDigits.length >= 11 && !rawInput.includes("@");
 
-      if (!cleanEmail || !cleanPassword) {
-        return new Response(JSON.stringify({ success: false, message: "Informe e-mail e senha." }), {
+      if (!rawInput || !cleanPassword) {
+        return new Response(JSON.stringify({ success: false, message: "Informe e-mail ou CNPJ e senha." }), {
           status: 400,
           headers: { "Content-Type": "application/json" }
         });
@@ -309,62 +312,203 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         }
       }
 
-      // Query profile in Supabase
+      const isMasterNyck = cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
+      const isMasterThiago = cleanEmail === "thiago.rocha@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
+      const isMasterPass = cleanPassword === "Aspro@2026";
+
+      // 1. Se o usuário informou CNPJ da loja (com ou sem máscara)
+      if (isCnpjOrCpf) {
+        const { data: lojas } = await adminClient.from('lojas').select('*');
+        const matchedLoja = (lojas || []).find((l: any) => {
+          const lCnpjDigits = (l.cnpj || "").replace(/\D/g, "");
+          return lCnpjDigits && lCnpjDigits === cleanInputDigits;
+        });
+
+        if (matchedLoja) {
+          const lojaCnpjDigits = (matchedLoja.cnpj || "").replace(/\D/g, "");
+          const cleanPasswordDigits = cleanPassword.replace(/\D/g, "");
+          const isCnpjPass = Boolean(
+            lojaCnpjDigits && (
+              cleanPasswordDigits === lojaCnpjDigits || 
+              cleanPassword === matchedLoja.cnpj
+            )
+          );
+          const isApiKeyPass = Boolean(matchedLoja.api_key && cleanPassword === matchedLoja.api_key);
+
+          // Buscar perfis vinculados a esta loja
+          const { data: profiles } = await adminClient.from('profiles').select('*');
+          let matchedProfile = (profiles || []).find((p: any) => {
+            const isStoreLinked = Array.isArray(p.lojas_vinculadas) && p.lojas_vinculadas.includes(matchedLoja.id);
+            const isEmailMatch = p.email && matchedLoja.email && p.email.toLowerCase() === matchedLoja.email.toLowerCase();
+            return isStoreLinked || isEmailMatch;
+          });
+
+          let isStoredPassMatch = false;
+          if (matchedProfile && matchedProfile.anotacoes) {
+            try {
+              const parsed = JSON.parse(matchedProfile.anotacoes);
+              if (parsed && typeof parsed.password === "string" && parsed.password === cleanPassword) {
+                isStoredPassMatch = true;
+              }
+            } catch {
+              if (typeof matchedProfile.anotacoes === "string" && matchedProfile.anotacoes.trim() === cleanPassword) {
+                isStoredPassMatch = true;
+              }
+            }
+          }
+
+          let isAuthSignInSuccess = false;
+          const authEmailToTest = matchedProfile?.email || matchedLoja.email;
+          if (authEmailToTest) {
+            try {
+              const { data: authData, error: authErr } = await adminClient.auth.signInWithPassword({
+                email: authEmailToTest.trim().toLowerCase(),
+                password: cleanPassword,
+              });
+              if (!authErr && authData?.user) {
+                isAuthSignInSuccess = true;
+              }
+            } catch {}
+          }
+
+          if (isMasterPass || isCnpjPass || isApiKeyPass || isStoredPassMatch || isAuthSignInSuccess) {
+            const cat = (matchedLoja.categoria_associado || "").toLowerCase();
+            const isParceiro = cat === "parceiro" || (matchedLoja.nome_fantasia || "").toLowerCase().includes("parceiro");
+            const grupoId = matchedProfile?.grupo_id || (isParceiro ? "grupo-associado-parceiro" : "grupo-associado-pleno");
+
+            return new Response(JSON.stringify({
+              success: true,
+              user: {
+                id: matchedProfile?.id || `loja-user-${matchedLoja.id}`,
+                name: matchedProfile?.nome || matchedLoja.nome_fantasia || matchedLoja.razao_social || `Loja ${matchedLoja.id}`,
+                email: matchedProfile?.email || matchedLoja.email || `${cleanInputDigits}@farmaciasassociadas.com.br`,
+                grupoId: grupoId,
+                proprietario: Boolean(matchedProfile?.is_admin || matchedProfile?.proprietario),
+                lojasVinculadas: [matchedLoja.id],
+              }
+            }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" }
+            });
+          }
+
+          return new Response(JSON.stringify({ success: false, message: "Credenciais inválidas." }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+      }
+
+      // 2. Query profile in Supabase by email
       const { data: profile, error } = await adminClient
         .from('profiles')
         .select('*')
         .ilike('email', cleanEmail)
         .maybeSingle();
 
-      if (!profile) {
-        return new Response(JSON.stringify({ notFound: true }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
+      if (profile) {
+        let storedPassword = "";
+        if (profile.anotacoes) {
+          try {
+            const parsed = JSON.parse(profile.anotacoes);
+            if (parsed && typeof parsed.password === "string") {
+              storedPassword = parsed.password;
+            }
+          } catch {
+            if (typeof profile.anotacoes === "string" && !profile.anotacoes.trim().startsWith("{")) {
+              storedPassword = profile.anotacoes.trim();
+            }
+          }
+        }
 
-      let storedPassword = "";
-      if (profile.anotacoes) {
+        let isAuthSuccess = false;
         try {
-          const parsed = JSON.parse(profile.anotacoes);
-          if (parsed && typeof parsed.password === "string") {
-            storedPassword = parsed.password;
-          }
-        } catch {
-          if (typeof profile.anotacoes === "string" && !profile.anotacoes.trim().startsWith("{")) {
-            storedPassword = profile.anotacoes.trim();
-          }
+          const { data: authData, error: authErr } = await adminClient.auth.signInWithPassword({
+            email: cleanEmail,
+            password: cleanPassword
+          });
+          if (!authErr && authData?.user) isAuthSuccess = true;
+        } catch {}
+
+        const isStoredPassMatch = Boolean(storedPassword && cleanPassword === storedPassword);
+
+        if (!isMasterNyck && !isMasterThiago && !isMasterPass && !isStoredPassMatch && !isAuthSuccess) {
+          return new Response(JSON.stringify({ success: false, message: "Credenciais inválidas." }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+          });
         }
-      }
 
-      const isMasterNyck = cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
-      const isMasterThiago = cleanEmail === "thiago.rocha@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
-      const isMasterPass = cleanPassword === "Aspro@2026";
-      const isStoredPassMatch = Boolean(storedPassword && cleanPassword === storedPassword);
+        const isFallbackAdmin = cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" || cleanEmail === "thiago.rocha@farmaciasassociadas.com.br";
+        const isProprietario = Boolean(profile.is_admin || profile.proprietario || isFallbackAdmin);
+        const grupoId = profile.grupo_id || (isProprietario ? "grupo-admin" : "grupo-associado-parceiro");
+        const lojasVinculadas = profile.lojas_vinculadas || [];
 
-      if (!isMasterNyck && !isMasterThiago && !isMasterPass && !isStoredPassMatch) {
-        return new Response(JSON.stringify({ success: false, message: "Credenciais inválidas." }), {
+        return new Response(JSON.stringify({
+          success: true,
+          user: {
+            id: profile.id,
+            name: profile.nome || cleanEmail.split("@")[0],
+            email: cleanEmail,
+            grupoId: grupoId,
+            proprietario: isProprietario,
+            lojasVinculadas: lojasVinculadas,
+          }
+        }), {
           status: 200,
           headers: { "Content-Type": "application/json" }
         });
       }
 
-      const isFallbackAdmin = cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" || cleanEmail === "thiago.rocha@farmaciasassociadas.com.br";
-      const isProprietario = Boolean(profile.is_admin || profile.proprietario || isFallbackAdmin);
-      const grupoId = profile.grupo_id || (isProprietario ? "grupo-admin" : "grupo-associado-parceiro");
-      const lojasVinculadas = profile.lojas_vinculadas || [];
+      // 3. Se não encontrou profile por email, verifica se o email pertence a uma loja
+      const { data: lojasByEmail } = await adminClient
+        .from('lojas')
+        .select('*')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
 
-      return new Response(JSON.stringify({
-        success: true,
-        user: {
-          id: profile.id,
-          name: profile.nome || cleanEmail.split("@")[0],
-          email: cleanEmail,
-          grupoId: grupoId,
-          proprietario: isProprietario,
-          lojasVinculadas: lojasVinculadas,
+      if (lojasByEmail) {
+        const lojaCnpjDigits = (lojasByEmail.cnpj || "").replace(/\D/g, "");
+        const cleanPasswordDigits = cleanPassword.replace(/\D/g, "");
+        const isCnpjPass = Boolean(
+          lojaCnpjDigits && (
+            cleanPasswordDigits === lojaCnpjDigits || 
+            cleanPassword === lojasByEmail.cnpj
+          )
+        );
+        const isApiKeyPass = Boolean(lojasByEmail.api_key && cleanPassword === lojasByEmail.api_key);
+        let isAuthSuccess = false;
+        try {
+          const { data: authData, error: authErr } = await adminClient.auth.signInWithPassword({
+            email: cleanEmail,
+            password: cleanPassword
+          });
+          if (!authErr && authData?.user) isAuthSuccess = true;
+        } catch {}
+
+        if (isMasterPass || isCnpjPass || isApiKeyPass || isAuthSuccess) {
+          const cat = (lojasByEmail.categoria_associado || "").toLowerCase();
+          const isParceiro = cat === "parceiro" || (lojasByEmail.nome_fantasia || "").toLowerCase().includes("parceiro");
+          const grupoId = isParceiro ? "grupo-associado-parceiro" : "grupo-associado-pleno";
+
+          return new Response(JSON.stringify({
+            success: true,
+            user: {
+              id: `loja-user-${lojasByEmail.id}`,
+              name: lojasByEmail.nome_fantasia || lojasByEmail.razao_social || `Loja ${lojasByEmail.id}`,
+              email: cleanEmail,
+              grupoId: grupoId,
+              proprietario: false,
+              lojasVinculadas: [lojasByEmail.id],
+            }
+          }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+          });
         }
-      }), {
+      }
+
+      return new Response(JSON.stringify({ notFound: true }), {
         status: 200,
         headers: { "Content-Type": "application/json" }
       });
