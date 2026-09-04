@@ -186,6 +186,16 @@ function CartPage() {
   const promocoes = useMarketing((s) => s.promocoes);
   
   const allPharmacies = useAdmin((s) => s.pharmacies);
+  const pharmaciesLoaded = useAdmin((s) => s.pharmaciesLoaded);
+  const loadPharmacies = useAdmin((s) => s.loadPharmacies);
+
+  // Garante que as farmácias sejam carregadas se ainda não estiverem disponíveis
+  useEffect(() => {
+    if (!pharmaciesLoaded || allPharmacies.length === 0) {
+      loadPharmacies();
+    }
+  }, [pharmaciesLoaded, allPharmacies.length, loadPharmacies]);
+
   const selectedPharmacy = useMemo(() => {
     if (storeSlug) {
       const p = allPharmacies.find(ph => (ph.slug || "").toLowerCase() === storeSlug.toLowerCase());
@@ -1315,7 +1325,14 @@ function CartPage() {
                   <div className="text-xs text-slate-600 grid gap-2">
                     <p className="flex items-start gap-2">
                       <MapPin className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" />
-                      <span>{selectedPharmacy.endereco}</span>
+                      <span>
+                        {[selectedPharmacy.endereco, selectedPharmacy.numero, selectedPharmacy.complemento].filter(Boolean).join(", ")}
+                        {(selectedPharmacy.bairro || selectedPharmacy.cidade) && (
+                          <>
+                            {" - "}{[selectedPharmacy.bairro, selectedPharmacy.cidade, selectedPharmacy.uf].filter(Boolean).join("/")}
+                          </>
+                        )}
+                      </span>
                     </p>
                     <p className="flex items-start gap-2">
                       <Clock className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" />
@@ -1643,7 +1660,12 @@ function CartPage() {
                     <div className="bg-primary/10 text-primary-dark text-xs p-3 rounded border border-primary/20 mt-3 animate-in fade-in slide-in-from-top-2">
                       <div className="font-bold flex items-center gap-1.5 mb-1.5"><MapPin className="h-4 w-4"/> {hasService ? "Local de Realização do Serviço" : "Atenção ao Endereço de Retirada"}</div>
                       <p>{hasService ? "Dirija-se ao local abaixo para realização do serviço:" : "O seu pedido deverá ser retirado presencialmente no seguinte endereço:"}</p>
-                      <p className="mt-1.5 font-bold text-sm bg-white p-2 rounded shadow-sm border border-primary/10">{selectedPharmacy.endereco}</p>
+                      <p className="mt-1.5 font-bold text-sm bg-white p-2 rounded shadow-sm border border-primary/10">
+                        {[selectedPharmacy.endereco, selectedPharmacy.numero, selectedPharmacy.complemento].filter(Boolean).join(", ")}
+                        {(selectedPharmacy.bairro || selectedPharmacy.cidade) && (
+                          <> - {[selectedPharmacy.bairro, selectedPharmacy.cidade, selectedPharmacy.uf].filter(Boolean).join("/")}</>
+                        )}
+                      </p>
                     </div>
                   )}
                 </div>
