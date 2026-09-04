@@ -2,7 +2,7 @@ import { LojaFormFields } from "@/components/admin/LojaFormFields";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAdmin, Pharmacy } from "@/stores/admin";
 import { useRegionsStore } from "@/stores/regions";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,7 @@ import {
   Key,
   Eye,
   EyeOff,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -157,9 +158,10 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
 }
 
 function LojasAdmin() {
-  const { pharmacies, addPharmacy, updatePharmacy, togglePharmacyStatus, removePharmacy, networkDefaultTheme } = useAdmin();
+  const { pharmacies, addPharmacy, updatePharmacy, togglePharmacyStatus, removePharmacy, networkDefaultTheme, loadPharmacies } = useAdmin();
   const { regions } = useRegionsStore();
   const [search, setSearch] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Pharmacy>({ ...EMPTY_PHARMACY });
@@ -169,6 +171,11 @@ function LojasAdmin() {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const navigate = useNavigate();
+
+  // Revalida automaticamente com o banco ao entrar na tela Ver Todas
+  useEffect(() => {
+    loadPharmacies(true);
+  }, [loadPharmacies]);
 
   const filteredPharmacies = pharmacies.filter(
     (p) =>
@@ -289,9 +296,24 @@ function LojasAdmin() {
             Gerencie as farmácias disponíveis para busca de CEP e Retirada.
           </p>
         </div>
-        <Button onClick={handleAdd} className="font-bold">
-          <Plus className="w-4 h-4 mr-2" /> Adicionar Loja
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              setIsRefreshing(true);
+              loadPharmacies(true).finally(() => setIsRefreshing(false));
+            }}
+            disabled={isRefreshing}
+            className="text-xs font-bold"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            {isRefreshing ? "Atualizando..." : "Atualizar"}
+          </Button>
+          <Button onClick={handleAdd} className="font-bold">
+            <Plus className="w-4 h-4 mr-2" /> Adicionar Loja
+          </Button>
+        </div>
       </div>
 
       {/* List table */}

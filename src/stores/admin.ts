@@ -1544,7 +1544,29 @@ export const useAdmin = create<AdminState>()(
           console.error("Erro ao adicionar loja:", error);
           throw new Error(error.message || "Erro ao adicionar loja no banco de dados.");
         } else {
-          await get().loadPharmacies();
+          const fullNewPharmacy: Pharmacy = {
+            ...p,
+            id: p.id,
+            ativo: p.ativo ?? true,
+            categoriaAssociado: p.categoriaAssociado || 'Pleno',
+            isPleno: (p.categoriaAssociado || 'Pleno') === 'Pleno',
+            themeColors: theme_colors_payload,
+          };
+
+          // 1. Atualização otimista imediata no estado Zustand e no cache persistente local
+          set((state) => {
+            const exists = state.pharmacies.some(item => item.id === fullNewPharmacy.id);
+            const updatedPharmacies = exists 
+              ? state.pharmacies.map(item => item.id === fullNewPharmacy.id ? fullNewPharmacy : item)
+              : [fullNewPharmacy, ...state.pharmacies];
+            saveCachedPharmacies(updatedPharmacies);
+            return { pharmacies: updatedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true };
+          });
+
+          // 2. Destrava throttle e promessa pendente para sincronizar imediatamente com o banco
+          (loadPharmaciesThrottle as any)._lastCall = 0;
+          loadPharmaciesPromise = null;
+          await get().loadPharmacies(true);
         }
       },
       updatePharmacy: async (id, p) => {
@@ -1836,8 +1858,11 @@ export const useAdmin = create<AdminState>()(
             set((s) => {
               const updated = s.pharmacies.map(x => x.id === id ? { ...x, ativo: newStatus } : x);
               saveCachedPharmacies(updated);
-              return { pharmacies: updated };
+              return { pharmacies: updated, pharmaciesFresh: true };
             });
+            (loadPharmaciesThrottle as any)._lastCall = 0;
+            loadPharmaciesPromise = null;
+            await get().loadPharmacies(true);
           }
         }
       },
@@ -1847,8 +1872,11 @@ export const useAdmin = create<AdminState>()(
           set((s) => {
             const updated = s.pharmacies.filter(x => x.id !== id);
             saveCachedPharmacies(updated);
-            return { pharmacies: updated };
+            return { pharmacies: updated, pharmaciesFresh: true };
           });
+          (loadPharmaciesThrottle as any)._lastCall = 0;
+          loadPharmaciesPromise = null;
+          await get().loadPharmacies(true);
         }
       },
 

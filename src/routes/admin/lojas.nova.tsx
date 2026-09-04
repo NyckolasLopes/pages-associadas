@@ -13,7 +13,8 @@ import {
   Zap,
   X,
   Plus,
-  Trash2
+  Trash2,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -139,8 +140,9 @@ function NovaLojaAdmin() {
   const { regions } = useRegionsStore();
   const [form, setForm] = useState<Pharmacy>({ ...EMPTY_PHARMACY, id: `p${Date.now()}` });
 
-  const update = (patch: Partial<Pharmacy>) => setForm((prev) => ({ ...prev, ...patch }));
+  const [saving, setSaving] = useState(false);
 
+  const update = (patch: Partial<Pharmacy>) => setForm((prev) => ({ ...prev, ...patch }));
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +153,7 @@ function NovaLojaAdmin() {
 
     const generatedId = form.id && form.id.startsWith("p1") ? crypto.randomUUID() : (form.id || crypto.randomUUID());
     
+    setSaving(true);
     try {
       await addPharmacy({ ...form, id: generatedId, categoriaAssociado: form.categoriaAssociado || "Pleno" });
       toast.success("Loja adicionada com sucesso!");
@@ -158,6 +161,8 @@ function NovaLojaAdmin() {
     } catch (err: any) {
       toast.error(err.message || "Erro ao adicionar loja.");
       console.error(err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -176,8 +181,9 @@ function NovaLojaAdmin() {
           <Button variant="outline" onClick={() => navigate({ to: "/admin/lojas" })}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} className="font-bold">
-            Salvar Loja
+          <Button onClick={handleSave} disabled={saving} className="font-bold">
+            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {saving ? "Salvando..." : "Salvar Loja"}
           </Button>
         </div>
       </div>
