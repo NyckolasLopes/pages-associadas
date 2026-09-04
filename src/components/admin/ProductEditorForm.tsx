@@ -11,7 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Produto, Categoria } from "@/types";
 import { catalog } from "@/services/catalog";
-import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X, Loader2, SlidersHorizontal, DollarSign, Image as ImageIcon, FileText, Eye, Download } from "lucide-react";
+import { ImagePlus, Package, Trash2, Search, PlusCircle, Link as LinkIcon, Info, Star, CheckCircle2, RefreshCw, Video, Youtube, ShoppingBag, Check, ChevronsUpDown, Upload, X, Loader2, SlidersHorizontal, DollarSign, Image as ImageIcon, FileText, Eye, Download, Sparkles } from "lucide-react";
+import { ProductMockupSelectorModal, PRODUCT_MOCKUPS } from "@/components/admin/ProductMockupSelectorModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getDeterministicStock } from "@/lib/stock";
@@ -77,6 +78,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const [comboOpen, setComboOpen] = useState(false);
   const [draggedImgIdx, setDraggedImgIdx] = useState<number | null>(null);
   const [eansSecundariosInput, setEansSecundariosInput] = useState<string>("");
+  const [mockupModalOpen, setMockupModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,6 +135,43 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       const nextFirst = newImagens[0];
       return { ...prev, imagens: newImagens, foto: nextFirst ? (nextFirst.caminhoImagem || nextFirst) : "" };
     });
+  };
+
+  const handleSelectMockup = (mockupUrl: string, asCover = false) => {
+    setFormData((prev) => {
+      if (!prev) return prev;
+      let currentImagens = [...(prev.imagens || [])];
+
+      // Remove se já existe para reposicionar
+      const existingIndex = currentImagens.findIndex((img: any) => {
+        const url = typeof img === "string" ? img : img?.caminhoImagem;
+        return url === mockupUrl;
+      });
+
+      if (existingIndex >= 0) {
+        currentImagens.splice(existingIndex, 1);
+      }
+
+      if (asCover) {
+        currentImagens.unshift({ caminhoImagem: mockupUrl });
+      } else {
+        if (currentImagens.length >= 5) {
+          toast.error("Limite máximo de 5 imagens atingido. Remova uma imagem para adicionar outra.");
+          return prev;
+        }
+        currentImagens.push({ caminhoImagem: mockupUrl });
+      }
+
+      const nextFirst = currentImagens[0];
+      const nextCoverUrl = typeof nextFirst === "string" ? nextFirst : nextFirst?.caminhoImagem;
+
+      return {
+        ...prev,
+        imagens: currentImagens,
+        foto: nextCoverUrl || prev.foto,
+      };
+    });
+    toast.success(asCover ? "Mockup definido como imagem principal (capa)!" : "Mockup adicionado às fotos do produto!");
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
@@ -1744,52 +1783,103 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
           {/* Card: Imagens */}
           {(activeTab === "imagens" || activeTab === "todos") && (
           <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm space-y-6 animate-in fade-in">
-            <div className="flex justify-between items-center pb-4 border-b">
-              <h3 className="font-bold text-2xl text-slate-800">Imagens do produto</h3>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pb-4 border-b">
+              <div>
+                <h3 className="font-bold text-2xl text-slate-800">Imagens do produto</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Adicione fotos reais ou escolha mockups oficiais da rede (máx. 5 fotos). A 1ª foto é a capa principal.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setMockupModalOpen(true)}
+                className="border-emerald-500/50 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-semibold text-xs h-9 px-3.5 shadow-sm flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                Catálogo de Mockups
+              </Button>
             </div>
             
             <div className="space-y-4">
               <div className="flex flex-wrap gap-4">
-                {((formData.imagens || []) as any[]).filter(i => i !== '/placeholder.svg').map((img: any, idx: number) => (
-                  <div 
-                    key={idx} 
-                    className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group cursor-grab active:cursor-grabbing"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, idx)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, idx)}
-                  >
-                    <img src={img.caminhoImagem || img} alt={`Imagem ${idx + 1}`} className="w-full h-full object-cover" />
-                    <button 
-                      onClick={() => handleRemoveImage(idx)}
-                      className="absolute top-1 right-1 bg-white hover:bg-red-50 text-red-500 rounded-md p-1.5 shadow-sm transition-colors z-10"
-                      title="Remover imagem"
+                {((formData.imagens || []) as any[]).filter(i => i !== '/placeholder.svg').map((img: any, idx: number) => {
+                  const imgUrl = typeof img === 'string' ? img : img?.caminhoImagem || "";
+                  const isMockup = PRODUCT_MOCKUPS.some(m => m.url === imgUrl) || imgUrl.startsWith('/produtos/');
+                  
+                  return (
+                    <div 
+                      key={idx} 
+                      className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group cursor-grab active:cursor-grabbing bg-slate-50"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, idx)}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    {idx === 0 && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/90 text-white text-[10px] text-center py-1 font-bold z-10 pointer-events-none">
-                        Capa
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      <img src={imgUrl} alt={`Imagem ${idx + 1}`} className="w-full h-full object-contain p-1" />
+                      
+                      {isMockup && (
+                        <div className="absolute top-1 left-1 bg-slate-900/85 text-amber-300 text-[9px] px-1.5 py-0.5 rounded font-bold shadow-xs z-10">
+                          Mockup
+                        </div>
+                      )}
+                      
+                      <button 
+                        onClick={() => handleRemoveImage(idx)}
+                        className="absolute top-1 right-1 bg-white/95 hover:bg-red-50 text-red-500 rounded-md p-1.5 shadow-sm transition-colors z-10 cursor-pointer"
+                        title="Remover imagem"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      
+                      {idx === 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/90 text-white text-[10px] text-center py-1 font-bold z-10 pointer-events-none">
+                          Capa Principal
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 
                 {((formData.imagens || []) as any[]).filter(i => i !== '/placeholder.svg').length === 0 && (
-                  <div className="w-32 h-32 border border-slate-200 rounded-lg relative overflow-hidden group opacity-80" title="Imagem gerada automaticamente. Faça upload de uma imagem para substituir.">
-                    <img src={productImage(formData)} alt="Imagem Padrão" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity text-center px-2">
-                      Imagem Automática (Mockup)
+                  <div 
+                    onClick={() => setMockupModalOpen(true)}
+                    className="w-32 h-32 border-2 border-dashed border-amber-300 bg-amber-50/40 rounded-lg relative overflow-hidden group cursor-pointer transition-all hover:shadow-md hover:border-amber-500" 
+                    title="Clique para escolher ou fixar um mockup oficial para este produto"
+                  >
+                    <img src={productImage(formData)} alt="Mockup Automático" className="w-full h-full object-contain p-2" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 text-white opacity-0 group-hover:opacity-100 transition-opacity text-center px-2 py-1">
+                      <Sparkles className="w-4 h-4 text-amber-400 mb-1" />
+                      <span className="text-[10px] font-bold leading-tight">Escolher / Trocar Mockup</span>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-slate-900/85 text-amber-300 text-[9px] text-center py-0.5 font-medium">
+                      Automático
                     </div>
                   </div>
                 )}
                 
+                {((formData.imagens || []) as any[]).length < 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setMockupModalOpen(true)}
+                    className="w-32 h-32 border-2 border-dashed border-emerald-300 bg-emerald-50/40 rounded-lg flex flex-col items-center justify-center text-emerald-700 hover:text-emerald-800 hover:border-emerald-500 hover:bg-emerald-100/50 cursor-pointer transition-all relative overflow-hidden group shadow-xs"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                      <Sparkles className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <span className="text-xs font-bold text-center px-1 text-emerald-900">Escolher Mockup</span>
+                    <span className="text-[10px] text-emerald-600 font-medium">Oficial da Rede</span>
+                  </button>
+                )}
+
                 {isGlobalAdmin && ((formData.imagens || []) as any[]).length < 5 && (
-                  <div className="w-32 h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-emerald-600 hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer transition-colors relative overflow-hidden group">
+                  <div className="w-32 h-32 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-500 hover:text-emerald-700 hover:border-emerald-500 hover:bg-emerald-50/30 cursor-pointer transition-all relative overflow-hidden group">
                     <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleImageUpload} />
-                    <Upload className="h-6 w-6 mb-2" />
-                    <span className="text-xs font-medium text-center px-2">Upload Imagem</span>
-                    <span className="text-[10px] text-slate-400 mt-1">{5 - ((formData.imagens || []) as any[]).length} restantes</span>
+                    <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-600 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-semibold text-center px-2 text-slate-700 group-hover:text-emerald-800">Upload Imagem</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">{5 - ((formData.imagens || []) as any[]).length} restantes</span>
                   </div>
                 )}
               </div>
@@ -1960,6 +2050,16 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
               )}
             </div>
           </div>
+        )}
+
+        {formData && (
+          <ProductMockupSelectorModal
+            open={mockupModalOpen}
+            onOpenChange={setMockupModalOpen}
+            product={formData}
+            currentImages={(formData.imagens || []) as any[]}
+            onSelectMockup={handleSelectMockup}
+          />
         )}
       </>
   );
