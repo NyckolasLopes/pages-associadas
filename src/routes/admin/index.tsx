@@ -30,7 +30,11 @@ import {
   PackageCheck,
   Truck,
   ExternalLink,
-  Globe
+  Globe,
+  Calendar,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 function slugify(text: string): string {
@@ -125,12 +129,65 @@ function AdminDashboard() {
   const [showPromoModal, setShowPromoModal] = useState(false);
 
   const pad = (n: number) => n.toString().padStart(2, '0');
-
   const [filtroPeriodo, setFiltroPeriodo] = useState("mes");
+  const [tipoDataCustom, setTipoDataCustom] = useState<"dia" | "intervalo">("dia");
   const [dataCustom, setDataCustom] = useState(() => {
     const today = new Date();
     return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
   });
+  const [dataCustomFim, setDataCustomFim] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  });
+
+  const handleStepDay = (days: number) => {
+    try {
+      const [y, m, d] = dataCustom.split('-').map(Number);
+      const cur = new Date(y, m - 1, d);
+      cur.setDate(cur.getDate() + days);
+      const newStr = `${cur.getFullYear()}-${pad(cur.getMonth() + 1)}-${pad(cur.getDate())}`;
+      setDataCustom(newStr);
+      setDataCustomFim(newStr);
+    } catch {}
+  };
+
+  const handleSetToday = () => {
+    const today = new Date();
+    const str = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    setDataCustom(str);
+    setDataCustomFim(str);
+  };
+
+  const handleSetRangePreset = (daysAgo: number) => {
+    const today = new Date();
+    const endStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    if (daysAgo === 0) {
+      // Ontem
+      const ontem = new Date(today);
+      ontem.setDate(ontem.getDate() - 1);
+      const ontemStr = `${ontem.getFullYear()}-${pad(ontem.getMonth() + 1)}-${pad(ontem.getDate())}`;
+      setDataCustom(ontemStr);
+      setDataCustomFim(ontemStr);
+      return;
+    }
+    const start = new Date(today);
+    start.setDate(start.getDate() - (daysAgo - 1));
+    setDataCustom(`${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`);
+    setDataCustomFim(endStr);
+  };
+
+  const getFormattedDayLabel = (dStr: string) => {
+    try {
+      const [y, m, d] = dStr.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      const diasSemana = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+      const diaSemana = diasSemana[date.getDay()];
+      const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      return `${diaSemana}, ${pad(d)} de ${meses[date.getMonth()]} de ${y}`;
+    } catch {
+      return dStr;
+    }
+  };
 
   const periodos = useMemo(() => {
     const hoje = new Date();
@@ -172,16 +229,46 @@ function AdminDashboard() {
     } else if (filtroPeriodo === "custom") {
       const [y, m, d] = dataCustom.split('-');
       if (y && m && d) {
-        startAtual = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-        endAtual = new Date(startAtual); endAtual.setHours(23, 59, 59);
-        startAnterior = new Date(startAtual); startAnterior.setDate(startAtual.getDate() - 1);
-        endAnterior = new Date(startAnterior); endAnterior.setHours(23, 59, 59);
-        label = `Dia ${pad(startAtual.getDate())}/${pad(startAtual.getMonth() + 1)}`;
-        labelAnterior = "dia anterior";
+        startAtual = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), 0, 0, 0);
+
+        if (tipoDataCustom === "intervalo" && dataCustomFim && dataCustomFim !== dataCustom) {
+          const [yEnd, mEnd, dEnd] = dataCustomFim.split('-');
+          if (yEnd && mEnd && dEnd) {
+            endAtual = new Date(parseInt(yEnd), parseInt(mEnd) - 1, parseInt(dEnd), 23, 59, 59);
+            if (endAtual < startAtual) {
+              const temp = startAtual;
+              startAtual = new Date(parseInt(yEnd), parseInt(mEnd) - 1, parseInt(dEnd), 0, 0, 0);
+              endAtual = new Date(temp);
+              endAtual.setHours(23, 59, 59);
+            }
+            const diffMs = endAtual.getTime() - startAtual.getTime();
+            const daysDiff = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+            
+            startAnterior = new Date(startAtual);
+            startAnterior.setDate(startAtual.getDate() - daysDiff);
+            endAnterior = new Date(startAtual);
+            endAnterior.setMilliseconds(-1);
+
+            label = `${pad(startAtual.getDate())}/${pad(startAtual.getMonth() + 1)} a ${pad(endAtual.getDate())}/${pad(endAtual.getMonth() + 1)}`;
+            labelAnterior = `período anterior (${daysDiff}d)`;
+          } else {
+            endAtual = new Date(startAtual); endAtual.setHours(23, 59, 59);
+            startAnterior = new Date(startAtual); startAnterior.setDate(startAnterior.getDate() - 1);
+            endAnterior = new Date(startAnterior); endAnterior.setHours(23, 59, 59);
+            label = `Dia ${pad(startAtual.getDate())}/${pad(startAtual.getMonth() + 1)}`;
+            labelAnterior = "dia anterior";
+          }
+        } else {
+          endAtual = new Date(startAtual); endAtual.setHours(23, 59, 59);
+          startAnterior = new Date(startAtual); startAnterior.setDate(startAnterior.getDate() - 1);
+          endAnterior = new Date(startAnterior); endAnterior.setHours(23, 59, 59);
+          label = `Dia ${pad(startAtual.getDate())}/${pad(startAtual.getMonth() + 1)}`;
+          labelAnterior = "dia anterior";
+        }
       }
     }
     return { startAtual, endAtual, startAnterior, endAnterior, label, labelAnterior };
-  }, [filtroPeriodo, dataCustom]);
+  }, [filtroPeriodo, dataCustom, dataCustomFim, tipoDataCustom]);
 
   const calcCrescimento = (atual: number, anterior: number) => {
     if (anterior === 0) {
@@ -302,12 +389,25 @@ function AdminDashboard() {
         </div>
         <div className="relative z-10 sm:self-start">
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-emerald-800/70 uppercase tracking-wider">Período de Análise</label>
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-bold text-emerald-800/70 uppercase tracking-wider">
+                Período de Análise
+              </label>
+              {filtroPeriodo === "custom" && (
+                <span className="text-[10px] font-bold text-emerald-600 uppercase bg-emerald-100/60 px-2 py-0.5 rounded-full">
+                  Filtro Personalizado
+                </span>
+              )}
+            </div>
+
             <Select value={filtroPeriodo} onValueChange={setFiltroPeriodo}>
-              <SelectTrigger className="w-[180px] bg-white border-emerald-200 shadow-sm font-bold text-slate-700">
-                <SelectValue placeholder="Selecione..." />
+              <SelectTrigger className="w-full sm:w-[220px] bg-white border-emerald-200 shadow-sm font-bold text-slate-700 hover:border-emerald-300 transition-colors">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <SelectValue placeholder="Selecione..." />
+                </div>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="font-medium">
                 <SelectItem value="hoje">Hoje</SelectItem>
                 <SelectItem value="semana">Esta Semana</SelectItem>
                 <SelectItem value="mes">Este Mês</SelectItem>
@@ -315,13 +415,164 @@ function AdminDashboard() {
                 <SelectItem value="custom">Data Específica...</SelectItem>
               </SelectContent>
             </Select>
+
             {filtroPeriodo === "custom" && (
-              <Input 
-                type="date"
-                value={dataCustom}
-                onChange={(e) => setDataCustom(e.target.value)}
-                className="w-[180px] bg-white border-emerald-200 shadow-sm font-bold text-slate-700 mt-1"
-              />
+              <div className="mt-1 p-3.5 bg-white rounded-xl border border-emerald-200 shadow-md shadow-emerald-950/5 space-y-3 w-full sm:w-[320px] md:w-[350px] animate-in fade-in zoom-in-95 duration-150">
+                {/* Abas: Dia Único vs Intervalo */}
+                <div className="flex items-center p-1 bg-slate-100 rounded-lg border border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTipoDataCustom("dia");
+                      setDataCustomFim(dataCustom);
+                    }}
+                    className={`flex-1 text-xs py-1.5 px-2 rounded-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      tipoDataCustom === "dia"
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Dia Único</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTipoDataCustom("intervalo")}
+                    className={`flex-1 text-xs py-1.5 px-2 rounded-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      tipoDataCustom === "intervalo"
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                    }`}
+                  >
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    <span>Intervalo (De / Até)</span>
+                  </button>
+                </div>
+
+                {/* Modo Dia Único */}
+                {tipoDataCustom === "dia" ? (
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleStepDay(-1)}
+                        title="Dia anterior"
+                        className="h-10 w-10 shrink-0 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 text-slate-600"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+
+                      <div className="relative flex-1">
+                        <Input
+                          type="date"
+                          value={dataCustom}
+                          onChange={(e) => {
+                            setDataCustom(e.target.value);
+                            setDataCustomFim(e.target.value);
+                          }}
+                          className="h-10 w-full bg-slate-50/50 hover:bg-white border-slate-200 focus:bg-white text-xs font-bold text-slate-800 shadow-2xs focus-visible:ring-emerald-500 focus-visible:border-emerald-500 transition-colors"
+                        />
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleStepDay(1)}
+                        title="Próximo dia"
+                        className="h-10 w-10 shrink-0 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 text-slate-600"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSetToday}
+                        className="h-10 text-xs font-bold text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 px-2.5 border border-emerald-200/50"
+                      >
+                        Hoje
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] font-medium text-emerald-800 bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-100">
+                      <span className="flex items-center gap-1.5 font-bold">
+                        <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                        {getFormattedDayLabel(dataCustom)}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
+                        24 Horas
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  /* Modo Intervalo */
+                  <div className="space-y-2.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+                          <span>Data Inicial</span>
+                        </label>
+                        <Input
+                          type="date"
+                          value={dataCustom}
+                          onChange={(e) => setDataCustom(e.target.value)}
+                          className="h-9.5 bg-slate-50/50 hover:bg-white border-slate-200 text-xs font-bold text-slate-800 shadow-2xs focus-visible:ring-emerald-500 focus-visible:border-emerald-500 transition-colors"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+                          <span>Data Final</span>
+                        </label>
+                        <Input
+                          type="date"
+                          value={dataCustomFim}
+                          onChange={(e) => setDataCustomFim(e.target.value)}
+                          className="h-9.5 bg-slate-50/50 hover:bg-white border-slate-200 text-xs font-bold text-slate-800 shadow-2xs focus-visible:ring-emerald-500 focus-visible:border-emerald-500 transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Atalhos rápidos de intervalo */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+                      <span className="text-[10px] text-slate-400 font-bold mr-0.5 uppercase tracking-wider">
+                        Atalhos:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSetRangePreset(0)}
+                        className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 hover:bg-emerald-100 hover:text-emerald-800 transition-colors"
+                      >
+                        Ontem
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetRangePreset(7)}
+                        className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 hover:bg-emerald-100 hover:text-emerald-800 transition-colors"
+                      >
+                        Últimos 7d
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetRangePreset(15)}
+                        className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 hover:bg-emerald-100 hover:text-emerald-800 transition-colors"
+                      >
+                        15d
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetRangePreset(30)}
+                        className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 hover:bg-emerald-100 hover:text-emerald-800 transition-colors"
+                      >
+                        30d
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
