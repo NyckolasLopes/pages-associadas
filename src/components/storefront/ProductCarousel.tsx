@@ -75,10 +75,10 @@ export function ProductCarousel({ products, selectedStoreId }: { products: Produ
         </CarouselContent>
 
         <CarouselPrevious 
-          className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover/pcarousel:opacity-100" 
+          className="flex absolute -left-2 sm:-left-3 md:-left-4 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition cursor-pointer" 
         />
         <CarouselNext 
-          className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover/pcarousel:opacity-100" 
+          className="flex absolute -right-2 sm:-right-3 md:-right-4 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition cursor-pointer" 
         />
       </Carousel>
     </div>

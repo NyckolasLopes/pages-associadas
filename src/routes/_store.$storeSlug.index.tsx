@@ -1014,7 +1014,7 @@ function StoreHome() {
     <div className="min-h-screen flex flex-col bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }} />
       
-      <main className="flex-1 pb-16 md:pb-0 overflow-x-hidden">
+      <main className="flex-1 pb-4 md:pb-0 overflow-x-hidden">
         {/* Full Banner Hero Carousel (Topo prioritário absoluto no mobile e desktop) */}
         <HeroCarousel lojaId={lojaId} initialBanners={loaderData?.banners} />
 
@@ -1109,9 +1109,9 @@ function StoreHome() {
         </LazySection>
 
         {/* Marcas Parceiras */}
-        <LazySection height="200px">
-          <section className="container-fa py-8">
-            <div className="flex items-center justify-between mb-6">
+        <LazySection height="120px">
+          <section className="container-fa pt-2 pb-2 sm:py-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-6">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Confiança e Qualidade</span>
                 <h2 className="text-xl md:text-2xl font-bold">Somos parceiros das melhores marcas</h2>
@@ -1127,7 +1127,7 @@ function StoreHome() {
                 }}
                 className="w-full"
               >
-                <CarouselContent className="-ml-4 md:-ml-6 pb-4">
+                <CarouselContent className="-ml-4 md:-ml-6 pb-2 sm:pb-4">
                   {activeMarcas.map((marca) => (
                     <CarouselItem
                       key={marca.id}
@@ -1157,8 +1157,8 @@ function StoreHome() {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover/marcas:opacity-100" />
-                <CarouselNext className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white shadow-elevated border items-center justify-center text-primary hover:bg-primary hover:text-white transition opacity-0 group-hover/marcas:opacity-100" />
+                <CarouselPrevious className="flex absolute -left-2 sm:-left-3 md:-left-4 top-1/2 -translate-y-1/2 z-20 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer" />
+                <CarouselNext className="flex absolute -right-2 sm:-right-3 md:-right-4 top-1/2 -translate-y-1/2 z-20 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full bg-white shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer" />
               </Carousel>
             </div>
           </section>
