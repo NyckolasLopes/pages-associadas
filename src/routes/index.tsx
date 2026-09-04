@@ -684,7 +684,9 @@ function IndexGateway() {
               </div>
 
               <div className="flex-1 overflow-y-auto pr-1 space-y-3 max-h-[320px] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-                {foundStores.map((store, idx) => (
+                {foundStores.map((store, idx) => {
+                  const isStoreParceiro = store.categoriaAssociado === 'Parceiro' || store.isPleno === false;
+                  return (
                   <div key={store.id || idx} className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_25px_rgb(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden flex flex-col gap-3 group cursor-default">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-[#F37021] rounded-l-2xl"></div>
                     {isSearchByLocation && idx === 0 && (
@@ -695,10 +697,9 @@ function IndexGateway() {
                     <div className="pt-1">
                       <div className="flex items-center gap-3 mb-2">
                         {(() => {
-                          const isParceiro = store.categoriaAssociado === 'Parceiro' || store.isPleno === false;
-                          const effectiveFavicon = store.faviconUrl || (!isParceiro ? globalFavicon : null);
-                          const effectiveLogo = store.logoUrl || (!isParceiro ? globalLogo : null);
-                          const rawSrc = effectiveFavicon || effectiveLogo || (!isParceiro ? '/favicon.png' : null);
+                          const effectiveFavicon = store.faviconUrl || (!isStoreParceiro ? globalFavicon : null);
+                          const effectiveLogo = store.logoUrl || (!isStoreParceiro ? globalLogo : null);
+                          const rawSrc = effectiveFavicon || effectiveLogo || (!isStoreParceiro ? '/favicon.png' : null);
                           const displaySrc = getSafeMediaUrl(rawSrc);
                           
                           if (displaySrc) {
@@ -729,7 +730,7 @@ function IndexGateway() {
                         })()}
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
                           <h3 className="font-extrabold text-slate-800 text-base group-hover:text-[#F37021] transition-colors leading-tight truncate">{store.nome}</h3>
-                          {isParceiro && (
+                          {isStoreParceiro && (
                             <span className="text-[10px] bg-orange-100 text-orange-800 border border-orange-200 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                               Loja Parceira
                             </span>
@@ -762,7 +763,8 @@ function IndexGateway() {
                       <ArrowRight className="h-3.5 w-3.5 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="pt-2 mt-auto">
