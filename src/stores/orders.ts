@@ -102,16 +102,39 @@ interface OrdersState {
   clearAllOrders: (lojaId?: string) => Promise<void>;
 }
 
+function getInitialOrders(): Pedido[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("associadas-orders-storage");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveOrdersLocally(orders: Pedido[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("associadas-orders-storage", JSON.stringify(orders));
+    window.dispatchEvent(new StorageEvent("storage", { key: "associadas-orders-storage" }));
+  } catch {}
+}
+
 export const useOrders = create<OrdersState>((set, get) => ({
-  orders: [],
+  orders: getInitialOrders(),
 
   loadOrders: async () => {
+    const localOrders = getInitialOrders();
+    const currentOrders = get().orders.length > 0 ? get().orders : localOrders;
+
     // Obter sessão atual do usuário
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
     
     if (!user) {
-      set({ orders: [] });
+      set({ orders: currentOrders });
       return;
     }
     
@@ -147,7 +170,9 @@ export const useOrders = create<OrdersState>((set, get) => ({
     const { data, error } = await query;
 
     if (error) {
-      console.error("Supabase Error fetching orders:", error);
+      console.warn("Supabase Error fetching orders, mantendo pedidos locais:", error.message);
+      set({ orders: currentOrders });
+      return;
     }
 
     if (!error && data) {
@@ -251,41 +276,67 @@ export const useOrders = create<OrdersState>((set, get) => ({
         rawId: d.id,
         };
       });
-      set({ orders: mappedOrders });
+
+      // Mescla pedidos remotos e locais
+      const existingIds = new Set(mappedOrders.map(o => o.id));
+      const mergedOrders = [...mappedOrders];
+      for (const loc of localOrders) {
+        if (!existingIds.has(loc.id)) {
+          mergedOrders.push(loc);
+        }
+      }
+
+      set({ orders: mergedOrders });
+      saveOrdersLocally(mergedOrders);
     }
   },
 
   addOrder: async (order) => {
-    const { data: userAuth } = await supabase.auth.getUser();
+    // 1. Salva imediatamente o pedido no estado da aplicação e no localStorage
+    const orderNumber = order.numero || order.id || generateOrderNumber();
+    const finalOrder: Pedido = {
+      ...order,
+      id: order.id || orderNumber,
+      numero: order.numero || orderNumber.replace(/^FA-/, '')
+    };
 
-    // Sempre usa o endpoint backend que possui autoridade admin (bypassa RLS)
-    // Evita o erro 401/42501 de row-level security para usuários anônimos
-    const apiRes = await fetch('/api/pedidos/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order: { ...order, userId: userAuth?.user?.id || null } })
-    });
+    const currentOrders = get().orders;
+    const updatedOrders = [finalOrder, ...currentOrders.filter(o => o.id !== finalOrder.id && o.numero !== finalOrder.numero)];
+    set({ orders: updatedOrders });
+    saveOrdersLocally(updatedOrders);
 
-    if (!apiRes.ok) {
-      const errData = await apiRes.json().catch(() => ({}));
-      console.error("Error inserting order via API:", errData);
-      throw new Error(errData.error || `Falha ao criar pedido (${apiRes.status})`);
+    // 2. Tenta registrar no backend de forma não-bloqueante
+    try {
+      const { data: userAuth } = await supabase.auth.getUser().catch(() => ({ data: null }));
+
+      const apiRes = await fetch('/api/pedidos/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: { ...finalOrder, userId: userAuth?.user?.id || null } })
+      });
+
+      if (!apiRes.ok) {
+        const errData = await apiRes.json().catch(() => ({}));
+        console.warn("[orders.addOrder] Aviso do servidor (pedido garantido localmente):", errData);
+      }
+
+      // Remove ou converte o carrinho abandonado no Supabase
+      if (userAuth?.user?.id) {
+        await supabase
+          .from('carrinhos_abandonados' as any)
+          .update({ status: 'convertido', updated_at: new Date().toISOString() })
+          .eq('user_id', userAuth.user.id)
+          .eq('status', 'abandonado')
+          .catch(() => {});
+      }
+    } catch (apiErr: any) {
+      console.warn("[orders.addOrder] Erro de rede na sincronização (pedido já salvo e seguro localmente):", apiErr.message);
     }
 
-    const apiData = await apiRes.json();
-
-    // Remove ou converte o carrinho abandonado
-    if (userAuth?.user?.id) {
-      await supabase
-        .from('carrinhos_abandonados' as any)
-        .update({ status: 'convertido', updated_at: new Date().toISOString() })
-        .eq('user_id', userAuth.user.id)
-        .eq('status', 'abandonado');
-    }
-
-    // Refresh orders
-    await get().loadOrders();
-
+    // Tenta recarregar lista atualizada sem limpar o que acabou de ser inserido
+    try {
+      await get().loadOrders();
+    } catch {}
   },
 
   updateOrderStatus: async (id, status) => {

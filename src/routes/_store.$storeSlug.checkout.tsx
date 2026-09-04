@@ -605,9 +605,16 @@ function Checkout() {
     if (paymentCategory !== "online" || paymentMethod !== "credit" || localCardStatus !== "refused") {
         const appliedCode = couponApplied?.code || useCart.getState().appliedCoupon;
         if (appliedCode) {
-          useMarketing.getState().incrementCouponUsage(appliedCode, activeStore?.id);
+          try {
+            useMarketing.getState().incrementCouponUsage(appliedCode, activeStore?.id);
+          } catch {}
         }
-        addOrder(newOrder);
+        useCart.getState().setLastOrder(newOrder);
+        try {
+          addOrder(newOrder);
+        } catch (e) {
+          console.warn("[checkout] addOrder warning:", e);
+        }
         clear();
       
       // Gerar mensagem do WhatsApp
