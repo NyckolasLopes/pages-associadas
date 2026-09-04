@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAdminFiltros, type Filtro } from "@/stores/filtros";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FiltroFormModal } from "@/components/admin/FiltroFormModal";
 import { useAdmin } from "@/stores/admin";
@@ -16,8 +16,12 @@ export const Route = createFileRoute("/admin/filtros")({
 
 function AdminFiltros() {
   const { activeStoreId } = useAdmin();
-  const { getStoreFiltros, addFiltro, updateFiltro, removeFiltro } = useAdminFiltros();
+  const { getStoreFiltros, addFiltro, updateFiltro, removeFiltro, loadFiltros } = useAdminFiltros();
   
+  useEffect(() => {
+    loadFiltros();
+  }, [loadFiltros]);
+
   const filtros = getStoreFiltros(activeStoreId);
   
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -25,6 +29,8 @@ function AdminFiltros() {
   
   const [modalOpen, setModalOpen] = useState(false);
   const [editingFiltro, setEditingFiltro] = useState<Filtro | null>(null);
+
+  const filtroToDelete = filtros.find(f => f.id === itemToDelete);
 
   const handleDelete = (id: string) => {
     setItemToDelete(id);
@@ -34,7 +40,9 @@ function AdminFiltros() {
   const confirmDelete = () => {
     if (itemToDelete !== null) {
       removeFiltro(itemToDelete, activeStoreId);
-      toast.success("Filtro removido!");
+      toast.success("Filtro excluído com sucesso!");
+      setItemToDelete(null);
+      setConfirmOpen(false);
     }
   };
 
@@ -130,19 +138,19 @@ function AdminFiltros() {
                     size="sm" 
                     className="text-slate-600 hover:text-primary hover:bg-primary/10"
                     onClick={() => handleOpenModal(filtro)}
+                    title="Editar filtro"
                   >
                     <Edit2 className="h-4 w-4" />
                   </Button>
-                  {!["price", "brand", "gen", "rec", "tarja"].includes(filtro.id) && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => handleDelete(filtro.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDelete(filtro.id)}
+                    title="Excluir filtro"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -152,10 +160,20 @@ function AdminFiltros() {
 
       <ConfirmDialog 
         isOpen={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
+        onClose={() => {
+          setConfirmOpen(false);
+          setItemToDelete(null);
+        }}
         onConfirm={confirmDelete}
-        title="Remover filtro"
-        description="Tem certeza que deseja remover este filtro? Ele será desvinculado de todos os produtos."
+        title="Você tem certeza que deseja excluir os filtros?"
+        description={
+          filtroToDelete 
+            ? `Tem certeza que deseja excluir o filtro "${filtroToDelete.nome}"? Ele será desvinculado de todos os produtos.` 
+            : "Esta ação não poderá ser desfeita."
+        }
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        variant="destructive"
       />
 
       <FiltroFormModal 

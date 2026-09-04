@@ -83,7 +83,7 @@ export const useAdminFiltros = create<FiltroStore>()(
         const state = get();
         if (!lojaId) return state.filtros || [];
         const storeSpecific = state.storeFiltros[lojaId];
-        if (storeSpecific && storeSpecific.length > 0) {
+        if (storeSpecific !== undefined) {
           return storeSpecific;
         }
         return state.filtros || [];
@@ -107,7 +107,7 @@ export const useAdminFiltros = create<FiltroStore>()(
       },
       addFiltro: (filtro, lojaId) => set((state) => {
         if (!lojaId) return { filtros: [...(state.filtros || []), filtro] };
-        const current = state.storeFiltros[lojaId] || state.filtros || [];
+        const current = state.storeFiltros[lojaId] !== undefined ? state.storeFiltros[lojaId] : (state.filtros || []);
         return { storeFiltros: { ...state.storeFiltros, [lojaId]: [...current, filtro] } };
       }),
       updateFiltro: (id, updated, lojaId) =>
@@ -115,15 +115,22 @@ export const useAdminFiltros = create<FiltroStore>()(
           if (!lojaId) {
             return { filtros: (state.filtros || []).map((f) => (f.id === id ? { ...f, ...updated } : f)) };
           }
-          const current = state.storeFiltros[lojaId] || state.filtros || [];
+          const current = state.storeFiltros[lojaId] !== undefined ? state.storeFiltros[lojaId] : (state.filtros || []);
           return { storeFiltros: { ...state.storeFiltros, [lojaId]: current.map((f) => (f.id === id ? { ...f, ...updated } : f)) } };
         }),
       removeFiltro: (id, lojaId) =>
         set((state) => {
           if (!lojaId) {
-            return { filtros: (state.filtros || []).filter((f) => f.id !== id) };
+            const updatedFiltros = (state.filtros || []).filter((f) => f.id !== id);
+            const updatedStoreFiltros = { ...state.storeFiltros };
+            Object.keys(updatedStoreFiltros).forEach(key => {
+              if (Array.isArray(updatedStoreFiltros[key])) {
+                updatedStoreFiltros[key] = updatedStoreFiltros[key].filter(f => f.id !== id);
+              }
+            });
+            return { filtros: updatedFiltros, storeFiltros: updatedStoreFiltros };
           }
-          const current = state.storeFiltros[lojaId] || state.filtros || [];
+          const current = state.storeFiltros[lojaId] !== undefined ? state.storeFiltros[lojaId] : (state.filtros || []);
           return { storeFiltros: { ...state.storeFiltros, [lojaId]: current.filter((f) => f.id !== id) } };
         }),
     }),

@@ -20,6 +20,8 @@ interface ConfirmDialogProps {
   description?: string;
   confirmText?: string;
   cancelText?: string;
+  variant?: "default" | "destructive";
+  confirmButtonClassName?: string;
 }
 
 export function ConfirmDialog({
@@ -32,12 +34,20 @@ export function ConfirmDialog({
   description,
   confirmText = "Confirmar",
   cancelText = "Cancelar",
+  variant = "default",
+  confirmButtonClassName,
 }: ConfirmDialogProps) {
   const isActualOpen = open !== undefined ? open : !!isOpen;
   const handleOpenChange = (newOpen: boolean) => {
     if (onOpenChange) onOpenChange(newOpen);
     if (!newOpen && onClose) onClose();
   };
+
+  const actionButtonClass = confirmButtonClassName 
+    ? confirmButtonClassName 
+    : variant === "destructive"
+    ? "bg-red-600 hover:bg-red-700 text-white font-medium shadow-sm px-6"
+    : "bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm px-6";
 
   return (
     <AlertDialog open={isActualOpen} onOpenChange={handleOpenChange}>
@@ -63,7 +73,7 @@ export function ConfirmDialog({
               if (onClose) onClose();
               if (onOpenChange) onOpenChange(false);
             }}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm px-6"
+            className={actionButtonClass}
           >
             {confirmText}
           </AlertDialogAction>
