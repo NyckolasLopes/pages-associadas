@@ -48,6 +48,7 @@ import { useAdminProducts, mapRowToProduto } from "@/stores/products";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminCategories } from "@/stores/categories";
 import { useMarcasStore } from "@/stores/marcas";
+import { ROOT_CAT_DEFAULT_ICONS, getCategoryIconByName } from "@/lib/categoryIcons";
 import { useMarketing } from "@/stores/marketing";
 import { useSearchHistory } from "@/stores/searchHistory";
 import { useActivePharmacy, SYSTEM_PAGES, safeSlugify } from "@/hooks/useActivePharmacy";
@@ -1131,11 +1132,33 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   const activePharmacy = useActivePharmacy();
   const isParceiro = activePharmacy?.categoriaAssociado === 'Parceiro';
   const allCategories = useAdminCategories(s => s.categories);
+  const getStoreCategories = useAdminCategories(s => s.getStoreCategories);
   const storeCategoryIcons = useAdmin(s => s.storeCategoryIcons);
   const categoryIcons = useAdmin(s => s.categoryIcons);
   const selectedPharmacyId = useCart(s => s.selectedPharmacyId) || activePharmacy?.id;
   const storeSlug = getEffectiveStoreSlug((params as any)?.storeSlug, activePharmacy);
   const cupons = useMarketing(s => s.cupons);
+
+  const effectiveAllCategories = useMemo(() => {
+    const fromStore = getStoreCategories(selectedPharmacyId);
+    if (fromStore && fromStore.length > 0) return fromStore;
+    if (allCategories && allCategories.length > 0) return allCategories;
+    return getSafeCategories();
+  }, [getStoreCategories, selectedPharmacyId, allCategories]);
+
+  const PREFERRED_ROOT_ORDER = ["142", "146", "143", "144", "145", "147", "148", "200", "300"];
+
+  const allRootCats = useMemo(() => {
+    const list = effectiveAllCategories.filter((c: any) => !c.parentId && c.ativa !== false) as Categoria[];
+    return [...list].sort((a, b) => {
+      const idxA = PREFERRED_ROOT_ORDER.indexOf(String(a.id));
+      const idxB = PREFERRED_ROOT_ORDER.indexOf(String(b.id));
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return (a.nome || "").localeCompare(b.nome || "");
+    });
+  }, [effectiveAllCategories]);
   const hasStoreCupons = useMemo(() => {
     if (!cupons || cupons.length === 0) return false;
     const now = new Date();
@@ -1306,27 +1329,86 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
               <ChevronDown className="h-4 w-4 transition-transform group-open/allcats:rotate-180 text-muted-foreground" />
             </summary>
             <div className="pl-11 pr-3 pb-2 flex flex-col">
-              {cats.map((c) => {
+              {allRootCats.map((c) => {
+                const isNossasMarcas = c.id === "300" || c.slug === "nossas-marcas";
+                if (isParceiro && isNossasMarcas) return null;
+
                 const storeIconKey = (selectedPharmacyId && storeCategoryIcons?.[selectedPharmacyId]?.[c.id])
                   || categoryIcons?.[c.id]
                   || c.icone;
-                const Icon = (storeIconKey && LUCIDE_ICONS[storeIconKey]) ? LUCIDE_ICONS[storeIconKey] : (CAT_ICONS[c.id] || getSubcategoryIcon(c.nome));
-                const isNossasMarcas = c.id === "300" || c.slug === "nossas-marcas";
+                const Icon = (storeIconKey && LUCIDE_ICONS[storeIconKey]) 
+                  ? LUCIDE_ICONS[storeIconKey] 
+                  : (ROOT_CAT_DEFAULT_ICONS[c.id] || CAT_ICONS[c.id] || getCategoryIconByName(c.nome) || getSubcategoryIcon(c.nome));
+
+                const subItems = isNossasMarcas
+                  ? marcas.filter(m => m.marcaPropria)
+                  : effectiveAllCategories.filter((sub: any) => sub.parentId === c.id && sub.ativa !== false);
+
+                if (subItems.length === 0) {
+                  return (
+                    <Link
+                      key={c.id}
+                      to="/$storeSlug/c/$slug"
+                      params={{ storeSlug, slug: isNossasMarcas ? "nossas-marcas" : c.slug }}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2 text-sm py-2.5 hover:text-primary text-muted-foreground font-medium border-b border-muted/30 last:border-0 transition-colors"
+                    >
+                      {isNossasMarcas ? (
+                        !isParceiro && <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />
+                      ) : Icon ? (
+                        <Icon className="h-4 w-4 shrink-0 text-primary" />
+                      ) : null}
+                      <span>{c.nome}</span>
+                    </Link>
+                  );
+                }
+
                 return (
-                  <Link
-                    key={c.id}
-                    to="/$storeSlug/c/$slug"
-                    params={{ storeSlug, slug: isNossasMarcas ? "nossas-marcas" : c.slug }}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-2 text-sm py-2.5 hover:text-primary text-muted-foreground font-medium border-b border-muted/30 last:border-0 transition-colors"
-                  >
-                    {isNossasMarcas ? (
-                      !isParceiro && <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />
-                    ) : Icon ? (
-                      <Icon className="h-4 w-4 shrink-0" />
-                    ) : null}
-                    <span>{c.nome}</span>
-                  </Link>
+                  <details key={c.id} className="group/subcat border-b border-muted/30 last:border-0">
+                    <summary className="flex items-center justify-between py-2.5 text-sm font-medium hover:text-primary text-muted-foreground cursor-pointer transition-colors list-none [&::-webkit-details-marker]:hidden">
+                      <div className="flex items-center gap-2">
+                        {isNossasMarcas ? (
+                          !isParceiro && <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />
+                        ) : Icon ? (
+                          <Icon className="h-4 w-4 shrink-0 text-primary" />
+                        ) : null}
+                        <Link
+                          to="/$storeSlug/c/$slug"
+                          params={{ storeSlug, slug: isNossasMarcas ? "nossas-marcas" : c.slug }}
+                          onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+                          className="hover:text-primary transition-colors text-foreground"
+                        >
+                          {c.nome}
+                        </Link>
+                      </div>
+                      <ChevronDown className="h-3.5 w-3.5 transition-transform group-open/subcat:rotate-180 text-muted-foreground/70" />
+                    </summary>
+                    <div className="pl-6 pr-2 pb-2 flex flex-col gap-1 text-xs">
+                      <Link
+                        to="/$storeSlug/c/$slug"
+                        params={{ storeSlug, slug: isNossasMarcas ? "nossas-marcas" : c.slug }}
+                        onClick={() => setOpen(false)}
+                        className="text-primary font-bold py-1 hover:underline"
+                      >
+                        Ver tudo em {c.nome}
+                      </Link>
+                      {subItems.map((sub: any) => (
+                        <Link
+                          key={sub.id}
+                          to={isNossasMarcas ? "/$storeSlug/m/$slug" : "/$storeSlug/c/$slug"}
+                          params={{ storeSlug, slug: sub.seoUrl || sub.slug }}
+                          onClick={() => setOpen(false)}
+                          className="text-muted-foreground hover:text-primary py-1 border-t border-muted/20 flex items-center gap-2"
+                        >
+                          {isNossasMarcas ? (
+                            <img src={sub.logo} alt={sub.nome} className="h-5 w-auto object-contain mix-blend-multiply" />
+                          ) : (
+                            <span>{sub.nome}</span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </details>
                 );
               })}
             </div>
