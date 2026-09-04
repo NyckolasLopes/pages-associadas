@@ -257,87 +257,24 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
   addOrder: async (order) => {
     const { data: userAuth } = await supabase.auth.getUser();
-    const orderNumber = order.numero || order.id || undefined;
 
-    const { data: insertedOrder, error: orderError } = await (supabase.from('pedidos') as any).insert({
-      numero: orderNumber,
-      loja_id: order.lojaId,
-      user_id: userAuth?.user?.id || null,
-      status: order.status || 'novo',
-      total: order.valores?.total || 0,
-      subtotal: order.valores?.subtotal || order.valores?.produtos || 0,
-      frete: order.valores?.frete || 0,
-      desconto: order.valores?.desconto || order.valores?.descontos || 0,
-      endereco_entrega: order.cliente?.endereco || null,
-      metodo_entrega: order.modalidade || order.envio?.metodo,
-      metodo_pagamento: order.pagamento?.metodo,
-      observacoes: order.anotacoes || order.observacoes || '',
-      // Dados do cliente gravados diretamente no pedido (evita join problemático com profiles)
-      nome_cliente: order.cliente?.nome || '',
-      telefone_cliente: order.cliente?.telefone || '',
-      email_cliente: order.cliente?.email || '',
-      cpf_cliente: order.cliente?.cpf || ''
-    }).select('id, numero').single();
+    // Sempre usa o endpoint backend que possui autoridade admin (bypassa RLS)
+    // Evita o erro 401/42501 de row-level security para usuários anônimos
+    const apiRes = await fetch('/api/pedidos/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: { ...order, userId: userAuth?.user?.id || null } })
+    });
 
-    if (orderError) {
-      // Fallback: usar API backend que bypassa RLS (necessário para visitantes anônimos)
-      if (orderError.code === '42501' || orderError.message?.includes('row-level security') || orderError.message?.includes('Unauthorized')) {
-        console.warn("Insert direto bloqueado por RLS, usando fallback /api/pedidos/create...");
-        try {
-          const apiRes = await fetch('/api/pedidos/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order: { ...order, userId: userAuth?.user?.id || null } })
-          });
-          if (apiRes.ok) {
-            const apiData = await apiRes.json();
-            await get().loadOrders();
-            return apiData?.data;
-          } else {
-            const errData = await apiRes.json().catch(() => ({}));
-            console.error("Fallback /api/pedidos/create falhou:", errData);
-            throw new Error(errData.error || orderError.message);
-          }
-        } catch (apiErr: any) {
-          console.error("Erro no fallback /api/pedidos/create:", apiErr);
-          throw new Error(apiErr.message || orderError.message);
-        }
-      }
-      console.error("Error inserting order:", orderError);
-      throw new Error(orderError.message);
+    if (!apiRes.ok) {
+      const errData = await apiRes.json().catch(() => ({}));
+      console.error("Error inserting order via API:", errData);
+      throw new Error(errData.error || `Falha ao criar pedido (${apiRes.status})`);
     }
 
-    if (!orderError && insertedOrder) {
-      const itens = order.produtos || order.itens || [];
-      if (itens.length > 0) {
-        // Verifica quais produtos existem no banco para evitar erro de Foreign Key
-        const productIds = itens.map(i => i.id || i.sku).filter((id): id is string => Boolean(id));
-        const { data: existingProducts } = await supabase
-          .from('produtos')
-          .select('id')
-          .in('id', productIds);
-          
-        const existingProductIds = new Set(existingProducts?.map(p => p.id) || []);
+    const apiData = await apiRes.json();
 
-        const orderItemsRows = itens.map(i => {
-            const potentialId = i.id || i.sku;
-            return {
-              pedido_id: insertedOrder.id,
-              produto_id: (potentialId && existingProductIds.has(potentialId)) ? potentialId : null,
-              nome: i.nome,
-              qty: i.qtd || i.quantidade || 1,
-              preco_unit: i.valorUnitario || i.preco || 0
-            };
-        });
-
-        const { error: itemsError } = await supabase.from('pedido_itens').insert(orderItemsRows as any);
-        if (itemsError) {
-          console.error("Error inserting order items:", itemsError);
-        }
-      }
-    }
-
-    // Remove ou converte o carrinho abandonado, pois o pedido foi finalizado e não é mais pendente/abandonado
+    // Remove ou converte o carrinho abandonado
     if (userAuth?.user?.id) {
       await supabase
         .from('carrinhos_abandonados' as any)
@@ -346,8 +283,9 @@ export const useOrders = create<OrdersState>((set, get) => ({
         .eq('status', 'abandonado');
     }
 
-    // Refresh orders from DB for consistency
+    // Refresh orders
     await get().loadOrders();
+
   },
 
   updateOrderStatus: async (id, status) => {
