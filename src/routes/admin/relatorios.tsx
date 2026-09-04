@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import * as XLSX from "xlsx";
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { 
@@ -29,6 +29,7 @@ import {
   Activity,
   Trash2,
   Loader2,
+  Award,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdmin } from "@/stores/admin";
@@ -74,11 +75,22 @@ import {
 } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/admin/relatorios")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    report: (search.report as string) || undefined,
+  }),
   component: Relatorios,
 });
 
 function Relatorios() {
-  const [activeReport, setActiveReport] = useState<string | null>(null);
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const [activeReport, setActiveReport] = useState<string | null>(search?.report || null);
+
+  useEffect(() => {
+    if (search?.report) {
+      setActiveReport(search.report);
+    }
+  }, [search?.report]);
   const [abcRegion, setAbcRegion] = useState<string>("Todas");
   const [searchTerm, setSearchTerm] = useState("");
   const [date, setDate] = useState<{ from?: Date, to?: Date }>({
@@ -124,10 +136,10 @@ function Relatorios() {
     return userGroup?.permissoes?.includes(permissionId) || false;
   };
 
-  const vendasProdutoTitulo = effectiveStoreId ? "Produtos mais pedidos da minha loja" : "TOP 100 Produtos Mais Pedidos";
+  const vendasProdutoTitulo = effectiveStoreId ? "Produtos mais pedidos da minha loja" : "TOP 100 da Rede (Mais Pedidos)";
   const vendasProdutoDesc = effectiveStoreId 
-    ? "Acompanhe os produtos que mais vendem da sua loja por unidade ou faturamento"
-    : "Ranking dos 100 produtos mais pedidos da rede com filtros por quantidade e faturamento.";
+    ? "Acompanhe os produtos líderes de vendas da sua loja por unidade ou faturamento"
+    : "Ranking oficial consolidado dos 100 produtos líderes de vendas de toda a rede Farmácias Associadas.";
   const repasseTitulo = activeStoreId ? "Repasse Financeiro da loja" : "Repasse Financeiro";
   const retiradaTitulo = activeStoreId ? "Retirada vs Entrega da unidade" : "Retirada vs Entrega";
   const medControladosTitulo = activeStoreId ? "Medicamentos Controlados da unidade" : "Medicamentos Controlados";
@@ -143,8 +155,9 @@ function Relatorios() {
           id: "top-100-produtos",
           titulo: vendasProdutoTitulo,
           descricao: vendasProdutoDesc,
-          icon: <Package className="h-5 w-5 text-emerald-600" />,
-          bgColor: "bg-emerald-100",
+          icon: <Award className="h-5 w-5 text-[#00b5ad]" />,
+          bgColor: "bg-[#00b5ad]/10",
+          badge: !effectiveStoreId ? "Oficial da Rede" : undefined,
           permission: "rel_vendas_produto"
         }
       ]
@@ -569,7 +582,10 @@ function Relatorios() {
       <RelatorioTop100Produtos
         lojaId={effectiveStoreId}
         isGlobalAdmin={isGlobalAdmin()}
-        onBack={() => setActiveReport(null)}
+        onBack={() => {
+          setActiveReport(null);
+          navigate({ to: "/admin/relatorios", search: {} as any });
+        }}
         titlePrefix={effectiveStoreId ? "TOP 100 da Unidade" : "TOP 100 da Rede"}
       />
     );
@@ -1533,6 +1549,11 @@ function Relatorios() {
                     {isDisabled && (
                       <div className="absolute top-4 right-4 bg-slate-100 text-slate-500 text-xs font-bold px-2 py-1 rounded-md">
                         Em breve
+                      </div>
+                    )}
+                    {relatorio.badge && !isDisabled && (
+                      <div className="absolute top-4 right-4 bg-[#00b5ad]/15 border border-[#00b5ad]/30 text-[#008e88] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-2xs">
+                        {relatorio.badge}
                       </div>
                     )}
                     <div className={`mb-5 w-12 h-12 rounded-xl flex items-center justify-center ${relatorio.bgColor} ${!isDisabled ? 'transition-transform group-hover:scale-110 group-hover:shadow-sm' : ''}`}>

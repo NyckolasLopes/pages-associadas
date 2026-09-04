@@ -91,8 +91,8 @@ function ProductThumbnail({ foto, nome }: { foto?: string; nome: string }) {
 
   if (!foto || imgError) {
     return (
-      <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
-        <Package className="w-5 h-5 text-emerald-600" />
+      <div className="w-10 h-10 rounded-lg bg-[#00b5ad]/10 text-[#008e88] border border-[#00b5ad]/20 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
+        <Package className="w-5 h-5 text-[#00b5ad]" />
       </div>
     );
   }
@@ -419,8 +419,15 @@ export function RelatorioTop100Produtos({
     }
     if (pos === 3) {
       return (
-        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100/60 text-amber-950 font-black text-sm border-2 border-amber-600/50 shadow-xs">
+        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-950 font-black text-sm border-2 border-[#f37021]/50 shadow-xs">
           🥉
+        </span>
+      );
+    }
+    if (pos <= 10) {
+      return (
+        <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-lg bg-[#00b5ad]/10 text-[#008e88] font-black text-xs border border-[#00b5ad]/30 shadow-2xs">
+          {pos}º
         </span>
       );
     }
@@ -439,38 +446,65 @@ export function RelatorioTop100Produtos({
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>
-      {/* Top Bar with Back Navigation & Print Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs print:hidden">
-        <div className="flex items-center gap-3">
+      {/* Top Bar with Brand Identity, Back Navigation & Controls */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs print:hidden">
+        <div className="flex items-start sm:items-center gap-4">
           {onBack && (
             <Button 
               variant="outline" 
               onClick={onBack}
-              className="h-10 px-3.5 rounded-xl hover:bg-slate-100 font-bold text-slate-700 flex items-center gap-2 border-slate-300 shadow-2xs"
+              className="h-10 px-3.5 rounded-xl hover:bg-slate-100 font-bold text-slate-700 flex items-center gap-2 border-slate-300 shadow-2xs shrink-0"
             >
               <ArrowLeft className="h-4 w-4 text-slate-600" />
               <span>Voltar</span>
             </Button>
           )}
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              {selectedLoja === "all" ? (
-                <Badge className="bg-blue-600 text-white font-bold text-xs">
-                  Rede Consolidada
-                </Badge>
-              ) : (
-                <Badge className="bg-slate-800 text-white font-bold text-xs">
-                  {activeStoreObj?.nome || `Loja #${selectedLoja}`}
-                </Badge>
-              )}
+
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#00b5ad]/10 border border-[#00b5ad]/20 flex items-center justify-center shrink-0 p-1.5 shadow-2xs">
+              <img src="/logo.png" alt="Farmácias Associadas" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {titlePrefix || (selectedLoja === "all" ? "TOP 100 Produtos Mais Pedidos da Rede" : "Produtos Mais Pedidos da Minha Loja")}
-            </h1>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                {selectedLoja === "all" ? (
+                  <>
+                    <Badge className="bg-[#00b5ad] hover:bg-[#009e97] text-white font-black text-[11px] tracking-wide uppercase px-2.5 py-0.5 rounded-md shadow-2xs">
+                      Farmácias Associadas
+                    </Badge>
+                    <Badge className="bg-[#f37021] hover:bg-[#d95810] text-white font-black text-[11px] tracking-wide uppercase px-2.5 py-0.5 rounded-md shadow-2xs">
+                      Consolidado da Rede
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    <Badge className="bg-[#00b5ad] text-white font-bold text-[11px] px-2.5 py-0.5 rounded-md">
+                      Farmácias Associadas
+                    </Badge>
+                    <Badge className="bg-slate-800 text-white font-bold text-[11px] px-2.5 py-0.5 rounded-md">
+                      {activeStoreObj?.nome || `Loja #${selectedLoja}`}
+                    </Badge>
+                  </>
+                )}
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                {titlePrefix || (selectedLoja === "all" ? "TOP 100 da Rede" : "Produtos Mais Pedidos da Minha Loja")}
+                {selectedLoja === "all" && (
+                  <span className="text-xs font-bold text-slate-400 font-normal hidden sm:inline">
+                    • Ranking Oficial de Vendas
+                  </span>
+                )}
+              </h1>
+              <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">
+                {selectedLoja === "all" 
+                  ? "Inteligência comercial e ranking dos 100 itens mais pedidos em toda a rede de Farmácias Associadas."
+                  : `Desempenho dos produtos mais vendidos da unidade ${activeStoreObj?.nome || ''}.`}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 self-end md:self-auto shrink-0">
           <Button 
             onClick={handleExportXLSX} 
             variant="outline"
@@ -482,7 +516,7 @@ export function RelatorioTop100Produtos({
 
           <Button 
             onClick={() => window.print()}
-            className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-2xs rounded-xl flex items-center gap-2"
+            className="h-10 px-4 bg-[#008e88] hover:bg-[#00746f] text-white font-bold shadow-2xs rounded-xl flex items-center gap-2"
           >
             <Printer className="h-4 w-4" />
             <span>Imprimir / PDF</span>
@@ -490,14 +524,17 @@ export function RelatorioTop100Produtos({
         </div>
       </div>
 
-      {/* Hero / Executive Summary Cards */}
+      {/* Hero / Executive Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* #1 Mais Vendido */}
-        <Card className="border-amber-200/80 bg-gradient-to-br from-amber-500/10 via-white to-amber-50/20 shadow-xs relative overflow-hidden">
+        <Card className="border-amber-300/80 bg-gradient-to-br from-amber-500/15 via-white to-[#f37021]/10 shadow-xs relative overflow-hidden">
           <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-400/20 rounded-full blur-xl pointer-events-none" />
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-amber-700 flex items-center justify-between">
-              <span>Campeão de Pedidos (1º Lugar)</span>
+            <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-amber-800 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                Campeão da Rede (1º Lugar)
+              </span>
               <Award className="w-4 h-4 text-amber-600" />
             </CardTitle>
           </CardHeader>
@@ -523,62 +560,62 @@ export function RelatorioTop100Produtos({
         </Card>
 
         {/* Volume Total Vendido */}
-        <Card className="border-blue-200/80 bg-gradient-to-br from-blue-500/10 via-white to-blue-50/20 shadow-xs">
+        <Card className="border-[#00b5ad]/40 bg-gradient-to-br from-[#00b5ad]/12 via-white to-[#00b5ad]/5 shadow-xs">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-blue-700 flex items-center justify-between">
+            <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-[#008e88] flex items-center justify-between">
               <span>Volume Total em Unidades</span>
-              <Package className="w-4 h-4 text-blue-600" />
+              <Package className="w-4 h-4 text-[#00b5ad]" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-black text-blue-700">
-              {totalQtdGeral.toLocaleString("pt-BR")} <span className="text-base font-bold text-blue-500">un</span>
+            <div className="text-2xl sm:text-3xl font-black text-[#008e88]">
+              {totalQtdGeral.toLocaleString("pt-BR")} <span className="text-base font-bold text-[#00b5ad]">un</span>
             </div>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              Soma total de itens vendidos no período
+              Soma total consolidada de itens pedidos
             </p>
           </CardContent>
         </Card>
 
         {/* Faturamento Total dos Produtos */}
-        <Card className="border-emerald-200/80 bg-gradient-to-br from-emerald-500/10 via-white to-emerald-50/20 shadow-xs">
+        <Card className="border-[#f37021]/40 bg-gradient-to-br from-[#f37021]/12 via-white to-[#f37021]/5 shadow-xs">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-emerald-700 flex items-center justify-between">
+            <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-[#d95810] flex items-center justify-between">
               <span>Faturamento dos Produtos</span>
-              <DollarSign className="w-4 h-4 text-emerald-600" />
+              <DollarSign className="w-4 h-4 text-[#f37021]" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-700">
+            <div className="text-2xl sm:text-3xl font-black text-[#d95810]">
               {formatBRL(totalFaturamentoGeral)}
             </div>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              Receita total bruta gerada pelos itens
+              Receita bruta total movimentada no ranking
             </p>
           </CardContent>
         </Card>
 
         {/* Cobertura / Lojas Ativas */}
-        <Card className="border-indigo-200/80 bg-gradient-to-br from-indigo-500/10 via-white to-indigo-50/20 shadow-xs">
+        <Card className="border-slate-300/80 bg-gradient-to-br from-slate-100/90 via-white to-teal-50/20 shadow-xs">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-indigo-700 flex items-center justify-between">
-              <span>{selectedLoja === "all" ? "Lojas Integradas" : "Unidade Selecionada"}</span>
-              <Building2 className="w-4 h-4 text-indigo-600" />
+            <CardTitle className="text-xs uppercase tracking-wider font-extrabold text-slate-700 flex items-center justify-between">
+              <span>{selectedLoja === "all" ? "Lojas da Rede Integradas" : "Unidade Selecionada"}</span>
+              <Building2 className="w-4 h-4 text-[#00b5ad]" />
             </CardTitle>
           </CardHeader>
           <CardContent>
             {selectedLoja === "all" ? (
               <>
-                <div className="text-2xl sm:text-3xl font-black text-indigo-900">
-                  {pharmacies.length} <span className="text-base font-bold text-indigo-600">lojas</span>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900">
+                  {pharmacies.length} <span className="text-base font-bold text-[#00b5ad]">lojas</span>
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-1">
-                  Total consolidado somando todas as filiais
+                  Rede de Farmácias Associadas em operação
                 </p>
               </>
             ) : (
               <>
-                <div className="text-base sm:text-lg font-black text-indigo-900 leading-tight">
+                <div className="text-base sm:text-lg font-black text-slate-900 leading-tight">
                   {activeStoreObj?.nome || `Loja #${selectedLoja}`}
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-1">
@@ -605,7 +642,7 @@ export function RelatorioTop100Produtos({
                 onClick={() => setCriterio("quantidade")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition-all ${
                   criterio === "quantidade"
-                    ? "bg-blue-600 text-white shadow-2xs"
+                    ? "bg-[#00b5ad] text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                 }`}
               >
@@ -617,7 +654,7 @@ export function RelatorioTop100Produtos({
                 onClick={() => setCriterio("faturamento")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition-all ${
                   criterio === "faturamento"
-                    ? "bg-emerald-600 text-white shadow-2xs"
+                    ? "bg-[#f37021] text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                 }`}
               >
@@ -638,7 +675,7 @@ export function RelatorioTop100Produtos({
                     <SelectValue placeholder="Selecione a loja..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all" className="font-bold text-blue-700">
+                    <SelectItem value="all" className="font-bold text-[#008e88]">
                       Todas as Lojas (Consolidado da Rede)
                     </SelectItem>
                     {pharmacies.map(loja => (
@@ -721,7 +758,7 @@ export function RelatorioTop100Produtos({
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-9 pr-8 h-9 text-xs font-semibold bg-slate-50 border-slate-200 rounded-xl focus:bg-white"
+              className="pl-9 pr-8 h-9 text-xs font-semibold bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus-visible:ring-[#00b5ad]/20 focus-visible:border-[#00b5ad]"
             />
             {searchTerm && (
               <button 
@@ -736,7 +773,7 @@ export function RelatorioTop100Produtos({
 
           <div className="text-xs text-slate-500 font-medium">
             Exibindo <span className="font-bold text-slate-800">{searchFilteredRanking.length}</span> produtos no ranking
-            {selectedLoja === "all" ? " (Total somado de todas as lojas)" : ` (${activeStoreObj?.nome})`}
+            {selectedLoja === "all" ? " (Total somado de toda a rede)" : ` (${activeStoreObj?.nome})`}
           </div>
         </div>
       </div>
@@ -747,15 +784,15 @@ export function RelatorioTop100Produtos({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <CardTitle className="text-base font-black text-slate-900 flex items-center gap-2">
-                <BarChart2 className="w-5 h-5 text-emerald-600" />
-                Gráfico TOP 10 — {criterio === "quantidade" ? "Volume em Unidades" : "Faturamento Bruto (R$)"}
+                <BarChart2 className="w-5 h-5 text-[#00b5ad]" />
+                Gráfico TOP 10 da Rede — {criterio === "quantidade" ? "Volume em Unidades" : "Faturamento Bruto (R$)"}
               </CardTitle>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Comparativo visual dos 10 produtos de maior desempenho no recorte selecionado.
+                Comparativo visual dos 10 produtos líderes de vendas na rede Farmácias Associadas.
               </p>
             </div>
-            <Badge variant="outline" className="bg-white border-slate-200 text-slate-700 font-bold text-xs self-start sm:self-auto shadow-2xs">
-              Critério Ativo: {criterio === "quantidade" ? "Quantidade (Unidades)" : "Faturamento (R$)"}
+            <Badge variant="outline" className="bg-[#00b5ad]/10 border-[#00b5ad]/30 text-[#008e88] font-black text-xs self-start sm:self-auto shadow-2xs">
+              Critério: {criterio === "quantidade" ? "Quantidade (Unidades)" : "Faturamento (R$)"}
             </Badge>
           </div>
         </CardHeader>
@@ -801,7 +838,7 @@ export function RelatorioTop100Produtos({
                     {top10ChartData.map((_, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={index === 0 ? (criterio === "quantidade" ? "#1d4ed8" : "#059669") : (criterio === "quantidade" ? "#3b82f6" : "#10b981")} 
+                        fill={index === 0 ? "#f37021" : "#00b5ad"} 
                       />
                     ))}
                   </Bar>
@@ -818,18 +855,18 @@ export function RelatorioTop100Produtos({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <ListOrdered className="w-5 h-5 text-emerald-600" />
-                {selectedLoja === "all" ? "Tabela do Ranking Oficial TOP 100" : "Tabela de Produtos Mais Pedidos"}
+                <ListOrdered className="w-5 h-5 text-[#00b5ad]" />
+                {selectedLoja === "all" ? "Tabela do Ranking Oficial TOP 100 da Rede" : "Tabela de Produtos Mais Pedidos"}
               </CardTitle>
               <p className="text-xs text-slate-500 font-medium mt-1">
                 {selectedLoja === "all"
-                  ? "Soma total consolidada de todas as lojas da rede de farmácias."
+                  ? "Soma total consolidada de todas as farmácias associadas da rede."
                   : `Ranking individual exclusivo da loja: ${activeStoreObj?.nome}.`}
               </p>
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              {/* Pagination control removed per user request */}
+              {/* Pagination control */}
             </div>
           </div>
         </CardHeader>
@@ -838,7 +875,7 @@ export function RelatorioTop100Produtos({
           <div className="overflow-x-auto print:overflow-visible print:w-full">
             <table className="w-full text-left text-sm print:text-xs">
               <thead>
-                <tr className="border-b bg-slate-50/80 text-slate-500 text-[11px] font-black uppercase tracking-wider print:text-[10px]">
+                <tr className="border-b bg-slate-50/80 text-slate-600 text-[11px] font-black uppercase tracking-wider print:text-[10px]">
                   <th className="py-3.5 px-4 w-16 text-center">Posição</th>
                   <th className="py-3.5 px-4 min-w-[260px] print:min-w-0 print:w-auto">Produto</th>
                   <th className="py-3.5 px-4">SKU / EAN</th>
@@ -846,14 +883,14 @@ export function RelatorioTop100Produtos({
                   <th className="py-3.5 px-4 text-center">
                     <div className="inline-flex items-center gap-1">
                       <span>Qtd. Pedida</span>
-                      {criterio === "quantidade" && <Badge className="bg-blue-600 text-white text-[10px] px-1 py-0 h-4">Filtro</Badge>}
+                      {criterio === "quantidade" && <Badge className="bg-[#00b5ad] text-white text-[10px] px-1.5 py-0 h-4 font-bold">Filtro Ativo</Badge>}
                     </div>
                   </th>
                   <th className="py-3.5 px-4 text-right">Preço Médio</th>
                   <th className="py-3.5 px-4 text-right">
                     <div className="inline-flex items-center gap-1 justify-end">
                       <span>Faturamento Total</span>
-                      {criterio === "faturamento" && <Badge className="bg-emerald-600 text-white text-[10px] px-1 py-0 h-4">Filtro</Badge>}
+                      {criterio === "faturamento" && <Badge className="bg-[#f37021] text-white text-[10px] px-1.5 py-0 h-4 font-bold">Filtro Ativo</Badge>}
                     </div>
                   </th>
                   <th className="py-3.5 px-4 text-center">Representatividade</th>
@@ -876,7 +913,7 @@ export function RelatorioTop100Produtos({
                       <tr 
                         key={item.sku + item.posicao} 
                         className={`hover:bg-slate-50/80 transition-colors ${
-                          item.posicao === 1 ? "bg-amber-50/20 font-semibold" : ""
+                          item.posicao === 1 ? "bg-amber-50/30 font-semibold" : ""
                         }`}
                       >
                         {/* Posição / Badge */}
@@ -913,7 +950,7 @@ export function RelatorioTop100Produtos({
                             {/* Visual mini bar */}
                             <div className="w-16 bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
                               <div 
-                                className="bg-blue-600 h-full rounded-full transition-all duration-300" 
+                                className={`${criterio === "quantidade" ? "bg-[#00b5ad]" : "bg-[#f37021]"} h-full rounded-full transition-all duration-300`} 
                                 style={{ width: `${relativePercent}%` }}
                               />
                             </div>
@@ -927,7 +964,7 @@ export function RelatorioTop100Produtos({
 
                         {/* Faturamento Total */}
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <span className="font-black text-emerald-700 text-sm">
+                          <span className="font-black text-[#008e88] text-sm">
                             {formatBRL(item.faturamento)}
                           </span>
                         </td>
@@ -938,8 +975,8 @@ export function RelatorioTop100Produtos({
                             variant="outline" 
                             className={`text-xs font-black py-0.5 ${
                               criterio === "quantidade" 
-                                ? "bg-blue-50 text-blue-800 border-blue-200" 
-                                : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                ? "bg-[#00b5ad]/10 text-[#008e88] border-[#00b5ad]/30" 
+                                : "bg-[#f37021]/10 text-[#d95810] border-[#f37021]/30"
                             }`}
                           >
                             {(criterio === "quantidade" ? item.percentQtd : item.percentFaturamento).toFixed(1)}%
@@ -979,7 +1016,7 @@ export function RelatorioTop100Produtos({
                   onClick={() => setCurrentPage(page)}
                   className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
                     currentPage === page
-                      ? "bg-emerald-600 text-white shadow-2xs"
+                      ? "bg-[#00b5ad] text-white shadow-2xs"
                       : "text-slate-600 hover:bg-slate-200/60 bg-white border border-slate-200"
                   }`}
                 >

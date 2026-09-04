@@ -543,8 +543,11 @@ function AdminLayout() {
               <Link to="/admin/metricas" className={subLinkClass}>
                 Métricas de Pedidos
               </Link>
+              <Link to="/admin/relatorios" search={{ report: "top-100-produtos" } as any} className={subLinkClass}>
+                TOP 100 da Rede
+              </Link>
               {(can('rel_vendas_produto') || can('rel_vendas_canal') || can('rel_desempenho') || can('rel_financeiro') || can('rel_logistica_retirada') || can('rel_logistica_sla') || can('rel_estoque_controlados') || can('rel_estoque_abc') || !isGlobalAdmin) && (
-                <Link to="/admin/relatorios" className={subLinkClass}>
+                <Link to="/admin/relatorios" className={subLinkClass} activeOptions={{ exact: true }}>
                   Central de Relatórios
                 </Link>
               )}
