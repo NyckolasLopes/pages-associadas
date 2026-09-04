@@ -1561,7 +1561,7 @@ function CartPage() {
                       <Store className="h-4 w-4 text-primary" />
                       <div className="flex-1">
                         <div className="text-sm font-bold">Retirada na loja</div>
-                        <div className="text-xs text-muted-foreground">Retirar <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">grátis</span> na loja</div>
+                        <div className="text-xs text-muted-foreground">Retirar grátis na loja</div>
                       </div>
                     </label>
 

@@ -293,17 +293,23 @@ function AdminUsuarios() {
         ...u,
         name: novoUsuarioNome,
         email: novoUsuarioEmail,
-        password: novoUsuarioSenha || u.password,
+        password: novoUsuarioSenha.trim() || u.password,
         grupoId: novoUsuarioGrupo,
         lojasVinculadas: isGlobal ? undefined : novoUsuarioLojas
       } : u));
       
-      // Sync to Supabase profiles
-      const { error: syncError } = await supabase.from('profiles' as any).update({
+      const updatePayload: any = {
+        nome: novoUsuarioNome,
         grupo_id: novoUsuarioGrupo,
         lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
         is_admin: isGlobal
-      }).eq('id', editingUsuarioId);
+      };
+      if (novoUsuarioSenha.trim()) {
+        updatePayload.anotacoes = JSON.stringify({ password: novoUsuarioSenha.trim() });
+      }
+
+      // Sync to Supabase profiles
+      const { error: syncError } = await supabase.from('profiles' as any).update(updatePayload).eq('id', editingUsuarioId);
       
       if (syncError) {
         console.error("Failed to sync profile:", syncError);
@@ -312,6 +318,7 @@ function AdminUsuarios() {
       }
       
       toast.success("Usuário atualizado com sucesso!");
+      loadUsers();
     } else {
       // Validate if email already exists locally to prevent overwrite
       if (usuarios.some(u => u.email.toLowerCase() === novoUsuarioEmail.toLowerCase())) {
@@ -321,6 +328,8 @@ function AdminUsuarios() {
 
       // Removed unique store constraint
       const isGlobal = isGlobalGroup();
+      const userPassword = novoUsuarioSenha.trim();
+      const anotacoesPayload = userPassword ? JSON.stringify({ password: userPassword }) : null;
 
       // Criar usuário no Supabase Auth usando cliente secundário para não sobrescrever a sessão atual do Admin
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
@@ -332,7 +341,7 @@ function AdminUsuarios() {
 
       const { data: authData, error: authError } = await adminAuthClient.auth.signUp({
         email: novoUsuarioEmail,
-        password: novoUsuarioSenha,
+        password: userPassword,
         options: {
           data: {
             nome: novoUsuarioNome,
@@ -360,7 +369,7 @@ function AdminUsuarios() {
             // Tenta fazer login com a senha informada para recuperar o ID do usuário da tabela auth
             const { data: loginData, error: loginError } = await adminAuthClient.auth.signInWithPassword({
               email: novoUsuarioEmail,
-              password: novoUsuarioSenha
+              password: userPassword
             });
 
             if (loginError || !loginData.user) {
@@ -378,7 +387,8 @@ function AdminUsuarios() {
                nome: novoUsuarioNome,
                is_admin: isGlobal,
                grupo_id: novoUsuarioGrupo,
-               lojas_vinculadas: isGlobal ? null : novoUsuarioLojas
+               lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
+               ...(anotacoesPayload ? { anotacoes: anotacoesPayload } : {})
             });
 
             if (insertError) {
@@ -391,10 +401,12 @@ function AdminUsuarios() {
               id: targetUserId,
               name: novoUsuarioNome,
               email: novoUsuarioEmail,
+              password: userPassword,
               grupoId: novoUsuarioGrupo,
               lojasVinculadas: isGlobal ? undefined : novoUsuarioLojas,
               proprietario: false
             }]);
+            loadUsers();
             setIsNovoUsuarioOpen(false);
             setNovoUsuarioNome("");
             setNovoUsuarioEmail("");
@@ -408,9 +420,11 @@ function AdminUsuarios() {
           alreadyExisted = true;
           
           const { error: updateError } = await supabase.from('profiles' as any).update({
+             nome: novoUsuarioNome,
              grupo_id: novoUsuarioGrupo,
              lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
-             is_admin: isGlobal
+             is_admin: isGlobal,
+             ...(anotacoesPayload ? { anotacoes: anotacoesPayload } : {})
           }).eq('id', targetUserId);
           
           if (updateError) {
@@ -430,7 +444,8 @@ function AdminUsuarios() {
            nome: novoUsuarioNome,
            grupo_id: novoUsuarioGrupo,
            lojas_vinculadas: isGlobal ? null : novoUsuarioLojas,
-           is_admin: isGlobal
+           is_admin: isGlobal,
+           ...(anotacoesPayload ? { anotacoes: anotacoesPayload } : {})
          });
       }
 
@@ -439,7 +454,7 @@ function AdminUsuarios() {
         id: targetUserId || `user-${Date.now()}`, 
         name: novoUsuarioNome, 
         email: novoUsuarioEmail, 
-        password: novoUsuarioSenha,
+        password: userPassword,
         grupoId: novoUsuarioGrupo, 
         proprietario: false,
         lojasVinculadas: isGlobal ? undefined : novoUsuarioLojas
@@ -450,6 +465,7 @@ function AdminUsuarios() {
       } else {
         toast.success("Usuário criado com sucesso!");
       }
+      loadUsers();
     }
     setIsNovoUsuarioOpen(false);
     resetUsuarioForm();
@@ -462,11 +478,25 @@ function AdminUsuarios() {
     toast.success("Grupo(s) excluído(s) com sucesso!");
   };
 
-  const handleExcluirUsuarios = () => {
-    setUsuarios(usuarios.filter(u => !selectedUsuarios.includes(u.id)));
+  const handleExcluirUsuarios = async () => {
+    const idsToDelete = [...selectedUsuarios];
+    setUsuarios(usuarios.filter(u => !idsToDelete.includes(u.id)));
     setSelectedUsuarios([]);
     setIsExcluirUsuarioOpen(false);
+
+    try {
+      await supabase.from('profiles' as any).update({
+        grupo_id: null,
+        lojas_vinculadas: null,
+        is_admin: false,
+        anotacoes: null
+      }).in('id', idsToDelete);
+    } catch (e) {
+      console.error("Erro ao desvincular usuário no banco:", e);
+    }
+
     toast.success("Usuário(s) excluído(s) com sucesso!");
+    loadUsers();
   };
 
   return (

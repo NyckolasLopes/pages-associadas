@@ -57,6 +57,7 @@ import {
 import { StoreSelector } from "@/components/admin/StoreSelector";
 import { MotorcycleIcon } from "@/components/ui/motorcycle-icon";
 import { safeSlugify } from "@/hooks/useActivePharmacy";
+import { getStoreColorStripes, STORE_STRIPE_LABELS } from "@/lib/themeUtils";
 
 export interface ColorPreset {
   id: string;
@@ -66,12 +67,11 @@ export interface ColorPreset {
   colors: Record<string, string>;
 }
 
-export const COLOR_PRESETS: ColorPreset[] = [
+const RAW_COLOR_PRESETS: Array<Omit<ColorPreset, "stripes"> & { stripes?: [string, string, string, string, string, string] }> = [
   {
     id: "associadas-oficial",
     name: "Associadas Oficial (Teal & Laranja)",
     category: "Oficial",
-    stripes: ["#00B5AD", "#F37021", "#FFFFFF", "#008E88", "#0F172A", "#F43F5E"],
     colors: {
       "--primary": "#00B5AD",
       "--primary-foreground": "#FFFFFF",
@@ -391,8 +391,13 @@ export const COLOR_PRESETS: ColorPreset[] = [
       "--pwa-banner-btn-bg": "#FFFFFF",
       "--pwa-banner-btn-text": "#DC2626",
     }
-  }
+  },
 ];
+
+export const COLOR_PRESETS: ColorPreset[] = RAW_COLOR_PRESETS.map((preset) => ({
+  ...preset,
+  stripes: getStoreColorStripes(preset.colors),
+}));
 
 // Helper to sanitize and format valid HEX strings (#RRGGBB)
 function sanitizeHex(val: string, fallback = "#000000"): string {
@@ -406,6 +411,66 @@ function sanitizeHex(val: string, fallback = "#000000"): string {
   }
   return fallback;
 }
+
+export const DEFAULT_STORE_THEME: Record<string, string> = {
+  "--primary": "#00B5AD",
+  "--primary-foreground": "#FFFFFF",
+  "--btn-primary-bg": "#00B5AD",
+  "--btn-primary-text": "#FFFFFF",
+  "--secondary": "#F37021",
+  "--secondary-foreground": "#FFFFFF",
+  "--btn-secondary-bg": "#F37021",
+  "--btn-secondary-text": "#FFFFFF",
+  "--accent": "#F43F5E",
+  "--accent-foreground": "#FFFFFF",
+  "--background": "#FFFFFF",
+  "--foreground": "#1E293B",
+  "--headings": "#0F172A",
+  "--section-desc": "#64748B",
+  "--header-bg": "#00B5AD",
+  "--header-icons": "#F37021",
+  "--header-text": "#FFFFFF",
+  "--search-bg": "#FFFFFF",
+  "--search-text": "#334155",
+  "--search-icon": "#94A3B8",
+  "--search-border": "#E2E8F0",
+  "--cart-btn-bg": "#FFFFFF",
+  "--cart-btn-text": "#00B5AD",
+  "--cart-badge-bg": "#F43F5E",
+  "--cart-badge-text": "#FFFFFF",
+  "--topbar-bg": "#F37021",
+  "--topbar-icon": "#FFFFFF",
+  "--topbar-text": "#FFFFFF",
+  "--menu-bg": "#008E88",
+  "--menu-text": "#FFFFFF",
+  "--all-cats-icon": "#FFFFFF",
+  "--all-cats-text": "#FFFFFF",
+  "--price-main": "#00B5AD",
+  "--price-old": "#94A3B8",
+  "--price-discount-badge-bg": "#F43F5E",
+  "--price-discount-badge-text": "#FFFFFF",
+  "--tarja-bg": "#FFFFFF",
+  "--tarja-icon": "#00B5AD",
+  "--tarja-text": "#0F172A",
+  "--news-bg": "#F8FAFC",
+  "--news-text": "#0F172A",
+  "--news-input-bg": "#FFFFFF",
+  "--news-input-text": "#1E293B",
+  "--news-input-border": "#CBD5E1",
+  "--news-btn-bg": "#00B5AD",
+  "--news-btn-text": "#FFFFFF",
+  "--footer-bg": "#00B5AD",
+  "--footer-text": "#FFFFFF",
+  "--social-icons": "#00B5AD",
+  "--social-icons-bg": "#FFFFFF",
+  "--footer-bottom-bg": "#008E88",
+  "--footer-bottom-text": "#E2E8F0",
+  "--institutional-bg": "#F97316",
+  "--pwa-banner-bg": "#00B5AD",
+  "--pwa-banner-text": "#FFFFFF",
+  "--pwa-banner-btn-bg": "#FFFFFF",
+  "--pwa-banner-btn-text": "#00B5AD",
+};
 
 export function StoreColorManager({
   storeId,
@@ -432,72 +497,15 @@ export function StoreColorManager({
   // Network theme mode: isNetworkPage OR (global admin + no specific store selected)
   const isNetworkMode = isNetworkPage || (isGlobalAdmin && !effectiveStoreId);
 
-  const defaultTheme: Record<string, string> = useMemo(() => ({
-    "--primary": "#00B5AD",
-    "--primary-foreground": "#FFFFFF",
-    "--btn-primary-bg": "#00B5AD",
-    "--btn-primary-text": "#FFFFFF",
-    "--secondary": "#F37021",
-    "--secondary-foreground": "#FFFFFF",
-    "--btn-secondary-bg": "#F37021",
-    "--btn-secondary-text": "#FFFFFF",
-    "--accent": "#F43F5E",
-    "--accent-foreground": "#FFFFFF",
-    "--background": "#FFFFFF",
-    "--foreground": "#1E293B",
-    "--headings": "#0F172A",
-    "--section-desc": "#64748B",
-    "--header-bg": "#00B5AD",
-    "--header-icons": "#F37021",
-    "--header-text": "#FFFFFF",
-    "--search-bg": "#FFFFFF",
-    "--search-text": "#334155",
-    "--search-icon": "#94A3B8",
-    "--search-border": "#E2E8F0",
-    "--cart-btn-bg": "#FFFFFF",
-    "--cart-btn-text": "#00B5AD",
-    "--cart-badge-bg": "#F43F5E",
-    "--cart-badge-text": "#FFFFFF",
-    "--topbar-bg": "#F37021",
-    "--topbar-icon": "#FFFFFF",
-    "--topbar-text": "#FFFFFF",
-    "--menu-bg": "#008E88",
-    "--menu-text": "#FFFFFF",
-    "--all-cats-icon": "#FFFFFF",
-    "--all-cats-text": "#FFFFFF",
-    "--price-main": "#00B5AD",
-    "--price-old": "#94A3B8",
-    "--price-discount-badge-bg": "#F43F5E",
-    "--price-discount-badge-text": "#FFFFFF",
-    "--tarja-bg": "#FFFFFF",
-    "--tarja-icon": "#00B5AD",
-    "--tarja-text": "#0F172A",
-    "--news-bg": "#F8FAFC",
-    "--news-text": "#0F172A",
-    "--news-input-bg": "#FFFFFF",
-    "--news-input-text": "#1E293B",
-    "--news-input-border": "#CBD5E1",
-    "--news-btn-bg": "#00B5AD",
-    "--news-btn-text": "#FFFFFF",
-    "--footer-bg": "#00B5AD",
-    "--footer-text": "#FFFFFF",
-    "--social-icons": "#00B5AD",
-    "--social-icons-bg": "#FFFFFF",
-    "--footer-bottom-bg": "#008E88",
-    "--footer-bottom-text": "#E2E8F0",
-    "--institutional-bg": "#F97316",
-    "--pwa-banner-bg": "#00B5AD",
-    "--pwa-banner-text": "#FFFFFF",
-    "--pwa-banner-btn-bg": "#FFFFFF",
-    "--pwa-banner-btn-text": "#00B5AD",
-  }), []);
-
   const [colors, setColors] = useState<Record<string, string>>(() => {
-    const savedColors = currentPharmacy?.themeColors;
-    if (savedColors && typeof savedColors === 'object' && Object.keys(savedColors).length > 0) {
-      return { ...defaultTheme, ...savedColors };
+    let savedColors: any = currentPharmacy?.themeColors;
+    if (typeof savedColors === 'string') {
+      try { savedColors = JSON.parse(savedColors); } catch { savedColors = null; }
     }
-    return defaultTheme;
+    if (savedColors && typeof savedColors === 'object' && Object.keys(savedColors).length > 0) {
+      return { ...DEFAULT_STORE_THEME, ...savedColors };
+    }
+    return { ...DEFAULT_STORE_THEME, ...(admin.networkDefaultTheme || {}) };
   });
 
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
@@ -505,10 +513,6 @@ export function StoreColorManager({
   const [previewPage, setPreviewPage] = useState<"home" | "product" | "cart">("home");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-
-  // Network theme state
-  const [networkColors, setNetworkColors] = useState<Record<string, string>>(() => admin.networkDefaultTheme || defaultTheme);
-  const [isNetworkSaving, setIsNetworkSaving] = useState(false);
   const [isApplyingAll, setIsApplyingAll] = useState(false);
 
   useEffect(() => {
@@ -518,13 +522,21 @@ export function StoreColorManager({
 
   useEffect(() => {
     if (isNetworkMode) {
-      setColors({ ...defaultTheme, ...(admin.networkDefaultTheme || {}) });
-    } else if (currentPharmacy?.themeColors && Object.keys(currentPharmacy.themeColors).length > 0) {
-      setColors({ ...defaultTheme, ...currentPharmacy.themeColors });
+      setColors({ ...DEFAULT_STORE_THEME, ...(admin.networkDefaultTheme || {}) });
+    } else if (currentPharmacy?.themeColors) {
+      let savedColors: any = currentPharmacy.themeColors;
+      if (typeof savedColors === 'string') {
+        try { savedColors = JSON.parse(savedColors); } catch { savedColors = null; }
+      }
+      if (savedColors && typeof savedColors === 'object' && Object.keys(savedColors).length > 0) {
+        setColors({ ...DEFAULT_STORE_THEME, ...savedColors });
+      } else {
+        setColors({ ...DEFAULT_STORE_THEME, ...(admin.networkDefaultTheme || {}) });
+      }
     } else {
-      setColors({ ...defaultTheme, ...(admin.networkDefaultTheme || {}) });
+      setColors({ ...DEFAULT_STORE_THEME, ...(admin.networkDefaultTheme || {}) });
     }
-  }, [isNetworkMode, currentPharmacy?.id, defaultTheme, admin.networkDefaultTheme]);
+  }, [isNetworkMode, currentPharmacy?.id, admin.networkDefaultTheme]);
 
   const getColor = (key: string, fallback: string) => {
     return colors[key] || colors[`--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`] || colors[key.replace(/^--/, '')] || fallback;
@@ -550,10 +562,16 @@ export function StoreColorManager({
   };
 
   const applyPreset = (preset: ColorPreset) => {
-    setColors(prev => ({
-      ...prev,
-      ...preset.colors
-    }));
+    setColors(prev => {
+      const merged = { ...prev, ...preset.colors };
+      Object.entries(preset.colors).forEach(([k, v]) => {
+        if (k.startsWith('--')) {
+          const camel = k.replace(/^--/, '').replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+          merged[camel] = v;
+        }
+      });
+      return merged;
+    });
     toast.success(`Paleta "${preset.name}" aplicada no simulador! Clique em Salvar para publicar.`);
   };
 
@@ -583,17 +601,33 @@ export function StoreColorManager({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      if (isNetworkMode || !effectiveStoreId) {
-        await admin.saveNetworkTheme(colors);
-        toast.success("Cores padrão da rede salvas com sucesso! Todas as configurações foram salvas como padrão da rede.");
-      } else {
-        if (currentPharmacy) {
-          await admin.updatePharmacy(effectiveStoreId, {
-            ...currentPharmacy,
-            themeColors: colors,
-          });
+      // Sincroniza tanto chaves com prefixo '--' quanto versões camelCase
+      const completeThemeColors: Record<string, string> = { ...colors };
+      Object.entries(colors).forEach(([k, v]) => {
+        if (k.startsWith('--')) {
+          const camel = k.replace(/^--/, '').replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+          completeThemeColors[camel] = v;
         }
-        toast.success("Cores salvas com sucesso! Sua loja já está com a nova identidade visual.");
+      });
+
+      if (isNetworkMode || !effectiveStoreId) {
+        await admin.saveNetworkTheme(completeThemeColors);
+        toast.success("Cores padrão da rede salvas com sucesso!");
+      } else {
+        const storeToUpdate = currentPharmacy || admin.pharmacies.find((p) => p.id === effectiveStoreId);
+        if (storeToUpdate) {
+          const updatedPayload = {
+            ...(storeToUpdate.themeColors || {}),
+            ...completeThemeColors,
+          };
+          await admin.updatePharmacy(effectiveStoreId, {
+            ...storeToUpdate,
+            themeColors: updatedPayload,
+          });
+          toast.success("Cores salvas com sucesso! A vitrine da sua loja foi atualizada.");
+        } else {
+          toast.error("Loja não encontrada para salvar.");
+        }
       }
     } catch (err: any) {
       toast.error("Erro ao salvar cores: " + (err.message || "Tente novamente"));
@@ -613,17 +647,8 @@ export function StoreColorManager({
   };
 
   const currentStripes = useMemo(() => {
-    const p = getColor("--primary", "#00B5AD");
-    const s = getColor("--secondary", "#F37021");
-    return [
-      p,
-      s,
-      getColor("--header-bg", p),
-      getColor("--topbar-bg", s),
-      getColor("--menu-bg", p === "#00B5AD" ? "#008E88" : p),
-      getColor("--footer-bg", p),
-    ];
-  }, [colors]);
+    return getStoreColorStripes(colors, admin.networkDefaultTheme);
+  }, [colors, admin.networkDefaultTheme]);
 
   // Quick Swatches palette for fast coloring
   const quickSwatches = [
@@ -799,7 +824,7 @@ export function StoreColorManager({
                   key={index}
                   className="flex-1 h-full transition-colors relative group cursor-default"
                   style={{ backgroundColor: color }}
-                  title={`Cor ${index + 1}: ${color}`}
+                  title={`${STORE_STRIPE_LABELS[index] || `Cor ${index + 1}`}: ${color}`}
                 >
                   <span className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center text-[9px] font-mono font-bold text-white drop-shadow-md">
                     {color}
@@ -887,7 +912,12 @@ export function StoreColorManager({
                       </div>
                       <div className="h-6 w-full rounded-lg overflow-hidden flex shadow-inner border border-slate-200">
                         {p.stripes.map((hex, sIdx) => (
-                          <div key={sIdx} className="flex-1 h-full" style={{ backgroundColor: hex }} />
+                          <div 
+                            key={sIdx} 
+                            className="flex-1 h-full" 
+                            style={{ backgroundColor: hex }} 
+                            title={`${STORE_STRIPE_LABELS[sIdx] || `Cor ${sIdx + 1}`}: ${hex}`}
+                          />
                         ))}
                       </div>
                     </button>

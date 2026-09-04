@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreSelector } from "@/components/admin/StoreSelector";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -53,8 +53,6 @@ interface AbandonedCartItem {
   total: number;
   rawCart: AbandonedCart;
 }
-
-import { useEffect } from 'react';
 
 export function PedidosAdmin() {
   const { pharmacies, currentUser, grupos, activeStoreId } = useAdmin();
@@ -112,13 +110,19 @@ export function PedidosAdmin() {
     setConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete) {
-      removeStoreCart(itemToDelete.id);
-      if (selectedCartItem?.id === itemToDelete.id) setSelectedCartItem(null);
-      setConfirmOpen(false);
-      setItemToDelete(null);
-      toast.success("Carrinho excluído com sucesso!");
+      try {
+        await removeStoreCart(itemToDelete.id);
+        if (selectedCartItem?.id === itemToDelete.id) setSelectedCartItem(null);
+        toast.success("Carrinho excluído com sucesso!");
+      } catch (err) {
+        console.error("Erro ao excluir carrinho:", err);
+        toast.error("Erro ao excluir carrinho.");
+      } finally {
+        setConfirmOpen(false);
+        setItemToDelete(null);
+      }
     }
   };
 

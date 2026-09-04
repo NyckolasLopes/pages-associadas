@@ -48,88 +48,36 @@ export function GlobalLoading() {
     } catch { /* ignore */ }
   }
 
-  // Resoluções imediatas com persistência síncrona para garantir 100% dos carregamentos (inclusive F5/cold reload)
-  let storeLogo = currentPharmacy?.logoUrl || currentPharmacy?.loadingLogoUrl || "";
-  let storeFavicon = currentPharmacy?.faviconUrl || currentPharmacy?.loadingLogoUrl || "";
   let storeCategoria = currentPharmacy?.categoriaAssociado;
-  let storeIsPleno = currentPharmacy?.isPleno;
-
-  if (!isAdminArea && typeof window !== 'undefined' && potentialSlug) {
-    if (!storeLogo) {
-      try {
-        storeLogo = sessionStorage.getItem(`fa-store-logo-${potentialSlug}`) || sessionStorage.getItem('fa-last-store-logo') || "";
-      } catch {}
-    }
-    if (!storeFavicon) {
-      try {
-        storeFavicon = sessionStorage.getItem(`fa-store-favicon-${potentialSlug}`) || sessionStorage.getItem('fa-last-store-favicon') || "";
-      } catch {}
-    }
-    if (!storeCategoria) {
-      try {
-        storeCategoria = (sessionStorage.getItem(`fa-store-categoria-${potentialSlug}`) || sessionStorage.getItem('fa-last-store-categoria') || "") as any;
-      } catch {}
-    }
+  if (!isAdminArea && typeof window !== 'undefined' && potentialSlug && !storeCategoria) {
+    try {
+      storeCategoria = (sessionStorage.getItem(`fa-store-categoria-${potentialSlug}`) || sessionStorage.getItem('fa-last-store-categoria') || "") as any;
+    } catch {}
   }
 
-  // Identificação exata das 3 categorias de loja
-  const isParceiro = !isAdminArea && 
-    (storeCategoria === 'Parceiro' || currentPharmacy?.categoriaAssociado === 'Parceiro') &&
-    currentPharmacy?.categoriaAssociado !== 'Pleno' &&
-    currentPharmacy?.isPleno !== true &&
-    potentialSlug.toLowerCase() !== 'pelotas';
-
-  const isPleno = !isAdminArea && !isParceiro && (
-    potentialSlug.toLowerCase() === 'pelotas' ||
-    storeCategoria === 'Pleno' || 
-    currentPharmacy?.categoriaAssociado === 'Pleno' || 
-    storeIsPleno === true || 
-    currentPharmacy?.isPleno === true ||
-    Boolean(storeFavicon && potentialSlug && potentialSlug !== 'loja-padrao' && !SYSTEM_PAGES.has(potentialSlug))
-  );
+  const cat = (storeCategoria || currentPharmacy?.categoriaAssociado || "").toString().toLowerCase();
+  const isParceiro = !isAdminArea && (cat === 'parceiro' || currentPharmacy?.isPleno === false);
 
   return (
     <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[99999] flex flex-col items-center justify-center animate-in fade-in duration-150">
       {isParceiro ? (
-        // ==================== LOJA PARCEIRO ====================
-        // "somente o circulo rodando no parceiro"
-        <div className="flex flex-col items-center justify-center p-6 text-center">
-          <Loader2 className="w-12 h-12 text-slate-700 animate-spin" />
-        </div>
-      ) : isPleno ? (
-        // ==================== LOJA PLENO ====================
-        // "o carregamento do spin com o logo e faviicon do pleno deve ser 100% dos carregamentos quando estiver na loja pleno"
+        // ==================== LOJA PARCEIRO (LOAD PADRÃO) ====================
+        // Ao acessar loja parceira: abertura com load padrão sem marca Associadas
         <div className="bg-white shadow-xl border border-slate-100 rounded-3xl p-8 flex flex-col items-center max-w-xs w-full mx-4 text-center">
-          {/* Logo da Loja Pleno */}
-          {(storeLogo || currentPharmacy?.logoUrl) ? (
-            <img
-              src={storeLogo || currentPharmacy?.logoUrl}
-              alt={currentPharmacy?.nome || "Loja Pleno"}
-              className="max-h-14 max-w-[210px] w-auto h-auto mb-6 object-contain"
-            />
-          ) : (
-            <h3 className="text-lg font-bold text-slate-800 mb-6">{currentPharmacy?.nome || "Loja Pleno"}</h3>
-          )}
-          {/* Spin com o Favicon da Loja Pleno */}
-          <img
-            src={storeFavicon || currentPharmacy?.faviconUrl || storeLogo || currentPharmacy?.logoUrl || "/icone-associadas.png"}
-            alt="Carregando..."
-            className="w-14 h-14 animate-spin object-contain"
-          />
-          <span className="text-sm font-semibold text-slate-600 mt-4">
+          <Loader2 className="w-12 h-12 text-slate-700 animate-spin mb-4" />
+          <span className="text-sm font-semibold text-slate-600">
             Carregando...
           </span>
         </div>
       ) : (
-        // ==================== LOJA DO ASSOCIADO / REDE ASSOCIADAS ====================
-        // "na loja do associado o carregamento deve ser 100% do tempo o comum"
+        // ==================== LOJA PLENO / REDE (CARREGAMENTO ASSOCIADAS) ====================
+        // Ao acessar loja pleno: abertura com a marca oficial das Farmácias Associadas
         <div className="bg-white shadow-xl border border-slate-100 rounded-3xl p-8 flex flex-col items-center max-w-xs w-full mx-4 text-center">
           <img
             src={globalLogo || "/logo.png"}
             alt="Farmácias Associadas"
             className="max-h-14 max-w-[210px] w-auto h-auto mb-6 object-contain"
           />
-          {/* Spin da Associadas (cruz giratória comum) */}
           <img
             src="/icone-associadas.png"
             alt="Carregando..."

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAdmin } from "@/stores/admin";
 import { StoreColorManager } from "@/components/admin/StoreColorManager";
 import { Input } from "@/components/ui/input";
@@ -18,15 +18,20 @@ import {
   MapPin
 } from "lucide-react";
 import { safeSlugify } from "@/hooks/useActivePharmacy";
+import { getStoreColorStripes, STORE_STRIPE_LABELS } from "@/lib/themeUtils";
 
 export const Route = createFileRoute("/admin/marketing/cores")({
   component: AdminMarketingCores,
 });
 
 function AdminMarketingCores() {
-  const { pharmacies, activeStoreId, setActiveStoreId } = useAdmin();
+  const { pharmacies, activeStoreId, setActiveStoreId, networkDefaultTheme, loadNetworkTheme } = useAdmin();
   const [search, setSearch] = useState("");
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(activeStoreId || null);
+
+  useEffect(() => {
+    loadNetworkTheme();
+  }, [loadNetworkTheme]);
 
   const filteredPharmacies = pharmacies.filter((p) => {
     if (!search.trim()) return true;
@@ -40,21 +45,6 @@ function AdminMarketingCores() {
   });
 
   const selectedStore = pharmacies.find((p) => p.id === selectedStoreId);
-
-  const getStoreStripes = (p: any): [string, string, string, string, string, string] => {
-    const t = p.themeColors || {};
-    const isParceiro = p.categoriaAssociado === "Parceiro" || p.isPleno === false;
-    
-    // Cores da loja ou oficiais da rede
-    const primary = t["--primary"] || t.primary || (isParceiro ? "#705BC2" : "#00B5AD");
-    const secondary = t["--secondary"] || t.secondary || (isParceiro ? "#FE509C" : "#F37021");
-    const background = t["--background"] || t.background || "#FFFFFF";
-    const headerOrMenu = t["--header-bg"] || t.headerBg || t["--menu-bg"] || p.headerBgColor || (isParceiro ? "#199965" : "#008E88");
-    const textOrDark = t["--foreground"] || t.foreground || t["--headings"] || "#0F172A";
-    const accentOrPromo = t["--accent"] || t.accent || t["--topbar-bg"] || t["--price-discount-badge-bg"] || p.topBarBgColor || (isParceiro ? "#C92A42" : "#F43F5E");
-
-    return [primary, secondary, background, headerOrMenu, textOrDark, accentOrPromo];
-  };
 
   return (
     <div className="space-y-6 pb-20">
@@ -109,7 +99,7 @@ function AdminMarketingCores() {
           {/* Stores Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPharmacies.map((store) => {
-              const stripes = getStoreStripes(store);
+              const stripes = getStoreColorStripes(store, networkDefaultTheme);
               const isParceiro = store.categoriaAssociado === "Parceiro" || store.isPleno === false;
 
               return (
@@ -164,7 +154,12 @@ function AdminMarketingCores() {
                       </div>
                       <div className="h-6 w-full rounded-lg overflow-hidden flex shadow-inner border border-slate-200">
                         {stripes.map((hex, sIdx) => (
-                          <div key={sIdx} className="flex-1 h-full" style={{ backgroundColor: hex }} title={hex} />
+                          <div
+                            key={sIdx}
+                            className="flex-1 h-full transition-colors"
+                            style={{ backgroundColor: hex }}
+                            title={`${STORE_STRIPE_LABELS[sIdx] || `Cor ${sIdx + 1}`}: ${hex}`}
+                          />
                         ))}
                       </div>
                     </div>

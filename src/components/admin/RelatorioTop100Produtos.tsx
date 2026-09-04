@@ -1039,17 +1039,25 @@ export function RelatorioTop100Produtos({
                   <th className="py-3.5 px-4 min-w-[260px] print:min-w-0 print:w-auto">Produto</th>
                   <th className="py-3.5 px-4">SKU / EAN</th>
 
-                  <th className="py-3.5 px-4 text-center">
-                    <div className="inline-flex items-center gap-1">
+                  <th className="py-3.5 px-4 text-center whitespace-nowrap">
+                    <div className="inline-flex items-center justify-center gap-1.5">
                       <span>Qtd. Pedida</span>
-                      {criterio === "quantidade" && <Badge className="bg-[#00b5ad] text-white text-[10px] px-1.5 py-0 h-4 font-bold">Filtro Ativo</Badge>}
+                      {criterio === "quantidade" && (
+                        <span className="inline-flex items-center bg-[#00b5ad] text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-xs whitespace-nowrap leading-normal tracking-normal">
+                          Filtro Ativo
+                        </span>
+                      )}
                     </div>
                   </th>
-                  <th className="py-3.5 px-4 text-right">Preço Médio</th>
-                  <th className="py-3.5 px-4 text-right">
-                    <div className="inline-flex items-center gap-1 justify-end">
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Preço Médio</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <div className="inline-flex items-center gap-1.5 justify-end">
                       <span>Faturamento Total</span>
-                      {criterio === "faturamento" && <Badge className="bg-[#f37021] text-white text-[10px] px-1.5 py-0 h-4 font-bold">Filtro Ativo</Badge>}
+                      {criterio === "faturamento" && (
+                        <span className="inline-flex items-center bg-[#f37021] text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-xs whitespace-nowrap leading-normal tracking-normal">
+                          Filtro Ativo
+                        </span>
+                      )}
                     </div>
                   </th>
                   <th className="py-3.5 px-4 text-center">Representatividade</th>

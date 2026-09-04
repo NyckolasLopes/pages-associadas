@@ -57,3 +57,76 @@ export function resetStoreTheme() {
     document.body.style.removeProperty(v);
   });
 }
+
+export const STORE_STRIPE_LABELS = [
+  "Primária",
+  "Secundária",
+  "Cabeçalho",
+  "Barra Superior",
+  "Menu",
+  "Rodapé",
+] as const;
+
+export function getStoreColorStripes(
+  pharmacyOrColors?: any,
+  networkDefaultTheme?: Record<string, string>
+): [string, string, string, string, string, string] {
+  if (!pharmacyOrColors) {
+    return ["#00B5AD", "#F37021", "#00B5AD", "#F37021", "#008E88", "#00B5AD"];
+  }
+
+  // Support directly passing colors Record<string, string> (like in StoreColorManager or presets)
+  const isDirectTheme =
+    typeof pharmacyOrColors === "object" &&
+    (pharmacyOrColors["--primary"] !== undefined ||
+      pharmacyOrColors["primary"] !== undefined);
+
+  const p = isDirectTheme ? {} : (pharmacyOrColors || {});
+  let t = isDirectTheme ? pharmacyOrColors : (p.themeColors || {});
+
+  if (typeof t === "string") {
+    try {
+      t = JSON.parse(t);
+    } catch {
+      t = {};
+    }
+  }
+
+  const net = networkDefaultTheme || {};
+  const isParceiro = p.categoriaAssociado === "Parceiro" || p.isPleno === false;
+
+  const defaultPrimary = isParceiro ? "#705BC2" : "#00B5AD";
+  const defaultSecondary = isParceiro ? "#FE509C" : "#F37021";
+
+  const getColor = (key: string, fallback: string) => {
+    let val =
+      t[key] ||
+      t[`--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`] ||
+      t[key.replace(/^--/, "")];
+
+    if (!val && key === "--header-bg" && p.headerBgColor) val = p.headerBgColor;
+    if (!val && key === "--topbar-bg" && p.topBarBgColor) val = p.topBarBgColor;
+
+    if (!val && net) {
+      val =
+        net[key] ||
+        net[`--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`] ||
+        net[key.replace(/^--/, "")];
+    }
+
+    return val || fallback;
+  };
+
+  const primary = getColor("--primary", defaultPrimary);
+  const secondary = getColor("--secondary", defaultSecondary);
+  const headerBg = getColor("--header-bg", primary);
+  const topbarBg = getColor("--topbar-bg", secondary);
+  const defaultMenu = isParceiro
+    ? (primary === "#705BC2" ? "#5944B3" : primary)
+    : (primary === "#00B5AD" ? "#008E88" : primary);
+  const menuBg = getColor("--menu-bg", defaultMenu);
+  const footerBg = getColor("--footer-bg", primary);
+
+  return [primary, secondary, headerBg, topbarBg, menuBg, footerBg];
+}
+

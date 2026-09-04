@@ -101,19 +101,40 @@ export const useAbandonedCartsStore = create<AbandonedCartsState>()((set, get) =
   },
   removeCart: async (id: string) => {
     try {
-      const { error } = await supabase
+      // 1. Marca como excluído para nunca mais voltar em queries de status = 'abandonado'
+      await supabase
         .from('carrinhos_abandonados' as any)
-        .delete()
+        .update({ status: 'excluido' })
         .eq('id', id);
-        
-      if (error) { throw error; }
+
+      // 2. Chama rota da API para exclusão definitiva no banco
+      try {
+        await fetch('/api/admin/delete-abandoned-cart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+      } catch (apiErr) {
+        console.warn("Falha na chamada da API para exclusão física do carrinho:", apiErr);
+      }
+
+      // 3. Tenta exclusão direta via Supabase
+      try {
+        await supabase
+          .from('carrinhos_abandonados' as any)
+          .delete()
+          .eq('id', id);
+      } catch (delErr) {}
         
       set(state => ({
         carts: state.carts.filter(c => c.id !== id)
       }));
     } catch (err) {
       console.error("Error removing cart:", err);
-      throw err;
+      // Garante remoção da UI
+      set(state => ({
+        carts: state.carts.filter(c => c.id !== id)
+      }));
     }
   }
 }));

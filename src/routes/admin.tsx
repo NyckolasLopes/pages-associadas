@@ -31,7 +31,6 @@ import {
   Truck,
   Mail,
   Bell,
-  Image,
   Eye,
   EyeOff,
   Code,
@@ -65,7 +64,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { z } from "zod";
+import { resetStoreTheme } from "@/lib/themeUtils";
 
 const adminLoginSchema = z.object({
   email: z.string().min(3, "Por favor, insira um e-mail ou CNPJ válido."),
@@ -82,8 +81,6 @@ function slugify(text: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 }
-
-import { resetStoreTheme } from "@/lib/themeUtils";
 
 export const Route = createFileRoute("/admin")({
   pendingComponent: () => (
@@ -306,9 +303,10 @@ function AdminLayout() {
       return;
     }
 
-    // Carregar lojas do banco de dados (Supabase)
-    const { loadPharmacies } = useAdmin.getState();
+    // Carregar lojas e usuários do banco de dados (Supabase)
+    const { loadPharmacies, loadUsers } = useAdmin.getState();
     loadPharmacies();
+    loadUsers();
 
     // Carregar pedidos globais para popular dashboard, métricas e top 100
     useOrders.getState().loadOrders();
@@ -546,9 +544,6 @@ function AdminLayout() {
             <NavSection icon={<BarChart2 className="h-4 w-4" />} label="Análises" open={openNavSection === "Análises"} onToggle={() => setOpenNavSection(openNavSection === "Análises" ? "" : "Análises")}>
               <Link to="/admin/metricas" className={subLinkClass}>
                 Métricas de Pedidos
-              </Link>
-              <Link to="/admin/relatorios" search={{ report: "top-100-produtos" } as any} className={subLinkClass}>
-                TOP 100 da Rede
               </Link>
               {(can('rel_vendas_produto') || can('rel_vendas_canal') || can('rel_desempenho') || can('rel_financeiro') || can('rel_logistica_retirada') || can('rel_logistica_sla') || can('rel_estoque_controlados') || can('rel_estoque_abc') || !isGlobalAdmin) && (
                 <Link to="/admin/relatorios" className={subLinkClass} activeOptions={{ exact: true }}>

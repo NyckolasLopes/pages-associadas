@@ -277,6 +277,7 @@ function Metricas() {
   const concluidosPct = totalPedidos > 0 ? Math.round((concluidosCount / totalPedidos) * 100) : 0;
   const pendentesPct = totalPedidos > 0 ? Math.round((pendentesCount / totalPedidos) * 100) : 0;
   const abandonadosPct = totalPedidos > 0 ? Math.round((abandonadosCount / totalPedidos) * 100) : 0;
+  const canceladosPct = totalPedidos > 0 ? Math.round((canceladosCount / totalPedidos) * 100) : 0;
 
   const totalValorConcluido = scopedOrders.filter(o => o.status === "Concluído").reduce((acc, o) => acc + o.valorTotal, 0);
   const totalValorAbandonado = scopedOrders.filter(o => o.status === "Carrinho Abandonado").reduce((acc, o) => acc + o.valorTotal, 0);
