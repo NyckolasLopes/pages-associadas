@@ -1,9 +1,17 @@
 import type { Produto } from "@/types";
 
-// Strip HTML tags from strings
+// Strip HTML tags and common HTML entities from strings
 export function stripHtml(html?: string | null): string {
   if (!html) return "";
-  return html.replace(/<[^>]*>?/gm, " ");
+  return html
+    .replace(/<[^>]*>?/gm, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&[a-zA-Z0-9#]+;/g, " ");
 }
 
 // Clean and normalize text: lowercase, remove accents, symbols to spaces
@@ -452,8 +460,12 @@ export function scoreProductRelevance(p: Produto, profile: SearchQueryProfile): 
   }
 
   // 10. DESCRIPTION & FULL TEXT PHRASE MATCHES
-  if (fields.descClean.includes(cleanQuery)) {
-    score += 300;
+  if (fields.descClean === cleanQuery) {
+    score += 1200;
+  } else if (fields.descClean.startsWith(cleanQuery)) {
+    score += 800;
+  } else if (fields.descClean.includes(cleanQuery)) {
+    score += 550;
   }
 
   // 11. TOKEN-LEVEL MATCHING (Multi-word queries like "paracetamol 750mg cimed")
@@ -494,7 +506,7 @@ export function scoreProductRelevance(p: Produto, profile: SearchQueryProfile): 
       tokenMatched = true;
     }
     if (fields.descClean.includes(token)) {
-      score += 60;
+      score += 100;
       tokenMatched = true;
     }
 

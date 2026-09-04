@@ -1076,13 +1076,17 @@ export const catalog = {
         .limit(30);
       candidates = await fetchFromSupabaseWithPrices(codeQuery, lojaId);
     } else {
-      // Cláusulas SQL cobrindo todos os campos visíveis na página do produto
+      // Cláusulas SQL cobrindo todos os campos visíveis na página do produto (incluindo descrição)
       const orClauses: string[] = [];
       const cleanQ = profile.cleanQuery;
+      // Termo com acentos preservados (sem caracteres que quebram sintaxe do PostgREST)
+      const safeRawQ = trimmedQ.replace(/[,()]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 
       if (cleanQ) {
         orClauses.push(`nome.ilike.%${cleanQ}%`);
         orClauses.push(`marca.ilike.%${cleanQ}%`);
+        orClauses.push(`descricao.ilike.%${cleanQ}%`);
+        orClauses.push(`resumo_descricao.ilike.%${cleanQ}%`);
         orClauses.push(`slug.ilike.%${cleanQ}%`);
         orClauses.push(`codigo_interno.ilike.%${cleanQ}%`);
         orClauses.push(`registro_anvisa.ilike.%${cleanQ}%`);
@@ -1091,11 +1095,20 @@ export const catalog = {
         orClauses.push(`termos_pesquisa.ilike.%${cleanQ}%`);
       }
 
-      // Tokens principais (máximo 3 tokens para evitar sobrecarga no banco)
-      for (const token of profile.tokens.slice(0, 3)) {
+      if (safeRawQ && safeRawQ !== cleanQ) {
+        orClauses.push(`descricao.ilike.%${safeRawQ}%`);
+        orClauses.push(`resumo_descricao.ilike.%${safeRawQ}%`);
+        orClauses.push(`nome.ilike.%${safeRawQ}%`);
+        orClauses.push(`marca.ilike.%${safeRawQ}%`);
+      }
+
+      // Tokens principais (máximo 4 tokens para cobrir palavras da descrição)
+      for (const token of profile.tokens.slice(0, 4)) {
         if (token.length >= 3) {
           orClauses.push(`nome.ilike.%${token}%`);
           orClauses.push(`marca.ilike.%${token}%`);
+          orClauses.push(`descricao.ilike.%${token}%`);
+          orClauses.push(`resumo_descricao.ilike.%${token}%`);
           orClauses.push(`indicacao_terapeutica.ilike.%${token}%`);
           orClauses.push(`classe_terapeutica.ilike.%${token}%`);
         }
@@ -1105,13 +1118,15 @@ export const catalog = {
       if (profile.didYouMean && profile.didYouMean !== cleanQ) {
         orClauses.push(`nome.ilike.%${profile.didYouMean}%`);
         orClauses.push(`marca.ilike.%${profile.didYouMean}%`);
+        orClauses.push(`descricao.ilike.%${profile.didYouMean}%`);
+        orClauses.push(`resumo_descricao.ilike.%${profile.didYouMean}%`);
       }
 
-      const uniqueClauses = Array.from(new Set(orClauses)).slice(0, 16);
+      const uniqueClauses = Array.from(new Set(orClauses)).slice(0, 35);
       if (uniqueClauses.length > 0) {
         const query = supabase.from('produtos').select('*')
           .or(uniqueClauses.join(','))
-          .limit(60);
+          .limit(80);
 
         candidates = await fetchFromSupabaseWithPrices(query, lojaId);
       }
@@ -1170,6 +1185,7 @@ export const catalog = {
           `nome.ilike.%${profile.cleanQuery}%`,
           `marca.ilike.%${profile.cleanQuery}%`,
           `descricao.ilike.%${profile.cleanQuery}%`,
+          `resumo_descricao.ilike.%${profile.cleanQuery}%`,
           `classe_terapeutica.ilike.%${profile.cleanQuery}%`,
           `indicacao_terapeutica.ilike.%${profile.cleanQuery}%`,
           `slug.ilike.%${profile.cleanQuery}%`,
@@ -1183,6 +1199,7 @@ export const catalog = {
             clauses.push(`nome.ilike.%${token}%`);
             clauses.push(`marca.ilike.%${token}%`);
             clauses.push(`descricao.ilike.%${token}%`);
+            clauses.push(`resumo_descricao.ilike.%${token}%`);
             clauses.push(`indicacao_terapeutica.ilike.%${token}%`);
             clauses.push(`classe_terapeutica.ilike.%${token}%`);
           }
@@ -1191,6 +1208,7 @@ export const catalog = {
         if (profile.didYouMean) {
           clauses.push(`nome.ilike.%${profile.didYouMean}%`);
           clauses.push(`descricao.ilike.%${profile.didYouMean}%`);
+          clauses.push(`resumo_descricao.ilike.%${profile.didYouMean}%`);
         }
 
         query = query.or(Array.from(new Set(clauses)).join(','));

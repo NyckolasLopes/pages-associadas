@@ -132,6 +132,8 @@ export function mapRowToProduto(d: any): Produto {
     ean: d.ean || "",
     nome: toTitleCase(d.nome || ""),
     descricao: d.descricao || "",
+    resumoDescricao: d.resumo_descricao || meta.resumo_descricao || "",
+    descricaoHtml: d.descricao_html || meta.descricao_html || "",
     url: d.slug || "",
     marca: d.marca || meta.marca || "",
     fabricante: d.fabricante || tagFabricante || caracFabricante || meta.fabricante || "",
