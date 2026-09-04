@@ -289,7 +289,7 @@ function LoginPage() {
             <div className="mt-8 text-center text-sm text-muted-foreground border-t pt-6">
               Ainda não tem conta?{" "}
               <Link to="/$storeSlug/cadastro" params={{ storeSlug }} search={{ redirect }} className="text-primary font-bold hover:underline">
-                Cadastre-se <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">grátis</span>
+                Cadastre-se
               </Link>
             </div>
           </>
