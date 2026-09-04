@@ -1094,14 +1094,14 @@ export const catalog = {
       query = query.neq('categoria_id', '142');
     }
 
-    query = query.range(params.page * params.pageSize, (params.page + 1) * params.pageSize - 1).order('id', { ascending: false });
+    query = query.range(params.page * params.pageSize, (params.page + 1) * params.pageSize - 1).order('created_at', { ascending: false });
 
     const { data, error, count } = await query;
     if (error || !data || data.length === 0) return { results: [], count: 0 };
     
     // Convert to Produto and inject prices
     const products = await fetchFromSupabaseWithPrices(
-      supabase.from('produtos').select('*').in('id', data.map(d => d.id)).order('id', { ascending: false }),
+      supabase.from('produtos').select('*').in('id', data.map(d => d.id)).order('created_at', { ascending: false }),
       params.lojaId,
       true // admin should see inactive products
     );
