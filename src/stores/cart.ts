@@ -278,14 +278,17 @@ export const useCart = create<CartState>()(
               lastUpdatedAt: Date.now(),
             };
           }
+          const resolvedPreco = Number((p as any).preco !== undefined ? (p as any).preco : (p.precoPor ?? (p as any).preco_por ?? (p as any).price ?? 0));
+          const resolvedPrecoDe = Number((p as any).precoDe !== undefined ? (p as any).precoDe : ((p as any).preco_de ?? (resolvedPreco > 0 ? resolvedPreco : 0)));
+
           return {
             items: [
               ...s.items,
               {
-                id: p.id,
+                id: String(p.id),
                 nome: p.nome,
-                preco: p.precoPor,
-                precoDe: p.precoDe || p.precoPor,
+                preco: resolvedPreco,
+                precoDe: resolvedPrecoDe > 0 ? resolvedPrecoDe : resolvedPreco,
                 ean: p.ean || "",
                 possuiImagem: p.possuiImagem,
                 qty: isService ? qty : Math.min(qty, stock),
@@ -446,7 +449,6 @@ export const useCart = create<CartState>()(
     }),
     { 
       name: "fa-cart", 
-      skipHydration: true,
       onRehydrateStorage: () => (state) => {
         if (state && Array.isArray(state.items)) {
           state.items = state.items
@@ -503,7 +505,6 @@ export const useGeoCep = create<{
     } 
   }), {
     name: "fa-geo-cep",
-    skipHydration: true,
   }),
 );
 

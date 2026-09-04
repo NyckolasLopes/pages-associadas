@@ -84,8 +84,13 @@ export function PedidosAdmin() {
 
 
 
+  const activePharmacy = pharmacies.find(p => p.id === activeStoreId);
   const allAbandonedCarts = allAbandonedCartsRaw.filter(c => {
-    if (activeStoreId) return c.lojaId === activeStoreId;
+    if (activeStoreId) {
+      const matchId = c.lojaId === activeStoreId;
+      const matchSlug = activePharmacy && (c.lojaId === activePharmacy.slug || String(c.lojaId).toLowerCase() === String(activePharmacy.slug).toLowerCase());
+      return matchId || matchSlug;
+    }
     if (!isGlobalAdmin() && (!currentUser?.lojasVinculadas || !currentUser.lojasVinculadas.includes(c.lojaId as string))) return false;
     return true;
   });

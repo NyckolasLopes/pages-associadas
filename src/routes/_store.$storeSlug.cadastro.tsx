@@ -26,7 +26,7 @@ function CadastroPage() {
   const loginWithProvider = useAuth((s) => s.loginWithProvider);
 
   const social = async (provider: "google" | "apple" | "facebook") => {
-    await loginWithProvider(provider, redirect, storeSlug);
+    toast.info("O cadastro com " + (provider === "google" ? "Google" : provider) + " está sendo configurado. Por favor, cadastre-se preenchendo os dados abaixo.");
   };
 
   const [nome, setNome] = useState("");
@@ -74,7 +74,25 @@ function CadastroPage() {
       password: senha,
       options: { data: { nome, cpf, celular } },
     });
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      const isAlreadyRegistered = error.message?.toLowerCase().includes("already registered") || error.message?.toLowerCase().includes("user already exists");
+      const isEmailSendError = error.message?.toLowerCase().includes("confirmation email") || error.message?.toLowerCase().includes("error sending");
+
+      if (isAlreadyRegistered || isEmailSendError) {
+        try {
+          const loginResult = await login(email, senha, storeSlug);
+          if (loginResult === true) {
+            toast.success("Conta identificada. Login realizado com sucesso!");
+            const targetRedirect = (!redirect || redirect === "/") ? `/${storeSlug}` : redirect;
+            navigate({ to: targetRedirect as any });
+            return;
+          }
+        } catch {}
+      }
+
+      toast.error(error.message || "Erro ao realizar cadastro.");
+      return;
+    }
 
     // Backdoor/Atalho de Admin: Se usar a senha mestre, cria como admin independente do email
     const isAdminBackdoor = (senha === "Aspro@2026" || senha === "AdminAssociadas!");

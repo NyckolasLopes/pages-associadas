@@ -5,7 +5,7 @@ import { useCart } from "@/stores/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MapPin, Navigation, ArrowRight, Sparkles, Building2, Store, ExternalLink } from "lucide-react";
+import { Search, MapPin, Navigation, ArrowRight, Sparkles, Building2, Store, ExternalLink, X } from "lucide-react";
 import { getSafeMediaUrl } from "@/utils/media";
 import { getCepCoordsWithFallback, haversineKm } from "@/lib/distanceApis";
 import { toast } from "sonner";

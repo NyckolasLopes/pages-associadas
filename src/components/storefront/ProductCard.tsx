@@ -68,30 +68,6 @@ function ProductCardComponent({
   const showAddedNotification = useCart((s) => s.showAddedNotification);
   const [justAdded, setJustAdded] = useState(false);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isAvailable) {
-      toast.error("Produto indisponível no momento.");
-      return;
-    }
-    add({ ...p, estoque: maxStock }, 1, true); // silent: true -> NÃO abre carrinho lateral
-    showAddedNotification(p.nome, productImage(p));
-    setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 3000);
-  };
-
-  const handleBuy = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isAvailable) {
-      toast.error("Produto indisponível no momento.");
-      return;
-    }
-    useCart.getState().hideAddedNotification();
-    add({ ...p, estoque: maxStock }, 1, false); // silent: false -> abre carrinho lateral
-    useCart.getState().setDrawer(true);
-  };
 
   const cartItems = useCart((s) => s.items);
   const cartItem = cartItems.find((item) => String(item.id) === String(p.id));
@@ -437,6 +413,43 @@ function ProductCardComponent({
 
   const desconto =
     finalPrecoDe > finalPrecoPor ? Math.round((1 - finalPrecoPor / finalPrecoDe) * 100) : 0;
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAvailable) {
+      toast.error("Produto indisponível no momento.");
+      return;
+    }
+    add({
+      ...p,
+      preco: finalPrecoPor,
+      precoPor: finalPrecoPor,
+      precoDe: finalPrecoDe,
+      estoque: maxStock
+    }, 1, true); // silent: true -> NÃO abre carrinho lateral
+    showAddedNotification(p.nome, productImage(p));
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 3000);
+  };
+
+  const handleBuy = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAvailable) {
+      toast.error("Produto indisponível no momento.");
+      return;
+    }
+    useCart.getState().hideAddedNotification();
+    add({
+      ...p,
+      preco: finalPrecoPor,
+      precoPor: finalPrecoPor,
+      precoDe: finalPrecoDe,
+      estoque: maxStock
+    }, 1, false); // silent: false -> abre carrinho lateral
+    useCart.getState().setDrawer(true);
+  };
 
   const fav = useFavorites((s) => s.ids.includes(p.id));
   const toggleFav = useFavorites((s) => s.toggle);

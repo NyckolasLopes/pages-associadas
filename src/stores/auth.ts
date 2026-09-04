@@ -295,6 +295,17 @@ export const useAuth = create<AuthState>((set, get) => {
       _isLoggingOut = true;
       const targetSlug = resolveStoreSlug(explicitStoreSlug);
       const sessions = loadStoreSessions();
+      const currentUser = sessions[targetSlug] || get().user;
+
+      // 1. Sincroniza imediatamente o carrinho abandonado com os dados deste usuário antes de encerrar a sessão
+      if (currentUser?.id) {
+        try {
+          const { syncAbandonedCartNow } = await import("@/hooks/useCartSync");
+          await syncAbandonedCartNow(currentUser);
+        } catch (syncErr) {
+          console.error("Erro ao sincronizar carrinho no logout:", syncErr);
+        }
+      }
 
       delete sessions[targetSlug];
       saveStoreSessions(sessions);

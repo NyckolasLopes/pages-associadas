@@ -154,7 +154,7 @@ function LoginPage() {
   };
 
   const social = async (provider: "google" | "apple" | "facebook") => {
-    await loginWithProvider(provider, redirect, storeSlug);
+    toast.info("O login social com " + (provider === "google" ? "Google" : provider) + " está sendo configurado. Por favor, acesse com seu e-mail e senha.");
   };
 
   return (

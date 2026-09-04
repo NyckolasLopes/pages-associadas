@@ -1818,7 +1818,13 @@ function PDP() {
                       if (freteCalculado && selectedFreight !== "pickup" && cep && !isService) {
                         setConfirmDeliveryOpen(true);
                       } else {
-                        add({ ...p, estoque: maxStock }, qty, false);
+                        add({
+                          ...p,
+                          preco: finalPrecoPor,
+                          precoPor: finalPrecoPor,
+                          precoDe: finalPrecoDe,
+                          estoque: maxStock
+                        }, qty, false);
                         useCart.getState().setDrawer(true);
                         useCart.getState().hideAddedNotification();
                       }
