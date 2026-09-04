@@ -1290,18 +1290,47 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
           )}
 
           {/* Opção Todas as categorias no Mobile */}
-          <Link
-            to="/$storeSlug/categorias"
-            params={{ storeSlug }}
-            onClick={() => setOpen(false)}
-            className="flex items-center justify-between px-3 py-3 rounded-lg text-sm font-bold hover:bg-muted transition text-foreground"
-          >
-            <div className="flex items-center gap-3">
-              <LayoutGrid className="h-5 w-5 text-primary shrink-0" />
-              <span>Todas as categorias</span>
+          <details className="group/allcats">
+            <summary className="flex items-center justify-between px-3 py-3 rounded-lg text-sm font-bold hover:bg-muted transition text-foreground cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+              <div className="flex items-center gap-3">
+                <Menu className="h-5 w-5 text-primary shrink-0" />
+                <Link
+                  to="/$storeSlug/categorias"
+                  params={{ storeSlug }}
+                  onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+                  className="hover:text-primary transition-colors"
+                >
+                  Todas as categorias
+                </Link>
+              </div>
+              <ChevronDown className="h-4 w-4 transition-transform group-open/allcats:rotate-180 text-muted-foreground" />
+            </summary>
+            <div className="pl-11 pr-3 pb-2 flex flex-col">
+              {cats.map((c) => {
+                const storeIconKey = (selectedPharmacyId && storeCategoryIcons?.[selectedPharmacyId]?.[c.id])
+                  || categoryIcons?.[c.id]
+                  || c.icone;
+                const Icon = (storeIconKey && LUCIDE_ICONS[storeIconKey]) ? LUCIDE_ICONS[storeIconKey] : (CAT_ICONS[c.id] || getSubcategoryIcon(c.nome));
+                const isNossasMarcas = c.id === "300" || c.slug === "nossas-marcas";
+                return (
+                  <Link
+                    key={c.id}
+                    to="/$storeSlug/c/$slug"
+                    params={{ storeSlug, slug: isNossasMarcas ? "nossas-marcas" : c.slug }}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2 text-sm py-2.5 hover:text-primary text-muted-foreground font-medium border-b border-muted/30 last:border-0 transition-colors"
+                  >
+                    {isNossasMarcas ? (
+                      !isParceiro && <img src="/icone-associadas.png" alt="" className="h-5 w-5 object-contain mix-blend-multiply" />
+                    ) : Icon ? (
+                      <Icon className="h-4 w-4 shrink-0" />
+                    ) : null}
+                    <span>{c.nome}</span>
+                  </Link>
+                );
+              })}
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </Link>
+          </details>
 
           {cats.map((c) => {
             const storeIconKey = (selectedPharmacyId && storeCategoryIcons?.[selectedPharmacyId]?.[c.id])
