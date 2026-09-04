@@ -575,7 +575,7 @@ function Metricas() {
                       cy="44%"
                       innerRadius={72}
                       outerRadius={112}
-                      paddingAngle={3}
+                      paddingAngle={0}
                       dataKey="value"
                       stroke="none"
                     >
