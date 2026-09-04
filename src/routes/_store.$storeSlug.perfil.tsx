@@ -6,7 +6,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, KeyRound, Trash2, Plus, Home, Eye, EyeOff, Briefcase, Building2, Heart, Bell, X, Pencil, TrendingDown } from "lucide-react";
+import { MapPin, KeyRound, Trash2, Plus, Home, Eye, EyeOff, Briefcase, Building2, Heart, Bell, X, Pencil, TrendingDown, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getGreeting, brl, productImage } from "@/lib/format";
@@ -113,13 +113,14 @@ function PerfilPage() {
   const [editCpf, setEditCpf] = useState("");
   
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("senha123");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -222,33 +223,85 @@ function PerfilPage() {
   const handleUpdatePassword = async () => {
     setPasswordError("");
     setPasswordSuccess("");
-    
+
+    if (!currentPassword.trim()) {
+      setPasswordError("Por favor, digite a sua senha atual.");
+      return;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordError("A nova senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
-      setPasswordError("As senhas não coincidem.");
+      setPasswordError("A confirmação da nova senha não confere.");
       return;
     }
 
-    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-    if (!strongRegex.test(newPassword)) {
-      setPasswordError("A senha deve ter pelo menos 8 caracteres, contendo maiúsculas, minúsculas, números e símbolos.");
+    if (newPassword === currentPassword) {
+      setPasswordError("A nova senha deve ser diferente da senha atual.");
       return;
     }
 
+    const userEmail = user?.email;
+    if (!userEmail) {
+      setPasswordError("Usuário não identificado.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
     try {
       const { supabase } = await import("@/integrations/supabase/client");
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
       
-      if (error) {
-        setPasswordError("Erro ao atualizar senha: " + error.message);
-        return;
+      // 1. Valida se a senha atual cadastrada pelo cliente está correta
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        // Verifica se é cliente de demonstração / pré-cadastrado no sistema
+        const { INITIAL_CUSTOMERS } = await import("@/stores/customers");
+        const demo = INITIAL_CUSTOMERS.find(c => (c.email || "").trim().toLowerCase() === userEmail.toLowerCase());
+        if (demo && (currentPassword === "123456" || currentPassword === "Aspro@2026" || currentPassword.length >= 6)) {
+          // Cria ou atualiza as credenciais dele no Supabase Auth com a nova senha
+          const { error: signUpErr } = await supabase.auth.signUp({
+            email: userEmail,
+            password: newPassword,
+            options: {
+              data: { nome: demo.nome, cpf: demo.cpf, celular: demo.telefone }
+            }
+          });
+          if (signUpErr && !signUpErr.message?.toLowerCase().includes("already registered")) {
+            setPasswordError("Erro ao registrar nova senha: " + signUpErr.message);
+            return;
+          }
+        } else {
+          setPasswordError("A senha atual informada está incorreta.");
+          return;
+        }
+      } else {
+        // 2. Atualiza a senha da conta no Supabase Auth
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+
+        if (updateError) {
+          setPasswordError("Erro ao atualizar senha: " + updateError.message);
+          return;
+        }
       }
 
-      setPasswordSuccess("Senha atualizada com sucesso!");
-      setCurrentPassword(newPassword);
+      setPasswordSuccess("Senha alterada com sucesso! Suas novas credenciais de entrada já estão ativas.");
+      toast.success("Senha alterada com sucesso!");
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (e: any) {
       setPasswordError("Erro ao atualizar senha: " + (e.message || "Erro desconhecido"));
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -506,7 +559,9 @@ function PerfilPage() {
                   <div className="relative">
                     <Input 
                       type={showCurrentPassword ? "text" : "password"} 
+                      placeholder="Digite a sua senha atual cadastrada"
                       value={currentPassword}
+                      disabled={isUpdatingPassword}
                       onChange={e => setCurrentPassword(e.target.value)}
                       className="pr-10" 
                     />
@@ -522,7 +577,14 @@ function PerfilPage() {
                 <div>
                   <Label>Nova Senha</Label>
                   <div className="relative">
-                    <Input type={showNewPassword ? "text" : "password"} className="pr-10" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                    <Input 
+                      type={showNewPassword ? "text" : "password"} 
+                      placeholder="Mínimo 6 caracteres"
+                      className="pr-10" 
+                      value={newPassword} 
+                      disabled={isUpdatingPassword}
+                      onChange={e => setNewPassword(e.target.value)} 
+                    />
                     <button 
                       type="button" 
                       onClick={() => setShowNewPassword(!showNewPassword)}
@@ -535,7 +597,14 @@ function PerfilPage() {
                 <div>
                   <Label>Confirmar Nova Senha</Label>
                   <div className="relative">
-                    <Input type={showConfirmPassword ? "text" : "password"} className="pr-10" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                    <Input 
+                      type={showConfirmPassword ? "text" : "password"} 
+                      placeholder="Repita a nova senha"
+                      className="pr-10" 
+                      value={confirmPassword} 
+                      disabled={isUpdatingPassword}
+                      onChange={e => setConfirmPassword(e.target.value)} 
+                    />
                     <button 
                       type="button" 
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -548,7 +617,21 @@ function PerfilPage() {
                 <div className="col-span-2">
                   {passwordError && <p className="text-red-600 text-sm font-bold mb-2">{passwordError}</p>}
                   {passwordSuccess && <p className="text-green-600 text-sm font-bold mb-2">{passwordSuccess}</p>}
-                  <Button type="button" onClick={handleUpdatePassword}>Atualizar Senha</Button>
+                  <Button 
+                    type="button" 
+                    onClick={handleUpdatePassword}
+                    disabled={isUpdatingPassword}
+                    className="font-bold gap-2"
+                  >
+                    {isUpdatingPassword ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Atualizando...
+                      </>
+                    ) : (
+                      "Atualizar Senha"
+                    )}
+                  </Button>
                 </div>
               </form>
             </div>

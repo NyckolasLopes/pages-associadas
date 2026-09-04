@@ -258,15 +258,14 @@ export const useCart = create<CartState>()(
         set((s) => {
           const isService = (p as any).tipoProduto === "servico" || ((p as any).tipoProduto !== "fisico" && (p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
           const rawStock = p.estoque !== undefined && p.estoque !== null ? Number(p.estoque) : 0;
-          const hasStock = rawStock > 0 || isService;
           const isGlobalActive = p.ativo !== false && (p as any).aVenda !== false;
 
-          // Se o produto estiver indisponível ou sem estoque, NÃO permite adicionar ao carrinho
-          if (!hasStock || !isGlobalActive) {
+          // Se o produto estiver desativado, NÃO permite adicionar
+          if (!isGlobalActive) {
             return s;
           }
 
-          const stock = isService ? 999 : rawStock;
+          const stock = isService ? 999 : (rawStock > 0 ? rawStock : 99);
           const ex = s.items.find((i) => i.id === p.id);
           if (ex) {
             const newQty = isService ? (ex.qty + qty) : Math.min(ex.qty + qty, stock);
@@ -311,12 +310,11 @@ export const useCart = create<CartState>()(
           const item = s.items.find(i => i.id === id);
           if (!item) return s;
           const isService = item.categoriaId === "200" || (item.subcategoriaId && String(item.subcategoriaId).startsWith("20"));
-          const stock = isService ? 999 : Number(item.estoque || 0);
-          if (stock <= 0) return s;
+          const stock = isService ? 999 : (Number(item.estoque || 0) > 0 ? Number(item.estoque) : 99);
           const safeQty = Math.min(Math.max(1, qty), stock);
           return {
             items: s.items.map((i) =>
-              i.id === id ? { ...i, qty: safeQty } : i,
+              i.id === id ? { ...i, qty: safeQty, estoque: stock } : i,
             ),
             lastUpdatedAt: Date.now(),
           };

@@ -146,7 +146,11 @@ export function PedidosAdmin() {
       return;
     }
 
-    const itemsList = item.produtos.map(p => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`).join("\n");
+    const itemsList = item.produtos.map(p => {
+      const price = Number((p as any).preco ?? (p as any).valorUnitario ?? 0);
+      const priceStr = price > 0 ? ` (${price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })})` : "";
+      return `• ${p.qtd || (p as any).quantidade || 1}x ${p.nome}${priceStr}`;
+    }).join("\n");
     const isPendente = item.status === "Pendente";
 
     const message = isPendente
@@ -183,7 +187,7 @@ export function PedidosAdmin() {
     clienteTelefone: string;
     total: number;
     status: "Concluído" | "Pendente";
-    produtos: Array<{ nome: string; qtd?: number; quantidade?: number }>;
+    produtos: Array<{ nome: string; qtd?: number; quantidade?: number; preco?: number; valorUnitario?: number }>;
   }) => {
     const rawPhone = item.clienteTelefone || "";
     const cleanPhone = rawPhone.replace(/\D/g, "");
@@ -195,7 +199,11 @@ export function PedidosAdmin() {
     const loja = pharmacies.find(p => p.id === item.lojaId);
     const lojaNome = loja?.nome || item.lojaNome || (loja?.categoriaAssociado === 'Parceiro' ? 'Loja Parceira' : 'Farmácias Associadas');
     const isParceiro = loja?.categoriaAssociado === 'Parceiro';
-    const itemsList = item.produtos.map(p => `• ${p.qtd || p.quantidade || 1}x ${p.nome}`).join("\n");
+    const itemsList = item.produtos.map(p => {
+      const price = Number((p as any).preco ?? (p as any).valorUnitario ?? 0);
+      const priceStr = price > 0 ? ` (${price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })})` : "";
+      return `• ${p.qtd || (p as any).quantidade || 1}x ${p.nome}${priceStr}`;
+    }).join("\n");
     const isPendente = item.status === "Pendente";
 
     const message = isPendente
@@ -225,10 +233,14 @@ export function PedidosAdmin() {
       .map(cart => {
       const cartItems = Array.isArray(cart.items) ? cart.items : Object.values(cart.items || {});
       const totalItemsCount = cartItems.reduce((acc: number, p: any) => acc + (p.qtd || p.quantidade || 1), 0) || cartItems.length || 0;
-      const itemsListText = cartItems.map((p: any) => `${p.qtd || p.quantidade || 1}x ${p.nome}`).join(", ");
+      const itemsListText = cartItems.map((p: any) => {
+        const itemPrice = Number(p.valorUnitario ?? p.preco ?? p.preco_unitario ?? p.preco_promocional ?? p.preco_original ?? 0);
+        const formattedPrice = itemPrice > 0 ? ` (${itemPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })})` : "";
+        return `${p.qtd || p.quantidade || 1}x ${p.nome}${formattedPrice}`;
+      }).join(", ");
 
       const totalValue = cartItems.reduce((acc: number, p: any) => {
-        const pr = p.valorUnitario || p.preco || p.preco_promocional || p.preco_original || 0;
+        const pr = Number(p.valorUnitario ?? p.preco ?? p.preco_unitario ?? p.preco_promocional ?? p.preco_original ?? 0);
         return acc + (pr * (p.qtd || p.quantidade || 1));
       }, 0);
 
@@ -247,8 +259,8 @@ export function PedidosAdmin() {
           ...p,
           id: p.id || p.produto_id || "item",
           nome: p.nome,
-          preco: p.valorUnitario || p.preco || p.preco_promocional || p.preco_original || 0,
-          qtd: p.qtd || p.quantidade || 1,
+          preco: Number(p.valorUnitario ?? p.preco ?? p.preco_unitario ?? p.preco_promocional ?? p.preco_original ?? 0),
+          qtd: Number(p.qtd || p.quantidade || 1),
         })),
         total: cart.total > 0 ? cart.total : totalValue,
         rawCart: cart,
@@ -666,17 +678,29 @@ export function PedidosAdmin() {
                   Itens no Carrinho ({selectedCartItem.itensQtd})
                 </div>
                 <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 border rounded-xl">
-                  {selectedCartItem.produtos.map((it, idx) => (
-                    <div key={idx} className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-50">
-                      <div>
-                        <div className="font-bold text-slate-800">{it.nome}</div>
-                        <div className="text-slate-400 text-[11px]">Qtd: {it.qtd || it.quantidade || 1}x</div>
+                  {selectedCartItem.produtos.map((it, idx) => {
+                    const unitPrice = Number(it.preco ?? it.valorUnitario ?? (it as any).preco_unitario ?? 0);
+                    const qty = Number(it.qtd || it.quantidade || 1);
+                    const lineTotal = unitPrice * qty;
+                    return (
+                      <div key={idx} className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-50">
+                        <div>
+                          <div className="font-bold text-slate-800">{it.nome}</div>
+                          <div className="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5">
+                            <span className="font-medium">Qtd: {qty}x</span>
+                            {unitPrice > 0 && (
+                              <span className="text-slate-400">• Unit: {unitPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="font-black text-slate-900">
+                          {lineTotal > 0 
+                            ? lineTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) 
+                            : (unitPrice > 0 ? unitPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-")}
+                        </div>
                       </div>
-                      <div className="font-black text-slate-900">
-                        {it.valorUnitario || it.preco ? ((it.valorUnitario || it.preco || 0) * (it.qtd || it.quantidade || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-"}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

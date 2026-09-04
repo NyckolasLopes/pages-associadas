@@ -604,11 +604,11 @@ export const catalog = {
 
     await ensureHydrated();
 
-    // Query both slug, url, and id in ONE single fast query with or()
+    // Query both slug and id in ONE single fast query with or()
     const query = supabase
       .from('produtos')
       .select('*')
-      .or(`slug.eq.${cleanKey},id.eq.${cleanKey},url.eq.${cleanKey}`)
+      .or(`slug.eq.${cleanKey},id.eq.${cleanKey}`)
       .limit(1);
 
     const products = await fetchFromSupabaseWithPrices(query, lojaId);

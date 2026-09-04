@@ -1,19 +1,40 @@
 import error404Img from "@/assets/error-404.png";
 import produtoNaoEncontradoImg from "@/assets/produto-nao-encontrado.png";
 import { ArrowLeft, PackageX, ChevronLeft } from "lucide-react";
-import { useActivePharmacy, safeSlugify } from "@/hooks/useActivePharmacy";
+import { useActivePharmacy, safeSlugify, SYSTEM_PAGES } from "@/hooks/useActivePharmacy";
 
 interface NotFoundProps {
   type?: "page" | "product" | "category" | "showcase";
   title?: string;
   description?: string;
+  storeSlug?: string;
 }
 
-export function NotFound({ type = "page", title, description }: NotFoundProps) {
+export function NotFound({ type = "page", title, description, storeSlug: propStoreSlug }: NotFoundProps) {
   const activePharmacy = useActivePharmacy();
   const isParceiro = activePharmacy?.categoriaAssociado === "Parceiro";
 
-  const storeSlug = activePharmacy?.slug ? safeSlugify(activePharmacy.slug) : "";
+  // Determina o slug da loja atual com máxima precisão
+  const resolvedStoreSlug = (() => {
+    if (propStoreSlug) return safeSlugify(propStoreSlug);
+    if (activePharmacy?.slug) return safeSlugify(activePharmacy.slug);
+    if (typeof window !== "undefined") {
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      const firstPart = parts[0] ? safeSlugify(parts[0]) : "";
+      if (firstPart && !SYSTEM_PAGES.has(firstPart)) {
+        return firstPart;
+      }
+      const lastSlug = localStorage.getItem("fa-last-store-slug") || localStorage.getItem("fa_installed_store_slug");
+      if (lastSlug && !SYSTEM_PAGES.has(lastSlug)) {
+        return safeSlugify(lastSlug);
+      }
+    }
+    return "";
+  })();
+
+  const storeHomeUrl = resolvedStoreSlug && resolvedStoreSlug !== "loja-padrao" 
+    ? `/${resolvedStoreSlug}` 
+    : (resolvedStoreSlug === "loja-padrao" ? "/loja-padrao" : "/");
 
   // Apenas se o PRODUTO não for encontrado em loja parceira: exibe o layout neutro
   if (type === "product" && isParceiro) {
@@ -29,11 +50,11 @@ export function NotFound({ type = "page", title, description }: NotFoundProps) {
           </p>
           
           <a
-            href={storeSlug ? `/${storeSlug}` : "/"}
+            href={storeHomeUrl}
             className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             <ChevronLeft className="w-4 h-4" />
-            {storeSlug ? "Voltar para a loja" : "Voltar para o início"}
+            {resolvedStoreSlug ? "Voltar para a loja" : "Voltar para o início"}
           </a>
         </div>
       </div>
@@ -41,14 +62,11 @@ export function NotFound({ type = "page", title, description }: NotFoundProps) {
   }
 
   // PARA QUALQUER PÁGINA NÃO ENCONTRADA (404, loja inexistente, rota inválida):
-  // Exibe a imagem oficial 404 e o botão nas cores da Associadas "Voltar para a página inicial"
+  // Exibe a imagem oficial 404 / produto não encontrado e o botão "Voltar para a página inicial"
+  // que SEMPRE direciona para a página inicial da loja ativa!
   const isProduct = type === "product";
   const imgSrc = isProduct ? produtoNaoEncontradoImg : error404Img;
   const altText = isProduct ? "Produto não encontrado" : "Página não encontrada - 404";
-
-  const isStandalone = typeof window !== "undefined" && (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true);
-  const lockedSlug = typeof window !== "undefined" ? (localStorage.getItem("fa_installed_store_slug") || storeSlug) : storeSlug;
-  const homeHref = isStandalone && lockedSlug ? `/${lockedSlug}` : "/";
 
   return (
     <div className="fixed inset-0 z-[999999] bg-white flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none overflow-y-auto">
@@ -66,7 +84,7 @@ export function NotFound({ type = "page", title, description }: NotFoundProps) {
         
         <div className="mt-6 flex flex-col items-center gap-3 w-full sm:w-auto">
           <a 
-            href={homeHref}
+            href={storeHomeUrl}
             className="bg-[#00B5AD] hover:bg-[#009E97] text-white font-bold text-base px-8 py-3.5 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2.5 w-full sm:w-auto"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -33,6 +33,8 @@ export async function syncAbandonedCartNow(userOverride?: User | null) {
           nome: item.nome || item.name || "Produto",
           qtd: Number(item.qty || item.qtd || item.quantidade || 1),
           valorUnitario: unitPrice,
+          preco: unitPrice,
+          preco_unitario: unitPrice,
           foto: item.foto || item.imagem || item.image || (item.possuiImagem ? productImage(item) : ""),
           ean: item.ean || "",
         };
