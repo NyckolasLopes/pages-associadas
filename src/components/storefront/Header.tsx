@@ -1841,8 +1841,14 @@ function CartDrawer({ onCheckoutClick, storeSlug }: { onCheckoutClick: () => voi
           <div key={i.id} className="py-4 flex gap-3">
             <img
               src={productImage(i)}
-              alt=""
+              alt={i.nome || ""}
               className="h-16 w-16 object-contain bg-white border rounded"
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                if (!target.src.includes("/produtos/sem-imagem.webp")) {
+                  target.src = "/produtos/sem-imagem.webp";
+                }
+              }}
             />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold line-clamp-2">{i.nome}</div>

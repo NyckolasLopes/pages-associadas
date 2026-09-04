@@ -1340,8 +1340,14 @@ function CartPage() {
               <div key={i.id} className="bg-card border rounded-xl p-3 sm:p-4 flex gap-3 sm:gap-4">
                 <img
                   src={productImage(i)}
-                  alt=""
+                  alt={i.nome || ""}
                   className="h-20 w-20 sm:h-24 sm:w-24 shrink-0 object-contain bg-white border rounded"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    if (!target.src.includes("/produtos/sem-imagem.webp")) {
+                      target.src = "/produtos/sem-imagem.webp";
+                    }
+                  }}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-sm">{i.nome}</div>
@@ -1451,8 +1457,14 @@ function CartPage() {
                   <div key={p.id} className="border rounded-lg p-2 text-xs flex flex-col">
                     <img
                       src={productImage(p)}
-                      alt=""
+                      alt={p.nome || ""}
                       className="h-20 w-full object-contain bg-white"
+                      onError={(e) => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        if (!target.src.includes("/produtos/sem-imagem.webp")) {
+                          target.src = "/produtos/sem-imagem.webp";
+                        }
+                      }}
                     />
                     <div className="font-bold mt-1 h-[2.5em] overflow-hidden line-clamp-2 leading-tight text-ellipsis">{p.nome}</div>
                     <div className="text-foreground font-bold mt-1">{brl(p.precoPor)}</div>

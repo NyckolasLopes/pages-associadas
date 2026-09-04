@@ -86,9 +86,15 @@ export function AddToCartNotification() {
             {notification.productImage ? (
               <div className="w-12 h-12 rounded-xl bg-white p-1 shrink-0 border border-emerald-950/15 shadow-sm flex items-center justify-center overflow-hidden">
                 <img
-                  src={notification.productImage}
+                  src={notification.productImage || "/produtos/sem-imagem.webp"}
                   alt={notification.productName || "Produto"}
                   className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    if (!target.src.includes("/produtos/sem-imagem.webp")) {
+                      target.src = "/produtos/sem-imagem.webp";
+                    }
+                  }}
                 />
               </div>
             ) : (

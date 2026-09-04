@@ -81,6 +81,18 @@ function ProductCardComponent({
     setTimeout(() => setJustAdded(false), 3000);
   };
 
+  const handleBuy = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAvailable) {
+      toast.error("Produto indisponível no momento.");
+      return;
+    }
+    useCart.getState().hideAddedNotification();
+    add({ ...p, estoque: maxStock }, 1, false); // silent: false -> abre carrinho lateral
+    useCart.getState().setDrawer(true);
+  };
+
   const cartItems = useCart((s) => s.items);
   const cartItem = cartItems.find((item) => String(item.id) === String(p.id));
   const inCartQty = cartItem?.qty || 0;
@@ -532,6 +544,12 @@ function ProductCardComponent({
           width={400}
           height={400}
           className={`w-full h-full object-contain transition-transform duration-300 md:group-hover/card:scale-105 ${maxStock === 0 && !isService ? 'grayscale opacity-75' : ''}`}
+          onError={(e) => {
+            const target = e.currentTarget as HTMLImageElement;
+            if (!target.src.includes("/produtos/sem-imagem.webp")) {
+              target.src = "/produtos/sem-imagem.webp";
+            }
+          }}
         />
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none items-start">
           {activeSelos.map(selo => (
@@ -728,7 +746,7 @@ function ProductCardComponent({
               onClick={(e) => { 
                 if (isService) return;
                 if (!p.precoSobConsulta) {
-                  handleAddToCart(e);
+                  handleBuy(e);
                 } else {
                   e.preventDefault();
                   window.location.href = `/${(params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao"}/produto/${p.url || p.id}`;

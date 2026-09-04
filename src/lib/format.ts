@@ -32,12 +32,15 @@ export const checkIsGenerico = (p: any) => {
 };
 
 export const productImage = (p: any) => {
-  if (!p) return "/produtos/generico.webp";
+  if (!p) return "/produtos/sem-imagem.webp";
   if (typeof p === "string") return p;
-  if (p.imagens && p.imagens.length > 0) {
+  if (p.imagens && Array.isArray(p.imagens) && p.imagens.length > 0) {
     const img = p.imagens[0];
-    return img.caminhoImagem || img.url || img;
+    const url = typeof img === 'string' ? img : (img?.caminhoImagem || img?.url);
+    if (url) return url;
   }
+  if (p.foto && typeof p.foto === 'string') return p.foto;
+  if (p.imagem && typeof p.imagem === 'string') return p.imagem;
 
   if (p.possuiImagem && p.ean) {
     // Return actual image if implemented
@@ -60,7 +63,7 @@ export const productImage = (p: any) => {
     return "/produtos/caneta-emagrecedora.webp";
   }
 
-  if (name.includes("energy") || name.includes("energia") || name.includes("energético")) {
+  if (name.includes("energy") || name.includes("energia") || name.includes("energético") || name.includes("baly") || name.includes("monster") || name.includes("red bull")) {
     return "/produtos/energy.webp";
   }
 

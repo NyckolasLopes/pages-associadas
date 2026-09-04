@@ -351,8 +351,9 @@ function AnvisaDisclaimer({
               Alterar CEP
             </Button>
             <Button onClick={() => {
-              add({ ...p, estoque: maxStock }, qty);
-              showAddedNotification(p.nome, productImage(p));
+              add({ ...p, estoque: maxStock }, qty, false);
+              useCart.getState().setDrawer(true);
+              useCart.getState().hideAddedNotification();
               setConfirmDeliveryOpen(false);
             }}>
               Sim, continuar
@@ -1352,10 +1353,16 @@ function PDP() {
               }}
             >
               <img 
-                src={selectedImage} 
+                src={selectedImage || "/produtos/sem-imagem.webp"} 
                 alt={p.nome} 
                 fetchPriority="high"
                 className={`w-full h-full object-contain p-4 pb-8 transition-opacity duration-300 ${isZoomed ? 'opacity-0' : 'opacity-100'}`}
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  if (!target.src.includes("/produtos/sem-imagem.webp")) {
+                    target.src = "/produtos/sem-imagem.webp";
+                  }
+                }}
               />
               {isMedication && p.tarja && p.tarja !== 'Sem Tarja' && p.tarja !== 'none' && (
                 <div className={`absolute bottom-0 left-0 w-full h-8 flex items-center justify-center font-black text-[10px] uppercase tracking-wider z-20 ${tarjaColor(p.tarja)}`}>
@@ -1396,7 +1403,17 @@ function PDP() {
                         onClick={() => setSelectedImage(imgUrl)}
                         className={`w-20 h-20 shrink-0 snap-start border-2 rounded-xl overflow-hidden cursor-pointer bg-white transition ${selectedImage === imgUrl ? 'border-primary' : 'border-slate-200 hover:border-primary/50'}`}
                       >
-                        <img src={imgUrl} alt={`Imagem ${idx + 1} de ${p.nome}`} className="w-full h-full object-contain p-2" />
+                        <img 
+                          src={imgUrl} 
+                          alt={`Imagem ${idx + 1} de ${p.nome}`} 
+                          className="w-full h-full object-contain p-2" 
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            if (!target.src.includes("/produtos/sem-imagem.webp")) {
+                              target.src = "/produtos/sem-imagem.webp";
+                            }
+                          }}
+                        />
                       </button>
                     );
                   })}
@@ -1801,8 +1818,9 @@ function PDP() {
                       if (freteCalculado && selectedFreight !== "pickup" && cep && !isService) {
                         setConfirmDeliveryOpen(true);
                       } else {
-                        add({ ...p, estoque: maxStock }, qty);
-                        showAddedNotification(p.nome, productImage(p));
+                        add({ ...p, estoque: maxStock }, qty, false);
+                        useCart.getState().setDrawer(true);
+                        useCart.getState().hideAddedNotification();
                       }
                     }}
                   >
@@ -2046,7 +2064,17 @@ function PDP() {
                 Está vendo
               </span>
               <div className="bg-white border rounded-xl p-4 w-full aspect-square flex items-center justify-center shadow-sm">
-                <img src={p.imagens?.[0] || productImage(p)} alt={p.nome} className="w-full h-full object-contain" />
+                <img 
+                  src={p.imagens?.[0] || productImage(p)} 
+                  alt={p.nome} 
+                  className="w-full h-full object-contain" 
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    if (!target.src.includes("/produtos/sem-imagem.webp")) {
+                      target.src = "/produtos/sem-imagem.webp";
+                    }
+                  }}
+                />
               </div>
               <div className="mt-4 text-center">
                 <p className="font-bold text-sm text-slate-800 line-clamp-2">{p.nome}</p>
@@ -2064,7 +2092,17 @@ function PDP() {
                     <CheckCircle2 className="w-4 h-4 text-white" />
                   </div>
                 </div>
-                <img src={compreJuntoPartner.imagens?.[0] || productImage(compreJuntoPartner)} alt={compreJuntoPartner.nome} className="w-full h-full object-contain" />
+                <img 
+                  src={compreJuntoPartner.imagens?.[0] || productImage(compreJuntoPartner)} 
+                  alt={compreJuntoPartner.nome} 
+                  className="w-full h-full object-contain" 
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    if (!target.src.includes("/produtos/sem-imagem.webp")) {
+                      target.src = "/produtos/sem-imagem.webp";
+                    }
+                  }}
+                />
               </div>
               <div className="mt-4 text-center">
                 <p className="font-bold text-sm text-slate-800 line-clamp-2">{compreJuntoPartner.nome}</p>
