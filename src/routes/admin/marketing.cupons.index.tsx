@@ -73,6 +73,19 @@ function CuponsIndexPage() {
   const { categories } = useAdminCategories();
   const { customProducts } = useAdminProducts();
 
+  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
+  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : activeStoreId;
+  const effectiveStore = pharmacies.find(p => p.id === effectiveStoreId);
+
+  // Helper para obter as cores do selo "Com Cupom" de uma loja ou rede
+  const getStoreBadgeColors = (storeId?: string) => {
+    const store = pharmacies.find(p => p.id === storeId) || effectiveStore;
+    const bg = store?.themeColors?.['--coupon-badge-bg'] || store?.themeColors?.couponBadgeBg || networkDefaultTheme?.['--coupon-badge-bg'] || "#ff0000";
+    const text = store?.themeColors?.['--coupon-badge-text'] || store?.themeColors?.couponBadgeText || networkDefaultTheme?.['--coupon-badge-text'] || "#ffffff";
+    const border = store?.themeColors?.['--coupon-badge-border'] || store?.themeColors?.couponBadgeBorder || networkDefaultTheme?.['--coupon-badge-border'] || "#ff0000";
+    return { bg, text, border };
+  };
+
   // Carrega todos os produtos do catálogo para seleção completa
   const [catalogProducts, setCatalogProducts] = useState<Produto[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -110,19 +123,6 @@ function CuponsIndexPage() {
     }
     return list;
   }, [catalogProducts, customProducts]);
-
-  const isGlobalAdmin = currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || Boolean(currentUser?.grupoId && grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
-  const effectiveStoreId = !isGlobalAdmin && currentUser?.lojasVinculadas?.length ? currentUser.lojasVinculadas[0] : activeStoreId;
-  const effectiveStore = pharmacies.find(p => p.id === effectiveStoreId);
-
-  // Helper para obter as cores do selo "Com Cupom" de uma loja ou rede
-  const getStoreBadgeColors = (storeId?: string) => {
-    const store = pharmacies.find(p => p.id === storeId) || effectiveStore;
-    const bg = store?.themeColors?.['--coupon-badge-bg'] || store?.themeColors?.couponBadgeBg || networkDefaultTheme?.['--coupon-badge-bg'] || "#ff0000";
-    const text = store?.themeColors?.['--coupon-badge-text'] || store?.themeColors?.couponBadgeText || networkDefaultTheme?.['--coupon-badge-text'] || "#ffffff";
-    const border = store?.themeColors?.['--coupon-badge-border'] || store?.themeColors?.couponBadgeBorder || networkDefaultTheme?.['--coupon-badge-border'] || "#ff0000";
-    return { bg, text, border };
-  };
 
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);

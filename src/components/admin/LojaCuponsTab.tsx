@@ -43,7 +43,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
   const { pharmacies, updatePharmacy } = useAdmin();
   const { categories } = useAdminCategories();
   const { customProducts } = useAdminProducts();
-  const { cupons, addCoupon, removeCoupon, updateCoupon } = useMarketing();
+  const { cupons, addCoupon, removeCoupon, updateCoupon, loadMarketing } = useMarketing();
   const pharmacy = pharmacies.find((p) => p.id === lojaId);
 
   // Cores personalizáveis do destaque do cupom da loja
