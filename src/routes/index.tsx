@@ -100,10 +100,10 @@ function IndexGateway() {
     }
 
     resetStoreTheme();
-    if (!pharmaciesLoaded) {
+    if (!pharmaciesLoaded || pharmacies.length === 0) {
       loadPharmacies();
     }
-  }, [pharmaciesLoaded, loadPharmacies]);
+  }, [pharmaciesLoaded, pharmacies.length, loadPharmacies]);
 
   // Click outside to close search suggestions
   useEffect(() => {

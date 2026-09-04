@@ -546,6 +546,105 @@ export function saveCachedPharmacies(pharmacies: Pharmacy[]) {
   } catch { /* ignore */ }
 }
 
+export function safeSlugify(text: string): string {
+  return String(text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function mapLojaRowToPharmacy(l: any): Pharmacy {
+  let parsedThemeColors: any = {};
+  try {
+    parsedThemeColors = typeof l.theme_colors === 'string' ? JSON.parse(l.theme_colors) : (l.theme_colors || {});
+  } catch (e) {
+    console.error("Erro ao parsear theme_colors", e);
+  }
+  return {
+    id: l.id,
+    slug: l.sub_domain || parsedThemeColors?.slug || l.slug || (l.cidade ? safeSlugify(l.cidade) : ''),
+    ativo: l.ativa ?? true,
+    cnpj: l.cnpj,
+    razaoSocial: l.razao_social,
+    nome: l.nome_fantasia,
+    apelido: l.apelido || parsedThemeColors?.apelido || '',
+    email: l.email,
+    telefone: l.telefone,
+    horarioFuncionamento: l.horario_funcionamento || parsedThemeColors?.horario_funcionamento,
+    diasFuncionamento: parsedThemeColors?.diasFuncionamento || [1,2,3,4,5,6],
+    horariosPorDia: parsedThemeColors?.horariosPorDia || [],
+    datasEspeciais: parsedThemeColors?.datasEspeciais || [],
+    respTecnico: l.farmaceutico_responsavel || parsedThemeColors?.farmaceutico_responsavel,
+    inscricaoFarmaceutico: l.crf || parsedThemeColors?.crf,
+    alvara: l.alvara_sanitario || parsedThemeColors?.alvara_sanitario,
+    afe: l.afe || parsedThemeColors?.afe,
+    cep: l.cep || '',
+    endereco: l.logradouro || '',
+    numero: l.numero || '',
+    complemento: l.complemento || parsedThemeColors?.complemento || '',
+    bairro: l.bairro || '',
+    cidade: l.cidade || '',
+    uf: l.estado || '',
+    whatsapp: l.whatsapp || parsedThemeColors?.whatsapp || '',
+    pageTitle: parsedThemeColors?.pageTitle || '',
+    metaDescription: parsedThemeColors?.metaDescription || '',
+    seoDescricao: parsedThemeColors?.seoDescricao || '',
+    facebookPixelId: parsedThemeColors?.facebookPixelId || '',
+    googleAnalyticsId: parsedThemeColors?.googleAnalyticsId || '',
+    googleTagManagerId: parsedThemeColors?.googleTagManagerId || '',
+    footerPlataformaTexto: l.footer_plataforma_texto || parsedThemeColors?.footer_plataforma_texto || '',
+    footerDescricao: l.footer_descricao || parsedThemeColors?.footer_descricao || '',
+    footerTituloContato: l.footer_titulo_contato || parsedThemeColors?.footer_titulo_contato || '',
+    socialLinks: l.social_links || parsedThemeColors?.social_links || {},
+    topBarText: parsedThemeColors?.topBarText || '',
+    topBarBgColor: parsedThemeColors?.topBarBgColor || '',
+    topBarTextColor: parsedThemeColors?.topBarTextColor || '',
+    latitude: l.latitude,
+    longitude: l.longitude,
+    logoUrl: l.logo_url || parsedThemeColors?.logoUrl || l.configs?.logoUrl || '',
+    faviconUrl: l.favicon_url || parsedThemeColors?.faviconUrl || l.configs?.faviconUrl || '',
+    loadingLogoUrl: parsedThemeColors?.loadingLogoUrl || '',
+    footerLogoUrl: parsedThemeColors?.footerLogoUrl || '',
+    categoriaAssociado: l.categoria_associado || parsedThemeColors?.categoria_associado || 'Pleno',
+    isPleno: (l.categoria_associado || parsedThemeColors?.categoria_associado) === 'Pleno' || l.is_pleno === true,
+    customPages: parsedThemeColors?.customPages || [],
+    trabalhaComEncarte: l.trabalha_com_encarte || parsedThemeColors?.trabalha_com_encarte,
+    entregaExpressa: l.entrega_expressa || parsedThemeColors?.entrega_expressa,
+    virtualStoreStatus: l.status_loja_virtual || parsedThemeColors?.status_loja_virtual,
+    isVirtualStoreGenerated: !!l.status_loja_virtual,
+    api_key: l.api_key,
+    aceitaEntrega: parsedThemeColors?.aceitaEntrega === true,
+    modeloFrete: parsedThemeColors?.modeloFrete ?? 'raio',
+    horarioInicioEntrega: parsedThemeColors?.horarioInicioEntrega ?? '',
+    horarioFimEntrega: parsedThemeColors?.horarioFimEntrega ?? '',
+    horarioFimEntregaRisco: parsedThemeColors?.horarioFimEntregaRisco ?? '',
+    tempoEntrega: parsedThemeColors?.tempoEntrega ?? '',
+    custoEntrega: parsedThemeColors?.custoEntrega ?? 0,
+    raioEntregaKm: parsedThemeColors?.raioEntregaKm,
+    faixasCep: parsedThemeColors?.faixasCep ?? [],
+    aceitaRetirada: parsedThemeColors?.aceitaRetirada === true,
+    horarioInicioRetirada: parsedThemeColors?.horarioInicioRetirada ?? '',
+    horarioFimRetirada: parsedThemeColors?.horarioFimRetirada ?? '',
+    tempoRetirada: parsedThemeColors?.tempoRetirada ?? '',
+    aceitaUber: parsedThemeColors?.aceitaUber ?? false,
+    custoUber: parsedThemeColors?.custoUber ?? 0,
+    aceita99: parsedThemeColors?.aceita99 ?? false,
+    custo99: parsedThemeColors?.custo99 ?? 0,
+    aceitaMotoboy: parsedThemeColors?.aceitaMotoboy ?? false,
+    custoMotoboy: parsedThemeColors?.custoMotoboy ?? 0,
+    custoEntregaExpressa: parsedThemeColors?.custoEntregaExpressa ?? 0,
+    raiosEntrega: parsedThemeColors?.raiosEntrega ?? [],
+    faixasValorPedido: parsedThemeColors?.faixasValorPedido ?? [],
+    meiosEntregaPersonalizados: parsedThemeColors?.meiosEntregaPersonalizados ?? [],
+    themeColors: parsedThemeColors && Object.keys(parsedThemeColors).length > 0 ? parsedThemeColors : undefined,
+    sistemaUtilizado: l.sistema_utilizado || parsedThemeColors?.sistemaUtilizado || '',
+    offersServices: parsedThemeColors?.offersServices ?? false,
+  } as unknown as Pharmacy;
+}
+
+let loadPharmaciesPromise: Promise<void> | null = null;
 const storeBannersCache = new Map<string, { baseBanners: any[]; resolved: AdminBanner[] }>();
 
 export const useAdmin = create<AdminState>()(
@@ -1243,117 +1342,79 @@ export const useAdmin = create<AdminState>()(
       pharmaciesLoaded: getInitialCachedPharmacies().length > 0,
       pharmaciesFresh: false,
       loadPharmacies: async () => {
-        // Throttle: ignora chamadas duplicadas dentro de 5s (evita duplo fetch no boot)
-        const now = Date.now();
-        const last = (loadPharmaciesThrottle as any)._lastCall || 0;
-        if (now - last < 5000) {
-          // Mesmo throttlado, desbloqueia a UI — os dados já foram carregados pelo primeiro fetch
-          set({ pharmaciesLoaded: true });
+        // Se já há um carregamento em andamento, aguarda ele para não duplicar requisições
+        if (loadPharmaciesPromise) {
+          return loadPharmaciesPromise;
+        }
+
+        // Se já carregou e temos farmácias na memória e frescas, não precisa refazer fetch
+        if (get().pharmacies && get().pharmacies.length > 0 && get().pharmaciesFresh) {
           return;
         }
-        (loadPharmaciesThrottle as any)._lastCall = now;
 
-        try {
-          const { data, error } = await supabase.from('lojas').select('*');
-          if (!error && data) {
-            const loadedPharmacies: Pharmacy[] = data.map((l: any) => {
-              let parsedThemeColors: any = {};
-              try {
-                parsedThemeColors = typeof l.theme_colors === 'string' ? JSON.parse(l.theme_colors) : (l.theme_colors || {});
-              } catch (e) {
-                console.error("Erro ao parsear theme_colors", e);
+        loadPharmaciesPromise = (async () => {
+          try {
+            const { data, error } = await supabase.from('lojas').select('*');
+            if (!error && data && data.length > 0) {
+              const loadedPharmacies: Pharmacy[] = data.map(mapLojaRowToPharmacy);
+              saveCachedPharmacies(loadedPharmacies);
+              set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
+              return;
+            }
+
+            // Fallback: se a consulta direta não retornou dados ou deu erro, tenta a rota proxy
+            try {
+              const defaultKey = "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+              const res = await fetch('/api/supabase/rest/v1/lojas?select=*', {
+                headers: {
+                  'apikey': defaultKey,
+                  'Authorization': `Bearer ${defaultKey}`
+                }
+              });
+              if (res.ok) {
+                const fallbackData = await res.json();
+                if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+                  const loadedPharmacies: Pharmacy[] = fallbackData.map(mapLojaRowToPharmacy);
+                  saveCachedPharmacies(loadedPharmacies);
+                  set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
+                  return;
+                }
               }
-              return {
-                id: l.id,
-                slug: l.sub_domain || parsedThemeColors?.slug || l.slug || (l.cidade ? safeSlugify(l.cidade) : ''),
-                ativo: l.ativa ?? true,
-                cnpj: l.cnpj,
-                razaoSocial: l.razao_social,
-                nome: l.nome_fantasia,
-                apelido: l.apelido || parsedThemeColors?.apelido || '',
-                email: l.email,
-                telefone: l.telefone,
-                horarioFuncionamento: l.horario_funcionamento || parsedThemeColors?.horario_funcionamento,
-                diasFuncionamento: parsedThemeColors?.diasFuncionamento || [1,2,3,4,5,6],
-                  horariosPorDia: parsedThemeColors?.horariosPorDia || [],
-                  datasEspeciais: parsedThemeColors?.datasEspeciais || [],
-                respTecnico: l.farmaceutico_responsavel || parsedThemeColors?.farmaceutico_responsavel,
-                inscricaoFarmaceutico: l.crf || parsedThemeColors?.crf,
-                alvara: l.alvara_sanitario || parsedThemeColors?.alvara_sanitario,
-                afe: l.afe || parsedThemeColors?.afe,
-                cep: l.cep || '',
-                endereco: l.logradouro || '',
-                numero: l.numero || '',
-                complemento: l.complemento || parsedThemeColors?.complemento || '',
-                bairro: l.bairro || '',
-                cidade: l.cidade || '',
-                uf: l.estado || '',
-                whatsapp: l.whatsapp || parsedThemeColors?.whatsapp || '',
-                pageTitle: parsedThemeColors?.pageTitle || '',
-                metaDescription: parsedThemeColors?.metaDescription || '',
-                seoDescricao: parsedThemeColors?.seoDescricao || '',
-                facebookPixelId: parsedThemeColors?.facebookPixelId || '',
-                googleAnalyticsId: parsedThemeColors?.googleAnalyticsId || '',
-                googleTagManagerId: parsedThemeColors?.googleTagManagerId || '',
-                footerPlataformaTexto: l.footer_plataforma_texto || parsedThemeColors?.footer_plataforma_texto || '',
-                footerDescricao: l.footer_descricao || parsedThemeColors?.footer_descricao || '',
-                footerTituloContato: l.footer_titulo_contato || parsedThemeColors?.footer_titulo_contato || '',
-                socialLinks: l.social_links || parsedThemeColors?.social_links || {},
-                topBarText: parsedThemeColors?.topBarText || '',
-                topBarBgColor: parsedThemeColors?.topBarBgColor || '',
-                topBarTextColor: parsedThemeColors?.topBarTextColor || '',
-                latitude: l.latitude,
-                longitude: l.longitude,
-                logoUrl: l.logo_url || parsedThemeColors?.logoUrl || l.configs?.logoUrl || '',
-                faviconUrl: l.favicon_url || parsedThemeColors?.faviconUrl || l.configs?.faviconUrl || '',
-                loadingLogoUrl: parsedThemeColors?.loadingLogoUrl || '',
-                footerLogoUrl: parsedThemeColors?.footerLogoUrl || '',
-                categoriaAssociado: l.categoria_associado || parsedThemeColors?.categoria_associado || 'Pleno',
-                isPleno: (l.categoria_associado || parsedThemeColors?.categoria_associado) === 'Pleno' || l.is_pleno === true,
-                customPages: parsedThemeColors?.customPages || [],
-                trabalhaComEncarte: l.trabalha_com_encarte || parsedThemeColors?.trabalha_com_encarte,
-                entregaExpressa: l.entrega_expressa || parsedThemeColors?.entrega_expressa,
-                virtualStoreStatus: l.status_loja_virtual || parsedThemeColors?.status_loja_virtual,
-                isVirtualStoreGenerated: !!l.status_loja_virtual,
-                api_key: l.api_key,
-                aceitaEntrega: parsedThemeColors?.aceitaEntrega === true,
-                modeloFrete: parsedThemeColors?.modeloFrete ?? 'raio',
-                horarioInicioEntrega: parsedThemeColors?.horarioInicioEntrega ?? '',
-                horarioFimEntrega: parsedThemeColors?.horarioFimEntrega ?? '',
-                horarioFimEntregaRisco: parsedThemeColors?.horarioFimEntregaRisco ?? '',
-                tempoEntrega: parsedThemeColors?.tempoEntrega ?? '',
-                custoEntrega: parsedThemeColors?.custoEntrega ?? 0,
-                raioEntregaKm: parsedThemeColors?.raioEntregaKm,
-                faixasCep: parsedThemeColors?.faixasCep ?? [],
-                aceitaRetirada: parsedThemeColors?.aceitaRetirada === true,
-                horarioInicioRetirada: parsedThemeColors?.horarioInicioRetirada ?? '',
-                horarioFimRetirada: parsedThemeColors?.horarioFimRetirada ?? '',
-                tempoRetirada: parsedThemeColors?.tempoRetirada ?? '',
-                aceitaUber: parsedThemeColors?.aceitaUber ?? false,
-                custoUber: parsedThemeColors?.custoUber ?? 0,
-                aceita99: parsedThemeColors?.aceita99 ?? false,
-                custo99: parsedThemeColors?.custo99 ?? 0,
-                aceitaMotoboy: parsedThemeColors?.aceitaMotoboy ?? false,
-                custoMotoboy: parsedThemeColors?.custoMotoboy ?? 0,
-                custoEntregaExpressa: parsedThemeColors?.custoEntregaExpressa ?? 0,
-                raiosEntrega: parsedThemeColors?.raiosEntrega ?? [],
-                faixasValorPedido: parsedThemeColors?.faixasValorPedido ?? [],
-                meiosEntregaPersonalizados: parsedThemeColors?.meiosEntregaPersonalizados ?? [],
-                themeColors: parsedThemeColors && Object.keys(parsedThemeColors).length > 0 ? parsedThemeColors : undefined,
-                sistemaUtilizado: l.sistema_utilizado || parsedThemeColors?.sistemaUtilizado || '',
-                offersServices: parsedThemeColors?.offersServices ?? false,
-              };
-            }) as unknown as Pharmacy[];
-            saveCachedPharmacies(loadedPharmacies);
-            set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
-          } else {
-            // Mesmo em caso de erro, desbloqueia a UI (mostra loja vazia ou fallback)
+            } catch (fbErr) {
+              console.warn("Fallback proxy lojas falhou:", fbErr);
+            }
+
             set({ pharmaciesLoaded: true, pharmaciesFresh: true });
+          } catch (err) {
+            console.error("Erro no fetch direto de lojas, acionando fallback proxy:", err);
+            try {
+              const defaultKey = "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+              const res = await fetch('/api/supabase/rest/v1/lojas?select=*', {
+                headers: {
+                  'apikey': defaultKey,
+                  'Authorization': `Bearer ${defaultKey}`
+                }
+              });
+              if (res.ok) {
+                const fallbackData = await res.json();
+                if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+                  const loadedPharmacies: Pharmacy[] = fallbackData.map(mapLojaRowToPharmacy);
+                  saveCachedPharmacies(loadedPharmacies);
+                  set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
+                  return;
+                }
+              }
+            } catch (fbErr) {
+              console.warn("Fallback proxy lojas falhou:", fbErr);
+            }
+
+            set({ pharmaciesLoaded: true });
+          } finally {
+            loadPharmaciesPromise = null;
           }
-        } catch {
-          // Erro de rede — desbloqueia a UI para não ficar em spinner infinito
-          set({ pharmaciesLoaded: true });
-        }
+        })();
+
+        return loadPharmaciesPromise;
       },
 
       addPharmacy: async (p) => {
@@ -1913,7 +1974,7 @@ export const useAdmin = create<AdminState>()(
       // Persisti-los causaria: (a) flicker ao carregar dados de sessão anterior,
       // (b) payload gigante ao salvar logos base64 no app_state.
       partialize: (state) => {
-        const { pharmacies: _ph, banners: _bn, ...rest } = state as any;
+        const { pharmacies: _ph, banners: _bn, pharmaciesLoaded: _pl, pharmaciesFresh: _pf, ...rest } = state as any;
         return rest;
       },
       migrate: (persistedState: any, version: number) => {
