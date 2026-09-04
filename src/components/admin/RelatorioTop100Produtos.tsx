@@ -61,6 +61,8 @@ import { isToday, isYesterday, isThisWeek, isThisMonth, isThisYear, subDays, par
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
+import { productImage } from "@/lib/format";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RelatorioTop100Props {
   lojaId?: string | null;
@@ -75,6 +77,9 @@ export interface RankedProduct {
   sku: string;
   nome: string;
   foto?: string;
+  tarja?: string;
+  generico?: boolean;
+  retemReceita?: boolean;
   categoria?: string;
   qtd: number;
   faturamento: number;
@@ -86,24 +91,41 @@ export interface RankedProduct {
   lojasNomes: string[];
 }
 
-function ProductThumbnail({ foto, nome }: { foto?: string; nome: string }) {
+function ProductThumbnail({ 
+  foto, 
+  nome,
+  tarja,
+  generico,
+  retemReceita
+}: { 
+  foto?: string; 
+  nome: string;
+  tarja?: string;
+  generico?: boolean;
+  retemReceita?: boolean;
+}) {
   const [imgError, setImgError] = useState(false);
 
-  if (!foto || imgError) {
-    return (
-      <div className="w-10 h-10 rounded-lg bg-[#00b5ad]/10 text-[#008e88] border border-[#00b5ad]/20 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
-        <Package className="w-5 h-5 text-[#00b5ad]" />
-      </div>
-    );
-  }
+  // Compute image URL: if foto is provided and no error, use it; otherwise generate standard mockup based on name/tarja/generico
+  const src = (!imgError && foto) 
+    ? foto 
+    : productImage({ nome, foto: !imgError ? foto : undefined, tarja, generico, retemReceita });
 
   return (
-    <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center p-0.5 shrink-0 overflow-hidden shadow-2xs">
+    <div className="w-11 h-11 rounded-xl bg-white border border-slate-200/90 flex items-center justify-center p-1 shrink-0 overflow-hidden shadow-2xs group-hover:border-[#00b5ad]/40 transition-colors">
       <img 
-        src={foto} 
+        src={src || "/produtos/sem-imagem.webp"} 
         alt={nome} 
-        onError={() => setImgError(true)}
-        className="w-full h-full object-contain" 
+        loading="lazy"
+        onError={(e) => {
+          const target = e.currentTarget as HTMLImageElement;
+          if (!target.src.includes("/produtos/sem-imagem.webp")) {
+            target.src = "/produtos/sem-imagem.webp";
+          } else {
+            setImgError(true);
+          }
+        }}
+        className="w-full h-full object-contain mix-blend-multiply" 
       />
     </div>
   );
@@ -134,6 +156,99 @@ export function RelatorioTop100Produtos({
       setSelectedLoja(lojaId);
     }
   }, [lojaId]);
+
+  // DB Catalog State to enrich products with true photos/tarjas/categories
+  const [dbCatalog, setDbCatalog] = useState<Record<string, {
+    id: string;
+    ean?: string;
+    nome: string;
+    imagens?: any[];
+    foto?: string;
+    tarja?: string;
+    generico?: boolean;
+    retem_receita?: boolean;
+    categoria?: string;
+  }>>({});
+
+  // Fetch catalog info from Supabase for all items present in orders
+  React.useEffect(() => {
+    let isMounted = true;
+    
+    async function fetchCatalogForOrders() {
+      const idsToFetch = new Set<string>();
+      const eansToFetch = new Set<string>();
+
+      orders.forEach(order => {
+        const items = order.itens || order.produtos || [];
+        items.forEach((item: any) => {
+          if (item.id && typeof item.id === "string") idsToFetch.add(item.id);
+          if (item.sku && typeof item.sku === "string" && !item.sku.startsWith("SKU-")) idsToFetch.add(item.sku);
+          if (item.ean && typeof item.ean === "string") eansToFetch.add(item.ean);
+        });
+      });
+
+      const idsArr = Array.from(idsToFetch).slice(0, 500);
+      const eansArr = Array.from(eansToFetch).slice(0, 500);
+
+      if (idsArr.length === 0 && eansArr.length === 0) return;
+
+      try {
+        const queries: Promise<any>[] = [];
+        if (idsArr.length > 0) {
+          queries.push(
+            supabase
+              .from('produtos')
+              .select('id, ean, nome, imagens, tarja, generico, retem_receita, categoria_id')
+              .in('id', idsArr)
+          );
+        }
+        if (eansArr.length > 0) {
+          queries.push(
+            supabase
+              .from('produtos')
+              .select('id, ean, nome, imagens, tarja, generico, retem_receita, categoria_id')
+              .in('ean', eansArr)
+          );
+        }
+
+        const results = await Promise.all(queries);
+        if (!isMounted) return;
+
+        const newCatalog: Record<string, any> = {};
+        results.forEach(({ data, error }) => {
+          if (!error && Array.isArray(data)) {
+            data.forEach((prod: any) => {
+              const foto = (Array.isArray(prod.imagens) && prod.imagens[0])
+                ? (typeof prod.imagens[0] === 'string' ? prod.imagens[0] : (prod.imagens[0]?.caminhoImagem || prod.imagens[0]?.url))
+                : undefined;
+
+              const entry = {
+                id: prod.id,
+                ean: prod.ean,
+                nome: prod.nome,
+                imagens: prod.imagens,
+                foto: foto,
+                tarja: prod.tarja,
+                generico: prod.generico,
+                retem_receita: prod.retem_receita,
+              };
+
+              if (prod.id) newCatalog[prod.id] = entry;
+              if (prod.ean) newCatalog[prod.ean] = entry;
+              if (prod.nome) newCatalog[prod.nome.toLowerCase().trim()] = entry;
+            });
+          }
+        });
+
+        setDbCatalog(prev => ({ ...prev, ...newCatalog }));
+      } catch (err) {
+        console.warn("Erro ao buscar catálogo de produtos no Supabase:", err);
+      }
+    }
+
+    fetchCatalogForOrders();
+    return () => { isMounted = false; };
+  }, [orders]);
 
   const activeStoreObj = useMemo(() => {
     if (selectedLoja === "all") return null;
@@ -238,15 +353,47 @@ export function RelatorioTop100Produtos({
         totalFat += itemFat;
 
         if (!map[key]) {
-          // Use O(1) lookups instead of O(N) array find
-          const catalogItem = catalogByName[key] || catalogById[item.id] || catalogBySku[item.sku] || catalogBySku[item.ean];
+          // Look up from local customProducts or Supabase dbCatalog
+          const catalogItem = catalogByName[key] 
+            || catalogById[item.id] 
+            || catalogBySku[item.sku] 
+            || catalogBySku[item.ean]
+            || dbCatalog[key]
+            || (item.id ? dbCatalog[item.id] : undefined)
+            || (item.sku ? dbCatalog[item.sku] : undefined)
+            || (item.ean ? dbCatalog[item.ean] : undefined);
+
+          const tarja = catalogItem?.tarja || item.tarja || undefined;
+          const generico = catalogItem?.generico ?? item.generico ?? undefined;
+          const retemReceita = catalogItem?.retemReceita ?? catalogItem?.retem_receita ?? item.retemReceita ?? undefined;
+
+          // Candidate photo from order or catalog
+          const candidatePhoto = item.foto 
+            || item.imagem 
+            || (Array.isArray(item.imagens) && item.imagens[0])
+            || catalogItem?.imagem 
+            || catalogItem?.foto 
+            || (Array.isArray(catalogItem?.imagens) && catalogItem.imagens[0] ? (typeof catalogItem.imagens[0] === 'string' ? catalogItem.imagens[0] : (catalogItem.imagens[0]?.caminhoImagem || catalogItem.imagens[0]?.url)) : undefined)
+            || undefined;
+
+          const resolvedPhoto = candidatePhoto || productImage({
+            nome: rawNome,
+            foto: candidatePhoto,
+            tarja,
+            generico,
+            retemReceita,
+            imagens: catalogItem?.imagens || item.imagens
+          });
 
           map[key] = {
             id: item.id || catalogItem?.id || key,
             sku: item.sku || item.ean || catalogItem?.sku || catalogItem?.ean || `SKU-${key.slice(0, 5).toUpperCase()}`,
             nome: rawNome,
-            foto: item.foto || item.imagem || catalogItem?.imagem || (catalogItem as any)?.foto || undefined,
-            categoria: (catalogItem as any)?.categoria || "Medicamentos & Saúde",
+            foto: resolvedPhoto,
+            tarja,
+            generico,
+            retemReceita,
+            categoria: (catalogItem as any)?.categoria || (catalogItem as any)?.categoria_nome || "Medicamentos & Saúde",
             qtd: 0,
             faturamento: 0,
             pedidosIds: new Set(),
@@ -277,6 +424,9 @@ export function RelatorioTop100Produtos({
         sku: item.sku,
         nome: item.nome,
         foto: item.foto,
+        tarja: item.tarja,
+        generico: item.generico,
+        retemReceita: item.retemReceita,
         categoria: item.categoria,
         qtd: item.qtd,
         faturamento: item.faturamento,
@@ -309,7 +459,7 @@ export function RelatorioTop100Produtos({
       totalQtdGeral: totalQtd,
       totalFaturamentoGeral: totalFat
     };
-  }, [filteredOrders, catalogProducts, pharmacies, criterio]);
+  }, [filteredOrders, catalogProducts, dbCatalog, pharmacies, criterio]);
 
   // Search filter
   const searchFilteredRanking = useMemo(() => {
@@ -540,19 +690,28 @@ export function RelatorioTop100Produtos({
           </CardHeader>
           <CardContent>
             {championProduct ? (
-              <>
-                <div className="text-base font-black text-slate-900 line-clamp-1" title={championProduct.nome}>
-                  {championProduct.nome}
+              <div className="flex items-center gap-3.5">
+                <ProductThumbnail 
+                  foto={championProduct.foto} 
+                  nome={championProduct.nome} 
+                  tarja={championProduct.tarja}
+                  generico={championProduct.generico}
+                  retemReceita={championProduct.retemReceita}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-base font-black text-slate-900 line-clamp-1" title={championProduct.nome}>
+                    {championProduct.nome}
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-2xl sm:text-3xl font-black text-amber-700">
+                      {criterio === "quantidade" ? `${championProduct.qtd} un` : formatBRL(championProduct.faturamento)}
+                    </span>
+                    <span className="text-xs text-slate-500 font-bold">
+                      {criterio === "quantidade" ? formatBRL(championProduct.faturamento) : `${championProduct.qtd} un`}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl sm:text-3xl font-black text-amber-700">
-                    {criterio === "quantidade" ? `${championProduct.qtd} un` : formatBRL(championProduct.faturamento)}
-                  </span>
-                  <span className="text-xs text-slate-500 font-bold">
-                    {criterio === "quantidade" ? formatBRL(championProduct.faturamento) : `${championProduct.qtd} un`}
-                  </span>
-                </div>
-              </>
+              </div>
             ) : (
               <div className="text-sm font-medium text-slate-400 py-1">Nenhum dado registrado</div>
             )}
@@ -924,7 +1083,13 @@ export function RelatorioTop100Produtos({
                         {/* Produto / Thumbnail / Nome */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            <ProductThumbnail foto={item.foto} nome={item.nome} />
+                            <ProductThumbnail 
+                              foto={item.foto} 
+                              nome={item.nome} 
+                              tarja={item.tarja}
+                              generico={item.generico}
+                              retemReceita={item.retemReceita}
+                            />
                             <div className="min-w-0 flex-1">
                               <div className="font-extrabold text-slate-900 line-clamp-2 text-sm leading-snug" title={item.nome}>
                                 {item.nome}
