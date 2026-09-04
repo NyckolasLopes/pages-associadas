@@ -424,7 +424,7 @@ function AdminProdutosEstoque() {
                               <Package className="w-4 h-4" />
                             </div>
                           )}
-                          <span className="line-clamp-1 max-w-[200px] text-slate-800 font-medium">{p.nome}</span>
+                          <span className="text-slate-800 font-medium leading-snug">{p.nome}</span>
                         </div>
                       </td>
                       <td className="p-3 text-slate-500 font-mono text-xs">
