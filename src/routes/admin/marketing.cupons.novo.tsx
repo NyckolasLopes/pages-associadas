@@ -57,7 +57,7 @@ function NovoCupomPage() {
   useEffect(() => {
     let mounted = true;
     setLoadingProducts(true);
-    catalog.listProducts().then((prods) => {
+    catalog.listAllProducts().then((prods) => {
       if (mounted && prods) {
         setCatalogProducts(prods);
       }
@@ -114,7 +114,7 @@ function NovoCupomPage() {
   }, [categories, searchTarget]);
 
   const filteredProducts = useMemo(() => {
-    if (!searchTarget) return allProducts.slice(0, 50);
+    if (!searchTarget) return allProducts.slice(0, 500);
     const q = searchTarget.toLowerCase();
     return allProducts.filter((p: any) => 
       (p.nome && p.nome.toLowerCase().includes(q)) || 
@@ -122,7 +122,7 @@ function NovoCupomPage() {
       (p.ean && p.ean.toLowerCase().includes(q)) ||
       (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q))
-    ).slice(0, 50);
+    ).slice(0, 500);
   }, [allProducts, searchTarget]);
 
   const handleToggleAlvo = (id: string) => {

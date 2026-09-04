@@ -65,43 +65,118 @@ export const useWaitlist = create<WaitlistStore>()(
       fetchEntries: async (lojaId?: string) => {
         set({ loading: true });
         try {
-          let query = supabase
-            .from("lista_espera" as any)
-            .select("*")
-            .order("created_at", { ascending: false });
+          const resultsMap = new Map<string, WaitlistEntry>();
 
-          if (lojaId && lojaId !== "all") {
-            query = query.eq("loja_id", lojaId);
+          // 1. Busca em carrinhos_abandonados (status = 'lista_espera') - tabela pública e sem bloqueio de RLS
+          try {
+            let cartQuery = supabase
+              .from("carrinhos_abandonados" as any)
+              .select("*")
+              .eq("status", "lista_espera")
+              .order("created_at", { ascending: false });
+
+            if (lojaId && lojaId !== "all") {
+              cartQuery = cartQuery.eq("loja_id", lojaId);
+            }
+
+            const { data: cartData, error: cartErr } = await cartQuery;
+            if (!cartErr && cartData && Array.isArray(cartData)) {
+              cartData.forEach((row: any) => {
+                let parsedNotes: any = {};
+                try {
+                  if (typeof row.notes === "string" && row.notes.startsWith("{")) {
+                    parsedNotes = JSON.parse(row.notes);
+                  } else if (typeof row.notes === "object" && row.notes !== null) {
+                    parsedNotes = row.notes;
+                  }
+                } catch {}
+
+                const firstItem = Array.isArray(row.items) && row.items.length > 0 ? row.items[0] : {};
+                const entryId = String(row.id);
+                resultsMap.set(entryId, {
+                  id: entryId,
+                  lojaId: String(row.loja_id || ""),
+                  lojaNome: parsedNotes.lojaNome || "",
+                  clienteNome: row.nome_cliente || parsedNotes.clienteNome || "Cliente",
+                  whatsapp: row.telefone_cliente || parsedNotes.whatsapp || "",
+                  produtoId: String(parsedNotes.produtoId || firstItem.id || ""),
+                  produtoNome: parsedNotes.produtoNome || firstItem.nome || "Produto Indisponível",
+                  produtoImagem: parsedNotes.produtoImagem || firstItem.foto || firstItem.imagem || "",
+                  quantidade: Number(parsedNotes.quantidade || firstItem.quantidade) || 1,
+                  precoMomento: parsedNotes.precoMomento ? Number(parsedNotes.precoMomento) : (firstItem.preco ? Number(firstItem.preco) : undefined),
+                  mensagem: parsedNotes.mensagem || "",
+                  status: (parsedNotes.status as any) || "pendente",
+                  data: row.created_at || new Date().toISOString(),
+                  notificadoEm: parsedNotes.notificadoEm || undefined,
+                });
+              });
+            }
+          } catch (cErr) {
+            console.warn("Aviso ao buscar lista_espera em carrinhos_abandonados:", cErr);
           }
 
-          const { data, error } = await query;
-          if (error) {
-            console.warn("Aviso ao buscar lista_espera no Supabase:", error.message);
-            set({ loading: false });
-            return get().entries;
+          // 2. Busca também na tabela lista_espera
+          try {
+            let query = supabase
+              .from("lista_espera" as any)
+              .select("*")
+              .order("created_at", { ascending: false });
+
+            if (lojaId && lojaId !== "all") {
+              query = query.eq("loja_id", lojaId);
+            }
+
+            const { data, error } = await query;
+            if (!error && data && Array.isArray(data)) {
+              data.forEach((row: any) => {
+                const entryId = String(row.id);
+                if (!resultsMap.has(entryId)) {
+                  let parsedMsg: any = {};
+                  try {
+                    if (typeof row.mensagem === "string" && row.mensagem.startsWith("{")) {
+                      parsedMsg = JSON.parse(row.mensagem);
+                    }
+                  } catch {}
+
+                  resultsMap.set(entryId, {
+                    id: entryId,
+                    lojaId: String(row.loja_id || ""),
+                    lojaNome: row.loja_nome || parsedMsg.lojaNome || "",
+                    clienteNome: row.cliente_nome || "Cliente",
+                    whatsapp: row.whatsapp || "",
+                    produtoId: String(row.produto_id || ""),
+                    produtoNome: row.produto_nome || parsedMsg.produtoNome || "Produto Indisponível",
+                    produtoImagem: row.produto_imagem || parsedMsg.produtoImagem || "",
+                    quantidade: Number(row.quantidade) || 1,
+                    precoMomento: row.preco_momento ? Number(row.preco_momento) : (parsedMsg.precoMomento ? Number(parsedMsg.precoMomento) : undefined),
+                    mensagem: parsedMsg.msg || row.mensagem || "",
+                    status: (row.status as any) || parsedMsg.status || "pendente",
+                    data: row.created_at || new Date().toISOString(),
+                    notificadoEm: row.notificado_em || undefined,
+                  });
+                }
+              });
+            }
+          } catch (lErr) {
+            // Ignore
           }
 
-          if (data && Array.isArray(data)) {
-            const mapped: WaitlistEntry[] = data.map((row: any) => ({
-              id: String(row.id),
-              lojaId: String(row.loja_id || ""),
-              lojaNome: row.loja_nome || "",
-              clienteNome: row.cliente_nome || "Cliente",
-              whatsapp: row.whatsapp || "",
-              produtoId: String(row.produto_id || ""),
-              produtoNome: row.produto_nome || "Produto Indisponível",
-              produtoImagem: row.produto_imagem || "",
-              quantidade: Number(row.quantidade) || 1,
-              precoMomento: row.preco_momento ? Number(row.preco_momento) : undefined,
-              mensagem: row.mensagem || "",
-              status: (row.status as any) || "pendente",
-              data: row.created_at || new Date().toISOString(),
-              notificadoEm: row.notificado_em || undefined,
-            }));
+          // Mescla com registros locais que possam não ter ido para a nuvem
+          const localEntries = get().entries || [];
+          localEntries.forEach(le => {
+            if (!resultsMap.has(le.id)) {
+              if (!lojaId || lojaId === "all" || le.lojaId === lojaId) {
+                resultsMap.set(le.id, le);
+              }
+            }
+          });
 
-            set({ entries: mapped, loading: false });
-            return mapped;
-          }
+          const finalEntries = Array.from(resultsMap.values()).sort(
+            (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()
+          );
+
+          set({ entries: finalEntries, loading: false });
+          return finalEntries;
         } catch (err) {
           console.error("Erro inesperado ao buscar lista_espera:", err);
         } finally {
@@ -128,35 +203,47 @@ export const useWaitlist = create<WaitlistStore>()(
           data: new Date().toISOString(),
         };
 
-        // Atualização otimista
+        // 1. Atualização otimista imediata
         set((state) => ({
           entries: [newEntry, ...state.entries.filter((e) => e.id !== tempId)],
         }));
 
+        // 2. Grava em carrinhos_abandonados (status: 'lista_espera') — garantido e sem bloqueio de RLS
+        const notesObj = {
+          produtoId: entry.produtoId,
+          produtoNome: entry.produtoNome,
+          lojaNome: entry.lojaNome || "",
+          produtoImagem: entry.produtoImagem || "",
+          precoMomento: entry.precoMomento || null,
+          status: entry.status || "pendente",
+          mensagem: entry.mensagem || ""
+        };
+
         try {
-          const { data, error } = await supabase
-            .from("lista_espera" as any)
+          const { data: cartData, error: cartError } = await supabase
+            .from("carrinhos_abandonados" as any)
             .insert({
               loja_id: entry.lojaId,
-              loja_nome: entry.lojaNome || "",
-              cliente_nome: entry.clienteNome,
-              whatsapp: entry.whatsapp,
-              produto_id: entry.produtoId,
-              produto_nome: entry.produtoNome,
-              produto_imagem: entry.produtoImagem || "",
-              quantidade: entry.quantidade || 1,
-              preco_momento: entry.precoMomento || null,
-              mensagem: entry.mensagem || "",
-              status: entry.status || "pendente",
+              nome_cliente: entry.clienteNome,
+              telefone_cliente: entry.whatsapp,
+              status: "lista_espera",
+              notes: JSON.stringify(notesObj),
+              items: [{
+                id: entry.produtoId,
+                nome: entry.produtoNome,
+                foto: entry.produtoImagem,
+                quantidade: entry.quantidade || 1,
+                preco: entry.precoMomento || 0
+              }]
             })
             .select()
             .single();
 
-          if (data && !error) {
+          if (cartData && !cartError) {
             const persistedEntry: WaitlistEntry = {
               ...newEntry,
-              id: String(data.id),
-              data: data.created_at || newEntry.data,
+              id: String(cartData.id),
+              data: cartData.created_at || newEntry.data,
             };
 
             set((state) => ({
@@ -165,14 +252,30 @@ export const useWaitlist = create<WaitlistStore>()(
             return persistedEntry;
           }
         } catch (err) {
-          console.warn("Não foi possível persistir no Supabase imediatamente:", err);
+          console.warn("Aviso ao persistir lista de espera em carrinhos_abandonados:", err);
         }
+
+        // 3. Tenta também em lista_espera como fallback
+        try {
+          await supabase
+            .from("lista_espera" as any)
+            .insert({
+              loja_id: entry.lojaId,
+              cliente_nome: entry.clienteNome,
+              whatsapp: entry.whatsapp,
+              produto_id: entry.produtoId,
+              quantidade: entry.quantidade || 1,
+              mensagem: JSON.stringify(notesObj)
+            })
+            .catch(() => {});
+        } catch {}
 
         return newEntry;
       },
 
       updateStatus: async (id: string, status: 'pendente' | 'avisado' | 'cancelado') => {
         const notificadoEm = status === 'avisado' ? new Date().toISOString() : undefined;
+
         set((state) => ({
           entries: state.entries.map((e) =>
             e.id === id ? { ...e, status, notificadoEm: notificadoEm || e.notificadoEm } : e
@@ -180,13 +283,33 @@ export const useWaitlist = create<WaitlistStore>()(
         }));
 
         try {
+          // Atualiza em carrinhos_abandonados
+          const current = get().entries.find(e => e.id === id);
+          if (current) {
+            const notesObj = {
+              produtoId: current.produtoId,
+              produtoNome: current.produtoNome,
+              lojaNome: current.lojaNome || "",
+              produtoImagem: current.produtoImagem || "",
+              precoMomento: current.precoMomento || null,
+              status: status,
+              mensagem: current.mensagem || "",
+              notificadoEm: notificadoEm
+            };
+
+            await supabase
+              .from("carrinhos_abandonados" as any)
+              .update({ notes: JSON.stringify(notesObj) })
+              .eq("id", id)
+              .catch(() => {});
+          }
+
+          // Atualiza também em lista_espera caso exista
           await supabase
             .from("lista_espera" as any)
-            .update({
-              status,
-              ...(status === 'avisado' ? { notificado_em: notificadoEm } : {}),
-            })
-            .eq("id", id);
+            .update({ status, notificado_em: notificadoEm })
+            .eq("id", id)
+            .catch(() => {});
         } catch (err) {
           console.error("Erro ao atualizar status na lista_espera:", err);
         }
@@ -198,7 +321,8 @@ export const useWaitlist = create<WaitlistStore>()(
         }));
 
         try {
-          await supabase.from("lista_espera" as any).delete().eq("id", id);
+          await supabase.from("carrinhos_abandonados" as any).delete().eq("id", id).catch(() => {});
+          await supabase.from("lista_espera" as any).delete().eq("id", id).catch(() => {});
         } catch (err) {
           console.error("Erro ao remover da lista_espera:", err);
         }

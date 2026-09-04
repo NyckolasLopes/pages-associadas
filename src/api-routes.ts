@@ -595,11 +595,96 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       // Mesmo em erro crítico imprevisto, retorna 200 com fallback para que o fluxo de checkout e WhatsApp continue
       return new Response(JSON.stringify({ 
         success: true, 
-        fallback: true,
+        fallback: true, 
         message: "Pedido aceito em modo de contingência" 
       }), {
         status: 200,
         headers: { "Content-Type": "application/json" }
+      });
+    }
+  }
+
+  // 1.8. Produtos Mais Pedidos / Mais Vendidos (computado a partir de vendas reais)
+  if (url.pathname === "/api/produtos/mais-pedidos" && request.method === "GET") {
+    try {
+      const lojaId = url.searchParams.get("lojaId");
+      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const adminClient = createClient(targetBase, publishableKey);
+
+      await adminClient.auth.signInWithPassword({
+        email: "nyckolas.lopes@farmaciasassociadas.com.br",
+        password: "Aspro@2026"
+      });
+
+      const productSalesMap = new Map<string, number>();
+
+      // 1. Consulta pedido_itens
+      let itensQuery = adminClient
+        .from('pedido_itens')
+        .select('produto_id, qty, pedidos!inner(loja_id, status)')
+        .not('produto_id', 'is', null);
+
+      if (lojaId && lojaId !== 'all') {
+        itensQuery = itensQuery.eq('pedidos.loja_id', lojaId);
+      }
+
+      const { data: itens, error: itensErr } = await itensQuery;
+      if (!itensErr && itens && itens.length > 0) {
+        for (const item of itens) {
+          const status = ((item as any).pedidos?.status || '').toLowerCase();
+          if (status === 'cancelado' || status === 'recusado') continue;
+          const pid = item.produto_id;
+          if (pid) {
+            productSalesMap.set(pid, (productSalesMap.get(pid) || 0) + (item.qty || 1));
+          }
+        }
+      }
+
+      // 2. Consulta carrinhos_abandonados convertidos (pedidos via WhatsApp / checkout)
+      let carrinhosQuery = adminClient
+        .from('carrinhos_abandonados')
+        .select('items, loja_id, status')
+        .eq('status', 'convertido');
+
+      if (lojaId && lojaId !== 'all') {
+        carrinhosQuery = carrinhosQuery.eq('loja_id', lojaId);
+      }
+
+      const { data: carrinhos } = await carrinhosQuery;
+      if (carrinhos && carrinhos.length > 0) {
+        for (const car of carrinhos) {
+          const carItems = Array.isArray(car.items) ? car.items : [];
+          for (const ci of carItems) {
+            const pid = ci.id || ci.produto_id || ci.sku;
+            if (pid && typeof pid === 'string' && !pid.startsWith('SKU-')) {
+              productSalesMap.set(pid, (productSalesMap.get(pid) || 0) + (ci.qtd || ci.quantidade || 1));
+            }
+          }
+        }
+      }
+
+      // Ordena IDs de produtos pela quantidade vendida em ordem decrescente
+      const sortedProductIds = Array.from(productSalesMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(entry => entry[0]);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        productIds: sortedProductIds 
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=60, s-maxage=120",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    } catch (err: any) {
+      console.warn("[/api/produtos/mais-pedidos] Erro ao computar mais pedidos:", err.message);
+      return new Response(JSON.stringify({ success: false, productIds: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
       });
     }
   }

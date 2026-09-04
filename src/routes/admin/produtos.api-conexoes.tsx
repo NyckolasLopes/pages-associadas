@@ -343,65 +343,65 @@ function ApiConexoes() {
     const fullApiUrl = hash ? `${baseUrl}/rest/v1/rpc/${rpcEndpoint}?apikey=${hash}` : null;
 
     return (
-      <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <Server className="w-4 h-4 text-slate-400" />
-              {title}
-            </h4>
-            <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
-          </div>
-          {getStatusBadge(status || 'offline')}
-        </div>
-        
-        <div className="flex flex-col gap-2 mt-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase w-[52px] shrink-0">URL</span>
-            <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-[10px] text-slate-600 truncate relative group" title={fullApiUrl || ""}>
-              {fullApiUrl ? (
-                <div className="flex justify-between items-center">
-                  <span className="truncate pr-4">{fullApiUrl}</span>
-                  <button 
-                    onClick={() => copyToClipboard(fullApiUrl)}
-                    className="text-slate-400 hover:text-[#00B5AD] transition-colors shrink-0"
-                    title="Copiar Endpoint"
-                  >
-                    {copiedHash === fullApiUrl ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                  </button>
+      <div className="bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-5 shadow-xs transition-all h-full flex flex-col justify-between">
+        <div>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#00B5AD]/10 text-[#00B5AD] flex items-center justify-center shrink-0">
+                  <Server className="w-3.5 h-3.5" />
                 </div>
-              ) : (
-                <span className="text-slate-400 italic">Nenhuma chave gerada</span>
-              )}
+                <span>{title}</span>
+              </h4>
+              <p className="text-xs text-slate-500 mt-1 min-h-[32px] line-clamp-2">{desc}</p>
             </div>
+            {getStatusBadge(status || 'offline')}
           </div>
           
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase w-[52px] shrink-0">API Key</span>
-            <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-[10px] text-slate-600 truncate relative group" title={hash || ""}>
-              {hash ? (
-                <div className="flex justify-between items-center">
-                  <span className="truncate pr-4">{hash}</span>
+          <div className="space-y-3 my-2">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">URL do Endpoint</span>
+                {fullApiUrl && (
+                  <button 
+                    onClick={() => copyToClipboard(fullApiUrl)}
+                    className="text-xs font-semibold text-[#00B5AD] hover:underline flex items-center gap-1"
+                  >
+                    {copiedHash === fullApiUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedHash === fullApiUrl ? "Copiado" : "Copiar"}
+                  </button>
+                )}
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono text-[11px] text-slate-700 truncate" title={fullApiUrl || ""}>
+                {fullApiUrl || <span className="text-slate-400 italic">Nenhuma chave gerada</span>}
+              </div>
+            </div>
+            
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chave de Acesso (API Key)</span>
+                {hash && (
                   <button 
                     onClick={() => copyToClipboard(hash)}
-                    className="text-slate-400 hover:text-[#00B5AD] transition-colors shrink-0"
-                    title="Copiar API Key"
+                    className="text-xs font-semibold text-[#00B5AD] hover:underline flex items-center gap-1"
                   >
-                    {copiedHash === hash ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                    {copiedHash === hash ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedHash === hash ? "Copiado" : "Copiar"}
                   </button>
-                </div>
-              ) : (
-                <span className="text-slate-400 italic">Nenhuma chave gerada</span>
-              )}
+                )}
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono text-[11px] text-slate-700 truncate" title={hash || ""}>
+                {hash || <span className="text-slate-400 italic">Nenhuma chave gerada</span>}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-[10px] font-medium text-slate-400">
-            Último ping: {lastPing ? new Date(lastPing).toLocaleString('pt-BR') : 'Nunca'}
+        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mt-2">
+          <span className="text-[10px] font-medium text-slate-400 truncate">
+            Ping: {lastPing ? new Date(lastPing).toLocaleString('pt-BR') : 'Nunca'}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -411,26 +411,25 @@ function ApiConexoes() {
                 else downloadModeloPedidos();
               }}
               title="Baixar Modelo JSON desta API"
-              className="h-7 text-xs px-2.5 border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
+              className="h-7 text-xs px-2.5 border-slate-200 text-slate-700 hover:bg-slate-50 font-bold"
             >
-              <Download className="w-3.5 h-3.5 mr-1 text-slate-500" /> Modelo JSON
+              <Download className="w-3 h-3 mr-1 text-slate-500" /> JSON
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => pingConnection(loja.id, type)}
               disabled={!hash}
-              className="h-7 text-xs px-3 shadow-sm"
+              className="h-7 text-xs px-2.5 border-slate-200 text-slate-700 font-bold"
             >
-              <Activity className="w-3.5 h-3.5 mr-1.5" /> Ping
+              <Activity className="w-3 h-3 mr-1 text-emerald-600" /> Ping
             </Button>
             <Button 
-              variant="outline" 
               size="sm" 
               onClick={() => generateHash(loja.id, type)}
-              className="h-7 text-xs px-3 bg-[#00B5AD]/5 border-[#00B5AD]/20 text-[#00B5AD] hover:bg-[#00B5AD]/10 hover:border-[#00B5AD]/30 shadow-sm"
+              className="h-7 text-xs px-2.5 bg-[#00B5AD] text-white hover:bg-[#008E88] font-bold shadow-xs"
             >
-              <Key className="w-3.5 h-3.5 mr-1.5" /> Gerar Nova
+              <Key className="w-3 h-3 mr-1" /> Gerar Chave
             </Button>
           </div>
         </div>
@@ -510,12 +509,12 @@ function ApiConexoes() {
             {pharmacies.map(loja => (
               <div key={loja.id} className="p-6 hover:bg-slate-50/50 transition-colors">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#00B5AD]/20 to-[#F37021]/20 border border-slate-200 flex items-center justify-center font-black text-slate-800 text-base shadow-2xs">
                     {loja.nome.charAt(0)}
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800 text-lg">{loja.nome}</h3>
-                    <p className="text-sm text-slate-500">{loja.endereco}</p>
+                    <h3 className="font-bold text-slate-900 text-lg leading-tight">{loja.nome}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{loja.endereco || `${loja.cidade || ''} - ${loja.uf || ''}`}</p>
                   </div>
                 </div>
 

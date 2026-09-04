@@ -410,25 +410,27 @@ function sanitizeHex(val: string, fallback = "#000000"): string {
 export function StoreColorManager({
   storeId,
   showStoreSelector = true,
+  isNetworkPage = false,
   title = "Cores e Identidade Visual",
   description = "Defina a paleta de cores completa da sua loja. As alterações são refletidas em tempo real no simulador.",
 }: {
   storeId?: string;
   showStoreSelector?: boolean;
+  isNetworkPage?: boolean;
   title?: string;
   description?: string;
 }) {
   const admin = useAdmin();
-  const effectiveStoreId = storeId || admin.activeStoreId;
-  const currentPharmacy = admin.pharmacies.find((p) => p.id === effectiveStoreId);
+  const effectiveStoreId = isNetworkPage ? undefined : (storeId || admin.activeStoreId);
+  const currentPharmacy = effectiveStoreId ? admin.pharmacies.find((p) => p.id === effectiveStoreId) : undefined;
 
   // Global admin detection
   const currentUser = admin.currentUser;
   const isGlobalAdmin = !!(currentUser?.proprietario ||
     admin.grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total);
 
-  // Network theme mode: global admin + no specific store selected
-  const isNetworkMode = isGlobalAdmin && !effectiveStoreId;
+  // Network theme mode: isNetworkPage OR (global admin + no specific store selected)
+  const isNetworkMode = isNetworkPage || (isGlobalAdmin && !effectiveStoreId);
 
   const defaultTheme: Record<string, string> = useMemo(() => ({
     "--primary": "#00B5AD",
@@ -750,20 +752,7 @@ export function StoreColorManager({
             Copiar CSS
           </Button>
 
-          {isNetworkMode && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleApplyToAllPleno}
-              disabled={isApplyingAll}
-              className="border-amber-200 text-amber-700 hover:bg-amber-50 font-semibold"
-            >
-              <Network className="w-3.5 h-3.5 mr-1.5" />
-              {isApplyingAll ? "Aplicando..." : "Aplicar a Todas as Lojas Pleno"}
-            </Button>
-          )}
-
-          {isGlobalAdmin && effectiveStoreId && admin.networkDefaultTheme && (
+          {!isNetworkMode && isGlobalAdmin && effectiveStoreId && admin.networkDefaultTheme && (
             <Button
               variant="outline"
               size="sm"
@@ -782,7 +771,7 @@ export function StoreColorManager({
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm"
           >
             <Save className="w-4 h-4 mr-1.5" />
-            {isSaving ? "Salvando..." : (isNetworkMode ? "Salvar Padrão da Rede" : "Salvar Cores da Loja")}
+            {isSaving ? "Salvando..." : (isNetworkMode ? "Salvar cores da rede" : "Salvar Cores da Loja")}
           </Button>
         </div>
       </div>

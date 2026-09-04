@@ -95,7 +95,7 @@ function ProductCardComponent({
     return pharmacies[0];
   }, [pharmacies, selectedPharmacyId, storeSlug]);
   
-  const handleWaitlistSubmit = () => {
+  const handleWaitlistSubmit = async () => {
     if (!wlName.trim() || !wlPhone.trim()) {
       toast.error("Preencha todos os campos");
       return;
@@ -105,7 +105,7 @@ function ProductCardComponent({
     const targetLojaId = currentPharmacy?.id ? String(currentPharmacy.id) : "loja-padrao";
     const targetLojaNome = currentPharmacy?.nome || (currentPharmacy?.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas");
 
-    addWaitlistEntry({
+    await addWaitlistEntry({
       lojaId: targetLojaId,
       lojaNome: targetLojaNome,
       produtoId: p.id,

@@ -83,7 +83,7 @@ function CuponsIndexPage() {
     loadNetworkTheme();
     let mounted = true;
     setLoadingProducts(true);
-    catalog.listProducts().then((prods) => {
+    catalog.listAllProducts(effectiveStoreId || undefined).then((prods) => {
       if (mounted && prods) {
         setCatalogProducts(prods);
       }
@@ -93,7 +93,7 @@ function CuponsIndexPage() {
       if (mounted) setLoadingProducts(false);
     });
     return () => { mounted = false; };
-  }, [loadMarketing, loadPharmacies, loadNetworkTheme]);
+  }, [loadMarketing, loadPharmacies, loadNetworkTheme, effectiveStoreId]);
 
   // Mescla produtos do catálogo com produtos personalizados
   const allProducts = useMemo(() => {
@@ -172,7 +172,7 @@ function CuponsIndexPage() {
   }, [categories, searchTarget]);
 
   const filteredProducts = useMemo(() => {
-    if (!searchTarget) return allProducts.slice(0, 50);
+    if (!searchTarget) return allProducts.slice(0, 500);
     const q = searchTarget.toLowerCase();
     return allProducts.filter((p: any) => 
       (p.nome && p.nome.toLowerCase().includes(q)) || 
@@ -180,7 +180,7 @@ function CuponsIndexPage() {
       (p.ean && p.ean.toLowerCase().includes(q)) ||
       (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q))
-    ).slice(0, 50);
+    ).slice(0, 500);
   }, [allProducts, searchTarget]);
 
   // Filtros de busca de categorias e produtos para edição
@@ -191,7 +191,7 @@ function CuponsIndexPage() {
   }, [categories, editSearchTarget]);
 
   const editFilteredProducts = useMemo(() => {
-    if (!editSearchTarget) return allProducts.slice(0, 50);
+    if (!editSearchTarget) return allProducts.slice(0, 500);
     const q = editSearchTarget.toLowerCase();
     return allProducts.filter((p: any) => 
       (p.nome && p.nome.toLowerCase().includes(q)) || 
@@ -199,7 +199,7 @@ function CuponsIndexPage() {
       (p.ean && p.ean.toLowerCase().includes(q)) ||
       (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q))
-    ).slice(0, 50);
+    ).slice(0, 500);
   }, [allProducts, editSearchTarget]);
 
   const handleToggleAlvo = (id: string) => {

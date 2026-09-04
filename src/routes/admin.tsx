@@ -54,6 +54,8 @@ import {
   HeartPulse,
   Monitor,
   AlertTriangle,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -161,11 +163,15 @@ const ADMIN_WARNING_LIMIT_MS = 4 * 60 * 1000; // 4 minutos (aviso 1 min antes)
 function useAdminInactivityTimeout(onTimeout: () => void, isActive: boolean) {
   const onTimeoutRef = useRef(onTimeout);
   onTimeoutRef.current = onTimeout;
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(60);
 
   useEffect(() => {
-    if (!isActive || typeof window === "undefined") return;
+    if (!isActive || typeof window === "undefined") {
+      setIsWarningOpen(false);
+      return;
+    }
 
-    let warningShown = false;
     let lastActivity = Date.now();
 
     const stored = Number(localStorage.getItem("fa-admin-last-activity"));
@@ -182,24 +188,17 @@ function useAdminInactivityTimeout(onTimeout: () => void, isActive: boolean) {
       const elapsed = now - effectiveLast;
 
       if (elapsed >= ADMIN_INACTIVITY_LIMIT_MS) {
-        toast.dismiss("admin-inactivity-warning");
+        setIsWarningOpen(false);
         onTimeoutRef.current();
         return;
       }
 
-      if (elapsed >= ADMIN_WARNING_LIMIT_MS && !warningShown) {
-        warningShown = true;
-        toast.warning(
-          "Sua sessão no painel administrativo expirará em 1 minuto por inatividade.",
-          {
-            id: "admin-inactivity-warning",
-            duration: 60000,
-            action: {
-              label: "Continuar conectado",
-              onClick: () => recordActivity(),
-            },
-          }
-        );
+      if (elapsed >= ADMIN_WARNING_LIMIT_MS) {
+        const remaining = Math.max(0, Math.ceil((ADMIN_INACTIVITY_LIMIT_MS - elapsed) / 1000));
+        setRemainingSeconds(remaining);
+        setIsWarningOpen(true);
+      } else {
+        setIsWarningOpen(false);
       }
     };
 
@@ -207,11 +206,7 @@ function useAdminInactivityTimeout(onTimeout: () => void, isActive: boolean) {
     const recordActivity = () => {
       const now = Date.now();
       lastActivity = now;
-
-      if (warningShown) {
-        warningShown = false;
-        toast.dismiss("admin-inactivity-warning");
-      }
+      setIsWarningOpen(false);
 
       if (now - lastRecordTime > 1000) {
         lastRecordTime = now;
@@ -236,7 +231,7 @@ function useAdminInactivityTimeout(onTimeout: () => void, isActive: boolean) {
     const eventOptions = { capture: true, passive: true };
     events.forEach((evt) => window.addEventListener(evt, recordActivity, eventOptions));
 
-    const intervalId = setInterval(checkInactivity, 5000);
+    const intervalId = setInterval(checkInactivity, 1000);
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -251,9 +246,18 @@ function useAdminInactivityTimeout(onTimeout: () => void, isActive: boolean) {
       events.forEach((evt) => window.removeEventListener(evt, recordActivity, eventOptions as any));
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", checkInactivity);
-      toast.dismiss("admin-inactivity-warning");
     };
   }, [isActive]);
+
+  const resetActivity = () => {
+    const now = Date.now();
+    try {
+      localStorage.setItem("fa-admin-last-activity", String(now));
+    } catch {}
+    setIsWarningOpen(false);
+  };
+
+  return { isWarningOpen, remainingSeconds, resetActivity };
 }
 
 function AdminLayout() {
@@ -280,7 +284,7 @@ function AdminLayout() {
     navigate({ to: "/admin" });
   };
 
-  useAdminInactivityTimeout(handleInactivityLogout, Boolean(currentUser));
+  const { isWarningOpen, remainingSeconds, resetActivity } = useAdminInactivityTimeout(handleInactivityLogout, Boolean(currentUser));
 
   // Garante que o painel admin nunca herde o tema de cor de nenhuma loja
   useEffect(() => {
@@ -803,6 +807,56 @@ function AdminLayout() {
           </CatchBoundary>
         </div>
       </main>
+
+      {/* Modal de Aviso de Sessão Expirando (Centralizado na Tela com Cores da Rede) */}
+      {isWarningOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl border-2 border-[#F37021]/30 shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header com as cores oficiais da Rede Farmácias Associadas */}
+            <div className="bg-gradient-to-r from-[#00B5AD] to-[#008E88] p-5 text-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black leading-tight text-white">Sessão Expirando</h3>
+                <p className="text-xs text-white/90">Painel Administrativo da Rede</p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600 font-medium">
+                Sua sessão no painel administrativo expirará em breve por inatividade para garantir a segurança dos dados.
+              </p>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-900 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  Tempo restante:
+                </span>
+                <span className="font-mono font-black text-lg text-amber-700">
+                  {remainingSeconds}s
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={handleInactivityLogout}
+                  className="flex-1 border-slate-300 text-slate-600 hover:bg-slate-50 font-bold text-xs h-10"
+                >
+                  Sair Agora
+                </Button>
+                <Button
+                  onClick={resetActivity}
+                  className="flex-1 bg-[#F37021] hover:bg-[#d95d14] text-white font-black text-xs h-10 shadow-md shadow-orange-500/20"
+                >
+                  Continuar Conectado
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -494,6 +494,64 @@ function applyFilters(produtos: Produto[], filters?: FilterOptions): Produto[] {
 const vitrineCacheMap = new Map<string, { data: Produto[]; timestamp: number }>();
 const VITRINE_CACHE_TTL = 45_000; // 45 segundos
 
+const topOrderedCacheMap = new Map<string, { data: string[]; timestamp: number }>();
+const TOP_ORDERED_TTL = 60_000; // 1 minuto
+
+export async function getTopOrderedProductIds(lojaId?: string | null): Promise<string[]> {
+  const cacheKey = `top-ordered:${lojaId || 'all'}`;
+  const cached = topOrderedCacheMap.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < TOP_ORDERED_TTL)) {
+    return cached.data;
+  }
+
+  try {
+    const res = await fetch(`/api/produtos/mais-pedidos${lojaId ? `?lojaId=${encodeURIComponent(lojaId)}` : ''}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && Array.isArray(json.productIds) && json.productIds.length > 0) {
+        topOrderedCacheMap.set(cacheKey, { data: json.productIds, timestamp: Date.now() });
+        return json.productIds;
+      }
+    }
+  } catch (err) {
+    // Ignore network/SSR error
+  }
+
+  // Fallback para pedidos salvos localmente
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("associadas-orders-storage");
+      if (raw) {
+        const localOrders = JSON.parse(raw);
+        if (Array.isArray(localOrders) && localOrders.length > 0) {
+          const salesMap = new Map<string, number>();
+          localOrders.forEach((o: any) => {
+            const status = (o.status || '').toLowerCase();
+            if (status === 'cancelado' || status === 'recusado') return;
+            if (lojaId && o.lojaId && o.lojaId !== lojaId) return;
+            const items = o.itens || o.produtos || [];
+            items.forEach((it: any) => {
+              const pid = it.id || it.produto_id || it.sku;
+              if (pid && typeof pid === 'string' && !pid.startsWith('SKU-')) {
+                salesMap.set(pid, (salesMap.get(pid) || 0) + (it.qtd || it.quantidade || 1));
+              }
+            });
+          });
+          const localTopIds = Array.from(salesMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(e => e[0]);
+          if (localTopIds.length > 0) {
+            topOrderedCacheMap.set(cacheKey, { data: localTopIds, timestamp: Date.now() });
+            return localTopIds;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return [];
+}
+
 const productDetailCache = new Map<string, { product: Produto; timestamp: number }>();
 const PRODUCT_DETAIL_TTL = 180_000; // 3 minutos de cache instantâneo
 
@@ -504,7 +562,7 @@ export const catalog = {
   listProducts: async (filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
     const page = filters?.page || 0;
-    const pageSize = filters?.pageSize || 24;
+    const pageSize = filters?.pageSize || (filters ? 24 : 1000);
 
     let query = supabase.from('produtos').select('*').range(page * pageSize, (page + 1) * pageSize - 1);
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
@@ -519,6 +577,11 @@ export const catalog = {
     });
 
     return applyFilters(products, filters);
+  },
+  listAllProducts: async (lojaId?: string | null) => {
+    await ensureHydrated();
+    let query = supabase.from('produtos').select('*').limit(2000).order('nome', { ascending: true });
+    return await fetchFromSupabaseWithPrices(query, lojaId, true);
   },
   async listCategories(includeEmpty = true): Promise<Categoria[]> {
     await ensureHydrated();
@@ -802,15 +865,34 @@ export const catalog = {
     }
 
     let query = supabase.from('produtos').select('*');
+    let topOrderedIds: string[] = [];
 
     if (produtoIds && produtoIds.length > 0) {
       query = query.in('id', produtoIds);
     } else if (categoriaId === "destaques") {
       query = query.eq('destaque', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
+    } else if (categoriaId === "ofertas") {
+      // Vitrine Ofertas da Semana: reflete apenas produtos manuais destacados pela estrela no admin
+      query = query.eq('destaque', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
     } else if (categoriaId === "novidades") {
-      query = query.order('id', { ascending: false });
-    } else if (categoriaId === "ofertas" || categoriaId === "campanha" || categoriaId === "all") {
-      query = query.order('nivel_relevancia', { ascending: false, nullsFirst: false });
+      // Vitrine Novidades: única que recebe produtos recém-adicionados automaticamente
+      query = query.order('created_at', { ascending: false, nullsFirst: false }).order('id', { ascending: false });
+    } else if (categoriaId === "all" || categoriaId === "mais_pedidos" || String(vitrineId) === "3") {
+      // Vitrine Mais pedidos / Mais vendidos: automático de acordo com os pedidos reais
+      topOrderedIds = await getTopOrderedProductIds(lojaId);
+      if (topOrderedIds.length > 0) {
+        const pagedIds = topOrderedIds.slice(page * pageSize, (page + 1) * pageSize);
+        if (pagedIds.length > 0) {
+          query = query.in('id', pagedIds);
+        } else {
+          return [];
+        }
+      } else {
+        // Fallback se ainda não houver pedidos: catálogo histórico com relevância (nunca novidades sem pedidos)
+        query = query.gt('nivel_relevancia', 0).order('nivel_relevancia', { ascending: false });
+      }
+    } else if (categoriaId === "campanha") {
+      query = query.eq('em_campanha', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
     } else if (categoriaId === "protetores") {
       query = query.ilike('nome', '%protetor%'); // or %solar%
     } else {
@@ -819,22 +901,39 @@ export const catalog = {
       query = query.in('categoria_id', validCategoryIds);
     }
 
-    // Aplica paginação
-    query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+    // Aplica paginação quando não estiver filtrando por pagedIds
+    if (!(categoriaId === "all" || categoriaId === "mais_pedidos" || String(vitrineId) === "3") || topOrderedIds.length === 0) {
+      query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+    }
 
     const baseProducts = await fetchFromSupabaseWithPrices(query, lojaId);
 
     // Filtra inativos
-    const activeProducts = baseProducts.filter(p => p && p.ativo !== false);
+    let activeProducts = baseProducts.filter(p => p && p.ativo !== false);
 
-    // Prioritizes products with stock > 0
-    activeProducts.sort((a, b) => {
-      const stockA = a.estoque || 0;
-      const stockB = b.estoque || 0;
-      if (stockA > 0 && stockB <= 0) return -1;
-      if (stockB > 0 && stockA <= 0) return 1;
-      return 0;
-    });
+    // Para Ofertas da Semana sem produtoIds explícitos, garante que somente produtos com destaque ativo sejam exibidos
+    if (categoriaId === "ofertas" && (!produtoIds || produtoIds.length === 0)) {
+      activeProducts = activeProducts.filter(p => p.destaque === true);
+    }
+
+    // Se for Mais Pedidos com pedidos reais, ordenar na ordem exata de vendas
+    if ((categoriaId === "all" || categoriaId === "mais_pedidos" || String(vitrineId) === "3") && topOrderedIds.length > 0) {
+      const idOrderMap = new Map(topOrderedIds.map((id, index) => [id, index]));
+      activeProducts.sort((a, b) => {
+        const orderA = idOrderMap.has(String(a.id)) ? idOrderMap.get(String(a.id))! : 999999;
+        const orderB = idOrderMap.has(String(b.id)) ? idOrderMap.get(String(b.id))! : 999999;
+        return orderA - orderB;
+      });
+    } else {
+      // Prioritizes products with stock > 0
+      activeProducts.sort((a, b) => {
+        const stockA = a.estoque || 0;
+        const stockB = b.estoque || 0;
+        if (stockA > 0 && stockB <= 0) return -1;
+        if (stockB > 0 && stockA <= 0) return 1;
+        return 0;
+      });
+    }
 
     vitrineCacheMap.set(cacheKey, { data: activeProducts, timestamp: Date.now() });
 

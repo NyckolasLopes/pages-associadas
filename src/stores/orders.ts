@@ -28,6 +28,7 @@ export interface Pedido {
   origem?: "whatsapp" | "site" | string;
   cupomAplicado?: string;
   observacoes?: string;
+  motivoCancelamento?: string;
   modalidade?: "Entrega" | "Retirada" | string;
   cliente: {
     nome: string;
@@ -96,7 +97,7 @@ interface OrdersState {
   orders: Pedido[];
   loadOrders: () => Promise<void>;
   addOrder: (order: Pedido) => Promise<void>;
-  updateOrderStatus: (id: string, status: string) => Promise<void>;
+  updateOrderStatus: (id: string, status: string, motivo?: string) => Promise<void>;
   updateOrderTracking: (id: string, tracking: string) => Promise<void>;
   deleteOrder: (id: string) => Promise<void>;
   clearAllOrders: (lojaId?: string) => Promise<void>;
@@ -273,6 +274,8 @@ export const useOrders = create<OrdersState>((set, get) => ({
               .map((h: any) => ({ data: h.data, situacao: h.situacao, autor: h.autor }))
           : [],
         anotacoes: d.observacoes,
+        observacoes: d.observacoes,
+        motivoCancelamento: d.motivo_cancelamento || d.observacoes,
         rawId: d.id,
         };
       });
@@ -292,8 +295,8 @@ export const useOrders = create<OrdersState>((set, get) => ({
   },
 
   addOrder: async (order) => {
-    // 1. Salva imediatamente o pedido no estado da aplicação e no localStorage
-    const orderNumber = order.numero || order.id || generateOrderNumber();
+    // 1. Salva imediatamente no LocalStorage (UI Instantânea)
+    const orderNumber = generateOrderNumber();
     const finalOrder: Pedido = {
       ...order,
       id: order.id || orderNumber,
@@ -339,7 +342,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
     } catch {}
   },
 
-  updateOrderStatus: async (id, status) => {
+  updateOrderStatus: async (id, status, motivo) => {
     // Resolver UUID real do pedido
     let rawId = id;
     if (id.startsWith('FA-')) {
@@ -351,7 +354,12 @@ export const useOrders = create<OrdersState>((set, get) => ({
       if ((pedido as any)?.rawId) rawId = (pedido as any).rawId;
     }
 
-    const { error } = await supabase.from('pedidos').update({ status }).eq('id', rawId);
+    const updatePayload: any = { status };
+    if (motivo) {
+      updatePayload.observacoes = motivo;
+    }
+
+    const { error } = await supabase.from('pedidos').update(updatePayload).eq('id', rawId);
     if (!error) {
       // Gravar histórico de status
       const { data: userData } = await supabase.auth.getUser();
@@ -367,19 +375,22 @@ export const useOrders = create<OrdersState>((set, get) => ({
         situacao: status,
         autor: autorNome,
         data: new Date().toISOString()
-      });
+      }).catch(() => {});
 
-      // Atualizar state local
-      set((state) => ({
-        orders: state.orders.map(o => o.id === id ? {
-          ...o,
-          status,
-          historico: [
-            ...(o.historico || []),
-            { data: new Date().toISOString(), situacao: status, autor: autorNome }
-          ]
-        } : o),
-      }));
+      // Atualizar state local e storage
+      const updatedOrders = get().orders.map(o => o.id === id ? {
+        ...o,
+        status,
+        motivoCancelamento: motivo || o.motivoCancelamento,
+        observacoes: motivo || o.observacoes,
+        historico: [
+          ...(o.historico || []),
+          { data: new Date().toISOString(), situacao: status, autor: autorNome }
+        ]
+      } : o);
+
+      set({ orders: updatedOrders });
+      saveOrdersLocally(updatedOrders);
     }
   },
 

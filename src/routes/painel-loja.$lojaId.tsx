@@ -5,7 +5,7 @@ import { useAbandonedCartsStore } from "@/stores/abandoned-carts";
 import { useMemo, useEffect, useRef, useState } from "react";
 import { isToday, isYesterday, isThisWeek, isThisMonth, isThisYear, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone, ShoppingBag, CheckCircle2, Clock, Eye, Check, FileSpreadsheet, MessageCircle, ShoppingCart } from "lucide-react";
+import { Package, TrendingUp, Calendar, DollarSign, Ban, ListOrdered, Activity, Phone, CreditCard, Printer, Megaphone, ShoppingBag, CheckCircle2, Clock, Eye, Check, FileSpreadsheet, MessageCircle, ShoppingCart, XCircle } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -175,6 +175,7 @@ function PainelLoja() {
       valorTotal: number;
       origem: string;
       rawOrder?: Pedido;
+      motivoCancelamento?: string;
     }> = [];
 
     // Pedidos regulares
@@ -185,7 +186,15 @@ function PainelLoja() {
 
       if (statusStr.includes("cancelad") || statusStr === "recusado") {
         unifiedStatus = "Cancelado";
-      } else if (statusStr === "abandonado no carrinho" || origemStr === "carrinho") {
+      } else if (
+        statusStr === "pendente" || 
+        statusStr === "novo" || 
+        statusStr === "pedido recebido" || 
+        statusStr === "recebido" || 
+        statusStr.includes("separ") ||
+        statusStr === "abandonado no carrinho" || 
+        origemStr === "carrinho"
+      ) {
         unifiedStatus = "Pendente";
       } else {
         unifiedStatus = "Concluído";
@@ -202,6 +211,8 @@ function PainelLoja() {
         }
       } catch {}
 
+      const motivoCancelamento = (o as any).motivoCancelamento || o.observacoes || (o as any).anotacoes || "";
+
       list.push({
         id: o.id,
         data: dateFormatted,
@@ -212,10 +223,10 @@ function PainelLoja() {
         itensQtd: totalQtd,
         valorTotal: o.valores?.total || 0,
         origem: o.origem || "site",
-        rawOrder: o
+        rawOrder: o,
+        motivoCancelamento
       });
     });
-
 
     return list.sort((a, b) => {
       const tA = new Date(a.dataRaw).getTime() || 0;
@@ -231,6 +242,7 @@ function PainelLoja() {
 
   const concluidosLojaPct = totalPedidosLoja > 0 ? Math.round((concluidosLojaCount / totalPedidosLoja) * 100) : 0;
   const pendentesLojaPct = totalPedidosLoja > 0 ? Math.round((pendentesLojaCount / totalPedidosLoja) * 100) : 0;
+  const canceladosLojaPct = totalPedidosLoja > 0 ? Math.round((canceladosLojaCount / totalPedidosLoja) * 100) : 0;
 
   const statusPieDataLoja = useMemo(() => {
     const data = [];
@@ -918,6 +930,11 @@ function PainelLoja() {
                                     ))}
                                   </SelectContent>
                                 </Select>
+                                {pedido.status === "Cancelado" && (
+                                  <span className="text-[11px] text-red-600 bg-red-50 p-1 rounded border border-red-200 line-clamp-2" title={(pedido as any).motivoCancelamento || pedido.observacoes || ""}>
+                                    Motivo: {(pedido as any).motivoCancelamento || pedido.observacoes || (pedido as any).anotacoes || "Cancelado"}
+                                  </span>
+                                )}
                                 <Button 
                                   variant="outline" 
                                   size="sm" 
@@ -943,7 +960,7 @@ function PainelLoja() {
           {can('loja_metricas') && (
             <TabsContent value="metricas" className="space-y-6">
             {/* Top KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {/* Total de Pedidos da Loja */}
               <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <div className="h-1 bg-blue-600" />
@@ -955,8 +972,8 @@ function PainelLoja() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalPedidosLoja}</div>
-                  <p className="text-xs text-slate-500 mt-1 font-medium flex gap-1 items-center">
-                    {concluidosLojaCount} concluídos • <Link to="/admin/carrinhos-abandonados" className="text-amber-600 hover:underline cursor-pointer">{pendentesLojaCount} pendentes</Link>
+                  <p className="text-xs text-slate-500 mt-1 font-medium flex gap-1 items-center flex-wrap">
+                    {concluidosLojaCount} concluídos • {pendentesLojaCount} pendentes • {canceladosLojaCount} cancelados
                   </p>
                 </CardContent>
               </Card>
@@ -983,29 +1000,49 @@ function PainelLoja() {
                 </CardContent>
               </Card>
 
-              {/* Pedidos Pendentes (Carrinho) */}
-              <Link to="/admin/carrinhos-abandonados" className="block hover:opacity-90 transition-opacity">
-                <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow h-full cursor-pointer">
-                  <div className="h-1 bg-amber-500" />
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
-                      Pendentes (Carrinho)
-                      <Clock className="w-4 h-4 text-amber-600" />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl sm:text-3xl font-black text-slate-900">{pendentesLojaCount}</span>
-                      <Badge className="bg-amber-100 text-amber-800 border-none text-xs font-bold">
-                        {pendentesLojaPct}% do total
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Abandonado no carrinho
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
+              {/* Pedidos Pendentes */}
+              <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="h-1 bg-amber-500" />
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
+                    Pedidos Pendentes
+                    <Clock className="w-4 h-4 text-amber-600" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900">{pendentesLojaCount}</span>
+                    <Badge className="bg-amber-100 text-amber-800 border-none text-xs font-bold">
+                      {pendentesLojaPct}% do total
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Em separação / Aguardando
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Pedidos Cancelados */}
+              <Card className="border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="h-1 bg-red-500" />
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-500 flex items-center justify-between">
+                    Pedidos Cancelados
+                    <XCircle className="w-4 h-4 text-red-600" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900">{canceladosLojaCount}</span>
+                    <Badge className="bg-red-100 text-red-800 border-none text-xs font-bold">
+                      {canceladosLojaPct}% do total
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Cancelados com motivo registrado
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Charts Row */}
@@ -1178,12 +1215,19 @@ function PainelLoja() {
                               ) : order.status === "Pendente" ? (
                                 <Badge className="bg-amber-100 text-amber-800 border-none font-bold gap-1 px-2 py-0.5">
                                   <Clock className="w-3 h-3" />
-                                  Pendente (Carrinho)
+                                  Pendente
                                 </Badge>
                               ) : (
-                                <Badge className="bg-red-100 text-red-700 border-none font-bold px-2 py-0.5">
-                                  Cancelado
-                                </Badge>
+                                <div className="inline-flex flex-col items-start">
+                                  <Badge className="bg-red-100 text-red-700 border-none font-bold px-2 py-0.5">
+                                    Cancelado
+                                  </Badge>
+                                  {order.motivoCancelamento && (
+                                    <span className="text-[10px] text-red-600 max-w-[140px] truncate mt-0.5" title={order.motivoCancelamento}>
+                                      Motivo: {order.motivoCancelamento}
+                                    </span>
+                                  )}
+                                </div>
                               )}
                             </TableCell>
                             <TableCell className="py-3 px-4 text-right font-bold text-xs text-slate-900">
@@ -1290,7 +1334,7 @@ function PainelLoja() {
                 disabled={cancelReason.length < 10}
                 onClick={() => {
                   if (cancelOrderId && cancelReason.length >= 10) {
-                    updateOrderStatus(cancelOrderId, "Cancelado");
+                    updateOrderStatus(cancelOrderId, "Cancelado", cancelReason);
                     toast.success("Pedido cancelado com sucesso.");
                     setShowCancelReason(false);
                     setCancelReason("");
@@ -1331,6 +1375,23 @@ function PainelLoja() {
 
             {selectedPedidoInfo && (
               <div className="space-y-6">
+                {/* Alerta de Cancelamento */}
+                {selectedPedidoInfo.status?.toLowerCase().includes("cancelad") && (
+                  <Card className="border-red-200 bg-red-50/70 shadow-sm">
+                    <CardHeader className="pb-2 bg-red-100/50">
+                      <CardTitle className="text-base font-bold text-red-800 flex items-center gap-2">
+                        <XCircle className="w-5 h-5 text-red-600" />
+                        Pedido Cancelado
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-3 text-sm">
+                      <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Motivo do Cancelamento:</p>
+                      <p className="text-sm font-medium text-red-900 mt-1">
+                        {selectedPedidoInfo.motivoCancelamento || selectedPedidoInfo.observacoes || (selectedPedidoInfo as any).anotacoes || "Motivo não informado."}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
                 
                 {/* Cliente Info */}
                 <Card className="border-slate-200 shadow-sm">

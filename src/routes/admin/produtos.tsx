@@ -1502,17 +1502,16 @@ function AdminProdutos() {
             </p>
             {productToDelete && (
               <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                {productToDelete.foto || (productToDelete.imagens && productToDelete.imagens[0]) ? (
+                <div className="w-14 h-14 rounded-lg bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
                   <img
-                    src={productToDelete.foto || (productToDelete.imagens[0]?.caminhoImagem || productToDelete.imagens[0])}
+                    src={productImage(productToDelete)}
                     alt={productToDelete.nome}
-                    className="w-12 h-12 object-contain rounded bg-white border p-1 shrink-0"
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/placeholder.jpg";
+                    }}
                   />
-                ) : (
-                  <div className="w-12 h-12 rounded bg-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                    <Package className="w-6 h-6" />
-                  </div>
-                )}
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-bold text-sm text-slate-800 truncate">{productToDelete.nome}</p>
                   <p className="text-xs text-slate-500">EAN: {productToDelete.ean || "Sem EAN"}</p>

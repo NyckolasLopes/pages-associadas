@@ -87,7 +87,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
     loadMarketing();
     let mounted = true;
     setLoadingProducts(true);
-    catalog.listProducts().then((prods) => {
+    catalog.listAllProducts(lojaId).then((prods) => {
       if (mounted && prods) {
         setCatalogProducts(prods);
       }
@@ -97,7 +97,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
       if (mounted) setLoadingProducts(false);
     });
     return () => { mounted = false; };
-  }, [loadMarketing]);
+  }, [loadMarketing, lojaId]);
 
   // Mescla produtos do catálogo com produtos personalizados
   const allProducts = useMemo(() => {
@@ -155,7 +155,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
 
   // Filtro de Produtos no formulário de criação
   const filteredProducts = useMemo(() => {
-    if (!searchTarget) return allProducts.slice(0, 50);
+    if (!searchTarget) return allProducts.slice(0, 500);
     const q = searchTarget.toLowerCase();
     return allProducts.filter((p: any) => 
       (p.nome && p.nome.toLowerCase().includes(q)) || 
@@ -164,7 +164,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
       (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q)) ||
       (Array.isArray(p.principiosAtivos) && p.principiosAtivos.some((pa: any) => String(typeof pa === 'string' ? pa : pa.nome).toLowerCase().includes(q)))
-    ).slice(0, 50);
+    ).slice(0, 500);
   }, [allProducts, searchTarget]);
 
   // Filtros no modal de edição
@@ -175,7 +175,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
   }, [categories, editSearchTarget]);
 
   const editFilteredProducts = useMemo(() => {
-    if (!editSearchTarget) return allProducts.slice(0, 50);
+    if (!editSearchTarget) return allProducts.slice(0, 500);
     const q = editSearchTarget.toLowerCase();
     return allProducts.filter((p: any) => 
       (p.nome && p.nome.toLowerCase().includes(q)) || 
@@ -183,7 +183,7 @@ export function LojaCuponsTab({ lojaId }: { lojaId: string }) {
       (p.ean && p.ean.toLowerCase().includes(q)) ||
       (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q))
-    ).slice(0, 50);
+    ).slice(0, 500);
   }, [allProducts, editSearchTarget]);
 
   const handleToggleAlvo = (id: string) => {

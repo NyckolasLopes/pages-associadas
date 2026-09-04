@@ -23,6 +23,7 @@ import {
   PackageCheck,
   Percent,
   X,
+  XCircle,
   MessageCircle
 } from "lucide-react";
 import { useAdmin } from "@/stores/admin";
@@ -72,6 +73,7 @@ export interface UnifiedOrder {
   pagamentoMetodo?: string;
   modalidade?: string;
   tipoRegistro: "pedido" | "carrinho";
+  motivoCancelamento?: string;
 }
 
 function getUnifiedOrderStatus(order: { status?: string; origem?: string; type?: string }): { label: UnifiedOrderStatus; desc: string } {
@@ -88,12 +90,21 @@ function getUnifiedOrderStatus(order: { status?: string; origem?: string; type?:
     return { label: "Carrinho Abandonado", desc: "Carrinho Abandonado" };
   }
 
-  // Pedido real pendente
-  if (statusStr === "pendente" || statusStr === "novo") {
-    return { label: "Pendente", desc: "Aguardando Atendimento" };
+  // Pedidos classificados como em separação, pedido recebido e pendente -> PENDENTE!
+  if (
+    statusStr === "pendente" || 
+    statusStr === "novo" || 
+    statusStr === "pedido recebido" || 
+    statusStr === "recebido" || 
+    statusStr.includes("separ")
+  ) {
+    return { 
+      label: "Pendente", 
+      desc: statusStr.includes("separ") ? "Em Separação" : "Aguardando Atendimento" 
+    };
   }
 
-  // Qualquer pedido real finalizado via site (que vai pro WhatsApp) é Concluído
+  // Qualquer pedido real finalizado via site (entregue / pronto / em rota / concluido)
   return { label: "Concluído", desc: "WhatsApp / Concluído" };
 }
 
@@ -194,7 +205,8 @@ function Metricas() {
         itens: orderItems,
         pagamentoMetodo: paymentLabel,
         modalidade: order.modalidade || (order.envio?.metodo === "entrega" ? "Entrega" : "Retirada"),
-        tipoRegistro: "pedido"
+        tipoRegistro: "pedido",
+        motivoCancelamento: (order as any).motivoCancelamento || order.observacoes || (order as any).anotacoes || undefined
       });
     });
 
@@ -401,8 +413,8 @@ function Metricas() {
         </div>
       </div>
 
-      {/* KPI Cards — Conforme Requisito: Total de Pedidos, Concluídos (WhatsApp), Pendentes, Carrinhos Abandonados, Lojas/Ticket */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      {/* KPI Cards — Conforme Requisito: Total de Pedidos, Concluídos (WhatsApp), Pendentes, Cancelados, Carrinhos Abandonados, Lojas/Ticket */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* Card 1: Total Geral */}
         <div className="bg-white rounded-2xl border shadow-sm p-5 flex flex-col justify-between hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-2">
@@ -475,7 +487,32 @@ function Metricas() {
           </div>
         </div>
 
-        {/* Card 4 [NOVO]: Carrinhos Abandonados */}
+        {/* Card 4: Pedidos Cancelados */}
+        <div className="bg-white rounded-2xl border shadow-sm p-5 flex flex-col justify-between hover:border-red-200 transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Pedidos Cancelados
+            </span>
+            <div className="p-2 bg-red-50 text-red-600 rounded-xl">
+              <XCircle className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-3xl font-black text-red-600 tracking-tight">
+                {canceladosCount}
+              </div>
+              <Badge className="bg-red-100 text-red-800 border-0 text-[11px] font-bold">
+                {canceladosPct}% do total
+              </Badge>
+            </div>
+            <div className="text-xs text-slate-500 mt-1 font-medium">
+              Cancelados com motivo
+            </div>
+          </div>
+        </div>
+
+        {/* Card 5: Carrinhos Abandonados */}
         <div className="bg-white rounded-2xl border shadow-sm p-5 flex flex-col justify-between hover:border-amber-200 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -984,10 +1021,17 @@ function Metricas() {
                           </span>
                         )}
                         {isCancelado && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-                            <span className="w-2 h-2 rounded-full bg-red-500" />
-                            Cancelado
-                          </span>
+                          <div className="inline-flex flex-col items-center">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
+                              <span className="w-2 h-2 rounded-full bg-red-500" />
+                              Cancelado
+                            </span>
+                            {order.motivoCancelamento && (
+                              <span className="text-[10px] text-red-600 max-w-[140px] truncate mt-0.5" title={order.motivoCancelamento}>
+                                Motivo: {order.motivoCancelamento}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
 
@@ -1053,6 +1097,19 @@ function Metricas() {
 
           {selectedOrderDetails && (
             <div className="space-y-4 text-sm mt-2">
+              {/* Alerta de Cancelamento */}
+              {selectedOrderDetails.status === "Cancelado" && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 text-red-800">
+                  <div className="text-xs font-bold uppercase tracking-wider text-red-600 flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                    Motivo do Cancelamento
+                  </div>
+                  <div className="text-sm font-medium mt-1 text-red-900">
+                    {selectedOrderDetails.motivoCancelamento || "Motivo não informado."}
+                  </div>
+                </div>
+              )}
+
               {/* Cliente */}
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1.5">
                 <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Dados do Cliente</div>

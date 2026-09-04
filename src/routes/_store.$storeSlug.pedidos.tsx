@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Package, Truck, CheckCircle2, Clock, Store, CreditCard, 
-  QrCode, Wallet, Search, Phone, MessageCircle, AlertCircle, Sparkles, ChevronRight 
+  QrCode, Wallet, Search, Phone, MessageCircle, AlertCircle, Sparkles, ChevronRight, XCircle 
 } from "lucide-react";
 import { getGreeting, brl } from "@/lib/format";
 import { useOrders, type Pedido } from "@/stores/orders";
@@ -118,6 +118,47 @@ function PedidosPage() {
     }
     return [];
   }, [orders, searchQuery, user]);
+
+  const [statusFilter, setStatusFilter] = useState<"todos" | "em_andamento" | "concluidos" | "cancelados">("todos");
+
+  const counts = useMemo(() => {
+    let emAndamento = 0;
+    let concluidos = 0;
+    let cancelados = 0;
+
+    displayedOrders.forEach((o) => {
+      const s = (o.status || "").toLowerCase();
+      if (s.includes("cancelad")) {
+        cancelados++;
+      } else if (s.includes("entregue") || s.includes("retirado") || s.includes("concluído")) {
+        concluidos++;
+      } else {
+        emAndamento++;
+      }
+    });
+
+    return { todos: displayedOrders.length, emAndamento, concluidos, cancelados };
+  }, [displayedOrders]);
+
+  const filteredOrders = useMemo(() => {
+    if (statusFilter === "todos") return displayedOrders;
+    if (statusFilter === "cancelados") {
+      return displayedOrders.filter((o) => (o.status || "").toLowerCase().includes("cancelad"));
+    }
+    if (statusFilter === "concluidos") {
+      return displayedOrders.filter((o) => {
+        const s = (o.status || "").toLowerCase();
+        return !s.includes("cancelad") && (s.includes("entregue") || s.includes("retirado") || s.includes("concluído"));
+      });
+    }
+    if (statusFilter === "em_andamento") {
+      return displayedOrders.filter((o) => {
+        const s = (o.status || "").toLowerCase();
+        return !s.includes("cancelad") && !s.includes("entregue") && !s.includes("retirado") && !s.includes("concluído");
+      });
+    }
+    return displayedOrders;
+  }, [displayedOrders, statusFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,42 +303,127 @@ function PedidosPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {displayedOrders.map((order) => {
-                const pharmacy = pharmacies.find((p) => p.id === order.lojaId);
-                const stepIdx = getStepIndex(order.status);
-                const isCancelled = order.status.toLowerCase() === "cancelado";
+              {/* Filtros por Status */}
+              <div className="flex flex-wrap items-center gap-2 border-b pb-3">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("todos")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    statusFilter === "todos"
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Todos
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${statusFilter === "todos" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
+                    {counts.todos}
+                  </span>
+                </button>
 
-                return (
-                  <div key={order.id} className="bg-card border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                    {/* Header do Card */}
-                    <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4 mb-4">
-                      <div>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("em_andamento")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    statusFilter === "em_andamento"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Em andamento
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${statusFilter === "em_andamento" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
+                    {counts.emAndamento}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("concluidos")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    statusFilter === "concluidos"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Concluídos
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${statusFilter === "concluidos" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
+                    {counts.concluidos}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("cancelados")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    statusFilter === "cancelados"
+                      ? "bg-red-600 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Cancelados
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${statusFilter === "cancelados" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
+                    {counts.cancelados}
+                  </span>
+                </button>
+              </div>
+
+              {filteredOrders.length === 0 ? (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center text-slate-500">
+                  <p className="text-sm font-medium">Nenhum pedido encontrado nesta categoria.</p>
+                  <Button variant="ghost" size="sm" onClick={() => setStatusFilter("todos")} className="mt-2 text-xs font-bold">
+                    Ver todos os pedidos
+                  </Button>
+                </div>
+              ) : (
+                filteredOrders.map((order) => {
+                  const pharmacy = pharmacies.find((p) => p.id === order.lojaId);
+                  const stepIdx = getStepIndex(order.status);
+                  const isCancelled = order.status.toLowerCase().includes("cancelad");
+
+                  return (
+                    <div key={order.id} className="bg-card border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                      {/* Header do Card */}
+                      <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4 mb-4">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-base text-slate-900">Pedido #{order.id}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
+                              {order.origem === "whatsapp" ? "WhatsApp" : "Site"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {new Date(order.data).toLocaleString("pt-BR")} • Farmácia: <strong>{order.lojaNome || pharmacy?.nome || "Farmácia Associada"}</strong>
+                          </p>
+                        </div>
+
                         <div className="flex items-center gap-2">
-                          <span className="font-black text-base text-slate-900">Pedido #{order.id}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
-                            {order.origem === "whatsapp" ? "WhatsApp" : "Site"}
+                          <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                            isCancelled ? "bg-red-100 text-red-700" :
+                            stepIdx === 3 ? "bg-emerald-100 text-emerald-800" :
+                            "bg-blue-100 text-blue-800"
+                          }`}>
+                            {order.status}
                           </span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(order.data).toLocaleString("pt-BR")} • Farmácia: <strong>{order.lojaNome || pharmacy?.nome || "Farmácia Associada"}</strong>
-                        </p>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                          isCancelled ? "bg-red-100 text-red-700" :
-                          stepIdx === 3 ? "bg-emerald-100 text-emerald-800" :
-                          "bg-blue-100 text-blue-800"
-                        }`}>
-                          {order.status}
-                        </span>
-                      </div>
-                    </div>
+                      {/* Alerta de Cancelamento com Motivo */}
+                      {isCancelled && (
+                        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                          <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-red-700">Pedido Cancelado</p>
+                            <p className="text-sm font-medium text-red-900 mt-1">
+                              <span className="font-semibold text-red-800">Motivo: </span>
+                              {order.motivoCancelamento || order.observacoes || (order as any).anotacoes || "Cancelado pela farmácia."}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                    {/* Stepper de Progresso */}
-                    {!isCancelled && (
-                      <div className="mb-6 px-2">
-                        <div className="grid grid-cols-4 gap-2">
+                      {/* Stepper de Progresso */}
+                      {!isCancelled && (
+                        <div className="mb-6 px-2">
+                          <div className="grid grid-cols-4 gap-2">
                           {STATUS_STEPS.map((step, idx) => {
                             const isDone = stepIdx >= idx;
                             const isCurrent = stepIdx === idx;
@@ -371,7 +497,7 @@ function PedidosPage() {
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
           )}
         </main>
@@ -386,6 +512,20 @@ function PedidosPage() {
 
           {selectedOrder && (
             <div className="space-y-6 mt-2">
+              {/* Alerta de Cancelamento */}
+              {selectedOrder.status.toLowerCase().includes("cancelad") && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                  <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-red-700">Pedido Cancelado</p>
+                    <p className="text-sm font-medium text-red-900 mt-1">
+                      <span className="font-semibold text-red-800">Motivo informado: </span>
+                      {selectedOrder.motivoCancelamento || selectedOrder.observacoes || (selectedOrder as any).anotacoes || "Cancelado pela farmácia."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between items-start bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div>
                   <div className="text-sm font-bold text-slate-800">

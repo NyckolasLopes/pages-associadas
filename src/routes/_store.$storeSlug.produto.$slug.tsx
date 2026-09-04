@@ -490,7 +490,7 @@ function PDP() {
     calculatedRating = avaliacoes.reduce((acc, curr) => acc + curr.nota, 0) / avaliacoes.length;
   }
   
-  const handleWaitlistSubmit = () => {
+  const handleWaitlistSubmit = async () => {
     if (!wlName || !wlPhone) {
       toast.error("Preencha todos os campos");
       return;
@@ -507,7 +507,7 @@ function PDP() {
     const targetLojaId = targetLoja?.id ? String(targetLoja.id) : "loja-padrao";
     const targetLojaNome = targetLoja?.nome || (targetLoja?.categoriaAssociado === 'Parceiro' ? "Loja Parceira" : "Farmácias Associadas");
 
-    addWaitlistEntry({
+    await addWaitlistEntry({
       lojaId: targetLojaId,
       lojaNome: targetLojaNome,
       produtoId: p.id,

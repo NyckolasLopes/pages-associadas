@@ -75,8 +75,19 @@ function SingleDynamicVitrine({
       setLoading(true);
       try {
         let results: Produto[] = [];
+        const isOfertasSemana = vitrine.categoriaId === "ofertas" || 
+                                vitrine.linkSeo === "ofertas-da-semana" || 
+                                (vitrine.nome && vitrine.nome.toLowerCase().includes("ofertas da semana"));
+
         if (vitrine.modo === "manual" && vitrine.produtoIds && vitrine.produtoIds.length > 0) {
           results = await catalog.productsByVitrine(vitrine.id.toString(), vitrine.categoriaId, undefined, vitrine.produtoIds, lojaId);
+        } else if (isOfertasSemana) {
+          // Em Ofertas da Semana só deve refletir manual com o destaque na estrela do produto no admin
+          if (vitrine.produtoIds && vitrine.produtoIds.length > 0) {
+            results = await catalog.productsByVitrine(vitrine.id.toString(), "manual", undefined, vitrine.produtoIds, lojaId);
+          } else {
+            results = await catalog.productsByVitrine(vitrine.id.toString(), "ofertas", undefined, undefined, lojaId);
+          }
         } else {
           results = await catalog.productsByVitrine(vitrine.id.toString(), vitrine.categoriaId, undefined, undefined, lojaId);
           if (vitrine.produtoIds && vitrine.produtoIds.length > 0) {

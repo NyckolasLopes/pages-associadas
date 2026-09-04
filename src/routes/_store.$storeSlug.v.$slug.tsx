@@ -41,11 +41,15 @@ export const Route = createFileRoute("/_store/$storeSlug/v/$slug")({
 
     if (!vitrine) throw notFound();
 
+    const isOfertasSemana = vitrine.categoriaId === "ofertas" || 
+                            vitrine.linkSeo === "ofertas-da-semana" || 
+                            (vitrine.nome && vitrine.nome.toLowerCase().includes("ofertas da semana"));
+
     const filteredProducts = await catalog.productsByVitrine(
       vitrine.id.toString(), 
       vitrine.categoriaId, 
       deps, 
-      vitrine.modo === "manual" ? vitrine.produtoIds : undefined,
+      (vitrine.modo === "manual" || (isOfertasSemana && vitrine.produtoIds && vitrine.produtoIds.length > 0)) ? vitrine.produtoIds : undefined,
       lojaId
     );
 

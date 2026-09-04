@@ -30,6 +30,7 @@ function AdminCoresRede() {
       <StoreColorManager
         storeId={undefined}
         showStoreSelector={false}
+        isNetworkPage={true}
         title="Cores Padrão da Rede"
         description="Configure a paleta de cores oficial da rede Farmácias Associadas. Novas lojas Pleno herdam essas cores automaticamente."
       />
