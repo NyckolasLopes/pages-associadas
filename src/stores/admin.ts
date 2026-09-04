@@ -543,7 +543,22 @@ export function saveCachedPharmacies(pharmacies: Pharmacy[]) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(PHARMACIES_CACHE_KEY, JSON.stringify(pharmacies));
+    window.dispatchEvent(new StorageEvent("storage", { key: PHARMACIES_CACHE_KEY, newValue: JSON.stringify(pharmacies) }));
   } catch { /* ignore */ }
+}
+
+// Sincronização automática entre abas abertas no mesmo navegador
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === PHARMACIES_CACHE_KEY && e.newValue) {
+      try {
+        const parsed = JSON.parse(e.newValue);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          useAdmin.setState({ pharmacies: parsed, pharmaciesLoaded: true, pharmaciesFresh: true });
+        }
+      } catch { /* ignore */ }
+    }
+  });
 }
 
 export function safeSlugify(text: string): string {

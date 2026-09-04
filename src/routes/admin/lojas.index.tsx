@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAdmin, Pharmacy } from "@/stores/admin";
 import { useRegionsStore } from "@/stores/regions";
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -172,9 +173,44 @@ function LojasAdmin() {
   const [showKey, setShowKey] = useState(false);
   const navigate = useNavigate();
 
-  // Revalida automaticamente com o banco ao entrar na tela Ver Todas
+  // Revalida automaticamente com o banco e escuta atualizações em tempo real (ex: inscrições via link)
   useEffect(() => {
+    // 1. Carga forçada imediata ao montar
     loadPharmacies(true);
+
+    // 2. Escuta mudanças na tabela lojas em tempo real (quando alguém se inscreve via link de associado)
+    const channel = supabase
+      .channel("lojas-admin-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "lojas" },
+        () => {
+          loadPharmacies(true);
+        }
+      )
+      .subscribe();
+
+    // 3. Revalida quando a aba volta a ficar visível ou em foco (ex: admin volta da aba do link)
+    const onFocus = () => loadPharmacies(true);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadPharmacies(true);
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // 4. Polling periódico a cada 5 segundos enquanto estiver nesta tela
+    const pollInterval = setInterval(() => {
+      loadPharmacies(true);
+    }, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearInterval(pollInterval);
+    };
   }, [loadPharmacies]);
 
   const filteredPharmacies = pharmacies.filter(

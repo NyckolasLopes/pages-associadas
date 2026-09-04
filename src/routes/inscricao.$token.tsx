@@ -16,7 +16,8 @@ import {
   AlertCircle,
   Zap,
   ShoppingBag,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -149,6 +150,7 @@ function InscricaoLojaPublic() {
   const [isValidating, setIsValidating] = useState(true);
   const [isValidToken, setIsValidToken] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
   
   const [form, setForm] = useState<Pharmacy>({ ...EMPTY_PHARMACY, id: `p${Date.now()}` });
 
@@ -205,6 +207,7 @@ function InscricaoLojaPublic() {
 
     const generatedId = form.id && form.id.startsWith("p1") ? crypto.randomUUID() : (form.id || crypto.randomUUID());
     
+    setSaving(true);
     try {
       await addPharmacy({ ...form, id: generatedId });
       // Mark used and save
@@ -214,6 +217,8 @@ function InscricaoLojaPublic() {
     } catch (err: any) {
       toast.error(err.message || "Erro ao adicionar loja.");
       console.error(err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -267,8 +272,9 @@ function InscricaoLojaPublic() {
         <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-6 sm:p-10 space-y-10">
           <LojaFormFields form={form} update={update} />
           <div className="pt-6 border-t flex justify-end">
-            <Button size="lg" onClick={handleSave} className="font-bold w-full sm:w-auto h-12 px-8 bg-primary hover:bg-primary-dark">
-              Concluir Cadastro da Loja
+            <Button size="lg" onClick={handleSave} disabled={saving} className="font-bold w-full sm:w-auto h-12 px-8 bg-primary hover:bg-primary-dark">
+              {saving && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
+              {saving ? "Enviando Inscrição..." : "Concluir Cadastro da Loja"}
             </Button>
           </div>
         </div>
