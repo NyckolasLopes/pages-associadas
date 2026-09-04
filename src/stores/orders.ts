@@ -280,6 +280,29 @@ export const useOrders = create<OrdersState>((set, get) => ({
     }).select('id, numero').single();
 
     if (orderError) {
+      // Fallback: usar API backend que bypassa RLS (necessário para visitantes anônimos)
+      if (orderError.code === '42501' || orderError.message?.includes('row-level security') || orderError.message?.includes('Unauthorized')) {
+        console.warn("Insert direto bloqueado por RLS, usando fallback /api/pedidos/create...");
+        try {
+          const apiRes = await fetch('/api/pedidos/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: { ...order, userId: userAuth?.user?.id || null } })
+          });
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            await get().loadOrders();
+            return apiData?.data;
+          } else {
+            const errData = await apiRes.json().catch(() => ({}));
+            console.error("Fallback /api/pedidos/create falhou:", errData);
+            throw new Error(errData.error || orderError.message);
+          }
+        } catch (apiErr: any) {
+          console.error("Erro no fallback /api/pedidos/create:", apiErr);
+          throw new Error(apiErr.message || orderError.message);
+        }
+      }
       console.error("Error inserting order:", orderError);
       throw new Error(orderError.message);
     }

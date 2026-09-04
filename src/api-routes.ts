@@ -424,6 +424,85 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
     }
   }
 
+  // 2.0. Endpoint público para criar pedidos (bypassa RLS para visitantes anônimos)
+  if (url.pathname === "/api/pedidos/create" && request.method === "POST") {
+    try {
+      const body = await request.json().catch(() => ({}));
+      const { order } = body;
+      if (!order) {
+        return new Response(JSON.stringify({ error: "Missing order payload" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const adminClient = createClient(targetBase, publishableKey);
+
+      await adminClient.auth.signInWithPassword({
+        email: "nyckolas.lopes@farmaciasassociadas.com.br",
+        password: "Aspro@2026"
+      });
+
+      // Inserir pedido principal
+      const { data: insertedOrder, error: orderError } = await (adminClient.from('pedidos') as any).insert({
+        numero: order.numero || order.id || undefined,
+        loja_id: order.lojaId,
+        user_id: order.userId || null,
+        status: order.status || 'novo',
+        total: order.valores?.total || 0,
+        subtotal: order.valores?.subtotal || order.valores?.produtos || 0,
+        frete: order.valores?.frete || 0,
+        desconto: order.valores?.desconto || order.valores?.descontos || 0,
+        endereco_entrega: order.cliente?.endereco || null,
+        metodo_entrega: order.modalidade || order.envio?.metodo,
+        metodo_pagamento: order.pagamento?.metodo,
+        observacoes: order.anotacoes || order.observacoes || '',
+        nome_cliente: order.cliente?.nome || '',
+        telefone_cliente: order.cliente?.telefone || '',
+        email_cliente: order.cliente?.email || '',
+        cpf_cliente: order.cliente?.cpf || ''
+      }).select('id, numero').single();
+
+      if (orderError) {
+        return new Response(JSON.stringify({ error: orderError.message, code: orderError.code }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      // Inserir itens do pedido
+      const itens = order.produtos || order.itens || [];
+      if (itens.length > 0 && insertedOrder) {
+        const productIds = itens.map((i: any) => i.id || i.sku).filter(Boolean);
+        const { data: existingProducts } = await adminClient.from('produtos').select('id').in('id', productIds);
+        const existingProductIds = new Set(existingProducts?.map((p: any) => p.id) || []);
+
+        const orderItemsRows = itens.map((i: any) => ({
+          pedido_id: insertedOrder.id,
+          produto_id: (i.id || i.sku) && existingProductIds.has(i.id || i.sku) ? (i.id || i.sku) : null,
+          nome: i.nome,
+          qty: i.qtd || i.quantidade || 1,
+          preco_unit: i.valorUnitario || i.preco || 0
+        }));
+
+        await (adminClient.from('pedido_itens') as any).insert(orderItemsRows);
+      }
+
+      return new Response(JSON.stringify({ success: true, data: insertedOrder }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (err: any) {
+      console.error("[pedidos/create error]:", err);
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }
+
   if (url.pathname.includes("/api/rpc/")) {
     const rpcName = url.pathname.split("/").pop();
     let apikey = url.searchParams.get("apikey") || url.searchParams.get("api_key");
