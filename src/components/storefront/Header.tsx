@@ -14,7 +14,7 @@ import { useSmartSticky } from "@/hooks/useSmartSticky";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { LoginModal } from "@/components/storefront/LoginModal";
-import { useAuth } from "@/stores/auth";
+import { useAuth, isSameStore } from "@/stores/auth";
 import { reverseGeocodeLatLon } from "@/lib/geo";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -261,7 +261,10 @@ export function Header() {
   };
   const rawUser = useAuth((s) => s.user);
   const user = useMemo(() => {
-    if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
+    if (!rawUser) return null;
+    if (!storeSlug || storeSlug === "loja-padrao" || isSameStore(rawUser.storeSlug, storeSlug)) {
+      return rawUser;
+    }
     return useAuth.getState().getUserForStore(storeSlug);
   }, [rawUser, storeSlug]);
 
@@ -1148,7 +1151,10 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   }, [cupons, selectedPharmacyId]);
 
   const user = useMemo(() => {
-    if (rawUser && rawUser.storeSlug === storeSlug) return rawUser;
+    if (!rawUser) return null;
+    if (!storeSlug || storeSlug === "loja-padrao" || isSameStore(rawUser.storeSlug, storeSlug)) {
+      return rawUser;
+    }
     return useAuth.getState().getUserForStore(storeSlug);
   }, [rawUser, storeSlug]);
   

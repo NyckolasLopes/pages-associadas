@@ -134,8 +134,9 @@ export function sanitizeCartItem(item: any): CartItem | null {
   const rawQty = Number(item.qty || item.qtd || item.quantidade || 0);
   if (!rawQty || isNaN(rawQty) || rawQty <= 0) return null;
 
-  const preco = Number(item.preco ?? item.precoPor ?? item.valorUnitario ?? 0);
-  const precoDe = Number(item.precoDe ?? item.de ?? preco);
+  const preco = Number(item.preco ?? item.precoPor ?? item.valorUnitario ?? (item as any).preco_por ?? 0);
+  const precoDe = Number(item.precoDe ?? item.de ?? (item as any).preco_de ?? preco);
+  const rawStock = Number(item.estoque || 0);
 
   return {
     id: String(item.id),
@@ -150,10 +151,30 @@ export function sanitizeCartItem(item: any): CartItem | null {
     categoriaId: String(item.categoriaId || ""),
     subcategoriaId: item.subcategoriaId ? String(item.subcategoriaId) : undefined,
     generico: !!item.generico,
-    estoque: item.estoque !== undefined && item.estoque !== null ? Number(item.estoque) : 0,
+    estoque: rawStock > 0 ? rawStock : 99,
     precosPorLoja: item.precosPorLoja || undefined,
     isOrderBump: !!item.isOrderBump,
   };
+}
+
+export function saveCartBackup(items: CartItem[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("fa_persistent_cart_backup", JSON.stringify(items));
+  } catch {}
+}
+
+export function loadCartBackup(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("fa_persistent_cart_backup");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(sanitizeCartItem).filter((i): i is CartItem => i !== null);
+  } catch {
+    return [];
+  }
 }
 
 interface CartState {
@@ -269,10 +290,12 @@ export const useCart = create<CartState>()(
           const ex = s.items.find((i) => i.id === p.id);
           if (ex) {
             const newQty = isService ? (ex.qty + qty) : Math.min(ex.qty + qty, stock);
+            const updatedExisting = s.items.map((i) =>
+              i.id === p.id ? { ...i, qty: newQty, estoque: stock } : i,
+            );
+            saveCartBackup(updatedExisting);
             return {
-              items: s.items.map((i) =>
-                i.id === p.id ? { ...i, qty: newQty, estoque: stock } : i,
-              ),
+              items: updatedExisting,
               drawerOpen: silent ? s.drawerOpen : true,
               lastUpdatedAt: Date.now(),
             };
@@ -280,31 +303,38 @@ export const useCart = create<CartState>()(
           const resolvedPreco = Number((p as any).preco !== undefined ? (p as any).preco : (p.precoPor ?? (p as any).preco_por ?? (p as any).price ?? 0));
           const resolvedPrecoDe = Number((p as any).precoDe !== undefined ? (p as any).precoDe : ((p as any).preco_de ?? (resolvedPreco > 0 ? resolvedPreco : 0)));
 
+          const updatedNew = [
+            ...s.items,
+            {
+              id: String(p.id),
+              nome: p.nome,
+              preco: resolvedPreco,
+              precoDe: resolvedPrecoDe > 0 ? resolvedPrecoDe : resolvedPreco,
+              ean: p.ean || "",
+              possuiImagem: p.possuiImagem,
+              qty: isService ? qty : Math.min(qty, stock),
+              retemReceita: p.retemReceita,
+              tarja: String(p.tarja),
+              categoriaId: p.categoriaId,
+              generico: p.generico,
+              estoque: stock,
+              precosPorLoja: (p as any).precosPorLoja || undefined,
+              isOrderBump: (p as any).isOrderBump || false,
+            },
+          ];
+          saveCartBackup(updatedNew);
           return {
-            items: [
-              ...s.items,
-              {
-                id: String(p.id),
-                nome: p.nome,
-                preco: resolvedPreco,
-                precoDe: resolvedPrecoDe > 0 ? resolvedPrecoDe : resolvedPreco,
-                ean: p.ean || "",
-                possuiImagem: p.possuiImagem,
-                qty: isService ? qty : Math.min(qty, stock),
-                retemReceita: p.retemReceita,
-                tarja: String(p.tarja),
-                categoriaId: p.categoriaId,
-                generico: p.generico,
-                estoque: stock,
-                precosPorLoja: (p as any).precosPorLoja || undefined,
-                isOrderBump: (p as any).isOrderBump || false,
-              },
-            ],
+            items: updatedNew,
             drawerOpen: silent ? s.drawerOpen : true,
             lastUpdatedAt: Date.now(),
           };
         }),
-      remove: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id), lastUpdatedAt: Date.now() })),
+      remove: (id) =>
+        set((s) => {
+          const updated = s.items.filter((i) => i.id !== id);
+          saveCartBackup(updated);
+          return { items: updated, lastUpdatedAt: Date.now() };
+        }),
       setQty: (id, qty) =>
         set((s) => {
           const item = s.items.find(i => i.id === id);
@@ -312,31 +342,41 @@ export const useCart = create<CartState>()(
           const isService = item.categoriaId === "200" || (item.subcategoriaId && String(item.subcategoriaId).startsWith("20"));
           const stock = isService ? 999 : (Number(item.estoque || 0) > 0 ? Number(item.estoque) : 99);
           const safeQty = Math.min(Math.max(1, qty), stock);
+          const updated = s.items.map((i) =>
+            i.id === id ? { ...i, qty: safeQty, estoque: stock } : i,
+          );
+          saveCartBackup(updated);
           return {
-            items: s.items.map((i) =>
-              i.id === id ? { ...i, qty: safeQty, estoque: stock } : i,
-            ),
+            items: updated,
             lastUpdatedAt: Date.now(),
           };
         }),
       updateItemPrice: (id, preco) =>
-        set((s) => ({
-          items: s.items.map((i) =>
+        set((s) => {
+          const updated = s.items.map((i) =>
             i.id === id ? { ...i, preco } : i
-          ),
-          lastUpdatedAt: Date.now(),
-        })),
+          );
+          saveCartBackup(updated);
+          return {
+            items: updated,
+            lastUpdatedAt: Date.now(),
+          };
+        }),
       addNotification: (id, oldPrice, newPrice, storeName) =>
         set((s) => {
           const filtered = s.notifications.filter((n) => n.id !== id);
           return { notifications: [{ id, oldPrice, newPrice, storeName }, ...filtered] };
         }),
       clearNotifications: () => set({ notifications: [] }),
-      clear: () => set({ items: [], appliedCoupon: null, lastUpdatedAt: null }),
+      clear: () => {
+        saveCartBackup([]);
+        set({ items: [], appliedCoupon: null, lastUpdatedAt: null });
+      },
       restoreCart: (items) => {
         const clean = (Array.isArray(items) ? items : [])
           .map(sanitizeCartItem)
           .filter((i): i is CartItem => i !== null);
+        saveCartBackup(clean);
         set({ items: clean, lastUpdatedAt: Date.now() });
       },
       setDrawer: (open) => set({ drawerOpen: open }),
@@ -448,10 +488,18 @@ export const useCart = create<CartState>()(
     { 
       name: "fa-cart", 
       onRehydrateStorage: () => (state) => {
-        if (state && Array.isArray(state.items)) {
-          state.items = state.items
-            .map(sanitizeCartItem)
-            .filter((i): i is CartItem => i !== null);
+        if (state) {
+          if (Array.isArray(state.items) && state.items.length > 0) {
+            state.items = state.items
+              .map(sanitizeCartItem)
+              .filter((i): i is CartItem => i !== null);
+            saveCartBackup(state.items);
+          } else {
+            const backup = loadCartBackup();
+            if (backup.length > 0) {
+              state.items = backup;
+            }
+          }
         }
       }
     },

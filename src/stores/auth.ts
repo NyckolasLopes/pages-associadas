@@ -12,6 +12,45 @@ if (typeof window !== "undefined") {
 }
 
 const STORE_SESSIONS_STORAGE_KEY = "fa_store_sessions";
+const ACTIVE_USER_STORAGE_KEY = "fa_active_user";
+const ACTIVE_STORE_SLUG_KEY = "fa_active_store_slug";
+
+export function isSameStore(slugA?: string | null, slugB?: string | null): boolean {
+  if (!slugA || !slugB) return false;
+  const a = safeSlugifyAuth(slugA);
+  const b = safeSlugifyAuth(slugB);
+  if (a === b) return true;
+  // Se um deles for "loja-padrao", não indica troca de loja física (ex: página neutra)
+  if (a === "loja-padrao" || b === "loja-padrao") return true;
+  return false;
+}
+
+export function loadActiveUser(): User | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(ACTIVE_USER_STORAGE_KEY);
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    return user && (user.email || user.id) ? user : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveActiveUser(user: User | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (user) {
+      localStorage.setItem(ACTIVE_USER_STORAGE_KEY, JSON.stringify(user));
+      if (user.storeSlug) {
+        localStorage.setItem(ACTIVE_STORE_SLUG_KEY, user.storeSlug);
+      }
+    } else {
+      localStorage.removeItem(ACTIVE_USER_STORAGE_KEY);
+      localStorage.removeItem(ACTIVE_STORE_SLUG_KEY);
+    }
+  } catch {}
+}
 
 export interface User {
   id?: string;
@@ -54,7 +93,7 @@ export function resolveStoreSlug(explicitSlug?: string): string {
       if (parts[0] && !systemPages.has(parts[0])) {
         return safeSlugifyAuth(parts[0]);
       }
-      const last = sessionStorage.getItem("fa-last-store-slug");
+      const last = sessionStorage.getItem("fa-last-store-slug") || localStorage.getItem(ACTIVE_STORE_SLUG_KEY);
       if (last && !systemPages.has(last)) {
         return safeSlugifyAuth(last);
       }
@@ -103,7 +142,26 @@ interface AuthState {
 export const useAuth = create<AuthState>((set, get) => {
   const initialSessions = loadStoreSessions();
   const initialSlug = typeof window !== "undefined" ? resolveStoreSlug() : "loja-padrao";
-  const initialUser = initialSessions[initialSlug] || null;
+  const savedActiveUser = loadActiveUser();
+
+  // Se existe usuário salvo persistente:
+  let initialUser: User | null = null;
+  if (savedActiveUser) {
+    if (initialSlug === "loja-padrao" || !savedActiveUser.storeSlug || isSameStore(initialSlug, savedActiveUser.storeSlug)) {
+      initialUser = savedActiveUser;
+      if (initialSlug !== "loja-padrao" && savedActiveUser.storeSlug !== initialSlug) {
+        savedActiveUser.storeSlug = initialSlug;
+        initialSessions[initialSlug] = savedActiveUser;
+        saveStoreSessions(initialSessions);
+        saveActiveUser(savedActiveUser);
+      }
+    } else {
+      // Se acessou explicitamente outra loja diferente:
+      initialUser = initialSessions[initialSlug] || null;
+    }
+  } else {
+    initialUser = initialSessions[initialSlug] || null;
+  }
 
   return {
     user: initialUser,
@@ -114,7 +172,32 @@ export const useAuth = create<AuthState>((set, get) => {
     syncStoreSession: (storeSlug?: string) => {
       const targetSlug = resolveStoreSlug(storeSlug);
       const sessions = loadStoreSessions();
+      const currentUser = get().user || loadActiveUser();
+
+      // Se o usuário está navegando na mesma loja ou em página neutra, NUNCA derruba a sessão!
+      if (currentUser && isSameStore(targetSlug, currentUser.storeSlug)) {
+        if (targetSlug !== "loja-padrao" && currentUser.storeSlug !== targetSlug) {
+          currentUser.storeSlug = targetSlug;
+          sessions[targetSlug] = currentUser;
+          saveStoreSessions(sessions);
+          saveActiveUser(currentUser);
+        }
+        set({
+          currentStoreSlug: targetSlug,
+          storeUsers: sessions,
+          user: currentUser,
+        });
+        return;
+      }
+
+      // Se acessou explicitamente OUTRA loja física diferente:
       const targetUser = sessions[targetSlug] || null;
+      if (targetUser) {
+        saveActiveUser(targetUser);
+      } else if (targetSlug !== "loja-padrao" && currentUser?.storeSlug && !isSameStore(targetSlug, currentUser.storeSlug)) {
+        // Sai do login ao acessar outra loja sem sessão
+        saveActiveUser(null);
+      }
 
       set({
         currentStoreSlug: targetSlug,
@@ -126,7 +209,12 @@ export const useAuth = create<AuthState>((set, get) => {
     getUserForStore: (storeSlug?: string) => {
       const targetSlug = resolveStoreSlug(storeSlug);
       const sessions = loadStoreSessions();
-      return sessions[targetSlug] || null;
+      if (sessions[targetSlug]) return sessions[targetSlug];
+      const activeUser = loadActiveUser();
+      if (activeUser && isSameStore(targetSlug, activeUser.storeSlug)) {
+        return activeUser;
+      }
+      return null;
     },
 
     login: async (email, password, explicitStoreSlug) => {
@@ -201,6 +289,7 @@ export const useAuth = create<AuthState>((set, get) => {
       const sessions = loadStoreSessions();
       sessions[targetSlug] = userObj;
       saveStoreSessions(sessions);
+      saveActiveUser(userObj);
 
       set({
         user: userObj,
@@ -248,6 +337,7 @@ export const useAuth = create<AuthState>((set, get) => {
       const sessions = loadStoreSessions();
       sessions[targetSlug] = userObj;
       saveStoreSessions(sessions);
+      saveActiveUser(userObj);
 
       set({
         user: userObj,
@@ -297,6 +387,16 @@ export const useAuth = create<AuthState>((set, get) => {
       const sessions = loadStoreSessions();
       const currentUser = sessions[targetSlug] || get().user;
 
+      // Salva explicitamente os itens do carrinho para que NUNCA sumam ao sair da conta
+      let currentCartItems: any[] = [];
+      try {
+        const { useCart, saveCartBackup } = await import("./cart");
+        currentCartItems = useCart.getState().items;
+        if (currentCartItems.length > 0) {
+          saveCartBackup(currentCartItems);
+        }
+      } catch (e) {}
+
       // 1. Sincroniza imediatamente o carrinho abandonado com os dados deste usuário antes de encerrar a sessão
       if (currentUser?.id) {
         try {
@@ -309,12 +409,23 @@ export const useAuth = create<AuthState>((set, get) => {
 
       delete sessions[targetSlug];
       saveStoreSessions(sessions);
+      saveActiveUser(null);
 
       // If no more active store sessions exist, sign out from Supabase as well
       if (Object.keys(sessions).length === 0) {
         try {
           await supabase.auth.signOut();
         } catch {}
+      }
+
+      // Re-assegura que o carrinho permaneça com os produtos após logout
+      if (currentCartItems.length > 0) {
+        try {
+          const { useCart } = await import("./cart");
+          if (useCart.getState().items.length === 0) {
+            useCart.getState().restoreCart(currentCartItems);
+          }
+        } catch (e) {}
       }
 
       const currentStore = get().currentStoreSlug;
@@ -419,9 +530,10 @@ export const useAuth = create<AuthState>((set, get) => {
 
           const currentStore = pendingStore || resolveStoreSlug();
           const sessions = loadStoreSessions();
+          const activeUser = get().user || loadActiveUser();
 
-          // Só atualiza os dados do usuário se esta loja possuir sessão ativa prévia ou se veio de fluxo OAuth pendente
-          if (pendingStore || sessions[currentStore]) {
+          // Só atualiza os dados do usuário se esta loja possuir sessão ativa prévia, veio de fluxo OAuth ou é a mesma loja
+          if (pendingStore || sessions[currentStore] || (activeUser && isSameStore(currentStore, activeUser.storeSlug))) {
             const u = session.user;
             const { data: profile } = await supabase
               .from("profiles")
@@ -445,15 +557,19 @@ export const useAuth = create<AuthState>((set, get) => {
 
             sessions[currentStore] = userObj;
             saveStoreSessions(sessions);
+            saveActiveUser(userObj);
 
             const activeNow = resolveStoreSlug();
             set({
-              user: activeNow === currentStore ? userObj : (sessions[activeNow] || null),
+              user: (activeNow === "loja-padrao" || isSameStore(activeNow, currentStore)) ? userObj : (sessions[activeNow] || null),
               currentStoreSlug: activeNow,
               storeUsers: sessions,
             });
           } else {
-            // Se esta loja NÃO possui sessão ativa gravada, garantir que user seja null no state
+            // Se o usuário já está logado localmente para esta loja, NUNCA sobreponha com null!
+            if (activeUser && isSameStore(currentStore, activeUser.storeSlug)) {
+              return;
+            }
             const activeNow = resolveStoreSlug();
             set({
               user: sessions[activeNow] || null,

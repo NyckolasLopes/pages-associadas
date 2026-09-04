@@ -496,11 +496,12 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
 
       const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
       const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
-      const adminClient = createClient(targetBase, publishableKey);
-      
-      await adminClient.auth.signInWithPassword({
-        email: "nyckolas.lopes@farmaciasassociadas.com.br",
-        password: "Aspro@2026"
+      const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+
+      const adminClient = createClient(targetBase, publishableKey, {
+        global: {
+          headers: authHeader ? { Authorization: authHeader } : undefined
+        }
       });
 
       const { data, error } = await (adminClient.from('app_state') as any).upsert({

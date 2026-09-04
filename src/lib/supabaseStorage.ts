@@ -49,14 +49,23 @@ function scheduleSupabaseWrite(name: string, parsedValue: any) {
       }
 
       // Se não conseguiu via cliente direto (ex: sem sessão ou bloqueio RLS), aciona fallback do backend
+      // APENAS se estiver navegando em rotas administrativas (/admin ou /painel-loja)
       if (!saved && typeof window !== 'undefined') {
-        try {
-          await fetch('/api/admin/save-app-state', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: name, value: val })
-          });
-        } catch (apiErr) {}
+        const pathname = window.location.pathname;
+        const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/painel-loja');
+        if (isAdminRoute) {
+          try {
+            const token = sessionData?.session?.access_token;
+            await fetch('/api/admin/save-app-state', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+              },
+              body: JSON.stringify({ key: name, value: val })
+            });
+          } catch (apiErr) {}
+        }
       }
     } catch (err) {
       // Fallback silencioso

@@ -183,15 +183,17 @@ function StoreLayout() {
       ? safeSlugify(activePharmacy.slug)
       : activePharmacy?.nome
       ? safeSlugify(activePharmacy.nome)
-      : "loja-padrao";
+      : undefined;
 
-    if (isStoreSlugPage) {
-      try {
-        sessionStorage.setItem('fa-last-store-slug', slug);
-      } catch { /* sessionStorage indisponível */ }
+    if (slug) {
+      if (isStoreSlugPage) {
+        try {
+          sessionStorage.setItem('fa-last-store-slug', slug);
+        } catch { /* sessionStorage indisponível */ }
+      }
+
+      useAuth.getState().syncStoreSession(slug);
     }
-
-    useAuth.getState().syncStoreSession(slug);
   }, [potentialSlug, activePharmacy?.id, activePharmacy?.slug, activePharmacy?.nome]);
 
   useEffect(() => {

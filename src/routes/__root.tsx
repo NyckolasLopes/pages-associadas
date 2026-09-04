@@ -401,9 +401,13 @@ function RootComponent() {
 
     return () => {
       injectedNodes.forEach(node => {
-        if (node.parentNode) {
-          node.parentNode.removeChild(node);
-        }
+        try {
+          if (node.parentNode) {
+            node.parentNode.removeChild(node);
+          } else if (typeof (node as any).remove === 'function') {
+            (node as any).remove();
+          }
+        } catch {}
       });
     };
   }, [scripts?.head, scripts?.body]);
@@ -474,9 +478,13 @@ function RootComponent() {
 
     return () => {
       injectedNodes.forEach(node => {
-        if (node.parentNode) {
-          node.parentNode.removeChild(node);
-        }
+        try {
+          if (node.parentNode) {
+            node.parentNode.removeChild(node);
+          } else if (typeof (node as any).remove === 'function') {
+            (node as any).remove();
+          }
+        } catch {}
       });
     };
   }, [currentPharmacy]);
@@ -484,10 +492,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {themeColors && Object.keys(themeColors).length > 0 && (
-        <style dangerouslySetInnerHTML={{ __html: `:root { ${Object.entries(themeColors).map(([k, v]) => `${k}: ${v};`).join(' ')} }` }} />
+        <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `:root { ${Object.entries(themeColors).map(([k, v]) => `${k}: ${v};`).join(' ')} }` }} />
       )}
-      {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}
-      {customHtml && <div dangerouslySetInnerHTML={{ __html: customHtml }} />}
+      {customCss && <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: customCss }} />}
+      {customHtml && <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: customHtml }} />}
       <Outlet />
       <PriceDropTracker />
 

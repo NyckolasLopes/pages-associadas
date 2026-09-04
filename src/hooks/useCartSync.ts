@@ -5,7 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdmin } from '@/stores/admin';
 import { productImage } from '@/lib/format';
 
+let isSyncing = false;
+
 export async function syncAbandonedCartNow(userOverride?: User | null) {
+  if (isSyncing) return;
+  isSyncing = true;
   try {
     const authState = useAuth.getState();
     const currentUser = userOverride || authState.user;
@@ -24,18 +28,18 @@ export async function syncAbandonedCartNow(userOverride?: User | null) {
       .filter((item: any) => item && item.id && (Number(item.qty || item.qtd || 0) > 0))
       .map((item: any) => {
         const effectivePrice = getEffectivePrice(item, selectedPharmacyId);
-        const unitPrice = effectivePrice.precoPor > 0
+        const resolvedUnitPrice = effectivePrice.precoPor > 0
           ? effectivePrice.precoPor
-          : Number(item.preco ?? item.precoPor ?? item.precoDe ?? item.price ?? 0);
+          : Number(item.preco ?? item.precoPor ?? item.precoDe ?? item.price ?? (item as any).preco_por ?? 0);
 
         return {
           id: String(item.id),
           nome: item.nome || item.name || "Produto",
           qtd: Number(item.qty || item.qtd || item.quantidade || 1),
-          valorUnitario: unitPrice,
-          preco: unitPrice,
-          preco_unitario: unitPrice,
-          foto: item.foto || item.imagem || item.image || (item.possuiImagem ? productImage(item) : ""),
+          valorUnitario: resolvedUnitPrice,
+          preco: resolvedUnitPrice,
+          preco_unitario: resolvedUnitPrice,
+          foto: item.foto || item.imagem || item.image || productImage(item),
           ean: item.ean || "",
         };
       });
@@ -46,13 +50,23 @@ export async function syncAbandonedCartNow(userOverride?: User | null) {
     const finalTotal = (typeof total === 'number' && total > 0) ? total : computedTotal;
 
     // Resolve store id to UUID if possible
-    let normalizedLojaId = selectedPharmacyId;
+    let rawStoreId = selectedPharmacyId || useAdmin.getState().activeStoreId;
+    if (!rawStoreId && typeof window !== 'undefined') {
+      const slugCandidate = window.location.pathname.split('/')[1];
+      if (slugCandidate && !['admin', 'auth', 'cart', 'checkout', 'p', 'api'].includes(slugCandidate)) {
+        rawStoreId = slugCandidate;
+      }
+    }
+
+    let normalizedLojaId = rawStoreId;
     const pharmacies = useAdmin.getState().pharmacies || [];
-    if (selectedPharmacyId && pharmacies.length > 0) {
+    if (rawStoreId && pharmacies.length > 0) {
       const ph = pharmacies.find(p => 
-        p.id === selectedPharmacyId || 
-        p.slug === selectedPharmacyId || 
-        safeSlugifyAuth(p.slug) === safeSlugifyAuth(selectedPharmacyId)
+        p.id === rawStoreId || 
+        p.slug === rawStoreId || 
+        (p as any).sub_domain === rawStoreId ||
+        safeSlugifyAuth(p.slug) === safeSlugifyAuth(rawStoreId) ||
+        safeSlugifyAuth((p as any).sub_domain || '') === safeSlugifyAuth(rawStoreId)
       );
       if (ph) {
         normalizedLojaId = ph.id;
@@ -76,59 +90,61 @@ export async function syncAbandonedCartNow(userOverride?: User | null) {
       updated_at: new Date().toISOString()
     };
 
-    // Verifica se já existe um carrinho aberto para este usuário
-    const { data: existingCarts, error: fetchErr } = await (supabase
-      .from('carrinhos_abandonados' as any) as any)
+    // 1. Procura se já existe um carrinho para este usuário e esta loja
+    let existingForLojaQuery = supabase
+      .from('carrinhos_abandonados' as any)
       .select('id')
-      .eq('status', 'abandonado')
-      .eq('user_id', currentUser.id)
-      .order('updated_at', { ascending: false })
-      .limit(1);
+      .eq('user_id', currentUser.id);
 
-    if (fetchErr) {
-      console.error("[CartSync] Erro na verificação:", fetchErr.message);
-      return;
+    if (normalizedLojaId) {
+      existingForLojaQuery = (existingForLojaQuery as any).eq('loja_id', normalizedLojaId);
+    } else {
+      existingForLojaQuery = (existingForLojaQuery as any).is('loja_id', null);
     }
 
-    const existingCart = existingCarts?.[0];
+    const { data: existingForLoja } = await (existingForLojaQuery.limit(1).maybeSingle() as any);
 
-    if (existingCart) {
-      const updatePayload: any = {
-        loja_id: normalizedLojaId || null,
-        nome_cliente: clienteNome,
-        email_cliente: clienteEmail,
-        telefone_cliente: clienteTelefone,
-        items: safeItems,
-        total: finalTotal,
-        updated_at: new Date().toISOString()
-      };
+    if (existingForLoja?.id) {
+      // Desativa qualquer outro carrinho abandonado deste usuário para satisfazer o índice único
+      await (supabase.from('carrinhos_abandonados' as any) as any)
+        .update({ status: 'recuperado' })
+        .eq('user_id', currentUser.id)
+        .eq('status', 'abandonado')
+        .neq('id', existingForLoja.id);
 
-      const { error: updateErr } = await (supabase
-        .from('carrinhos_abandonados' as any) as any)
-        .update(updatePayload)
-        .eq('id', existingCart.id);
-
-      if (updateErr) {
-        await (supabase.from('carrinhos_abandonados' as any) as any)
-          .delete()
-          .eq('user_id', currentUser.id)
-          .eq('status', 'abandonado');
-        await (supabase.from('carrinhos_abandonados' as any) as any)
-          .insert(cartData);
-      }
+      // Atualiza o carrinho desta loja
+      await (supabase.from('carrinhos_abandonados' as any) as any)
+        .update(cartData)
+        .eq('id', existingForLoja.id);
     } else {
-      await (supabase
-        .from('carrinhos_abandonados' as any) as any)
-        .delete()
+      // Desativa qualquer outro carrinho abandonado deste usuário para satisfazer o índice único
+      await (supabase.from('carrinhos_abandonados' as any) as any)
+        .update({ status: 'recuperado' })
         .eq('user_id', currentUser.id)
         .eq('status', 'abandonado');
 
-      await (supabase
-        .from('carrinhos_abandonados' as any) as any)
+      const { error: insertErr } = await (supabase.from('carrinhos_abandonados' as any) as any)
         .insert(cartData);
+
+      if (insertErr && (insertErr.code === '23505' || String(insertErr.message || '').includes('duplicate') || String(insertErr.message || '').includes('unique'))) {
+        // Concorrência: atualiza a linha que colidiu
+        if (normalizedLojaId) {
+          await (supabase.from('carrinhos_abandonados' as any) as any)
+            .update(cartData)
+            .eq('user_id', currentUser.id)
+            .eq('loja_id', normalizedLojaId);
+        } else {
+          await (supabase.from('carrinhos_abandonados' as any) as any)
+            .update(cartData)
+            .eq('user_id', currentUser.id)
+            .is('loja_id', null);
+        }
+      }
     }
   } catch (err) {
     console.error("[CartSync] Erro ao sincronizar carrinho:", err);
+  } finally {
+    isSyncing = false;
   }
 }
 
