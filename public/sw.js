@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fa-static-v5';
+const CACHE_NAME = 'fa-static-v6';
 
 const IMMUTABLE_URLS = [
   '/favicon.png',

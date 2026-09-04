@@ -536,7 +536,10 @@ function Checkout() {
         quantidade: i.qty,
         valorUnitario: getEffectivePrice(i, selectedPharmacyId).precoPor,
         precoUnit: getEffectivePrice(i, selectedPharmacyId).precoPor,
-        foto: productImage(i)
+        foto: productImage(i),
+        imagem: productImage(i),
+        possuiImagem: i.possuiImagem,
+        ean: i.ean,
       })),
       valores: {
         produtos: visibleSubtotal,

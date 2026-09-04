@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdmin } from "@/stores/admin";
 import { useCart } from "@/stores/cart";
-import { brl } from "@/lib/format";
+import { brl, productImage } from "@/lib/format";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,10 +76,14 @@ function SucessoPage() {
                   qtd: Number(pi.qty) || 1,
                   valorUnitario: Number(pi.preco_unit) || 0,
                   preco: Number(pi.preco_unit) || 0,
-                  imagem: pi.imagem || pi.foto || "",
-                  foto: pi.imagem || pi.foto || "",
+                  imagem: pi.imagem || pi.foto || productImage(pi),
+                  foto: pi.foto || pi.imagem || productImage(pi),
                 }))
-              : (d.itens || d.produtos || []);
+              : (d.itens || d.produtos || []).map((it: any) => ({
+                  ...it,
+                  imagem: it.imagem || it.foto || productImage(it),
+                  foto: it.foto || it.imagem || productImage(it),
+                }));
 
             return {
               id: d.id,
@@ -217,24 +221,37 @@ function SucessoPage() {
 
               {/* Items List */}
               <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                {(order.produtos || order.itens || []).map((item, i) => (
-                  <div key={i} className="flex gap-4 items-start bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-                    <div className="w-14 h-14 bg-slate-50 rounded-xl flex-shrink-0 flex items-center justify-center p-1">
-                      {item.imagem || item.foto ? (
-                        <img src={item.imagem || item.foto} alt={item.nome} className="w-full h-full object-contain mix-blend-multiply" />
-                      ) : (
-                        <Package className="w-6 h-6 text-slate-300" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-800 leading-tight line-clamp-2 mb-1">{item.nome}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-500">{item.qtd || item.quantidade}x un.</span>
-                        <span className="text-sm font-bold text-primary">{brl((item.preco || item.valorUnitario || 0) * (item.qtd || item.quantidade || 1))}</span>
+                {(order.produtos || order.itens || []).map((item, i) => {
+                  const itemImg = item.imagem || item.foto || productImage(item);
+                  return (
+                    <div key={i} className="flex gap-4 items-start bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+                      <div className="w-14 h-14 bg-white rounded-xl flex-shrink-0 flex items-center justify-center p-1 border border-slate-100 overflow-hidden">
+                        {itemImg ? (
+                          <img 
+                            src={itemImg} 
+                            alt={item.nome} 
+                            className="w-full h-full object-contain mix-blend-multiply" 
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              if (target.src !== "/produtos/sem-imagem.webp") {
+                                target.src = "/produtos/sem-imagem.webp";
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Package className="w-6 h-6 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-800 leading-tight line-clamp-2 mb-1">{item.nome}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-slate-500">{item.qtd || item.quantidade}x un.</span>
+                          <span className="text-sm font-bold text-primary">{brl((item.preco || item.valorUnitario || 0) * (item.qtd || item.quantidade || 1))}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="h-px bg-slate-200 w-full mb-6" />

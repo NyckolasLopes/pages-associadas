@@ -604,14 +604,44 @@ export const catalog = {
 
     await ensureHydrated();
 
-    // Query both slug and id in ONE single fast query with or()
-    const query = supabase
+    // 1. Busca direta por slug (mais comum e indexado)
+    let query = supabase
       .from('produtos')
       .select('*')
-      .or(`slug.eq.${cleanKey},id.eq.${cleanKey}`)
+      .eq('slug', cleanKey)
       .limit(1);
 
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
+    let products = await fetchFromSupabaseWithPrices(query, lojaId);
+
+    // 2. Se não encontrou por slug, tenta por id
+    if (products.length === 0) {
+      const idQuery = supabase
+        .from('produtos')
+        .select('*')
+        .eq('id', cleanKey)
+        .limit(1);
+      products = await fetchFromSupabaseWithPrices(idQuery, lojaId);
+    }
+
+    // 3. Se não encontrou e for código de barras/EAN (números)
+    if (products.length === 0 && /^\d{7,14}$/.test(cleanKey)) {
+      const eanQuery = supabase
+        .from('produtos')
+        .select('*')
+        .eq('ean', cleanKey)
+        .limit(1);
+      products = await fetchFromSupabaseWithPrices(eanQuery, lojaId);
+    }
+
+    // 4. Fallback final: busca case-insensitive por slug
+    if (products.length === 0) {
+      const ilikeQuery = supabase
+        .from('produtos')
+        .select('*')
+        .ilike('slug', cleanKey.toLowerCase())
+        .limit(1);
+      products = await fetchFromSupabaseWithPrices(ilikeQuery, lojaId);
+    }
 
     if (products.length > 0) {
       const result = { ...products[0] };

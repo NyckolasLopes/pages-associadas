@@ -546,7 +546,7 @@ function ProductCardComponent({
       <Link
         to="/$storeSlug/produto/$slug"
         preload="intent"
-        params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
+        params={{ storeSlug: targetStoreSlug, slug: p.slug || p.url || p.id }}
         className="relative aspect-square bg-white p-2.5 sm:p-3.5 block overflow-hidden"
       >
         <img
@@ -595,7 +595,7 @@ function ProductCardComponent({
           <Link
             to="/$storeSlug/produto/$slug"
             preload="intent"
-            params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
+            params={{ storeSlug: targetStoreSlug, slug: p.slug || p.url || p.id }}
             style={{ color: 'var(--headings, inherit)' }}
             className="product-title-clamp text-[12px] sm:text-sm font-bold text-slate-800 hover:text-primary-dark transition-colors"
             title={p.nome}
@@ -762,7 +762,7 @@ function ProductCardComponent({
                   handleBuy(e);
                 } else {
                   e.preventDefault();
-                  window.location.href = `/${(params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao"}/produto/${p.url || p.id}`;
+                  window.location.href = `/${(params as any)?.storeSlug || pharmacies.find(f => f.id === activeStoreId)?.slug || "loja-padrao"}/produto/${p.slug || p.url || p.id}`;
                 }
               }}
               style={
