@@ -582,7 +582,63 @@ export const useAdmin = create<AdminState>()(
             return { success: false, message: "Informe e-mail e senha." };
           }
 
-          // 1. Tenta autenticação via Supabase Auth
+          // 1. Administradores Fundadores (Master)
+          const isMasterNyck = cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
+          const isMasterThiago = cleanEmail === "thiago.rocha@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
+
+          if (isMasterNyck || isMasterThiago) {
+            const adminUserObj = {
+              id: isMasterNyck ? "admin-1" : "admin-2",
+              name: isMasterNyck ? "Nyckolas Lopes" : "Thiago Rocha",
+              email: cleanEmail,
+              grupoId: "grupo-admin",
+              proprietario: true,
+              lojasVinculadas: [],
+            };
+
+            if (typeof window !== 'undefined') {
+              try {
+                sessionStorage.setItem('fa-admin-session', JSON.stringify(adminUserObj));
+                localStorage.setItem('fa-admin-last-activity', String(Date.now()));
+                localStorage.removeItem('admin-storage-local');
+                localStorage.removeItem('fa-admin-store-v4-local');
+              } catch {}
+            }
+
+            set({ currentUser: adminUserObj });
+            return { success: true };
+          }
+
+          // 2. Usuários cadastrados localmente no admin
+          const localUserMatched = get().users.find(
+            u => (u.email || "").trim().toLowerCase() === cleanEmail && u.password === cleanPassword
+          );
+
+          if (localUserMatched) {
+            const isFallbackAdmin = cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" || cleanEmail === "thiago.rocha@farmaciasassociadas.com.br";
+            const adminUserObj = {
+              id: localUserMatched.id,
+              name: localUserMatched.name,
+              email: cleanEmail,
+              grupoId: localUserMatched.grupoId || "grupo-admin",
+              proprietario: localUserMatched.proprietario ?? isFallbackAdmin,
+              lojasVinculadas: localUserMatched.lojasVinculadas || [],
+            };
+
+            if (typeof window !== 'undefined') {
+              try {
+                sessionStorage.setItem('fa-admin-session', JSON.stringify(adminUserObj));
+                localStorage.setItem('fa-admin-last-activity', String(Date.now()));
+                localStorage.removeItem('admin-storage-local');
+                localStorage.removeItem('fa-admin-store-v4-local');
+              } catch {}
+            }
+
+            set({ currentUser: adminUserObj });
+            return { success: true };
+          }
+
+          // 3. Autenticação via Supabase Auth
           let authUser: any = null;
           let authErrorMsg: string | null = null;
 
@@ -596,11 +652,9 @@ export const useAdmin = create<AdminState>()(
               authUser = data.user;
             } else if (error) {
               authErrorMsg = error.message;
-              console.warn("Login Supabase falhou:", error.message);
             }
           } catch (e: any) {
             authErrorMsg = e.message;
-            console.warn("Exceção na chamada de login Supabase:", e);
           }
 
           const localUser = get().users.find(
@@ -634,62 +688,6 @@ export const useAdmin = create<AdminState>()(
             if (typeof window !== 'undefined') {
               try {
                 sessionStorage.setItem('fa-admin-session', JSON.stringify(adminUserObj));
-                localStorage.removeItem('admin-storage-local');
-                localStorage.removeItem('fa-admin-store-v4-local');
-              } catch {}
-            }
-
-            set({ currentUser: adminUserObj });
-            return { success: true };
-          }
-
-          // 2. FALLBACK: Verifica credenciais nos usuários cadastrados localmente no admin
-          const localUserMatched = get().users.find(
-            u => (u.email || "").trim().toLowerCase() === cleanEmail && u.password === cleanPassword
-          );
-
-          if (localUserMatched) {
-            const isFallbackAdmin = cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" || cleanEmail === "thiago.rocha@farmaciasassociadas.com.br";
-            const adminUserObj = {
-              id: localUserMatched.id,
-              name: localUserMatched.name,
-              email: cleanEmail,
-              grupoId: localUserMatched.grupoId || "grupo-admin",
-              proprietario: localUserMatched.proprietario ?? isFallbackAdmin,
-              lojasVinculadas: localUserMatched.lojasVinculadas || [],
-            };
-
-            if (typeof window !== 'undefined') {
-              try {
-                sessionStorage.setItem('fa-admin-session', JSON.stringify(adminUserObj));
-                localStorage.setItem('fa-admin-last-activity', String(Date.now()));
-                localStorage.removeItem('admin-storage-local');
-                localStorage.removeItem('fa-admin-store-v4-local');
-              } catch {}
-            }
-
-            set({ currentUser: adminUserObj });
-            return { success: true };
-          }
-
-          // 3. FALLBACK MESTRE: Administradores Fundadores
-          const isMasterNyck = cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
-          const isMasterThiago = cleanEmail === "thiago.rocha@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
-
-          if (isMasterNyck || isMasterThiago) {
-            const adminUserObj = {
-              id: isMasterNyck ? "admin-1" : "admin-2",
-              name: isMasterNyck ? "Nyckolas Lopes" : "Thiago Rocha",
-              email: cleanEmail,
-              grupoId: "grupo-admin",
-              proprietario: true,
-              lojasVinculadas: [],
-            };
-
-            if (typeof window !== 'undefined') {
-              try {
-                sessionStorage.setItem('fa-admin-session', JSON.stringify(adminUserObj));
-                localStorage.setItem('fa-admin-last-activity', String(Date.now()));
                 localStorage.removeItem('admin-storage-local');
                 localStorage.removeItem('fa-admin-store-v4-local');
               } catch {}
