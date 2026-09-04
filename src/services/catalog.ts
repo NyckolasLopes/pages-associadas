@@ -236,13 +236,33 @@ function enhanceProduct(p: Produto): Produto {
   return newP;
 }
 
-// Helper to enforce Health Services logic on ANY product
+// Helper to enforce Health Services logic ONLY when product nature is service
 function enforceHealthServicesCategory(p: Produto): Produto {
   if (!p || !p.nome) return p;
-  const n = String(p.nome).toLowerCase();
   
-  if ((n.includes("covid") || n.includes("vacina") || (/\bteste\b/.test(n) && !n.includes("gravidez") && !n.includes("(teste)"))) && !n.includes("aparelho") && !n.includes("medidor")) {
+  // Só deve aplicar categoria/subcategoria de serviços se a natureza do produto for serviço
+  const isServico = p.tipoProduto === "servico" || 
+    (p as any).produtoNatureza === "servico" || 
+    (p as any).produto_natureza === "servico" || 
+    (Array.isArray(p.selosIds) && p.selosIds.includes("servico"));
+
+  if (!isServico) {
+    // Se a natureza do produto NÃO for serviço, nunca deve ter categoria 200 (Serviços) ou subcategorias 201/202 forçadas
+    if (p.categoriaId === "200") {
+      p.categoriaId = "";
+      if (p.subcategoriaId === "201" || p.subcategoriaId === "202") {
+        p.subcategoriaId = "";
+      }
+    }
+    return p;
+  }
+
+  // Se for serviço e ainda não tiver categoria definida, atribui categoria 200 (Serviços)
+  if (!p.categoriaId) {
     p.categoriaId = "200";
+  }
+  if (p.categoriaId === "200" && !p.subcategoriaId) {
+    const n = String(p.nome).toLowerCase();
     if (n.includes("vacina")) {
       p.subcategoriaId = "201";
     } else if (/\bteste\b/.test(n) || n.includes("covid")) {

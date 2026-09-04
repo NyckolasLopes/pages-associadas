@@ -113,6 +113,20 @@ export function mapRowToProduto(d: any): Produto {
   const tagSubcat = (rawInternalTags || []).find((t: string) => t.startsWith("subcat:"))?.replace("subcat:", "") || "";
   const cleanTagSubcat = tagSubcat ? decodeURIComponent(tagSubcat) : "";
 
+  const effectiveTipoProduto = d.tipo_produto || meta.tipo_produto || meta.natureza_produto || d.produto_natureza || "fisico";
+  const isServiceProduct = effectiveTipoProduto === "servico" || rawSelosIds.includes("servico");
+
+  let parsedCatId = d.categoria_id ? String(d.categoria_id) : (cleanTagCat || "");
+  let parsedSubcatId = d.subcategoria_id ? String(d.subcategoria_id) : (cleanTagSubcat || "");
+
+  if (!isServiceProduct) {
+    if (parsedCatId === "200") parsedCatId = "";
+    if (parsedSubcatId === "201" || parsedSubcatId === "202") parsedSubcatId = "";
+  }
+
+  const rawCaracList = Array.isArray(d.caracteristicas) ? d.caracteristicas : (Array.isArray(meta.caracteristicas) ? meta.caracteristicas : []);
+  const cleanCaracList = rawCaracList.filter((c: any) => c.titulo !== "__bula_url__" && c.titulo !== "Fabricante" && c.titulo?.toLowerCase() !== "bula" && c.titulo?.toLowerCase() !== "link da bula");
+
   return {
     id: d.id,
     ean: d.ean || "",
@@ -130,15 +144,15 @@ export function mapRowToProduto(d: any): Produto {
     retemReceita: d.retem_receita ?? meta.retem_receita ?? false,
     generico: isGen || d.generico || meta.generico || false,
     possuiImagem: d.possui_imagem || false,
-    categoriaId: d.categoria_id ? String(d.categoria_id) : (cleanTagCat || ""),
-    subcategoriaId: d.subcategoria_id ? String(d.subcategoria_id) : (cleanTagSubcat || ""),
+    categoriaId: parsedCatId,
+    subcategoriaId: parsedSubcatId,
     categoriasAdicionais: Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : (Array.isArray(meta.categorias_adicionais) ? meta.categorias_adicionais : []),
     categoriasIds: Array.isArray(d.categorias_ids) ? d.categorias_ids : (Array.isArray(meta.categorias_ids) ? meta.categorias_ids : (Array.isArray(d.categorias_adicionais) ? d.categorias_adicionais : [])),
     subcategoriasIds: Array.isArray(d.subcategorias_adicionais) ? d.subcategorias_adicionais : (Array.isArray(d.subcategorias_ids) ? d.subcategorias_ids : (Array.isArray(meta.subcategorias_ids) ? meta.subcategorias_ids : [])),
     internalTags: rawInternalTags.filter((t: string) => !t.startsWith("selo:") && !t.startsWith("filtro:") && !t.startsWith("comprejunto:") && !t.startsWith("alertafundo:") && !t.startsWith("alertatexto:") && !t.startsWith("bula:") && !t.startsWith("fabricante:") && !t.startsWith("cat:") && !t.startsWith("subcat:")),
     selosIds: rawSelosIds,
     principiosAtivos: Array.isArray(d.principios_ativos) ? d.principios_ativos : (Array.isArray(meta.principios_ativos) ? meta.principios_ativos : []),
-    caracteristicas: Array.isArray(d.caracteristicas) ? d.caracteristicas.filter((c: any) => c.titulo !== "__bula_url__") : [],
+    caracteristicas: cleanCaracList,
     imagens: d.imagens || meta.imagens || [],
     foto: d.foto || (Array.isArray(d.imagens) && d.imagens[0] ? (d.imagens[0].caminhoImagem || d.imagens[0]) : "") || "",
     videoUrl: d.video_url || meta.video_url || "",
@@ -178,7 +192,6 @@ export function mapRowToProduto(d: any): Produto {
     alertaRegulatorio: d.alerta_regulatorio ?? meta.alerta_regulatorio ?? false,
     alertaCorFundo: d.alerta_cor_fundo || tagAlertaFundo || meta.alerta_cor_fundo || meta.alertaCorFundo || "#fffbeb",
     alertaCorTexto: d.alerta_cor_texto || tagAlertaTexto || meta.alerta_cor_texto || meta.alertaCorTexto || "#78350f",
-    caracteristicas: Array.isArray(d.caracteristicas) ? d.caracteristicas : (Array.isArray(meta.caracteristicas) ? meta.caracteristicas : []),
     eansSecundarios: (() => {
       let list: string[] = [];
       if (Array.isArray(d.eans_secundarios)) {
@@ -305,13 +318,7 @@ export const useAdminProducts = create<ProductsState>()(
         }
 
         let updatedCaracteristicas = Array.isArray(formattedProduct.caracteristicas) ? [...formattedProduct.caracteristicas] : [];
-        updatedCaracteristicas = updatedCaracteristicas.filter((c: any) => c.titulo !== "__bula_url__");
-        if (bulaUrl) {
-          updatedCaracteristicas.push({ titulo: "__bula_url__", descricao: bulaUrl });
-        }
-        if (fabricante && !updatedCaracteristicas.some((c: any) => c.titulo === "Fabricante")) {
-          updatedCaracteristicas.push({ titulo: "Fabricante", descricao: fabricante });
-        }
+        updatedCaracteristicas = updatedCaracteristicas.filter((c: any) => c.titulo !== "__bula_url__" && c.titulo !== "Fabricante" && c.titulo?.toLowerCase() !== "bula" && c.titulo?.toLowerCase() !== "link da bula");
         formattedProduct.caracteristicas = updatedCaracteristicas;
 
         const metadataPayload = {
