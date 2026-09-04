@@ -27,8 +27,29 @@ const DEFAULT_DAYS = [
   { dia: 6, nome: "Sábado" },
 ];
 
+function normalizeWeekSchedule(existing: any[] = []) {
+  const current = Array.isArray(existing) ? existing : [];
+  return [0, 1, 2, 3, 4, 5, 6].map((dia) => {
+    const found = current.find((h: any) => h && Number(h.dia) === dia);
+    if (found) {
+      return {
+        dia,
+        abre: found.abre || "08:00",
+        fecha: found.fecha || "18:00",
+        fechado: Boolean(found.fechado),
+      };
+    }
+    return {
+      dia,
+      abre: "08:00",
+      fecha: "18:00",
+      fechado: dia === 0,
+    };
+  });
+}
+
 function MinhaLogistica() {
-  const { pharmacies, activeStoreId, setActiveStoreId, currentUser, updatePharmacy } = useAdmin();
+  const { pharmacies, pharmaciesLoaded, loadPharmacies, activeStoreId, setActiveStoreId, currentUser, updatePharmacy } = useAdmin();
   const [formData, setFormData] = useState<Partial<Pharmacy>>({});
   const [isSaving, setIsSaving] = useState(false);
   
@@ -36,12 +57,21 @@ function MinhaLogistica() {
   const [methodModalOpen, setMethodModalOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<CustomDeliveryMethod | null>(null);
 
-  // Fallback to linked store or first pharmacy if activeStoreId is not set
-  const effectiveStoreId = activeStoreId || currentUser?.lojasVinculadas?.[0] || pharmacies[0]?.id;
-  const pharmacy = pharmacies.find((p) => p.id === effectiveStoreId);
+  // Garante carregamento das farmácias caso ainda não estejam na memória
+  useEffect(() => {
+    if (!pharmaciesLoaded || pharmacies.length === 0) {
+      loadPharmacies(true);
+    }
+  }, [pharmaciesLoaded, pharmacies.length, loadPharmacies]);
+
+  // Fallback to linked store or first pharmacy if activeStoreId is not set or is 'all'
+  const effectiveStoreId = (activeStoreId && activeStoreId !== "all") 
+    ? activeStoreId 
+    : (currentUser?.lojasVinculadas?.[0] || pharmacies[0]?.id);
+  const pharmacy = pharmacies.find((p) => p.id === effectiveStoreId) || pharmacies[0];
 
   useEffect(() => {
-    if (!activeStoreId && effectiveStoreId) {
+    if ((!activeStoreId || activeStoreId === "all") && effectiveStoreId) {
       setActiveStoreId(effectiveStoreId);
     }
   }, [activeStoreId, effectiveStoreId, setActiveStoreId]);
@@ -50,25 +80,7 @@ function MinhaLogistica() {
     if (pharmacy) {
       // Deep clone to isolate local form modifications
       const cloned = JSON.parse(JSON.stringify(pharmacy));
-      // Ensure all 7 days exist
-      const existingH = Array.isArray(cloned.horariosPorDia) ? cloned.horariosPorDia : [];
-      cloned.horariosPorDia = [0, 1, 2, 3, 4, 5, 6].map((dia) => {
-        const found = existingH.find((h: any) => h && Number(h.dia) === dia);
-        if (found) {
-          return {
-            dia,
-            abre: found.abre || "08:00",
-            fecha: found.fecha || "18:00",
-            fechado: Boolean(found.fechado),
-          };
-        }
-        return {
-          dia,
-          abre: "08:00",
-          fecha: "18:00",
-          fechado: dia === 0,
-        };
-      });
+      cloned.horariosPorDia = normalizeWeekSchedule(cloned.horariosPorDia);
       if (!Array.isArray(cloned.datasEspeciais)) {
         cloned.datasEspeciais = [];
       }
@@ -77,13 +89,48 @@ function MinhaLogistica() {
       }
       setFormData(cloned);
     }
-  }, [pharmacy?.id]);
+  }, [pharmacy?.id, pharmacy?.updated_at]);
+
+  const updateDayConfig = (dia: number, updates: Partial<{ abre: string; fecha: string; fechado: boolean }>) => {
+    setFormData((prev) => {
+      const current = normalizeWeekSchedule(prev.horariosPorDia);
+      const updated = current.map((item) => (item.dia === dia ? { ...item, ...updates } : item));
+      return { ...prev, horariosPorDia: updated };
+    });
+  };
+
+  const addDataEspecial = () => {
+    setFormData((prev) => ({
+      ...prev,
+      datasEspeciais: [
+        ...(prev.datasEspeciais || []),
+        { data: new Date().toISOString().split('T')[0], descricao: "", fechado: true, abre: "08:00", fecha: "18:00" },
+      ],
+    }));
+  };
+
+  const updateDataEspecial = (index: number, updates: Partial<{ data: string; descricao: string; fechado: boolean; abre: string; fecha: string }>) => {
+    setFormData((prev) => {
+      const list = [...(prev.datasEspeciais || [])];
+      if (list[index]) {
+        list[index] = { ...list[index], ...updates };
+      }
+      return { ...prev, datasEspeciais: list };
+    });
+  };
+
+  const removeDataEspecial = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      datasEspeciais: (prev.datasEspeciais || []).filter((_, i) => i !== index),
+    }));
+  };
 
   const handleSave = async () => {
     if (!pharmacy?.id) return;
     setIsSaving(true);
     try {
-      await updatePharmacy(pharmacy.id, {
+      const payloadToSave: Pharmacy = {
         ...pharmacy,
         ...formData,
         aceitaEntrega: Boolean(formData.aceitaEntrega),
@@ -94,10 +141,13 @@ function MinhaLogistica() {
         horarioInicioRetirada: formData.horarioInicioRetirada || "",
         horarioFimRetirada: formData.horarioFimRetirada || "",
         tempoRetirada: formData.tempoRetirada !== undefined ? String(formData.tempoRetirada) : "",
-        horariosPorDia: formData.horariosPorDia || [],
+        horariosPorDia: normalizeWeekSchedule(formData.horariosPorDia),
         datasEspeciais: formData.datasEspeciais || [],
         meiosEntregaPersonalizados: formData.meiosEntregaPersonalizados || [],
-      } as Pharmacy);
+      };
+
+      await updatePharmacy(pharmacy.id, payloadToSave);
+      setFormData(JSON.parse(JSON.stringify(payloadToSave)));
       toast.success("Configurações de logística salvas com sucesso!");
     } catch (err: any) {
       console.error("Erro ao salvar logística:", err);
@@ -112,16 +162,23 @@ function MinhaLogistica() {
       id: Date.now().toString(),
       nome: "",
       ativo: true,
-      tempoEntrega: "",
-      raios: [],
+      tempoEntrega: "45",
+      raios: [{ ateKm: 5, preco: 10 }],
       faixasValorPedido: [],
     });
     setMethodModalOpen(true);
   };
 
   const handleSaveMethod = (method: CustomDeliveryMethod) => {
+    if (!method.nome.trim()) {
+      toast.error("Informe o nome do meio de entrega.");
+      return;
+    }
+
     const cleanedMethod: CustomDeliveryMethod = {
       ...method,
+      nome: method.nome.trim(),
+      tempoEntrega: method.tempoEntrega || "45",
       raios: (method.raios || []).map((r) => ({
         ateKm: Number(r.ateKm) || 0,
         preco: Number(r.preco) || 0,
@@ -142,6 +199,7 @@ function MinhaLogistica() {
     setFormData((prev) => ({ ...prev, meiosEntregaPersonalizados: newMethods }));
     setMethodModalOpen(false);
     setEditingMethod(null);
+    toast.success(`Meio de entrega "${cleanedMethod.nome}" atualizado.`);
   };
 
   const handleDeleteMethod = (id: string) => {
@@ -150,6 +208,7 @@ function MinhaLogistica() {
       ...prev,
       meiosEntregaPersonalizados: currentMethods.filter((m) => m.id !== id),
     }));
+    toast.info("Meio de entrega removido.");
   };
 
   if (!pharmacy) {
@@ -157,7 +216,7 @@ function MinhaLogistica() {
       <div className="p-8 max-w-4xl mx-auto">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-4">
           <AlertCircle className="w-10 h-10 text-amber-600 mx-auto" />
-          <h2 className="text-xl font-bold text-amber-900">Nenhuma farmácia selecionada</h2>
+          <h2 className="text-xl font-bold text-amber-900">Carregando farmácia...</h2>
           <p className="text-sm text-amber-700">
             Selecione uma farmácia para gerenciar as configurações de logística.
           </p>
@@ -420,13 +479,8 @@ function MinhaLogistica() {
                     <div className="flex items-center gap-4 flex-1 justify-end">
                       <Label className="text-sm flex items-center gap-2 cursor-pointer font-medium text-slate-600 select-none">
                         <Checkbox
-                          checked={currentConfig.fechado}
-                          onCheckedChange={(c) => {
-                            const newH = (formData.horariosPorDia || []).map((h) =>
-                              Number(h.dia) === dia ? { ...h, fechado: !!c } : h
-                            );
-                            setFormData((prev) => ({ ...prev, horariosPorDia: newH }));
-                          }}
+                          checked={Boolean(currentConfig.fechado)}
+                          onCheckedChange={(c) => updateDayConfig(dia, { fechado: !!c })}
                         />
                         Fechado
                       </Label>
@@ -435,25 +489,15 @@ function MinhaLogistica() {
                           <Input
                             type="time"
                             className="w-28 h-9 text-sm bg-white"
-                            value={currentConfig.abre}
-                            onChange={(e) => {
-                              const newH = (formData.horariosPorDia || []).map((h) =>
-                                Number(h.dia) === dia ? { ...h, abre: e.target.value } : h
-                              );
-                              setFormData((prev) => ({ ...prev, horariosPorDia: newH }));
-                            }}
+                            value={currentConfig.abre || "08:00"}
+                            onChange={(e) => updateDayConfig(dia, { abre: e.target.value })}
                           />
                           <span className="text-sm text-slate-400">às</span>
                           <Input
                             type="time"
                             className="w-28 h-9 text-sm bg-white"
-                            value={currentConfig.fecha}
-                            onChange={(e) => {
-                              const newH = (formData.horariosPorDia || []).map((h) =>
-                                Number(h.dia) === dia ? { ...h, fecha: e.target.value } : h
-                              );
-                              setFormData((prev) => ({ ...prev, horariosPorDia: newH }));
-                            }}
+                            value={currentConfig.fecha || "18:00"}
+                            onChange={(e) => updateDayConfig(dia, { fecha: e.target.value })}
                           />
                         </div>
                       ) : (
@@ -477,34 +521,19 @@ function MinhaLogistica() {
                   <Input
                     type="date"
                     className="w-auto h-10 text-sm"
-                    value={dataEsp.data}
-                    onChange={(e) => {
-                      const newDE = (formData.datasEspeciais || []).map((de, i) =>
-                        i === idx ? { ...de, data: e.target.value } : de
-                      );
-                      setFormData((prev) => ({ ...prev, datasEspeciais: newDE }));
-                    }}
+                    value={dataEsp.data || ""}
+                    onChange={(e) => updateDataEspecial(idx, { data: e.target.value })}
                   />
                   <Input
                     placeholder="Descrição (ex: Natal, Carnaval)"
                     className="w-48 h-10 text-sm"
                     value={dataEsp.descricao || ""}
-                    onChange={(e) => {
-                      const newDE = (formData.datasEspeciais || []).map((de, i) =>
-                        i === idx ? { ...de, descricao: e.target.value } : de
-                      );
-                      setFormData((prev) => ({ ...prev, datasEspeciais: newDE }));
-                    }}
+                    onChange={(e) => updateDataEspecial(idx, { descricao: e.target.value })}
                   />
                   <Label className="text-sm flex items-center gap-2 cursor-pointer font-medium text-slate-600 select-none">
                     <Checkbox
-                      checked={dataEsp.fechado}
-                      onCheckedChange={(c) => {
-                        const newDE = (formData.datasEspeciais || []).map((de, i) =>
-                          i === idx ? { ...de, fechado: !!c } : de
-                        );
-                        setFormData((prev) => ({ ...prev, datasEspeciais: newDE }));
-                      }}
+                      checked={Boolean(dataEsp.fechado)}
+                      onCheckedChange={(c) => updateDataEspecial(idx, { fechado: !!c })}
                     />
                     Fechado
                   </Label>
@@ -513,25 +542,15 @@ function MinhaLogistica() {
                       <Input
                         type="time"
                         className="w-24 h-10 text-sm"
-                        value={dataEsp.abre}
-                        onChange={(e) => {
-                          const newDE = (formData.datasEspeciais || []).map((de, i) =>
-                            i === idx ? { ...de, abre: e.target.value } : de
-                          );
-                          setFormData((prev) => ({ ...prev, datasEspeciais: newDE }));
-                        }}
+                        value={dataEsp.abre || "08:00"}
+                        onChange={(e) => updateDataEspecial(idx, { abre: e.target.value })}
                       />
                       <span className="text-sm text-slate-400">às</span>
                       <Input
                         type="time"
                         className="w-24 h-10 text-sm"
-                        value={dataEsp.fecha}
-                        onChange={(e) => {
-                          const newDE = (formData.datasEspeciais || []).map((de, i) =>
-                            i === idx ? { ...de, fecha: e.target.value } : de
-                          );
-                          setFormData((prev) => ({ ...prev, datasEspeciais: newDE }));
-                        }}
+                        value={dataEsp.fecha || "18:00"}
+                        onChange={(e) => updateDataEspecial(idx, { fecha: e.target.value })}
                       />
                     </div>
                   )}
@@ -539,10 +558,7 @@ function MinhaLogistica() {
                     variant="ghost"
                     size="icon"
                     className="h-10 w-10 ml-auto text-red-500 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => {
-                      const newDE = (formData.datasEspeciais || []).filter((_, i) => i !== idx);
-                      setFormData((prev) => ({ ...prev, datasEspeciais: newDE }));
-                    }}
+                    onClick={() => removeDataEspecial(idx)}
                   >
                     <X className="w-5 h-5" />
                   </Button>
@@ -551,15 +567,7 @@ function MinhaLogistica() {
               <Button
                 variant="outline"
                 className="w-full text-sm font-bold h-11 border-dashed border-slate-300 hover:border-emerald-500 hover:bg-emerald-50/50 text-slate-700 hover:text-emerald-800"
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    datasEspeciais: [
-                      ...(prev.datasEspeciais || []),
-                      { data: "", descricao: "", fechado: true, abre: "08:00", fecha: "18:00" },
-                    ],
-                  }));
-                }}
+                onClick={addDataEspecial}
               >
                 <Plus className="w-4 h-4 mr-2" /> Adicionar Data Especial / Feriado
               </Button>

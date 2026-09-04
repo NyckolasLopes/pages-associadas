@@ -18,6 +18,27 @@ interface LogisticsModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function normalizeWeekSchedule(existing: any[] = []) {
+  const current = Array.isArray(existing) ? existing : [];
+  return [0, 1, 2, 3, 4, 5, 6].map((dia) => {
+    const found = current.find((h: any) => h && Number(h.dia) === dia);
+    if (found) {
+      return {
+        dia,
+        abre: found.abre || "08:00",
+        fecha: found.fecha || "18:00",
+        fechado: Boolean(found.fechado),
+      };
+    }
+    return {
+      dia,
+      abre: "08:00",
+      fecha: "18:00",
+      fechado: dia === 0,
+    };
+  });
+}
+
 export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalProps) {
   const { updatePharmacy } = useAdmin();
   const [formData, setFormData] = useState<Partial<Pharmacy>>({});
@@ -30,7 +51,46 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
   useEffect(() => { formDataRef.current = formData; }, [formData]);
   useEffect(() => { editingMethodRef.current = editingMethod; }, [editingMethod]);
 
+  const updateDayConfig = (dia: number, updates: Partial<{ abre: string; fecha: string; fechado: boolean }>) => {
+    setFormData((prev) => {
+      const current = normalizeWeekSchedule(prev.horariosPorDia);
+      const updated = current.map((item) => (item.dia === dia ? { ...item, ...updates } : item));
+      return { ...prev, horariosPorDia: updated };
+    });
+  };
+
+  const addDataEspecial = () => {
+    setFormData((prev) => ({
+      ...prev,
+      datasEspeciais: [
+        ...(prev.datasEspeciais || []),
+        { data: new Date().toISOString().split('T')[0], descricao: "", fechado: true, abre: "08:00", fecha: "18:00" },
+      ],
+    }));
+  };
+
+  const updateDataEspecial = (index: number, updates: Partial<{ data: string; descricao: string; fechado: boolean; abre: string; fecha: string }>) => {
+    setFormData((prev) => {
+      const list = [...(prev.datasEspeciais || [])];
+      if (list[index]) {
+        list[index] = { ...list[index], ...updates };
+      }
+      return { ...prev, datasEspeciais: list };
+    });
+  };
+
+  const removeDataEspecial = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      datasEspeciais: (prev.datasEspeciais || []).filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSaveMethod = (method: CustomDeliveryMethod) => {
+    if (!method.nome?.trim()) {
+      toast.error("Informe o nome do meio de entrega.");
+      return;
+    }
     const currentMethods = formDataRef.current.meiosEntregaPersonalizados || [];
     let newMethods;
     if (currentMethods.find(m => m.id === method.id)) {
@@ -40,33 +100,18 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
     }
     setFormData(prev => ({ ...prev, meiosEntregaPersonalizados: newMethods }));
     setMethodModalOpen(false);
+    toast.success(`Meio de entrega "${method.nome}" salvo.`);
   };
 
   const handleDeleteMethod = (id: string) => {
     setFormData(prev => ({ ...prev, meiosEntregaPersonalizados: (prev.meiosEntregaPersonalizados || []).filter(m => m.id !== id) }));
+    toast.info("Meio de entrega removido.");
   };
 
   useEffect(() => {
     if (pharmacy && open) {
       const cloned = JSON.parse(JSON.stringify(pharmacy));
-      const existingH = Array.isArray(cloned.horariosPorDia) ? cloned.horariosPorDia : [];
-      cloned.horariosPorDia = [0, 1, 2, 3, 4, 5, 6].map((dia) => {
-        const found = existingH.find((h: any) => h && Number(h.dia) === dia);
-        if (found) {
-          return {
-            dia,
-            abre: found.abre || "08:00",
-            fecha: found.fecha || "18:00",
-            fechado: Boolean(found.fechado),
-          };
-        }
-        return {
-          dia,
-          abre: "08:00",
-          fecha: "18:00",
-          fechado: dia === 0,
-        };
-      });
+      cloned.horariosPorDia = normalizeWeekSchedule(cloned.horariosPorDia);
       if (!Array.isArray(cloned.datasEspeciais)) cloned.datasEspeciais = [];
       if (!Array.isArray(cloned.meiosEntregaPersonalizados)) cloned.meiosEntregaPersonalizados = [];
       setFormData(cloned);
@@ -77,7 +122,7 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
     if (!pharmacy?.id) return;
     setIsSaving(true);
     try {
-      await updatePharmacy(pharmacy.id, {
+      const payloadToSave: Pharmacy = {
         ...pharmacy,
         ...formData,
         aceitaEntrega: Boolean(formData.aceitaEntrega),
@@ -88,10 +133,12 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
         horarioInicioRetirada: formData.horarioInicioRetirada || "",
         horarioFimRetirada: formData.horarioFimRetirada || "",
         tempoRetirada: formData.tempoRetirada !== undefined ? String(formData.tempoRetirada) : "",
-        horariosPorDia: formData.horariosPorDia || [],
+        horariosPorDia: normalizeWeekSchedule(formData.horariosPorDia),
         datasEspeciais: formData.datasEspeciais || [],
         meiosEntregaPersonalizados: formData.meiosEntregaPersonalizados || [],
-      } as Pharmacy);
+      };
+
+      await updatePharmacy(pharmacy.id, payloadToSave);
       toast.success("Configurações de logística salvas com sucesso!");
       onOpenChange(false);
     } catch (err: any) {
@@ -292,39 +339,29 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                       <div className="flex items-center gap-4 flex-1 justify-end">
                         <Label className="text-sm flex items-center gap-2 cursor-pointer font-medium text-slate-600">
                           <Checkbox 
-                            checked={currentConfig.fechado} 
-                            onCheckedChange={(c: boolean | 'indeterminate') => {
-                              const newH = (formData.horariosPorDia || []).map(h => Number(h.dia) === idx ? { ...h, fechado: !!c } : h);
-                              setFormData(prev => ({ ...prev, horariosPorDia: newH }));
-                            }} 
+                            checked={Boolean(currentConfig.fechado)} 
+                            onCheckedChange={(c: boolean | 'indeterminate') => updateDayConfig(idx, { fechado: !!c })} 
                           />
                           Fechado
                         </Label>
-                        {!currentConfig.fechado && (
+                        {!currentConfig.fechado ? (
                           <div className="flex items-center gap-2">
                             <Input 
                               type="time" 
                               className="w-28 h-9 text-sm" 
-                              value={currentConfig.abre}
-                              onChange={(e) => {
-                                const newH = (formData.horariosPorDia || []).map(h => Number(h.dia) === idx ? { ...h, abre: e.target.value } : h);
-                                setFormData(prev => ({ ...prev, horariosPorDia: newH }));
-                              }}
+                              value={currentConfig.abre || '08:00'} 
+                              onChange={(e) => updateDayConfig(idx, { abre: e.target.value })}
                             />
                             <span className="text-sm text-slate-400">às</span>
                             <Input 
                               type="time" 
                               className="w-28 h-9 text-sm" 
-                              value={currentConfig.fecha}
-                              onChange={(e) => {
-                                const newH = (formData.horariosPorDia || []).map(h => Number(h.dia) === idx ? { ...h, fecha: e.target.value } : h);
-                                setFormData(prev => ({ ...prev, horariosPorDia: newH }));
-                              }}
+                              value={currentConfig.fecha || '18:00'} 
+                              onChange={(e) => updateDayConfig(idx, { fecha: e.target.value })}
                             />
                           </div>
-                        )}
-                        {currentConfig.fechado && (
-                           <div className="flex items-center w-[252px]"></div>
+                        ) : (
+                          <div className="flex items-center w-[252px] text-xs text-slate-400 justify-end pr-2">Não há atendimento</div>
                         )}
                       </div>
                     </div>
@@ -344,28 +381,19 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                     <Input 
                       type="date" 
                       className="w-auto h-9 text-sm" 
-                      value={dataEsp.data}
-                      onChange={(e) => {
-                        const newDE = (formData.datasEspeciais || []).map((de, i) => i === idx ? { ...de, data: e.target.value } : de);
-                        setFormData(prev => ({ ...prev, datasEspeciais: newDE }));
-                      }}
+                      value={dataEsp.data || ''} 
+                      onChange={(e) => updateDataEspecial(idx, { data: e.target.value })}
                     />
                     <Input 
                       placeholder="Descrição (ex: Natal)" 
                       className="w-[180px] h-9 text-sm" 
-                      value={dataEsp.descricao || ''}
-                      onChange={(e) => {
-                        const newDE = (formData.datasEspeciais || []).map((de, i) => i === idx ? { ...de, descricao: e.target.value } : de);
-                        setFormData(prev => ({ ...prev, datasEspeciais: newDE }));
-                      }}
+                      value={dataEsp.descricao || ''} 
+                      onChange={(e) => updateDataEspecial(idx, { descricao: e.target.value })}
                     />
                     <Label className="text-sm flex items-center gap-2 cursor-pointer font-medium text-slate-600">
                       <Checkbox 
-                        checked={dataEsp.fechado} 
-                        onCheckedChange={(c: boolean | 'indeterminate') => {
-                          const newDE = (formData.datasEspeciais || []).map((de, i) => i === idx ? { ...de, fechado: !!c } : de);
-                          setFormData(prev => ({ ...prev, datasEspeciais: newDE }));
-                        }} 
+                        checked={Boolean(dataEsp.fechado)} 
+                        onCheckedChange={(c: boolean | 'indeterminate') => updateDataEspecial(idx, { fechado: !!c })} 
                       />
                       Fechado
                     </Label>
@@ -374,21 +402,15 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                         <Input 
                           type="time" 
                           className="w-24 h-9 text-sm" 
-                          value={dataEsp.abre}
-                          onChange={(e) => {
-                            const newDE = (formData.datasEspeciais || []).map((de, i) => i === idx ? { ...de, abre: e.target.value } : de);
-                            setFormData(prev => ({ ...prev, datasEspeciais: newDE }));
-                          }}
+                          value={dataEsp.abre || '08:00'} 
+                          onChange={(e) => updateDataEspecial(idx, { abre: e.target.value })}
                         />
                         <span className="text-sm text-slate-400">às</span>
                         <Input 
                           type="time" 
                           className="w-24 h-9 text-sm" 
-                          value={dataEsp.fecha}
-                          onChange={(e) => {
-                            const newDE = (formData.datasEspeciais || []).map((de, i) => i === idx ? { ...de, fecha: e.target.value } : de);
-                            setFormData(prev => ({ ...prev, datasEspeciais: newDE }));
-                          }}
+                          value={dataEsp.fecha || '18:00'} 
+                          onChange={(e) => updateDataEspecial(idx, { fecha: e.target.value })}
                         />
                       </div>
                     )}
@@ -396,10 +418,7 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 ml-auto text-red-500 hover:text-red-700 hover:bg-red-50" 
-                      onClick={() => {
-                        const newDE = (formData.datasEspeciais || []).filter((_, i) => i !== idx);
-                        setFormData(prev => ({ ...prev, datasEspeciais: newDE }));
-                      }}
+                      onClick={() => removeDataEspecial(idx)}
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -409,12 +428,7 @@ export function LogisticsModal({ pharmacy, open, onOpenChange }: LogisticsModalP
                   variant="outline" 
                   size="sm" 
                   className="w-full text-xs font-bold"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      datasEspeciais: [...(formData.datasEspeciais || []), { data: '', descricao: '', fechado: true, abre: '08:00', fecha: '18:00' }]
-                    });
-                  }}
+                  onClick={addDataEspecial}
                 >
                   + Adicionar Data Especial
                 </Button>

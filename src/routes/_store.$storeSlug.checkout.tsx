@@ -99,9 +99,23 @@ function Checkout() {
   const addOrder = useOrders((s) => s.addOrder);
   const addToCart = useCart((s) => s.add);
   const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const setSelectedPharmacyId = useCart((s) => s.setSelectedPharmacyId);
   const allPharmacies = useAdmin((s) => s.pharmacies);
   const orderBumpSettings = useAdmin((s) => s.orderBumpSettings);
-  const activeStore = allPharmacies.find(p => p.id === selectedPharmacyId) || allPharmacies[0];
+
+  const activeStore = useMemo(() => {
+    if (storeSlug) {
+      const p = allPharmacies.find(ph => (ph.slug || "").toLowerCase() === storeSlug.toLowerCase());
+      if (p) return p;
+    }
+    return allPharmacies.find(p => p.id === selectedPharmacyId) || allPharmacies[0];
+  }, [allPharmacies, selectedPharmacyId, storeSlug]);
+
+  useEffect(() => {
+    if (activeStore?.id && activeStore.id !== selectedPharmacyId) {
+      setSelectedPharmacyId(activeStore.id);
+    }
+  }, [activeStore?.id, selectedPharmacyId, setSelectedPharmacyId]);
 
   const storeStatus = useMemo(() => {
     if (!activeStore) return null;
@@ -215,9 +229,35 @@ function Checkout() {
   };
 
   const hasPrescription = items.some(i => i.retemReceita || isServiceProduct(i));
-  const noDeliveryAvailable = activeStore ? !activeStore.aceitaEntrega : false;
+  const noDeliveryAvailable = activeStore ? activeStore.aceitaEntrega === false : false;
+  const noPickupAvailable = activeStore ? activeStore.aceitaRetirada === false : false;
   const forceStore = hasPrescription || noDeliveryAvailable;
+  const forceDelivery = !hasPrescription && noPickupAvailable;
   const isServiceCart = items.some(i => isServiceProduct(i));
+
+  const cartFreightOpts = useCart((s) => s.freightOptions) || [];
+  const baseDeliveryOpts = cartFreightOpts.filter(f => f.id !== "pickup");
+
+  const deliveryOpts = useMemo(() => {
+    if (baseDeliveryOpts.length > 0) return baseDeliveryOpts;
+    if (activeStore && activeStore.aceitaEntrega !== false) {
+      if (activeStore.meiosEntregaPersonalizados && activeStore.meiosEntregaPersonalizados.length > 0) {
+        return activeStore.meiosEntregaPersonalizados.filter(m => m.ativo).map(m => ({
+          id: m.id,
+          label: m.nome,
+          price: (m.raios && m.raios.length > 0) ? m.raios[0].preco : (activeStore.custoEntrega || 0),
+          eta: m.tempoEntrega ? `Em até ${m.tempoEntrega} min` : "Em até 3 horas",
+        }));
+      }
+      return [{
+        id: "standard",
+        label: "Receber em casa",
+        price: activeStore.custoEntrega || 0,
+        eta: activeStore.tempoEntrega ? `Em até ${activeStore.tempoEntrega} min` : "Em até 3 horas",
+      }];
+    }
+    return [];
+  }, [baseDeliveryOpts, activeStore]);
 
   useEffect(() => {
     if (pixGenerated && pixTimeLeft > 0) {
@@ -360,14 +400,18 @@ function Checkout() {
   useEffect(() => {
     if (forceStore && deliveryMethod === "home") {
       setSelectedFreight("pickup");
+    } else if (forceDelivery && deliveryMethod === "store") {
+      const firstDelivery = deliveryOpts[0]?.id || "standard";
+      setSelectedFreight(firstDelivery);
     }
-  }, [forceStore, deliveryMethod, setSelectedFreight]);
+  }, [forceStore, forceDelivery, deliveryMethod, deliveryOpts, setSelectedFreight]);
 
   useEffect(() => {
     if (!forceStore && deliveryMethod === "home" && (!selectedFreight || selectedFreight === "pickup")) {
-      setSelectedFreight("standard");
+      const firstDelivery = deliveryOpts[0]?.id || "standard";
+      setSelectedFreight(firstDelivery);
     }
-  }, [forceStore, deliveryMethod, selectedFreight, setSelectedFreight]);
+  }, [forceStore, deliveryMethod, selectedFreight, deliveryOpts, setSelectedFreight]);
 
   useEffect(() => {
     if (mounted && deliveryMethod === "store" && !pickupPersonType && !hasPromptedPickup) {
@@ -416,9 +460,6 @@ function Checkout() {
   }
 
   const forcePickup = hasPrescription;
-  
-  const cartFreightOpts = useCart((s) => s.freightOptions) || [];
-  const deliveryOpts = cartFreightOpts.filter(f => f.id !== "pickup");
   
   const selectedFreightObj = deliveryOpts.find(f => f.id === selectedFreight) || deliveryOpts[0];
   let fretePrice: number | null = deliveryMethod === "home" 
@@ -633,91 +674,99 @@ function Checkout() {
           </h2>
 
           <div className="grid sm:grid-cols-2 gap-4 mt-2">
-            <div className={`border rounded-lg p-4 transition ${deliveryMethod === "store" ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}>
-              <label className="cursor-pointer flex flex-col gap-2">
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="radio" 
-                    name="delivery" 
-                    value="store"
-                    checked={deliveryMethod === "store"} 
-                    onChange={() => {
-                      setSelectedFreight("pickup");
-                      if (!pickupPersonType) {
-                        if (isServiceCart) {
-                          setPickupPersonType("self");
-                        } else {
-                          setPickupDialogOpen(true);
+            {!forceDelivery && (
+              <div className={`border rounded-lg p-4 transition ${deliveryMethod === "store" ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}>
+                <label className="cursor-pointer flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="radio" 
+                      name="delivery" 
+                      value="store"
+                      checked={deliveryMethod === "store"} 
+                      onChange={() => {
+                        setSelectedFreight("pickup");
+                        if (!pickupPersonType) {
+                          if (isServiceCart) {
+                            setPickupPersonType("self");
+                          } else {
+                            setPickupDialogOpen(true);
+                          }
+                          setHasPromptedPickup(true);
                         }
-                        setHasPromptedPickup(true);
-                      }
-                    }} 
-                    className="h-4 w-4 text-primary accent-primary" 
-                  />
-                  <Store className="h-5 w-5 text-primary" />
-                  <span className="font-bold text-sm">{isServiceCart ? "Atendimento na Loja" : "Retirar na Loja"}</span>
-                </div>
-                <p className="text-xs text-muted-foreground ml-7">
-                  {isServiceCart 
-                    ? <>O atendimento será realizado na unidade: <strong>{activeStore?.razaoSocial || activeStore?.nome}</strong>. {activeStore?.tempoRetirada ? `Retirada em até ${activeStore.tempoRetirada}.` : 'Retirada a partir de 30 minutos.'}</>
-                    : <>Você deve retirar na unidade: <strong>{activeStore?.razaoSocial || activeStore?.nome}</strong>. {activeStore?.tempoRetirada ? `Retirada em até ${activeStore.tempoRetirada}.` : 'Retirada a partir de 30 minutos.'}</>
-                  }
-                </p>
-              </label>
-
-              {deliveryMethod === "store" && activeStore && (
-                <div className="ml-7 mt-2 bg-emerald-50 text-emerald-900 text-xs p-3 rounded border border-emerald-200 animate-in fade-in slide-in-from-top-2 cursor-default" onClick={(e) => e.preventDefault()}>
-                  <div className="font-bold flex items-center gap-1.5 mb-1.5"><MapPin className="h-4 w-4"/> {hasService ? "Local de Realização do Serviço" : "Atenção ao Endereço de Retirada"}</div>
-                  <p>{hasService ? "Dirija-se ao local abaixo para realização do serviço:" : "O seu pedido deverá ser retirado presencialmente no seguinte endereço:"}</p>
-                  <p className="mt-1.5 font-bold text-sm bg-white p-2 rounded shadow-sm border border-emerald-100">{activeStore.endereco}</p>
-                  {activeStore.horarioFuncionamento && (
-                    <p className="mt-1.5"><strong>Horário de funcionamento:</strong> {activeStore.horarioFuncionamento}</p>
-                  )}
-                </div>
-              )}
-
-              {deliveryMethod === "store" && !pickupPersonType && (
-                <div className="mt-4 pt-4 border-t border-primary/20 animate-in fade-in">
-                  <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/5" onClick={() => setPickupDialogOpen(true)}>
-                    Informar quem irá retirar o pedido
-                  </Button>
-                </div>
-              )}
-              
-              {deliveryMethod === "store" && pickupPersonType === "other" && (
-                <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-primary/20 animate-in fade-in">
-                  <div className="font-bold text-sm text-primary">Dados da pessoa autorizada a retirar:</div>
-                  <div><Label>Nome</Label><Input value={authName} onChange={(e) => setAuthName(e.target.value)} className="bg-white" /></div>
-                  <div><Label>CPF</Label><Input value={authCpf} onChange={(e) => {
-                    let v = e.target.value.replace(/\D/g, "");
-                    if (v.length > 11) v = v.slice(0, 11);
-                    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-                    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-                    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-                    setAuthCpf(v);
-                  }} className="bg-white" /></div>
-                  <div><Label>Telefone</Label><Input value={authPhone} onChange={(e) => {
-                    let v = e.target.value.replace(/\D/g, "");
-                    if (v.length > 11) v = v.slice(0, 11);
-                    v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
-                    v = v.replace(/(\d)(\d{4})$/, "$1-$2");
-                    setAuthPhone(v);
-                  }} className="bg-white" /></div>
-                  <div className="mt-1">
-                    <Button variant="outline" size="sm" onClick={() => setPickupPersonType("self")} className="w-full sm:w-auto">Alterar para Eu mesmo vou retirar</Button>
+                      }} 
+                      className="h-4 w-4 text-primary accent-primary" 
+                    />
+                    <Store className="h-5 w-5 text-primary" />
+                    <span className="font-bold text-sm">{isServiceCart ? "Atendimento na Loja" : "Retirar na Loja"}</span>
                   </div>
-                </div>
-              )}
-              
-              {deliveryMethod === "store" && pickupPersonType === "self" && !isServiceCart && (
-                <div className="mt-4 pt-4 border-t border-primary/20 animate-in fade-in">
-                  <div className="flex flex-col xl:flex-row xl:items-center gap-3 xl:justify-between text-sm">
-                    <span className="flex items-center gap-2"><User className="h-4 w-4 text-primary shrink-0" /><span><strong>Você mesmo</strong> irá retirar o pedido.</span></span>
-                    <Button variant="outline" size="sm" className="h-8 shrink-0" onClick={() => setPickupDialogOpen(true)}>Alterar pessoa</Button>
+                  <p className="text-xs text-muted-foreground ml-7">
+                    {isServiceCart 
+                      ? <>O atendimento será realizado na unidade: <strong>{activeStore?.razaoSocial || activeStore?.nome}</strong>. {activeStore?.tempoRetirada ? `Retirada em até ${activeStore.tempoRetirada}.` : 'Retirada a partir de 30 minutos.'}</>
+                      : <>Você deve retirar na unidade: <strong>{activeStore?.razaoSocial || activeStore?.nome}</strong>. {activeStore?.tempoRetirada ? `Retirada em até ${activeStore.tempoRetirada}.` : 'Retirada a partir de 30 minutos.'}</>
+                    }
+                  </p>
+                </label>
+
+                {deliveryMethod === "store" && activeStore && (
+                  <div className="ml-7 mt-2 bg-emerald-50 text-emerald-900 text-xs p-3 rounded border border-emerald-200 animate-in fade-in slide-in-from-top-2 cursor-default" onClick={(e) => e.preventDefault()}>
+                    <div className="font-bold flex items-center gap-1.5 mb-1.5"><MapPin className="h-4 w-4"/> {hasService ? "Local de Realização do Serviço" : "Atenção ao Endereço de Retirada"}</div>
+                    <p>{hasService ? "Dirija-se ao local abaixo para realização do serviço:" : "O seu pedido deverá ser retirado presencialmente no seguinte endereço:"}</p>
+                    <p className="mt-1.5 font-bold text-sm bg-white p-2 rounded shadow-sm border border-emerald-100">{activeStore.endereco}</p>
+                    {activeStore.horarioFuncionamento && (
+                      <p className="mt-1.5"><strong>Horário de funcionamento:</strong> {activeStore.horarioFuncionamento}</p>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+
+                {deliveryMethod === "store" && !pickupPersonType && (
+                  <div className="mt-4 pt-4 border-t border-primary/20 animate-in fade-in">
+                    <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/5" onClick={() => setPickupDialogOpen(true)}>
+                      Informar quem irá retirar o pedido
+                    </Button>
+                  </div>
+                )}
+                
+                {deliveryMethod === "store" && pickupPersonType === "other" && (
+                  <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-primary/20 animate-in fade-in">
+                    <div className="font-bold text-sm text-primary">Dados da pessoa autorizada a retirar:</div>
+                    <div><Label>Nome</Label><Input value={authName} onChange={(e) => setAuthName(e.target.value)} className="bg-white" /></div>
+                    <div><Label>CPF</Label><Input value={authCpf} onChange={(e) => {
+                      let v = e.target.value.replace(/\D/g, "");
+                      if (v.length > 11) v = v.slice(0, 11);
+                      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+                      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+                      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+                      setAuthCpf(v);
+                    }} className="bg-white" /></div>
+                    <div><Label>Telefone</Label><Input value={authPhone} onChange={(e) => {
+                      let v = e.target.value.replace(/\D/g, "");
+                      if (v.length > 11) v = v.slice(0, 11);
+                      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+                      v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+                      setAuthPhone(v);
+                    }} className="bg-white" /></div>
+                    <div className="mt-1">
+                      <Button variant="outline" size="sm" onClick={() => setPickupPersonType("self")} className="w-full sm:w-auto">Alterar para Eu mesmo vou retirar</Button>
+                    </div>
+                  </div>
+                )}
+                
+                {deliveryMethod === "store" && pickupPersonType === "self" && !isServiceCart && (
+                  <div className="mt-4 pt-4 border-t border-primary/20 animate-in fade-in">
+                    <div className="flex flex-col xl:flex-row xl:items-center gap-3 xl:justify-between text-sm">
+                      <span className="flex items-center gap-2"><User className="h-4 w-4 text-primary shrink-0" /><span><strong>Você mesmo</strong> irá retirar o pedido.</span></span>
+                      <Button variant="outline" size="sm" className="h-8 shrink-0" onClick={() => setPickupDialogOpen(true)}>Alterar pessoa</Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {forceDelivery && (
+              <div className="col-span-full bg-blue-50 text-blue-800 p-3 rounded-lg text-xs border border-blue-100 font-bold h-fit">
+                ℹ️ Esta unidade opera exclusivamente com entrega em domicílio.
+              </div>
+            )}
             
             {!forceStore && (
               <label className={`border rounded-lg p-4 cursor-pointer flex flex-col gap-2 transition h-fit ${deliveryMethod === "home" ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}>

@@ -1565,6 +1565,57 @@ export const useAdmin = create<AdminState>()(
           console.warn("Aviso ao buscar loja no banco:", e);
         }
 
+        const finalAceitaEntrega = p.aceitaEntrega !== undefined 
+          ? Boolean(p.aceitaEntrega) 
+          : (p.themeColors?.aceitaEntrega !== undefined 
+              ? Boolean(p.themeColors.aceitaEntrega) 
+              : (currentPharmacy?.aceitaEntrega !== undefined ? Boolean(currentPharmacy.aceitaEntrega) : Boolean(dbThemeColors?.aceitaEntrega)));
+
+        const finalAceitaRetirada = p.aceitaRetirada !== undefined 
+          ? Boolean(p.aceitaRetirada) 
+          : (p.themeColors?.aceitaRetirada !== undefined 
+              ? Boolean(p.themeColors.aceitaRetirada) 
+              : (currentPharmacy?.aceitaRetirada !== undefined ? Boolean(currentPharmacy.aceitaRetirada) : Boolean(dbThemeColors?.aceitaRetirada)));
+
+        const finalHorarioInicioEntrega = p.horarioInicioEntrega !== undefined 
+          ? p.horarioInicioEntrega 
+          : (p.themeColors?.horarioInicioEntrega !== undefined ? p.themeColors.horarioInicioEntrega : (currentPharmacy?.horarioInicioEntrega ?? dbThemeColors?.horarioInicioEntrega ?? ''));
+
+        const finalHorarioFimEntrega = p.horarioFimEntrega !== undefined 
+          ? p.horarioFimEntrega 
+          : (p.themeColors?.horarioFimEntrega !== undefined ? p.themeColors.horarioFimEntrega : (currentPharmacy?.horarioFimEntrega ?? dbThemeColors?.horarioFimEntrega ?? ''));
+
+        const finalTempoEntrega = p.tempoEntrega !== undefined 
+          ? String(p.tempoEntrega) 
+          : (p.themeColors?.tempoEntrega !== undefined ? String(p.themeColors.tempoEntrega) : (currentPharmacy?.tempoEntrega !== undefined ? String(currentPharmacy.tempoEntrega) : (dbThemeColors?.tempoEntrega ?? '')));
+
+        const finalHorarioInicioRetirada = p.horarioInicioRetirada !== undefined 
+          ? p.horarioInicioRetirada 
+          : (p.themeColors?.horarioInicioRetirada !== undefined ? p.themeColors.horarioInicioRetirada : (currentPharmacy?.horarioInicioRetirada ?? dbThemeColors?.horarioInicioRetirada ?? ''));
+
+        const finalHorarioFimRetirada = p.horarioFimRetirada !== undefined 
+          ? p.horarioFimRetirada 
+          : (p.themeColors?.horarioFimRetirada !== undefined ? p.themeColors.horarioFimRetirada : (currentPharmacy?.horarioFimRetirada ?? dbThemeColors?.horarioFimRetirada ?? ''));
+
+        const finalTempoRetirada = p.tempoRetirada !== undefined 
+          ? String(p.tempoRetirada) 
+          : (p.themeColors?.tempoRetirada !== undefined ? String(p.themeColors.tempoRetirada) : (currentPharmacy?.tempoRetirada !== undefined ? String(currentPharmacy.tempoRetirada) : (dbThemeColors?.tempoRetirada ?? '')));
+
+        const rawHorarios = p.horariosPorDia !== undefined 
+          ? p.horariosPorDia 
+          : (p.themeColors?.horariosPorDia !== undefined ? p.themeColors.horariosPorDia : (currentPharmacy?.horariosPorDia ?? dbThemeColors?.horariosPorDia));
+        const finalHorariosPorDia = normalizeHorariosPorDia(rawHorarios);
+
+        const rawDatas = p.datasEspeciais !== undefined 
+          ? p.datasEspeciais 
+          : (p.themeColors?.datasEspeciais !== undefined ? p.themeColors.datasEspeciais : (currentPharmacy?.datasEspeciais ?? dbThemeColors?.datasEspeciais));
+        const finalDatasEspeciais = Array.isArray(rawDatas) ? rawDatas : [];
+
+        const rawMeios = p.meiosEntregaPersonalizados !== undefined 
+          ? p.meiosEntregaPersonalizados 
+          : (p.themeColors?.meiosEntregaPersonalizados !== undefined ? p.themeColors.meiosEntregaPersonalizados : (currentPharmacy?.meiosEntregaPersonalizados ?? dbThemeColors?.meiosEntregaPersonalizados));
+        const finalMeiosEntrega = Array.isArray(rawMeios) ? rawMeios : [];
+
         const updatedColors = p.themeColors !== undefined ? p.themeColors : (currentPharmacy?.themeColors || {});
         const theme_colors_payload = {
           ...dbThemeColors,
@@ -1597,8 +1648,8 @@ export const useAdmin = create<AdminState>()(
           anvisaLogoUrl: p.anvisaLogoUrl !== undefined ? p.anvisaLogoUrl : (currentPharmacy?.anvisaLogoUrl || dbThemeColors?.anvisaLogoUrl),
           horario_funcionamento: p.horarioFuncionamento !== undefined ? p.horarioFuncionamento : (currentPharmacy?.horarioFuncionamento || dbThemeColors?.horario_funcionamento),
           diasFuncionamento: p.diasFuncionamento !== undefined ? p.diasFuncionamento : (currentPharmacy?.diasFuncionamento || dbThemeColors?.diasFuncionamento),
-          horariosPorDia: p.horariosPorDia !== undefined ? p.horariosPorDia : (currentPharmacy?.horariosPorDia || dbThemeColors?.horariosPorDia),
-          datasEspeciais: p.datasEspeciais !== undefined ? p.datasEspeciais : (currentPharmacy?.datasEspeciais || dbThemeColors?.datasEspeciais),
+          horariosPorDia: finalHorariosPorDia,
+          datasEspeciais: finalDatasEspeciais,
           farmaceutico_responsavel: p.respTecnico !== undefined ? p.respTecnico : (currentPharmacy?.respTecnico || dbThemeColors?.farmaceutico_responsavel),
           crf: p.inscricaoFarmaceutico !== undefined ? p.inscricaoFarmaceutico : (currentPharmacy?.inscricaoFarmaceutico || dbThemeColors?.crf),
           alvara_sanitario: p.alvara !== undefined ? p.alvara : (currentPharmacy?.alvara || dbThemeColors?.alvara_sanitario),
@@ -1607,19 +1658,19 @@ export const useAdmin = create<AdminState>()(
           status_loja_virtual: p.virtualStoreStatus !== undefined ? p.virtualStoreStatus : (currentPharmacy?.virtualStoreStatus || dbThemeColors?.status_loja_virtual),
           categoria_associado: p.categoriaAssociado !== undefined ? p.categoriaAssociado : (currentPharmacy?.categoriaAssociado || dbThemeColors?.categoria_associado),
           trabalha_com_encarte: p.trabalhaComEncarte !== undefined ? p.trabalhaComEncarte : (currentPharmacy?.trabalhaComEncarte ?? dbThemeColors?.trabalha_com_encarte),
-          aceitaEntrega: p.aceitaEntrega !== undefined ? Boolean(p.aceitaEntrega) : (currentPharmacy?.aceitaEntrega !== undefined ? Boolean(currentPharmacy.aceitaEntrega) : Boolean(dbThemeColors?.aceitaEntrega)),
+          aceitaEntrega: finalAceitaEntrega,
           modeloFrete: p.modeloFrete !== undefined ? p.modeloFrete : (currentPharmacy?.modeloFrete || dbThemeColors?.modeloFrete),
-          horarioInicioEntrega: p.horarioInicioEntrega !== undefined ? p.horarioInicioEntrega : (currentPharmacy?.horarioInicioEntrega || dbThemeColors?.horarioInicioEntrega),
-          horarioFimEntrega: p.horarioFimEntrega !== undefined ? p.horarioFimEntrega : (currentPharmacy?.horarioFimEntrega || dbThemeColors?.horarioFimEntrega),
+          horarioInicioEntrega: finalHorarioInicioEntrega,
+          horarioFimEntrega: finalHorarioFimEntrega,
           horarioFimEntregaRisco: p.horarioFimEntregaRisco !== undefined ? p.horarioFimEntregaRisco : (currentPharmacy?.horarioFimEntregaRisco || dbThemeColors?.horarioFimEntregaRisco),
-          tempoEntrega: p.tempoEntrega !== undefined ? String(p.tempoEntrega) : (currentPharmacy?.tempoEntrega !== undefined ? String(currentPharmacy.tempoEntrega) : (dbThemeColors?.tempoEntrega || '')),
+          tempoEntrega: finalTempoEntrega,
           custoEntrega: p.custoEntrega !== undefined ? p.custoEntrega : (currentPharmacy?.custoEntrega ?? dbThemeColors?.custoEntrega),
           raioEntregaKm: p.raioEntregaKm !== undefined ? p.raioEntregaKm : (currentPharmacy?.raioEntregaKm ?? dbThemeColors?.raioEntregaKm),
           faixasCep: p.faixasCep !== undefined ? p.faixasCep : (currentPharmacy?.faixasCep || dbThemeColors?.faixasCep),
-          aceitaRetirada: p.aceitaRetirada !== undefined ? Boolean(p.aceitaRetirada) : (currentPharmacy?.aceitaRetirada !== undefined ? Boolean(currentPharmacy.aceitaRetirada) : Boolean(dbThemeColors?.aceitaRetirada)),
-          horarioInicioRetirada: p.horarioInicioRetirada !== undefined ? p.horarioInicioRetirada : (currentPharmacy?.horarioInicioRetirada || dbThemeColors?.horarioInicioRetirada),
-          horarioFimRetirada: p.horarioFimRetirada !== undefined ? p.horarioFimRetirada : (currentPharmacy?.horarioFimRetirada || dbThemeColors?.horarioFimRetirada),
-          tempoRetirada: p.tempoRetirada !== undefined ? String(p.tempoRetirada) : (currentPharmacy?.tempoRetirada !== undefined ? String(currentPharmacy.tempoRetirada) : (dbThemeColors?.tempoRetirada || '')),
+          aceitaRetirada: finalAceitaRetirada,
+          horarioInicioRetirada: finalHorarioInicioRetirada,
+          horarioFimRetirada: finalHorarioFimRetirada,
+          tempoRetirada: finalTempoRetirada,
           aceitaUber: p.aceitaUber !== undefined ? p.aceitaUber : (currentPharmacy?.aceitaUber ?? dbThemeColors?.aceitaUber),
           custoUber: p.custoUber !== undefined ? p.custoUber : (currentPharmacy?.custoUber ?? dbThemeColors?.custoUber),
           aceita99: p.aceita99 !== undefined ? p.aceita99 : (currentPharmacy?.aceita99 ?? dbThemeColors?.aceita99),
@@ -1629,7 +1680,7 @@ export const useAdmin = create<AdminState>()(
           custoEntregaExpressa: p.custoEntregaExpressa !== undefined ? p.custoEntregaExpressa : (currentPharmacy?.custoEntregaExpressa ?? dbThemeColors?.custoEntregaExpressa),
           raiosEntrega: p.raiosEntrega !== undefined ? p.raiosEntrega : (currentPharmacy?.raiosEntrega || dbThemeColors?.raiosEntrega),
           faixasValorPedido: p.faixasValorPedido !== undefined ? p.faixasValorPedido : (currentPharmacy?.faixasValorPedido || dbThemeColors?.faixasValorPedido),
-          meiosEntregaPersonalizados: p.meiosEntregaPersonalizados !== undefined ? p.meiosEntregaPersonalizados : (currentPharmacy?.meiosEntregaPersonalizados || dbThemeColors?.meiosEntregaPersonalizados),
+          meiosEntregaPersonalizados: finalMeiosEntrega,
         };
 
         const baseUpdatePayload: Record<string, any> = {
@@ -1706,11 +1757,11 @@ export const useAdmin = create<AdminState>()(
         if (p.virtualStoreStatus || dbLoja?.status_loja_virtual) baseUpdatePayload.status_loja_virtual = p.virtualStoreStatus || dbLoja?.status_loja_virtual;
         if (p.sistemaUtilizado || dbLoja?.sistema_utilizado) baseUpdatePayload.sistema_utilizado = p.sistemaUtilizado || dbLoja?.sistema_utilizado;
 
-        let { error } = await supabase.from('lojas').update(baseUpdatePayload as any).eq('id', id);
+        let { error, data: updateData } = await supabase.from('lojas').update(baseUpdatePayload as any).eq('id', id).select();
 
-        // Fallback para endpoint administrativo de backend caso haja bloqueio RLS ou falha de sessão
-        if (error) {
-          console.warn("Update direto em lojas falhou, tentando via /api/admin/save-pharmacy:", error.message);
+        // Fallback para endpoint administrativo de backend caso haja bloqueio RLS, falha de sessão ou nenhuma linha retornada
+        if (error || !updateData || updateData.length === 0) {
+          console.warn("Update direto em lojas falhou ou retornou 0 linhas, tentando via /api/admin/save-pharmacy:", error?.message);
           try {
             const apiRes = await fetch("/api/admin/save-pharmacy", {
               method: "POST",
@@ -1721,7 +1772,7 @@ export const useAdmin = create<AdminState>()(
               error = null;
             } else {
               const errData = await apiRes.json().catch(() => ({}));
-              error = { message: errData.error || error.message } as any;
+              error = { message: errData.error || error?.message || "Erro ao persistir alterações" } as any;
             }
           } catch (apiErr: any) {
             console.error("Fallback /api/admin/save-pharmacy falhou:", apiErr);
@@ -1739,17 +1790,17 @@ export const useAdmin = create<AdminState>()(
                 return {
                   ...item,
                   ...p,
-                  aceitaEntrega: theme_colors_payload.aceitaEntrega,
-                  horarioInicioEntrega: theme_colors_payload.horarioInicioEntrega,
-                  horarioFimEntrega: theme_colors_payload.horarioFimEntrega,
-                  tempoEntrega: theme_colors_payload.tempoEntrega,
-                  aceitaRetirada: theme_colors_payload.aceitaRetirada,
-                  horarioInicioRetirada: theme_colors_payload.horarioInicioRetirada,
-                  horarioFimRetirada: theme_colors_payload.horarioFimRetirada,
-                  tempoRetirada: theme_colors_payload.tempoRetirada,
-                  horariosPorDia: normalizeHorariosPorDia(theme_colors_payload.horariosPorDia),
-                  datasEspeciais: Array.isArray(theme_colors_payload.datasEspeciais) ? theme_colors_payload.datasEspeciais : [],
-                  meiosEntregaPersonalizados: Array.isArray(theme_colors_payload.meiosEntregaPersonalizados) ? theme_colors_payload.meiosEntregaPersonalizados : [],
+                  aceitaEntrega: finalAceitaEntrega,
+                  horarioInicioEntrega: finalHorarioInicioEntrega,
+                  horarioFimEntrega: finalHorarioFimEntrega,
+                  tempoEntrega: finalTempoEntrega,
+                  aceitaRetirada: finalAceitaRetirada,
+                  horarioInicioRetirada: finalHorarioInicioRetirada,
+                  horarioFimRetirada: finalHorarioFimRetirada,
+                  tempoRetirada: finalTempoRetirada,
+                  horariosPorDia: finalHorariosPorDia,
+                  datasEspeciais: finalDatasEspeciais,
+                  meiosEntregaPersonalizados: finalMeiosEntrega,
                   raiosEntrega: Array.isArray(theme_colors_payload.raiosEntrega) ? theme_colors_payload.raiosEntrega : [],
                   faixasValorPedido: Array.isArray(theme_colors_payload.faixasValorPedido) ? theme_colors_payload.faixasValorPedido : [],
                   themeColors: theme_colors_payload,
@@ -1758,10 +1809,11 @@ export const useAdmin = create<AdminState>()(
               return item;
             });
             saveCachedPharmacies(updatedPharmacies);
-            return { pharmacies: updatedPharmacies };
+            return { pharmacies: updatedPharmacies, pharmaciesFresh: true };
           });
 
           (loadPharmaciesThrottle as any)._lastCall = 0;
+          loadPharmaciesPromise = null;
           await get().loadPharmacies(true);
         }
       },

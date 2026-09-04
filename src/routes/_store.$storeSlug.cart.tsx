@@ -433,15 +433,32 @@ function CartPage() {
     setIsCalcLoading(false);
     if (!selectedPharmacy) return;
 
-    const p = allPharmacies.find(p => p.id === selectedPharmacyId);
+    const p = selectedPharmacy;
     if (!p) return;
 
     const forcePickup = items.some(i => i.retemReceita || i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")));
   
     const opts: FreightOption[] = [];
+
+    const diasAbertos = (p.horariosPorDia && p.horariosPorDia.length > 0)
+      ? p.horariosPorDia.filter(h => !h.fechado).map(h => Number(h.dia))
+      : (p.diasFuncionamento || [1, 2, 3, 4, 5, 6]);
+
+    const todayDay = new Date().getDay();
+    const todayConfig = p.horariosPorDia?.find(h => Number(h.dia) === todayDay);
+    const horaInicioRetirada = (!todayConfig?.fechado && todayConfig?.abre) || p.horarioInicioRetirada || "08:00";
+    const horaFimRetirada = (!todayConfig?.fechado && todayConfig?.fecha) || p.horarioFimRetirada || "18:00";
+    const horaInicioEntrega = (!todayConfig?.fechado && todayConfig?.abre) || p.horarioInicioEntrega || "08:00";
+    const horaFimEntrega = (!todayConfig?.fechado && todayConfig?.fecha) || p.horarioFimEntrega || "18:00";
     
     if (p.aceitaRetirada) {
-      opts.push({ id: "pickup", label: items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Presencial na farmácia" : "Retirar grátis na loja", price: 0, eta: getDynamicETA(p.horarioInicioRetirada || "08:00", p.horarioFimRetirada || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoRetirada || "30 minutos", "Retirada"), icon: Store });
+      opts.push({ 
+        id: "pickup", 
+        label: items.some(i => i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? "Presencial na farmácia" : "Retirar grátis na loja", 
+        price: 0, 
+        eta: getDynamicETA(horaInicioRetirada, horaFimRetirada, diasAbertos, p.tempoRetirada || "30 minutos", "Retirada"), 
+        icon: Store 
+      });
     }
 
     if (!forcePickup && p.aceitaEntrega) {
@@ -514,7 +531,7 @@ function CartPage() {
                id: m.id,
                label: m.nome,
                price: deliveryPrice,
-               eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], m.tempoEntrega || "60 minutos", "Entrega"),
+               eta: getDynamicETA(horaInicioEntrega, horaFimEntrega, diasAbertos, m.tempoEntrega || p.tempoEntrega || "60 minutos", "Entrega"),
                icon: isMoto ? (MotorcycleIcon as any) : Truck
             });
           }
@@ -602,7 +619,7 @@ function CartPage() {
 
         if (isEligible && deliveryPrice !== null) {
           opts.push(
-            { id: "standard", label: "Receber em casa", price: deliveryPrice, eta: getDynamicETA(p.horarioInicioEntrega || "08:00", p.horarioFimEntrega || "18:00", p.diasFuncionamento || [1,2,3,4,5,6], p.tempoEntrega || "3 horas", "Entrega"), icon: Home as any }
+            { id: "standard", label: "Receber em casa", price: deliveryPrice, eta: getDynamicETA(horaInicioEntrega, horaFimEntrega, diasAbertos, p.tempoEntrega || "3 horas", "Entrega"), icon: Home as any }
           );
         }
 
@@ -620,37 +637,38 @@ function CartPage() {
 
     if (opts.length > 0) {
       const firstDelivery = opts.find(o => o.id !== "pickup");
+      const hasPickup = opts.some(o => o.id === "pickup");
       
-      if (!forcePickup && firstDelivery) {
+      if (forcePickup && hasPickup) {
+        setSelected("pickup");
+        setDeliveryMethod("retirada");
+      } else if (deliveryMethod === "retirada" && hasPickup) {
+        setSelected("pickup");
+      } else if (firstDelivery) {
         setSelected(firstDelivery.id);
         setDeliveryMethod("entrega");
-      } else if (forcePickup) {
+      } else if (hasPickup) {
         setSelected("pickup");
         setDeliveryMethod("retirada");
       } else {
-        if (!firstDelivery) {
-          setSelected("delivery_placeholder");
-          setDeliveryMethod("entrega");
-          toast.error("Entrega indisponível", { description: "Não há opções de entrega disponíveis para o CEP informado." });
-        } else if (!opts.find(o => o.id === selected)) {
-          setSelected(firstDelivery.id);
-          setDeliveryMethod("entrega");
-        }
+        setSelected(opts[0].id);
       }
     } else {
-      if (!forcePickup && selected !== "pickup") {
-        setSelected("delivery_placeholder");
-        setDeliveryMethod("entrega");
-      } else {
-        setSelected("pickup");
-        setDeliveryMethod("retirada");
-      }
+      setSelected("delivery_placeholder");
+      setDeliveryMethod("entrega");
+      toast.error("Entrega indisponível", { description: "Não há opções de entrega ou retirada disponíveis para esta unidade ou CEP informado." });
     }
     
     setFreight(opts);
     // Persist to store without non-serializable icons
     setFreightOptions(opts.map(o => ({ id: o.id, label: o.label, price: o.price, eta: o.eta })));
   };
+
+  useEffect(() => {
+    if (selectedPharmacy?.id && selectedPharmacyId !== selectedPharmacy.id) {
+      setSelectedPharmacyId(selectedPharmacy.id);
+    }
+  }, [selectedPharmacy?.id, selectedPharmacyId, setSelectedPharmacyId]);
 
   useEffect(() => {
     if (items.length > 0) {
@@ -663,12 +681,12 @@ function CartPage() {
   }, [items]);
 
   useEffect(() => {
-    if (selectedPharmacyId && cep.replace(/\D/g, "").length >= 8) {
+    if ((selectedPharmacy || selectedPharmacyId) && cep.replace(/\D/g, "").length >= 8) {
       calcFreight();
     } else {
       setFreight(null);
     }
-  }, [selectedPharmacyId, cep]);
+  }, [selectedPharmacy, selectedPharmacyId, cep]);
 
   const selectedFreight = freight?.find((f) => f.id === selected);
   const isDelivery = selected !== "pickup";
