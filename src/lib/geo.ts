@@ -81,18 +81,14 @@ export async function reverseGeocodeLatLon(lat: number, lng: number): Promise<st
     3500
   ).then(r => r.ok ? r.json() : null).catch(() => null);
 
-  const awesomePromise = fetchWithTimeout(
-    `https://cep.awesomeapi.com.br/json/lat/${lat}/lng/${lng}`,
-    3000
-  ).then(r => r.ok ? r.json() : null).catch(() => null);
-
   const nomPromise = fetchWithTimeout(
     `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=pt-BR`,
     4000
   ).then(r => r.ok ? r.json() : null).catch(() => null);
 
-  // Wait for all three in parallel
-  const [bdcData, awesomeData, nomData] = await Promise.all([bdcPromise, awesomePromise, nomPromise]);
+  // Wait for both in parallel (awesomeapi lat/lng endpoint não existe, removido)
+  const [bdcData, nomData] = await Promise.all([bdcPromise, nomPromise]);
+  const awesomeData = null; // mantém compatibilidade com código abaixo
 
   // Check Nominatim postcode first (very accurate for Brazilian cities)
   const nomCep = extractCep(nomData?.address?.postcode);
