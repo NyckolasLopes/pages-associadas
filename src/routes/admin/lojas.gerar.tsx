@@ -158,8 +158,10 @@ function GerarLojaPage() {
       {/* Lojas Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {activePharmacies.map((pharmacy) => {
-          const isGenerated = pharmacy.isVirtualStoreGenerated;
-          const isAtiva = pharmacy.virtualStoreStatus === "Ativa";
+          // Considera gerada se isVirtualStoreGenerated for true OU se nunca foi explicitamente definida como false
+          // (lojas já existentes no banco não têm esse campo, mas já são lojas reais)
+          const isGenerated = pharmacy.isVirtualStoreGenerated !== false;
+          const isAtiva = pharmacy.virtualStoreStatus === "Ativa" || !pharmacy.virtualStoreStatus;
           const lojaUrl = getLojaUrl(pharmacy);
 
           return (
