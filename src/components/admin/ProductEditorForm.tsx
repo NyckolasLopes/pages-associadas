@@ -844,11 +844,11 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Categoria (com ID)</Label>
-                <Select disabled={!isGlobalAdmin} value={formData.categoriaId || ""} onValueChange={v => setFormData({...formData, categoriaId: v, subcategoriaId: ""})}>
+                <Select disabled={!isGlobalAdmin} value={formData.categoriaId ? String(formData.categoriaId) : ""} onValueChange={v => setFormData({...formData, categoriaId: v, subcategoriaId: ""})}>
                   <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
                   <SelectContent>
                     {categorias.filter((c: any) => !c.parentId).map((c: any) => (
-                      <SelectItem key={c.id} value={c.id}>{c.nome} (ID: {c.id})</SelectItem>
+                      <SelectItem key={c.id} value={String(c.id)}>{c.nome} (ID: {c.id})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -856,12 +856,12 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
               <div className="space-y-2">
                 <Label className="font-bold text-xs uppercase text-slate-500">Subcategoria (com ID)</Label>
-                <Select disabled={!isGlobalAdmin} value={formData.subcategoriaId || ""} onValueChange={v => setFormData({...formData, subcategoriaId: v})} disabled={!formData.categoriaId}>
+                <Select disabled={!isGlobalAdmin || !formData.categoriaId} value={formData.subcategoriaId ? String(formData.subcategoriaId) : ""} onValueChange={v => setFormData({...formData, subcategoriaId: v})}>
                   <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione a subcategoria" /></SelectTrigger>
                   <SelectContent>
-                    {categorias.filter((c: any) => c.parentId === formData.categoriaId).length > 0 ? (
-                      categorias.filter((c: any) => c.parentId === formData.categoriaId).map((c: any) => (
-                        <SelectItem key={c.id} value={c.id}>{c.nome} (ID: {c.id})</SelectItem>
+                    {categorias.filter((c: any) => String(c.parentId) === String(formData.categoriaId)).length > 0 ? (
+                      categorias.filter((c: any) => String(c.parentId) === String(formData.categoriaId)).map((c: any) => (
+                        <SelectItem key={c.id} value={String(c.id)}>{c.nome} (ID: {c.id})</SelectItem>
                       ))
                     ) : (
                       <SelectItem value="none" disabled>Nenhuma subcategoria</SelectItem>
