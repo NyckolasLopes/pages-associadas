@@ -64,7 +64,7 @@ const STATUS_LABEL: Record<string, string> = Object.fromEntries(
 function PainelLoja() {
   const { lojaId } = Route.useParams();
   const { pharmacies, storePanels, hasPermission, currentUser } = useAdmin();
-  const can = (perm: string) => hasPermission(perm);
+  const can = (perm: string) => isAuthenticated && (!currentUser || currentUser?.proprietario || hasPermission(perm));
   const { orders, updateOrderStatus } = useOrders();
 
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
@@ -127,6 +127,27 @@ function PainelLoja() {
       if (loja?.id) secureSession.set(`auth_painel_${loja.id}`, "true");
     }
   }, [isGlobalAdminUser, isStoreLinkedUser, lojaId, loja?.id]);
+
+  // Sincroniza currentUser no useAdmin quando o painel está autenticado
+  useEffect(() => {
+    if (isAuthenticated && !currentUser && loja) {
+      const cat = (loja.categoriaAssociado || "").toString().toLowerCase();
+      const isParceiro = cat === "parceiro" || (loja.nome || "").toLowerCase().includes("parceiro");
+      const adminUserObj = {
+        id: `loja-user-${loja.id}`,
+        name: loja.nome || loja.razaoSocial || `Painel Loja ${loja.id}`,
+        email: loja.email || "",
+        grupoId: isParceiro ? "grupo-associado-parceiro" : "grupo-associado-pleno",
+        proprietario: false,
+        lojasVinculadas: [loja.id],
+      };
+      useAdmin.setState({ currentUser: adminUserObj, activeStoreId: loja.id });
+      try {
+        sessionStorage.setItem('fa-admin-session', JSON.stringify(adminUserObj));
+        localStorage.setItem('fa-admin-last-activity', String(Date.now()));
+      } catch {}
+    }
+  }, [isAuthenticated, currentUser, loja]);
 
   // Filter orders for this specific store
   const lojaOrders = useMemo(() => orders.filter((o) => normalizeLojaId(o.lojaId) === normalizeLojaId(lojaId) || (loja?.id && normalizeLojaId(o.lojaId) === normalizeLojaId(loja.id))).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()), [orders, lojaId, loja?.id]);
@@ -397,6 +418,9 @@ function PainelLoja() {
       
       const cleanEmail = sanitizeText(loginEmail, 100).trim().toLowerCase();
       const cleanPass = loginPassword.trim();
+      const cleanEmailDigits = cleanEmail.replace(/\D/g, "");
+      const cleanPassDigits = cleanPass.replace(/\D/g, "");
+      const lojaCnpjDigits = loja?.cnpj ? loja.cnpj.replace(/\D/g, "") : "";
 
       // 1. Painel com credencial específica em storePanels
       const matchesPanel = Boolean(
@@ -404,10 +428,24 @@ function PainelLoja() {
         panelInfo.email.trim().toLowerCase() === cleanEmail && panelInfo.password === cleanPass
       );
 
-      // 2. Email da loja com senha mestre Aspro@2026 ou CNPJ da loja
-      const isStoreEmail = Boolean(loja?.email && cleanEmail === loja.email.trim().toLowerCase());
+      // 2. Identificador da loja (Email, CNPJ limpo ou formatado, ID ou Slug)
+      const isStoreIdentifier = Boolean(
+        (loja?.email && cleanEmail === loja.email.trim().toLowerCase()) ||
+        (lojaCnpjDigits && cleanEmailDigits === lojaCnpjDigits && cleanEmailDigits.length >= 11) ||
+        (cleanEmail === (loja?.id || "").toLowerCase()) ||
+        (cleanEmail === (loja?.slug || "").toLowerCase()) ||
+        (lojaId && cleanEmail === lojaId.toLowerCase())
+      );
+
+      // Senha: Mestre Aspro@2026, ou CNPJ da loja (limpo ou formatado), ou senha do painel
       const isMasterPass = cleanPass === "Aspro@2026";
-      const isCnpjPass = Boolean(loja?.cnpj && cleanPass === loja.cnpj.replace(/\D/g, ""));
+      const isCnpjPass = Boolean(
+        lojaCnpjDigits && (
+          cleanPassDigits === lojaCnpjDigits || 
+          cleanPass === loja?.cnpj
+        )
+      );
+      const isPanelPass = Boolean(panelInfo?.password && cleanPass === panelInfo.password);
 
       // 3. Administradores Fundadores (Nyckolas / Thiago)
       const isMasterAdmin = (cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" || cleanEmail === "thiago.rocha@farmaciasassociadas.com.br") && isMasterPass;
@@ -453,11 +491,31 @@ function PainelLoja() {
         console.warn("Erro ao checar login via Supabase no painel da loja:", err);
       }
 
-      if (matchesPanel || matchesSupabase || (isStoreEmail && (isMasterPass || isCnpjPass)) || isMasterAdmin || isLocalUserLinked) {
+      if (matchesPanel || matchesSupabase || (isStoreIdentifier && (isMasterPass || isCnpjPass || isPanelPass)) || isMasterAdmin || isLocalUserLinked) {
         secureSession.set(`auth_painel_${lojaId}`, "true");
         if (loja?.id) secureSession.set(`auth_painel_${loja.id}`, "true");
+        if (loja?.slug) secureSession.set(`auth_painel_${loja.slug}`, "true");
         setIsAuthenticated(true);
         rateLimiter.reset(`login_painel_${loja?.id || lojaId}`);
+
+        // Define sessão ativa no store admin
+        const targetLoja = loja || pharmacies.find(p => p.id === lojaId || p.slug === lojaId);
+        const cat = (targetLoja?.categoriaAssociado || "").toString().toLowerCase();
+        const isParceiro = cat === "parceiro" || (targetLoja?.nome || "").toLowerCase().includes("parceiro");
+        const adminUserObj = {
+          id: `loja-user-${targetLoja?.id || lojaId}`,
+          name: targetLoja?.nome || targetLoja?.razaoSocial || `Painel Loja ${lojaId}`,
+          email: targetLoja?.email || cleanEmail,
+          grupoId: isParceiro ? "grupo-associado-parceiro" : "grupo-associado-pleno",
+          proprietario: false,
+          lojasVinculadas: [targetLoja?.id || lojaId],
+        };
+        useAdmin.setState({ currentUser: adminUserObj, activeStoreId: targetLoja?.id || lojaId });
+        try {
+          sessionStorage.setItem('fa-admin-session', JSON.stringify(adminUserObj));
+          localStorage.setItem('fa-admin-last-activity', String(Date.now()));
+        } catch {}
+
         toast.success("Acesso liberado com sucesso!");
       } else {
         toast.error("E-mail ou senha incorretos");
@@ -476,17 +534,17 @@ function PainelLoja() {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-900">Acesso Restrito</h1>
-            <p className="text-slate-500 mt-1">Painel da loja: {loja.nome}</p>
+            <p className="text-slate-500 mt-1">Painel da loja: {loja?.nome || lojaId}</p>
           </div>
           
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>E-mail de Acesso</Label>
+              <Label>E-mail ou CNPJ de Acesso</Label>
               <Input 
-                type="email" 
+                type="text" 
                 value={loginEmail} 
                 onChange={e => setLoginEmail(e.target.value)} 
-                placeholder="loja@associadas.com.br"
+                placeholder="Digite o e-mail ou CNPJ da loja"
                 required
               />
             </div>
@@ -630,6 +688,15 @@ function PainelLoja() {
               size="sm"
               onClick={() => {
                 secureSession.remove(`auth_painel_${lojaId}`);
+                if (loja?.id) secureSession.remove(`auth_painel_${loja.id}`);
+                if (loja?.slug) secureSession.remove(`auth_painel_${loja.slug}`);
+                if (currentUser?.id === `loja-user-${loja?.id || lojaId}`) {
+                  useAdmin.setState({ currentUser: null, activeStoreId: null });
+                  try {
+                    sessionStorage.removeItem('fa-admin-session');
+                    localStorage.removeItem('fa-admin-last-activity');
+                  } catch {}
+                }
                 setIsAuthenticated(false);
                 toast.success("Sessão encerrada com segurança.");
               }}

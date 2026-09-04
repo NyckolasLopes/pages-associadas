@@ -68,8 +68,8 @@ import {
 import { z } from "zod";
 
 const adminLoginSchema = z.object({
-  email: z.string().email("Por favor, insira um e-mail válido."),
-  pass: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.")
+  email: z.string().min(3, "Por favor, insira um e-mail ou CNPJ válido."),
+  pass: z.string().min(4, "A senha deve ter pelo menos 4 caracteres.")
 });
 
 function slugify(text: string): string {
@@ -410,12 +410,12 @@ function AdminLayout() {
               }
             }}>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-[#1a1a1a]">E-mail *</label>
+                <label className="text-sm font-semibold text-[#1a1a1a]">E-mail ou CNPJ *</label>
                 <Input 
-                  type="email" 
+                  type="text" 
                   value={email} 
                   onChange={(e) => setEmail(e.target.value)} 
-                  placeholder="Digite seu e-mail" 
+                  placeholder="Digite seu e-mail ou CNPJ da loja" 
                   className="h-12 bg-[#eaf2fd] border-transparent focus-visible:ring-primary/20"
                   required 
                 />
