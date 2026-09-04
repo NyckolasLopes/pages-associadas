@@ -545,7 +545,7 @@ function ProductCardComponent({
       {/* Product Image Link */}
       <Link
         to="/$storeSlug/produto/$slug"
-        preload={false}
+        preload="intent"
         params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
         className="relative aspect-square bg-white p-2.5 sm:p-3.5 block overflow-hidden"
       >
@@ -594,7 +594,7 @@ function ProductCardComponent({
           {/* Nome do Produto */}
           <Link
             to="/$storeSlug/produto/$slug"
-            preload={false}
+            preload="intent"
             params={{ storeSlug: targetStoreSlug, slug: p.url || p.id }}
             style={{ color: 'var(--headings, inherit)' }}
             className="product-title-clamp text-[12px] sm:text-sm font-bold text-slate-800 hover:text-primary-dark transition-colors"

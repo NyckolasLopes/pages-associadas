@@ -474,6 +474,12 @@ function applyFilters(produtos: Produto[], filters?: FilterOptions): Produto[] {
 const vitrineCacheMap = new Map<string, { data: Produto[]; timestamp: number }>();
 const VITRINE_CACHE_TTL = 45_000; // 45 segundos
 
+const productDetailCache = new Map<string, { product: Produto; timestamp: number }>();
+const PRODUCT_DETAIL_TTL = 180_000; // 3 minutos de cache instantâneo
+
+const crossSellCache = new Map<string, { data: Produto[]; timestamp: number }>();
+const CROSS_SELL_TTL = 300_000; // 5 minutos de cache
+
 export const catalog = {
   listProducts: async (filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
@@ -578,34 +584,82 @@ export const catalog = {
     return wait(categorias.find((c) => c && c.id === id) ?? null);
   },
   getProductBySlug: async (slugOrId: string, lojaId?: string | null) => {
+    if (!slugOrId) return null;
+    const cleanKey = String(slugOrId).trim();
+    const cacheKey = `${cleanKey}-${lojaId || 'global'}`;
+    const cached = productDetailCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < PRODUCT_DETAIL_TTL)) {
+      return { ...cached.product };
+    }
+
+    // Check in-memory custom products first for 0ms response
+    const local = useAdminProducts.getState().customProducts.find(
+      p => p.url === cleanKey || p.slug === cleanKey || String(p.id) === cleanKey
+    );
+    if (local && (!lojaId || local.precosPorLoja?.[lojaId])) {
+      const res = enforceHealthServicesCategory(enhanceProduct(local));
+      productDetailCache.set(cacheKey, { product: res, timestamp: Date.now() });
+      return res;
+    }
+
     await ensureHydrated();
 
-    // Search by URL first
-    let query = supabase.from('produtos').select('*').eq('slug', slugOrId).limit(1);
-    let products = await fetchFromSupabaseWithPrices(query, lojaId);
-    
-    if (products.length === 0) {
-      // Try by ID
-      query = supabase.from('produtos').select('*').eq('id', slugOrId).limit(1);
-      products = await fetchFromSupabaseWithPrices(query, lojaId);
-    }
-    
-    if (products.length > 0) return { ...products[0] };
+    // Query both slug, url, and id in ONE single fast query with or()
+    const query = supabase
+      .from('produtos')
+      .select('*')
+      .or(`slug.eq.${cleanKey},id.eq.${cleanKey},url.eq.${cleanKey}`)
+      .limit(1);
 
-    const local = useAdminProducts.getState().customProducts.find(p => p.url === slugOrId || String(p.id) === slugOrId);
-    if (local) return enforceHealthServicesCategory(enhanceProduct(local));
+    const products = await fetchFromSupabaseWithPrices(query, lojaId);
+
+    if (products.length > 0) {
+      const result = { ...products[0] };
+      productDetailCache.set(cacheKey, { product: result, timestamp: Date.now() });
+      if (result.id) productDetailCache.set(`${result.id}-${lojaId || 'global'}`, { product: result, timestamp: Date.now() });
+      if (result.slug) productDetailCache.set(`${result.slug}-${lojaId || 'global'}`, { product: result, timestamp: Date.now() });
+      return result;
+    }
+
+    if (local) {
+      const res = enforceHealthServicesCategory(enhanceProduct(local));
+      productDetailCache.set(cacheKey, { product: res, timestamp: Date.now() });
+      return res;
+    }
 
     return null;
   },
   getProductById: async (id: string, lojaId?: string | null) => {
+    if (!id) return null;
+    const cleanId = String(id).trim();
+    const cacheKey = `id-${cleanId}-${lojaId || 'global'}`;
+    const cached = productDetailCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < PRODUCT_DETAIL_TTL)) {
+      return { ...cached.product };
+    }
+
+    const local = useAdminProducts.getState().customProducts.find(p => String(p.id) === cleanId);
+    if (local && (!lojaId || local.precosPorLoja?.[lojaId])) {
+      const res = enforceHealthServicesCategory(enhanceProduct(local));
+      productDetailCache.set(cacheKey, { product: res, timestamp: Date.now() });
+      return res;
+    }
+
     await ensureHydrated();
 
-    const query = supabase.from('produtos').select('*').eq('id', id).limit(1);
+    const query = supabase.from('produtos').select('*').eq('id', cleanId).limit(1);
     const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    if (products.length > 0) return { ...products[0] };
+    if (products.length > 0) {
+      const result = { ...products[0] };
+      productDetailCache.set(cacheKey, { product: result, timestamp: Date.now() });
+      return result;
+    }
 
-    const local = useAdminProducts.getState().customProducts.find(p => String(p.id) === id);
-    if (local) return enforceHealthServicesCategory(enhanceProduct(local));
+    if (local) {
+      const res = enforceHealthServicesCategory(enhanceProduct(local));
+      productDetailCache.set(cacheKey, { product: res, timestamp: Date.now() });
+      return res;
+    }
 
     return null;
   },
@@ -747,6 +801,12 @@ export const catalog = {
   },
   // Uses deterministic seed so results are stable across re-renders
   crossSell: async (cartIds: string[], limit = 4, referenceCategoryId?: string) => {
+    const cacheKey = `${referenceCategoryId || 'all'}-${limit}-${(cartIds || []).sort().join(',')}`;
+    const cached = crossSellCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < CROSS_SELL_TTL)) {
+      return wait(cached.data);
+    }
+
     await ensureHydrated();
     const settings = useAdmin.getState().compreJuntoSettings;
     
@@ -770,8 +830,8 @@ export const catalog = {
       }
     }
 
-    // Limit to 50 and then shuffle locally for randomness
-    query = query.limit(50);
+    // Limit to 10 instead of 50 to avoid massive unneeded price table scans
+    query = query.limit(10);
     const products = await fetchFromSupabaseWithPrices(query);
     let others = products;
 
@@ -788,7 +848,9 @@ export const catalog = {
       const j = Math.floor(seededRandom() * (i + 1));
       [others[i], others[j]] = [others[j], others[i]];
     }
-    return wait(others.slice(0, limit));
+    const result = others.slice(0, limit);
+    crossSellCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    return wait(result);
   },
   getOrderBumps: async (): Promise<Produto[]> => {
     await ensureHydrated();

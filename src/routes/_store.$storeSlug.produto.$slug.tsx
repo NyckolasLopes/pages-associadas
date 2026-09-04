@@ -51,6 +51,9 @@ const PromoIcon = ({ id, className }: { id: string, className?: string }) => {
 };
 
 export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
+  staleTime: 60_000,
+  gcTime: 300_000,
+  preload: "intent",
   validateSearch: (search: Record<string, unknown>): { shared?: string } => {
     return {
       shared: search.shared as string | undefined,
@@ -59,51 +62,33 @@ export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
   loader: async ({ params }) => {
     const storeSlug = params.storeSlug;
     const { useAdmin } = await import("@/stores/admin");
-    let pharmacies = useAdmin.getState().pharmacies;
+    const adminState = useAdmin.getState();
+    let pharmacies = adminState.pharmacies;
     if (!pharmacies || pharmacies.length === 0) {
-      await useAdmin.getState().loadPharmacies();
+      await adminState.loadPharmacies();
       pharmacies = useAdmin.getState().pharmacies;
     }
-    let loja = pharmacies.find((ph: any) => (ph.slug || "").toLowerCase() === (storeSlug || "").toLowerCase());
-    if (!loja && storeSlug && storeSlug !== "loja-padrao") {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data: lojaDb } = await supabase
-        .from('lojas')
-        .select('*')
-        .or(`slug.ilike.${storeSlug},id.eq.${storeSlug}`)
-        .maybeSingle();
-      if (lojaDb) {
-        loja = lojaDb;
-      }
-    }
-    if (!loja) {
-      loja = pharmacies.filter((ph: any) => ph.ativo !== false)[0] || pharmacies[0];
-    }
+    const cleanStoreSlug = (storeSlug || "").toLowerCase();
+    const loja = (pharmacies || []).find((ph: any) => 
+      (ph.slug || "").toLowerCase() === cleanStoreSlug ||
+      String(ph.id).toLowerCase() === cleanStoreSlug ||
+      safeSlugify(ph.slug || ph.nome || "") === cleanStoreSlug
+    ) || (pharmacies || []).find((ph: any) => ph.ativo !== false) || pharmacies?.[0];
+
     const p = await catalog.getProductBySlug(params.slug, loja?.id);
     if (!p) throw notFound();
-    const [cat, subcat, crossSell, compreJuntoPartner] = await Promise.all([
-      p.categoriaId ? catalog.getCategoryById(p.categoriaId) : Promise.resolve(null),
-      p.subcategoriaId ? catalog.getCategoryById(p.subcategoriaId) : Promise.resolve(null),
-      catalog.crossSell([p.id], 5, p.categoriaId),
-      p.compreJuntoProdutoId ? catalog.getProductById(p.compreJuntoProdutoId) : Promise.resolve(null)
-    ]);
-    
-    // Find variations (same exact title excluding numbers/units and colors)
-    const normalizeForVariation = (nome: any) => 
-      String(nome || '').replace(/[0-9]+(?:,[0-9]+)?\s*(?:MG|G|ML|KG|UNIDADES|COMPRIMIDOS|CÁPSULAS|SACHÊS|FPS|UI|UN|UI\/G|MG\/G|ML\/ML)?/gi, '')
-          .replace(/\b(AZUL|VERDE|VERMELHO|VERMELHA|AMARELO|AMARELA|BRANCO|BRANCA|PRETO|PRETA|ROSA|ROXO|LARANJA|MARROM|CINZA)\b/gi, '')
-          .replace(/\s+/g, ' ').trim();
-      
-    const normalizedTarget = normalizeForVariation(p.nome);
-    
-    const allProducts = await catalog.listProducts();
-    const variations = allProducts.filter(p2 => 
-      p2.id !== p.id && 
-      p2.categoriaId === p.categoriaId &&
-      normalizeForVariation(p2.nome) === normalizedTarget
-    ).slice(0, 5);
 
-    return { p, loja, cat, subcat, crossSell, variations, compreJuntoPartner };
+    // Fast in-memory category lookups
+    const cat = p.categoriaId ? await catalog.getCategoryById(p.categoriaId) : null;
+    const subcat = p.subcategoriaId ? await catalog.getCategoryById(p.subcategoriaId) : null;
+
+    // Fast parallel fetch for secondary bottom sections (crossSell and bundle partner)
+    const [crossSell, compreJuntoPartner] = await Promise.all([
+      catalog.crossSell([p.id], 4, p.categoriaId),
+      p.compreJuntoProdutoId ? catalog.getProductById(p.compreJuntoProdutoId, loja?.id) : Promise.resolve(null)
+    ]);
+
+    return { p, loja, cat, subcat, crossSell, variations: [], compreJuntoPartner };
   },
   head: ({ loaderData, params }: any) => {
     if (!loaderData) return {};
