@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { PriceDiscountInput } from "@/components/ui/PriceDiscountInput";
 import { 
   Store, Search, DollarSign, Package, Upload, 
-  FileSpreadsheet, AlertCircle, CheckCircle2, FileText, ArrowRight, Check, Calendar, Megaphone, Flame
+  FileSpreadsheet, AlertCircle, CheckCircle2, FileText, ArrowRight, Check, Calendar, Megaphone, Flame, Loader2
 } from "lucide-react";
 import {
   Select,
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/admin/produtos/precos")({
 
 function AdminProdutosPrecos() {
   const { customProducts, addOrUpdateProduct, importStoreSpreadsheet, updateStoreProductStatus, updateStoreProductDestaque } = useAdminProducts();
-  const { pharmacies, currentUser, grupos } = useAdmin();
+  const { pharmacies, currentUser, grupos, activeStoreId } = useAdmin();
   const { selos, addSelo } = useSelos();
   const [massLoading, setMassLoading] = useState<MassLoadingState>({ active: false });
 
@@ -50,8 +50,15 @@ function AdminProdutosPrecos() {
     ? pharmacies 
     : pharmacies.filter(p => currentUser?.lojasVinculadas?.includes(p.id));
 
-  const defaultSelection = userStores[0]?.id || "";
+  const defaultSelection = activeStoreId || userStores[0]?.id || "";
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>(defaultSelection);
+
+  useEffect(() => {
+    if (!selectedPharmacyId && (activeStoreId || userStores.length > 0)) {
+      setSelectedPharmacyId(activeStoreId || userStores[0].id);
+    }
+  }, [selectedPharmacyId, activeStoreId, userStores]);
+
   const [search, setSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -104,10 +111,12 @@ function AdminProdutosPrecos() {
   const currentMonthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
 
   const [localProducts, setLocalProducts] = useState<Produto[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [campanhaLocalProducts, setCampanhaLocalProducts] = useState<Produto[]>([]);
   
   useEffect(() => {
     let active = true;
+    setLoadingProducts(true);
     async function load() {
       try {
         const { results } = await catalog.adminSearchProducts({
@@ -117,12 +126,16 @@ function AdminProdutosPrecos() {
           listFilter: "all",
           lojaId: selectedPharmacyId === "global" ? undefined : selectedPharmacyId
         });
-        if (active) setLocalProducts(results);
+        if (active) {
+          setLocalProducts(results);
+          setLoadingProducts(false);
+        }
       } catch (e) {
         console.error(e);
+        if (active) setLoadingProducts(false);
       }
     }
-    const t = setTimeout(load, 400);
+    const t = setTimeout(load, search ? 300 : 0);
     return () => { active = false; clearTimeout(t); };
   }, [search, selectedPharmacyId]);
 
@@ -857,9 +870,20 @@ function AdminProdutosPrecos() {
             </div>
 
           <div className="flex-1 space-y-1.5">
-            <label className="text-sm font-bold text-slate-700">Buscar Produto</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-slate-700">Buscar Produto</label>
+              {loadingProducts && (
+                <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1 animate-pulse">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Atualizando catálogo...
+                </span>
+              )}
+            </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {loadingProducts ? (
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600 animate-spin" />
+              ) : (
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              )}
               <Input
                 placeholder="Busque por nome ou EAN..."
                 value={search}
@@ -894,9 +918,36 @@ function AdminProdutosPrecos() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map((produto) => {
-                const globalDe = produto.precoDe || produto.precoPor;
-                const globalPor = produto.precoPor;
+              {loadingProducts ? (
+                <tr>
+                  <td colSpan={selectedPharmacyId === "global" ? 3 : 4} className="py-24 text-center bg-white">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <img 
+                        src="/icone-associadas.png" 
+                        alt="Carregando..." 
+                        className="w-12 h-12 animate-spin object-contain" 
+                      />
+                      <div className="space-y-1">
+                        <p className="text-base font-bold text-slate-800">Carregando produtos e preços...</p>
+                        <p className="text-xs text-slate-500">Buscando regras e valores da unidade selecionada</p>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={selectedPharmacyId === "global" ? 3 : 4} className="py-16 text-center text-slate-500 bg-white">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Package className="w-8 h-8 text-slate-300" />
+                      <div className="font-semibold text-slate-600">Nenhum produto encontrado na busca.</div>
+                      <div className="text-xs text-slate-400">Verifique os termos pesquisados ou altere a loja selecionada.</div>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((produto) => {
+                  const globalDe = produto.precoDe || produto.precoPor;
+                  const globalPor = produto.precoPor;
                 
                 const isGlobal = selectedPharmacyId === "global";
                 const lojaPreco = isGlobal ? null : produto.precosPorLoja?.[selectedPharmacyId];
@@ -1097,15 +1148,10 @@ function AdminProdutosPrecos() {
                     )}
                   </tr>
                 );
-              })}
+              })
+            )}
             </tbody>
           </table>
-          
-          {filtered.length === 0 && (
-            <div className="p-8 text-center text-slate-500">
-              Nenhum produto encontrado na busca.
-            </div>
-          )}
         </div>
       </div>
       <Dialog open={isImportEncarteOpen} onOpenChange={setIsImportEncarteOpen}>
