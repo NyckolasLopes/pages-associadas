@@ -147,6 +147,7 @@ export function useActivePharmacy() {
         if (byLastSlug) return byLastSlug;
       }
     } catch { /* ignore */ }
+  }
 
     // 3. Farmácia selecionada no carrinho
     if (selectedPharmacyId) {
