@@ -18,6 +18,13 @@ const CookieBanner = lazy(() => import("@/components/storefront/CookieBanner").t
 const GeoPopup = lazy(() => import("@/components/storefront/GeoPopup").then(m => ({ default: m.GeoPopup })));
 
 export const Route = createFileRoute("/_store")({
+  loader: async () => {
+    try {
+      if (!useAdmin.getState().pharmaciesLoaded || useAdmin.getState().pharmacies.length === 0) {
+        await useAdmin.getState().loadPharmacies();
+      }
+    } catch {}
+  },
   component: StoreLayout,
 });
 
@@ -360,7 +367,7 @@ function StoreLayout() {
     setMounted(true);
   }, []);
 
-  if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && !activePharmacy && !pharmaciesLoaded) {
+  if (potentialSlug && !SYSTEM_PAGES.has(potentialSlug) && !activePharmacy && !pharmaciesLoaded && !mounted) {
     return <GlobalLoading />;
   }
 
@@ -398,6 +405,7 @@ function StoreLayout() {
   return (
     <div
       className="min-h-screen flex flex-col bg-background"
+      suppressHydrationWarning
       style={storeTheme}
     >
       <Header />

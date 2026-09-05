@@ -121,23 +121,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const isParceiro = (dadosLoja as any)?.categoriaAssociado === 'Parceiro';
     const title = isParceiro ? (dadosLoja?.nomeLoja || dadosLoja?.razaoSocial || "Loja Parceira") : fallbackTitle;
     const description = dadosLoja?.descricao || "Medicamentos, dermocosméticos, vitaminas e cuidado para toda a família, com entrega rápida e farmacêutico responsável. Aqui você tem amigos.";
-    const bairro = dadosLoja?.bairro || "Matriz";
 
-    const adminState = useAdmin.getState();
-    const pathname = typeof window !== 'undefined' ? window.location.pathname : "/";
-    const storeSlug = pathname.split("/")[1];
-    
-    let currentPharmacy = null;
-    if (storeSlug && !['admin', 'auth', 'cart', 'checkout', 'p'].includes(storeSlug)) {
-      currentPharmacy = adminState.pharmacies.find(p => (p.slug || "").toLowerCase() === storeSlug.toLowerCase());
-    }
-    if (!currentPharmacy) {
-      currentPharmacy = adminState.pharmacies.find(p => p.id === adminState.activeStoreId);
-    }
-
-    const globalLogo = useConfig.getState().logo;
-    const themeColor = currentPharmacy?.topBarBgColor || currentPharmacy?.themeColors?.['--primary'] || "#00B5AD";
-    const faviconHref = getSafeMediaUrl(currentPharmacy?.faviconUrl || currentPharmacy?.logoUrl || globalLogo || "/favicon.png");
     return {
       meta: [
         { charSet: "utf-8" },
@@ -151,7 +135,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           name: "description",
           content: description,
         },
-        { name: "theme-color", content: themeColor },
+        { name: "theme-color", content: "#00B5AD" },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
@@ -161,13 +145,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
         { rel: "stylesheet", href: appCss },
-        { rel: "icon", href: faviconHref, type: "image/png" },
-        { rel: "shortcut icon", href: faviconHref, type: "image/png" },
+        { rel: "icon", href: "/favicon.png", type: "image/png" },
+        { rel: "shortcut icon", href: "/favicon.png", type: "image/png" },
         {
           rel: "stylesheet",
           href: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;500;700;900&display=swap",
         },
         { rel: "manifest", href: "/manifest.json" },
+      ],
+      scripts: [
+        {
+          children: `
+            window.deferredPWAInstallPrompt = null;
+            window.addEventListener('beforeinstallprompt', function(e) {
+              e.preventDefault();
+              window.deferredPWAInstallPrompt = e;
+            });
+          `,
+        },
       ],
     };
   },
@@ -181,15 +176,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <head>
+      <head suppressHydrationWarning>
         <HeadContent />
-        <script dangerouslySetInnerHTML={{ __html: `
-          window.deferredPWAInstallPrompt = null;
-          window.addEventListener('beforeinstallprompt', function(e) {
-            e.preventDefault();
-            window.deferredPWAInstallPrompt = e;
-          });
-        `}} />
       </head>
       <body suppressHydrationWarning>
         {children}
@@ -208,6 +196,11 @@ function RootComponent() {
   const redirects = useConfig((s) => s.redirects);
   const scripts = useConfig((s) => s.scripts);
   const activePharmacy = useActivePharmacy();
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Sincroniza carrinhos abandonados
   useCartSync();
@@ -491,11 +484,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {themeColors && Object.keys(themeColors).length > 0 && (
+      {mounted && themeColors && Object.keys(themeColors).length > 0 && (
         <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `:root { ${Object.entries(themeColors).map(([k, v]) => `${k}: ${v};`).join(' ')} }` }} />
       )}
-      {customCss && <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: customCss }} />}
-      {customHtml && <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: customHtml }} />}
+      {mounted && customCss && <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: customCss }} />}
+      {mounted && customHtml && <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: customHtml }} />}
       <Outlet />
       <PriceDropTracker />
 
