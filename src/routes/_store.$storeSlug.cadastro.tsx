@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { useActivePharmacy } from "@/hooks/useActivePharmacy";
+import { useAdmin } from "@/stores/admin";
+import { useConfig } from "@/stores/config";
 
 export const Route = createFileRoute("/_store/$storeSlug/cadastro")({
   validateSearch: zodValidator(
@@ -24,6 +27,24 @@ function CadastroPage() {
   const navigate = useNavigate();
   const login = useAuth((s) => s.login);
   const loginWithProvider = useAuth((s) => s.loginWithProvider);
+
+  const activePharmacy = useActivePharmacy();
+  const { dadosLoja } = useConfig();
+  const { pharmacies } = useAdmin();
+
+  const pharmacyFromSlug = pharmacies?.find(
+    (p) => (p.slug && p.slug.toLowerCase() === (storeSlug || "").toLowerCase()) || String(p.id) === String(storeSlug)
+  );
+
+  const pharmacyName =
+    activePharmacy?.nome ||
+    pharmacyFromSlug?.nome ||
+    activePharmacy?.apelido ||
+    pharmacyFromSlug?.apelido ||
+    dadosLoja?.nomeLoja ||
+    "Farmácias Associadas";
+
+  const preposition = /^(o|o\s|posto|hospital|centro)\b/i.test(pharmacyName.trim()) ? "no" : "na";
 
   const social = async (provider: "google" | "apple" | "facebook") => {
     try {
@@ -268,7 +289,7 @@ function CadastroPage() {
             onChange={(e) => setMarketing(e.target.checked)}
           />
           <Label htmlFor="marketing" className="text-sm text-muted-foreground leading-snug cursor-pointer font-normal">
-            Quero receber ofertas e novidades por e-mail, SMS, WhatsApp na Farmácias Associadas
+            Quero receber ofertas e novidades por e-mail, SMS, WhatsApp {preposition} {pharmacyName}
           </Label>
         </div>
 
