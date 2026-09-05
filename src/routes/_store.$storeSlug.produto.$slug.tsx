@@ -1712,7 +1712,7 @@ function PDP() {
             {!isAvailable ? (
               <div className="flex flex-col gap-1 min-h-[60px] justify-center">
                 <span className="text-xl font-bold text-slate-500">
-                  Preço indisponível
+                  Indisponível
                 </span>
                 <span className="text-xs text-muted-foreground">
                   Sem estoque no momento

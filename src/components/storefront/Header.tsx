@@ -2001,7 +2001,7 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                               {isAvail ? (
                                 <div className="text-sm font-bold text-foreground">{brl(ep.precoPor)}</div>
                               ) : (
-                                <span className="text-xs font-semibold text-slate-400">Preço indisponível</span>
+                                <span className="text-xs font-semibold text-slate-400">Indisponível</span>
                               )}
                             </div>
                           </Link>

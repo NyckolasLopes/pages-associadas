@@ -614,7 +614,7 @@ function ProductCardComponent({
             {!isAvailable ? (
               <div className="py-0.5 flex flex-col justify-center">
                 <span className="text-xs sm:text-sm font-semibold text-slate-400">
-                  Preço indisponível
+                  Indisponível
                 </span>
                 <span className="text-[10px] text-muted-foreground">
                   Sem estoque no momento

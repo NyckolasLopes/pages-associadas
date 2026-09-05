@@ -835,7 +835,7 @@ function PerfilPage() {
                             {!isAvailable ? (
                               <div className="py-1 flex flex-col items-center justify-center">
                                 <span className="text-sm sm:text-base font-bold text-slate-400">
-                                  Preço indisponível
+                                  Indisponível
                                 </span>
                                 <span className="text-xs text-slate-400 font-medium mt-0.5">
                                   Sem estoque no momento
