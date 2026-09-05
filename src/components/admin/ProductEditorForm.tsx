@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const [formData, setFormData] = useState<Produto | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [saveStep, setSaveStep] = useState<"idle" | "saving" | "syncing" | "done">("idle");
-  const { pharmacies, currentUser, grupos, faviconUrl: globalFavicon } = useAdmin();
+  const { pharmacies, currentUser, grupos, faviconUrl: globalFavicon, logoUrl: globalLogo } = useAdmin();
   const allSelos = useSelos(s => s.selos);
   const effectiveLojaId = lojaId || product?.lojaId || formData?.lojaId || (currentUser?.lojasVinculadas && currentUser.lojasVinculadas.length === 1 ? currentUser.lojasVinculadas[0] : null);
   const isGlobalAdmin = !effectiveLojaId || currentUser?.proprietario || currentUser?.lojasVinculadas === undefined || currentUser?.lojasVinculadas?.length === 0 || grupos?.find(g => g.id === currentUser?.grupoId)?.permissao_total === true;
@@ -71,10 +72,22 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
   useEffect(() => {
     if (saveStep !== "idle") {
-      const prevOverflow = document.body.style.overflow;
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
       document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (["Space", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(e.code)) {
+          e.preventDefault();
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown, { passive: false });
+
       return () => {
-        document.body.style.overflow = prevOverflow;
+        document.body.style.overflow = prevBodyOverflow;
+        document.documentElement.style.overflow = prevHtmlOverflow;
+        window.removeEventListener("keydown", handleKeyDown);
       };
     }
   }, [saveStep]);
@@ -544,7 +557,8 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
       setSaveStep("done");
       setTimeout(() => {
         setSaveStep("idle");
-      }, 1500);
+        onOpenChange(false);
+      }, 1200);
     } catch (error: any) {
       setSaveStep("idle");
       console.error("Erro no onSave:", error);
@@ -2042,12 +2056,19 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
         </div>
 
-        {saveStep !== "idle" && (
-          <div className="fixed inset-0 z-[99999] bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 overflow-hidden select-none animate-in fade-in duration-200">
-            <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm w-full text-center border border-slate-200 animate-in zoom-in-95 duration-200">
+        {saveStep !== "idle" && typeof document !== "undefined" && createPortal(
+          <div 
+            className="fixed inset-0 z-[99999999] bg-slate-950/75 backdrop-blur-md flex flex-col items-center justify-center p-4 select-none touch-none overscroll-none animate-in fade-in duration-200 cursor-wait"
+            onWheel={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onTouchMove={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onKeyDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            style={{ pointerEvents: "all" }}
+          >
+            <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full text-center border border-slate-100 animate-in zoom-in-95 duration-200">
               {saveStep === "done" ? (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4 text-emerald-600">
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4 text-emerald-600 shadow-xs">
                     <CheckCircle2 className="w-10 h-10 animate-in zoom-in" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-800 mb-1">Salvo com sucesso!</h3>
@@ -2055,15 +2076,33 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 </>
               ) : (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
-                    <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+                  <img
+                    src={globalLogo || "/logo.png"}
+                    alt="Farmácias Associadas"
+                    className="max-h-12 max-w-[200px] w-auto h-auto mb-6 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                  <div className="relative w-16 h-16 flex items-center justify-center mb-4">
+                    <img
+                      src="/icone-associadas.png"
+                      alt="Carregando..."
+                      className="w-14 h-14 animate-spin object-contain"
+                    />
                   </div>
                   <h3 className="text-xl font-bold text-slate-800 mb-1">Aguarde um momento</h3>
-                  <p className="text-sm text-slate-500 font-medium">Estamos salvando seu produto na rede...</p>
+                  <p className="text-sm text-slate-500 font-medium">
+                    {effectiveLojaId ? `Salvando alterações para ${currentLoja?.nome || "sua loja"}...` : "Estamos salvando seu produto na rede..."}
+                  </p>
+                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-5">
+                    <div className="bg-emerald-600 h-full w-full animate-pulse rounded-full" />
+                  </div>
                 </>
               )}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {formData && (
@@ -2088,8 +2127,20 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-[95vw] w-[1200px] h-[95vh] p-0 overflow-y-auto bg-slate-50">
+      <Dialog open={open} onOpenChange={(val) => {
+        if (saveStep !== "idle") return;
+        onOpenChange(val);
+      }}>
+        <DialogContent 
+          onInteractOutside={(e) => e.preventDefault()} 
+          onEscapeKeyDown={(e) => {
+            if (saveStep !== "idle") e.preventDefault();
+          }}
+          className={cn(
+            "max-w-[95vw] w-[1200px] h-[95vh] p-0 bg-slate-50",
+            saveStep !== "idle" ? "overflow-hidden pointer-events-none select-none" : "overflow-y-auto"
+          )}
+        >
           <DialogTitle className="sr-only">{isServico ? "Editor de Serviço" : "Editor de Produto"}</DialogTitle>
           {content}
         </DialogContent>

@@ -241,7 +241,9 @@ function AdminProdutos() {
     
     try {
       await addOrUpdateProduct(finalProduct, currentLojaId || undefined);
-      setEditorOpen(false);
+      setTimeout(() => {
+        setEditorOpen(false);
+      }, 1200);
       setServerProducts(prev => prev.map(prod => prod.id === finalProduct.id ? { ...prod, ...finalProduct } : prod));
       toast.success(
         currentLojaId
