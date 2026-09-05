@@ -190,7 +190,20 @@ export const useLive = create<LiveStore>((set, get) => ({
 
   fetchRealAcessos: async () => {
     try {
-      const { data, error } = await supabase.from('site_acessos').select('*');
+      // 1. Obter a contagem total exata de acessos de forma ultrarrápida via HEAD (sem transferir linhas)
+      const { count: exactTotal } = await supabase
+        .from('site_acessos')
+        .select('id', { count: 'exact', head: true });
+
+      // 2. Buscar apenas colunas necessárias dos últimos 30 dias com limite seguro (economiza 90%+ de tráfego)
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('site_acessos')
+        .select('created_at, loja_id')
+        .gte('created_at', thirtyDaysAgo)
+        .order('created_at', { ascending: false })
+        .limit(5000);
+
       if (error) {
         console.warn("Aviso ao buscar histórico de acessos:", error.message);
         return;
@@ -201,7 +214,7 @@ export const useLive = create<LiveStore>((set, get) => ({
       const isMes = (d: Date) => d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
 
       const stats: Record<string, LojaAcessoStat> = {};
-      let globTotal = 0;
+      let calculatedTotal = 0;
 
       (data || []).forEach(acesso => {
         const date = new Date(acesso.created_at);
@@ -214,10 +227,10 @@ export const useLive = create<LiveStore>((set, get) => ({
         if (isHoje(date)) stats[lojaId].hoje += 1;
         
         stats[lojaId].lastAccess = Math.max(stats[lojaId].lastAccess, date.getTime());
-        globTotal += 1;
+        calculatedTotal += 1;
       });
 
-      set({ lojasAcessos: stats, totalAcessos: globTotal });
+      set({ lojasAcessos: stats, totalAcessos: exactTotal !== null && exactTotal !== undefined ? exactTotal : calculatedTotal });
     } catch (e) {
       console.warn("Exceção ao buscar acessos:", e);
     }
@@ -225,13 +238,14 @@ export const useLive = create<LiveStore>((set, get) => ({
 
   fetchActiveVisitors: async () => {
     try {
-      // Considera visitantes com heartbeat nos últimos 45 segundos como ativos e online
-      const since = new Date(Date.now() - 45000).toISOString();
+      // Considera visitantes com heartbeat nos últimos 75 segundos como ativos e online
+      const since = new Date(Date.now() - 75000).toISOString();
       const { data, error } = await supabase
         .from('site_acessos')
         .select('*')
         .gte('created_at', since)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(300);
 
       if (error) {
         return;
@@ -296,15 +310,15 @@ export const useLive = create<LiveStore>((set, get) => ({
     if (pollTimer) clearInterval(pollTimer);
     if (statsPollTimer) clearInterval(statsPollTimer);
 
-    // Polling contínuo de visitantes ativos a cada 4 segundos
+    // Polling contínuo de visitantes ativos a cada 8 segundos no admin
     pollTimer = setInterval(() => {
       fetchActiveVisitors();
-    }, 4000);
+    }, 8000);
 
-    // Atualização de totais a cada 30 segundos
+    // Atualização de totais a cada 60 segundos
     statsPollTimer = setInterval(() => {
       fetchRealAcessos();
-    }, 30000);
+    }, 60000);
 
     return () => {
       get().stopPollingVisitors();
@@ -378,7 +392,22 @@ export const useLive = create<LiveStore>((set, get) => ({
   initPresence: (sessionId: string, lojaId?: string) => {
     set({ mySessionId: sessionId });
 
-    const emitHeartbeat = async () => {
+    let lastHeartbeatTime = 0;
+
+    const emitHeartbeat = async (force = false) => {
+      // Se a aba estiver minimizada ou em segundo plano, não gasta requisição nem banco
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden' && !force) {
+        return;
+      }
+
+      const now = Date.now();
+      // Throttling: impede disparos seguidos em menos de 30 segundos
+      if (!force && (now - lastHeartbeatTime < 30000)) {
+        return;
+      }
+
+      lastHeartbeatTime = now;
+
       try {
         const city = get().myCidade || CIDADES[0];
         const pInfo = getPageInfo();
@@ -405,21 +434,20 @@ export const useLive = create<LiveStore>((set, get) => ({
     // 1. Resolve localização e dispara primeiro heartbeat com a cidade real
     resolveVisitorLocation().then((resolvedCity) => {
       set({ myCidade: resolvedCity });
-      emitHeartbeat();
+      emitHeartbeat(true);
     });
 
-    // 2. Heartbeat contínuo a cada 15 segundos enquanto a página estiver aberta
+    // 2. Heartbeat contínuo a cada 60 segundos enquanto a aba estiver aberta e ativa
     if (heartbeatTimer) clearInterval(heartbeatTimer);
     heartbeatTimer = setInterval(() => {
       emitHeartbeat();
-    }, 15000);
+    }, 60000);
 
-    // 3. Heartbeat em mudanças de foco ou visibilidade da aba
+    // 3. Heartbeat em mudanças de foco ou visibilidade da aba (com throttle inteligente de 30s)
     if (typeof window !== 'undefined') {
-      window.addEventListener('focus', emitHeartbeat);
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') emitHeartbeat();
-      });
+      const throttledFocus = () => emitHeartbeat(false);
+      window.addEventListener('focus', throttledFocus);
+      document.addEventListener('visibilitychange', throttledFocus);
     }
   },
 

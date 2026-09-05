@@ -222,38 +222,40 @@ export function useOrdersKpis(lojaId?: string) {
         .single();
       const profile = rawProfile as any;
 
-      let query = supabase.from('pedidos').select('status');
-
-      if (!profile?.is_admin) {
-        if (profile?.lojas_vinculadas && profile.lojas_vinculadas.length > 0) {
-          const lojaIds = Array.isArray(profile.lojas_vinculadas)
-            ? profile.lojas_vinculadas
-            : Object.keys(profile.lojas_vinculadas);
-          query = query.in('loja_id', expandLojaIds(lojaIds));
-        } else {
-          query = query.eq('user_id', user.id);
+      const applyBaseFilters = (q: any) => {
+        if (!profile?.is_admin) {
+          if (profile?.lojas_vinculadas && profile.lojas_vinculadas.length > 0) {
+            const lojaIds = Array.isArray(profile.lojas_vinculadas)
+              ? profile.lojas_vinculadas
+              : Object.keys(profile.lojas_vinculadas);
+            q = q.in('loja_id', expandLojaIds(lojaIds));
+          } else {
+            q = q.eq('user_id', user.id);
+          }
         }
-      }
+        if (lojaId) {
+          q = q.in('loja_id', expandLojaIds(lojaId));
+        }
+        return q;
+      };
 
-      if (lojaId) {
-        query = query.in('loja_id', expandLojaIds(lojaId));
+      try {
+        const [totalRes, concluidosRes, canceladosRes] = await Promise.all([
+          applyBaseFilters(supabase.from('pedidos').select('id', { count: 'exact', head: true })),
+          applyBaseFilters(supabase.from('pedidos').select('id', { count: 'exact', head: true }).or('status.ilike.%conclu%,status.ilike.%entregue%')),
+          applyBaseFilters(supabase.from('pedidos').select('id', { count: 'exact', head: true }).ilike('status', '%cancel%')),
+        ]);
+
+        const total = totalRes.count || 0;
+        const concluidos = concluidosRes.count || 0;
+        const cancelados = canceladosRes.count || 0;
+        const pendentes = Math.max(0, total - concluidos - cancelados);
+
+        return { concluidos, pendentes, cancelados, total };
+      } catch (err) {
+        console.warn("[useOrdersKpis] Erro na contagem otimizada:", err);
+        return { concluidos: 0, pendentes: 0, cancelados: 0, total: 0 };
       }
-      
-      const { data, error } = await query;
-      if (error) return { concluidos: 0, pendentes: 0, cancelados: 0, total: 0 };
-      
-      let concluidos = 0;
-      let pendentes = 0;
-      let cancelados = 0;
-      
-      (data || []).forEach((d: any) => {
-        const st = (d.status || "").toLowerCase();
-        if (st.includes("conclu") || st.includes("entregue")) concluidos++;
-        else if (st.includes("cancel")) cancelados++;
-        else pendentes++;
-      });
-      
-      return { concluidos, pendentes, cancelados, total: (data || []).length };
     },
     staleTime: 1000 * 60,
   });

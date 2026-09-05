@@ -363,7 +363,7 @@ function PainelLoja() {
     previousOrderCountRef.current = lojaOrders.length;
   }, [lojaOrders.length]);
 
-  // Sincronização em Tempo Real + Web Worker Polling para Background
+  // Sincronização em Tempo Real nativa via WebSocket (Supabase Realtime) com 0 sobrecarga no banco
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'associadas-orders-storage') {
@@ -371,25 +371,36 @@ function PainelLoja() {
       }
     };
     window.addEventListener('storage', handleStorage);
-    
-    // Usando Web Worker para garantir que o polling rode a cada 3s mesmo minimizado
-    const workerCode = `
-      setInterval(function() {
-        postMessage('poll');
-      }, 3000);
-    `;
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    const worker = new Worker(URL.createObjectURL(blob));
-    
-    worker.onmessage = () => {
+
+    const onFocus = () => {
       useOrders.getState().loadOrders();
     };
+    window.addEventListener('focus', onFocus);
+
+    // Canal Realtime para push instantâneo de novos pedidos (< 50ms)
+    const channel = supabase
+      .channel(`rt-painel-loja-${lojaId || 'store'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pedidos' },
+        () => {
+          useOrders.getState().loadOrders();
+        }
+      )
+      .subscribe();
+
+    // Fallback leve e seguro a cada 45s apenas para contingência de rede
+    const fallbackInterval = setInterval(() => {
+      useOrders.getState().loadOrders();
+    }, 45000);
 
     return () => {
       window.removeEventListener('storage', handleStorage);
-      worker.terminate();
+      window.removeEventListener('focus', onFocus);
+      clearInterval(fallbackInterval);
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [lojaId]);
 
 
   if (pharmacies.length === 0) {

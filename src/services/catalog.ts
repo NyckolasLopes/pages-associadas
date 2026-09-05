@@ -498,6 +498,28 @@ const VITRINE_CACHE_TTL = 45_000; // 45 segundos
 const categoryCacheMap = new Map<string, { data: Produto[]; timestamp: number }>();
 const CATEGORY_CACHE_TTL = 120_000; // 2 minutos
 
+const featuredCacheMap = new Map<string, { data: Produto[]; timestamp: number }>();
+const FEATURED_CACHE_TTL = 45_000; // 45 segundos
+
+// SingleFlight: Deduplicação de requisições concorrentes idênticas em voo
+const inFlightRequests = new Map<string, Promise<any>>();
+
+export function invalidateCatalogCache(lojaId?: string | null) {
+  if (lojaId) {
+    for (const key of vitrineCacheMap.keys()) {
+      if (key.includes(lojaId)) vitrineCacheMap.delete(key);
+    }
+    for (const key of categoryCacheMap.keys()) {
+      if (key.includes(lojaId)) categoryCacheMap.delete(key);
+    }
+    featuredCacheMap.delete(`featured:${lojaId}`);
+  } else {
+    vitrineCacheMap.clear();
+    categoryCacheMap.clear();
+    featuredCacheMap.clear();
+  }
+}
+
 const topOrderedCacheMap = new Map<string, { data: string[]; timestamp: number }>();
 const TOP_ORDERED_TTL = 60_000; // 1 minuto
 
@@ -781,16 +803,7 @@ export const catalog = {
     return null;
   },
   getProduct: async (id: string, lojaId?: string | null) => {
-    await ensureHydrated();
-
-    const query = supabase.from('produtos').select('*').eq('id', id).limit(1);
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    if (products.length > 0) return { ...products[0] };
-
-    const local = useAdminProducts.getState().customProducts.find(p => String(p.id) === id);
-    if (local) return enforceHealthServicesCategory(enhanceProduct(local));
-
-    return null;
+    return await catalog.getProductById(id, lojaId);
   },
   getProductsByIds: async (ids: (string | number)[], lojaId?: string | null): Promise<Produto[]> => {
     if (!ids || ids.length === 0) return [];
@@ -921,80 +934,94 @@ export const catalog = {
       return applyFilters(cachedEntry.data, filters);
     }
 
-    let query = supabase.from('produtos').select('*');
-    let topOrderedIds: string[] = [];
+    if (inFlightRequests.has(cacheKey)) {
+      const inFlightData = await inFlightRequests.get(cacheKey)!;
+      return applyFilters(inFlightData, filters);
+    }
 
-    if (produtoIds && produtoIds.length > 0) {
-      query = query.in('id', produtoIds);
-    } else if (categoriaId === "destaques") {
-      query = query.eq('destaque', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
-    } else if (categoriaId === "ofertas") {
-      // Vitrine Ofertas da Semana: reflete apenas produtos manuais destacados pela estrela no admin
-      query = query.eq('destaque', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
-    } else if (categoriaId === "novidades") {
-      // Vitrine Novidades: única que recebe produtos recém-adicionados automaticamente
-      query = query.order('created_at', { ascending: false, nullsFirst: false }).order('id', { ascending: false });
-    } else if (categoriaId === "all" || categoriaId === "mais_pedidos" || String(vitrineId) === "3") {
-      // Vitrine Mais pedidos / Mais vendidos: automático de acordo com os pedidos reais
-      topOrderedIds = await getTopOrderedProductIds(lojaId);
-      if (topOrderedIds.length > 0) {
-        const pagedIds = topOrderedIds.slice(page * pageSize, (page + 1) * pageSize);
-        if (pagedIds.length > 0) {
-          query = query.in('id', pagedIds);
+    const fetchPromise = (async () => {
+      let query = supabase.from('produtos').select('*');
+      let topOrderedIds: string[] = [];
+
+      if (produtoIds && produtoIds.length > 0) {
+        query = query.in('id', produtoIds);
+      } else if (categoriaId === "destaques") {
+        query = query.eq('destaque', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
+      } else if (categoriaId === "ofertas") {
+        // Vitrine Ofertas da Semana: reflete apenas produtos manuais destacados pela estrela no admin
+        query = query.eq('destaque', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
+      } else if (categoriaId === "novidades") {
+        // Vitrine Novidades: única que recebe produtos recém-adicionados automaticamente
+        query = query.order('created_at', { ascending: false, nullsFirst: false }).order('id', { ascending: false });
+      } else if (categoriaId === "all" || categoriaId === "mais_pedidos" || String(vitrineId) === "3") {
+        // Vitrine Mais pedidos / Mais vendidos: automático de acordo com os pedidos reais
+        topOrderedIds = await getTopOrderedProductIds(lojaId);
+        if (topOrderedIds.length > 0) {
+          const pagedIds = topOrderedIds.slice(page * pageSize, (page + 1) * pageSize);
+          if (pagedIds.length > 0) {
+            query = query.in('id', pagedIds);
+          } else {
+            return [];
+          }
         } else {
-          return [];
+          // Fallback se ainda não houver pedidos: catálogo histórico com relevância (nunca novidades sem pedidos)
+          query = query.gt('nivel_relevancia', 0).order('nivel_relevancia', { ascending: false });
         }
+      } else if (categoriaId === "campanha") {
+        query = query.eq('em_campanha', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
+      } else if (categoriaId === "protetores") {
+        query = query.ilike('nome', '%protetor%'); // or %solar%
       } else {
-        // Fallback se ainda não houver pedidos: catálogo histórico com relevância (nunca novidades sem pedidos)
-        query = query.gt('nivel_relevancia', 0).order('nivel_relevancia', { ascending: false });
+        const categorias = getCategorias();
+        const validCategoryIds = [categoriaId, ...categorias.filter(c => String(c.parentId) === String(categoriaId)).map(c => c.id)];
+        query = query.in('categoria_id', validCategoryIds);
       }
-    } else if (categoriaId === "campanha") {
-      query = query.eq('em_campanha', true).order('nivel_relevancia', { ascending: false, nullsFirst: false });
-    } else if (categoriaId === "protetores") {
-      query = query.ilike('nome', '%protetor%'); // or %solar%
-    } else {
-      const categorias = getCategorias();
-      const validCategoryIds = [categoriaId, ...categorias.filter(c => String(c.parentId) === String(categoriaId)).map(c => c.id)];
-      query = query.in('categoria_id', validCategoryIds);
+
+      // Aplica paginação quando não estiver filtrando por pagedIds
+      if (!(categoriaId === "all" || categoriaId === "mais_pedidos" || String(vitrineId) === "3") || topOrderedIds.length === 0) {
+        query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+      }
+
+      const baseProducts = await fetchFromSupabaseWithPrices(query, lojaId);
+
+      // Filtra inativos
+      let activeProducts = baseProducts.filter(p => p && p.ativo !== false);
+
+      // Para Ofertas da Semana sem produtoIds explícitos, garante que somente produtos com destaque ativo sejam exibidos
+      if (categoriaId === "ofertas" && (!produtoIds || produtoIds.length === 0)) {
+        activeProducts = activeProducts.filter(p => p.destaque === true);
+      }
+
+      // Se for Mais Pedidos com pedidos reais, ordenar na ordem exata de vendas
+      if ((categoriaId === "all" || categoriaId === "mais_pedidos" || String(vitrineId) === "3") && topOrderedIds.length > 0) {
+        const idOrderMap = new Map(topOrderedIds.map((id, index) => [id, index]));
+        activeProducts.sort((a, b) => {
+          const orderA = idOrderMap.has(String(a.id)) ? idOrderMap.get(String(a.id))! : 999999;
+          const orderB = idOrderMap.has(String(b.id)) ? idOrderMap.get(String(b.id))! : 999999;
+          return orderA - orderB;
+        });
+      } else {
+        // Prioritizes products with stock > 0
+        activeProducts.sort((a, b) => {
+          const stockA = a.estoque || 0;
+          const stockB = b.estoque || 0;
+          if (stockA > 0 && stockB <= 0) return -1;
+          if (stockB > 0 && stockA <= 0) return 1;
+          return 0;
+        });
+      }
+
+      vitrineCacheMap.set(cacheKey, { data: activeProducts, timestamp: Date.now() });
+      return activeProducts;
+    })();
+
+    inFlightRequests.set(cacheKey, fetchPromise);
+    try {
+      const activeProducts = await fetchPromise;
+      return applyFilters(activeProducts, filters);
+    } finally {
+      inFlightRequests.delete(cacheKey);
     }
-
-    // Aplica paginação quando não estiver filtrando por pagedIds
-    if (!(categoriaId === "all" || categoriaId === "mais_pedidos" || String(vitrineId) === "3") || topOrderedIds.length === 0) {
-      query = query.range(page * pageSize, (page + 1) * pageSize - 1);
-    }
-
-    const baseProducts = await fetchFromSupabaseWithPrices(query, lojaId);
-
-    // Filtra inativos
-    let activeProducts = baseProducts.filter(p => p && p.ativo !== false);
-
-    // Para Ofertas da Semana sem produtoIds explícitos, garante que somente produtos com destaque ativo sejam exibidos
-    if (categoriaId === "ofertas" && (!produtoIds || produtoIds.length === 0)) {
-      activeProducts = activeProducts.filter(p => p.destaque === true);
-    }
-
-    // Se for Mais Pedidos com pedidos reais, ordenar na ordem exata de vendas
-    if ((categoriaId === "all" || categoriaId === "mais_pedidos" || String(vitrineId) === "3") && topOrderedIds.length > 0) {
-      const idOrderMap = new Map(topOrderedIds.map((id, index) => [id, index]));
-      activeProducts.sort((a, b) => {
-        const orderA = idOrderMap.has(String(a.id)) ? idOrderMap.get(String(a.id))! : 999999;
-        const orderB = idOrderMap.has(String(b.id)) ? idOrderMap.get(String(b.id))! : 999999;
-        return orderA - orderB;
-      });
-    } else {
-      // Prioritizes products with stock > 0
-      activeProducts.sort((a, b) => {
-        const stockA = a.estoque || 0;
-        const stockB = b.estoque || 0;
-        if (stockA > 0 && stockB <= 0) return -1;
-        if (stockB > 0 && stockA <= 0) return 1;
-        return 0;
-      });
-    }
-
-    vitrineCacheMap.set(cacheKey, { data: activeProducts, timestamp: Date.now() });
-
-    return applyFilters(activeProducts, filters);
   },
   productsByBrand: async (brandQuery: string, filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
@@ -1458,41 +1485,63 @@ export const catalog = {
   },
   featured: async (lojaId?: string | null) => {
     await ensureHydrated();
-    let query = supabase.from('produtos').select('*').eq('destaque', true).limit(12);
-    let comDestaqueAll = await fetchFromSupabaseWithPrices(query, lojaId);
-    
-    // Se tiver lojaId, buscar também os destaques específicos da loja
-    if (lojaId) {
-      const { data: storeDestaques } = await supabase
-        .from('produto_precos_loja')
-        .select('produto_id')
-        .eq('loja_id', lojaId)
-        .eq('destaque', true);
-        
-      if (storeDestaques && storeDestaques.length > 0) {
-        const storeFeaturedIds = storeDestaques.map(d => d.produto_id);
-        const existingIds = new Set(comDestaqueAll.map(p => p.id));
-        const missingIds = storeFeaturedIds.filter(id => !existingIds.has(id));
-        
-        if (missingIds.length > 0) {
-          let storeQuery = supabase.from('produtos').select('*').in('id', missingIds);
-          const extraStoreProducts = await fetchFromSupabaseWithPrices(storeQuery, lojaId);
-          comDestaqueAll = [...extraStoreProducts, ...comDestaqueAll];
-        }
-      }
+
+    const cacheKey = `featured:${lojaId || 'all'}`;
+    const cached = featuredCacheMap.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < FEATURED_CACHE_TTL)) {
+      return cached.data;
     }
 
-    const comDestaque = comDestaqueAll;
-    
-    if (comDestaque.length < 12) {
-      const needed = 12 - comDestaque.length;
-      let queryFallback = supabase.from('produtos').select('*').eq('destaque', false).limit(needed * 2); // fetch more to account for stock filtering
-      const fallbackAll = await fetchFromSupabaseWithPrices(queryFallback, lojaId);
-      const fallback = fallbackAll.slice(0, needed);
-      return [...comDestaque, ...fallback];
+    if (inFlightRequests.has(cacheKey)) {
+      return await inFlightRequests.get(cacheKey)!;
     }
-    
-    return comDestaque;
+
+    const fetchPromise = (async () => {
+      let query = supabase.from('produtos').select('*').eq('destaque', true).limit(12);
+      let comDestaqueAll = await fetchFromSupabaseWithPrices(query, lojaId);
+      
+      // Se tiver lojaId, buscar também os destaques específicos da loja
+      if (lojaId) {
+        const { data: storeDestaques } = await supabase
+          .from('produto_precos_loja')
+          .select('produto_id')
+          .eq('loja_id', lojaId)
+          .eq('destaque', true);
+          
+        if (storeDestaques && storeDestaques.length > 0) {
+          const storeFeaturedIds = storeDestaques.map(d => d.produto_id);
+          const existingIds = new Set(comDestaqueAll.map(p => p.id));
+          const missingIds = storeFeaturedIds.filter(id => !existingIds.has(id));
+          
+          if (missingIds.length > 0) {
+            let storeQuery = supabase.from('produtos').select('*').in('id', missingIds);
+            const extraStoreProducts = await fetchFromSupabaseWithPrices(storeQuery, lojaId);
+            comDestaqueAll = [...extraStoreProducts, ...comDestaqueAll];
+          }
+        }
+      }
+
+      const comDestaque = comDestaqueAll;
+      let finalResult = comDestaque;
+      
+      if (comDestaque.length < 12) {
+        const needed = 12 - comDestaque.length;
+        let queryFallback = supabase.from('produtos').select('*').eq('destaque', false).limit(needed * 2); // fetch more to account for stock filtering
+        const fallbackAll = await fetchFromSupabaseWithPrices(queryFallback, lojaId);
+        const fallback = fallbackAll.slice(0, needed);
+        finalResult = [...comDestaque, ...fallback];
+      }
+      
+      featuredCacheMap.set(cacheKey, { data: finalResult, timestamp: Date.now() });
+      return finalResult;
+    })();
+
+    inFlightRequests.set(cacheKey, fetchPromise);
+    try {
+      return await fetchPromise;
+    } finally {
+      inFlightRequests.delete(cacheKey);
+    }
   },
   getUsedCategoriesIds: async (): Promise<string[]> => {
     await ensureHydrated();

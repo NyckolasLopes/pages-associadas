@@ -128,9 +128,13 @@ function getInitialOrders(): Pedido[] {
 function saveOrdersLocally(orders: Pedido[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem("associadas-orders-storage", JSON.stringify(orders));
+    // Mantém no máximo 50 pedidos mais recentes no localStorage para evitar QuotaExceededError (5MB)
+    const prunedOrders = (orders || []).slice(0, 50);
+    localStorage.setItem("associadas-orders-storage", JSON.stringify(prunedOrders));
     window.dispatchEvent(new StorageEvent("storage", { key: "associadas-orders-storage" }));
-  } catch {}
+  } catch (err) {
+    console.warn("[orders] Aviso ao salvar pedidos localmente (cota excedida ou restrição do navegador):", err);
+  }
 }
 
 export const useOrders = create<OrdersState>((set, get) => ({

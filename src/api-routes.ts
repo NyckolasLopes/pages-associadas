@@ -1,4 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import { rateLimiter, RATE_LIMIT_PRESETS } from "./lib/rateLimit";
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return request.headers.get("x-real-ip") || "127.0.0.1";
+}
 
 // Initialize Supabase with service_role key to bypass RLS and authenticate the RPC securely
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -528,6 +535,18 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
   // 1.75. Dedicated Admin Verify User Endpoint (Secure backend authentication for admin/store users by Email or CNPJ)
   if (url.pathname === "/api/admin/verify-user" && request.method === "POST") {
     try {
+      const clientIp = getClientIp(request);
+      const authLimit = rateLimiter.check(`auth:${clientIp}`, RATE_LIMIT_PRESETS.AUTH_LOGIN);
+      if (!authLimit.allowed) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          message: `Muitas tentativas de login. Por segurança, aguarde ${authLimit.retryAfterSeconds} segundos antes de tentar novamente.` 
+        }), {
+          status: 429,
+          headers: { "Content-Type": "application/json", "Retry-After": String(authLimit.retryAfterSeconds) }
+        });
+      }
+
       const body = await request.json().catch(() => ({}));
       const rawInput = (body.email || "").trim();
       const cleanEmail = rawInput.toLowerCase();
@@ -1071,21 +1090,38 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
   // 2.0. Endpoint público para criar pedidos (bypassa RLS e garante salvamento incondicional)
   if (url.pathname === "/api/pedidos/create" && request.method === "POST") {
     try {
+      const clientIp = getClientIp(request);
+      const orderLimit = rateLimiter.check(`order:${clientIp}`, RATE_LIMIT_PRESETS.ORDER_SUBMIT);
+      if (!orderLimit.allowed) {
+        return new Response(JSON.stringify({ 
+          error: `Muitas tentativas de envio de pedido. Aguarde ${orderLimit.retryAfterSeconds} segundos.` 
+        }), {
+          status: 429,
+          headers: { "Content-Type": "application/json", "Retry-After": String(orderLimit.retryAfterSeconds) }
+        });
+      }
+
       const body = await request.json().catch(() => ({}));
       const { order } = body;
-      if (!order) {
-        return new Response(JSON.stringify({ error: "Missing order payload" }), {
+      if (!order || typeof order !== "object") {
+        return new Response(JSON.stringify({ error: "Missing or invalid order payload" }), {
           status: 400,
           headers: { "Content-Type": "application/json" }
         });
       }
 
+      // Sanitização defensiva contra injeções nos campos de texto (Zero Trust Front-end)
+      const sanitize = (val: any, maxLen = 255): string => {
+        if (typeof val !== 'string') return '';
+        return val.replace(/[<>{}]/g, '').trim().slice(0, maxLen);
+      };
+
       const { client: adminClient, token: authToken, publishableKey, targetBase } = await getAdminSupabaseClient(request);
 
       const orderNumber = String(order.numero || order.id || ("FA-" + new Date().toISOString().slice(2, 10).replace(/-/g, "") + "-" + Math.floor(1000 + Math.random() * 9000))).trim();
       const rawNumber = orderNumber.replace(/^FA-/, '');
-      const lojaId = order.lojaId || order.farmaciaId || "loja-padrao";
-      const itens = order.produtos || order.itens || [];
+      const lojaId = sanitize(order.lojaId || order.farmaciaId || "loja-padrao", 100);
+      const itens = Array.isArray(order.produtos) ? order.produtos : Array.isArray(order.itens) ? order.itens : [];
 
       let insertedOrder: any = null;
 
@@ -1093,19 +1129,19 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         numero: rawNumber,
         loja_id: lojaId,
         user_id: order.userId || null,
-        status: order.status || 'novo',
-        total: order.valores?.total || 0,
-        subtotal: order.valores?.subtotal || order.valores?.produtos || 0,
-        frete: order.valores?.frete || 0,
-        desconto: order.valores?.desconto || order.valores?.descontos || 0,
+        status: sanitize(order.status || 'novo', 50),
+        total: Math.max(0, Number(order.valores?.total) || 0),
+        subtotal: Math.max(0, Number(order.valores?.subtotal || order.valores?.produtos) || 0),
+        frete: Math.max(0, Number(order.valores?.frete) || 0),
+        desconto: Math.max(0, Number(order.valores?.desconto || order.valores?.descontos) || 0),
         endereco_entrega: order.cliente?.endereco || null,
-        metodo_entrega: order.modalidade || order.envio?.metodo || 'Entrega',
-        metodo_pagamento: order.pagamento?.metodo || 'Outro',
-        observacoes: order.anotacoes || order.observacoes || '',
-        nome_cliente: order.cliente?.nome || '',
-        telefone_cliente: order.cliente?.telefone || '',
-        email_cliente: order.cliente?.email || '',
-        cpf_cliente: order.cliente?.cpf || ''
+        metodo_entrega: sanitize(order.modalidade || order.envio?.metodo || 'Entrega', 50),
+        metodo_pagamento: sanitize(order.pagamento?.metodo || 'Outro', 50),
+        observacoes: sanitize(order.anotacoes || order.observacoes || '', 500),
+        nome_cliente: sanitize(order.cliente?.nome || '', 120),
+        telefone_cliente: sanitize(order.cliente?.telefone || '', 30),
+        email_cliente: sanitize(order.cliente?.email || '', 120),
+        cpf_cliente: sanitize(order.cliente?.cpf || '', 25)
       };
 
       // 1. Inserção direta via PostgREST com Bearer Token de Admin (Garante bypass de RLS 42501 100%)
