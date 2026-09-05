@@ -387,16 +387,16 @@ function AdminLayout() {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex bg-white">
+      <div className="min-h-screen flex bg-white w-full overflow-x-hidden">
         {/* Left Side - Login Form */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-24 relative">
-          <div className="w-full max-w-[400px] space-y-8">
-            <div className="flex justify-start mb-12">
-              <img src="/logo.png" alt="Farmácias Associadas" className="h-10 object-contain" />
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-5 sm:p-8 md:p-12 lg:p-20 relative">
+          <div className="w-full max-w-[420px] space-y-6 sm:space-y-8">
+            <div className="flex justify-start mb-6 sm:mb-10">
+              <img src="/logo.png" alt="Farmácias Associadas" className="h-9 sm:h-10 object-contain" />
             </div>
 
-            <div className="space-y-2">
-              <h1 className="text-[28px] font-bold text-[#1a1a1a]">Bem-vindo!</h1>
+            <div className="space-y-1.5 sm:space-y-2">
+              <h1 className="text-2xl sm:text-[28px] font-bold text-[#1a1a1a]">Bem-vindo!</h1>
             </div>
 
             <form className="space-y-5" onSubmit={async (e) => {
@@ -501,41 +501,72 @@ function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-      {/* Mobile Top Bar */}
-      <div className="md:hidden print:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-30">
-        <div>
-          <div className="text-lg font-bold text-primary">Painel Administrativo</div>
-          <div className="text-xs text-muted-foreground mt-1">
-            {isGlobalAdmin ? "Sede Administrativa" : (activeStoreId ? (() => {
-              const store = pharmacies.find(p => p.id === activeStoreId);
-                return store ? `${store.cidade || ''} - Admin ${store.nome}` : (isParceiro ? "Painel Administrativo" : "Farmácias Associadas");
-              })() : (isParceiro ? "Painel Administrativo" : "Farmácias Associadas"))}
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row w-full overflow-x-hidden">
+      {/* Mobile & Tablet Top Bar (< 1024px) */}
+      <div className="lg:hidden print:hidden bg-white border-b px-3.5 sm:px-5 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <button 
+            onClick={() => setMobileMenuOpen(true)} 
+            className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 active:bg-slate-100 text-slate-700 shrink-0 transition-colors"
+            aria-label="Abrir menu de navegação"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="min-w-0">
+            <div className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5 truncate">
+              <span className="text-primary font-black">Painel</span>
+              {activeStoreId ? (
+                <span className="truncate text-xs sm:text-sm font-semibold text-slate-600">
+                  {pharmacies.find(p => p.id === activeStoreId)?.nome || "Loja"}
+                </span>
+              ) : (
+                <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                  Sede Global
+                </span>
+              )}
+            </div>
+            <div className="text-[11px] text-muted-foreground truncate">
+              {currentUser.name}
+            </div>
           </div>
         </div>
-        <button onClick={() => setMobileMenuOpen(true)} className="p-2 border border-slate-200 rounded-md hover:bg-slate-50 text-slate-600">
-          <Menu className="w-5 h-5" />
-        </button>
+
+        {/* Right side status / user initials on mobile/tablet */}
+        <div className="flex items-center gap-2 shrink-0">
+          {activeStoreId && (() => {
+            const rawCat = pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || "Pleno";
+            const cat = rawCat.toLowerCase() === 'padrão' || rawCat.toLowerCase() === 'padrao' ? "Pleno" : rawCat;
+            const colorClass = cat === "Parceiro" ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-emerald-50 text-emerald-700 border-emerald-200";
+            return (
+              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase border ${colorClass} hidden sm:inline-block`}>
+                {cat}
+              </span>
+            );
+          })()}
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+            {currentUser.name?.charAt(0) || "A"}
+          </div>
+        </div>
       </div>
 
-      {/* Mobile Overlay */}
+      {/* Mobile & Tablet Overlay */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity" 
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-200" 
           onClick={() => setMobileMenuOpen(false)} 
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar (Drawer em Mobile/Tablet, Docked em Desktop >= 1024px) */}
       <aside className={`print:hidden
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r h-screen flex flex-col transform transition-transform duration-300 ease-in-out
-        md:static md:translate-x-0 md:sticky md:top-0
+        fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white border-r h-screen flex flex-col transform transition-transform duration-300 ease-in-out
+        lg:static lg:w-64 lg:translate-x-0 lg:sticky lg:top-0
         ${mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
       `}>
-        <div className="p-6 border-b flex justify-between items-center bg-white">
-          <div>
-            <div className="text-lg font-bold text-primary">Painel Administrativo</div>
-            <div className="text-xs text-muted-foreground mt-1">
+        <div className="p-4 sm:p-5 border-b flex justify-between items-center bg-white">
+          <div className="min-w-0">
+            <div className="text-base sm:text-lg font-bold text-primary">Painel Administrativo</div>
+            <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">
               {isGlobalAdmin ? "Sede Administrativa" : (activeStoreId ? (() => {
                 const store = pharmacies.find(p => p.id === activeStoreId);
                 return store ? `${store.cidade || ''} - Admin ${store.nome}` : (isParceiro ? "Painel Administrativo" : "Farmácias Associadas");
@@ -543,16 +574,17 @@ function AdminLayout() {
             </div>
           </div>
           <button 
-            className="md:hidden p-1.5 hover:bg-slate-100 rounded-md text-slate-500" 
+            className="lg:hidden p-1.5 hover:bg-slate-100 rounded-md text-slate-500" 
             onClick={() => setMobileMenuOpen(false)}
+            aria-label="Fechar menu"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto" onClick={(e) => {
-          // If a link is clicked on mobile, close the menu
-          if (window.innerWidth < 768 && (e.target as HTMLElement).closest('a')) {
+          // If a link is clicked on mobile or tablet (< lg), close the drawer
+          if (window.innerWidth < 1024 && (e.target as HTMLElement).closest('a')) {
             setMobileMenuOpen(false);
           }
         }}>
@@ -751,12 +783,12 @@ function AdminLayout() {
       </aside>
       
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-full overflow-x-hidden flex flex-col h-screen">
-        {/* Top Header */}
-        <header className="h-16 border-b bg-white flex items-center px-4 md:px-8 justify-between shrink-0 sticky top-0 z-20">
+      <main className="flex-1 w-full max-w-full overflow-x-hidden flex flex-col h-screen min-w-0">
+        {/* Desktop Top Header (visível a partir de lg: 1024px) */}
+        <header className="hidden lg:flex h-16 border-b bg-white items-center px-6 lg:px-8 justify-between shrink-0 sticky top-0 z-20">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-              <h1 className="font-bold text-slate-800 hidden md:block">
+              <h1 className="font-bold text-slate-800">
                 Painel de Controle {activeStoreId && (() => {
                   const rawCat = pharmacies.find(p => p.id === activeStoreId)?.categoriaAssociado || "Pleno";
                   const cat = rawCat.toLowerCase() === 'padrão' || rawCat.toLowerCase() === 'padrao' ? "Pleno" : rawCat;
@@ -765,15 +797,24 @@ function AdminLayout() {
                 })()}
               </h1>
               {!activeStoreId && isGlobalAdmin && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 hidden md:block">
+                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
                   Sede Administrativa
                 </span>
               )}
             </div>
           </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-xs font-bold text-slate-700">{currentUser?.name}</div>
+              <div className="text-[11px] text-muted-foreground">{currentUser?.email}</div>
+            </div>
+            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+              {currentUser?.name?.charAt(0) || "A"}
+            </div>
+          </div>
         </header>
 
-        <div className="p-4 md:p-8 flex-1 overflow-y-auto bg-slate-50 relative">
+        <div className="p-3.5 sm:p-5 md:p-6 lg:p-8 flex-1 overflow-y-auto bg-slate-50 relative min-w-0">
           <CatchBoundary
             getResetKey={() => "admin-error"}
             onCatch={(error) => console.error("Admin Page Error:", error)}

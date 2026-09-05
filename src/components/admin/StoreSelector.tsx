@@ -33,19 +33,19 @@ export function StoreSelector({ className, hidePlenoForNonAdmin = false }: Store
   if (!isGlobalAdmin && userStores.length <= 1) return null;
 
   return (
-    <div className={cn("flex items-center gap-2.5 bg-gradient-to-r from-emerald-100 to-emerald-50 px-3 py-1.5 rounded-xl border-2 border-emerald-300 shadow-sm shrink-0", className)}>
-      <div className="flex items-center gap-1.5 hidden md:flex shrink-0">
+    <div className={cn("flex items-center gap-2 sm:gap-2.5 bg-gradient-to-r from-emerald-100 to-emerald-50 px-2.5 sm:px-3 py-1.5 rounded-xl border-2 border-emerald-300 shadow-sm w-full sm:w-auto shrink-0", className)}>
+      <div className="flex items-center gap-1.5 hidden sm:flex shrink-0">
         <Store className="h-4 w-4 text-emerald-600 shrink-0" />
         <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider whitespace-nowrap">
           Selecione a sua loja:
         </span>
       </div>
-      <div className="w-[220px] sm:w-[260px] md:w-[300px]">
+      <div className="w-full sm:w-[250px] md:w-[280px] flex-1 sm:flex-initial">
         <Select 
           value={activeStoreId || "all"} 
           onValueChange={(val) => setActiveStoreId(val === "all" ? null : val)}
         >
-          <SelectTrigger className="h-10 bg-white border-emerald-300 text-emerald-950 font-black text-xs sm:text-sm shadow-sm focus:ring-emerald-500 rounded-lg px-3 overflow-hidden text-left">
+          <SelectTrigger className="h-10 bg-white border-emerald-300 text-emerald-950 font-black text-xs sm:text-sm shadow-sm focus:ring-emerald-500 rounded-lg px-3 overflow-hidden text-left w-full">
             <SelectValue placeholder="Selecione a sua loja" />
           </SelectTrigger>
           <SelectContent className="max-w-[380px]">

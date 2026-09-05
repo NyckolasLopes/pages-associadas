@@ -357,14 +357,14 @@ function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-8 max-w-5xl pb-10">
+    <div className="space-y-6 sm:space-y-8 max-w-5xl w-full pb-10 min-w-0">
       {/* ---- Greeting ---- */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl sm:text-[26px] font-bold text-slate-800 tracking-tight">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl md:text-[26px] font-bold text-slate-800 tracking-tight truncate">
             Olá, {currentUser?.name || "Administrador"}! 👋
           </h2>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 truncate">
             {effectiveStoreId ? `Visão da Loja: ${pharmacies.find(p => p.id === effectiveStoreId)?.nome || ""}` : (isParceiro ? "Painel Administrativo da Loja" : "Painel Geral da Rede de Farmácias Associadas")}
           </p>
         </div>
@@ -372,24 +372,24 @@ function AdminDashboard() {
       </div>
 
       {/* ---- Faturamento ---- */}
-      <div className="bg-gradient-to-br from-emerald-50 via-white to-teal-50/30 rounded-xl border border-emerald-100 shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/50 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        <div className="relative z-10">
-          <h3 className="text-sm font-bold text-emerald-800/70 mb-2 uppercase tracking-wider">Faturamento Total ({periodos.label})</h3>
-          <div className="flex items-center gap-4">
-            <div className="bg-emerald-500 text-white p-3 rounded-xl shadow-md shadow-emerald-200">
-              <DollarSign className="h-8 w-8" />
+      <div className="bg-gradient-to-br from-emerald-50 via-white to-teal-50/30 rounded-xl border border-emerald-100 shadow-sm p-4 sm:p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/50 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+        <div className="relative z-10 min-w-0">
+          <h3 className="text-xs sm:text-sm font-bold text-emerald-800/70 mb-2 uppercase tracking-wider">Faturamento Total ({periodos.label})</h3>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="bg-emerald-500 text-white p-2.5 sm:p-3 rounded-xl shadow-md shadow-emerald-200 shrink-0">
+              <DollarSign className="h-6 w-6 sm:h-8 sm:w-8" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight">
+            <div className="flex flex-col min-w-0">
+              <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-slate-800 tracking-tight break-words">
                 {valorAtual.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
               </span>
-              <div className="flex items-center gap-1.5 mt-2">
+              <div className="flex flex-wrap items-center gap-1.5 mt-1.5 sm:mt-2">
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${crescFaturamento.isPositivo ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                   {crescFaturamento.isPositivo ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                   {crescFaturamento.percent}
                 </span>
-                <span className="text-xs font-medium text-slate-500">em relação ao {periodos.labelAnterior}</span>
+                <span className="text-[11px] sm:text-xs font-medium text-slate-500">em relação ao {periodos.labelAnterior}</span>
               </div>
             </div>
           </div>
@@ -586,7 +586,7 @@ function AdminDashboard() {
       </div>
 
       {/* ---- Linha 1 de KPIs ---- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
         <Link to="/admin/ao-vivo" className="bg-white rounded-xl border shadow-sm p-5 flex flex-col justify-between h-full hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold uppercase tracking-wider leading-tight">
@@ -689,7 +689,7 @@ function AdminDashboard() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
           <Link to="/admin/carrinhos-abandonados" className="bg-white rounded-xl border shadow-sm p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4 text-emerald-500" />
