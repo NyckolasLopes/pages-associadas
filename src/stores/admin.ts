@@ -66,6 +66,34 @@ export interface AdminBanner {
   ordem?: number; // Posição de exibição dentro da mesma posição/grupo
 }
 
+export function isNetworkRestrictedPosition(pos: string | null | undefined): boolean {
+  if (!pos) return false;
+  const p = pos.toLowerCase().trim();
+  const isTarja = p === "banner tarja" || p === "tarja" || p.includes("tarja");
+  const isComprePorCategoria = 
+    p === "banner compre por categoria" || 
+    p === "compre por categoria" ||
+    p === "banner categoria";
+  return isTarja || isComprePorCategoria;
+}
+
+export function isRedeAdminUser(user: AdminUser | null | undefined, grupos?: any[]): boolean {
+  if (!user) return false;
+  if (user.grupoId && (user.grupoId.startsWith("grupo-associado") || user.grupoId === "grupo-associado")) {
+    return false;
+  }
+  if (user.proprietario) return true;
+  if (user.grupoId === "grupo-admin") return true;
+  if (grupos && user.grupoId) {
+    const g = grupos.find((item: any) => item.id === user.grupoId);
+    if (g?.permissao_total) return true;
+  }
+  if (!user.lojasVinculadas || user.lojasVinculadas.length === 0) {
+    return true;
+  }
+  return false;
+}
+
 export interface AdminIntegrations {
   webhookUrl: string;
   apiKey: string;
@@ -1339,6 +1367,26 @@ export const useAdmin = create<AdminState>()(
         const rawResolved: AdminBanner[] = [];
 
         ALL_POSITIONS.forEach(pos => {
+          const isVectorSystemPos = pos === "Banner Tarja" || pos === "Banner Compre por categoria" || pos === "Banner Categoria";
+          const isRestricted = isNetworkRestrictedPosition(pos);
+
+          // Posições restritas à rede (Banner Tarja e Compre por categoria):
+          // Sempre usam a configuração oficial da rede, nunca overrides locais
+          if (isRestricted) {
+            const globalFromDb = activeBanners.filter((b: AdminBanner) => !b.lojaId && matchPos(b, pos));
+            if (globalFromDb.length > 0) {
+              rawResolved.push(...globalFromDb);
+              return;
+            }
+            if (isVectorSystemPos) {
+              const defaultsForPos = defaultBanners.filter(b => matchPos(b, pos) && !deletedIds.has(b.id));
+              if (defaultsForPos.length > 0) {
+                rawResolved.push(...defaultsForPos);
+                return;
+              }
+            }
+          }
+
           // 1. Banners customizados da loja
           const storeSpecific = activeBanners.filter((b: AdminBanner) => b.lojaId === lojaId && matchPos(b, pos));
           if (storeSpecific.length > 0) {
@@ -1354,7 +1402,6 @@ export const useAdmin = create<AdminState>()(
           }
 
           // 3. Fallback apenas para ícones vetoriais do sistema (Tarja e Categoria), NUNCA para Full Banners ou imagens
-          const isVectorSystemPos = pos === "Banner Tarja" || pos === "Banner Compre por categoria" || pos === "Banner Categoria";
           if (isVectorSystemPos) {
             const defaultsForPos = defaultBanners.filter(b => matchPos(b, pos) && !deletedIds.has(b.id));
             if (defaultsForPos.length > 0) {
@@ -1465,6 +1512,7 @@ export const useAdmin = create<AdminState>()(
       },
       addBanner: async (banner) => {
         const cleanBanner = await sanitizeBannerImages(banner);
+        const isRestricted = isNetworkRestrictedPosition(cleanBanner.posicao);
         const payload = {
           nome: cleanBanner.nome,
           image_url: cleanBanner.imageUrl,
@@ -1476,7 +1524,7 @@ export const useAdmin = create<AdminState>()(
           ativo: cleanBanner.active,
           start_date: (cleanBanner.startDate && cleanBanner.startDate.trim() !== "") ? new Date(cleanBanner.startDate).toISOString() : null,
           end_date: (cleanBanner.endDate && cleanBanner.endDate.trim() !== "") ? new Date(cleanBanner.endDate).toISOString() : null,
-          loja_id: cleanBanner.lojaId || null,
+          loja_id: isRestricted ? null : (cleanBanner.lojaId || null),
           vitrine_vinculada: cleanBanner.vitrineVinculada || null,
           topico_vinculado: cleanBanner.topicoVinculado || null,
           formato_extra: cleanBanner.formatoExtra,
@@ -1499,6 +1547,7 @@ export const useAdmin = create<AdminState>()(
       },
       updateBanner: async (id, banner) => {
         const cleanBanner = await sanitizeBannerImages(banner);
+        const isRestricted = cleanBanner.posicao ? isNetworkRestrictedPosition(cleanBanner.posicao) : false;
         const payload: any = {};
         if (cleanBanner.nome !== undefined) payload.nome = cleanBanner.nome;
         if (cleanBanner.imageUrl !== undefined) payload.image_url = cleanBanner.imageUrl;
@@ -1510,7 +1559,7 @@ export const useAdmin = create<AdminState>()(
         if (cleanBanner.active !== undefined) payload.ativo = cleanBanner.active;
         if (cleanBanner.startDate !== undefined) payload.start_date = (cleanBanner.startDate && cleanBanner.startDate.trim() !== "") ? new Date(cleanBanner.startDate).toISOString() : null;
         if (cleanBanner.endDate !== undefined) payload.end_date = (cleanBanner.endDate && cleanBanner.endDate.trim() !== "") ? new Date(cleanBanner.endDate).toISOString() : null;
-        if (cleanBanner.lojaId !== undefined) payload.loja_id = cleanBanner.lojaId;
+        if (cleanBanner.lojaId !== undefined) payload.loja_id = isRestricted ? null : cleanBanner.lojaId;
         if (cleanBanner.vitrineVinculada !== undefined) payload.vitrine_vinculada = cleanBanner.vitrineVinculada || null;
         if (cleanBanner.topicoVinculado !== undefined) payload.topico_vinculado = cleanBanner.topicoVinculado || null;
         if (cleanBanner.formatoExtra !== undefined) payload.formato_extra = cleanBanner.formatoExtra;

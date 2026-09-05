@@ -21,7 +21,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useAdmin, AdminBanner, defaultBanners } from "@/stores/admin";
+import { useAdmin, AdminBanner, defaultBanners, isNetworkRestrictedPosition, isRedeAdminUser } from "@/stores/admin";
 import { useConfig } from "@/stores/config";
 import { useAdminProducts } from "@/stores/products";
 import { useAdminCategories } from "@/stores/categories";
@@ -283,13 +283,10 @@ function AdminBanners() {
   const setActiveStoreId = useAdmin(s => s.setActiveStoreId);
   const currentUser = useAdmin(s => s.currentUser);
   const grupos = useAdmin(s => s.grupos);
+  const isRedeAdmin = isRedeAdminUser(currentUser, grupos);
   const allBanners = useAdmin(s => s.banners);
   
-  const isGlobalAdmin = () => {
-    if (currentUser?.proprietario) return true;
-    const userGroup = grupos?.find(g => g.id === currentUser?.grupoId);
-    return userGroup?.permissao_total || false;
-  };
+  const isGlobalAdmin = () => isRedeAdmin;
   const banners = activeStoreId ? allBanners.filter(b => b.lojaId === activeStoreId) : allBanners.filter(b => !b.lojaId);
   const setBanners = useAdmin(s => s.setBanners);
   const removeBanner = useAdmin(s => s.removeBanner);
@@ -383,10 +380,23 @@ function AdminBanners() {
   const [selectedBanners, setSelectedBanners] = useState<string[]>([]);
 
   const handleDeleteSelected = (groupIds: string[]) => {
-    if (confirm(`Tem certeza que deseja excluir os ${groupIds.length} banner(s) selecionado(s)?`)) {
-      groupIds.forEach(id => removeBanner(id));
-      setSelectedBanners(prev => prev.filter(id => !groupIds.includes(id)));
-      toast.success(`${groupIds.length} banner(s) removido(s) com sucesso`);
+    const toDelete = groupIds.filter(id => {
+      const b = allBanners.find(item => item.id === id);
+      if (!isRedeAdmin && b && isNetworkRestrictedPosition(b.posicao)) {
+        return false;
+      }
+      return true;
+    });
+
+    if (toDelete.length === 0) {
+      toast.error("Banners de Tarja e Compre por Categoria são exclusivos da rede e não podem ser excluídos pelo associado.");
+      return;
+    }
+
+    if (confirm(`Tem certeza que deseja excluir os ${toDelete.length} banner(s) selecionado(s)?`)) {
+      toDelete.forEach(id => removeBanner(id));
+      setSelectedBanners(prev => prev.filter(id => !toDelete.includes(id)));
+      toast.success(`${toDelete.length} banner(s) removido(s) com sucesso`);
     }
   };
 
@@ -419,7 +429,7 @@ function AdminBanners() {
   const executeCopyGlobalBanners = async () => {
     setIsCopying(true);
     try {
-      const globalBanners = allBanners.filter(b => !b.lojaId);
+      const globalBanners = allBanners.filter(b => !b.lojaId && !isNetworkRestrictedPosition(b.posicao));
       for (const banner of globalBanners) {
         await addBanner({
           ...banner,
@@ -456,8 +466,29 @@ function AdminBanners() {
   const groupedBanners = BANNER_POSITIONS.map(pos => {
     const isVectorSystemPos = pos === "Banner Tarja" || pos === "Banner Compre por categoria" || pos === "Banner Categoria";
     const systemDefaults = isVectorSystemPos ? defaultBanners.filter(b => matchBannerPos(b, pos)) : [];
+    const isRestricted = isNetworkRestrictedPosition(pos);
 
     if (activeStoreId) {
+      // Posições restritas à rede sempre puxam a configuração oficial da rede
+      if (isRestricted) {
+        const globalItems = allBanners.filter(b => !b.lojaId && matchBannerPos(b, pos) && !deletedIds.has(b.id) && !b.imageUrl?.includes('unsplash'));
+        const fallbackItems = (globalItems.length > 0 ? globalItems : systemDefaults).filter(b => !deletedIds.has(b.id));
+        const uniqueMap = new Map();
+        for (const item of fallbackItems) {
+          const key = `${item.posicao}|${item.nome}|${item.imageUrl}|global`;
+          if (!uniqueMap.has(item.id) && !uniqueMap.has(key)) {
+            uniqueMap.set(item.id, item);
+            uniqueMap.set(key, item);
+          }
+        }
+        const uniqueItems = Array.from(new Set(uniqueMap.values()));
+        return {
+          position: pos,
+          isInherited: true,
+          items: uniqueItems.filter(b => b.nome.toLowerCase().includes(search.toLowerCase()))
+        };
+      }
+
       const storeItems = allBanners.filter(b => b.lojaId === activeStoreId && matchBannerPos(b, pos) && !deletedIds.has(b.id) && !b.imageUrl?.includes('unsplash'));
       if (storeItems.length > 0) {
         return {
@@ -566,6 +597,9 @@ function AdminBanners() {
     setIsSavingOrder(true);
     try {
       for (const position of Array.from(dirtyGroups)) {
+        if (!isRedeAdmin && isNetworkRestrictedPosition(position)) {
+          continue;
+        }
         const ids = localOrder[position] || [];
         await Promise.all(
           ids.map((id, idx) => updateBanner(id, { ordem: idx }))
@@ -584,6 +618,11 @@ function AdminBanners() {
 
   const openNewModal = (posicao?: string) => {
     let initialPos = posicao || "Full Banner";
+    if (!isRedeAdmin && isNetworkRestrictedPosition(initialPos)) {
+      toast.error("Banners de Tarja e Compre por Categoria são exclusivos do login da rede.");
+      return;
+    }
+
     let defaultImg = "";
     let defaultLink = "";
 
@@ -611,11 +650,21 @@ function AdminBanners() {
   };
 
   const openEditModal = (banner: AdminBanner) => {
+    if (!isRedeAdmin && isNetworkRestrictedPosition(banner.posicao)) {
+      toast.info("Este banner é institucional da rede e não pode ser editado pelo associado.");
+      return;
+    }
     setEditingBanner({ ...banner });
     setModalOpen(true);
   };
 
   const handleDeleteBanner = async (id: string) => {
+    const target = allBanners.find(b => b.id === id);
+    if (!isRedeAdmin && target && isNetworkRestrictedPosition(target.posicao)) {
+      toast.error("Banners de Tarja e Compre por Categoria são padronizados pela rede e não podem ser excluídos pelo associado.");
+      setBannerToDelete(null);
+      return;
+    }
     try {
       await removeBanner(id);
       toast.success("Banner excluído com sucesso!");
@@ -629,6 +678,11 @@ function AdminBanners() {
   const saveBanner = async () => {
     if (!editingBanner?.nome || !editingBanner?.posicao) {
       toast.error("Nome e posição são obrigatórios");
+      return;
+    }
+
+    if (!isRedeAdmin && isNetworkRestrictedPosition(editingBanner.posicao)) {
+      toast.error("Banners de Tarja e Compre por Categoria são exclusivos da rede e não podem ser criados ou alterados por associados.");
       return;
     }
     if (!editingBanner?.imageUrl) {
@@ -884,19 +938,28 @@ function AdminBanners() {
           </div>
         
         <div className="p-6 space-y-10">
-          {groupedBanners.map((group, groupIdx) => (
+          {groupedBanners.map((group, groupIdx) => {
+            const isRestricted = isNetworkRestrictedPosition(group.position);
+            const canManageGroup = isRedeAdmin || !isRestricted;
+
+            return (
             <div key={groupIdx} className="bg-white border border-slate-200 rounded-md overflow-hidden mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-slate-200 gap-2">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <h3 className="font-bold text-[#3a4454] text-[17px]">{group.position}</h3>
-                  {group.isInherited && (
+                  {isRestricted && (
+                    <span className="text-[11px] bg-amber-50 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-300 flex items-center gap-1 shadow-2xs">
+                      🔒 Restrito à Rede (Exclusivo)
+                    </span>
+                  )}
+                  {!isRestricted && group.isInherited && (
                     <span className="text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
                       🌐 Padrão da Rede (Ativo na Loja)
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  {group.items.some(b => selectedBanners.includes(b.id)) && (
+                  {canManageGroup && group.items.some(b => selectedBanners.includes(b.id)) && (
                     <button 
                       onClick={() => handleDeleteSelected(group.items.map(b => b.id).filter(id => selectedBanners.includes(id)))} 
                       className="flex items-center gap-1.5 text-red-500 hover:text-red-700 text-[13px] font-medium"
@@ -904,9 +967,15 @@ function AdminBanners() {
                       <Trash2 className="w-4 h-4" /> Excluir selecionados
                     </button>
                   )}
-                  <button onClick={() => openNewModal(group.position)} className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-[13px] font-medium">
-                    <PlusCircle className="w-4 h-4" /> Adicionar {group.position.toLowerCase()}
-                  </button>
+                  {canManageGroup ? (
+                    <button onClick={() => openNewModal(group.position)} className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-[13px] font-medium">
+                      <PlusCircle className="w-4 h-4" /> Adicionar {group.position.toLowerCase()}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-400 font-medium italic flex items-center gap-1.5 py-1 px-2.5 rounded bg-slate-50 border border-slate-200">
+                      <ShieldCheck className="w-3.5 h-3.5 text-slate-400" /> Restrito à Administração da Rede
+                    </span>
+                  )}
                 </div>
               </div>
               
@@ -915,18 +984,20 @@ function AdminBanners() {
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-[#556376] font-medium text-[13px]">
                       <th className="p-3 w-14 text-center">
-                        <input 
-                          type="checkbox" 
-                          className="rounded border-slate-300 w-3.5 h-3.5 cursor-pointer"
-                          checked={group.items.length > 0 && group.items.every(b => selectedBanners.includes(b.id))}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedBanners(prev => [...new Set([...prev, ...group.items.map(b => b.id)])]);
-                            } else {
-                              setSelectedBanners(prev => prev.filter(id => !group.items.find(b => b.id === id)));
-                            }
-                          }}
-                        />
+                        {canManageGroup ? (
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-slate-300 w-3.5 h-3.5 cursor-pointer"
+                            checked={group.items.length > 0 && group.items.every(b => selectedBanners.includes(b.id))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedBanners(prev => [...new Set([...prev, ...group.items.map(b => b.id)])]);
+                              } else {
+                                setSelectedBanners(prev => prev.filter(id => !group.items.find(b => b.id === id)));
+                              }
+                            }}
+                          />
+                        ) : null}
                       </th>
                       <th className="p-3">Nome do banner</th>
                       <th className="p-3 text-center">Data início agendamento</th>
@@ -944,33 +1015,48 @@ function AdminBanners() {
                     {getOrderedItems(group.position, group.items).map((banner, rowIdx) => (
                       <tr
                         key={banner.id}
-                        className="hover:bg-slate-50 group transition-colors"
-                        draggable
-                        onDragStart={() => handleDragStart(group.position, rowIdx)}
-                        onDragEnter={() => handleDragEnter(group.position, rowIdx)}
-                        onDragEnd={() => handleDragEnd(group.position)}
+                        className={`hover:bg-slate-50 group transition-colors ${!canManageGroup ? 'bg-slate-50/30' : ''}`}
+                        draggable={canManageGroup}
+                        onDragStart={() => canManageGroup && handleDragStart(group.position, rowIdx)}
+                        onDragEnter={() => canManageGroup && handleDragEnter(group.position, rowIdx)}
+                        onDragEnd={() => canManageGroup && handleDragEnd(group.position)}
                         onDragOver={e => e.preventDefault()}
-                        style={{ cursor: 'grab' }}
+                        style={{ cursor: canManageGroup ? 'grab' : 'default' }}
                       >
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-3">
-                            <GripVertical className="w-4 h-4 text-slate-400 cursor-grab hover:text-slate-700" />
-                            <input 
-                              type="checkbox" 
-                              className="rounded border-slate-300 w-3.5 h-3.5 cursor-pointer"
-                              checked={selectedBanners.includes(banner.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedBanners(prev => [...prev, banner.id]);
-                                } else {
-                                  setSelectedBanners(prev => prev.filter(id => id !== banner.id));
-                                }
-                              }}
-                            />
+                            {canManageGroup ? (
+                              <>
+                                <GripVertical className="w-4 h-4 text-slate-400 cursor-grab hover:text-slate-700" />
+                                <input 
+                                  type="checkbox" 
+                                  className="rounded border-slate-300 w-3.5 h-3.5 cursor-pointer"
+                                  checked={selectedBanners.includes(banner.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedBanners(prev => [...prev, banner.id]);
+                                    } else {
+                                      setSelectedBanners(prev => prev.filter(id => id !== banner.id));
+                                    }
+                                  }}
+                                />
+                              </>
+                            ) : (
+                              <ShieldCheck className="w-4 h-4 text-slate-300" title="Configuração institucional da rede" />
+                            )}
                           </div>
                         </td>
                         <td className="p-3">
-                          <div className="flex items-center gap-4 cursor-pointer" onClick={() => openEditModal(banner)}>
+                          <div 
+                            className={`flex items-center gap-4 ${canManageGroup ? 'cursor-pointer' : 'cursor-default'}`} 
+                            onClick={() => {
+                              if (!canManageGroup) {
+                                toast.info("Banners de Tarja e Compre por Categoria são exclusivos da administração da rede e não podem ser alterados pelo associado.");
+                                return;
+                              }
+                              openEditModal(banner);
+                            }}
+                          >
                             <div className="w-12 h-12 rounded border border-slate-200 overflow-hidden bg-white flex items-center justify-center shrink-0">
                                {banner.imageUrl && banner.imageUrl.startsWith('icon:') ? (() => {
                                  const Icon = getIcon(banner.imageUrl);
@@ -989,7 +1075,7 @@ function AdminBanners() {
                             </div>
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <span className="text-[15px] font-medium text-[#3a4454] hover:text-[#00B5AD]">{banner.nome}</span>
+                                <span className={`text-[15px] font-medium ${canManageGroup ? 'text-[#3a4454] hover:text-[#00B5AD]' : 'text-slate-700'}`}>{banner.nome}</span>
                                 {group.isInherited && (
                                   <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded border border-slate-200">
                                     Herdado da Rede
@@ -1013,14 +1099,20 @@ function AdminBanners() {
                           </div>
                         </td>
                         <td className="p-3">
-                           <div className="flex gap-2">
-                             <Button onClick={() => openEditModal(banner)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[#00B5AD] hover:bg-slate-100 hover:text-slate-800 transition-colors" title={group.isInherited ? "Personalizar para esta loja" : "Editar banner"}>
-                               <Edit2 className="w-4 h-4" />
-                             </Button>
-                             <Button onClick={() => setBannerToDelete(banner.id)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Excluir banner">
-                               <Trash2 className="w-4 h-4" />
-                             </Button>
-                           </div>
+                           {canManageGroup ? (
+                             <div className="flex gap-2">
+                               <Button onClick={() => openEditModal(banner)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[#00B5AD] hover:bg-slate-100 hover:text-slate-800 transition-colors" title={group.isInherited ? "Personalizar para esta loja" : "Editar banner"}>
+                                 <Edit2 className="w-4 h-4" />
+                               </Button>
+                               <Button onClick={() => setBannerToDelete(banner.id)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Excluir banner">
+                                 <Trash2 className="w-4 h-4" />
+                               </Button>
+                             </div>
+                           ) : (
+                             <div className="flex items-center justify-end pr-2 text-slate-400 text-xs font-semibold" title="Configuração restrita ao login da rede">
+                               <span className="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200">Somente Leitura</span>
+                             </div>
+                           )}
                         </td>
                       </tr>
                     ))}
@@ -1028,7 +1120,8 @@ function AdminBanners() {
                 </table>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
           {/* Banners das Lojas */}
@@ -1205,7 +1298,7 @@ function AdminBanners() {
                         <SelectValue placeholder="Selecione a posição" />
                       </SelectTrigger>
                       <SelectContent>
-                        {BANNER_POSITIONS.map(p => (
+                        {BANNER_POSITIONS.filter(p => isRedeAdmin || !isNetworkRestrictedPosition(p)).map(p => (
                           <SelectItem key={p} value={p}>{p}</SelectItem>
                         ))}
                       </SelectContent>
