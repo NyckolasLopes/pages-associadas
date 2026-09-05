@@ -210,7 +210,7 @@ function SearchPage() {
                 {productsList.length} produto{productsList.length === 1 ? "" : "s"} encontrado{productsList.length === 1 ? "" : "s"} {hasMore && "ou mais"}
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 items-stretch">
                 {productsList.map((p) => (
                   <ProductCard key={p.id} p={p} />
                 ))}

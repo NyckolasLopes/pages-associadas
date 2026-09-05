@@ -530,32 +530,32 @@ export function Header() {
         }}
       >
         <div className="container-fa flex items-center justify-between h-9 gap-4">
-          <span className="hidden md:inline font-bold text-[15.5px] tracking-wide">
+          <span className="hidden md:inline font-bold text-[14px] lg:text-[15.5px] tracking-wide truncate max-w-[260px] lg:max-w-none">
             {activePharmacy?.apelido || (
               !(activePharmacy?.categoriaAssociado === 'Parceiro')
                 ? "Aqui você tem amigos."
                 : ""
             )}
           </span>
-          <div className="flex items-center gap-2 md:gap-4 ml-auto overflow-x-auto whitespace-nowrap scrollbar-none">
+          <div className="flex items-center gap-2 md:gap-3 lg:gap-4 ml-auto overflow-x-auto whitespace-nowrap scrollbar-none">
             {contentPages.filter(p => p.location === "header" || p.location === "both").map(p => (
               p.type === "external" ? (
-                <a key={p.id} href={p.externalUrl} target="_blank" rel="noreferrer" className="hidden lg:inline-flex items-center gap-1 hover:underline">
+                <a key={p.id} href={p.externalUrl} target="_blank" rel="noreferrer" className="hidden xl:inline-flex items-center gap-1 hover:underline">
                   {p.title}
                 </a>
               ) : (
-                <Link key={p.id} to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hidden lg:inline-flex items-center gap-1 hover:underline">
+                <Link key={p.id} to={"/pagina/$slug" as any} params={{ slug: p.slug } as any} className="hidden xl:inline-flex items-center gap-1 hover:underline">
                   {p.title}
                 </Link>
               )
             ))}
             {(activePharmacy?.telefone || !activePharmacy) && (
-              <a href={`tel:${(activePharmacy?.telefone || "5133633900").replace(/\D/g, '')}`} className="hidden lg:inline-flex items-center gap-1 hover:underline">
+              <a href={`tel:${(activePharmacy?.telefone || "5133633900").replace(/\D/g, '')}`} className="hidden md:inline-flex items-center gap-1 hover:underline">
                 <Phone className="h-3.5 w-3.5" /> {activePharmacy?.telefone || "(51) 3363-3900"}
               </a>
             )}
             {(activePharmacy?.whatsapp || !activePharmacy) && (
-              <a href={`https://wa.me/55${(activePharmacy?.whatsapp || "51989444818").replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="hidden lg:inline-flex items-center gap-1 hover:underline">
+              <a href={`https://wa.me/55${(activePharmacy?.whatsapp || "51989444818").replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="hidden md:inline-flex items-center gap-1 hover:underline">
                 Whatsapp: {activePharmacy?.whatsapp || "(51) 98944-4818"}
               </a>
             )}
@@ -563,13 +563,13 @@ export function Header() {
         </div>
       </div>
 
-      {/* === DESKTOP MAIN BAR === */}
-      <div className="container-fa hidden md:flex items-center gap-2 lg:gap-4 py-3">
-        <Logo className="max-h-16 h-auto max-w-[240px]" />
+      {/* === DESKTOP / TABLET MAIN BAR === */}
+      <div className="container-fa hidden md:flex items-center gap-2 lg:gap-4 py-2.5 md:py-3">
+        <Logo className="max-h-12 md:max-h-14 lg:max-h-16 h-auto max-w-[140px] md:max-w-[175px] lg:max-w-[220px] xl:max-w-[240px] shrink-0" />
 
 
         {/* Search */}
-        <form onSubmit={onSubmit} className="flex-1 relative">
+        <form onSubmit={onSubmit} className="flex-1 relative min-w-[160px] md:min-w-[200px]">
           <Popover open={searchOpen} onOpenChange={setSearchOpen}>
             <PopoverTrigger asChild>
               <div className="relative w-full">
@@ -732,47 +732,79 @@ export function Header() {
         </form>
 
         {/* Account & Pedidos */}
-        <div className="hidden lg:flex items-center gap-4 ml-4">
-          <Link to={user ? "/$storeSlug/pedidos" : "/$storeSlug/login"} params={{ storeSlug }} search={user ? undefined : { redirect: `/${storeSlug}/pedidos` } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
+        <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 xl:gap-4 ml-1 md:ml-2 lg:ml-4 shrink-0">
+          <Link 
+            to={user ? "/$storeSlug/pedidos" : "/$storeSlug/login"} 
+            params={{ storeSlug }} 
+            search={user ? undefined : { redirect: `/${storeSlug}/pedidos` } as any} 
+            className="flex items-center gap-2 hover:opacity-80 transition group shrink-0"
+            title="Acompanhar Meus Pedidos"
+            aria-label="Acompanhar Meus Pedidos"
+          >
             <div className={`p-2 rounded-full transition group-hover:bg-primary/20 ${!isParceiro ? 'bg-primary/10' : ''}`} style={isParceiro ? { backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' } : undefined}>
-              <Package className={`h-5 w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
+              <Package className={`h-4 w-4 md:h-5 md:w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
             </div>
-            <div className="flex flex-col">
+            <div className="hidden xl:flex flex-col">
               <span className="text-[10px] uppercase font-bold text-muted-foreground leading-tight">Acompanhar</span>
               <span className="text-xs font-bold leading-tight">Meus Pedidos</span>
             </div>
           </Link>
 
-          <Link to={user ? "/$storeSlug/perfil" : "/$storeSlug/login"} params={{ storeSlug }} search={user ? { tab: "favoritos" } : { redirect: `/${storeSlug}/perfil`, tab: "favoritos" } as any} className="flex items-center gap-2 hover:opacity-80 transition group">
+          <Link 
+            to={user ? "/$storeSlug/perfil" : "/$storeSlug/login"} 
+            params={{ storeSlug }} 
+            search={user ? { tab: "favoritos" } : { redirect: `/${storeSlug}/perfil`, tab: "favoritos" } as any} 
+            className="flex items-center gap-2 hover:opacity-80 transition group shrink-0"
+            title="Ver Lista de Favoritos"
+            aria-label="Meus Favoritos"
+          >
             <div className={`p-2 rounded-full transition group-hover:bg-primary/20 ${!isParceiro ? 'bg-primary/10' : ''}`} style={isParceiro ? { backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)' } : undefined}>
-              <Heart className={`h-5 w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
+              <Heart className={`h-4 w-4 md:h-5 md:w-5 ${!isParceiro ? 'text-primary' : ''}`} style={isParceiro ? { color: 'var(--header-icons, var(--primary))' } : undefined} />
             </div>
-            <div className="flex flex-col">
+            <div className="hidden xl:flex flex-col">
               <span className="text-[10px] uppercase font-bold text-muted-foreground leading-tight">Ver Lista</span>
               <span className="text-xs font-bold leading-tight">Meus Favoritos</span>
             </div>
           </Link>
 
-          <div className="w-px h-8 bg-border"></div>
+          <div className="w-px h-6 lg:h-8 bg-border shrink-0"></div>
 
           {mounted && user ? (
-            <Link to="/$storeSlug/perfil" params={{ storeSlug }} className="flex flex-col items-start text-sm max-w-[120px] hover:opacity-80 transition cursor-pointer">
-              <span className="text-[10px] font-bold text-muted-foreground leading-tight truncate w-full">
-                {getGreeting()}
-              </span>
-              <span className="font-bold text-primary truncate w-full leading-tight">{user?.name?.split(" ")[0]}</span>
+            <Link 
+              to="/$storeSlug/perfil" 
+              params={{ storeSlug }} 
+              className="flex items-center gap-1.5 text-sm max-w-[130px] hover:opacity-80 transition cursor-pointer shrink-0"
+              title={`Perfil de ${user?.name || 'usuário'}`}
+            >
+              <div 
+                className={`p-2 rounded-full transition ${!isParceiro ? 'bg-primary/10 text-primary' : ''}`}
+                style={isParceiro ? { backgroundColor: 'color-mix(in srgb, var(--header-icons, var(--primary)) 10%, transparent)', color: 'var(--header-icons, var(--primary))' } : undefined}
+              >
+                <User className="h-4 w-4 md:h-5 md:w-5" />
+              </div>
+              <div className="flex flex-col items-start min-w-0">
+                <span className="text-[10px] font-bold text-muted-foreground leading-tight truncate w-full">
+                  {getGreeting()}
+                </span>
+                <span className="font-bold text-primary truncate w-full leading-tight text-xs">
+                  {user?.name?.split(" ")[0]}
+                </span>
+              </div>
             </Link>
           ) : (
             <Button 
               variant="ghost" 
               onClick={() => navigate({ to: "/$storeSlug/login", params: { storeSlug }, search: { redirect: window.location.pathname } as any })}
-              className="font-bold gap-1.5 transition-colors hover:!bg-primary/10 hover:!text-primary active:scale-95 text-slate-700"
+              className="font-bold gap-1.5 transition-colors hover:!bg-primary/10 hover:!text-primary active:scale-95 text-slate-700 px-2 sm:px-3 text-xs md:text-sm h-9 md:h-10 shrink-0"
               style={isParceiro ? { color: 'var(--header-icons, var(--foreground))' } : undefined}
+              title="Entrar na sua conta"
             >
-              <User className="h-4 w-4 mr-0.5" /> Entrar
+              <User className="h-4 w-4 mr-0.5" /> 
+              <span>Entrar</span>
             </Button>
           )}
         </div>
+
         {/* Cesta */}
         <Sheet open={mounted && drawerOpen} onOpenChange={setDrawer}>
           <SheetTrigger asChild>
@@ -783,10 +815,10 @@ export function Header() {
                 color: 'var(--cart-btn-text, var(--header-icons, var(--primary)))',
                 borderColor: 'var(--cart-btn-text, var(--header-icons, var(--primary)))'
               } : undefined}
-              className={`relative gap-2 transition-colors ${!isParceiro ? 'border-primary text-primary hover:bg-primary hover:text-white' : ''}`}
+              className={`relative gap-1.5 md:gap-2 transition-colors shrink-0 px-2.5 sm:px-3 md:px-4 h-9 md:h-10 ${!isParceiro ? 'border-primary text-primary hover:bg-primary hover:text-white' : ''}`}
             >
-              <ShoppingBasket className="h-5 w-5" />
-              <span className="hidden sm:inline">Cesta</span>
+              <ShoppingBasket className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="inline text-xs md:text-sm font-bold">Cesta</span>
               {mounted && count > 0 && (
                 <span 
                   style={isParceiro ? {
