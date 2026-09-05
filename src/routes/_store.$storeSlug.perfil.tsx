@@ -13,7 +13,7 @@ import { getGreeting, brl, productImage } from "@/lib/format";
 import { toast } from "sonner";
 import { catalog } from "@/services/catalog";
 import { useAdmin } from "@/stores/admin";
-import { useCart } from "@/stores/cart";
+import { useCart, getEffectivePrice } from "@/stores/cart";
 import { safeSlugify } from "@/lib/utils";
 import {
   AlertDialog,
@@ -124,7 +124,8 @@ function PerfilPage() {
             const storeStock = effectiveStoreId && p.estoquesPorLoja?.[effectiveStoreId] !== undefined 
               ? Number(p.estoquesPorLoja[effectiveStoreId]) 
               : (p.estoque !== undefined ? Number(p.estoque) : 0);
-            const isAvailable = (isService || storeStock > 0) && p.ativo !== false && (p as any).aVenda !== false;
+            const isLocalActive = !effectiveStoreId || (p as any).precosPorLoja?.[effectiveStoreId]?.ativo !== false;
+            const isAvailable = (isService || storeStock > 0) && p.ativo !== false && (p as any).aVenda !== false && isLocalActive;
             if (!isAvailable) {
               markOutOfStock(p.id, true);
             }
@@ -738,13 +739,25 @@ function PerfilPage() {
                 <h1 className="text-2xl font-bold">Meus Favoritos</h1>
                 <Heart className="h-6 w-6 text-red-500 fill-red-500" />
              </div>
-             {favNotifications && favNotifications.filter(n => favoriteProducts.some(p => p.id === n.id)).length > 0 && favoriteProducts.length > 0 && (
+             {favNotifications && favNotifications.filter(n => favoriteProducts.some(p => {
+                if (p.id !== n.id) return false;
+                const isService = (p as any).tipoProduto === "servico" || ((p as any).tipoProduto !== "fisico" && (p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
+                const storeStock = effectiveStoreId && p.estoquesPorLoja?.[effectiveStoreId] !== undefined ? Number(p.estoquesPorLoja[effectiveStoreId]) : (p.estoque !== undefined ? Number(p.estoque) : 0);
+                const isLocalActive = !effectiveStoreId || (p as any).precosPorLoja?.[effectiveStoreId]?.ativo !== false;
+                return (isService || storeStock > 0) && p.ativo !== false && (p as any).aVenda !== false && isLocalActive;
+              })).length > 0 && favoriteProducts.length > 0 && (
                 <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl mb-6 relative shadow-2xs">
                   <button onClick={clearFavNotifications} className="absolute top-2 right-2 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors" title="Fechar aviso">
                     <X className="h-4 w-4" />
                   </button>
                   <ul className="text-sm text-emerald-700 space-y-3">
-                    {favNotifications.filter(n => favoriteProducts.some(p => p.id === n.id)).map(n => {
+                    {favNotifications.filter(n => favoriteProducts.some(p => {
+                      if (p.id !== n.id) return false;
+                      const isService = (p as any).tipoProduto === "servico" || ((p as any).tipoProduto !== "fisico" && (p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
+                      const storeStock = effectiveStoreId && p.estoquesPorLoja?.[effectiveStoreId] !== undefined ? Number(p.estoquesPorLoja[effectiveStoreId]) : (p.estoque !== undefined ? Number(p.estoque) : 0);
+                      const isLocalActive = !effectiveStoreId || (p as any).precosPorLoja?.[effectiveStoreId]?.ativo !== false;
+                      return (isService || storeStock > 0) && p.ativo !== false && (p as any).aVenda !== false && isLocalActive;
+                    })).map(n => {
                       const p = favoriteProducts.find(prod => prod.id === n.id)!;
                       return (
                          <li key={n.id} className="flex flex-col gap-1 pr-6">
@@ -783,13 +796,15 @@ function PerfilPage() {
                     const storeStock = effectiveStoreId && p.estoquesPorLoja?.[effectiveStoreId] !== undefined 
                       ? Number(p.estoquesPorLoja[effectiveStoreId]) 
                       : (p.estoque !== undefined ? Number(p.estoque) : 0);
-                    const isAvailable = (isService || storeStock > 0) && p.ativo !== false && (p as any).aVenda !== false;
+                    const isLocalActive = !effectiveStoreId || (p as any).precosPorLoja?.[effectiveStoreId]?.ativo !== false;
+                    const isAvailable = (isService || storeStock > 0) && p.ativo !== false && (p as any).aVenda !== false && isLocalActive;
                     const strId = String(p.id).trim();
                     const wasOut = !!wasOutOfStockMap[strId];
                     const isBackInStock = isAvailable && wasOut;
 
-                    const effectivePricePor = Number(p.precoPor || p.preco || 0);
-                    const effectivePriceDe = Number(p.precoDe || 0);
+                    const ep = getEffectivePrice(p, effectiveStoreId);
+                    const effectivePricePor = Number(ep.precoPor || p.precoPor || p.preco || 0);
+                    const effectivePriceDe = Number(ep.precoDe || p.precoDe || 0);
 
                     return (
                       <div key={p.id} className="bg-card border rounded-xl p-4 flex flex-col gap-3 relative group hover:shadow-md transition-shadow">
@@ -817,14 +832,24 @@ function PerfilPage() {
                           <h3 className="text-sm font-bold line-clamp-2 text-slate-800 leading-snug">{p.nome}</h3>
                           
                           <div className="mt-auto pt-2 w-full">
-                            {effectivePriceDe > effectivePricePor && (
-                              <p className="text-xs text-muted-foreground line-through">{brl(effectivePriceDe)}</p>
-                            )}
-                            <p className="font-extrabold text-emerald-600 text-lg">
-                              {effectivePricePor > 0 ? brl(effectivePricePor) : (isAvailable ? "Consulte" : "Preço indisponível")}
-                            </p>
-                            {!isAvailable && (
-                              <p className="text-xs text-slate-400 font-medium mt-0.5">Sem estoque no momento</p>
+                            {!isAvailable ? (
+                              <div className="py-1 flex flex-col items-center justify-center">
+                                <span className="text-sm sm:text-base font-bold text-slate-400">
+                                  Preço indisponível
+                                </span>
+                                <span className="text-xs text-slate-400 font-medium mt-0.5">
+                                  Sem estoque no momento
+                                </span>
+                              </div>
+                            ) : (
+                              <>
+                                {effectivePriceDe > effectivePricePor && (
+                                  <p className="text-xs text-muted-foreground line-through">{brl(effectivePriceDe)}</p>
+                                )}
+                                <p className="font-extrabold text-emerald-600 text-lg">
+                                  {effectivePricePor > 0 ? brl(effectivePricePor) : "Consulte"}
+                                </p>
+                              </>
                             )}
                           </div>
                         </Link>
