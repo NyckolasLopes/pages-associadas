@@ -16,8 +16,8 @@ export const highlightGratis = (text: string | null | undefined): React.ReactNod
         "span",
         {
           key: index,
-          style: { color: "#2CFF05" },
-          className: "text-[#2CFF05] text-gratis font-bold",
+          style: { color: "#008000" },
+          className: "text-[#008000] text-gratis font-bold",
         },
         part
       );

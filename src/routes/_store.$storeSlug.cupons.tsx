@@ -340,7 +340,7 @@ function CuponsPage() {
                   : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
               }`}
             >
-              Frete <span style={{ color: "#2CFF05" }} className="text-[#2CFF05]">Grátis</span>
+              Frete <span style={{ color: "#008000" }} className="text-[#008000]">Grátis</span>
             </button>
           </div>
         </div>
@@ -377,7 +377,7 @@ function CuponsPage() {
                   <div className="p-6 pb-4 flex flex-col items-center justify-center min-h-[140px] bg-gradient-to-b from-slate-50/70 to-white relative">
                     {coupon.aplicarFreteGratis && (
                       <span className="absolute top-3 left-3 text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white px-2 py-0.5 rounded-md flex items-center gap-1 border border-emerald-500/30">
-                        <Truck className="h-3 w-3 text-[#2CFF05]" /> Frete <span style={{ color: "#2CFF05" }} className="text-[#2CFF05]">Grátis</span>
+                        <Truck className="h-3 w-3 text-[#008000]" /> Frete <span style={{ color: "#008000" }} className="text-[#008000]">Grátis</span>
                       </span>
                     )}
 
@@ -518,8 +518,8 @@ function CuponsPage() {
 
                 {selectedCouponForRules.aplicarFreteGratis && (
                   <p className="text-xs text-slate-700 font-bold flex items-center gap-1.5">
-                    <Truck className="h-3.5 w-3.5 text-[#2CFF05]" />
-                    <span>Inclui frete <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">grátis</span></span>
+                    <Truck className="h-3.5 w-3.5 text-[#008000]" />
+                    <span>Inclui frete <span style={{ color: "#008000" }} className="text-[#008000] font-bold">grátis</span></span>
                   </p>
                 )}
 

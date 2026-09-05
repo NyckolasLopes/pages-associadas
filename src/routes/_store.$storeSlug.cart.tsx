@@ -1328,7 +1328,7 @@ function CartPage() {
                           {!isServiceCart && (
                             <div className="w-full mt-1 flex flex-wrap items-center gap-2">
                               <div className="font-bold text-primary text-[10px] bg-primary/10 px-1.5 py-0.5 rounded">
-                                Retirada: <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> ({p.horarioInicioRetirada || "08:00"} às {p.horarioFimRetirada || "20:00"})
+                                Retirada: <span style={{ color: "#008000" }} className="text-[#008000] font-bold">Grátis</span> ({p.horarioInicioRetirada || "08:00"} às {p.horarioFimRetirada || "20:00"})
                               </div>
                               {p.aceitaEntrega && (() => {
                                 let displayDeliveryPrice = null;
@@ -1724,7 +1724,7 @@ function CartPage() {
                                   <div className="text-sm font-bold">{f.label}</div>
                                   <div className="text-xs text-primary font-medium">{f.eta}</div>
                                 </div>
-                                <span className="text-sm font-bold">{f.price === 0 ? <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> : brl(f.price)}</span>
+                                <span className="text-sm font-bold">{f.price === 0 ? <span style={{ color: "#008000" }} className="text-[#008000] font-bold">Grátis</span> : brl(f.price)}</span>
                               </label>
                             )
                           })}
@@ -1790,9 +1790,9 @@ function CartPage() {
               <span className="text-muted-foreground">{isDelivery ? "Entrega" : "Retirada"}</span>
               <span>
                 {!isDelivery ? (
-                  <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span>
+                  <span style={{ color: "#008000" }} className="text-[#008000] font-bold">Grátis</span>
                 ) : (selectedFreight && selectedFreight.id !== "pickup") ? (
-                  freightPrice === 0 ? <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> : brl(freightPrice)
+                  freightPrice === 0 ? <span style={{ color: "#008000" }} className="text-[#008000] font-bold">Grátis</span> : brl(freightPrice)
                 ) : (
                   <span className="text-muted-foreground text-xs">A calcular</span>
                 )}
@@ -2115,7 +2115,7 @@ function CartPage() {
                 {deliveryMethod === "entrega" && (
                   <div className="flex justify-between text-sm text-primary-dark">
                     <span>Frete</span>
-                    <span>{(selectedFreight && selectedFreight.id !== "pickup") ? (freightPrice === 0 ? <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> : brl(freightPrice)) : <span className="text-primary/70 text-xs">A calcular</span>}</span>
+                    <span>{(selectedFreight && selectedFreight.id !== "pickup") ? (freightPrice === 0 ? <span style={{ color: "#008000" }} className="text-[#008000] font-bold">Grátis</span> : brl(freightPrice)) : <span className="text-primary/70 text-xs">A calcular</span>}</span>
                   </div>
                 )}
               </div>

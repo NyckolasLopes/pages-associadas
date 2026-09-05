@@ -823,13 +823,13 @@ function Checkout() {
                           onChange={() => setSelectedFreight(opt.id)}
                           className="accent-primary" 
                         />
-                        <Icon className={`h-4 w-4 ${opt.price === 0 ? "text-[#2CFF05]" : "text-primary"}`} />
+                        <Icon className={`h-4 w-4 ${opt.price === 0 ? "text-[#008000]" : "text-primary"}`} />
                         <div className="flex-1">
                           <div className="font-bold text-sm">{opt.label}</div>
                           <div className="text-xs text-muted-foreground">{opt.eta}</div>
                         </div>
-                        <span className={`font-bold text-sm ${opt.price === 0 ? "text-[#2CFF05]" : ""}`}>
-                          {opt.price === 0 ? <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span> : brl(opt.price)}
+                        <span className={`font-bold text-sm ${opt.price === 0 ? "text-[#008000]" : ""}`}>
+                          {opt.price === 0 ? <span style={{ color: "#008000" }} className="text-[#008000] font-bold">Grátis</span> : brl(opt.price)}
                         </span>
                       </label>
                     );
@@ -1225,9 +1225,9 @@ function Checkout() {
           )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">{deliveryMethod === "store" ? "Retirada" : "Frete"}</span>
-            <span className={`font-medium ${fretePrice === 0 ? "text-[#2CFF05] font-bold" : ""}`}>
+            <span className={`font-medium ${fretePrice === 0 ? "text-[#008000] font-bold" : ""}`}>
               {fretePrice === 0 ? (
-                <span style={{ color: "#2CFF05" }} className="text-[#2CFF05] font-bold">Grátis</span>
+                <span style={{ color: "#008000" }} className="text-[#008000] font-bold">Grátis</span>
               ) : fretePrice === null ? (
                 <span className="text-muted-foreground text-xs">A calcular</span>
               ) : (

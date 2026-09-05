@@ -80,13 +80,13 @@
   --color-orange-800: color-mix(in srgb, #f37021 40%, black);
   --color-orange-900: color-mix(in srgb, #f37021 20%, black);
 
-  /* Cor do termo GRÁTIS (#2CFF05) */
-  --color-gratis: #2CFF05;
+  /* Cor do termo GRÁTIS (#008000) */
+  --color-gratis: #008000;
 }
 
 .text-gratis,
 [data-gratis] {
-  color: #2CFF05 !important;
+  color: #008000 !important;
 }
 
 :root {
