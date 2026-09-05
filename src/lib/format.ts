@@ -62,8 +62,21 @@ export const productImage = (p: any) => {
     const url = typeof img === 'string' ? img : (img?.caminhoImagem || img?.url);
     if (url) return url;
   }
+  if (typeof p.imagens === 'string' && p.imagens.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(p.imagens);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const img = parsed[0];
+        const url = typeof img === 'string' ? img : (img?.caminhoImagem || img?.url);
+        if (url) return url;
+      }
+    } catch {}
+  } else if (typeof p.imagens === 'string' && (p.imagens.startsWith('http') || p.imagens.startsWith('/'))) {
+    return p.imagens;
+  }
   if (p.foto && typeof p.foto === 'string') return p.foto;
   if (p.imagem && typeof p.imagem === 'string') return p.imagem;
+  if (p.imagemPrincipal && typeof p.imagemPrincipal === 'string') return p.imagemPrincipal;
 
   if (p.possuiImagem && p.ean) {
     // Return actual image if implemented

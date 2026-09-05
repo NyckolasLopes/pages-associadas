@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Spinner } from "@/components/ui/spinner";
 import { catalog } from "@/services/catalog";
 import type { Produto } from "@/types";
+import { productImage } from "@/lib/format";
+import { getSafeMediaUrl } from "@/utils/media";
 
 export const Route = createFileRoute("/admin/produtos/estoque")({
   component: AdminProdutosEstoque,
@@ -416,14 +418,18 @@ function AdminProdutosEstoque() {
                   return (
                     <tr key={p.id} className="border-b last:border-0 hover:bg-slate-50/50 transition-colors text-sm">
                       <td className="p-3 sticky left-0 bg-white z-10 border-r border-slate-100">
-                        <div className="flex items-center gap-2">
-                          {p.imagem ? (
-                            <img src={p.imagem} alt="" className="w-8 h-8 object-contain bg-white rounded border shrink-0" />
-                          ) : (
-                            <div className="w-8 h-8 bg-slate-100 rounded border flex items-center justify-center text-slate-400 shrink-0">
-                              <Package className="w-4 h-4" />
-                            </div>
-                          )}
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                            <img
+                              src={getSafeMediaUrl(productImage(p))}
+                              alt={p.nome}
+                              className="w-full h-full object-contain p-0.5"
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = "/produtos/sem-imagem.webp";
+                              }}
+                            />
+                          </div>
                           <span className="text-slate-800 font-medium leading-snug">{p.nome}</span>
                         </div>
                       </td>
