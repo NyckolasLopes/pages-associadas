@@ -451,7 +451,7 @@ function ProductCardComponent({
     useCart.getState().setDrawer(true);
   };
 
-  const fav = useFavorites((s) => s.ids.includes(p.id));
+  const fav = useFavorites((s) => s.ids.map(String).includes(String(p.id).trim()));
   const toggleFav = useFavorites((s) => s.toggle);
 
   const [mounted, setMounted] = useState(false);
@@ -511,7 +511,13 @@ function ProductCardComponent({
               });
               return;
             }
-            toggleFav(p.id, finalPrecoPor);
+            const willBeFav = !fav;
+            toggleFav(p.id, finalPrecoPor, !isAvailable);
+            if (willBeFav) {
+              toast.success("Produto adicionado aos favoritos!");
+            } else {
+              toast.info("Produto removido dos favoritos.");
+            }
           }}
           className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white/95 backdrop-blur border shadow-xs flex items-center justify-center hover:bg-white text-muted-foreground transition-transform active:scale-95"
         >

@@ -30,88 +30,80 @@ export function PriceDropTracker() {
       if (cartItems.length === 0 && favIds.length === 0) return;
 
       try {
-        const liveProducts = await catalog.listProducts();
-        
-        // Calculate distances to all pharmacies
-        const distances: Record<string, number> = {};
-        if (userCep && pharmacies.length > 0) {
-          await Promise.all(pharmacies.map(async (ph: any) => {
-            const d = await calculateCepDistanceAsync(userCep, ph.cep);
-            distances[ph.id] = d;
-          }));
-        }
-
-        const rawCity = globalCity || (userCep ? getCityFromCep(userCep, pharmacies) : "");
-        const normalize = (s: string) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
-        const citySearch = normalize(rawCity);
-
-        const getBestPharmacyForProduct = (p: any) => {
-          if (selectedPharmacyId) {
-            const pharm = pharmacies.find((f: any) => f.id === selectedPharmacyId);
-            if (pharm && p.precosPorLoja?.[pharm.id]?.ativo !== false) {
-              return pharm;
-            }
-          }
-
-          if (!userCep || Object.keys(distances).length === 0) return null;
-          
-          const eligible = pharmacies.filter((f: any) => {
-            const dist = distances[f.id];
-            if (dist === undefined) return false;
-            const hasRaios = (f.raiosEntrega || []).some((r: any) => dist <= r.ateKm);
-            const hasMeiosCustomizados = (f.meiosEntregaPersonalizados || []).filter((m: any) => m.ativo).some((m: any) => (m.raios || []).some((r: any) => dist <= r.ateKm));
-            const canDeliver = f.aceitaEntrega && (hasRaios || hasMeiosCustomizados);
-            const canPickup = f.aceitaRetirada;
-            const productActive = p.precosPorLoja?.[f.id]?.ativo !== false;
-            return (canDeliver || canPickup) && productActive;
-          }).map((f: any) => ({
-            ...f,
-            isSameCity: normalize(f.cidade).includes(citySearch) || normalize(f.endereco).includes(citySearch)
-          }));
-
-          if (eligible.length > 0) {
-            eligible.sort((a: any, b: any) => {
-              if (a.isSameCity && !b.isSameCity) return -1;
-              if (!a.isSameCity && b.isSameCity) return 1;
-              return (distances[a.id] || 0) - (distances[b.id] || 0);
-            });
-            return eligible[0];
-          }
-          return null;
-        };
-
-        // Verificação do carrinho: APENAS dentro da farmácia que o cliente está acessando
+        // Verificação do carrinho e favoritos: APENAS dentro da farmácia que o cliente está acessando
         if (selectedPharmacyId) {
           const currentPharm = pharmacies.find((f: any) => String(f.id) === String(selectedPharmacyId));
           if (currentPharm) {
-            cartItems.forEach(item => {
-              const live = liveProducts.find(p => p.id === item.id);
-              if (live && live.precosPorLoja?.[currentPharm.id]?.ativo !== false) {
-                const { precoPor } = getEffectivePrice(live as any, currentPharm.id);
-                if (precoPor < item.preco) {
-                  addCartNotification(item.id, item.preco, precoPor, "");
-                  if (updateCartItemPrice) {
-                    updateCartItemPrice(item.id, precoPor);
+            const allTrackedIds = Array.from(new Set([
+              ...cartItems.map(i => String(i.id).trim()),
+              ...favIds.map(id => String(id).trim())
+            ])).filter(Boolean);
+
+            if (allTrackedIds.length > 0) {
+              const liveProducts = await catalog.getProductsByIds(allTrackedIds, currentPharm.id);
+
+              // 1. Verificação dos itens do carrinho (SOMENTE SE DISPONÍVEL)
+              cartItems.forEach(item => {
+                const live = liveProducts.find(p => String(p.id).trim() === String(item.id).trim());
+                if (!live) return;
+
+                const isService = (live as any).tipoProduto === "servico" || ((live as any).tipoProduto !== "fisico" && (live.categoriaId === "200" || (live.subcategoriaId && String(live.subcategoriaId).startsWith("20"))));
+                const stock = live.estoquesPorLoja?.[currentPharm.id] !== undefined 
+                  ? Number(live.estoquesPorLoja[currentPharm.id]) 
+                  : (live.estoque !== undefined ? Number(live.estoque) : 0);
+                const isAvailable = (isService || stock > 0) && live.ativo !== false && (live as any).aVenda !== false;
+
+                if (isAvailable && live.precosPorLoja?.[currentPharm.id]?.ativo !== false) {
+                  const { precoPor } = getEffectivePrice(live as any, currentPharm.id);
+                  if (precoPor > 0 && precoPor < item.preco) {
+                    addCartNotification(
+                      item.id,
+                      item.preco,
+                      precoPor,
+                      currentPharm.nomeFantasia || currentPharm.razaoSocial || currentPharm.nome || "",
+                      false,
+                      item.nome
+                    );
+                    if (updateCartItemPrice) {
+                      updateCartItemPrice(item.id, precoPor);
+                    }
                   }
                 }
-              }
-            });
+              });
 
-            // Verificação dos favoritos dentro da farmácia ativa
-            favIds.forEach(id => {
-              const live = liveProducts.find(p => p.id === id);
-              const precoSalvo = favPrices[id];
-              if (live && precoSalvo && live.precosPorLoja?.[currentPharm.id]?.ativo !== false) {
-                const { precoPor } = getEffectivePrice(live as any, currentPharm.id);
-                if (precoPor < precoSalvo) {
-                  addFavNotification(id, precoSalvo, precoPor, "");
-                  updateFavPrice(id, precoPor);
+              // 2. Verificação dos favoritos: notifica no carrinho se mais barato, MAS SOMENTE SE DISPONÍVEL
+              favIds.forEach(id => {
+                const strId = String(id).trim();
+                const live = liveProducts.find(p => String(p.id).trim() === strId);
+                const precoSalvo = favPrices[strId] || favPrices[id];
+                if (!live) return;
+
+                const isService = (live as any).tipoProduto === "servico" || ((live as any).tipoProduto !== "fisico" && (live.categoriaId === "200" || (live.subcategoriaId && String(live.subcategoriaId).startsWith("20"))));
+                const stock = live.estoquesPorLoja?.[currentPharm.id] !== undefined 
+                  ? Number(live.estoquesPorLoja[currentPharm.id]) 
+                  : (live.estoque !== undefined ? Number(live.estoque) : 0);
+                const isAvailable = (isService || stock > 0) && live.ativo !== false && (live as any).aVenda !== false;
+
+                if (!isAvailable) {
+                  useFavorites.getState().markOutOfStock(strId, true);
                 }
-              }
-            });
+
+                // Notifica no carrinho se o produto favorito ficou mais barato E estiver disponível
+                if (isAvailable && precoSalvo && precoSalvo > 0 && live.precosPorLoja?.[currentPharm.id]?.ativo !== false) {
+                  const { precoPor } = getEffectivePrice(live as any, currentPharm.id);
+                  if (precoPor > 0 && precoPor < precoSalvo) {
+                    const storeName = currentPharm.nomeFantasia || currentPharm.razaoSocial || currentPharm.nome || "";
+                    // Requisito: notifica no carrinho
+                    addCartNotification(strId, precoSalvo, precoPor, storeName, true, live.nome);
+                    // Notifica na aba de favoritos
+                    addFavNotification(strId, precoSalvo, precoPor, storeName, live.nome);
+                    updateFavPrice(strId, precoPor);
+                  }
+                }
+              });
+            }
           }
         }
-
       } catch (error) {
         console.error("Failed to check price drops", error);
       }

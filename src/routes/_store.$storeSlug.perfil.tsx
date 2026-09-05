@@ -6,12 +6,15 @@ import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, KeyRound, Trash2, Plus, Home, Eye, EyeOff, Briefcase, Building2, Heart, Bell, X, Pencil, TrendingDown, Loader2 } from "lucide-react";
+import { MapPin, KeyRound, Trash2, Plus, Home, Eye, EyeOff, Briefcase, Building2, Heart, Bell, X, Pencil, TrendingDown, Loader2, CheckCircle2, ShoppingBasket } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getGreeting, brl, productImage } from "@/lib/format";
 import { toast } from "sonner";
 import { catalog } from "@/services/catalog";
+import { useAdmin } from "@/stores/admin";
+import { useCart } from "@/stores/cart";
+import { safeSlugify } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -77,20 +80,65 @@ function PerfilPage() {
   const logout = useAuth((s) => s.logout);
   const deleteAccount = useAuth((s) => s.deleteAccount);
   const login = useAuth((s) => s.login);
-  const { ids: favoriteIds, toggle: toggleFavorite, notifications: favNotifications, clearNotifications: clearFavNotifications } = useFavorites();
+  const { ids: favoriteIds, toggle: toggleFavorite, notifications: favNotifications, clearNotifications: clearFavNotifications, wasOutOfStock: wasOutOfStockMap, markOutOfStock } = useFavorites();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"dados" | "favoritos">(search.tab === "favoritos" ? "favoritos" : "dados");
   const [favoriteProducts, setFavoriteProducts] = useState<any[]>([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
+
+  const pharmacies = useAdmin((s) => s.pharmacies);
+  const selectedPharmacyId = useCart((s) => s.selectedPharmacyId);
+  const addToCart = useCart((s) => s.add);
+  const setCartDrawer = useCart((s) => s.setDrawer);
+
+  const currentPharm = useMemo(() => {
+    if (storeSlug && storeSlug !== "loja-padrao") {
+      return pharmacies.find(ph => ph.slug === storeSlug || ph.id === storeSlug || safeSlugify(ph.slug || "") === safeSlugify(storeSlug));
+    }
+    return pharmacies.find(ph => ph.id === selectedPharmacyId) || pharmacies[0];
+  }, [pharmacies, storeSlug, selectedPharmacyId]);
+
+  const effectiveStoreId = currentPharm?.id || selectedPharmacyId;
 
   useEffect(() => {
     if (activeTab === "favoritos") {
-      catalog.listProducts().then(all => {
-        setFavoriteProducts(all.filter(p => favoriteIds.includes(p.id)));
-      });
+      useFavorites.getState().syncWithSupabase(user?.id);
     }
-  }, [activeTab, favoriteIds]);
+  }, [activeTab, user?.id]);
+
+  useEffect(() => {
+    if (activeTab === "favoritos") {
+      if (!favoriteIds || favoriteIds.length === 0) {
+        setFavoriteProducts([]);
+        return;
+      }
+      setLoadingFavorites(true);
+      catalog.getProductsByIds(favoriteIds, effectiveStoreId)
+        .then(products => {
+          setFavoriteProducts(products);
+          // Atualiza status de indisponibilidade para cada produto
+          products.forEach(p => {
+            const isService = (p as any).tipoProduto === "servico" || ((p as any).tipoProduto !== "fisico" && (p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
+            const storeStock = effectiveStoreId && p.estoquesPorLoja?.[effectiveStoreId] !== undefined 
+              ? Number(p.estoquesPorLoja[effectiveStoreId]) 
+              : (p.estoque !== undefined ? Number(p.estoque) : 0);
+            const isAvailable = (isService || storeStock > 0) && p.ativo !== false && (p as any).aVenda !== false;
+            if (!isAvailable) {
+              markOutOfStock(p.id, true);
+            }
+          });
+        })
+        .catch(err => {
+          console.error("Erro ao carregar produtos favoritos:", err);
+          setFavoriteProducts([]);
+        })
+        .finally(() => {
+          setLoadingFavorites(false);
+        });
+    }
+  }, [activeTab, favoriteIds, effectiveStoreId, markOutOfStock]);
 
   // Mocks for prototype
   const [addresses, setAddresses] = useState([
@@ -714,7 +762,12 @@ function PerfilPage() {
                 </div>
              )}
              
-             {favoriteProducts.length === 0 ? (
+             {loadingFavorites ? (
+                <div className="bg-card border rounded-xl p-12 flex flex-col items-center justify-center text-center">
+                  <Loader2 className="h-8 w-8 text-primary animate-spin mb-3" />
+                  <p className="text-muted-foreground text-sm">Carregando seus produtos favoritos...</p>
+                </div>
+             ) : favoriteProducts.length === 0 ? (
                 <div className="bg-card border rounded-xl p-12 flex flex-col items-center justify-center text-center">
                   <div className="bg-red-50 p-4 rounded-full mb-4">
                     <Heart className="h-8 w-8 text-red-300" />
@@ -724,28 +777,107 @@ function PerfilPage() {
                   <Button variant="outline" className="mt-6" onClick={() => navigate({ to: "/$storeSlug", params: { storeSlug } })}>Continuar Comprando</Button>
                 </div>
              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {favoriteProducts.map(p => (
-                     <div key={p.id} className="bg-card border rounded-xl p-4 flex flex-col gap-3 relative group hover:shadow-md transition-shadow">
-                        <Link to="/$storeSlug/produto/$slug" params={{ storeSlug, slug: p.slug || p.url || p.id }} className="flex-1 flex flex-col items-center text-center gap-3">
-                           <div className="w-full bg-white rounded-lg p-2 aspect-square flex items-center justify-center mb-2">
-                             <img src={productImage(p)} alt={p.nome} className="w-full h-full object-contain mix-blend-multiply" />
-                           </div>
-                           <h3 className="text-sm font-bold line-clamp-2 text-slate-800 leading-snug">{p.nome}</h3>
-                           <div className="mt-auto pt-2">
-                              {p.precoDe && p.precoDe > p.precoPor && <p className="text-xs text-muted-foreground line-through">{brl(p.precoDe)}</p>}
-                              <p className="font-extrabold text-emerald-600 text-lg">{brl(p.precoPor)}</p>
-                           </div>
-                        </Link>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {favoriteProducts.map(p => {
+                    const isService = (p as any).tipoProduto === "servico" || ((p as any).tipoProduto !== "fisico" && (p.categoriaId === "200" || (p.subcategoriaId && String(p.subcategoriaId).startsWith("20"))));
+                    const storeStock = effectiveStoreId && p.estoquesPorLoja?.[effectiveStoreId] !== undefined 
+                      ? Number(p.estoquesPorLoja[effectiveStoreId]) 
+                      : (p.estoque !== undefined ? Number(p.estoque) : 0);
+                    const isAvailable = (isService || storeStock > 0) && p.ativo !== false && (p as any).aVenda !== false;
+                    const strId = String(p.id).trim();
+                    const wasOut = !!wasOutOfStockMap[strId];
+                    const isBackInStock = isAvailable && wasOut;
+
+                    const effectivePricePor = Number(p.precoPor || p.preco || 0);
+                    const effectivePriceDe = Number(p.precoDe || 0);
+
+                    return (
+                      <div key={p.id} className="bg-card border rounded-xl p-4 flex flex-col gap-3 relative group hover:shadow-md transition-shadow">
                         <button 
-                          onClick={(e) => { e.preventDefault(); toggleFavorite(p.id); }}
-                          className="absolute top-3 right-3 bg-white p-1.5 rounded-full shadow-sm text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 border border-slate-100"
+                          onClick={(e) => { 
+                            e.preventDefault(); 
+                            toggleFavorite(p.id); 
+                            toast.info("Produto removido dos favoritos.");
+                          }}
+                          className="absolute top-3 right-3 z-10 bg-white p-1.5 rounded-full shadow-sm text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors opacity-100 border border-slate-100"
                           title="Remover dos favoritos"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
-                     </div>
-                  ))}
+
+                        <Link to="/$storeSlug/produto/$slug" params={{ storeSlug, slug: p.slug || p.url || p.id }} className="flex flex-col items-center text-center gap-3">
+                          <div className="w-full bg-white rounded-lg p-2 aspect-square flex items-center justify-center mb-2 relative">
+                            <img src={productImage(p)} alt={p.nome} className="w-full h-full object-contain mix-blend-multiply" />
+                            {!isAvailable && (
+                              <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                INDISPONÍVEL
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-sm font-bold line-clamp-2 text-slate-800 leading-snug">{p.nome}</h3>
+                          
+                          <div className="mt-auto pt-2 w-full">
+                            {effectivePriceDe > effectivePricePor && (
+                              <p className="text-xs text-muted-foreground line-through">{brl(effectivePriceDe)}</p>
+                            )}
+                            <p className="font-extrabold text-emerald-600 text-lg">
+                              {effectivePricePor > 0 ? brl(effectivePricePor) : (isAvailable ? "Consulte" : "Preço indisponível")}
+                            </p>
+                            {!isAvailable && (
+                              <p className="text-xs text-slate-400 font-medium mt-0.5">Sem estoque no momento</p>
+                            )}
+                          </div>
+                        </Link>
+
+                        {/* Banner quando produto volta ao estoque ou está disponível para finalizar compra */}
+                        {isBackInStock ? (
+                          <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-3 text-xs text-emerald-900 font-semibold flex flex-col gap-2 mt-2">
+                            <div className="flex items-start gap-1.5 leading-snug">
+                              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                              <span>Esse produto ta de volta ao estoque finalize a sua compra antes que ele acabe novamente</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-8 shadow-xs flex items-center justify-center gap-1.5"
+                              onClick={() => {
+                                addToCart(p, 1, false);
+                                setCartDrawer(true);
+                              }}
+                            >
+                              <ShoppingBasket className="h-3.5 w-3.5" />
+                              Finalizar compra
+                            </Button>
+                          </div>
+                        ) : isAvailable ? (
+                          <div className="mt-2 pt-2 border-t flex flex-col gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full border-primary/40 text-primary hover:bg-primary hover:text-white font-bold text-xs h-8 transition-colors flex items-center justify-center gap-1.5"
+                              onClick={() => {
+                                addToCart(p, 1, false);
+                                setCartDrawer(true);
+                              }}
+                            >
+                              <ShoppingBasket className="h-3.5 w-3.5" />
+                              Adicionar à cesta
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="mt-2 pt-2 border-t">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled
+                              className="w-full text-slate-400 font-semibold text-xs h-8 cursor-not-allowed bg-slate-100"
+                            >
+                              Indisponível no momento
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
              )}
           </div>

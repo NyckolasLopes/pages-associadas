@@ -179,7 +179,7 @@ export function loadCartBackup(): CartItem[] {
 
 interface CartState {
   items: CartItem[];
-  notifications: { id: string; oldPrice: number; newPrice: number; storeName: string }[];
+  notifications: { id: string; oldPrice: number; newPrice: number; storeName: string; isFavorite?: boolean; productName?: string }[];
   drawerOpen: boolean;
   pbm: PBMCredential | null;
   lastUpdatedAt: number | null;
@@ -210,7 +210,7 @@ interface CartState {
   setSelectedFreight: (freightId: string) => void;
   setFreightOptions: (opts: any[]) => void;
   updateItemPrice: (id: string, preco: number) => void;
-  addNotification: (id: string, oldPrice: number, newPrice: number, storeName: string) => void;
+  addNotification: (id: string, oldPrice: number, newPrice: number, storeName: string, isFavorite?: boolean, productName?: string) => void;
   clearNotifications: () => void;
   restoreCart: (items: CartItem[]) => void;
 }
@@ -362,10 +362,11 @@ export const useCart = create<CartState>()(
             lastUpdatedAt: Date.now(),
           };
         }),
-      addNotification: (id, oldPrice, newPrice, storeName) =>
+      addNotification: (id, oldPrice, newPrice, storeName, isFavorite = false, productName) =>
         set((s) => {
-          const filtered = s.notifications.filter((n) => n.id !== id);
-          return { notifications: [{ id, oldPrice, newPrice, storeName }, ...filtered] };
+          const strId = String(id).trim();
+          const filtered = s.notifications.filter((n) => n.id !== strId);
+          return { notifications: [{ id: strId, oldPrice, newPrice, storeName, isFavorite, productName }, ...filtered] };
         }),
       clearNotifications: () => set({ notifications: [] }),
       clear: () => {

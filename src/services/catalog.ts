@@ -789,6 +789,51 @@ export const catalog = {
 
     return null;
   },
+  getProductsByIds: async (ids: (string | number)[], lojaId?: string | null): Promise<Produto[]> => {
+    if (!ids || ids.length === 0) return [];
+    const cleanIds = Array.from(new Set(ids.map(id => String(id).trim()).filter(Boolean)));
+    if (cleanIds.length === 0) return [];
+
+    await ensureHydrated();
+
+    let dbProducts: Produto[] = [];
+    try {
+      const query = supabase.from('produtos').select('*').in('id', cleanIds);
+      dbProducts = await fetchFromSupabaseWithPrices(query, lojaId, true);
+    } catch (err) {
+      console.warn("Erro ao buscar produtos por IDs no Supabase:", err);
+    }
+
+    const foundMap = new Map<string, Produto>();
+    dbProducts.forEach(p => {
+      if (p && p.id) {
+        foundMap.set(String(p.id).trim(), p);
+      }
+    });
+
+    const storeState = useAdminProducts.getState();
+    const allCustom = [
+      ...(storeState.customProducts || []),
+      ...(lojaId && storeState.storeCustomProducts?.[lojaId] ? storeState.storeCustomProducts[lojaId] : [])
+    ];
+
+    cleanIds.forEach(id => {
+      if (!foundMap.has(id)) {
+        const local = allCustom.find(p => String(p.id).trim() === id);
+        if (local) {
+          foundMap.set(id, enforceHealthServicesCategory(enhanceProduct(local)));
+        }
+      }
+    });
+
+    const results: Produto[] = [];
+    cleanIds.forEach(id => {
+      const p = foundMap.get(id);
+      if (p) results.push(p);
+    });
+
+    return results;
+  },
   productsByCategory: async (categoryId: string, filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
     const categorias = getCategorias();

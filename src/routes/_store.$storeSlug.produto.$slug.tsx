@@ -408,7 +408,7 @@ function PDP() {
   );
   const normalizeForMatch = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
   const activeSeloNormalizedNames = activeSelos.map(s => normalizeForMatch(s.nome));
-  const fav = useFavorites((s) => s.ids.includes(p.id));
+  const fav = useFavorites((s) => s.ids.map(String).includes(String(p.id).trim()));
   const toggleFav = useFavorites((s) => s.toggle);
   const [mounted, setMounted] = useState(false);
   const { getAvaliacoesPorProduto } = useReviews();
@@ -1021,14 +1021,7 @@ function PDP() {
     }
   }, [globalCep]);
 
-  const handleWishlist = () => {
-    if (!user) {
-      toast.info("Por favor, faça login para adicionar aos favoritos.");
-      setLoginOpen(true);
-      return;
-    }
-    toggleFav(p.id, finalPrecoPor);
-  };
+
 
   const handleShare = async () => {
     try {
@@ -1073,6 +1066,21 @@ function PDP() {
     : (!activePharmacyId || p.precosPorLoja?.[activePharmacyId]?.ativo !== false);
   const storeOffersServices = !currentLoja || currentLoja.offersServices !== false;
   const isAvailable = (maxStock > 0 || (isService && storeOffersServices)) && isGlobalActive && isLocalActive;
+
+  const handleWishlist = () => {
+    if (!user) {
+      toast.info("Por favor, faça login para adicionar aos favoritos.");
+      setLoginOpen(true);
+      return;
+    }
+    const willBeFav = !fav;
+    toggleFav(p.id, finalPrecoPor, !isAvailable);
+    if (willBeFav) {
+      toast.success("Produto adicionado aos favoritos!");
+    } else {
+      toast.info("Produto removido dos favoritos.");
+    }
+  };
 
   // Cupom da loja aplicável para este produto / categoria
   const eligibleCoupon = React.useMemo(() => {
