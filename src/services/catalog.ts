@@ -10,6 +10,7 @@ import { useAdminProducts, mapRowToProduto } from "@/stores/products";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeSearchQuery, rankProductsBySearch } from "@/lib/searchEngine";
 import { getDeterministicStock } from "@/lib/stock";
+import { sanitizePostgrestIdList, sanitizeSearchQuery } from "@/lib/cyberSecurity";
 
 async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | null, includeInactive = false): Promise<Produto[]> {
   const timeoutMs = 10000;
@@ -1181,9 +1182,10 @@ export const catalog = {
     }
 
     let query = supabase.from('produtos').select('*').neq('categoria_id', '142');
-    if (cartIds.length > 0) {
+    const safeCartIds = sanitizePostgrestIdList(cartIds || []);
+    if (safeCartIds.length > 0) {
       // Supabase not.in filter doesn't support empty arrays, so check first
-      query = query.not('id', 'in', `(${cartIds.join(',')})`);
+      query = query.not('id', 'in', `(${safeCartIds.join(',')})`);
     }
 
     if (settings) {
@@ -1257,7 +1259,8 @@ export const catalog = {
     
     const page = filters?.page || 0;
     const pageSize = filters?.pageSize || 24;
-    const trimmedQ = (q || "").trim();
+    const sanitizedQ = sanitizeSearchQuery(q);
+    const trimmedQ = (sanitizedQ || "").trim();
 
     if (!trimmedQ || trimmedQ.length < 2) {
       if (filters && Object.keys(filters).length > 0) {
@@ -1389,7 +1392,7 @@ export const catalog = {
     return resultObj;
   },
   adminSearchProducts: async (params: { search: string, page: number, pageSize: number, listFilter: string, lojaId?: string | null }) => {
-    const rawSearch = (params.search || "").trim();
+    const rawSearch = sanitizeSearchQuery(params.search || "").trim();
     let query = supabase.from('produtos').select('*', { count: 'exact' });
     
     if (rawSearch) {

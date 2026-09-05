@@ -3,11 +3,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { INITIAL_CUSTOMERS } from "@/stores/customers";
 
-// Limpeza de segurança: remove credenciais antigas do localStorage legado
+// Higienização de segurança LGPD / OWASP:
+// Remove dados sensíveis (CPF, Email, Telefone, Tokens) de localStorage legado e migra para sessionStorage
 if (typeof window !== "undefined") {
   try {
     localStorage.removeItem("fa-auth");
     localStorage.removeItem("fa-auth-storage");
+    localStorage.removeItem("fa-auth-token");
+
+    const legacyUser = localStorage.getItem("fa_active_user");
+    if (legacyUser && !sessionStorage.getItem("fa_active_user")) {
+      sessionStorage.setItem("fa_active_user", legacyUser);
+    }
+    localStorage.removeItem("fa_active_user");
+
+    const legacySessions = localStorage.getItem("fa_store_sessions");
+    if (legacySessions && !sessionStorage.getItem("fa_store_sessions")) {
+      sessionStorage.setItem("fa_store_sessions", legacySessions);
+    }
+    localStorage.removeItem("fa_store_sessions");
   } catch {}
 }
 
@@ -28,7 +42,8 @@ export function isSameStore(slugA?: string | null, slugB?: string | null): boole
 export function loadActiveUser(): User | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(ACTIVE_USER_STORAGE_KEY);
+    // Carrega dados da sessão ativa no sessionStorage (destruído ao fechar a aba)
+    const raw = sessionStorage.getItem(ACTIVE_USER_STORAGE_KEY);
     if (!raw) return null;
     const user = JSON.parse(raw);
     return user && (user.email || user.id) ? user : null;
@@ -41,14 +56,17 @@ export function saveActiveUser(user: User | null): void {
   if (typeof window === "undefined") return;
   try {
     if (user) {
-      localStorage.setItem(ACTIVE_USER_STORAGE_KEY, JSON.stringify(user));
+      sessionStorage.setItem(ACTIVE_USER_STORAGE_KEY, JSON.stringify(user));
+      // fa_active_store_slug armazena apenas a sigla/slug da loja sem dados sensíveis
       if (user.storeSlug) {
         localStorage.setItem(ACTIVE_STORE_SLUG_KEY, user.storeSlug);
       }
     } else {
-      localStorage.removeItem(ACTIVE_USER_STORAGE_KEY);
+      sessionStorage.removeItem(ACTIVE_USER_STORAGE_KEY);
       localStorage.removeItem(ACTIVE_STORE_SLUG_KEY);
     }
+    // Garante que dados pessoais nunca fiquem persistidos no localStorage permanente
+    localStorage.removeItem(ACTIVE_USER_STORAGE_KEY);
   } catch {}
 }
 
@@ -115,7 +133,7 @@ export function resolveStoreSlug(explicitSlug?: string): string {
 function loadStoreSessions(): Record<string, User> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(STORE_SESSIONS_STORAGE_KEY);
+    const raw = sessionStorage.getItem(STORE_SESSIONS_STORAGE_KEY);
     if (!raw) return {};
     return JSON.parse(raw);
   } catch {
@@ -126,7 +144,8 @@ function loadStoreSessions(): Record<string, User> {
 function saveStoreSessions(sessions: Record<string, User>): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORE_SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
+    sessionStorage.setItem(STORE_SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
+    localStorage.removeItem(STORE_SESSIONS_STORAGE_KEY);
   } catch {}
 }
 

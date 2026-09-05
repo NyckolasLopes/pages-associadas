@@ -133,12 +133,21 @@ function createSupabaseClient() {
 
   const safeTransport = getSafeWebSocketTransport();
 
+  // Limpeza preventiva: remove tokens legados do localStorage para evitar persistência indevida
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('sb-token');
+      localStorage.removeItem('supabase.auth.token');
+    } catch {}
+  }
+
   return createClient<Database>(effectiveUrl, SUPABASE_PUBLISHABLE_KEY, {
     global: {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
     },
     auth: {
-      storage: typeof window !== 'undefined' ? localStorage : undefined,
+      // Armazena a sessão exclusivamente em sessionStorage (limpo automaticamente ao fechar a aba)
+      storage: typeof window !== 'undefined' ? sessionStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
     },

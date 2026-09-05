@@ -62,6 +62,10 @@ export default defineConfig({
       }
     }
   ],
+  esbuild: {
+    legalComments: "none",
+    sourcemap: false,
+  },
   build: {
     // Security: Sourcemaps desativados em produção para proteger o código-fonte contra engenharia reversa
     sourcemap: false,

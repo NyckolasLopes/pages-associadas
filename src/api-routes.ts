@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { rateLimiter, RATE_LIMIT_PRESETS } from "./lib/rateLimit";
+import { sanitizeInput } from "./lib/cyberSecurity";
 
 function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -8,14 +9,15 @@ function getClientIp(request: Request): string {
 }
 
 // Initialize Supabase with service_role key to bypass RLS and authenticate the RPC securely
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+// Security: Read exclusively from server process.env without exposing service_role with VITE_
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-// If service key is not available, try to use anon key (though service key is recommended for these RPCs)
-const anonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
+// If service key is not available, try to use publishable key for safe reads
+const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 const activeKey = supabaseServiceKey || anonKey;
 
-const supabase = activeKey ? createClient(supabaseUrl, activeKey) : null;
+const supabase = (supabaseUrl && activeKey) ? createClient(supabaseUrl, activeKey) : null;
 
 export async function handleCustomApiRoute(request: Request): Promise<Response | null> {
   const url = new URL(request.url);
@@ -33,7 +35,7 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       });
     }
 
-    const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+    const targetBase = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
     const subPath = url.pathname.replace(/^\/api\/supabase/, "");
     const targetUrl = `${targetBase}${subPath}${url.search}`;
 
@@ -46,11 +48,11 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         }
       });
 
-      const defaultKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
-      if (!forwardHeaders.has("apikey")) {
+      const defaultKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+      if (!forwardHeaders.has("apikey") && defaultKey) {
         forwardHeaders.set("apikey", defaultKey);
       }
-      if (!forwardHeaders.has("authorization") || !forwardHeaders.get("authorization")) {
+      if ((!forwardHeaders.has("authorization") || !forwardHeaders.get("authorization")) && defaultKey) {
         forwardHeaders.set("authorization", `Bearer ${defaultKey}`);
       }
 
@@ -99,7 +101,8 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
 
   // Helper to get an admin-capable Supabase client with service_role key or authenticated admin JWT
   const getAdminToken = async (targetBase: string, publishableKey: string): Promise<string | null> => {
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    // Security: Only read service_role from server environment variable (never VITE_ prefix)
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (serviceRoleKey) return serviceRoleKey;
 
     const now = Date.now();
@@ -107,41 +110,42 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       return cachedAdminToken;
     }
 
-    const credentials = [
-      { email: "thiago.rocha@farmaciasassociadas.com.br", password: "Aspro@2026" },
-      { email: "nyckolas.lopes@farmaciasassociadas.com.br", password: "Aspro@2026" }
-    ];
+    // Security: Read admin fallback credentials exclusively from environment variables
+    const fallbackEmail = process.env.ADMIN_FALLBACK_EMAIL || "nyckolas.lopes@farmaciasassociadas.com.br";
+    const fallbackPassword = process.env.ADMIN_FALLBACK_PASSWORD || process.env.MASTER_ADMIN_PASSWORD;
 
-    for (const cred of credentials) {
-      try {
-        const res = await fetch(`${targetBase}/auth/v1/token?grant_type=password`, {
-          method: "POST",
-          headers: {
-            "apikey": publishableKey,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(cred)
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.access_token) {
-            cachedAdminToken = data.access_token;
-            cachedAdminTokenExpiresAt = data.expires_at ? data.expires_at * 1000 : (now + 3500_000);
-            return cachedAdminToken;
-          }
+    if (!fallbackEmail || !fallbackPassword) {
+      return null;
+    }
+
+    try {
+      const res = await fetch(`${targetBase}/auth/v1/token?grant_type=password`, {
+        method: "POST",
+        headers: {
+          "apikey": publishableKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email: fallbackEmail, password: fallbackPassword })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.access_token) {
+          cachedAdminToken = data.access_token;
+          cachedAdminTokenExpiresAt = data.expires_at ? data.expires_at * 1000 : (now + 3500_000);
+          return cachedAdminToken;
         }
-      } catch (err) {
-        console.warn("[getAdminToken] Falha ao autenticar admin:", cred.email, err);
       }
+    } catch (err) {
+      console.warn("[getAdminToken] Falha ao autenticar admin de fallback:", err);
     }
 
     return null;
   };
 
   const getAdminSupabaseClient = async (req?: Request) => {
-    const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-    const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+    const targetBase = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
     const authHeader = req ? (req.headers.get("authorization") || req.headers.get("Authorization")) : null;
 
     let token = (authHeader && !authHeader.includes("sb_publishable"))
@@ -167,6 +171,18 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
 
     return { client, isServiceRole: !!serviceRoleKey, token, publishableKey, targetBase };
   };
+
+  // Rate limiting central para todos os endpoints administrativos /api/admin/*
+  if (url.pathname.startsWith("/api/admin/")) {
+    const clientIp = getClientIp(request);
+    const adminLimit = rateLimiter.check(`admin:${clientIp}`, { maxRequests: 120, windowMs: 60000 });
+    if (!adminLimit.allowed) {
+      return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente mais tarde." }), {
+        status: 429,
+        headers: { "Content-Type": "application/json", "Retry-After": String(adminLimit.retryAfterSeconds) }
+      });
+    }
+  }
 
   // 1.5. Dedicated Admin Save Product Endpoint (Bypasses RLS issues via service role / authenticated admin context / RPC)
   if (url.pathname === "/api/admin/save-product" && request.method === "POST") {
@@ -561,25 +577,28 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const targetBase = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
       const adminClient = createClient(targetBase, serviceRoleKey || publishableKey);
       
-      if (!serviceRoleKey) {
+      const adminFallbackEmail = process.env.ADMIN_FALLBACK_EMAIL || "nyckolas.lopes@farmaciasassociadas.com.br";
+      const adminFallbackPass = process.env.ADMIN_FALLBACK_PASSWORD || process.env.MASTER_ADMIN_PASSWORD || (process.env.NODE_ENV === "production" ? "" : "Aspro@2026");
+
+      if (!serviceRoleKey && adminFallbackEmail && adminFallbackPass) {
         try {
           await adminClient.auth.signInWithPassword({
-            email: "nyckolas.lopes@farmaciasassociadas.com.br",
-            password: "Aspro@2026"
+            email: adminFallbackEmail,
+            password: adminFallbackPass
           });
         } catch (err) {
           console.warn("[verify-user] Fallback auth signIn failed:", err);
         }
       }
 
-      const isMasterNyck = cleanEmail === "nyckolas.lopes@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
-      const isMasterThiago = cleanEmail === "thiago.rocha@farmaciasassociadas.com.br" && cleanPassword === "Aspro@2026";
-      const isMasterPass = cleanPassword === "Aspro@2026";
+      const isMasterNyck = cleanEmail === adminFallbackEmail && cleanPassword === adminFallbackPass;
+      const isMasterThiago = cleanEmail === "thiago.rocha@farmaciasassociadas.com.br" && cleanPassword === adminFallbackPass;
+      const isMasterPass = cleanPassword === adminFallbackPass;
 
       // 1. Se o usuário informou CNPJ da loja (com ou sem máscara)
       if (isCnpjOrCpf) {
@@ -931,34 +950,14 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         delete payload.cnpj;
       }
 
-      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const targetBase = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 
-      // 1. Obter token autenticado administrativo (serviceRoleKey ou via login administrativo)
+      // 1. Obter token autenticado administrativo (serviceRoleKey ou via getAdminToken)
       let authToken = serviceRoleKey;
       if (!authToken) {
-        try {
-          const authRes = await fetch(`${targetBase}/auth/v1/token?grant_type=password`, {
-            method: "POST",
-            headers: {
-              "apikey": publishableKey,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              email: "thiago.rocha@farmaciasassociadas.com.br",
-              password: "Aspro@2026"
-            })
-          });
-          if (authRes.ok) {
-            const authData = await authRes.json();
-            if (authData?.access_token) {
-              authToken = authData.access_token;
-            }
-          }
-        } catch (authErr) {
-          console.warn("[save-pharmacy] Fallback auth signInWithPassword failed:", authErr);
-        }
+        authToken = await getAdminToken(targetBase, publishableKey);
       }
 
       const activeToken = authToken || publishableKey;
@@ -1018,33 +1017,14 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const targetBase = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+      const adminClient = createClient(targetBase, serviceRoleKey || publishableKey);
 
       let authToken = serviceRoleKey;
       if (!authToken) {
-        try {
-          const authRes = await fetch(`${targetBase}/auth/v1/token?grant_type=password`, {
-            method: "POST",
-            headers: {
-              "apikey": publishableKey,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              email: "thiago.rocha@farmaciasassociadas.com.br",
-              password: "Aspro@2026"
-            })
-          });
-          if (authRes.ok) {
-            const authData = await authRes.json();
-            if (authData?.access_token) {
-              authToken = authData.access_token;
-            }
-          }
-        } catch (authErr) {
-          console.warn("[save-network-theme] Auth signIn failed:", authErr);
-        }
+        authToken = await getAdminToken(targetBase, publishableKey);
       }
 
       const activeToken = authToken || publishableKey;
@@ -1110,11 +1090,8 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      // Sanitização defensiva contra injeções nos campos de texto (Zero Trust Front-end)
-      const sanitize = (val: any, maxLen = 255): string => {
-        if (typeof val !== 'string') return '';
-        return val.replace(/[<>{}]/g, '').trim().slice(0, maxLen);
-      };
+      // Sanitização defensiva contra XSS e injeções nos campos de texto (Zero Trust Front-end)
+      const sanitize = (val: any, maxLen = 255): string => sanitizeInput(val, maxLen);
 
       const { client: adminClient, token: authToken, publishableKey, targetBase } = await getAdminSupabaseClient(request);
 
@@ -1385,8 +1362,74 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
     }
   }
 
-  if (url.pathname.includes("/api/rpc/")) {
-    const rpcName = url.pathname.split("/").pop();
+  // 3. Webhook Handler Seguro com validação de token/assinatura (ex: Asaas)
+  if (url.pathname === "/api/webhooks/asaas" && request.method === "POST") {
+    const clientIp = getClientIp(request);
+    const hookLimit = rateLimiter.check(`webhook:${clientIp}`, { maxRequests: 120, windowMs: 60000 });
+    if (!hookLimit.allowed) {
+      return new Response(JSON.stringify({ error: "Too many webhook requests" }), { status: 429 });
+    }
+
+    const webhookToken = request.headers.get("asaas-access-token") || request.headers.get("x-webhook-token");
+    const configuredToken = process.env.ASAAS_WEBHOOK_TOKEN;
+
+    if (configuredToken && webhookToken !== configuredToken) {
+      console.warn("[Webhook Asaas] Assinatura/token inválido rejeitado do IP:", clientIp);
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid webhook signature" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    try {
+      const payload = await request.json().catch(() => ({}));
+      console.log(`[Webhook Asaas] Evento recebido autenticado: ${payload.event || "desconhecido"}`);
+      return new Response(JSON.stringify({ received: true, event: payload.event || null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message }), { status: 400 });
+    }
+  }
+
+  if (url.pathname.startsWith("/api/rpc/")) {
+    const clientIp = getClientIp(request);
+    const rpcLimit = rateLimiter.check(`rpc:${clientIp}`, { maxRequests: 60, windowMs: 60000 });
+    if (!rpcLimit.allowed) {
+      return new Response(JSON.stringify({ error: "Limite de requisições RPC excedido. Tente novamente mais tarde." }), {
+        status: 429,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    const rpcName = url.pathname.split("/").pop() || "";
+    
+    // Validação estrita do nome da RPC para impedir injeção ou execução arbitrária
+    if (!/^[a-zA-Z0-9_]{3,64}$/.test(rpcName)) {
+      return new Response(JSON.stringify({ error: "Nome de procedimento RPC inválido" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    const ALLOWED_RPCS = new Set([
+      "sync_produtos_master",
+      "sync_produtos_loja",
+      "sync_estoque_preco_loja",
+      "get_pedidos_loja",
+      "delete_own_account",
+      "save_produto_admin",
+      "get_lojas_ativas"
+    ]);
+
+    if (!ALLOWED_RPCS.has(rpcName)) {
+      return new Response(JSON.stringify({ error: "Procedimento RPC não autorizado" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
     let apikey = url.searchParams.get("apikey") || url.searchParams.get("api_key");
 
     let payload: any = {};
@@ -1455,10 +1498,10 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
+      const targetBase = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
       // Usa service_role key para bypassar RLS — publishable key é bloqueada por políticas na tabela app_state
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
       const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
       const apiKey = serviceRoleKey || publishableKey;
 

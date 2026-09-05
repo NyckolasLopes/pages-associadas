@@ -262,44 +262,11 @@ function CadastroPage() {
       });
     } catch {}
 
-    // Backdoor/Atalho de Admin: Se usar a senha mestre, cria como admin independente do email
-    const isAdminBackdoor = (senha === "Aspro@2026" || senha === "AdminAssociadas!");
-    
-    if (isAdminBackdoor) {
-      const { useAdmin } = await import("@/stores/admin");
-      const { users, setUsers } = useAdmin.getState();
-      if (!users.find(u => u.email === email)) {
-        setUsers([...users, { 
-          id: data.user?.id || `admin-${Date.now()}`, 
-          name: finalNome, 
-          email: email, 
-          password: senha, 
-          grupoId: "grupo-admin", 
-          proprietario: true 
-        }]);
-      }
-    }
-
     // Login after registration
     await login(email, senha, storeSlug);
-    
-    // Atualizar no Supabase (segurança)
-    if (isAdminBackdoor && data.user?.id) {
-      await (await import("@/integrations/supabase/client")).supabase
-        .from("profiles")
-        .update({ 
-          // @ts-ignore
-          is_admin: true, 
-          grupo_id: "grupo-admin",
-          lojas_vinculadas: null
-        })
-        .eq("id", data.user.id);
-      
-      navigate({ to: "/admin" as any });
-    } else {
-      const targetRedirect = (!redirect || redirect === "/") ? `/${storeSlug}` : redirect;
-      navigate({ to: targetRedirect as any });
-    }
+
+    const targetRedirect = (!redirect || redirect === "/") ? `/${storeSlug}` : redirect;
+    navigate({ to: targetRedirect as any });
   };
 
   return (
