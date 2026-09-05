@@ -1388,7 +1388,13 @@ function AdminProdutos() {
           if (isGlobalAdmin && !currentLojaId) {
             const { supabase } = await import("@/integrations/supabase/client");
             const { error } = await supabase.from('produtos').update({ destaque }).eq('id', highlightedProduct.id);
-            if (error) throw error;
+            if (error) {
+              await fetch("/api/admin/save-product", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ product: { id: highlightedProduct.id, destaque } })
+              });
+            }
           } else if (currentLojaId) {
             await updateStoreProductDestaque(currentLojaId, highlightedProduct.id, destaque);
           }

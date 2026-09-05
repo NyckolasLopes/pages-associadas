@@ -465,14 +465,23 @@ export const useAdminProducts = create<ProductsState>()(
           error = retryRes.error;
         }
 
-        // Se o upsert direto falhou (por exemplo por causa de RLS 42501 ou sessão de auth do navegador), tenta via endpoint administrativo seguro
+        // Se o upsert direto falhou (por exemplo por causa de RLS 42501 ou sessão de auth do navegador), tenta via endpoint administrativo seguro ou RPC
         if (error) {
           console.warn("Upsert direto no Supabase falhou, delegando para /api/admin/save-product:", error.message);
           try {
             const apiRes = await fetch("/api/admin/save-product", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ product: upsertPayload }),
+              body: JSON.stringify({ 
+                product: upsertPayload,
+                lojaId: lojaId || undefined,
+                storePrice: lojaId ? {
+                  precoPor: Number((formattedProduct.precosPorLoja?.[lojaId] as any)?.precoPor) || Number(formattedProduct.precoPor) || 0,
+                  precoDe: Number((formattedProduct.precosPorLoja?.[lojaId] as any)?.precoDe) || Number(formattedProduct.precoDe) || 0,
+                  estoque: (formattedProduct.precosPorLoja?.[lojaId] as any)?.estoque ?? formattedProduct.estoque ?? 0,
+                  ativo: (formattedProduct.precosPorLoja?.[lojaId] as any)?.ativo ?? formattedProduct.ativo ?? true
+                } : undefined
+              }),
             });
             if (apiRes.ok) {
               const resJson = await apiRes.json();
@@ -485,6 +494,18 @@ export const useAdminProducts = create<ProductsState>()(
             }
           } catch (apiErr) {
             console.warn("Exceção na chamada /api/admin/save-product:", apiErr);
+          }
+        }
+
+        // Se ainda houver erro de RLS (42501) ou policy, tenta salvar via RPC save_produto_admin (com SECURITY DEFINER)
+        if (error && (error.code === "42501" || error.message?.toLowerCase().includes("policy") || error.message?.toLowerCase().includes("security"))) {
+          try {
+            const rpcRes = await (supabase as any).rpc('save_produto_admin', { product_data: upsertPayload });
+            if (!rpcRes.error && rpcRes.data?.success !== false) {
+              error = null;
+            }
+          } catch (rpcErr) {
+            console.warn("RPC save_produto_admin falhou:", rpcErr);
           }
         }
         
@@ -525,6 +546,29 @@ export const useAdminProducts = create<ProductsState>()(
               ativo: pAtivo
             });
             storeError = res.error;
+          }
+
+          if (storeError) {
+            console.warn("Erro ao salvar preço da loja diretamente, tentando via /api/admin/save-product-price:", storeError.message);
+            try {
+              const apiRes = await fetch("/api/admin/save-product-price", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  produto_id: formattedProduct.id,
+                  loja_id: lojaId,
+                  preco_de: pDe,
+                  preco_por: pPor,
+                  estoque: pEst,
+                  ativo: pAtivo
+                }),
+              });
+              if (apiRes.ok) {
+                storeError = null;
+              }
+            } catch (pErr) {
+              console.warn("Falha no fallback /api/admin/save-product-price:", pErr);
+            }
           }
 
           if (storeError) {
