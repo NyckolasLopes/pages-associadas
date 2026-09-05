@@ -241,11 +241,13 @@ function Relatorios() {
     // Lojas apenas desativadas temporariamente continuam existindo em pharmacies e são mantidas
     filtered = filtered.filter(o => {
       if (!o.lojaId) return false;
-      return pharmacies?.some(p => String(p.id) === String(o.lojaId));
+      return pharmacies?.some(p => String(p.id) === String(o.lojaId) || String(p.slug) === String(o.lojaId));
     });
 
     if (activeStoreId) {
-      filtered = filtered.filter(o => String(o.lojaId) === String(activeStoreId));
+      const activePh = pharmacies?.find(p => p.id === activeStoreId || p.slug === activeStoreId);
+      const valid = new Set([activeStoreId, activePh?.id, activePh?.slug, activePh?.slug ? `loja-${activePh.slug}` : null].filter(Boolean));
+      filtered = filtered.filter(o => valid.has(String(o.lojaId)));
     }
     
     if (date?.from) {

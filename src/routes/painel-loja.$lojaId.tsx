@@ -150,7 +150,23 @@ function PainelLoja() {
   }, [isAuthenticated, currentUser, loja]);
 
   // Filter orders for this specific store
-  const lojaOrders = useMemo(() => orders.filter((o) => normalizeLojaId(o.lojaId) === normalizeLojaId(lojaId) || (loja?.id && normalizeLojaId(o.lojaId) === normalizeLojaId(loja.id))).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()), [orders, lojaId, loja?.id]);
+  const lojaOrders = useMemo(() => {
+    const validIds = new Set<string>([
+      normalizeLojaId(lojaId) || '',
+      lojaId || '',
+      loja?.id || '',
+      normalizeLojaId(loja?.id) || '',
+      loja?.slug || '',
+      loja?.slug ? `loja-${loja.slug}` : ''
+    ].filter(Boolean));
+
+    return orders.filter((o) => {
+      const oId = normalizeLojaId(o.lojaId) || o.lojaId || '';
+      const matchId = validIds.has(oId) || (o.lojaId && validIds.has(o.lojaId));
+      const matchName = loja?.nome && o.lojaNome && o.lojaNome.toLowerCase() === loja.nome.toLowerCase();
+      return matchId || matchName;
+    }).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+  }, [orders, lojaId, loja?.id, loja?.slug, loja?.nome]);
 
   // Metricas de vendas
   const { hoje, ontem, semana, mes, ano } = useMemo(() => {

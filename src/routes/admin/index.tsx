@@ -121,8 +121,15 @@ function AdminDashboard() {
 
   const orders = useMemo(() => {
     if (!effectiveStoreId) return rawOrders;
-    return rawOrders.filter(o => o.lojaId === effectiveStoreId);
-  }, [rawOrders, effectiveStoreId]);
+    const store = pharmacies.find(p => p.id === effectiveStoreId || p.slug === effectiveStoreId);
+    const validIds = new Set<string>([
+      effectiveStoreId,
+      store?.id,
+      store?.slug,
+      store?.slug ? `loja-${store.slug}` : null
+    ].filter(Boolean) as string[]);
+    return rawOrders.filter(o => o.lojaId && (validIds.has(o.lojaId) || (store?.nome && o.lojaNome && o.lojaNome.toLowerCase() === store.nome.toLowerCase())));
+  }, [rawOrders, effectiveStoreId, pharmacies]);
   
   const { items: cartItems } = useCart();
   const { lojaPromocoes } = useMarketing();

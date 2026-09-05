@@ -1,6 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Pedido } from '@/stores/orders';
+import { useAdmin } from '@/stores/admin';
+
+function expandLojaIds(ids: string[] | string): string[] {
+  const list = Array.isArray(ids) ? ids : [ids];
+  const pharmacies = useAdmin.getState().pharmacies || [];
+  const expanded = new Set<string>();
+
+  list.forEach(id => {
+    if (!id) return;
+    expanded.add(id);
+    const ph = pharmacies.find(p => p.id === id || p.slug === id);
+    if (ph) {
+      if (ph.id) expanded.add(ph.id);
+      if (ph.slug) {
+        expanded.add(ph.slug);
+        expanded.add(`loja-${ph.slug}`);
+      }
+    }
+  });
+
+  return Array.from(expanded);
+}
 
 interface UseOrdersQueryParams {
   page?: number;
@@ -49,7 +71,7 @@ export function useOrdersQuery({
           const lojaIds = Array.isArray(profile.lojas_vinculadas)
             ? profile.lojas_vinculadas
             : Object.keys(profile.lojas_vinculadas);
-          query = query.in('loja_id', lojaIds);
+          query = query.in('loja_id', expandLojaIds(lojaIds));
         } else {
           query = query.eq('user_id', user.id);
         }
@@ -57,7 +79,7 @@ export function useOrdersQuery({
 
       // Filtros
       if (lojaId) {
-        query = query.eq('loja_id', lojaId);
+        query = query.in('loja_id', expandLojaIds(lojaId));
       }
       
       if (status && status !== 'todos') {
@@ -207,14 +229,14 @@ export function useOrdersKpis(lojaId?: string) {
           const lojaIds = Array.isArray(profile.lojas_vinculadas)
             ? profile.lojas_vinculadas
             : Object.keys(profile.lojas_vinculadas);
-          query = query.in('loja_id', lojaIds);
+          query = query.in('loja_id', expandLojaIds(lojaIds));
         } else {
           query = query.eq('user_id', user.id);
         }
       }
 
       if (lojaId) {
-        query = query.eq('loja_id', lojaId);
+        query = query.in('loja_id', expandLojaIds(lojaId));
       }
       
       const { data, error } = await query;

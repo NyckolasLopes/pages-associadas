@@ -168,10 +168,25 @@ export const useOrders = create<OrdersState>((set, get) => ({
     if (!profile?.is_admin) {
       if (profile?.lojas_vinculadas && profile.lojas_vinculadas.length > 0) {
         // Associado: vê as ordens das suas lojas
-        const lojaIds = Array.isArray(profile.lojas_vinculadas)
+        const rawLojaIds = Array.isArray(profile.lojas_vinculadas)
           ? profile.lojas_vinculadas
           : Object.keys(profile.lojas_vinculadas);
-        query = query.in('loja_id', lojaIds);
+
+        // Expandir com aliases de farmácias (UUID, slug, loja-slug)
+        const pharmacies = (await import('@/stores/admin')).useAdmin.getState().pharmacies || [];
+        const expandedIds = new Set<string>(rawLojaIds);
+        rawLojaIds.forEach(id => {
+          const ph = pharmacies.find(p => p.id === id || p.slug === id);
+          if (ph) {
+            if (ph.id) expandedIds.add(ph.id);
+            if (ph.slug) {
+              expandedIds.add(ph.slug);
+              expandedIds.add(`loja-${ph.slug}`);
+            }
+          }
+        });
+
+        query = query.in('loja_id', Array.from(expandedIds));
       } else {
         // Cliente final: vê apenas as suas ordens
         query = query.eq('user_id', user.id);
@@ -302,15 +317,35 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
       // Mescla pedidos remotos e locais
       const existingIds = new Set(mappedOrders.map(o => o.id));
+      const existingNumeros = new Set(mappedOrders.map(o => o.numero ? String(o.numero).replace(/^FA-/, '') : ''));
       const mergedOrders = [...mappedOrders];
+      const unsynced: Pedido[] = [];
+
       for (const loc of localOrders) {
-        if (!existingIds.has(loc.id)) {
+        const locNum = loc.numero ? String(loc.numero).replace(/^FA-/, '') : (loc.id ? String(loc.id).replace(/^FA-/, '') : '');
+        if (!existingIds.has(loc.id) && !existingNumeros.has(locNum)) {
           mergedOrders.push(loc);
+          unsynced.push(loc);
         }
       }
 
       set({ orders: mergedOrders });
       saveOrdersLocally(mergedOrders);
+
+      // Auto-sincronizar pedidos pendentes do localStorage para o servidor em segundo plano
+      if (unsynced.length > 0) {
+        setTimeout(async () => {
+          for (const pendingOrder of unsynced) {
+            try {
+              await fetch('/api/pedidos/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order: pendingOrder })
+              });
+            } catch {}
+          }
+        }, 1000);
+      }
     }
   },
 
@@ -338,7 +373,12 @@ export const useOrders = create<OrdersState>((set, get) => ({
         body: JSON.stringify({ order: { ...finalOrder, userId: userAuth?.user?.id || null } })
       });
 
-      if (!apiRes.ok) {
+      if (apiRes.ok) {
+        const resData = await apiRes.json().catch(() => null);
+        if (resData?.data?.id) {
+          finalOrder.rawId = resData.data.id;
+        }
+      } else {
         const errData = await apiRes.json().catch(() => ({}));
         console.warn("[orders.addOrder] Aviso do servidor (pedido garantido localmente):", errData);
       }
