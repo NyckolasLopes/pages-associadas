@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
-import { MessageCircle, CheckCircle2, Package, Truck, Clock, ShoppingBag, MapPin, Loader2, ArrowRight } from "lucide-react";
+import { MessageCircle, CheckCircle2, Package, Truck, Clock, ShoppingBag, MapPin, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdmin } from "@/stores/admin";
@@ -425,10 +425,14 @@ function SucessoPage() {
         </div>
       )}
 
-      <div className="mt-12 text-center">
+      <div className="mt-12 text-center pb-8">
         <Link to="/$storeSlug" params={{ storeSlug: params?.storeSlug || activePharmacy?.slug || 'loja-padrao' }}>
-          <Button variant="ghost" className="text-slate-500 font-medium hover:text-slate-900">
-            &larr; Voltar para a loja
+          <Button 
+            size="lg"
+            className="group bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 text-base font-bold h-12 px-8 rounded-2xl inline-flex items-center gap-2.5"
+          >
+            <ArrowLeft className="w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1" />
+            Voltar para a loja
           </Button>
         </Link>
       </div>
