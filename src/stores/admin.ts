@@ -344,6 +344,7 @@ interface AdminState {
   removePharmacy: (id: string) => Promise<void>;
   loadPharmacies: (force?: boolean) => Promise<void>;
   loadUsers: () => Promise<void>;
+  rehydrateCachedAdmin: () => void;
 
   // Category Icons & Features
   categoryIcons: Record<string, string>; // categoryId -> icon name/base64/url
@@ -1325,11 +1326,11 @@ export const useAdmin = create<AdminState>()(
       themeColors: {},
       setThemeColors: (themeColors) => set({ themeColors }),
 
-      banners: initialCachedBanners.banners,
-      bannersLoaded: initialCachedBanners.banners.length > 0,
+      banners: [],
+      bannersLoaded: false,
       bannersLoading: false,
-      bannersByLoja: initialCachedBanners.bannersByLoja,
-      deletedDefaultBannerIds: getInitialDeletedDefaultBanners(),
+      bannersByLoja: {},
+      deletedDefaultBannerIds: [],
       getStoreBanners: (lojaId?: string) => {
         const state = get() as any;
         const key = lojaId || "global";
@@ -1653,9 +1654,32 @@ export const useAdmin = create<AdminState>()(
       integrations: { webhookUrl: "", apiKey: "" },
       setIntegrations: (integrations) => set({ integrations }),
 
-      pharmacies: getInitialCachedPharmacies(),
-      pharmaciesLoaded: getInitialCachedPharmacies().length > 0,
+      pharmacies: [],
+      pharmaciesLoaded: false,
       pharmaciesFresh: false,
+      rehydrateCachedAdmin: () => {
+        if (typeof window === 'undefined') return;
+        const cachedPharmacies = getInitialCachedPharmacies();
+        const cachedBanners = getInitialCachedBanners();
+        const deletedIds = getInitialDeletedDefaultBanners();
+        const updates: any = {};
+        if (cachedPharmacies.length > 0) {
+          updates.pharmacies = cachedPharmacies;
+          updates.pharmaciesLoaded = true;
+          updates.pharmaciesFresh = true;
+        }
+        if (cachedBanners.banners.length > 0 || Object.keys(cachedBanners.bannersByLoja).length > 0) {
+          updates.banners = cachedBanners.banners;
+          updates.bannersByLoja = cachedBanners.bannersByLoja;
+          updates.bannersLoaded = true;
+        }
+        if (deletedIds.length > 0) {
+          updates.deletedDefaultBannerIds = deletedIds;
+        }
+        if (Object.keys(updates).length > 0) {
+          set(updates);
+        }
+      },
       loadPharmacies: async (force = false) => {
         // Se já há um carregamento em andamento e não forçamos recarga, aguarda ele para não duplicar requisições
         if (loadPharmaciesPromise && !force) {

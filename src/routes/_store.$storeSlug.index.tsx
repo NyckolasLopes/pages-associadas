@@ -843,7 +843,7 @@ function CampaignHighlight({ lojaId }: { lojaId?: string }) {
     });
   }, [customProducts, allProducts]);
 
-  const monthName = new Date().toLocaleString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase());
+  const monthName = new Date().toLocaleString('pt-BR', { month: 'long', timeZone: 'America/Sao_Paulo' }).replace(/^\w/, c => c.toUpperCase());
 
   if (campaignProducts.length === 0) return null;
 

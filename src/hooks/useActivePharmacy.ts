@@ -50,7 +50,7 @@ export function useActivePharmacy() {
       return null;
     }
 
-    const allPharmacies = (pharmacies && pharmacies.length > 0) ? pharmacies : getInitialCachedPharmacies();
+    const allPharmacies = pharmacies || [];
 
     // 1. Slug da URL ou Redirect
     const slugToSearch = (potentialSlug && !SYSTEM_PAGES.has(potentialSlug)) ? potentialSlug : redirectSlug;
@@ -116,12 +116,13 @@ export function useActivePharmacy() {
       return null;
     }
 
-    // 2. Última loja visitada
-    try {
-      const lastSlug = typeof window !== 'undefined' && typeof sessionStorage !== 'undefined'
-        ? sessionStorage.getItem('fa-last-store-slug')
-        : null;
-      if (lastSlug) {
+    // 2. Última loja visitada (apenas quando carregadas para evitar divergência de hidratação)
+    if (pharmaciesLoaded) {
+      try {
+        const lastSlug = typeof window !== 'undefined' && typeof sessionStorage !== 'undefined'
+          ? sessionStorage.getItem('fa-last-store-slug')
+          : null;
+        if (lastSlug) {
         const normalizedLast = safeSlugify(lastSlug);
         const lowerLast = lastSlug.toLowerCase();
         const byLastSlug = allPharmacies.find((p) => {

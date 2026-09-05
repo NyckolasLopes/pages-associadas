@@ -73,6 +73,7 @@ export interface MarketingStore {
   addLojaPromocao: (lojaId: string, promocao: Omit<Promocao, "id">) => Promise<void>;
   removeLojaPromocao: (lojaId: string, id: string) => Promise<void>;
   incrementCouponUsage: (codigo: string, lojaId?: string) => Promise<void>;
+  rehydrateCachedMarketing: () => void;
 }
 
 const CACHE_KEY = "fa-cached-marketing-v3";
@@ -110,13 +111,24 @@ function saveMarketingCache(cupons: Coupon[], promocoes: Promocao[], lojaPromoco
   }
 }
 
-const initial = getInitialMarketing();
-
 export const useMarketing = create<MarketingStore>((set, get) => ({
-  cupons: initial.cupons,
-  promocoes: initial.promocoes,
-  lojaPromocoes: initial.lojaPromocoes,
+  cupons: [],
+  promocoes: [],
+  lojaPromocoes: {},
   marketingLoaded: false,
+
+  rehydrateCachedMarketing: () => {
+    if (typeof window === "undefined") return;
+    const initial = getInitialMarketing();
+    if (initial.cupons.length > 0 || initial.promocoes.length > 0 || Object.keys(initial.lojaPromocoes).length > 0) {
+      set({
+        cupons: initial.cupons,
+        promocoes: initial.promocoes,
+        lojaPromocoes: initial.lojaPromocoes,
+        marketingLoaded: true,
+      });
+    }
+  },
   
   loadMarketing: async () => {
     try {

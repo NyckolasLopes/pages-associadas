@@ -150,33 +150,10 @@ interface AuthState {
 }
 
 export const useAuth = create<AuthState>((set, get) => {
-  const initialSessions = loadStoreSessions();
-  const initialSlug = typeof window !== "undefined" ? resolveStoreSlug() : "loja-padrao";
-  const savedActiveUser = loadActiveUser();
-
-  // Se existe usuário salvo persistente:
-  let initialUser: User | null = null;
-  if (savedActiveUser) {
-    if (initialSlug === "loja-padrao" || !savedActiveUser.storeSlug || isSameStore(initialSlug, savedActiveUser.storeSlug)) {
-      initialUser = savedActiveUser;
-      if (initialSlug !== "loja-padrao" && savedActiveUser.storeSlug !== initialSlug) {
-        savedActiveUser.storeSlug = initialSlug;
-        initialSessions[initialSlug] = savedActiveUser;
-        saveStoreSessions(initialSessions);
-        saveActiveUser(savedActiveUser);
-      }
-    } else {
-      // Se acessou explicitamente outra loja diferente:
-      initialUser = initialSessions[initialSlug] || null;
-    }
-  } else {
-    initialUser = initialSessions[initialSlug] || null;
-  }
-
   return {
-    user: initialUser,
-    storeUsers: initialSessions,
-    currentStoreSlug: initialSlug,
+    user: null,
+    storeUsers: {},
+    currentStoreSlug: "loja-padrao",
     loginOpen: false,
 
     syncStoreSession: (storeSlug?: string) => {

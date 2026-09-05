@@ -255,6 +255,8 @@ function RootComponent() {
   }, [location.pathname, redirects, activePharmacy?.slug]);
 
   useEffect(() => {
+    useAdmin.getState().rehydrateCachedAdmin();
+    useMarketing.getState().rehydrateCachedMarketing();
     useAuth.getState()._initListener();
     useCart.persist.rehydrate();
     useGeoCep.persist.rehydrate();
