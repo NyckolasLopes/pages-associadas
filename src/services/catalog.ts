@@ -495,6 +495,9 @@ function applyFilters(produtos: Produto[], filters?: FilterOptions): Produto[] {
 const vitrineCacheMap = new Map<string, { data: Produto[]; timestamp: number }>();
 const VITRINE_CACHE_TTL = 45_000; // 45 segundos
 
+const categoryCacheMap = new Map<string, { data: Produto[]; timestamp: number }>();
+const CATEGORY_CACHE_TTL = 120_000; // 2 minutos
+
 const topOrderedCacheMap = new Map<string, { data: string[]; timestamp: number }>();
 const TOP_ORDERED_TTL = 60_000; // 1 minuto
 
@@ -845,6 +848,13 @@ export const catalog = {
     // Pagination params
     const page = filters?.page || 0;
     const pageSize = filters?.pageSize || 24;
+
+    const cacheKey = `c:${categoryId}:${lojaId || 'all'}:${page}:${pageSize}`;
+    const cachedEntry = categoryCacheMap.get(cacheKey);
+    if (cachedEntry && (Date.now() - cachedEntry.timestamp < CATEGORY_CACHE_TTL)) {
+      return applyFilters(cachedEntry.data, filters);
+    }
+
     const isOfertas = String(cat.nome || "").toLowerCase().includes("oferta") || String(cat.nome || "").toLowerCase().includes("promoç");
 
     if (categoryId === "300") {
@@ -896,6 +906,7 @@ export const catalog = {
         });
     }
     
+    categoryCacheMap.set(cacheKey, { data: results, timestamp: Date.now() });
     return applyFilters(results, filters);
   },
   productsByVitrine: async (vitrineId: string, categoriaId: string, filters?: FilterOptions, produtoIds?: string[], lojaId?: string | null) => {

@@ -1506,10 +1506,13 @@ function MobileMenu({ cats, trigger }: { cats: Categoria[], trigger?: React.Reac
   );
 }
 
+const menuCategoryProductsCache = new Map<string, Produto[]>();
+
 function MegaMenu({ cats }: { cats: Categoria[] }) {
   const [open, setOpen] = useState<string | null>(null);
   const [subs, setSubs] = useState<Categoria[]>([]);
   const [catProducts, setCatProducts] = useState<Produto[]>([]);
+  const [loadingCatProducts, setLoadingCatProducts] = useState(false);
   const [mounted, setMounted] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const marcas = useMarcasStore(s => s.marcas);
@@ -1557,8 +1560,55 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
     setMounted(true);
   }, []);
 
+  // Pré-carregamento dos produtos das principais categorias do menu para resposta instantânea (0ms)
+  useEffect(() => {
+    if (!mounted || !cats || cats.length === 0) return;
+    const storeId = activePharmacy?.id || selectedPharmacyId || "";
+
+    const timer = setTimeout(() => {
+      const topCats = cats.slice(0, 6);
+      topCats.forEach(cat => {
+        if (!cat || cat.id === "300" || cat.slug === "nossas-marcas") return;
+        const cacheKey = `${storeId}:${cat.id}`;
+        if (menuCategoryProductsCache.has(cacheKey)) return;
+
+        catalog.productsByCategory(cat.id, { pageSize: 8 }, storeId).then(products => {
+          const sorted = [...products].sort((a, b) => {
+            const stockA = getDeterministicStock(a, storeId);
+            const availA = (stockA > 0 || a.tipoProduto === "servico") && a.ativo !== false && (a.precosPorLoja?.[storeId]?.ativo !== false) ? 1 : 0;
+            const stockB = getDeterministicStock(b, storeId);
+            const availB = (stockB > 0 || b.tipoProduto === "servico") && b.ativo !== false && (b.precosPorLoja?.[storeId]?.ativo !== false) ? 1 : 0;
+            return availB - availA;
+          });
+          menuCategoryProductsCache.set(cacheKey, sorted.slice(0, 6));
+        }).catch(() => {});
+      });
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [mounted, cats, activePharmacy?.id, selectedPharmacyId]);
+
   const handleMouseEnter = (id: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    // Antecipação de busca no hover para eliminar qualquer latência
+    if (id && id !== "all" && id !== "300") {
+      const storeId = activePharmacy?.id || selectedPharmacyId || "";
+      const cacheKey = `${storeId}:${id}`;
+      if (!menuCategoryProductsCache.has(cacheKey)) {
+        catalog.productsByCategory(id, { pageSize: 8 }, storeId).then(products => {
+          const sorted = [...products].sort((a, b) => {
+            const stockA = getDeterministicStock(a, storeId);
+            const availA = (stockA > 0 || a.tipoProduto === "servico") && a.ativo !== false && (a.precosPorLoja?.[storeId]?.ativo !== false) ? 1 : 0;
+            const stockB = getDeterministicStock(b, storeId);
+            const availB = (stockB > 0 || b.tipoProduto === "servico") && b.ativo !== false && (b.precosPorLoja?.[storeId]?.ativo !== false) ? 1 : 0;
+            return availB - availA;
+          });
+          menuCategoryProductsCache.set(cacheKey, sorted.slice(0, 6));
+        }).catch(() => {});
+      }
+    }
+
     timeoutRef.current = setTimeout(() => {
       setOpen(id);
     }, 50);
@@ -1575,15 +1625,37 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
     if (!open) {
       setSubs([]);
       setCatProducts([]);
+      setLoadingCatProducts(false);
       return;
     }
     if (open === "all") {
       return;
     }
 
-    catalog.listSubcategories(open, true).then(setSubs);
-    catalog.productsByCategory(open).then(products => {
-      const storeId = activePharmacy?.id || selectedPharmacyId || "";
+    // Subcategorias são resolvidas instantaneamente da memória
+    setSubs(allSubs[open] || []);
+
+    // Para Nossas Marcas, exibe diretamente a lista de marcas próprias
+    if (open === "300") {
+      setCatProducts([]);
+      setLoadingCatProducts(false);
+      return;
+    }
+
+    const storeId = activePharmacy?.id || selectedPharmacyId || "";
+    const cacheKey = `${storeId}:${open}`;
+
+    if (menuCategoryProductsCache.has(cacheKey)) {
+      setCatProducts(menuCategoryProductsCache.get(cacheKey)!);
+      setLoadingCatProducts(false);
+      return;
+    }
+
+    setLoadingCatProducts(true);
+    let cancelled = false;
+
+    catalog.productsByCategory(open, { pageSize: 8 }, storeId).then(products => {
+      if (cancelled) return;
       const sorted = [...products].sort((a, b) => {
         const stockA = getDeterministicStock(a, storeId);
         const availA = (stockA > 0 || a.tipoProduto === "servico") && a.ativo !== false && (a.precosPorLoja?.[storeId]?.ativo !== false) ? 1 : 0;
@@ -1591,9 +1663,18 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
         const availB = (stockB > 0 || b.tipoProduto === "servico") && b.ativo !== false && (b.precosPorLoja?.[storeId]?.ativo !== false) ? 1 : 0;
         return availB - availA;
       });
-      setCatProducts(sorted.slice(0, 6));
+      const top6 = sorted.slice(0, 6);
+      menuCategoryProductsCache.set(cacheKey, top6);
+      setCatProducts(top6);
+      setLoadingCatProducts(false);
+    }).catch(() => {
+      if (!cancelled) setLoadingCatProducts(false);
     });
-  }, [open, cats, activePharmacy?.id, selectedPharmacyId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, allSubs, activePharmacy?.id, selectedPharmacyId]);
 
   useEffect(() => {
     if (open) {
@@ -1832,53 +1913,83 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
               </div>
               {(active.id !== "300" && active.slug !== "nossas-marcas") && (
                 <div className="col-span-5 border-l pl-6 flex flex-col">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold mb-4">
-                  Destaques da categoria
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold mb-4 flex items-center justify-between">
+                    <span>Destaques da categoria</span>
+                    {loadingCatProducts && (
+                      <span className="text-[10px] font-medium text-primary/70 animate-pulse">Carregando...</span>
+                    )}
+                  </div>
+                  {loadingCatProducts && catProducts.length === 0 ? (
+                    <div className="grid grid-cols-3 gap-4 flex-1 content-start">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="flex flex-col bg-white rounded border border-slate-100 p-3 animate-pulse">
+                          <div className="aspect-square w-full bg-slate-100 rounded-md mb-3" />
+                          <div className="h-2.5 bg-slate-100 rounded w-16 mb-2" />
+                          <div className="h-3 bg-slate-100 rounded w-full mb-1" />
+                          <div className="h-3 bg-slate-100 rounded w-3/4 mb-3" />
+                          <div className="h-4 bg-slate-100 rounded w-20 mt-auto" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : catProducts.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-4 flex-1 content-start">
+                      {catProducts.map(p => {
+                        const storeId = activePharmacy?.id || selectedPharmacyId || "";
+                        const ep = getEffectivePrice(p, storeId);
+                        const stock = getDeterministicStock(p, storeId);
+                        const isAvail = (stock > 0 || p.tipoProduto === "servico") && p.ativo !== false && (p.precosPorLoja?.[storeId]?.ativo !== false);
+                        return (
+                          <Link
+                            key={p.id}
+                            to="/$storeSlug/produto/$slug"
+                            params={{ storeSlug, slug: p.url || p.slug || p.id }}
+                            onClick={() => setOpen(null)}
+                            className={`group flex flex-col bg-white rounded border hover:border-primary transition p-3 ${!isAvail ? 'opacity-85' : ''}`}
+                          >
+                            <div className="aspect-square w-full bg-white mb-3 flex items-center justify-center p-1 rounded overflow-hidden relative">
+                              <img 
+                                src={productImage(p)} 
+                                alt={p.nome} 
+                                className={`w-full h-full object-contain group-hover:scale-105 transition-transform ${!isAvail ? 'grayscale-[0.2]' : ''}`}
+                              />
+                              {checkIsGenerico(p) && (
+                                <span className="absolute top-0 left-0 bg-yellow-400 text-black text-[9px] font-bold px-1 rounded shadow-sm">
+                                  GENÉRICO
+                                </span>
+                              )}
+                              {!isAvail && (
+                                <span className="absolute bottom-1 inset-x-1 bg-slate-800/85 text-white text-[9px] font-bold py-0.5 rounded text-center shadow-xs">
+                                  Indisponível
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] font-bold text-muted-foreground uppercase truncate mb-1">{p.marca}</div>
+                            <div className="text-xs font-bold line-clamp-2 leading-tight mb-3 group-hover:text-primary transition min-h-[32px]">{p.nome}</div>
+                            <div className="mt-auto">
+                              {isAvail ? (
+                                <div className="text-sm font-bold text-foreground">{brl(ep.precoPor)}</div>
+                              ) : (
+                                <span className="text-xs font-semibold text-slate-400">Preço indisponível</span>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-slate-50/50 rounded-xl border border-dashed border-slate-200/80">
+                      <p className="text-xs text-muted-foreground">Nenhum destaque para esta categoria no momento.</p>
+                      <Link
+                        to="/$storeSlug/c/$slug"
+                        params={{ storeSlug, slug: active.slug }}
+                        onClick={() => setOpen(null)}
+                        className="mt-3 text-xs font-bold text-primary hover:underline"
+                      >
+                        Ver todos os produtos &rarr;
+                      </Link>
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-3 gap-4 flex-1 content-start">
-                  {catProducts.map(p => {
-                    const storeId = activePharmacy?.id || selectedPharmacyId || "";
-                    const ep = getEffectivePrice(p, storeId);
-                    const stock = getDeterministicStock(p, storeId);
-                    const isAvail = (stock > 0 || p.tipoProduto === "servico") && p.ativo !== false && (p.precosPorLoja?.[storeId]?.ativo !== false);
-                    return (
-                    <Link
-                      key={p.id}
-                      to="/$storeSlug/produto/$slug"
-                      params={{ storeSlug, slug: p.url || p.slug || p.id }}
-                      onClick={() => setOpen(null)}
-                      className={`group flex flex-col bg-white rounded border hover:border-primary transition p-3 ${!isAvail ? 'opacity-85' : ''}`}
-                    >
-                      <div className="aspect-square w-full bg-white mb-3 flex items-center justify-center p-1 rounded overflow-hidden relative">
-                        <img 
-                          src={productImage(p)} 
-                          alt={p.nome} 
-                          className={`w-full h-full object-contain group-hover:scale-105 transition-transform ${!isAvail ? 'grayscale-[0.2]' : ''}`}
-                        />
-                        {checkIsGenerico(p) && (
-                          <span className="absolute top-0 left-0 bg-yellow-400 text-black text-[9px] font-bold px-1 rounded shadow-sm">
-                            GENÉRICO
-                          </span>
-                        )}
-                        {!isAvail && (
-                          <span className="absolute bottom-1 inset-x-1 bg-slate-800/85 text-white text-[9px] font-bold py-0.5 rounded text-center shadow-xs">
-                            Indisponível
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] font-bold text-muted-foreground uppercase truncate mb-1">{p.marca}</div>
-                      <div className="text-xs font-bold line-clamp-2 leading-tight mb-3 group-hover:text-primary transition min-h-[32px]">{p.nome}</div>
-                      <div className="mt-auto">
-                        {isAvail ? (
-                          <div className="text-sm font-bold text-foreground">{brl(ep.precoPor)}</div>
-                        ) : (
-                          <span className="text-xs font-semibold text-slate-400">Preço indisponível</span>
-                        )}
-                      </div>
-                    </Link>
-                  )})}
-                </div>
-              </div>
               )}
             </div>
           </div>
