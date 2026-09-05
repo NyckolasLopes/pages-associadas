@@ -933,6 +933,7 @@ function CartPage() {
         },
         produtos: items.map((item) => {
           const ep = getEffectivePrice(item, selectedPharmacy.id);
+          const resolvedImg = (item as any).foto || (item as any).imagem || productImage(item);
           return {
             id: item.id,
             nome: item.nome,
@@ -942,12 +943,17 @@ function CartPage() {
             quantidade: item.qty,
             qtd: item.qty,
             ean: item.ean,
-            foto: item.possuiImagem ? productImage(item.id) : undefined,
-            imagem: item.possuiImagem ? productImage(item.id) : undefined,
+            foto: resolvedImg,
+            imagem: resolvedImg,
+            tarja: item.tarja,
+            generico: item.generico,
+            retemReceita: item.retemReceita,
+            possuiImagem: Boolean(item.possuiImagem || (item as any).foto),
           };
         }),
         itens: items.map((item) => {
           const ep = getEffectivePrice(item, selectedPharmacy.id);
+          const resolvedImg = (item as any).foto || (item as any).imagem || productImage(item);
           return {
             id: item.id,
             nome: item.nome,
@@ -957,8 +963,12 @@ function CartPage() {
             quantidade: item.qty,
             qtd: item.qty,
             ean: item.ean,
-            foto: item.possuiImagem ? productImage(item.id) : undefined,
-            imagem: item.possuiImagem ? productImage(item.id) : undefined,
+            foto: resolvedImg,
+            imagem: resolvedImg,
+            tarja: item.tarja,
+            generico: item.generico,
+            retemReceita: item.retemReceita,
+            possuiImagem: Boolean(item.possuiImagem || (item as any).foto),
           };
         }),
         valores: {

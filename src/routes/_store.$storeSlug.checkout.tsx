@@ -575,21 +575,27 @@ function Checkout() {
         cep: deliveryMethod === "home" ? formCep : (geoCep || "")
       },
       status: "Pago",
-      produtos: visibleItems.map(i => ({
-        produtoId: i.id,
-        nome: i.nome,
-        sku: String(i.id),
-        cores: "N/A",
-        disponibilidade: "Imediata",
-        qtd: i.qty,
-        quantidade: i.qty,
-        valorUnitario: getEffectivePrice(i, selectedPharmacyId).precoPor,
-        precoUnit: getEffectivePrice(i, selectedPharmacyId).precoPor,
-        foto: productImage(i),
-        imagem: productImage(i),
-        possuiImagem: i.possuiImagem,
-        ean: i.ean,
-      })),
+      produtos: visibleItems.map(i => {
+        const resolvedImg = (i as any).foto || (i as any).imagem || productImage(i);
+        return {
+          produtoId: i.id,
+          nome: i.nome,
+          sku: String(i.id),
+          cores: "N/A",
+          disponibilidade: "Imediata",
+          qtd: i.qty,
+          quantidade: i.qty,
+          valorUnitario: getEffectivePrice(i, selectedPharmacyId).precoPor,
+          precoUnit: getEffectivePrice(i, selectedPharmacyId).precoPor,
+          foto: resolvedImg,
+          imagem: resolvedImg,
+          possuiImagem: Boolean(i.possuiImagem || (i as any).foto),
+          ean: i.ean,
+          tarja: i.tarja,
+          generico: i.generico,
+          retemReceita: i.retemReceita,
+        };
+      }),
       valores: {
         produtos: visibleSubtotal,
         subtotal: visibleSubtotal,

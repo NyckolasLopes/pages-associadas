@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrders, type Pedido } from "@/stores/orders";
+import { useAdminProducts, mapRowToProduto } from "@/stores/products";
 
 export const Route = createFileRoute("/_store/$storeSlug/sucesso")({
   component: SucessoPage,
@@ -55,7 +56,7 @@ function SucessoPage() {
         try {
           let query = supabase
             .from('pedidos')
-            .select('*, pedido_itens(*)');
+            .select('*, pedido_itens(*, produtos(*))');
 
           // Busca flexível por numero ou id
           if (cleanId.includes('-') && cleanId.length === 36) {
@@ -64,26 +65,75 @@ function SucessoPage() {
             query = query.or(`numero.eq.${cleanId},numero.eq.${rawNumber}`);
           }
 
-          const { data, error } = await query.maybeSingle();
+          let res = await query.maybeSingle();
+          if (res.error) {
+            // Se falhar a relação produtos(*), tenta sem a relação
+            const fallbackQuery = supabase
+              .from('pedidos')
+              .select('*, pedido_itens(*)')
+              .or(cleanId.includes('-') && cleanId.length === 36
+                ? `id.eq.${cleanId},numero.eq.${cleanId},numero.eq.${rawNumber}`
+                : `numero.eq.${cleanId},numero.eq.${rawNumber}`);
+            res = await fallbackQuery.maybeSingle();
+          }
+
+          const { data, error } = res;
 
           if (!error && data) {
             const d = data as any;
+            const customProducts = useAdminProducts.getState().customProducts || [];
+            const lastOrderItems = (useCart.getState().lastOrder?.produtos || useCart.getState().lastOrder?.itens || []);
+            const storeOrderItems = (useOrders.getState().orders.find(o => 
+              o.id === cleanId || o.numero === cleanId || (o.numero && o.numero.replace('FA-', '') === rawNumber)
+            )?.produtos || []);
+            const localItems = [...lastOrderItems, ...storeOrderItems];
+
             const parsedItens = (d.pedido_itens && Array.isArray(d.pedido_itens) && d.pedido_itens.length > 0)
-              ? d.pedido_itens.map((pi: any) => ({
-                  id: pi.produto_id || pi.id,
-                  nome: pi.nome,
-                  quantidade: Number(pi.qty) || 1,
-                  qtd: Number(pi.qty) || 1,
-                  valorUnitario: Number(pi.preco_unit) || 0,
-                  preco: Number(pi.preco_unit) || 0,
-                  imagem: pi.imagem || pi.foto || productImage(pi),
-                  foto: pi.foto || pi.imagem || productImage(pi),
-                }))
-              : (d.itens || d.produtos || []).map((it: any) => ({
-                  ...it,
-                  imagem: it.imagem || it.foto || productImage(it),
-                  foto: it.foto || it.imagem || productImage(it),
-                }));
+              ? d.pedido_itens.map((pi: any) => {
+                  const targetId = pi.produto_id || pi.id;
+                  const matchedLocal = localItems.find((li: any) => 
+                    (li.id || li.produtoId || li.sku) === targetId || (li.nome && pi.nome && li.nome.toLowerCase() === pi.nome.toLowerCase())
+                  );
+                  const matchedCustom = customProducts.find((cp: any) => 
+                    cp.id === targetId || (cp.nome && pi.nome && cp.nome.toLowerCase() === pi.nome.toLowerCase())
+                  );
+                  const prodData = pi.produtos ? mapRowToProduto(pi.produtos) : matchedCustom;
+
+                  const resolvedImg = 
+                    (matchedLocal && (matchedLocal.imagem || matchedLocal.foto) && matchedLocal.imagem !== "/produtos/sem-imagem.webp" ? (matchedLocal.imagem || matchedLocal.foto) : null) ||
+                    (prodData ? productImage(prodData) : null) ||
+                    (pi.imagem && pi.imagem !== "/produtos/sem-imagem.webp" ? pi.imagem : null) ||
+                    (pi.foto && pi.foto !== "/produtos/sem-imagem.webp" ? pi.foto : null) ||
+                    productImage(pi);
+
+                  return {
+                    id: targetId,
+                    nome: pi.nome,
+                    quantidade: Number(pi.qty) || 1,
+                    qtd: Number(pi.qty) || 1,
+                    valorUnitario: Number(pi.preco_unit) || 0,
+                    preco: Number(pi.preco_unit) || 0,
+                    imagem: resolvedImg,
+                    foto: resolvedImg,
+                  };
+                })
+              : (d.itens || d.produtos || []).map((it: any) => {
+                  const targetId = it.produto_id || it.id || it.sku;
+                  const matchedCustom = customProducts.find((cp: any) => 
+                    cp.id === targetId || (cp.nome && it.nome && cp.nome.toLowerCase() === it.nome.toLowerCase())
+                  );
+                  const resolvedImg = 
+                    (it.imagem && it.imagem !== "/produtos/sem-imagem.webp" ? it.imagem : null) ||
+                    (it.foto && it.foto !== "/produtos/sem-imagem.webp" ? it.foto : null) ||
+                    (matchedCustom ? productImage(matchedCustom) : null) ||
+                    productImage(it);
+
+                  return {
+                    ...it,
+                    imagem: resolvedImg,
+                    foto: resolvedImg,
+                  };
+                });
 
             return {
               id: d.id,

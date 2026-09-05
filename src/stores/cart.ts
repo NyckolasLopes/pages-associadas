@@ -6,6 +6,7 @@ import { useAdmin } from "@/stores/admin";
 import { useRegionsStore } from "@/stores/regions";
 import { useMarketing } from "@/stores/marketing";
 import { getLevePaguePromotion } from "@/lib/utils";
+import { productImage } from "@/lib/format";
 
 export interface CartItem {
   id: string;
@@ -23,6 +24,10 @@ export interface CartItem {
   estoque: number;
   precosPorLoja?: Record<string, { precoPor: number; precoDe: number; ativo?: boolean }>;
   isOrderBump?: boolean;
+  foto?: string;
+  imagem?: string;
+  imagens?: any[];
+  selosIds?: string[];
 }
 
 /** Resolve the effective price for a cart item or product based on the selected pharmacy */
@@ -290,11 +295,20 @@ export const useCart = create<CartState>()(
           }
 
           const stock = isService ? 999 : (rawStock > 0 ? rawStock : 99);
+          const resolvedImg = (p as any).foto || (p as any).imagem || productImage(p);
           const ex = s.items.find((i) => i.id === p.id);
           if (ex) {
             const newQty = isService ? (ex.qty + qty) : Math.min(ex.qty + qty, stock);
             const updatedExisting = s.items.map((i) =>
-              i.id === p.id ? { ...i, qty: newQty, estoque: stock } : i,
+              i.id === p.id ? { 
+                ...i, 
+                qty: newQty, 
+                estoque: stock,
+                foto: i.foto || resolvedImg,
+                imagem: i.imagem || resolvedImg,
+                generico: i.generico !== undefined ? i.generico : p.generico,
+                tarja: i.tarja || String(p.tarja),
+              } : i,
             );
             saveCartBackup(updatedExisting);
             return {
@@ -314,15 +328,20 @@ export const useCart = create<CartState>()(
               preco: resolvedPreco,
               precoDe: resolvedPrecoDe > 0 ? resolvedPrecoDe : resolvedPreco,
               ean: p.ean || "",
-              possuiImagem: p.possuiImagem,
+              possuiImagem: Boolean(p.possuiImagem || (p.imagens && p.imagens.length > 0) || (p as any).foto),
               qty: isService ? qty : Math.min(qty, stock),
               retemReceita: p.retemReceita,
               tarja: String(p.tarja),
               categoriaId: p.categoriaId,
+              subcategoriaId: p.subcategoriaId,
               generico: p.generico,
               estoque: stock,
               precosPorLoja: (p as any).precosPorLoja || undefined,
               isOrderBump: (p as any).isOrderBump || false,
+              foto: resolvedImg,
+              imagem: resolvedImg,
+              imagens: (p as any).imagens || [],
+              selosIds: (p as any).selosIds || [],
             },
           ];
           saveCartBackup(updatedNew);

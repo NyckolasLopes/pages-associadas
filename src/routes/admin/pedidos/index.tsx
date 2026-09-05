@@ -866,7 +866,7 @@ export function PedidosAdmin() {
                   >
                     <div className="w-16 h-16 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                       <img
-                        src={productImage(p.foto || p.imagem || (p as any).imagens)}
+                        src={productImage(p.foto || p.imagem || (p as any).imagens || p)}
                         alt={p.nome}
                         className="w-full h-full object-cover"
                       />

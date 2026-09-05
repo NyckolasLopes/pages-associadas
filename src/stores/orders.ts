@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
+import { productImage } from '@/lib/format';
+import { mapRowToProduto, useAdminProducts } from '@/stores/products';
 
 export interface PedidoItem {
   id?: string;
@@ -158,7 +160,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
 
     let query = supabase
       .from('pedidos')
-      .select('*, pedido_itens(*, produtos(imagens)), pedido_historico_status(*)')
+      .select('*, pedido_itens(*, produtos(*)), pedido_historico_status(*)')
       .order('created_at', { ascending: false })
       .limit(1000);
 
@@ -201,6 +203,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
         const mappedRawItens = rawItens.map((i: any) => {
           const sku = i.sku || i.produto_id || i.id;
           const skuStr = sku ? String(sku) : undefined;
+          const resolvedImg = i.foto || i.imagem || i.image || i.imageUrl || (skuStr && skuStr.length >= 4 && !skuStr.startsWith('prod-') ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${skuStr.substring(0, 2)}/${skuStr.substring(2, 4)}/${skuStr}_m1_1.jpg` : productImage(i));
           return {
             ...i,
             nome: i.nome || i.name || i.title || 'Produto sem nome',
@@ -210,7 +213,8 @@ export const useOrders = create<OrdersState>((set, get) => ({
             quantidade: i.qtd || i.quantidade || i.qty || 1,
             valorUnitario: i.valorUnitario || i.preco_unit || i.price || i.preco || 0,
             preco: i.preco || (i.valorUnitario || i.preco_unit || i.price || 0) * (i.qtd || i.quantidade || i.qty || 1),
-            foto: i.foto || i.image || i.imageUrl || (skuStr && skuStr.length >= 4 ? `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${skuStr.substring(0, 2)}/${skuStr.substring(2, 4)}/${skuStr}_m1_1.jpg` : undefined),
+            foto: resolvedImg,
+            imagem: resolvedImg,
           };
         });
 
@@ -218,19 +222,26 @@ export const useOrders = create<OrdersState>((set, get) => ({
           ? d.pedido_itens.map((i: any) => {
               let foto = undefined;
               if (i.produtos) {
-                if (Array.isArray(i.produtos.imagens) && i.produtos.imagens.length > 0) {
-                  foto = i.produtos.imagens[0]?.caminhoImagem || i.produtos.imagens[0];
-                }
-                if (!foto && i.produtos.foto) {
-                  foto = i.produtos.foto;
+                foto = productImage(mapRowToProduto(i.produtos));
+              }
+              if (!foto && (i.foto || i.imagem)) {
+                foto = i.foto || i.imagem;
+              }
+              if (!foto && i.produto_id) {
+                const localProd = useAdminProducts.getState().customProducts?.find((p: any) => p.id === i.produto_id || p.nome === i.nome);
+                if (localProd) {
+                  foto = productImage(localProd);
                 }
               }
-                if (!foto && i.produto_id) {
-                  const pidStr = String(i.produto_id);
-                  if (pidStr.length >= 4) {
-                    foto = `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${pidStr.substring(0, 2)}/${pidStr.substring(2, 4)}/${pidStr}_m1_1.jpg`;
-                  }
+              if (!foto && i.produto_id) {
+                const pidStr = String(i.produto_id);
+                if (pidStr.length >= 4 && !pidStr.startsWith('prod-')) {
+                  foto = `https://dce0cc66r7yee.cloudfront.net/Custom/Content/Products/${pidStr.substring(0, 2)}/${pidStr.substring(2, 4)}/${pidStr}_m1_1.jpg`;
                 }
+              }
+              if (!foto) {
+                foto = productImage(i);
+              }
 
               return {
                 id: i.produto_id || i.id,
@@ -242,6 +253,7 @@ export const useOrders = create<OrdersState>((set, get) => ({
                 valorUnitario: i.preco_unit,
                 preco: i.preco_unit * i.qty,
                 foto: foto,
+                imagem: foto,
               };
             })
           : mappedRawItens;
