@@ -31,6 +31,36 @@ function TimelineStep({ icon: Icon, label, active, isLast = false }: { icon: any
   );
 }
 
+function resolveOrderItemImage(item: any) {
+  if (item?.imagem && typeof item.imagem === 'string' && !item.imagem.includes('/produtos/sem-imagem.webp')) {
+    return item.imagem;
+  }
+  if (item?.foto && typeof item.foto === 'string' && !item.foto.includes('/produtos/sem-imagem.webp')) {
+    return item.foto;
+  }
+  
+  const targetId = item?.id || item?.produto_id || item?.produtoId || item?.sku;
+  const state = useAdminProducts.getState();
+  const allProds = [
+    ...(state.customProducts || []),
+    ...Object.values(state.storeCustomProducts || {}).flat()
+  ];
+  
+  let matched = null;
+  if (targetId) {
+    matched = allProds.find((p: any) => String(p.id) === String(targetId) || String(p.sku) === String(targetId));
+  }
+  if (!matched && item?.nome) {
+    const clean = String(item.nome).trim().toLowerCase();
+    matched = allProds.find((p: any) => p.nome && String(p.nome).trim().toLowerCase() === clean);
+  }
+  
+  if (matched) {
+    return productImage(matched);
+  }
+  return productImage(item);
+}
+
 function SucessoPage() {
   const search = Route.useSearch() as { id?: string };
   const params = useParams({ strict: false });
@@ -50,6 +80,24 @@ function SucessoPage() {
     queryFn: async () => {
       const cleanId = String(search.id || "").trim();
       const rawNumber = cleanId.replace(/^FA-/, '');
+
+      const enrichOrder = (ord: any): Pedido => {
+        if (!ord) return ord;
+        const rawList = (ord.produtos && ord.produtos.length > 0) ? ord.produtos : (ord.itens || []);
+        const enrichedList = rawList.map((item: any) => {
+          const img = resolveOrderItemImage(item);
+          return {
+            ...item,
+            imagem: img,
+            foto: img,
+          };
+        });
+        return {
+          ...ord,
+          produtos: enrichedList,
+          itens: enrichedList,
+        };
+      };
 
       // 1. Tenta buscar no Supabase
       if (cleanId) {
@@ -100,11 +148,11 @@ function SucessoPage() {
                   const prodData = pi.produtos ? mapRowToProduto(pi.produtos) : matchedCustom;
 
                   const resolvedImg = 
-                    (matchedLocal && (matchedLocal.imagem || matchedLocal.foto) && matchedLocal.imagem !== "/produtos/sem-imagem.webp" ? (matchedLocal.imagem || matchedLocal.foto) : null) ||
+                    (matchedLocal && (matchedLocal.imagem || matchedLocal.foto) && !matchedLocal.imagem?.includes("/produtos/sem-imagem.webp") ? (matchedLocal.imagem || matchedLocal.foto) : null) ||
                     (prodData ? productImage(prodData) : null) ||
-                    (pi.imagem && pi.imagem !== "/produtos/sem-imagem.webp" ? pi.imagem : null) ||
-                    (pi.foto && pi.foto !== "/produtos/sem-imagem.webp" ? pi.foto : null) ||
-                    productImage(pi);
+                    (pi.imagem && !pi.imagem.includes("/produtos/sem-imagem.webp") ? pi.imagem : null) ||
+                    (pi.foto && !pi.foto.includes("/produtos/sem-imagem.webp") ? pi.foto : null) ||
+                    resolveOrderItemImage(pi);
 
                   return {
                     id: targetId,
@@ -118,16 +166,7 @@ function SucessoPage() {
                   };
                 })
               : (d.itens || d.produtos || []).map((it: any) => {
-                  const targetId = it.produto_id || it.id || it.sku;
-                  const matchedCustom = customProducts.find((cp: any) => 
-                    cp.id === targetId || (cp.nome && it.nome && cp.nome.toLowerCase() === it.nome.toLowerCase())
-                  );
-                  const resolvedImg = 
-                    (it.imagem && it.imagem !== "/produtos/sem-imagem.webp" ? it.imagem : null) ||
-                    (it.foto && it.foto !== "/produtos/sem-imagem.webp" ? it.foto : null) ||
-                    (matchedCustom ? productImage(matchedCustom) : null) ||
-                    productImage(it);
-
+                  const resolvedImg = resolveOrderItemImage(it);
                   return {
                     ...it,
                     imagem: resolvedImg,
@@ -135,7 +174,7 @@ function SucessoPage() {
                   };
                 });
 
-            return {
+            return enrichOrder({
               id: d.id,
               numero: d.numero || cleanId,
               data: d.data || d.created_at,
@@ -162,7 +201,7 @@ function SucessoPage() {
               lojaNome: d.loja_nome || activePharmacy?.nome,
               modalidade: d.modalidade || d.metodo_entrega,
               historico: d.historico || []
-            } as Pedido;
+            } as Pedido);
           }
         } catch (err) {
           console.warn("Supabase fetch failed in sucesso page, checking local fallback:", err);
@@ -172,7 +211,7 @@ function SucessoPage() {
       // 2. Fallback: lastOrder salvo no Zustand/localStorage do carrinho
       const lastOrder = useCart.getState().lastOrder;
       if (lastOrder && (lastOrder.id === cleanId || lastOrder.numero === cleanId || !cleanId)) {
-        return lastOrder as Pedido;
+        return enrichOrder(lastOrder);
       }
 
       // 3. Fallback: lista de pedidos do useOrders
@@ -180,14 +219,31 @@ function SucessoPage() {
         o.id === cleanId || o.numero === cleanId || (o.numero && o.numero.replace('FA-', '') === rawNumber)
       );
       if (storeOrder) {
-        return storeOrder as Pedido;
+        return enrichOrder(storeOrder);
       }
 
-      return lastOrder || null;
+      return lastOrder ? enrichOrder(lastOrder) : null;
     },
     enabled: true,
     refetchInterval: 5000,
   });
+
+  const isRetirada = Boolean(
+    order?.modalidade?.toLowerCase().includes("retirada") ||
+    order?.modalidade?.toLowerCase() === "store" ||
+    order?.modalidade?.toLowerCase() === "pickup" ||
+    order?.envio?.metodo?.toLowerCase().includes("retirada") ||
+    order?.envio?.metodo?.toLowerCase() === "store" ||
+    order?.envio?.metodo?.toLowerCase() === "pickup" ||
+    (order as any)?.metodo_entrega?.toLowerCase().includes("retirada") ||
+    (order as any)?.metodo_entrega?.toLowerCase() === "store" ||
+    (order as any)?.metodo_entrega?.toLowerCase() === "pickup"
+  );
+
+  const orderPharmacy = pharmacies.find(p => 
+    (order?.lojaId && (p.id === order.lojaId || p.slug === order.lojaId)) ||
+    (order?.lojaNome && p.nome?.toLowerCase() === order.lojaNome.toLowerCase())
+  ) || activePharmacy;
 
   const goWhatsApp = () => {
     const phone = (activePharmacy?.telefone || "51999999999").replace(/\D/g, "");
@@ -231,7 +287,7 @@ function SucessoPage() {
               <div className="flex justify-between items-start pt-2 px-2 overflow-hidden">
                 <TimelineStep icon={ShoppingBag} label="Recebido" active={true} />
                 <TimelineStep icon={Package} label="Em Separação" active={order.status === 'separando' || order.status === 'enviado' || order.status === 'concluido'} />
-                <TimelineStep icon={order.modalidade?.toLowerCase() === 'retirada' ? MapPin : Truck} label={order.modalidade?.toLowerCase() === 'retirada' ? 'Disponível' : 'Em Rota'} active={order.status === 'enviado' || order.status === 'concluido'} />
+                <TimelineStep icon={isRetirada ? MapPin : Truck} label={isRetirada ? 'Disponível' : 'Em Rota'} active={order.status === 'enviado' || order.status === 'concluido'} />
                 <TimelineStep icon={CheckCircle2} label="Concluído" active={order.status === 'concluido'} isLast={true} />
               </div>
               <p className="text-sm text-slate-500 text-center mt-6 bg-slate-50 p-3 rounded-xl">
@@ -272,7 +328,7 @@ function SucessoPage() {
               {/* Items List */}
               <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                 {(order.produtos || order.itens || []).map((item, i) => {
-                  const itemImg = item.imagem || item.foto || productImage(item);
+                  const itemImg = resolveOrderItemImage(item);
                   return (
                     <div key={i} className="flex gap-4 items-start bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
                       <div className="w-14 h-14 bg-white rounded-xl flex-shrink-0 flex items-center justify-center p-1 border border-slate-100 overflow-hidden">
@@ -313,14 +369,26 @@ function SucessoPage() {
                   <span className="font-medium">{brl(order.valores?.produtos || order.valores?.subtotal || 0)}</span>
                 </div>
                 {(order.valores?.desconto || order.valores?.descontos || 0) > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Desconto</span>
+                  <div className="flex justify-between text-sm text-green-600 font-medium">
+                    <span>{order.cupomAplicado ? `Desconto do Cupom (${order.cupomAplicado})` : "Desconto"}</span>
                     <span className="font-medium">-{brl(order.valores.desconto || order.valores.descontos || 0)}</span>
                   </div>
                 )}
+                {(order.valores?.desconto || order.valores?.descontos || 0) > 0 && (
+                  <div className="flex justify-between text-sm font-medium border-t pt-2 border-slate-100 text-slate-700">
+                    <span>Subtotal de Produtos</span>
+                    <span>{brl(Math.max(0, (order.valores?.produtos || order.valores?.subtotal || 0) - (order.valores.desconto || order.valores.descontos || 0)))}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm text-slate-600">
-                  <span>Frete</span>
-                  <span className="font-medium">{order.valores?.frete === 0 ? <span style={{ color: "#008000" }} className="text-[#008000] font-bold">Grátis</span> : brl(order.valores?.frete || 0)}</span>
+                  <span>{isRetirada ? "Retirada na Farmácia" : "Entrega"}</span>
+                  <span className="font-medium">
+                    {isRetirada || Number(order.valores?.frete || 0) === 0 ? (
+                      <span style={{ color: "#008000" }} className="text-[#008000] font-bold">Grátis</span>
+                    ) : (
+                      brl(Number(order.valores?.frete || 0))
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between text-lg font-black text-slate-900 pt-3 border-t">
                   <span>Total</span>
@@ -334,12 +402,12 @@ function SucessoPage() {
                   <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold text-slate-800 block mb-0.5">
-                      {order.modalidade?.toLowerCase() === 'retirada' ? 'Retirada na Loja' : 'Endereço de Entrega'}
+                      {isRetirada ? 'Retirada na Farmácia' : 'Endereço de Entrega'}
                     </span>
                     <span className="text-slate-600 leading-relaxed">
-                      {order.modalidade?.toLowerCase() === 'retirada' 
-                        ? `${activePharmacy?.nome || 'Loja'} - ${activePharmacy?.endereco || ''}`
-                        : `${order.cliente?.endereco?.rua || order.envio?.endereco || ''}, ${order.cliente?.endereco?.numero || order.envio?.numero || ''}`
+                      {isRetirada 
+                        ? `${orderPharmacy?.nome || order.lojaNome || 'Farmácia'} - ${orderPharmacy?.endereco || activePharmacy?.endereco || ''}`
+                        : `${order.cliente?.endereco?.rua || order.envio?.endereco || ''}${order.cliente?.endereco?.numero || order.envio?.numero ? `, ${order.cliente?.endereco?.numero || order.envio?.numero}` : ''}${order.cliente?.endereco?.bairro || order.envio?.bairro ? ` - ${order.cliente?.endereco?.bairro || order.envio?.bairro}` : ''}${order.cliente?.endereco?.cidade || order.envio?.cidade ? ` - ${order.cliente?.endereco?.cidade || order.envio?.cidade}` : ''}`
                       }
                     </span>
                   </div>
