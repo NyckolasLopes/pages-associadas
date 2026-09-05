@@ -1582,8 +1582,18 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
     }
 
     catalog.listSubcategories(open, true).then(setSubs);
-    catalog.productsByCategory(open).then(products => setCatProducts(products.slice(0, 6)));
-  }, [open, cats]);
+    catalog.productsByCategory(open).then(products => {
+      const storeId = activePharmacy?.id || selectedPharmacyId || "";
+      const sorted = [...products].sort((a, b) => {
+        const stockA = getDeterministicStock(a, storeId);
+        const availA = (stockA > 0 || a.tipoProduto === "servico") && a.ativo !== false && (a.precosPorLoja?.[storeId]?.ativo !== false) ? 1 : 0;
+        const stockB = getDeterministicStock(b, storeId);
+        const availB = (stockB > 0 || b.tipoProduto === "servico") && b.ativo !== false && (b.precosPorLoja?.[storeId]?.ativo !== false) ? 1 : 0;
+        return availB - availA;
+      });
+      setCatProducts(sorted.slice(0, 6));
+    });
+  }, [open, cats, activePharmacy?.id, selectedPharmacyId]);
 
   useEffect(() => {
     if (open) {
@@ -1827,30 +1837,44 @@ function MegaMenu({ cats }: { cats: Categoria[] }) {
                 </div>
                 <div className="grid grid-cols-3 gap-4 flex-1 content-start">
                   {catProducts.map(p => {
-                    const ep = getEffectivePrice(p, activePharmacy?.id || "");
+                    const storeId = activePharmacy?.id || selectedPharmacyId || "";
+                    const ep = getEffectivePrice(p, storeId);
+                    const stock = getDeterministicStock(p, storeId);
+                    const isAvail = (stock > 0 || p.tipoProduto === "servico") && p.ativo !== false && (p.precosPorLoja?.[storeId]?.ativo !== false);
                     return (
                     <Link
                       key={p.id}
                       to="/$storeSlug/produto/$slug"
                       params={{ storeSlug, slug: p.url || p.slug || p.id }}
                       onClick={() => setOpen(null)}
-                      className="group flex flex-col bg-white rounded border hover:border-primary transition p-3"
+                      className={`group flex flex-col bg-white rounded border hover:border-primary transition p-3 ${!isAvail ? 'opacity-85' : ''}`}
                     >
                       <div className="aspect-square w-full bg-white mb-3 flex items-center justify-center p-1 rounded overflow-hidden relative">
                         <img 
                           src={productImage(p)} 
                           alt={p.nome} 
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                          className={`w-full h-full object-contain group-hover:scale-105 transition-transform ${!isAvail ? 'grayscale-[0.2]' : ''}`}
                         />
                         {checkIsGenerico(p) && (
                           <span className="absolute top-0 left-0 bg-yellow-400 text-black text-[9px] font-bold px-1 rounded shadow-sm">
                             GENÉRICO
                           </span>
                         )}
+                        {!isAvail && (
+                          <span className="absolute bottom-1 inset-x-1 bg-slate-800/85 text-white text-[9px] font-bold py-0.5 rounded text-center shadow-xs">
+                            Indisponível
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] font-bold text-muted-foreground uppercase truncate mb-1">{p.marca}</div>
                       <div className="text-xs font-bold line-clamp-2 leading-tight mb-3 group-hover:text-primary transition min-h-[32px]">{p.nome}</div>
-                      <div className="text-sm font-bold text-foreground mt-auto">{brl(ep.precoPor)}</div>
+                      <div className="mt-auto">
+                        {isAvail ? (
+                          <div className="text-sm font-bold text-foreground">{brl(ep.precoPor)}</div>
+                        ) : (
+                          <span className="text-xs font-semibold text-slate-400">Preço indisponível</span>
+                        )}
+                      </div>
                     </Link>
                   )})}
                 </div>
@@ -1880,18 +1904,28 @@ function CartDrawer({ onCheckoutClick, storeSlug }: { onCheckoutClick: () => voi
   const clearCartNotifications = useCart((s) => s.clearNotifications);
   const promocoes = useMarketing((s) => s.promocoes);
 
+  const activePharmacy = useActivePharmacy();
   const [crossSell, setCrossSell] = useState<Produto[]>([]);
   useEffect(() => {
     if (items.length > 0) {
-      catalog.crossSell(items.map((i) => i.id), 4, items[0]?.categoriaId).then(setCrossSell);
+      const storeId = activePharmacy?.id || selectedPharmacyId;
+      catalog.crossSell(items.map((i) => i.id), 16, items[0]?.categoriaId, storeId).then((res) => {
+        const available = (res || []).filter((p) => {
+          const stock = getDeterministicStock(p, storeId);
+          const isService = p.tipoProduto === "servico";
+          const isGlobalActive = p.ativo !== false && p.aVenda !== false;
+          const isLocalActive = !storeId || p.precosPorLoja?.[storeId]?.ativo !== false;
+          return (stock > 0 || isService) && isGlobalActive && isLocalActive;
+        });
+        setCrossSell(available.slice(0, 4));
+      });
     } else {
       setCrossSell([]);
     }
-  }, [items]);
+  }, [items, activePharmacy?.id, selectedPharmacyId]);
 
   const navigate = useNavigate();
   const params = useParams({ strict: false });
-  const activePharmacy = useActivePharmacy();
   const urlSlug = (params as any)?.storeSlug as string | undefined;
   const effectiveStoreSlug = storeSlug || getEffectiveStoreSlug(urlSlug, activePharmacy);
 
@@ -2040,23 +2074,31 @@ function CartDrawer({ onCheckoutClick, storeSlug }: { onCheckoutClick: () => voi
               Produtos que podem te interessar
             </div>
             <div className="flex overflow-x-auto gap-2 pb-2 snap-x scrollbar-none -mx-6 px-6">
-              {crossSell.map((p) => (
-                <div key={p.id} className="border rounded-lg p-2 text-xs flex flex-col shrink-0 w-[140px] snap-start">
-                  <img
-                    src={productImage(p)}
-                    alt=""
-                    className="h-16 w-full object-contain bg-white"
-                  />
-                  <div className="font-bold mt-1 h-[2.5em] overflow-hidden line-clamp-2 text-[11px] leading-tight text-ellipsis">{p.nome}</div>
-                  <div className="text-foreground font-bold mt-1">{brl(p.precoPor)}</div>
-                  <button
-                    onClick={() => add(p)}
-                    className="mt-1 inline-flex items-center justify-center gap-1 text-[11px] border border-primary text-primary rounded py-1 hover:bg-primary hover:text-primary-foreground transition"
-                  >
-                    <Plus className="h-3 w-3" /> Adicionar
-                  </button>
-                </div>
-              ))}
+              {crossSell.map((p) => {
+                const storeId = activePharmacy?.id || selectedPharmacyId;
+                const ep = getEffectivePrice(p, storeId);
+                const stock = getDeterministicStock(p, storeId);
+                const isAvail = (stock > 0 || p.tipoProduto === "servico") && p.ativo !== false && (p.precosPorLoja?.[storeId]?.ativo !== false);
+                if (!isAvail) return null;
+
+                return (
+                  <div key={p.id} className="border rounded-lg p-2 text-xs flex flex-col shrink-0 w-[140px] snap-start">
+                    <img
+                      src={productImage(p)}
+                      alt=""
+                      className="h-16 w-full object-contain bg-white"
+                    />
+                    <div className="font-bold mt-1 h-[2.5em] overflow-hidden line-clamp-2 text-[11px] leading-tight text-ellipsis">{p.nome}</div>
+                    <div className="text-foreground font-bold mt-1">{brl(ep.precoPor)}</div>
+                    <button
+                      onClick={() => add({ ...p, preco: ep.precoPor, precoPor: ep.precoPor, precoDe: ep.precoDe, estoque: stock }, 1, true)}
+                      className="mt-1 inline-flex items-center justify-center gap-1 text-[11px] border border-primary text-primary rounded py-1 hover:bg-primary hover:text-primary-foreground transition"
+                    >
+                      <Plus className="h-3 w-3" /> Adicionar
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

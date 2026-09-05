@@ -672,13 +672,23 @@ function CartPage() {
 
   useEffect(() => {
     if (items.length > 0) {
+      const storeId = selectedPharmacy?.id || selectedPharmacyId;
       catalog
-        .crossSell(items.map((i) => i.id), 8, items[0]?.categoriaId)
-        .then((res) => setCrossSell((res || []).filter((p) => Number(p.estoque || 0) > 0 && p.ativo !== false && p.aVenda !== false).slice(0, 4)));
+        .crossSell(items.map((i) => i.id), 16, items[0]?.categoriaId, storeId)
+        .then((res) => {
+          const available = (res || []).filter((p) => {
+            const stock = getDeterministicStock(p, storeId);
+            const isService = p.tipoProduto === "servico";
+            const isGlobalActive = p.ativo !== false && p.aVenda !== false;
+            const isLocalActive = !storeId || p.precosPorLoja?.[storeId]?.ativo !== false;
+            return (stock > 0 || isService) && isGlobalActive && isLocalActive;
+          });
+          setCrossSell(available.slice(0, 4));
+        });
     } else {
       setCrossSell([]);
     }
-  }, [items]);
+  }, [items, selectedPharmacy?.id, selectedPharmacyId]);
 
   useEffect(() => {
     if ((selectedPharmacy || selectedPharmacyId) && cep.replace(/\D/g, "").length >= 8) {
@@ -1509,26 +1519,39 @@ function CartPage() {
             <div className="bg-card border rounded-xl p-4 mt-6">
               <h2 className="font-bold mb-3">Produtos que podem te interessar</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {crossSell.map((p) => (
-                  <div key={p.id} className="border rounded-lg p-2 text-xs flex flex-col">
-                    <img
-                      src={productImage(p)}
-                      alt={p.nome || ""}
-                      className="h-20 w-full object-contain bg-white"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        if (!target.src.includes("/produtos/sem-imagem.webp")) {
-                          target.src = "/produtos/sem-imagem.webp";
-                        }
-                      }}
-                    />
-                    <div className="font-bold mt-1 h-[2.5em] overflow-hidden line-clamp-2 leading-tight text-ellipsis">{p.nome}</div>
-                    <div className="text-foreground font-bold mt-1">{brl(p.precoPor)}</div>
-                    <Button size="sm" variant="outline" className="mt-1" onClick={() => add(p)}>
-                      Adicionar
-                    </Button>
-                  </div>
-                ))}
+                {crossSell.map((p) => {
+                  const storeId = selectedPharmacy?.id || selectedPharmacyId;
+                  const ep = getEffectivePrice(p, storeId);
+                  const stock = getDeterministicStock(p, storeId);
+                  const isAvail = (stock > 0 || p.tipoProduto === "servico") && p.ativo !== false && (p.precosPorLoja?.[storeId || '']?.ativo !== false);
+                  if (!isAvail) return null;
+
+                  return (
+                    <div key={p.id} className="border rounded-lg p-2 text-xs flex flex-col">
+                      <img
+                        src={productImage(p)}
+                        alt={p.nome || ""}
+                        className="h-20 w-full object-contain bg-white"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          if (!target.src.includes("/produtos/sem-imagem.webp")) {
+                            target.src = "/produtos/sem-imagem.webp";
+                          }
+                        }}
+                      />
+                      <div className="font-bold mt-1 h-[2.5em] overflow-hidden line-clamp-2 leading-tight text-ellipsis">{p.nome}</div>
+                      <div className="text-foreground font-bold mt-1">{brl(ep.precoPor)}</div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="mt-1 font-semibold hover:bg-primary hover:text-white" 
+                        onClick={() => add({ ...p, preco: ep.precoPor, precoPor: ep.precoPor, precoDe: ep.precoDe, estoque: stock }, 1, true)}
+                      >
+                        Adicionar
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

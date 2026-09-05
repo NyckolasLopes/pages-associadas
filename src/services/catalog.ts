@@ -9,6 +9,7 @@ import { checkIsGenerico } from "@/lib/format";
 import { useAdminProducts, mapRowToProduto } from "@/stores/products";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeSearchQuery, rankProductsBySearch } from "@/lib/searchEngine";
+import { getDeterministicStock } from "@/lib/stock";
 
 async function fetchFromSupabaseWithPrices(queryBuilder: any, lojaId?: string | null, includeInactive = false): Promise<Produto[]> {
   const timeoutMs = 10000;
@@ -949,8 +950,8 @@ export const catalog = {
     return applyFilters(products, filters);
   },
   // Uses deterministic seed so results are stable across re-renders
-  crossSell: async (cartIds: string[], limit = 4, referenceCategoryId?: string) => {
-    const cacheKey = `${referenceCategoryId || 'all'}-${limit}-${(cartIds || []).sort().join(',')}`;
+  crossSell: async (cartIds: string[], limit = 4, referenceCategoryId?: string, lojaId?: string) => {
+    const cacheKey = `${referenceCategoryId || 'all'}-${limit}-${(cartIds || []).sort().join(',')}-${lojaId || ''}`;
     const cached = crossSellCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp < CROSS_SELL_TTL)) {
       return wait(cached.data);
@@ -979,9 +980,9 @@ export const catalog = {
       }
     }
 
-    // Limit to 10 instead of 50 to avoid massive unneeded price table scans
-    query = query.limit(10);
-    const products = await fetchFromSupabaseWithPrices(query);
+    // Busca um lote maior para conseguir filtrar produtos em estoque
+    query = query.limit(Math.max(limit * 4, 30));
+    const products = await fetchFromSupabaseWithPrices(query, lojaId);
     let others = products;
 
     const seedStr = cartIds.sort().join(",");
@@ -997,6 +998,18 @@ export const catalog = {
       const j = Math.floor(seededRandom() * (i + 1));
       [others[i], others[j]] = [others[j], others[i]];
     }
+
+    // Se informada uma loja, prioriza estritamente os produtos com estoque disponível nesta loja
+    if (lojaId) {
+      others.sort((a, b) => {
+        const stockA = getDeterministicStock(a, lojaId);
+        const availA = (stockA > 0 || a.tipoProduto === "servico") && a.ativo !== false && (a.precosPorLoja?.[lojaId]?.ativo !== false) ? 1 : 0;
+        const stockB = getDeterministicStock(b, lojaId);
+        const availB = (stockB > 0 || b.tipoProduto === "servico") && b.ativo !== false && (b.precosPorLoja?.[lojaId]?.ativo !== false) ? 1 : 0;
+        return availB - availA;
+      });
+    }
+
     const result = others.slice(0, limit);
     crossSellCache.set(cacheKey, { data: result, timestamp: Date.now() });
     return wait(result);
