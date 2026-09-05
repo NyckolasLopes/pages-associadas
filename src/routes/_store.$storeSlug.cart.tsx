@@ -263,6 +263,15 @@ function CartPage() {
     }
   }, [geoCep, cep]);
 
+  // Sync selected freight with deliveryMethod
+  useEffect(() => {
+    if (selected === "pickup") {
+      setDeliveryMethod("retirada");
+    } else if (selected) {
+      setDeliveryMethod("entrega");
+    }
+  }, [selected]);
+
   // Sync user profile to form
   useEffect(() => {
     if (user) {
@@ -315,6 +324,8 @@ function CartPage() {
             const cleanCep = foundCep.replace(/\D/g, "");
             await useGeoCep.getState().setCep(cleanCep);
             setCep(cleanCep);
+            setDeliveryMethod("entrega");
+            calcFreight(cleanCep, true);
             toast.success("Localização obtida com sucesso!");
           } else {
             toast.error("Não foi possível determinar o CEP a partir da sua localização.");
@@ -383,62 +394,63 @@ function CartPage() {
     };
   }, [geoCep, cep, geoLat, geoLng, availablePharmacies]);
 
-  const calcFreight = async () => {
-    const clean = cep.replace(/\D/g, "");
+  const calcFreight = async (targetCep?: string, isExplicitDelivery = false) => {
+    const rawCep = targetCep || cep;
+    const clean = rawCep.replace(/\D/g, "");
     if (clean.length < 8) return;
 
     setIsCalcLoading(true);
-    // Update global geoCep so availablePharmacies updates
-    await useGeoCep.getState().setCep(cep);
-
-    // ---- Buscar dados do CEP do cliente ----
-    let customerUf = "";
-    let customerCity = "";
-    let clientLat: number | null = null;
-    let clientLng: number | null = null;
-
     try {
-      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
-      const data = await res.json();
-      if (!data.erro) {
-        customerUf = data.uf || "";
-        customerCity = data.localidade || "";
-        setAddressStr(`${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`);
-        setDeliveryAddress(data.logradouro || "");
-        setDeliveryBairro(data.bairro || "");
-        setDeliveryCity(data.localidade || "");
-      } else {
-        setAddressStr(cep);
-      }
-    } catch {
-      setAddressStr(cep);
-    }
+      setDeliveryCep(clean);
+      // Update global geoCep so availablePharmacies updates
+      await useGeoCep.getState().setCep(rawCep);
 
-    // ---- Buscar coordenadas do cliente ----
-    if (geoLat && geoLng) {
-      clientLat = geoLat;
-      clientLng = geoLng;
-    } else {
+      // ---- Buscar dados do CEP do cliente ----
+      let customerUf = "";
+      let customerCity = "";
+      let clientLat: number | null = null;
+      let clientLng: number | null = null;
+
       try {
-        const coords = await getCepCoordinates(clean);
-        if (coords) {
-          clientLat = coords.lat;
-          clientLng = coords.lng;
+        const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          customerUf = data.uf || "";
+          customerCity = data.localidade || "";
+          setAddressStr(`${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`);
+          setDeliveryAddress(data.logradouro || "");
+          setDeliveryBairro(data.bairro || "");
+          setDeliveryCity(data.localidade || "");
+        } else {
+          setAddressStr(rawCep);
         }
       } catch {
-        // coords indisponíveis — usará fallback por cidade/UF
+        setAddressStr(rawCep);
       }
-    }
 
-    setIsCalcLoading(false);
-    if (!selectedPharmacy) return;
+      // ---- Buscar coordenadas do cliente ----
+      const geoState = useGeoCep.getState();
+      if (geoState.lat && geoState.lng) {
+        clientLat = geoState.lat;
+        clientLng = geoState.lng;
+      } else {
+        try {
+          const coords = await getCepCoordinates(clean);
+          if (coords) {
+            clientLat = coords.lat;
+            clientLng = coords.lng;
+          }
+        } catch {
+          // coords indisponíveis — usará fallback por cidade/UF
+        }
+      }
 
-    const p = selectedPharmacy;
-    if (!p) return;
+      const p = selectedPharmacy || allPharmacies.find(ph => ph.id === selectedPharmacyId);
+      if (!p) return;
 
-    const forcePickup = items.some(i => i.retemReceita || i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")));
-  
-    const opts: FreightOption[] = [];
+      const forcePickup = items.some(i => i.retemReceita || i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")));
+    
+      const opts: FreightOption[] = [];
 
     const diasAbertos = (p.horariosPorDia && p.horariosPorDia.length > 0)
       ? p.horariosPorDia.filter(h => !h.fechado).map(h => Number(h.dia))
@@ -488,11 +500,10 @@ function CartPage() {
         // Estados diferentes, não oferece entrega
         setFreight(opts.length > 0 ? opts : []);
         setFreightOptions(opts.map(o => ({ id: o.id, label: o.label, price: o.price, eta: o.eta })));
-        if (opts.length === 0 && !forcePickup) {
-          setIsCalcLoading(false);
-          return;
+        if (isExplicitDelivery || selected !== "pickup" || deliveryMethod === "entrega") {
+          setSelected("delivery_placeholder");
+          setDeliveryMethod("entrega");
         }
-        setIsCalcLoading(false);
         return;
       }
 
@@ -635,33 +646,53 @@ function CartPage() {
       }
     }
 
-    if (opts.length > 0) {
-      const firstDelivery = opts.find(o => o.id !== "pickup");
-      const hasPickup = opts.some(o => o.id === "pickup");
-      
-      if (forcePickup && hasPickup) {
-        setSelected("pickup");
-        setDeliveryMethod("retirada");
-      } else if (deliveryMethod === "retirada" && hasPickup) {
-        setSelected("pickup");
-      } else if (firstDelivery) {
-        setSelected(firstDelivery.id);
-        setDeliveryMethod("entrega");
-      } else if (hasPickup) {
-        setSelected("pickup");
-        setDeliveryMethod("retirada");
+      if (opts.length > 0) {
+        const firstDelivery = opts.find(o => o.id !== "pickup");
+        const hasPickup = opts.some(o => o.id === "pickup");
+        
+        if (forcePickup && hasPickup) {
+          setSelected("pickup");
+          setDeliveryMethod("retirada");
+        } else if (isExplicitDelivery || selected !== "pickup" || deliveryMethod === "entrega") {
+          setDeliveryMethod("entrega");
+          if (firstDelivery) {
+            const currentValid = opts.find(o => o.id === selected && o.id !== "pickup");
+            if (currentValid) {
+              setSelected(currentValid.id);
+            } else {
+              setSelected(firstDelivery.id);
+            }
+          } else {
+            setSelected("delivery_placeholder");
+          }
+        } else {
+          if (hasPickup) {
+            setSelected("pickup");
+            setDeliveryMethod("retirada");
+          } else if (firstDelivery) {
+            setSelected(firstDelivery.id);
+            setDeliveryMethod("entrega");
+          } else {
+            setSelected(opts[0].id);
+          }
+        }
       } else {
-        setSelected(opts[0].id);
+        if (isExplicitDelivery || selected !== "pickup" || deliveryMethod === "entrega") {
+          setSelected("delivery_placeholder");
+          setDeliveryMethod("entrega");
+        } else {
+          setSelected("pickup");
+          setDeliveryMethod("retirada");
+        }
+        toast.error("Entrega indisponível", { description: "Não há opções de entrega ou retirada disponíveis para esta unidade ou CEP informado." });
       }
-    } else {
-      setSelected("delivery_placeholder");
-      setDeliveryMethod("entrega");
-      toast.error("Entrega indisponível", { description: "Não há opções de entrega ou retirada disponíveis para esta unidade ou CEP informado." });
+      
+      setFreight(opts);
+      // Persist to store without non-serializable icons
+      setFreightOptions(opts.map(o => ({ id: o.id, label: o.label, price: o.price, eta: o.eta })));
+    } finally {
+      setIsCalcLoading(false);
     }
-    
-    setFreight(opts);
-    // Persist to store without non-serializable icons
-    setFreightOptions(opts.map(o => ({ id: o.id, label: o.label, price: o.price, eta: o.eta })));
   };
 
   useEffect(() => {
@@ -692,7 +723,7 @@ function CartPage() {
 
   useEffect(() => {
     if ((selectedPharmacy || selectedPharmacyId) && cep.replace(/\D/g, "").length >= 8) {
-      calcFreight();
+      calcFreight(cep, selected !== "pickup");
     } else {
       setFreight(null);
     }
@@ -1604,7 +1635,15 @@ function CartPage() {
 
                   <div className="flex flex-col gap-2">
                     <label className={`flex items-center gap-2 border rounded-lg p-3 cursor-pointer ${selected === "pickup" ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}>
-                      <input type="radio" name="deliveryMode" checked={selected === "pickup"} onChange={() => setSelected("pickup")} />
+                      <input 
+                        type="radio" 
+                        name="deliveryMode" 
+                        checked={selected === "pickup"} 
+                        onChange={() => {
+                          setSelected("pickup");
+                          setDeliveryMethod("retirada");
+                        }} 
+                      />
                       <Store className="h-4 w-4 text-primary" />
                       <div className="flex-1">
                         <div className="text-sm font-bold">Retirada na loja</div>
@@ -1613,10 +1652,20 @@ function CartPage() {
                     </label>
 
                     <label className={`flex items-center gap-2 border rounded-lg p-3 ${items.some(i => i.retemReceita || i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20"))) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${selected !== "pickup" ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}>
-                      <input type="radio" name="deliveryMode" disabled={items.some(i => i.retemReceita || i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")))} checked={selected !== "pickup"} onChange={() => {
+                      <input 
+                        type="radio" 
+                        name="deliveryMode" 
+                        disabled={items.some(i => i.retemReceita || i.categoriaId === "200" || (i.subcategoriaId && String(i.subcategoriaId).startsWith("20")))} 
+                        checked={selected !== "pickup"} 
+                        onChange={() => {
+                          setDeliveryMethod("entrega");
                           const firstDeliveryOption = freight?.find(f => f.id !== "pickup");
                           setSelected(firstDeliveryOption ? firstDeliveryOption.id : "delivery_placeholder");
-                      }} />
+                          if (cep.replace(/\D/g, "").length >= 8) {
+                            calcFreight(cep, true);
+                          }
+                        }} 
+                      />
                       <Home className="h-4 w-4 text-primary" />
                       <div className="flex-1">
                         <div className="text-sm font-bold">Receber em casa</div>
@@ -1646,7 +1695,9 @@ function CartPage() {
                             }}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && cep.replace(/\D/g, "").length === 8) {
-                                calcFreight();
+                                e.preventDefault();
+                                setDeliveryMethod("entrega");
+                                calcFreight(cep, true);
                               }
                             }}
                             className={`
@@ -1672,8 +1723,12 @@ function CartPage() {
                         </div>
                         
                         <button
+                          type="button"
                           disabled={isCalcLoading || cep.replace(/\D/g, "").length < 8}
-                          onClick={calcFreight}
+                          onClick={() => {
+                            setDeliveryMethod("entrega");
+                            calcFreight(cep, true);
+                          }}
                           className={`
                             h-11 px-4 rounded-lg font-bold text-sm transition-all whitespace-nowrap shrink-0 border
                             ${cep.replace(/\D/g, "").length === 8 && !isCalcLoading
@@ -1693,7 +1748,11 @@ function CartPage() {
 
                       {/* Botão de localização GPS */}
                       <button 
-                        onClick={handleUseLocation} 
+                        type="button"
+                        onClick={() => {
+                          setDeliveryMethod("entrega");
+                          handleUseLocation();
+                        }} 
                         disabled={isLocating}
                         className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:text-primary/80 transition-colors mt-1 mb-3 group"
                       >
