@@ -7,7 +7,7 @@ import { useAuth } from "@/stores/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Apple, Mail } from "lucide-react";
+import { Apple, Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { 
   getLoginLockStatus, 
@@ -39,6 +39,7 @@ function LoginPage() {
   const sendOtp = useAuth((s) => s.sendOtp);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [isOtpMode, setIsOtpMode] = useState(false);
@@ -267,14 +268,29 @@ function LoginPage() {
                     Esqueci minha senha
                   </button>
                 </div>
-                <Input
-                  type="password"
-                  value={pass}
-                  onChange={(e) => setPass(e.target.value)}
-                  placeholder="••••••••"
-                  className="h-11 bg-slate-50"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={pass}
+                    onChange={(e) => setPass(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-11 bg-slate-50 pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1"
+                    title={showPassword ? "Ocultar senha" : "Ver senha"}
+                    aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
               
               {/* Honeypot Invisível para Bots */}

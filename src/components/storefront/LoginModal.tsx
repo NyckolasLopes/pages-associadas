@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/stores/auth";
 import { toast } from "sonner";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -21,6 +22,7 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
   const activePharmacy = useActivePharmacy();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<"credentials" | "reset">("credentials");
   const [loading, setLoading] = useState(false);
   const [lockStatus, setLockStatus] = useState(getLoginLockStatus());
@@ -135,12 +137,29 @@ export function LoginModal({ open, onOpenChange, onLoginSuccess }: { open: boole
                     Esqueceu a senha?
                   </button>
                 </div>
-                <Input 
-                  required 
-                  type="password" 
-                  value={senha} 
-                  onChange={e => setSenha(e.target.value)} 
-                />
+                <div className="relative">
+                  <Input 
+                    required 
+                    type={showPassword ? "text" : "password"} 
+                    value={senha} 
+                    onChange={e => setSenha(e.target.value)} 
+                    placeholder="••••••••"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1"
+                    title={showPassword ? "Ocultar senha" : "Ver senha"}
+                    aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading || lockStatus.isLocked}>
                 {lockStatus.isLocked ? `Bloqueado (${formatTimeLeft(lockStatus.timeLeftSeconds)})` : loading ? "Entrando..." : "Entrar"}
