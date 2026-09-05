@@ -488,7 +488,7 @@ function ProductCardComponent({
   const hasMedicamentoTags = isMedicamento && ((p.tarja && p.tarja !== "none") || p.retemReceita !== undefined);
 
   return (
-    <article className="group/card bg-card rounded-xl border border-slate-200/90 hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col relative w-full sm:h-full">
+    <article className="group/card bg-card rounded-xl border border-slate-200/90 hover:border-primary hover:shadow-elevated transition overflow-hidden flex flex-col justify-between relative w-full h-full">
       {/* Floating Actions */}
       <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1.5">
         {p.youtubeVideoUrl && (
@@ -581,7 +581,7 @@ function ProductCardComponent({
       </Link>
 
       {/* Product Content */}
-      <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-start sm:justify-between">
+      <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between">
         <div>
           {/* Promotional Badge (Timer / Leve + Pague) */}
           {activePromo && (
@@ -610,7 +610,7 @@ function ProductCardComponent({
           </Link>
 
           {/* Preços */}
-          <div className="flex flex-col mt-1">
+          <div className="flex flex-col mt-1 min-h-[42px] sm:min-h-[46px] justify-center">
             {!isAvailable ? (
               <div className="py-0.5 flex flex-col justify-center">
                 <span className="text-xs sm:text-sm font-semibold text-slate-400">
@@ -759,7 +759,7 @@ function ProductCardComponent({
         </div>
 
         {/* Botão de Compra */}
-        <div className="flex flex-col gap-1.5 mt-2.5 sm:mt-auto pt-1">
+        <div className="flex flex-col gap-1.5 mt-auto pt-1 w-full">
           {isAvailable ? (
             <button 
               onClick={(e) => { 
@@ -778,7 +778,7 @@ function ProductCardComponent({
                       ? { backgroundColor: 'var(--btn-primary-bg, var(--primary))', color: 'var(--btn-primary-text, var(--primary-foreground, #ffffff))' }
                       : undefined)
               }
-              className={`w-full font-bold text-xs py-2 sm:py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs hover:brightness-110 active:scale-[0.99] relative overflow-hidden ${
+              className={`w-full font-bold text-xs py-2 sm:py-2.5 min-h-[36px] sm:min-h-[40px] rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs hover:brightness-110 active:scale-[0.99] relative overflow-hidden ${
                 activePromo?.corBotao
                   ? ''
                   : isService
@@ -808,18 +808,14 @@ function ProductCardComponent({
               )}
             </button>
           ) : (
-            <div className="flex flex-col gap-1.5 w-full">
-              <span className="w-full bg-slate-100 text-slate-500 font-bold text-[11px] py-1.5 rounded-lg text-center border border-slate-200">
-                INDISPONÍVEL
-              </span>
-              <button 
-                onClick={(e) => { e.preventDefault(); setWaitlistOpen(true); }}
-                className="w-full bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-600 font-bold text-[11px] py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition"
-              >
-                <Bell className="h-3 w-3" />
-                AVISE-ME
-              </button>
-            </div>
+            <button 
+              onClick={(e) => { e.preventDefault(); setWaitlistOpen(true); }}
+              className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs py-2 sm:py-2.5 min-h-[36px] sm:min-h-[40px] rounded-lg flex items-center justify-center gap-1.5 transition active:scale-[0.99] shadow-2xs"
+              title="Produto indisponível no momento. Clique para ser avisado quando chegar."
+            >
+              <Bell className="h-3.5 w-3.5 text-slate-500" />
+              <span>AVISE-ME</span>
+            </button>
           )}
         </div>
       </div>

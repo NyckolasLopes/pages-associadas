@@ -234,7 +234,7 @@
   }
 }
 
-/* Strict 2-line product title clamping with ellipsis (dynamic on mobile, uniform on desktop) */
+/* Strict 2-line product title clamping with ellipsis (uniforme em mobile e desktop) */
 .product-title-clamp {
   display: -webkit-box !important;
   -webkit-line-clamp: 2 !important;
@@ -244,12 +244,7 @@
   word-break: break-word !important;
   line-height: 1.25rem !important;
   max-height: 2.5rem !important;
-}
-
-@media (min-width: 640px) {
-  .product-title-clamp {
-    min-height: 2.5rem !important;
-  }
+  min-height: 2.5rem !important;
 }
 
 @keyframes cartBtnProgress {
