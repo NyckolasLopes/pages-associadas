@@ -319,6 +319,22 @@ export const useAdminProducts = create<ProductsState>()(
           allTags.add(`fabricante:${fabricante}`);
         }
 
+        if (formattedProduct.marca) {
+          const cleanMarca = String(formattedProduct.marca).trim();
+          formattedProduct.marca = cleanMarca;
+          allTags.add(`marca:${cleanMarca}`);
+          allTags.add(`marca:${cleanMarca.toLowerCase()}`);
+          const slugifiedMarca = cleanMarca
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-");
+          if (slugifiedMarca) {
+            allTags.add(`marca:${slugifiedMarca}`);
+          }
+        }
+
         let updatedCaracteristicas = Array.isArray(formattedProduct.caracteristicas) ? [...formattedProduct.caracteristicas] : [];
         updatedCaracteristicas = updatedCaracteristicas.filter((c: any) => c.titulo !== "__bula_url__" && c.titulo !== "Fabricante" && c.titulo?.toLowerCase() !== "bula" && c.titulo?.toLowerCase() !== "link da bula");
         formattedProduct.caracteristicas = updatedCaracteristicas;

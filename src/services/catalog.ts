@@ -985,14 +985,147 @@ export const catalog = {
 
     return applyFilters(activeProducts, filters);
   },
-  productsByBrand: async (brandName: string, filters?: FilterOptions, lojaId?: string | null) => {
+  productsByBrand: async (brandQuery: string, filters?: FilterOptions, lojaId?: string | null) => {
     await ensureHydrated();
+
+    // 1. Garantir que as marcas estejam carregadas
+    let marcas = useMarcasStore.getState().marcas;
+    if (!marcas || marcas.length === 0) {
+      await useMarcasStore.getState().loadMarcas();
+      marcas = useMarcasStore.getState().marcas;
+    }
+
+    const cleanQuery = (brandQuery || "").trim();
+    const cleanQueryLower = cleanQuery.toLowerCase();
+    const localSlugify = (text: string) => {
+      if (!text) return "";
+      return text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+    };
+    const cleanQuerySlug = localSlugify(cleanQuery);
+
+    const matchedMarca = (marcas || []).find(m => 
+      (m.slug && m.slug.toLowerCase() === cleanQueryLower) ||
+      (m.seoUrl && m.seoUrl.toLowerCase() === cleanQueryLower) ||
+      (m.id && String(m.id).toLowerCase() === cleanQueryLower) ||
+      (m.nome && m.nome.toLowerCase() === cleanQueryLower) ||
+      (m.slug && localSlugify(m.slug) === cleanQuerySlug) ||
+      (m.seoUrl && localSlugify(m.seoUrl) === cleanQuerySlug) ||
+      (m.nome && localSlugify(m.nome) === cleanQuerySlug) ||
+      (m.nome && removeAccents(m.nome.toLowerCase()) === removeAccents(cleanQueryLower))
+    );
+
+    const brandName = matchedMarca ? matchedMarca.nome : (cleanQuery.includes("-") ? cleanQuery.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : cleanQuery);
+    const brandSlug = matchedMarca?.slug || matchedMarca?.seoUrl || cleanQuerySlug;
+    const isMarcaPropria = !!matchedMarca?.marcaPropria;
+
+    const cleanBrandName = brandName.trim();
+    const cleanBrandNameNoAccents = removeAccents(cleanBrandName).trim();
+    const cleanSlug = brandSlug.trim();
+
+    // 2. Montar query Supabase com busca flexível (.or)
+    let query = supabase.from('produtos').select('*');
+    const orClauses: string[] = [];
+
+    if (cleanBrandName) {
+      const sanitizedName = cleanBrandName.replace(/[%,()]/g, "").trim();
+      if (sanitizedName) orClauses.push(`marca.ilike.%${sanitizedName}%`);
+    }
+    if (cleanBrandNameNoAccents && cleanBrandNameNoAccents !== cleanBrandName) {
+      const sanitizedNoAccents = cleanBrandNameNoAccents.replace(/[%,()]/g, "").trim();
+      if (sanitizedNoAccents) orClauses.push(`marca.ilike.%${sanitizedNoAccents}%`);
+    }
+    if (cleanSlug && cleanSlug.toLowerCase() !== cleanBrandName.toLowerCase()) {
+      const sanitizedSlug = cleanSlug.replace(/[%,()]/g, "").trim();
+      if (sanitizedSlug) orClauses.push(`marca.ilike.%${sanitizedSlug}%`);
+    }
+
+    // internal_tags matching
+    if (cleanSlug) {
+      orClauses.push(`internal_tags.cs.["marca:${cleanSlug.toLowerCase()}"]`);
+    }
+    if (cleanBrandName) {
+      orClauses.push(`internal_tags.cs.["marca:${cleanBrandName.toLowerCase()}"]`);
+    }
+    if (matchedMarca?.id) {
+      orClauses.push(`internal_tags.cs.["marca:${matchedMarca.id}"]`);
+    }
+
+    // Para marcas próprias (ex: Revigore, Revitart, Santo Hábito, Crescendo, etc.) ou marcas com nome longo,
+    // também busca produtos cujo nome contenha o nome da marca
+    if (isMarcaPropria || cleanBrandName.length >= 4) {
+      const sanitizedName = cleanBrandName.replace(/[%,()]/g, "").trim();
+      if (sanitizedName) orClauses.push(`nome.ilike.%${sanitizedName}%`);
+      if (cleanBrandNameNoAccents && cleanBrandNameNoAccents !== cleanBrandName) {
+        const sanitizedNoAccents = cleanBrandNameNoAccents.replace(/[%,()]/g, "").trim();
+        if (sanitizedNoAccents) orClauses.push(`nome.ilike.%${sanitizedNoAccents}%`);
+      }
+    }
+
+    const uniqueClauses = Array.from(new Set(orClauses.filter(Boolean)));
+    if (uniqueClauses.length > 0) {
+      query = query.or(uniqueClauses.join(','));
+    }
+
     const page = filters?.page || 0;
     const pageSize = filters?.pageSize || 24;
-    
-    let query = supabase.from('produtos').select('*').ilike('marca', brandName).range(page * pageSize, (page + 1) * pageSize - 1);
-    const products = await fetchFromSupabaseWithPrices(query, lojaId);
-    return applyFilters(products, filters);
+
+    // Range no Supabase
+    query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+
+    const dbProducts = await fetchFromSupabaseWithPrices(query, lojaId);
+
+    // 3. Mesclar produtos do estado local (customProducts / storeCustomProducts da loja)
+    const storeState = useAdminProducts.getState();
+    const localEffective = storeState.getStoreEffectiveProducts(lojaId) || [];
+    const matchingLocal = localEffective.filter(p => {
+      if (!p || p.ativo === false) return false;
+      const pMarca = (p.marca || "").toLowerCase().trim();
+      const pMarcaNoAccents = removeAccents(pMarca);
+      const pNome = (p.nome || "").toLowerCase().trim();
+      const pNomeNoAccents = removeAccents(pNome);
+      
+      const bLower = cleanBrandName.toLowerCase();
+      const bNoAccents = cleanBrandNameNoAccents.toLowerCase();
+      const sLower = cleanSlug.toLowerCase();
+      
+      if (pMarca.includes(bLower) || pMarcaNoAccents.includes(bNoAccents) || (sLower && pMarca.includes(sLower))) return true;
+      if (Array.isArray(p.internalTags) && p.internalTags.some(t => {
+        const tl = String(t).toLowerCase();
+        return tl === `marca:${sLower}` || tl === `marca:${bLower}` || (matchedMarca?.id && tl === `marca:${matchedMarca.id}`);
+      })) return true;
+      if ((isMarcaPropria || cleanBrandName.length >= 4) && (pNome.includes(bLower) || pNomeNoAccents.includes(bNoAccents))) return true;
+      return false;
+    });
+
+    const mergedMap = new Map<string, Produto>();
+    dbProducts.forEach(p => {
+      if (p && p.id) mergedMap.set(p.id, p);
+    });
+    if (page === 0) {
+      matchingLocal.forEach(p => {
+        if (p && p.id) mergedMap.set(p.id, p);
+      });
+    }
+
+    let allBrandProducts = Array.from(mergedMap.values()).filter(p => p && p.ativo !== false);
+
+    // Prioriza produtos em estoque
+    allBrandProducts.sort((a, b) => {
+      const stockA = a.estoque || 0;
+      const stockB = b.estoque || 0;
+      if (stockA > 0 && stockB <= 0) return -1;
+      if (stockB > 0 && stockA <= 0) return 1;
+      return 0;
+    });
+
+    return applyFilters(allBrandProducts, filters);
   },
   // Uses deterministic seed so results are stable across re-renders
   crossSell: async (cartIds: string[], limit = 4, referenceCategoryId?: string, lojaId?: string) => {

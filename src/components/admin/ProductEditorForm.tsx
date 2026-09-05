@@ -61,9 +61,13 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
   const { getStoreFiltros, filtros: globalFiltros } = useAdminFiltros();
   const storeFiltros = getStoreFiltros ? getStoreFiltros(lojaId) : globalFiltros;
   const availableFiltros = (storeFiltros && storeFiltros.length > 0) ? storeFiltros : (globalFiltros || []);
-  const { marcas } = useMarcasStore();
+  const { marcas, loadMarcas } = useMarcasStore();
   const { variacoes } = useVariacoesStore();
   const [activeTab, setActiveTab] = useState<"geral" | "precos" | "filtros" | "imagens" | "seo" | "todos">("geral");
+
+  useEffect(() => {
+    loadMarcas();
+  }, [loadMarcas]);
 
   useEffect(() => {
     if (saveStep !== "idle") {
@@ -1031,6 +1035,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                     <Label className="font-bold text-xs uppercase text-slate-500">Laboratório</Label>
                     <Input 
                       disabled={!isGlobalAdmin} 
+                      list="admin-marcas-suggestions"
                       value={formData.marca || ""} 
                       onChange={e => setFormData({...formData, marca: e.target.value})} 
                       placeholder="Ex: EMS, Eurofarma, Medley, Aché..."
@@ -1214,6 +1219,7 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                   <Label className="font-bold text-xs uppercase text-slate-500">Marca</Label>
                   <Input 
                     disabled={!isGlobalAdmin} 
+                    list="admin-marcas-suggestions"
                     value={formData.marca || ""} 
                     onChange={e => setFormData({...formData, marca: e.target.value})} 
                     placeholder="Ex: Pampers, Nivea, Colgate..."
@@ -1234,6 +1240,14 @@ export function ProductEditorForm({ open, onOpenChange, product, onSave, asPage,
                 </div>
               </div>
             )}
+
+            <datalist id="admin-marcas-suggestions">
+              {marcas.map((m) => (
+                <option key={m.id} value={m.nome}>
+                  {m.marcaPropria ? `${m.nome} (Marca Própria)` : m.nome}
+                </option>
+              ))}
+            </datalist>
           </div>
 
           {/* Novos Campos (Características, Pesos e Embalagem) */}

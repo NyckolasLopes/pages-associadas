@@ -3,6 +3,8 @@ import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { catalog } from "@/services/catalog";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { useMarcasStore } from "@/stores/marcas";
+import { useAdmin } from "@/stores/admin";
+import { safeSlugify } from "@/hooks/useActivePharmacy";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -10,18 +12,70 @@ import { ProductGridSkeleton } from "@/components/storefront/ProductGridSkeleton
 
 export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
   loader: async ({ params }) => {
-    const state = useMarcasStore.getState();
-    const marca = state.marcas.find(m => (m.seoUrl === params.slug) || (m.slug === params.slug));
-    const brandName = marca ? marca.nome : params.slug.toUpperCase().replace("-", " ");
-    const produtos = await catalog.productsByBrand(brandName);
+    // 1. Garantir marcas carregadas
+    let marcas = useMarcasStore.getState().marcas;
+    if (!marcas || marcas.length === 0) {
+      await useMarcasStore.getState().loadMarcas();
+      marcas = useMarcasStore.getState().marcas;
+    }
+
+    // 2. Resolver a loja / lojaId a partir do storeSlug
+    const storeSlug = params.storeSlug;
+    const { useAdmin } = await import("@/stores/admin");
+    const adminState = useAdmin.getState();
+    let pharmacies = adminState.pharmacies;
+    if (!pharmacies || pharmacies.length === 0) {
+      await adminState.loadPharmacies();
+      pharmacies = useAdmin.getState().pharmacies;
+    }
+    const cleanStoreSlug = (storeSlug || "").toLowerCase();
+    const loja = (pharmacies || []).find((ph: any) => 
+      (ph.slug || "").toLowerCase() === cleanStoreSlug ||
+      String(ph.id).toLowerCase() === cleanStoreSlug ||
+      safeSlugify(ph.slug || ph.nome || "") === cleanStoreSlug
+    );
+    const lojaId = loja?.id || null;
+
+    // 3. Encontrar a marca pelo slug ou seoUrl
+    const cleanSlug = (params.slug || "").toLowerCase();
+    const cleanSlugNorm = safeSlugify(params.slug || "");
+    const marca = (marcas || []).find(m => 
+      (m.seoUrl && m.seoUrl.toLowerCase() === cleanSlug) || 
+      (m.slug && m.slug.toLowerCase() === cleanSlug) ||
+      (m.id && String(m.id).toLowerCase() === cleanSlug) ||
+      (m.nome && m.nome.toLowerCase() === cleanSlug) ||
+      (m.slug && safeSlugify(m.slug) === cleanSlugNorm) ||
+      (m.seoUrl && safeSlugify(m.seoUrl) === cleanSlugNorm) ||
+      (m.nome && safeSlugify(m.nome) === cleanSlugNorm)
+    );
+    const brandName = marca ? marca.nome : params.slug.toUpperCase().replace(/-/g, " ");
     
-    return { slug: params.slug, produtos, fallbackBrandName: brandName };
+    // 4. Buscar produtos da marca com o contexto da loja
+    const produtos = await catalog.productsByBrand(brandName, { page: 0, pageSize: 24 }, lojaId);
+    
+    return { 
+      slug: params.slug, 
+      produtos, 
+      fallbackBrandName: brandName,
+      lojaId,
+      storeSlug 
+    };
   },
   head: ({ loaderData, params }: any) => {
     if (!loaderData) return {};
     
     const state = useMarcasStore.getState();
-    const marca = state.marcas.find(m => (m.seoUrl === loaderData.slug) || (m.slug === loaderData.slug));
+    const cleanSlug = (loaderData.slug || "").toLowerCase();
+    const cleanSlugNorm = safeSlugify(loaderData.slug || "");
+    const marca = state.marcas.find(m => 
+      (m.seoUrl && m.seoUrl.toLowerCase() === cleanSlug) || 
+      (m.slug && m.slug.toLowerCase() === cleanSlug) ||
+      (m.id && String(m.id).toLowerCase() === cleanSlug) ||
+      (m.nome && m.nome.toLowerCase() === cleanSlug) ||
+      (m.slug && safeSlugify(m.slug) === cleanSlugNorm) ||
+      (m.seoUrl && safeSlugify(m.seoUrl) === cleanSlugNorm) ||
+      (m.nome && safeSlugify(m.nome) === cleanSlugNorm)
+    );
     const storeSlug = params?.storeSlug || "loja-padrao";
     const brandName = marca ? marca.nome : loaderData.fallbackBrandName;
     const desc = marca?.descricao || `Compre produtos da marca ${brandName} com os melhores preços na Farmácias Associadas.`;
@@ -51,18 +105,38 @@ export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
 });
 
 function BrandPage() {
-  const { slug, produtos, fallbackBrandName } = Route.useLoaderData();
-  const { storeSlug } = Route.useParams();
+  const { slug, produtos, fallbackBrandName, lojaId, storeSlug } = Route.useLoaderData();
+  const { storeSlug: paramStoreSlug } = Route.useParams();
   
   // Get reactive store data
-  const { marcas } = useMarcasStore();
-  const marca = marcas.find(m => (m.seoUrl === slug) || (m.slug === slug));
+  const { marcas, loadMarcas } = useMarcasStore();
+  const { pharmacies, activePharmacyId } = useAdmin();
+
+  useEffect(() => {
+    loadMarcas();
+  }, [loadMarcas]);
+
+  const cleanSlug = (slug || "").toLowerCase();
+  const cleanSlugNorm = safeSlugify(slug || "");
+  const marca = marcas.find(m => 
+    (m.seoUrl && m.seoUrl.toLowerCase() === cleanSlug) || 
+    (m.slug && m.slug.toLowerCase() === cleanSlug) ||
+    (m.id && String(m.id).toLowerCase() === cleanSlug) ||
+    (m.nome && m.nome.toLowerCase() === cleanSlug) ||
+    (m.slug && safeSlugify(m.slug) === cleanSlugNorm) ||
+    (m.seoUrl && safeSlugify(m.seoUrl) === cleanSlugNorm) ||
+    (m.nome && safeSlugify(m.nome) === cleanSlugNorm)
+  );
   
   const brand = marca?.nome || fallbackBrandName;
   const desc = marca?.descricao || `Conheça e compre toda a linha de produtos da ${brand}.`;
   const logo = marca?.logo;
   
-  const effectiveStoreSlug = storeSlug || "loja-padrao";
+  const effectiveStoreSlug = paramStoreSlug || storeSlug || "loja-padrao";
+  const currentLoja = pharmacies.find(p => (p.slug || "").toLowerCase() === effectiveStoreSlug.toLowerCase()) ||
+    (activePharmacyId ? pharmacies.find(p => p.id === activePharmacyId) : null);
+  const effectiveLojaId = lojaId || currentLoja?.id || null;
+
   const brandUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}/m/${slug}`;
   const storeUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}`;
 
@@ -111,12 +185,28 @@ function BrandPage() {
     setHasMore(produtos.length >= 24);
   }, [slug, produtos]);
 
+  // Se o loader retornou vazio (ex: carregamento antes da hidratação da loja/marcas), faz nova busca no cliente
+  useEffect(() => {
+    let isMounted = true;
+    if (productsList.length === 0) {
+      catalog.productsByBrand(brand, { page: 0, pageSize: 24 }, effectiveLojaId)
+        .then((fresh) => {
+          if (isMounted && fresh && fresh.length > 0) {
+            setProductsList(fresh);
+            setHasMore(fresh.length >= 24);
+          }
+        })
+        .catch(console.error);
+    }
+    return () => { isMounted = false; };
+  }, [brand, effectiveLojaId]);
+
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const moreProducts = await catalog.productsByBrand(brand, { page: nextPage, pageSize: 24 });
+      const moreProducts = await catalog.productsByBrand(brand, { page: nextPage, pageSize: 24 }, effectiveLojaId);
       setProductsList((prev: any) => [...prev, ...moreProducts]);
       setPage(nextPage);
       if (moreProducts.length < 24) setHasMore(false);
