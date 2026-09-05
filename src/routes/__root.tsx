@@ -147,24 +147,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
         { rel: "stylesheet", href: appCss },
-        { rel: "icon", href: "/favicon.png", type: "image/png" },
-        { rel: "shortcut icon", href: "/favicon.png", type: "image/png" },
+        { rel: "icon", href: "/favicon.ico" },
+        { rel: "shortcut icon", href: "/favicon.ico" },
         {
           rel: "stylesheet",
           href: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;500;700;900&display=swap",
         },
         { rel: "manifest", href: "/manifest.json" },
-      ],
-      scripts: [
-        {
-          children: `
-            window.deferredPWAInstallPrompt = null;
-            window.addEventListener('beforeinstallprompt', function(e) {
-              e.preventDefault();
-              window.deferredPWAInstallPrompt = e;
-            });
-          `,
-        },
       ],
     };
   },

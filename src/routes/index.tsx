@@ -13,13 +13,6 @@ import AssociadasLogo from "@/assets/logo.png";
 import { resetStoreTheme } from "@/lib/themeUtils";
 
 export const Route = createFileRoute("/")({
-  loader: async () => {
-    try {
-      if (!useAdmin.getState().pharmaciesLoaded || useAdmin.getState().pharmacies.length === 0) {
-        await useAdmin.getState().loadPharmacies();
-      }
-    } catch {}
-  },
   head: () => ({
     links: [
       { rel: "canonical", href: "https://farmaciasassociadas.com.br" },

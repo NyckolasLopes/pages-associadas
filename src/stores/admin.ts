@@ -1677,50 +1677,54 @@ export const useAdmin = create<AdminState>()(
               return;
             }
 
-            // Fallback: se a consulta direta não retornou dados ou deu erro, tenta a rota proxy
-            try {
-              const defaultKey = "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
-              const res = await fetch('/api/supabase/rest/v1/lojas?select=*', {
-                headers: {
-                  'apikey': defaultKey,
-                  'Authorization': `Bearer ${defaultKey}`
+            // Fallback: se a consulta direta não retornou dados ou deu erro, tenta a rota proxy (apenas no cliente)
+            if (typeof window !== 'undefined') {
+              try {
+                const defaultKey = "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+                const res = await fetch('/api/supabase/rest/v1/lojas?select=*', {
+                  headers: {
+                    'apikey': defaultKey,
+                    'Authorization': `Bearer ${defaultKey}`
+                  }
+                });
+                if (res.ok) {
+                  const fallbackData = await res.json();
+                  if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+                    const loadedPharmacies: Pharmacy[] = fallbackData.map(mapLojaRowToPharmacy);
+                    saveCachedPharmacies(loadedPharmacies);
+                    set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
+                    return;
+                  }
                 }
-              });
-              if (res.ok) {
-                const fallbackData = await res.json();
-                if (Array.isArray(fallbackData) && fallbackData.length > 0) {
-                  const loadedPharmacies: Pharmacy[] = fallbackData.map(mapLojaRowToPharmacy);
-                  saveCachedPharmacies(loadedPharmacies);
-                  set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
-                  return;
-                }
+              } catch (fbErr) {
+                console.warn("Fallback proxy lojas falhou:", fbErr);
               }
-            } catch (fbErr) {
-              console.warn("Fallback proxy lojas falhou:", fbErr);
             }
 
             set({ pharmaciesLoaded: true, pharmaciesFresh: true });
           } catch (err) {
             console.error("Erro no fetch direto de lojas, acionando fallback proxy:", err);
-            try {
-              const defaultKey = "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
-              const res = await fetch('/api/supabase/rest/v1/lojas?select=*', {
-                headers: {
-                  'apikey': defaultKey,
-                  'Authorization': `Bearer ${defaultKey}`
+            if (typeof window !== 'undefined') {
+              try {
+                const defaultKey = "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
+                const res = await fetch('/api/supabase/rest/v1/lojas?select=*', {
+                  headers: {
+                    'apikey': defaultKey,
+                    'Authorization': `Bearer ${defaultKey}`
+                  }
+                });
+                if (res.ok) {
+                  const fallbackData = await res.json();
+                  if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+                    const loadedPharmacies: Pharmacy[] = fallbackData.map(mapLojaRowToPharmacy);
+                    saveCachedPharmacies(loadedPharmacies);
+                    set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
+                    return;
+                  }
                 }
-              });
-              if (res.ok) {
-                const fallbackData = await res.json();
-                if (Array.isArray(fallbackData) && fallbackData.length > 0) {
-                  const loadedPharmacies: Pharmacy[] = fallbackData.map(mapLojaRowToPharmacy);
-                  saveCachedPharmacies(loadedPharmacies);
-                  set({ pharmacies: loadedPharmacies, pharmaciesLoaded: true, pharmaciesFresh: true });
-                  return;
-                }
+              } catch (fbErr) {
+                console.warn("Fallback proxy lojas falhou:", fbErr);
               }
-            } catch (fbErr) {
-              console.warn("Fallback proxy lojas falhou:", fbErr);
             }
 
             set({ pharmaciesLoaded: true });

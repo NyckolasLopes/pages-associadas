@@ -18,13 +18,6 @@ const CookieBanner = lazy(() => import("@/components/storefront/CookieBanner").t
 const GeoPopup = lazy(() => import("@/components/storefront/GeoPopup").then(m => ({ default: m.GeoPopup })));
 
 export const Route = createFileRoute("/_store")({
-  loader: async () => {
-    try {
-      if (!useAdmin.getState().pharmaciesLoaded || useAdmin.getState().pharmacies.length === 0) {
-        await useAdmin.getState().loadPharmacies();
-      }
-    } catch {}
-  },
   component: StoreLayout,
 });
 
