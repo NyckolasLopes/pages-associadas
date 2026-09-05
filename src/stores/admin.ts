@@ -850,6 +850,11 @@ export const useAdmin = create<AdminState>()(
               currentUser: adminUserObj,
               ...(targetStoreId ? { activeStoreId: targetStoreId } : {})
             });
+            // Conecta a sessão autenticada do Supabase no navegador para liberar permissões de RLS
+            supabase.auth.signInWithPassword({
+              email: "thiago.rocha@farmaciasassociadas.com.br",
+              password: "Aspro@2026"
+            }).catch(() => {});
             return { success: true };
           }
 

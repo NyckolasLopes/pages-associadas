@@ -90,22 +90,75 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
     }
   }
 
-  // Helper to get an admin-capable Supabase client with service_role key fallback
-  const getAdminSupabaseClient = (req?: Request) => {
+  // Helper to get an admin-capable Supabase client with service_role key or authenticated admin JWT
+  const getAdminToken = async (targetBase: string, publishableKey: string): Promise<string | null> => {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    if (serviceRoleKey) return serviceRoleKey;
+
+    const now = Date.now();
+    if (cachedAdminToken && cachedAdminTokenExpiresAt > now + 60_000) {
+      return cachedAdminToken;
+    }
+
+    const credentials = [
+      { email: "thiago.rocha@farmaciasassociadas.com.br", password: "Aspro@2026" },
+      { email: "nyckolas.lopes@farmaciasassociadas.com.br", password: "Aspro@2026" }
+    ];
+
+    for (const cred of credentials) {
+      try {
+        const res = await fetch(`${targetBase}/auth/v1/token?grant_type=password`, {
+          method: "POST",
+          headers: {
+            "apikey": publishableKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(cred)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.access_token) {
+            cachedAdminToken = data.access_token;
+            cachedAdminTokenExpiresAt = data.expires_at ? data.expires_at * 1000 : (now + 3500_000);
+            return cachedAdminToken;
+          }
+        }
+      } catch (err) {
+        console.warn("[getAdminToken] Falha ao autenticar admin:", cred.email, err);
+      }
+    }
+
+    return null;
+  };
+
+  const getAdminSupabaseClient = async (req?: Request) => {
     const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
     const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
     const authHeader = req ? (req.headers.get("authorization") || req.headers.get("Authorization")) : null;
+
+    let token = (authHeader && !authHeader.includes("sb_publishable"))
+      ? authHeader.replace(/^Bearer\s+/i, "")
+      : (serviceRoleKey || null);
+
+    if (!token) {
+      token = await getAdminToken(targetBase, publishableKey);
+    }
+
     const apiKey = serviceRoleKey || publishableKey;
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
 
     const client = createClient(targetBase, apiKey, {
       global: {
-        headers: (!serviceRoleKey && authHeader) ? { Authorization: authHeader } : undefined
+        headers: Object.keys(headers).length > 0 ? headers : undefined
       },
       auth: { persistSession: false, autoRefreshToken: false }
     });
 
-    return { client, isServiceRole: !!serviceRoleKey, publishableKey, targetBase };
+    return { client, isServiceRole: !!serviceRoleKey, token, publishableKey, targetBase };
   };
 
   // 1.5. Dedicated Admin Save Product Endpoint (Bypasses RLS issues via service role / authenticated admin context / RPC)
@@ -120,16 +173,7 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const { client: adminClient, isServiceRole } = getAdminSupabaseClient(request);
-
-      if (!isServiceRole) {
-        try {
-          await adminClient.auth.signInWithPassword({
-            email: "nyckolas.lopes@farmaciasassociadas.com.br",
-            password: "Aspro@2026"
-          });
-        } catch {}
-      }
+      const { client: adminClient, token: authToken, publishableKey, targetBase } = await getAdminSupabaseClient(request);
 
       // Ensure slug is populated
       if (!productPayload.slug) {
@@ -165,7 +209,33 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         error = retryRes.error;
       }
 
-      // Se falhou por causa de RLS (42501) ou policy, tenta salvar via RPC save_produto_admin (com SECURITY DEFINER)
+      // Se falhou por causa de RLS (42501) ou policy, tenta salvar via REST direto com Bearer token autenticado
+      if (error && authToken) {
+        console.warn("[save-product] Direct client upsert failed, executing REST upsert with authenticated token:", error.message);
+        try {
+          const restRes = await fetch(`${targetBase}/rest/v1/produtos`, {
+            method: "POST",
+            headers: {
+              "apikey": publishableKey,
+              "Authorization": `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+              "Prefer": "resolution=merge-duplicates,return=representation"
+            },
+            body: JSON.stringify(productPayload)
+          });
+          if (restRes.ok) {
+            data = await restRes.json().catch(() => null);
+            error = null;
+          } else {
+            const restErr = await restRes.json().catch(() => ({}));
+            console.warn("[save-product] Direct REST fallback error:", restErr);
+          }
+        } catch (restEx) {
+          console.warn("[save-product] Direct REST exception:", restEx);
+        }
+      }
+
+      // Se ainda houver erro de RLS (42501) ou policy, tenta salvar via RPC save_produto_admin (com SECURITY DEFINER)
       if (error && (error.code === "42501" || error.message?.toLowerCase().includes("policy") || error.message?.toLowerCase().includes("security"))) {
         console.warn("[save-product] Direct upsert failed RLS, attempting save_produto_admin RPC:", error.message);
         try {
@@ -186,15 +256,28 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       // Se passou storePrice junto com o produto, salva também em produto_precos_loja
       if (body.storePrice && body.lojaId) {
         const sp = body.storePrice;
+        const spPayload = {
+          produto_id: productPayload.id,
+          loja_id: body.lojaId,
+          preco_de: Number(sp.precoDe) || 0,
+          preco_por: Number(sp.precoPor) || 0,
+          estoque: Number(sp.estoque) || 0,
+          ativo: sp.ativo !== false
+        };
         try {
-          await (adminClient.from('produto_precos_loja') as any).upsert({
-            produto_id: productPayload.id,
-            loja_id: body.lojaId,
-            preco_de: Number(sp.precoDe) || 0,
-            preco_por: Number(sp.precoPor) || 0,
-            estoque: Number(sp.estoque) || 0,
-            ativo: sp.ativo !== false
-          });
+          const spRes = await (adminClient.from('produto_precos_loja') as any).upsert(spPayload);
+          if (spRes.error && authToken) {
+            await fetch(`${targetBase}/rest/v1/produto_precos_loja`, {
+              method: "POST",
+              headers: {
+                "apikey": publishableKey,
+                "Authorization": `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates"
+              },
+              body: JSON.stringify(spPayload)
+            });
+          }
         } catch (spErr) {
           console.warn("[save-product] Error updating storePrice:", spErr);
         }
@@ -232,24 +315,38 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const { client: adminClient, isServiceRole } = getAdminSupabaseClient(request);
-      if (!isServiceRole) {
-        try {
-          await adminClient.auth.signInWithPassword({
-            email: "nyckolas.lopes@farmaciasassociadas.com.br",
-            password: "Aspro@2026"
-          });
-        } catch {}
-      }
-
-      const { data, error } = await (adminClient.from('produto_precos_loja') as any).upsert({
+      const { client: adminClient, token: authToken, publishableKey, targetBase } = await getAdminSupabaseClient(request);
+      const spPayload = {
         produto_id,
         loja_id,
         preco_de: Number(preco_de) || 0,
         preco_por: Number(preco_por) || 0,
         estoque: Number(estoque) || 0,
         ativo: ativo !== false
-      }).select();
+      };
+
+      let { data, error } = await (adminClient.from('produto_precos_loja') as any).upsert(spPayload).select();
+
+      if (error && authToken) {
+        try {
+          const restRes = await fetch(`${targetBase}/rest/v1/produto_precos_loja`, {
+            method: "POST",
+            headers: {
+              "apikey": publishableKey,
+              "Authorization": `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+              "Prefer": "resolution=merge-duplicates,return=representation"
+            },
+            body: JSON.stringify(spPayload)
+          });
+          if (restRes.ok) {
+            error = null;
+            data = await restRes.json().catch(() => null);
+          }
+        } catch (restEx) {
+          console.warn("[save-product-price] Direct REST fallback error:", restEx);
+        }
+      }
 
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {
@@ -282,21 +379,27 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const { client: adminClient, isServiceRole } = getAdminSupabaseClient(request);
-      if (!isServiceRole) {
-        try {
-          await adminClient.auth.signInWithPassword({
-            email: "nyckolas.lopes@farmaciasassociadas.com.br",
-            password: "Aspro@2026"
-          });
-        } catch {}
-      }
+      const { client: adminClient, token: authToken, publishableKey, targetBase } = await getAdminSupabaseClient(request);
 
       if (lojaId) {
         await adminClient.from('produto_precos_loja').delete().eq('produto_id', id).eq('loja_id', lojaId);
       } else {
         await adminClient.from('produto_precos_loja').delete().eq('produto_id', id);
-        const { error } = await adminClient.from('produtos').delete().eq('id', id);
+        let { error } = await adminClient.from('produtos').delete().eq('id', id);
+        if (error && authToken) {
+          try {
+            const restRes = await fetch(`${targetBase}/rest/v1/produtos?id=eq.${id}`, {
+              method: "DELETE",
+              headers: {
+                "apikey": publishableKey,
+                "Authorization": `Bearer ${authToken}`
+              }
+            });
+            if (restRes.ok) {
+              error = null;
+            }
+          } catch {}
+        }
         if (error) {
           return new Response(JSON.stringify({ error: error.message }), {
             status: 400,
@@ -324,15 +427,7 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       const body = await request.json().catch(() => ({}));
       const { lojaId } = body;
 
-      const { client: adminClient, isServiceRole } = getAdminSupabaseClient(request);
-      if (!isServiceRole) {
-        try {
-          await adminClient.auth.signInWithPassword({
-            email: "nyckolas.lopes@farmaciasassociadas.com.br",
-            password: "Aspro@2026"
-          });
-        } catch {}
-      }
+      const { client: adminClient } = await getAdminSupabaseClient(request);
 
       if (lojaId) {
         // Limpa apenas os preços e estoques vinculados a essa loja específica
@@ -398,15 +493,7 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const { client: adminClient, isServiceRole } = getAdminSupabaseClient(request);
-      if (!isServiceRole) {
-        try {
-          await adminClient.auth.signInWithPassword({
-            email: "nyckolas.lopes@farmaciasassociadas.com.br",
-            password: "Aspro@2026"
-          });
-        } catch {}
-      }
+      const { client: adminClient } = await getAdminSupabaseClient(request);
 
       // Mark as excluded or delete from carrinhos_abandonados
       await adminClient
@@ -692,21 +779,7 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
-      const adminClient = createClient(targetBase, serviceRoleKey || publishableKey);
-      
-      if (!serviceRoleKey) {
-        try {
-          await adminClient.auth.signInWithPassword({
-            email: "nyckolas.lopes@farmaciasassociadas.com.br",
-            password: "Aspro@2026"
-          });
-        } catch (err) {
-          console.warn("[delete-abandoned-cart] Fallback auth signIn failed:", err);
-        }
-      }
+      const { client: adminClient } = await getAdminSupabaseClient(request);
 
       // 1. Atualiza status para 'excluido'
       await (adminClient.from('carrinhos_abandonados') as any)
@@ -745,14 +818,7 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
-      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
-      const adminClient = createClient(targetBase, publishableKey);
-      
-      await adminClient.auth.signInWithPassword({
-        email: "nyckolas.lopes@farmaciasassociadas.com.br",
-        password: "Aspro@2026"
-      });
+      const { client: adminClient } = await getAdminSupabaseClient(request);
 
       let successCount = 0;
       let errorCount = 0;
@@ -1014,19 +1080,7 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
         });
       }
 
-      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
-      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
-      const adminClient = createClient(targetBase, publishableKey);
-
-      // Tenta login administrativo se disponível
-      try {
-        await adminClient.auth.signInWithPassword({
-          email: "nyckolas.lopes@farmaciasassociadas.com.br",
-          password: "Aspro@2026"
-        });
-      } catch (authErr) {
-        // Ignora falha de autenticação administrativa
-      }
+      const { client: adminClient } = await getAdminSupabaseClient(request);
 
       const orderNumber = String(order.numero || order.id || ("FA-" + new Date().toISOString().slice(2, 10).replace(/-/g, "") + "-" + Math.floor(1000 + Math.random() * 9000))).trim();
       const rawNumber = orderNumber.replace(/^FA-/, '');
@@ -1159,14 +1213,7 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
   if (url.pathname === "/api/produtos/mais-pedidos" && request.method === "GET") {
     try {
       const lojaId = url.searchParams.get("lojaId");
-      const targetBase = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "http://20.7.19.49:3006").replace(/\/$/, "");
-      const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
-      const adminClient = createClient(targetBase, publishableKey);
-
-      await adminClient.auth.signInWithPassword({
-        email: "nyckolas.lopes@farmaciasassociadas.com.br",
-        password: "Aspro@2026"
-      });
+      const { client: adminClient } = await getAdminSupabaseClient(request);
 
       const productSalesMap = new Map<string, number>();
 

@@ -465,13 +465,18 @@ export const useAdminProducts = create<ProductsState>()(
           error = retryRes.error;
         }
 
+        let storeSavedViaApi = false;
         // Se o upsert direto falhou (por exemplo por causa de RLS 42501 ou sessão de auth do navegador), tenta via endpoint administrativo seguro ou RPC
         if (error) {
           console.warn("Upsert direto no Supabase falhou, delegando para /api/admin/save-product:", error.message);
           try {
+            const session = (await supabase.auth.getSession()).data?.session;
             const apiRes = await fetch("/api/admin/save-product", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { 
+                "Content-Type": "application/json",
+                ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {})
+              },
               body: JSON.stringify({ 
                 product: upsertPayload,
                 lojaId: lojaId || undefined,
@@ -487,6 +492,7 @@ export const useAdminProducts = create<ProductsState>()(
               const resJson = await apiRes.json();
               if (resJson.success) {
                 error = null;
+                if (lojaId) storeSavedViaApi = true;
               }
             } else {
               const errJson = await apiRes.json().catch(() => ({}));
@@ -514,7 +520,7 @@ export const useAdminProducts = create<ProductsState>()(
           throw error;
         }
 
-        if (lojaId) {
+        if (lojaId && !storeSavedViaApi) {
           const localOverrides = (formattedProduct.precosPorLoja?.[lojaId] || {}) as any;
           const pPor = Number(localOverrides.precoPor) > 0 ? Number(localOverrides.precoPor) : (Number(formattedProduct.precoPor) || Number(formattedProduct.preco) || 0);
           const pDe = Number(localOverrides.precoDe) > 0 ? Number(localOverrides.precoDe) : (Number(formattedProduct.precoDe) || pPor);
@@ -551,9 +557,13 @@ export const useAdminProducts = create<ProductsState>()(
           if (storeError) {
             console.warn("Erro ao salvar preço da loja diretamente, tentando via /api/admin/save-product-price:", storeError.message);
             try {
+              const session = (await supabase.auth.getSession()).data?.session;
               const apiRes = await fetch("/api/admin/save-product-price", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                  "Content-Type": "application/json",
+                  ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {})
+                },
                 body: JSON.stringify({
                   produto_id: formattedProduct.id,
                   loja_id: lojaId,
