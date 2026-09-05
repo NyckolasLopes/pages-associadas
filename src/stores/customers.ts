@@ -18,8 +18,20 @@ export interface Customer {
   ultimoPagamento?: string;
   totalPedidos: number;
   valorUltimoPedido?: number;
+  tipoPessoa?: 'PF' | 'PJ';
+  cnpj?: string;
+  razaoSocial?: string;
+  nomeFantasia?: string;
+  responsavelCompra?: string;
+  inscricaoEstadual?: string;
+  isentoIE?: boolean;
+  informacoesTributarias?: string;
+  aceitaOfertas?: boolean;
+  aceitouPolitica?: boolean;
+  dataAceitePolitica?: string;
   anotacoes: string;
   enderecos?: any[];
+  lojaId?: string;
 }
 
 export const INITIAL_CUSTOMERS: Customer[] = [];
@@ -61,6 +73,17 @@ export const useCustomers = create<CustomersStore>((set, get) => ({
             metodoLogin,
             totalPedidos: 0,
             valorUltimoPedido: 0,
+            tipoPessoa: (d.tipo_pessoa || (d.cnpj ? 'PJ' : 'PF')) as 'PF' | 'PJ',
+            cnpj: d.cnpj || '',
+            razaoSocial: d.razao_social || '',
+            nomeFantasia: d.nome_fantasia || '',
+            responsavelCompra: d.responsavel_compra || '',
+            inscricaoEstadual: d.inscricao_estadual || '',
+            isentoIE: Boolean(d.isento_ie || d.inscricao_estadual === 'ISENTO'),
+            informacoesTributarias: d.informacoes_tributarias || '',
+            aceitaOfertas: d.aceita_ofertas !== undefined ? Boolean(d.aceita_ofertas) : true,
+            aceitouPolitica: Boolean(d.aceitou_politica || d.data_aceite_politica),
+            dataAceitePolitica: d.data_aceite_politica || '',
             anotacoes: d.anotacoes || '',
             enderecos: d.enderecos || [],
             lojaId: d.loja_id || undefined,

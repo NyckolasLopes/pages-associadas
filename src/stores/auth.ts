@@ -57,12 +57,22 @@ export interface User {
   name?: string;
   nome?: string;
   email: string;
+  tipoPessoa?: "PF" | "PJ";
   cpf?: string;
+  cnpj?: string;
+  razaoSocial?: string;
+  nomeFantasia?: string;
+  responsavelCompra?: string;
+  inscricaoEstadual?: string;
+  isentoIE?: boolean;
+  informacoesTributarias?: string;
   celular?: string;
   enderecos?: any[];
   provider?: "email" | "google" | "apple" | "facebook";
   storeSlug?: string;
   loggedAt?: number;
+  aceitaOfertas?: boolean;
+  aceitouPolitica?: boolean;
 }
 
 export function safeSlugifyAuth(text?: string | null): string {
@@ -238,7 +248,7 @@ export const useAuth = create<AuthState>((set, get) => {
           u = data.user;
           const { data: rawProfile } = await supabase
             .from("profiles" as any)
-            .select("nome, cpf, telefone, has_logged_in_before, enderecos")
+            .select("nome, cpf, telefone, has_logged_in_before, enderecos, tipo_pessoa, cnpj, razao_social, nome_fantasia, responsavel_compra, inscricao_estadual, isento_ie, informacoes_tributarias, aceita_ofertas, aceitou_politica")
             .eq("id", u.id)
             .maybeSingle();
 
@@ -276,14 +286,24 @@ export const useAuth = create<AuthState>((set, get) => {
       const userObj: User = {
         id: u.id,
         email: u.email || cleanEmail,
-        name: profile?.nome || (u.email || cleanEmail).split("@")[0],
+        name: profile?.nome_fantasia || profile?.nome || (u.email || cleanEmail).split("@")[0],
         nome: profile?.nome || undefined,
+        tipoPessoa: profile?.tipo_pessoa || (profile?.cnpj ? "PJ" : "PF"),
         cpf: profile?.cpf || undefined,
+        cnpj: profile?.cnpj || undefined,
+        razaoSocial: profile?.razao_social || undefined,
+        nomeFantasia: profile?.nome_fantasia || undefined,
+        responsavelCompra: profile?.responsavel_compra || undefined,
+        inscricaoEstadual: profile?.inscricao_estadual || undefined,
+        isentoIE: Boolean(profile?.isento_ie),
+        informacoesTributarias: profile?.informacoes_tributarias || undefined,
         celular: profile?.telefone || undefined,
         enderecos: profile?.enderecos || [],
         provider: "email",
         storeSlug: targetSlug,
         loggedAt: Date.now(),
+        aceitaOfertas: profile?.aceita_ofertas !== undefined ? Boolean(profile.aceita_ofertas) : true,
+        aceitouPolitica: Boolean(profile?.aceitou_politica),
       };
 
       const sessions = loadStoreSessions();

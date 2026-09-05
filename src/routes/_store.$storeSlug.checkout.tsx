@@ -530,9 +530,17 @@ function Checkout() {
         nome: nome,
         email: email,
         telefone: telefone,
-        cpf: cpf,
+        cpf: user?.tipoPessoa === "PJ" ? undefined : (cpf || user?.cpf),
+        tipoPessoa: (user?.tipoPessoa || (user?.cnpj ? "PJ" : "PF")) as "PF" | "PJ",
+        cnpj: user?.cnpj || undefined,
+        razaoSocial: user?.razaoSocial || undefined,
+        nomeFantasia: user?.nomeFantasia || undefined,
+        responsavelCompra: user?.responsavelCompra || undefined,
+        inscricaoEstadual: user?.inscricaoEstadual || undefined,
+        isentoIE: user?.isentoIE || false,
+        informacoesTributarias: user?.informacoesTributarias || undefined,
         ip: "127.0.0.1",
-        tipo: "Padrão",
+        tipo: user?.tipoPessoa === "PJ" ? "Pessoa Jurídica (CNPJ)" : "Padrão",
         endereco: {
           rua: deliveryMethod === "home" ? rua : (activeStore?.endereco || ""),
           numero: deliveryMethod === "home" ? numero : "",
@@ -623,8 +631,14 @@ function Checkout() {
       const itemsText = visibleItems.map(i => `- ${i.qty}x ${i.nome}`).join("%0A");
       const deliveryText = deliveryMethod === "store" ? "Retirada na Loja" : "Receber em casa";
       const totalText = brl(finalTotal);
+
+      const isPjOrder = user?.tipoPessoa === "PJ" || Boolean(user?.cnpj);
+      const docLabel = isPjOrder ? `CNPJ: ${user?.cnpj || ""}` : (cpf ? `CPF: ${cpf}` : "");
+      const pjExtra = isPjOrder 
+        ? `%0A*Empresa:* ${user?.razaoSocial || user?.nomeFantasia || nome}%0A*Responsável:* ${user?.responsavelCompra || nome}%0A*I.E.:* ${user?.inscricaoEstadual || (user?.isentoIE ? "Isento" : "Não informado")}%0A*Tributação:* ${user?.informacoesTributarias || "Padrão"}`
+        : "";
       
-      const text = `Olá! Acabei de fazer um pedido na loja virtual.%0A%0A*Pedido:* #${newOrder.id}%0A*Cliente:* ${nome}%0A*Entrega:* ${deliveryText}%0A%0A*Itens:*%0A${itemsText}%0A%0A*Total:* ${totalText}%0A%0AGostaria de prosseguir com o pedido.`;
+      const text = `Olá! Acabei de fazer um pedido na loja virtual.%0A%0A*Pedido:* #${newOrder.id}%0A*Cliente:* ${nome} ${docLabel ? `(${docLabel})` : ""}${pjExtra}%0A*Entrega:* ${deliveryText}%0A%0A*Itens:*%0A${itemsText}%0A%0A*Total:* ${totalText}%0A%0AGostaria de prosseguir com o pedido.`;
       
       const waLink = `https://wa.me/${waNumber}?text=${text}`;
       window.open(waLink, "_blank");

@@ -10,6 +10,44 @@ export function toTitleCase(str: string) {
   return str.toLowerCase().replace(/(?:^|\s)\S/g, function(a) { return a.toUpperCase(); });
 }
 
+export function safeSlugify(text: string): string {
+  if (!text) return "";
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export function validatePasswordStrength(password: string): { valid: boolean; error?: string } {
+  if (!password || password.length < 8) {
+    return { valid: false, error: "A senha deve conter no mínimo 8 caracteres." };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, error: "A senha deve conter pelo menos 1 letra maiúscula." };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, error: "A senha deve conter pelo menos 1 número." };
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>_\-\\\/\[\]]/.test(password)) {
+    return { valid: false, error: "A senha deve conter pelo menos 1 caractere especial." };
+  }
+  return { valid: true };
+}
+
+export function formatCnpj(value: string): string {
+  let v = String(value || "").replace(/\D/g, "");
+  if (v.length > 14) v = v.slice(0, 14);
+  v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+  v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+  v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+  v = v.replace(/(\d{4})(\d)/, "$1-$2");
+  return v;
+}
+
 export function getCityFromCep(cep: string, pharmacies?: { cep: string, cidade: string }[]): string {
   if (!cep || !pharmacies || pharmacies.length === 0) return "Porto Alegre";
   const userCepNum = parseInt(String(cep || "").replace(/\D/g, ""), 10);

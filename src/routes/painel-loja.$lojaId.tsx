@@ -1356,7 +1356,14 @@ function PainelLoja() {
                               {order.data}
                             </TableCell>
                             <TableCell className="py-3 px-4 text-xs">
-                              <div className="font-semibold text-slate-900">{order.clienteNome}</div>
+                              <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                {order.clienteNome}
+                                {(order.rawOrder?.cliente?.cnpj || order.rawOrder?.cliente?.tipoPessoa === "PJ") && (
+                                  <Badge variant="outline" className="text-[10px] py-0 px-1 font-bold text-blue-700 bg-blue-50 border-blue-200">
+                                    PJ
+                                  </Badge>
+                                )}
+                              </div>
                               <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                                 <Phone className="w-3 h-3" />
                                 {order.clienteTelefone}
@@ -1556,15 +1563,53 @@ function PainelLoja() {
                 
                 {/* Cliente Info */}
                 <Card className="border-slate-200 shadow-sm">
-                  <CardHeader className="pb-2 bg-slate-100/50">
+                  <CardHeader className="pb-2 bg-slate-100/50 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-semibold text-slate-800">
                       Dados do Cliente
                     </CardTitle>
+                    {selectedPedidoInfo.cliente?.cnpj || selectedPedidoInfo.cliente?.tipoPessoa === "PJ" ? (
+                      <Badge className="bg-blue-100 text-blue-800 border-none font-bold text-xs">
+                        Pessoa Jurídica (CNPJ)
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-slate-100 text-slate-700 border-none font-bold text-xs">
+                        Pessoa Física (CPF)
+                      </Badge>
+                    )}
                   </CardHeader>
                   <CardContent className="pt-4 text-sm space-y-2">
-                    <p><span className="font-semibold text-slate-700">Nome:</span> {selectedPedidoInfo.cliente?.nome}</p>
+                    {selectedPedidoInfo.cliente?.cnpj || selectedPedidoInfo.cliente?.tipoPessoa === "PJ" ? (
+                      <>
+                        <p><span className="font-semibold text-slate-700">Razão Social:</span> {selectedPedidoInfo.cliente?.razaoSocial || selectedPedidoInfo.cliente?.nome}</p>
+                        <p><span className="font-semibold text-slate-700">Nome Fantasia:</span> {selectedPedidoInfo.cliente?.nomeFantasia || selectedPedidoInfo.cliente?.nome}</p>
+                        <p><span className="font-semibold text-slate-700">CNPJ:</span> {selectedPedidoInfo.cliente?.cnpj || "Não informado"}</p>
+                        <p><span className="font-semibold text-slate-700">Responsável pela Compra:</span> {selectedPedidoInfo.cliente?.responsavelCompra || selectedPedidoInfo.cliente?.nome}</p>
+                        <p>
+                          <span className="font-semibold text-slate-700">Inscrição Estadual:</span>{" "}
+                          {selectedPedidoInfo.cliente?.isentoIE || selectedPedidoInfo.cliente?.inscricaoEstadual === "ISENTO" ? (
+                            <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-xs">Isento</span>
+                          ) : (
+                            selectedPedidoInfo.cliente?.inscricaoEstadual || "Não informada"
+                          )}
+                        </p>
+                        {selectedPedidoInfo.cliente?.informacoesTributarias && (
+                          <p>
+                            <span className="font-semibold text-slate-700">Informações Tributárias:</span>{" "}
+                            <span className="font-medium text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-xs">
+                              {selectedPedidoInfo.cliente?.informacoesTributarias}
+                            </span>
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <p><span className="font-semibold text-slate-700">Nome:</span> {selectedPedidoInfo.cliente?.nome}</p>
+                        <p><span className="font-semibold text-slate-700">CPF:</span> {maskCpf(selectedPedidoInfo.cliente?.cpf || "")}</p>
+                      </>
+                    )}
+
                     <p className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-700">Telefone:</span> 
+                      <span className="font-semibold text-slate-700">Telefone / Celular:</span> 
                       {selectedPedidoInfo.cliente?.telefone}
                       {selectedPedidoInfo.cliente?.telefone && (
                         <a 
@@ -1579,7 +1624,6 @@ function PainelLoja() {
                       )}
                     </p>
                     <p><span className="font-semibold text-slate-700">Email:</span> {selectedPedidoInfo.cliente?.email}</p>
-                    <p><span className="font-semibold text-slate-700">CPF:</span> {maskCpf(selectedPedidoInfo.cliente?.cpf || "")}</p>
                   </CardContent>
                 </Card>
 

@@ -34,7 +34,15 @@ export interface Pedido {
     nome: string;
     email?: string;
     telefone: string;
+    tipoPessoa?: 'PF' | 'PJ';
     cpf?: string;
+    cnpj?: string;
+    razaoSocial?: string;
+    nomeFantasia?: string;
+    responsavelCompra?: string;
+    inscricaoEstadual?: string;
+    isentoIE?: boolean;
+    informacoesTributarias?: string;
     ip?: string;
     tipo?: string;
     endereco?: {

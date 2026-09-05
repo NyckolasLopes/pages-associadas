@@ -25,7 +25,9 @@ import {
   MessageCircle,
   Clock,
   CheckCircle2,
-  FileText
+  FileText,
+  Building2,
+  ShieldCheck
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -174,6 +176,17 @@ function ClientesAdmin() {
         anotacoes: c.anotacoes || "",
         lojaId: targetLojaId,
         lojaNome: lojaNome,
+        tipoPessoa: c.tipoPessoa || (c.cnpj ? 'PJ' : 'PF'),
+        cnpj: c.cnpj || "",
+        razaoSocial: c.razaoSocial || "",
+        nomeFantasia: c.nomeFantasia || "",
+        responsavelCompra: c.responsavelCompra || "",
+        inscricaoEstadual: c.inscricaoEstadual || "",
+        isentoIE: c.isentoIE || false,
+        informacoesTributarias: c.informacoesTributarias || "",
+        aceitaOfertas: c.aceitaOfertas !== false,
+        aceitouPolitica: c.aceitouPolitica !== false,
+        dataAceitePolitica: c.dataAceitePolitica || "",
         pedidos: [],
       });
     });
@@ -212,6 +225,14 @@ function ClientesAdmin() {
         }
         if (!existing.email && order.cliente.email) existing.email = order.cliente.email;
         if ((!existing.cpf || existing.cpf === "Não informado") && order.cliente.cpf) existing.cpf = order.cliente.cpf;
+        if (!existing.cnpj && order.cliente.cnpj) existing.cnpj = order.cliente.cnpj;
+        if (!existing.razaoSocial && order.cliente.razaoSocial) existing.razaoSocial = order.cliente.razaoSocial;
+        if (!existing.nomeFantasia && order.cliente.nomeFantasia) existing.nomeFantasia = order.cliente.nomeFantasia;
+        if (!existing.responsavelCompra && order.cliente.responsavelCompra) existing.responsavelCompra = order.cliente.responsavelCompra;
+        if (!existing.inscricaoEstadual && order.cliente.inscricaoEstadual) existing.inscricaoEstadual = order.cliente.inscricaoEstadual;
+        if (order.cliente.isentoIE !== undefined) existing.isentoIE = order.cliente.isentoIE;
+        if (!existing.informacoesTributarias && order.cliente.informacoesTributarias) existing.informacoesTributarias = order.cliente.informacoesTributarias;
+        if (order.cliente.tipoPessoa) existing.tipoPessoa = order.cliente.tipoPessoa;
         if (!existing.endereco && order.cliente.endereco?.rua) {
           existing.endereco = `${order.cliente.endereco.rua}, ${order.cliente.endereco.numero || "S/N"}`;
           existing.cidade = order.cliente.endereco.cidade || existing.cidade;
@@ -236,6 +257,17 @@ function ClientesAdmin() {
           email: order.cliente.email || "",
           telefone: order.cliente.telefone || "",
           cpf: order.cliente.cpf || "Não informado",
+          tipoPessoa: order.cliente.tipoPessoa || (order.cliente.cnpj ? 'PJ' : 'PF'),
+          cnpj: order.cliente.cnpj || "",
+          razaoSocial: order.cliente.razaoSocial || "",
+          nomeFantasia: order.cliente.nomeFantasia || "",
+          responsavelCompra: order.cliente.responsavelCompra || "",
+          inscricaoEstadual: order.cliente.inscricaoEstadual || "",
+          isentoIE: Boolean(order.cliente.isentoIE),
+          informacoesTributarias: order.cliente.informacoesTributarias || "",
+          aceitaOfertas: true,
+          aceitouPolitica: true,
+          dataAceitePolitica: orderData,
           endereco: enderecoCompleto,
           cidade: order.cliente.endereco?.cidade || "Porto Alegre",
           uf: "RS",
@@ -566,6 +598,15 @@ function ClientesAdmin() {
                       <div>
                         <div className="font-bold text-slate-900 text-[14px] group-hover:text-primary transition-colors flex items-center gap-2">
                           {customer.nome}
+                          {(customer as any).tipoPessoa === "PJ" || (customer as any).cnpj ? (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-bold text-blue-700 bg-blue-50 border-blue-200">
+                              PJ
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-bold text-slate-600 bg-slate-50 border-slate-200">
+                              PF
+                            </Badge>
+                          )}
                         </div>
                         <div className="text-[12px] text-slate-500 font-normal">{customer.email || "E-mail não informado"}</div>
                       </div>
@@ -726,13 +767,79 @@ function ClientesAdmin() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 pt-2 border-t">
-                    <CreditCard className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-                    <div>
-                      <div className="text-[11px] font-bold text-slate-400 uppercase">CPF</div>
-                      <div className="text-sm font-medium text-slate-800">{selectedLead.cpf || "Não informado"}</div>
+                  {(selectedLead as any).tipoPessoa === "PJ" || (selectedLead as any).cnpj ? (
+                    <>
+                      <div className="flex items-start gap-3 pt-2 border-t">
+                        <Building2 className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-[11px] font-bold text-slate-400 uppercase">CNPJ</div>
+                          <div className="text-sm font-bold text-slate-900">{(selectedLead as any).cnpj || "Não informado"}</div>
+                        </div>
+                      </div>
+
+                      {(selectedLead as any).razaoSocial && (
+                        <div className="flex items-start gap-3 pt-2 border-t">
+                          <Building2 className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-400 uppercase">Razão Social</div>
+                            <div className="text-sm font-medium text-slate-800">{(selectedLead as any).razaoSocial}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {(selectedLead as any).nomeFantasia && (
+                        <div className="flex items-start gap-3 pt-2 border-t">
+                          <Store className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-400 uppercase">Nome Fantasia</div>
+                            <div className="text-sm font-medium text-slate-800">{(selectedLead as any).nomeFantasia}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {(selectedLead as any).responsavelCompra && (
+                        <div className="flex items-start gap-3 pt-2 border-t">
+                          <Users className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-400 uppercase">Responsável da Compra</div>
+                            <div className="text-sm font-medium text-slate-800">{(selectedLead as any).responsavelCompra}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-start gap-3 pt-2 border-t">
+                        <FileText className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-[11px] font-bold text-slate-400 uppercase">Inscrição Estadual</div>
+                          <div className="text-sm font-medium text-slate-800">
+                            {(selectedLead as any).isentoIE || (selectedLead as any).inscricaoEstadual === "ISENTO" ? (
+                              <Badge className="bg-amber-100 text-amber-800 border-none font-bold text-xs">Isento</Badge>
+                            ) : (
+                              (selectedLead as any).inscricaoEstadual || "Não informada"
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {(selectedLead as any).informacoesTributarias && (
+                        <div className="flex items-start gap-3 pt-2 border-t">
+                          <DollarSign className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-400 uppercase">Informações Tributárias</div>
+                            <div className="text-sm font-medium text-slate-800">{(selectedLead as any).informacoesTributarias}</div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-start gap-3 pt-2 border-t">
+                      <CreditCard className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-[11px] font-bold text-slate-400 uppercase">CPF</div>
+                        <div className="text-sm font-medium text-slate-800">{selectedLead.cpf || "Não informado"}</div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="flex items-start gap-3 pt-2 border-t">
                     <MapPin className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
@@ -744,6 +851,44 @@ function ClientesAdmin() {
                         CEP: {selectedLead.cep}
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção: Consentimento e LGPD */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-primary" /> Consentimento e Políticas
+                </h4>
+                <div className="bg-white border rounded-xl p-4 space-y-3 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] font-bold text-slate-400 uppercase">Receber Ofertas e Novidades</div>
+                      <div className="text-xs text-slate-500">Comunicações por e-mail, SMS e WhatsApp</div>
+                    </div>
+                    {(selectedLead as any).aceitaOfertas ? (
+                      <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold text-xs">
+                        Aceita
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-slate-500 text-xs">
+                        Não aceita
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div>
+                      <div className="text-[11px] font-bold text-slate-400 uppercase">Políticas da Empresa e Privacidade</div>
+                      <div className="text-xs text-slate-500">
+                        {(selectedLead as any).dataAceitePolitica 
+                          ? `Aceito em ${new Date((selectedLead as any).dataAceitePolitica).toLocaleDateString("pt-BR")}`
+                          : `Aceito no cadastro (${selectedLead.dataCadastro})`}
+                      </div>
+                    </div>
+                    <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold text-xs gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> De acordo
+                    </Badge>
                   </div>
                 </div>
               </div>
