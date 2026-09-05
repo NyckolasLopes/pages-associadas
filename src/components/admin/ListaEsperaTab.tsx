@@ -15,6 +15,9 @@ import {
   RefreshCw,
   Eye
 } from "lucide-react";
+import { useAdminProducts } from "@/stores/products";
+import { productImage } from "@/lib/format";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +52,8 @@ interface ListaEsperaTabProps {
 export function ListaEsperaTab({ lojaId, isGlobalAdmin = false }: ListaEsperaTabProps) {
   const { entries, loading, fetchEntries, updateStatus, removeEntry } = useWaitlist();
   const { pharmacies } = useAdmin();
+  const { customProducts } = useAdminProducts();
+  const [supabasePhotos, setSupabasePhotos] = useState<Record<string, string>>({});
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
@@ -60,6 +65,53 @@ export function ListaEsperaTab({ lojaId, isGlobalAdmin = false }: ListaEsperaTab
     // Busca registros da tabela lista_espera no Supabase
     fetchEntries(lojaId);
   }, [lojaId, fetchEntries]);
+
+  // Busca fotos de produtos faltantes diretamente no Supabase
+  useEffect(() => {
+    const missingIds = entries
+      .filter((e) => e.produtoId && !e.produtoImagem)
+      .map((e) => String(e.produtoId));
+
+    if (missingIds.length === 0) return;
+
+    const uniqueIds = Array.from(new Set(missingIds));
+    supabase
+      .from("produtos" as any)
+      .select("id, nome, foto, imagem, imagens")
+      .in("id", uniqueIds)
+      .then(({ data }) => {
+        if (data && Array.isArray(data)) {
+          const map: Record<string, string> = {};
+          data.forEach((p: any) => {
+            const img = productImage(p);
+            if (img && img !== "/produtos/sem-imagem.webp") {
+              map[String(p.id)] = img;
+            }
+          });
+          setSupabasePhotos((prev) => ({ ...prev, ...map }));
+        }
+      })
+      .catch(() => {});
+  }, [entries]);
+
+  const getProductPhoto = (item: WaitlistEntry | null): string => {
+    if (!item) return "/produtos/sem-imagem.webp";
+    if (item.produtoImagem && item.produtoImagem.trim() !== "") {
+      return item.produtoImagem;
+    }
+    if (item.produtoId && supabasePhotos[String(item.produtoId)]) {
+      return supabasePhotos[String(item.produtoId)];
+    }
+    const matched = customProducts.find(
+      (p) =>
+        String(p.id) === String(item.produtoId) ||
+        (p.nome && item.produtoNome && p.nome.toLowerCase() === item.produtoNome.toLowerCase())
+    );
+    if (matched) {
+      return productImage(matched);
+    }
+    return productImage({ nome: item.produtoNome });
+  };
 
   // Se for painel de loja específica ou associado logado, restringe obrigatoriamente para a loja
   const effectiveLojaId = lojaId && lojaId !== "all" ? lojaId : null;
@@ -325,20 +377,20 @@ export function ListaEsperaTab({ lojaId, isGlobalAdmin = false }: ListaEsperaTab
 
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5 max-w-xs">
-                        {item.produtoImagem ? (
+                        <div className="w-10 h-10 bg-white rounded-lg border border-slate-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
                           <img
-                            src={item.produtoImagem}
+                            src={getProductPhoto(item)}
                             alt={item.produtoNome}
-                            className="w-9 h-9 object-contain bg-white rounded border shrink-0"
+                            className="w-full h-full object-contain mix-blend-multiply"
+                            loading="lazy"
                             onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
+                              const target = e.currentTarget;
+                              if (target.src !== "/produtos/sem-imagem.webp") {
+                                target.src = "/produtos/sem-imagem.webp";
+                              }
                             }}
                           />
-                        ) : (
-                          <div className="w-9 h-9 bg-slate-100 rounded border flex items-center justify-center shrink-0 text-slate-400">
-                            <Package className="w-4 h-4" />
-                          </div>
-                        )}
+                        </div>
                         <span className="font-medium text-slate-800 truncate" title={item.produtoNome}>
                           {item.produtoNome}
                         </span>
@@ -473,13 +525,19 @@ export function ListaEsperaTab({ lojaId, isGlobalAdmin = false }: ListaEsperaTab
               <div className="space-y-1">
                 <p className="text-xs font-bold uppercase text-slate-500">Produto Indisponível</p>
                 <div className="flex items-center gap-3 p-2 bg-slate-50 rounded border">
-                  {selectedEntry.produtoImagem && (
+                  <div className="w-12 h-12 bg-white rounded-lg border border-slate-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
                     <img
-                      src={selectedEntry.produtoImagem}
+                      src={getProductPhoto(selectedEntry)}
                       alt={selectedEntry.produtoNome}
-                      className="w-10 h-10 object-contain bg-white rounded border"
+                      className="w-full h-full object-contain mix-blend-multiply"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (target.src !== "/produtos/sem-imagem.webp") {
+                          target.src = "/produtos/sem-imagem.webp";
+                        }
+                      }}
                     />
-                  )}
+                  </div>
                   <div>
                     <p className="font-medium text-slate-800 text-xs">{selectedEntry.produtoNome}</p>
                     <p className="text-xs text-slate-500 mt-0.5">

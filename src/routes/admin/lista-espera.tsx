@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { productImage } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/lista-espera")({
   component: AdminListaDeEspera,
@@ -112,15 +113,30 @@ function AdminListaDeEspera() {
                         {entry.whatsapp}
                       </td>
                       <td className="px-6 py-4">
-                        {produto ? (
-                          <div className="font-medium text-slate-700 line-clamp-2" title={produto.nome}>
-                            {produto.nome}
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-white rounded-lg border border-slate-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
+                            <img
+                              src={entry.produtoImagem || (produto ? productImage(produto) : productImage({ nome: entry.produtoNome }))}
+                              alt={produto?.nome || entry.produtoNome}
+                              className="w-full h-full object-contain mix-blend-multiply"
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                if (target.src !== "/produtos/sem-imagem.webp") {
+                                  target.src = "/produtos/sem-imagem.webp";
+                                }
+                              }}
+                            />
                           </div>
-                        ) : (
-                          <div className="text-red-500 font-medium text-xs">
-                            Produto não encontrado (ID: {entry.produtoId})
-                          </div>
-                        )}
+                          {produto ? (
+                            <div className="font-medium text-slate-700 line-clamp-2" title={produto.nome}>
+                              {produto.nome}
+                            </div>
+                          ) : (
+                            <div className="font-medium text-slate-700 line-clamp-2" title={entry.produtoNome}>
+                              {entry.produtoNome}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 font-medium text-slate-600 whitespace-nowrap">
                         {entry.quantidade || 1}

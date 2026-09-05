@@ -110,7 +110,7 @@ function ProductCardComponent({
       lojaNome: targetLojaNome,
       produtoId: p.id,
       produtoNome: p.nome,
-      produtoImagem: p.imagem || p.foto || (p as any).fotos?.[0] || "",
+      produtoImagem: productImage(p),
       clienteNome: wlName.trim(),
       whatsapp: wlPhone.trim(),
       quantidade: safeQty,

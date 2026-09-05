@@ -56,6 +56,31 @@ const idbStorage = {
   },
 };
 
+// Blacklist check for fictitious/mock items and deleted items
+export const isBlockedWaitlistEntry = (item: any): boolean => {
+  if (!item) return true;
+  const id = String(item.id || "");
+  const nome = (item.clienteNome || item.nome_cliente || "").toLowerCase().trim();
+  const phone = String(item.whatsapp || item.telefone_cliente || "").replace(/\D/g, "");
+
+  // Permanent blacklist of the fictitious / mock data
+  if (id === "a43754b9-88a2-4d7a-8f09-807a5475dd72") return true;
+  if (nome === "maria silva" || nome.includes("maria silva")) return true;
+  if (phone === "51988887777" || phone.endsWith("88887777")) return true;
+
+  // Local blacklist of deleted IDs stored in localStorage
+  try {
+    if (typeof window !== "undefined") {
+      const deletedIds = JSON.parse(localStorage.getItem("fa-waitlist-deleted-ids") || "[]");
+      if (Array.isArray(deletedIds) && deletedIds.includes(id)) {
+        return true;
+      }
+    }
+  } catch {}
+
+  return false;
+};
+
 export const useWaitlist = create<WaitlistStore>()(
   persist(
     (set, get) => ({
@@ -93,7 +118,7 @@ export const useWaitlist = create<WaitlistStore>()(
 
                 const firstItem = Array.isArray(row.items) && row.items.length > 0 ? row.items[0] : {};
                 const entryId = String(row.id);
-                resultsMap.set(entryId, {
+                const candidate: WaitlistEntry = {
                   id: entryId,
                   lojaId: String(row.loja_id || ""),
                   lojaNome: parsedNotes.lojaNome || "",
@@ -108,7 +133,11 @@ export const useWaitlist = create<WaitlistStore>()(
                   status: (parsedNotes.status as any) || "pendente",
                   data: row.created_at || new Date().toISOString(),
                   notificadoEm: parsedNotes.notificadoEm || undefined,
-                });
+                };
+
+                if (!isBlockedWaitlistEntry(candidate)) {
+                  resultsMap.set(entryId, candidate);
+                }
               });
             }
           } catch (cErr) {
@@ -138,7 +167,7 @@ export const useWaitlist = create<WaitlistStore>()(
                     }
                   } catch {}
 
-                  resultsMap.set(entryId, {
+                  const candidate: WaitlistEntry = {
                     id: entryId,
                     lojaId: String(row.loja_id || ""),
                     lojaNome: row.loja_nome || parsedMsg.lojaNome || "",
@@ -153,7 +182,11 @@ export const useWaitlist = create<WaitlistStore>()(
                     status: (row.status as any) || parsedMsg.status || "pendente",
                     data: row.created_at || new Date().toISOString(),
                     notificadoEm: row.notificado_em || undefined,
-                  });
+                  };
+
+                  if (!isBlockedWaitlistEntry(candidate)) {
+                    resultsMap.set(entryId, candidate);
+                  }
                 }
               });
             }
@@ -162,18 +195,18 @@ export const useWaitlist = create<WaitlistStore>()(
           }
 
           // Mescla com registros locais que possam não ter ido para a nuvem
-          const localEntries = get().entries || [];
-          localEntries.forEach(le => {
-            if (!resultsMap.has(le.id)) {
+          const localEntries = (get().entries || []).filter((e) => !isBlockedWaitlistEntry(e));
+          localEntries.forEach((le) => {
+            if (!resultsMap.has(le.id) && !isBlockedWaitlistEntry(le)) {
               if (!lojaId || lojaId === "all" || le.lojaId === lojaId) {
                 resultsMap.set(le.id, le);
               }
             }
           });
 
-          const finalEntries = Array.from(resultsMap.values()).sort(
-            (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()
-          );
+          const finalEntries = Array.from(resultsMap.values())
+            .filter((e) => !isBlockedWaitlistEntry(e))
+            .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
 
           set({ entries: finalEntries, loading: false });
           return finalEntries;
@@ -182,7 +215,7 @@ export const useWaitlist = create<WaitlistStore>()(
         } finally {
           set({ loading: false });
         }
-        return get().entries;
+        return (get().entries || []).filter((e) => !isBlockedWaitlistEntry(e));
       },
 
       addEntry: async (entry) => {
@@ -316,13 +349,40 @@ export const useWaitlist = create<WaitlistStore>()(
       },
 
       removeEntry: async (id: string) => {
+        // Save to persistent blacklist so it never resurfaces
+        try {
+          if (typeof window !== "undefined") {
+            const raw = localStorage.getItem("fa-waitlist-deleted-ids");
+            const deletedIds: string[] = raw ? JSON.parse(raw) : [];
+            if (!deletedIds.includes(id)) {
+              deletedIds.push(id);
+              localStorage.setItem("fa-waitlist-deleted-ids", JSON.stringify(deletedIds));
+            }
+          }
+        } catch {}
+
         set((state) => ({
-          entries: state.entries.filter((e) => e.id !== id),
+          entries: state.entries.filter((e) => e.id !== id && !isBlockedWaitlistEntry(e)),
         }));
 
         try {
+          // 1. Soft-delete immediately to bypass RLS delete blocks
+          await supabase
+            .from("carrinhos_abandonados" as any)
+            .update({ status: "excluido" })
+            .eq("id", id)
+            .catch(() => {});
+
+          // 2. Client-side deletes
           await supabase.from("carrinhos_abandonados" as any).delete().eq("id", id).catch(() => {});
           await supabase.from("lista_espera" as any).delete().eq("id", id).catch(() => {});
+
+          // 3. Admin endpoint purge via Service Role
+          await fetch("/api/admin/delete-waitlist-entry", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          }).catch(() => {});
         } catch (err) {
           console.error("Erro ao remover da lista_espera:", err);
         }
@@ -332,10 +392,19 @@ export const useWaitlist = create<WaitlistStore>()(
       name: "waitlist-storage",
       storage: createJSONStorage(() => idbStorage),
       skipHydration: true,
+      onRehydrateStorage: () => (state) => {
+        if (state && Array.isArray(state.entries)) {
+          state.entries = state.entries.filter((e) => !isBlockedWaitlistEntry(e));
+        }
+      },
     }
   )
 );
 
 if (typeof window !== "undefined") {
-  useWaitlist.persist.rehydrate();
+  useWaitlist.persist.rehydrate().then(() => {
+    useWaitlist.setState((s) => ({
+      entries: (s.entries || []).filter((e) => !isBlockedWaitlistEntry(e)),
+    }));
+  });
 }

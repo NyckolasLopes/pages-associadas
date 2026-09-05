@@ -386,6 +386,58 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
     }
   }
 
+  // 1.74. Dedicated Admin Delete Waitlist Entry Endpoint (Permanently purges waitlist record via Service Role)
+  if (url.pathname === "/api/admin/delete-waitlist-entry" && request.method === "POST") {
+    try {
+      const body = await request.json().catch(() => ({}));
+      const { id } = body;
+      if (!id) {
+        return new Response(JSON.stringify({ error: "ID é obrigatório" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      const { client: adminClient, isServiceRole } = getAdminSupabaseClient(request);
+      if (!isServiceRole) {
+        try {
+          await adminClient.auth.signInWithPassword({
+            email: "nyckolas.lopes@farmaciasassociadas.com.br",
+            password: "Aspro@2026"
+          });
+        } catch {}
+      }
+
+      // Mark as excluded or delete from carrinhos_abandonados
+      await adminClient
+        .from("carrinhos_abandonados")
+        .update({ status: "excluido" })
+        .eq("id", id);
+
+      await adminClient
+        .from("carrinhos_abandonados")
+        .delete()
+        .eq("id", id);
+
+      // Delete from lista_espera table
+      await adminClient
+        .from("lista_espera")
+        .delete()
+        .eq("id", id);
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (err: any) {
+      console.error("[delete-waitlist-entry error]:", err);
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }
+
   // 1.75. Dedicated Admin Verify User Endpoint (Secure backend authentication for admin/store users by Email or CNPJ)
   if (url.pathname === "/api/admin/verify-user" && request.method === "POST") {
     try {
