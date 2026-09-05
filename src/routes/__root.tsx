@@ -44,10 +44,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   const isChunkError = Boolean(
     error?.message && (
+      error.message.includes("Failed to fetch dynamically imported module") ||
       error.message.includes("dynamically imported module") ||
       error.message.includes("Importing a module script failed") ||
       error.message.includes("Loading chunk") ||
-      error.message.includes("Failed to fetch")
+      error.message.includes("Failed to load module script") ||
+      error.message.includes("error loading dynamically imported module")
     )
   );
 
@@ -253,8 +255,15 @@ function RootComponent() {
       } else {
         window.location.replace(window.location.origin + match.para);
       }
+      return;
     }
-  }, [location.pathname, redirects]);
+
+    // Direct /cart or /carrinho access -> redirect to active pharmacy cart
+    if (path === "/cart" || path === "/carrinho" || path === "/cart/" || path === "/carrinho/") {
+      const active = activePharmacy?.slug || localStorage.getItem("fa-last-store-slug") || "pelotas";
+      window.location.replace(`/${active}/cart`);
+    }
+  }, [location.pathname, redirects, activePharmacy?.slug]);
 
   useEffect(() => {
     useAuth.getState()._initListener();
@@ -322,7 +331,8 @@ function RootComponent() {
         msg.includes("Failed to fetch dynamically imported module") ||
         msg.includes("Importing a module script failed") ||
         msg.includes("Loading chunk") ||
-        msg.includes("Failed to fetch")
+        msg.includes("Failed to load module script") ||
+        msg.includes("error loading dynamically imported module")
       ) {
         if (e.preventDefault) e.preventDefault();
         const now = Date.now();

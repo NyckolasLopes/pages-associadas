@@ -365,27 +365,35 @@ function CartPage() {
     let isSubscribed = true;
 
     (async () => {
-      const userCoords = (geoLat && geoLng)
-        ? { lat: geoLat, lng: geoLng }
-        : await getCepCoordinates(userCepClean);
+      try {
+        const userCoords = (geoLat && geoLng)
+          ? { lat: geoLat, lng: geoLng }
+          : await getCepCoordinates(userCepClean);
 
-      if (!userCoords || !isSubscribed) return;
+        if (!userCoords || !isSubscribed) return;
 
-      const updates: Record<string, number | null> = {};
-      await Promise.all(
-        availablePharmacies.map(async (p) => {
-          const pharmCoords = (p.lat && p.lng)
-            ? { lat: p.lat, lng: p.lng }
-            : await getCepCoordinates(p.cep);
-          if (pharmCoords) {
-            updates[p.id] = await getRoadDistanceKm(userCoords.lat, userCoords.lng, pharmCoords.lat, pharmCoords.lng);
-          } else {
-            updates[p.id] = -1;
-          }
-        })
-      );
-      if (isSubscribed && Object.keys(updates).length > 0) {
-        setPharmDistances(prev => ({ ...prev, ...updates }));
+        const updates: Record<string, number | null> = {};
+        await Promise.all(
+          availablePharmacies.map(async (p) => {
+            try {
+              const pharmCoords = (p.lat && p.lng)
+                ? { lat: p.lat, lng: p.lng }
+                : await getCepCoordinates(p.cep);
+              if (pharmCoords) {
+                updates[p.id] = await getRoadDistanceKm(userCoords.lat, userCoords.lng, pharmCoords.lat, pharmCoords.lng);
+              } else {
+                updates[p.id] = -1;
+              }
+            } catch {
+              updates[p.id] = -1;
+            }
+          })
+        );
+        if (isSubscribed && Object.keys(updates).length > 0) {
+          setPharmDistances(prev => ({ ...prev, ...updates }));
+        }
+      } catch (err) {
+        console.warn("[cart distance calculation warning]:", err);
       }
     })();
     
@@ -526,12 +534,12 @@ function CartPage() {
 
           if (deliveryPrice === null) {
             if (distance !== null && distance >= 0) {
-               const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
+               const sortedRaios = [...(m.raios || [])].sort((a,b) => a.ateKm - b.ateKm);
                const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
                if (matchingRaio) deliveryPrice = matchingRaio.preco;
             } else if (customerUf && p.uf && customerUf.toUpperCase() === p.uf.toUpperCase()) {
                // Fallback: mesmo estado (caso a API de CEP falhe)
-               const sortedRaios = [...m.raios].sort((a,b) => a.ateKm - b.ateKm);
+               const sortedRaios = [...(m.raios || [])].sort((a,b) => a.ateKm - b.ateKm);
                if (sortedRaios.length > 0) deliveryPrice = sortedRaios[0].preco;
             }
           }
@@ -587,7 +595,7 @@ function CartPage() {
                    deliveryPrice = Number(p.custoEntrega) || 0;
                    isEligible = true;
                 } else if (p.raiosEntrega && p.raiosEntrega.length > 0) {
-                   const sortedRaios = [...p.raiosEntrega].sort((a, b) => a.ateKm - b.ateKm);
+                   const sortedRaios = [...(p.raiosEntrega || [])].sort((a, b) => a.ateKm - b.ateKm);
                    const matchingRaio = sortedRaios.find(r => distance! <= r.ateKm);
                    if (matchingRaio) {
                      deliveryPrice = matchingRaio.preco;
@@ -606,8 +614,8 @@ function CartPage() {
              if (p.faixasCep && p.faixasCep.length > 0) {
                 const cleanCepInt = parseInt(clean, 10);
                 const matchingFaixa = p.faixasCep.find(f => {
-                   const start = parseInt(f.cepInicio.replace(/\D/g, ""), 10);
-                   const end = parseInt(f.cepFim.replace(/\D/g, ""), 10);
+                   const start = parseInt(String(f.cepInicio || "").replace(/\D/g, ""), 10);
+                   const end = parseInt(String(f.cepFim || "").replace(/\D/g, ""), 10);
                    return cleanCepInt >= start && cleanCepInt <= end;
                 });
                 if (matchingFaixa) {
@@ -690,6 +698,20 @@ function CartPage() {
       setFreight(opts);
       // Persist to store without non-serializable icons
       setFreightOptions(opts.map(o => ({ id: o.id, label: o.label, price: o.price, eta: o.eta })));
+    } catch (err) {
+      console.warn("[calcFreight error]:", err);
+      if (p?.aceitaRetirada && !opts.some(o => o.id === "pickup")) {
+        opts.push({
+          id: "pickup",
+          label: "Retirar grátis na loja",
+          price: 0,
+          eta: "Retirada em até 30 minutos",
+          icon: Store,
+        });
+        setFreight(opts);
+        setSelected("pickup");
+        setDeliveryMethod("retirada");
+      }
     } finally {
       setIsCalcLoading(false);
     }

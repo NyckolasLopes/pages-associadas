@@ -27,6 +27,9 @@ export interface CartItem {
 
 /** Resolve the effective price for a cart item or product based on the selected pharmacy */
 export function getEffectivePrice(item: any, pharmacyId: string | null): { precoPor: number; precoDe: number } {
+  if (!item || typeof item !== "object") {
+    return { precoPor: 0, precoDe: 0 };
+  }
   if (item.isOrderBump) {
     const pBump = Number(item.preco || item.precoPor || 0);
     return { precoPor: pBump, precoDe: Number(item.precoDe || pBump) };
@@ -386,34 +389,36 @@ export const useCart = create<CartState>()(
       count: () => get().items.reduce((a, i) => a + (Number(i.qty) || 0), 0),
       subtotal: () => {
         const pid = get().selectedPharmacyId;
-        return get().items.reduce((a, i) => {
+        return (get().items || []).reduce((a, i) => {
+          if (!i) return a;
           const { precoDe } = getEffectivePrice(i, pid);
           return a + (Number(i.qty) || 0) * (precoDe || i.preco || 0);
         }, 0);
       },
       storeDiscount: () => {
         const pid = get().selectedPharmacyId;
-        const promocoes = useMarketing.getState().promocoes;
-        const lojaPromocoes = pid ? (useMarketing.getState().lojaPromocoes[pid] || []) : [];
+        const promocoes = useMarketing.getState().promocoes || [];
+        const lojaPromocoes = pid ? (useMarketing.getState().lojaPromocoes?.[pid] || []) : [];
         
-        return get().items.reduce((a, i) => {
-          if (i.isOrderBump) return a;
+        return (get().items || []).reduce((a, i) => {
+          if (!i || i.isOrderBump) return a;
           const { precoPor, precoDe } = getEffectivePrice(i, pid);
           const de = precoDe || precoPor;
           
           let itemDiscount = 0;
           const levePaguePromo = getLevePaguePromotion(i as any, promocoes, lojaPromocoes);
           
-          if (levePaguePromo && i.qty >= levePaguePromo.levePague_quantidade) {
-            const promoItemsCount = Math.floor(i.qty / levePaguePromo.levePague_quantidade) * levePaguePromo.levePague_quantidade;
-            const regularItemsCount = i.qty - promoItemsCount;
+          if (levePaguePromo && (Number(i.qty) || 0) >= levePaguePromo.levePague_quantidade) {
+            const qty = Number(i.qty) || 0;
+            const promoItemsCount = Math.floor(qty / levePaguePromo.levePague_quantidade) * levePaguePromo.levePague_quantidade;
+            const regularItemsCount = qty - promoItemsCount;
             
-            const promoDiscount = Math.max(0, de - levePaguePromo.levePague_precoPorItem!);
+            const promoDiscount = Math.max(0, de - (levePaguePromo.levePague_precoPorItem || 0));
             const regularDiscount = Math.max(0, de - precoPor);
             
             itemDiscount = promoDiscount * promoItemsCount + regularDiscount * regularItemsCount;
           } else {
-            itemDiscount = (de > precoPor ? de - precoPor : 0) * i.qty;
+            itemDiscount = (de > precoPor ? de - precoPor : 0) * (Number(i.qty) || 0);
           }
           
           return a + itemDiscount;
@@ -421,15 +426,15 @@ export const useCart = create<CartState>()(
       },
       pbmDiscount: () => {
         const prov = get().pbm?.provider ?? null;
-        return get().items.reduce((a, i) => a + pbmDiscountForItem(i, prov), 0);
+        return (get().items || []).reduce((a, i) => i ? a + pbmDiscountForItem(i, prov) : a, 0);
       },
       couponDiscount: () => {
         const code = get().appliedCoupon;
         if (!code) return 0;
-        const cupons = useMarketing.getState().cupons;
+        const cupons = useMarketing.getState().cupons || [];
         const pid = get().selectedPharmacyId;
         if (!pid) return 0;
-        const coupon = cupons.find(c => c.codigo.toUpperCase() === code.toUpperCase() && c.ativo && c.lojaId === pid);
+        const coupon = cupons.find(c => c && c.codigo && c.codigo.toUpperCase() === code.toUpperCase() && c.ativo && c.lojaId === pid);
         if (!coupon) return 0;
         if (coupon.totalDisponiveis > 0 && (coupon.numeroUtilizacoes || 0) >= coupon.totalDisponiveis) return 0;
         
@@ -439,9 +444,9 @@ export const useCart = create<CartState>()(
         if (coupon.valorMinimo && rawSubtotal < coupon.valorMinimo) return 0;
         
         if (coupon.tipoDesconto === "percentual") {
-          return (rawSubtotal * coupon.valorDesconto) / 100;
+          return (rawSubtotal * Number(coupon.valorDesconto || 0)) / 100;
         } else {
-          return Math.min(subAfterDiscounts, coupon.valorDesconto);
+          return Math.min(subAfterDiscounts, Number(coupon.valorDesconto || 0));
         }
       },
       applyCoupon: (rawCode: string) => {
