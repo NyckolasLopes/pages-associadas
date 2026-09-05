@@ -80,8 +80,14 @@ function StoreLayout() {
       };
     }
 
-    if (activePharmacy.themeColors) {
-      const t = activePharmacy.themeColors as Record<string, any>;
+    const networkTheme = useAdmin.getState().networkDefaultTheme || {};
+    const rawColors = activePharmacy.themeColors || (!isParceiro ? networkTheme : null);
+
+    if (rawColors && typeof rawColors === "object" && Object.keys(rawColors).length > 0) {
+      const t = {
+        ...(!isParceiro ? networkTheme : {}),
+        ...(rawColors as Record<string, any>),
+      };
       const primary = t['--primary'] || t.primary;
       const primaryFg = t['--primary-foreground'] || t.primaryForeground || "#ffffff";
       const secondary = t['--secondary'] || t.secondary;
@@ -172,6 +178,7 @@ function StoreLayout() {
   // — Efeitos (todos os hooks antes do early return) —
   useEffect(() => {
     useMarketing.getState().loadMarketing();
+    useAdmin.getState().loadNetworkTheme();
   }, []);
 
   useEffect(() => {

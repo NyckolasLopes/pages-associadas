@@ -520,6 +520,28 @@ export function StoreColorManager({
     admin.loadNetworkTheme();
   }, []);
 
+  // Trava a rolagem da página inteira enquanto estiver salvando
+  useEffect(() => {
+    if (isSaving) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isSaving]);
+
+  // Stable fingerprint of pharmacy theme colors for change detection
+  const themeColorFingerprint = useMemo(() => {
+    if (!currentPharmacy?.themeColors) return '';
+    try {
+      return JSON.stringify(currentPharmacy.themeColors);
+    } catch {
+      return '';
+    }
+  }, [currentPharmacy?.themeColors]);
+
   useEffect(() => {
     if (isNetworkMode) {
       setColors({ ...DEFAULT_STORE_THEME, ...(admin.networkDefaultTheme || {}) });
@@ -536,7 +558,7 @@ export function StoreColorManager({
     } else {
       setColors({ ...DEFAULT_STORE_THEME, ...(admin.networkDefaultTheme || {}) });
     }
-  }, [isNetworkMode, currentPharmacy?.id, admin.networkDefaultTheme]);
+  }, [isNetworkMode, currentPharmacy?.id, themeColorFingerprint, admin.networkDefaultTheme]);
 
   const getColor = (key: string, fallback: string) => {
     return colors[key] || colors[`--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`] || colors[key.replace(/^--/, '')] || fallback;
@@ -612,9 +634,12 @@ export function StoreColorManager({
 
       if (isNetworkMode || !effectiveStoreId) {
         await admin.saveNetworkTheme(completeThemeColors);
+        setColors({ ...DEFAULT_STORE_THEME, ...completeThemeColors });
         toast.success("Cores padrão da rede salvas com sucesso!");
       } else {
-        const storeToUpdate = currentPharmacy || admin.pharmacies.find((p) => p.id === effectiveStoreId);
+        // Busca a loja atualizada do estado atual do store (evita referência stale)
+        const freshPharmacy = admin.pharmacies.find((p) => p.id === effectiveStoreId);
+        const storeToUpdate = freshPharmacy || currentPharmacy;
         if (storeToUpdate) {
           const updatedPayload = {
             ...(storeToUpdate.themeColors || {}),
@@ -624,6 +649,10 @@ export function StoreColorManager({
             ...storeToUpdate,
             themeColors: updatedPayload,
           });
+
+          // Sincroniza estado local de cores imediatamente
+          setColors({ ...DEFAULT_STORE_THEME, ...updatedPayload });
+
           toast.success("Cores salvas com sucesso! A vitrine da sua loja foi atualizada.");
         } else {
           toast.error("Loja não encontrada para salvar.");
@@ -749,7 +778,31 @@ export function StoreColorManager({
     : safeSlugify(currentPharmacy?.nome || "loja");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Full-screen blocking modal when saving to prevent interactions or scrolling */}
+      {isSaving && (
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-md z-[99999] flex flex-col items-center justify-center animate-in fade-in duration-150 select-none pointer-events-auto">
+          <div className="bg-white shadow-2xl border border-slate-100 rounded-3xl p-8 flex flex-col items-center max-w-xs w-full mx-4 text-center">
+            <img
+              src="/logo.png"
+              alt="Farmácias Associadas"
+              className="max-h-14 max-w-[210px] w-auto h-auto mb-6 object-contain"
+            />
+            <img
+              src="/icone-associadas.png"
+              alt="Salvando..."
+              className="w-14 h-14 animate-spin object-contain"
+            />
+            <span className="text-sm font-bold text-slate-700 mt-4">
+              Salvando cores...
+            </span>
+            <span className="text-xs text-slate-500 mt-1">
+              Sincronizando com o banco de dados.
+            </span>
+          </div>
+        </div>
+      )}
+
       {showStoreSelector && !storeId && <StoreSelector hidePlenoForNonAdmin={false} />}
 
       {/* Top Header Card */}

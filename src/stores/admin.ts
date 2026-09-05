@@ -2073,31 +2073,49 @@ export const useAdmin = create<AdminState>()(
         if (p.virtualStoreStatus || dbLoja?.status_loja_virtual) baseUpdatePayload.status_loja_virtual = p.virtualStoreStatus || dbLoja?.status_loja_virtual;
         if (p.sistemaUtilizado || dbLoja?.sistema_utilizado) baseUpdatePayload.sistema_utilizado = p.sistemaUtilizado || dbLoja?.sistema_utilizado;
 
-        let { error, data: updateData } = await supabase.from('lojas').update(baseUpdatePayload as any).eq('id', id).select();
+        // Prioriza salvamento via endpoint administrativo de backend (bypassa RLS de forma segura)
+        let saveSuccess = false;
+        let updateError: any = null;
 
-        // Fallback para endpoint administrativo de backend caso haja bloqueio RLS, falha de sessão ou nenhuma linha retornada
-        if (error || !updateData || updateData.length === 0) {
-          console.warn("Update direto em lojas falhou ou retornou 0 linhas, tentando via /api/admin/save-pharmacy:", error?.message);
-          try {
-            const apiRes = await fetch("/api/admin/save-pharmacy", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id, payload: baseUpdatePayload })
-            });
-            if (apiRes.ok) {
-              error = null;
+        try {
+          const apiRes = await fetch("/api/admin/save-pharmacy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, payload: baseUpdatePayload })
+          });
+          if (apiRes.ok) {
+            const resJson = await apiRes.json().catch(() => ({}));
+            if (resJson.success && Array.isArray(resJson.data) && resJson.data.length > 0) {
+              saveSuccess = true;
             } else {
-              const errData = await apiRes.json().catch(() => ({}));
-              error = { message: errData.error || error?.message || "Erro ao persistir alterações" } as any;
+              updateError = new Error(resJson.error || "Nenhuma alteração foi salva no banco de dados.");
             }
-          } catch (apiErr: any) {
-            console.error("Fallback /api/admin/save-pharmacy falhou:", apiErr);
+          } else {
+            const errData = await apiRes.json().catch(() => ({}));
+            updateError = new Error(errData.error || `Erro HTTP ${apiRes.status} ao salvar farmácia.`);
+          }
+        } catch (apiErr: any) {
+          console.warn("Chamada a /api/admin/save-pharmacy falhou, tentando update direto:", apiErr);
+        }
+
+        // Fallback: tenta update direto pelo cliente Supabase se a rota da API falhou na rede
+        if (!saveSuccess) {
+          try {
+            const { error: directErr, data: directData } = await supabase.from('lojas').update(baseUpdatePayload as any).eq('id', id).select();
+            if (!directErr && directData && directData.length > 0) {
+              saveSuccess = true;
+              updateError = null;
+            } else if (directErr) {
+              updateError = directErr;
+            }
+          } catch (e) {
+            console.error("Tentativa direta de update falhou:", e);
           }
         }
 
-        if (error) {
-          console.error("Erro ao atualizar loja:", error);
-          throw new Error(error.message || "Erro ao atualizar loja no banco de dados.");
+        if (!saveSuccess) {
+          console.error("Erro ao atualizar loja:", updateError);
+          throw new Error(updateError?.message || "Erro ao atualizar loja no banco de dados.");
         } else {
           // Atualiza o estado local do Zustand imediatamente de forma otimista
           set((state) => {
@@ -2346,7 +2364,6 @@ export const useAdmin = create<AdminState>()(
         }
 
         // 2. Persistência no servidor via endpoint administrativo dedicado (bypassa RLS com segurança)
-        let savedViaApi = false;
         try {
           const res = await fetch("/api/admin/save-network-theme", {
             method: "POST",
@@ -2354,25 +2371,27 @@ export const useAdmin = create<AdminState>()(
             body: JSON.stringify({ colors })
           });
           if (res.ok) {
-            savedViaApi = true;
+            const json = await res.json().catch(() => ({}));
+            if (json.success) return;
+          } else {
+            const errJson = await res.json().catch(() => ({}));
+            console.warn("Aviso ao salvar via /api/admin/save-network-theme:", errJson);
           }
         } catch (apiErr) {
           console.warn("Aviso ao salvar via /api/admin/save-network-theme:", apiErr);
         }
 
         // 3. Fallback: Salva no app_state diretamente via cliente Supabase caso endpoint falhe
-        if (!savedViaApi) {
-          try {
-            await supabase
-              .from('app_state' as any)
-              .upsert({
-                key: 'network_default_theme',
-                value: colors,
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'key' });
-          } catch (e) {
-            console.warn("Aviso ao sincronizar tema da rede com app_state:", e);
-          }
+        try {
+          await supabase
+            .from('app_state' as any)
+            .upsert({
+              key: 'network_default_theme',
+              value: colors,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'key' });
+        } catch (e) {
+          console.warn("Aviso ao sincronizar tema da rede com app_state:", e);
         }
       },
 

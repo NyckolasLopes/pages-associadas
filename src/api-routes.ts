@@ -850,44 +850,62 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
       const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
 
-      let adminClient = createClient(targetBase, serviceRoleKey || publishableKey);
-      if (!serviceRoleKey) {
+      // 1. Obter token autenticado administrativo (serviceRoleKey ou via login administrativo)
+      let authToken = serviceRoleKey;
+      if (!authToken) {
         try {
-          await adminClient.auth.signInWithPassword({
-            email: "thiago.rocha@farmaciasassociadas.com.br",
-            password: "Aspro@2026"
+          const authRes = await fetch(`${targetBase}/auth/v1/token?grant_type=password`, {
+            method: "POST",
+            headers: {
+              "apikey": publishableKey,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              email: "thiago.rocha@farmaciasassociadas.com.br",
+              password: "Aspro@2026"
+            })
           });
+          if (authRes.ok) {
+            const authData = await authRes.json();
+            if (authData?.access_token) {
+              authToken = authData.access_token;
+            }
+          }
         } catch (authErr) {
           console.warn("[save-pharmacy] Fallback auth signInWithPassword failed:", authErr);
         }
       }
 
-      let { data, error } = await adminClient.from('lojas').update(payload).eq('id', id).select();
+      const activeToken = authToken || publishableKey;
 
-      // If update via client had issue, try direct fetch with apikey
-      if (error) {
-        console.warn("[save-pharmacy] adminClient.from('lojas').update error, attempting raw fetch:", error);
-        const apiKey = serviceRoleKey || publishableKey;
-        const patchRes = await fetch(`${targetBase}/rest/v1/lojas?id=eq.${id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": apiKey,
-            "Authorization": `Bearer ${apiKey}`,
-            "Prefer": "return=representation"
-          },
-          body: JSON.stringify(payload)
+      // 2. Realiza o PATCH diretamente no PostgREST com o token de autorização
+      const patchRes = await fetch(`${targetBase}/rest/v1/lojas?id=eq.${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": publishableKey,
+          "Authorization": `Bearer ${activeToken}`,
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!patchRes.ok) {
+        const errText = await patchRes.text();
+        console.error("[save-pharmacy] PostgREST PATCH failed:", patchRes.status, errText);
+        return new Response(JSON.stringify({ error: errText || "Falha ao salvar loja no banco de dados." }), {
+          status: patchRes.status,
+          headers: { "Content-Type": "application/json" }
         });
+      }
 
-        if (!patchRes.ok) {
-          const errText = await patchRes.text();
-          return new Response(JSON.stringify({ error: errText || error.message || "Falha ao salvar loja no banco de dados." }), {
-            status: patchRes.status,
-            headers: { "Content-Type": "application/json" }
-          });
-        }
-
-        data = await patchRes.json().catch(() => []);
+      const data = await patchRes.json().catch(() => []);
+      if (!Array.isArray(data) || data.length === 0) {
+        console.error("[save-pharmacy] PATCH retornou 0 linhas para id:", id);
+        return new Response(JSON.stringify({ error: "Nenhuma linha foi alterada no banco de dados. Verifique permissões." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" }
+        });
       }
 
       return new Response(JSON.stringify({ success: true, data }), {
@@ -919,35 +937,58 @@ export async function handleCustomApiRoute(request: Request): Promise<Response |
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
       const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_lMKRz-zf_I7AXgFPgB9VWf_J1KIKAYU";
 
-      let adminClient = createClient(targetBase, serviceRoleKey || publishableKey);
-      if (!serviceRoleKey) {
+      let authToken = serviceRoleKey;
+      if (!authToken) {
         try {
-          await adminClient.auth.signInWithPassword({
-            email: "thiago.rocha@farmaciasassociadas.com.br",
-            password: "Aspro@2026"
+          const authRes = await fetch(`${targetBase}/auth/v1/token?grant_type=password`, {
+            method: "POST",
+            headers: {
+              "apikey": publishableKey,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              email: "thiago.rocha@farmaciasassociadas.com.br",
+              password: "Aspro@2026"
+            })
           });
+          if (authRes.ok) {
+            const authData = await authRes.json();
+            if (authData?.access_token) {
+              authToken = authData.access_token;
+            }
+          }
         } catch (authErr) {
-          console.warn("[save-network-theme] Auth signInWithPassword failed:", authErr);
+          console.warn("[save-network-theme] Auth signIn failed:", authErr);
         }
       }
 
-      const { data, error } = await adminClient
-        .from('app_state')
-        .upsert({
-          key: 'network_default_theme',
+      const activeToken = authToken || publishableKey;
+
+      const upsertRes = await fetch(`${targetBase}/rest/v1/app_state`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": publishableKey,
+          "Authorization": `Bearer ${activeToken}`,
+          "Prefer": "resolution=merge-duplicates,return=representation"
+        },
+        body: JSON.stringify({
+          key: "network_default_theme",
           value: colors,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'key' })
-        .select();
+        })
+      });
 
-      if (error) {
-        console.error("[save-network-theme] app_state upsert error:", error);
-        return new Response(JSON.stringify({ error: error.message || "Falha ao salvar tema da rede" }), {
-          status: 500,
+      if (!upsertRes.ok) {
+        const errText = await upsertRes.text();
+        console.error("[save-network-theme] app_state upsert error:", errText);
+        return new Response(JSON.stringify({ error: errText || "Falha ao salvar tema da rede" }), {
+          status: upsertRes.status,
           headers: { "Content-Type": "application/json" }
         });
       }
 
+      const data = await upsertRes.json().catch(() => []);
       return new Response(JSON.stringify({ success: true, data }), {
         status: 200,
         headers: { "Content-Type": "application/json" }
