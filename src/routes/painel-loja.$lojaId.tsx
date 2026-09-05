@@ -265,6 +265,17 @@ function PainelLoja() {
   const pendentesLojaPct = totalPedidosLoja > 0 ? Math.round((pendentesLojaCount / totalPedidosLoja) * 100) : 0;
   const canceladosLojaPct = totalPedidosLoja > 0 ? Math.round((canceladosLojaCount / totalPedidosLoja) * 100) : 0;
 
+  const [lojaOrdersFilter, setLojaOrdersFilter] = useState<"todos" | "concluidos" | "pendentes" | "cancelados">("todos");
+
+  const displayedLojaOrders = useMemo(() => {
+    return lojaUnifiedOrders.filter(o => {
+      if (lojaOrdersFilter === "concluidos") return o.status === "Concluído";
+      if (lojaOrdersFilter === "pendentes") return o.status === "Pendente";
+      if (lojaOrdersFilter === "cancelados") return o.status === "Cancelado";
+      return true;
+    });
+  }, [lojaUnifiedOrders, lojaOrdersFilter]);
+
   const statusPieDataLoja = useMemo(() => {
     const data = [];
     if (concluidosLojaCount > 0) data.push({ name: "Concluído (WhatsApp)", value: concluidosLojaCount, color: "#10b981" });
@@ -837,10 +848,93 @@ function PainelLoja() {
 
           {can('loja_pedidos') && (
             <TabsContent value="pedidos" className="space-y-6">
+              {/* 4 KPIs de Pedidos no Painel do Associado */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div
+                  onClick={() => setLojaOrdersFilter("todos")}
+                  className={`bg-white p-4 rounded-xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+                    lojaOrdersFilter === "todos" ? "ring-2 ring-slate-500 border-slate-500 bg-slate-50/50" : "border-slate-200"
+                  }`}
+                >
+                  <div>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Total de Pedidos</p>
+                    <p className="text-2xl font-black text-slate-800">{totalPedidosLoja}</p>
+                    <span className="text-[11px] text-slate-400 font-medium">Geral da loja</span>
+                  </div>
+                  <div className="w-10 h-10 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setLojaOrdersFilter("concluidos")}
+                  className={`bg-white p-4 rounded-xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+                    lojaOrdersFilter === "concluidos" ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/20" : "border-slate-200"
+                  }`}
+                >
+                  <div>
+                    <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-0.5">Concluídos</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-black text-emerald-700">{concluidosLojaCount}</p>
+                      <span className="text-[11px] font-bold text-emerald-600">({concluidosLojaPct}%)</span>
+                    </div>
+                    <span className="text-[11px] text-emerald-600 font-medium">Via WhatsApp</span>
+                  </div>
+                  <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setLojaOrdersFilter("pendentes")}
+                  className={`bg-white p-4 rounded-xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+                    lojaOrdersFilter === "pendentes" ? "ring-2 ring-amber-500 border-amber-500 bg-amber-50/20" : "border-slate-200"
+                  }`}
+                >
+                  <div>
+                    <p className="text-amber-600 text-xs font-bold uppercase tracking-wider mb-0.5">Pendentes</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-black text-amber-700">{pendentesLojaCount}</p>
+                      <span className="text-[11px] font-bold text-amber-600">({pendentesLojaPct}%)</span>
+                    </div>
+                    <span className="text-[11px] text-amber-600 font-medium">Aguardando</span>
+                  </div>
+                  <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setLojaOrdersFilter("cancelados")}
+                  className={`bg-white p-4 rounded-xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+                    lojaOrdersFilter === "cancelados" ? "ring-2 ring-red-500 border-red-500 bg-red-50/20" : "border-slate-200"
+                  }`}
+                >
+                  <div>
+                    <p className="text-red-600 text-xs font-bold uppercase tracking-wider mb-0.5">Cancelados</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-black text-red-700">{canceladosLojaCount}</p>
+                      <span className="text-[11px] font-bold text-red-600">({canceladosLojaPct}%)</span>
+                    </div>
+                    <span className="text-[11px] text-red-600 font-medium">Com motivo</span>
+                  </div>
+                  <div className="w-10 h-10 bg-red-100 text-red-600 rounded-xl flex items-center justify-center">
+                    <XCircle className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+
               <Card className="border-slate-200 shadow-sm">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-slate-800 flex justify-between items-center">
-                  <span>Pedidos Recebidos</span>
+                <CardTitle className="text-xl font-bold text-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="flex items-center gap-3">
+                    <span>Pedidos Recebidos</span>
+                    {lojaOrdersFilter !== "todos" && (
+                      <Badge variant="outline" className="text-xs font-bold cursor-pointer" onClick={() => setLojaOrdersFilter("todos")}>
+                        Filtrando por: {lojaOrdersFilter} ✕
+                      </Badge>
+                    )}
+                  </div>
                   <Link to="/admin/carrinhos-abandonados">
                     <Button variant="outline" className="gap-2 text-amber-700 border-amber-200 hover:bg-amber-50">
                       <ShoppingCart className="w-4 h-4" /> 
@@ -865,14 +959,14 @@ function PainelLoja() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {lojaUnifiedOrders.length === 0 ? (
+                      {displayedLojaOrders.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center py-8 text-slate-500">
-                            Nenhum pedido recebido ainda.
+                            Nenhum pedido encontrado{lojaOrdersFilter !== "todos" ? ` com status "${lojaOrdersFilter}"` : ""}.
                           </TableCell>
                         </TableRow>
                       ) : (
-                        lojaUnifiedOrders.map((unified) => {
+                        displayedLojaOrders.map((unified) => {
                           const pedido = unified.rawOrder;
                           if (!pedido) {
                             return (

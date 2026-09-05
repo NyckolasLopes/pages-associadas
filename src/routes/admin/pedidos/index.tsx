@@ -25,6 +25,7 @@ import {
   Zap,
   AlertTriangle,
   Loader2,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,7 +161,7 @@ export function PedidosAdmin() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; tipo: "pedido" | "carrinho" } | null>(null);
-  const [mainView, setMainView] = useState<"todos" | "concluidos" | "pendentes">("todos");
+  const [mainView, setMainView] = useState<"todos" | "concluidos" | "pendentes" | "cancelados">("todos");
   const [showApiDoc, setShowApiDoc] = useState(false);
   const [clearOrdersModalOpen, setClearOrdersModalOpen] = useState(false);
   const [isClearingOrders, setIsClearingOrders] = useState(false);
@@ -172,7 +173,7 @@ export function PedidosAdmin() {
     page,
     limit,
     lojaId: activeStoreId || undefined,
-    status: mainView === "pendentes" ? "Pendente" : (mainView === "concluidos" ? "Concluído" : undefined),
+    status: mainView === "pendentes" ? "Pendente" : (mainView === "concluidos" ? "Concluído" : (mainView === "cancelados" ? "Cancelado" : undefined)),
     search: searchTerm,
     dateStart: dateStartFilter,
     dateEnd: dateEndFilter,
@@ -419,11 +420,12 @@ export function PedidosAdmin() {
     });
   }, [orders, allAbandonedCarts, pharmacies]);
 
-  // KPIs: TOTAL DE PEDIDOS puxa TODOS os pedidos (Pendentes + Concluídos)
+  // KPIs: TOTAL DE PEDIDOS puxa TODOS os pedidos (Pendentes + Concluídos + Cancelados)
   const kpis = {
     total: dbKpis?.total || 0,
     concluidos: dbKpis?.concluidos || 0,
     pendentes: dbKpis?.pendentes || 0,
+    cancelados: dbKpis?.cancelados || 0,
   };
 
   // Filtragem
@@ -438,6 +440,10 @@ export function PedidosAdmin() {
          if (item.tipo !== "pedido") return false;
          const st = (item.status || "").toLowerCase();
          if (st.includes("conclu") || st.includes("cancel") || st.includes("entregue")) return false;
+      }
+      if (mainView === "cancelados") {
+         const st = (item.status || "").toLowerCase();
+         if (!st.includes("cancel")) return false;
       }
 
 
@@ -992,8 +998,8 @@ export function PedidosAdmin() {
           </div>
         </div>
 
-        {/* 3 KPIs Principais: TOTAL, CONCLUIDO, PENDENTE */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 4 KPIs Principais: TOTAL, CONCLUIDO, PENDENTE, CANCELADO */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* TOTAL DE PEDIDOS - Puxa todos os pedidos (Pendentes e Concluídos) */}
           <div
             onClick={() => setMainView("todos")}
@@ -1062,6 +1068,29 @@ export function PedidosAdmin() {
               <Package className="h-6 w-6" />
             </div>
           </div>
+
+          {/* PEDIDOS CANCELADOS */}
+          <div
+            onClick={() => setMainView("cancelados")}
+            className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between hover:shadow-md ${
+              mainView === "cancelados"
+                ? "ring-2 ring-red-500 border-red-500 bg-red-50/20"
+                : ""
+            }`}
+          >
+            <div>
+              <p className="text-red-600 text-xs font-bold uppercase tracking-wider mb-1">
+                CANCELADOS
+              </p>
+              <p className="text-3xl font-black text-red-700">{kpis.cancelados}</p>
+              <span className="text-[12px] text-red-600 font-semibold">
+                {kpis.total > 0 ? `${Math.round((kpis.cancelados / kpis.total) * 100)}% do total` : "Cancelados com motivo"}
+              </span>
+            </div>
+            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center">
+              <XCircle className="h-6 w-6" />
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
@@ -1110,6 +1139,16 @@ export function PedidosAdmin() {
                   }`}
                 >
                   Pendentes ({kpis.pendentes})
+                </button>
+                <button
+                  onClick={() => setMainView("cancelados")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    mainView === "cancelados"
+                      ? "bg-white text-red-700 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Cancelados ({kpis.cancelados})
                 </button>
               </div>
 
