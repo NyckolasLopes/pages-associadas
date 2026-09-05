@@ -10,11 +10,8 @@ import {
   CheckCircle2,
   Trash2,
   Users,
-  Store,
-  Clock
+  Store
 } from "lucide-react";
-import { ListaEsperaTab } from "@/components/admin/ListaEsperaTab";
-import { useWaitlist } from "@/stores/waitlist";
 import { useAdmin } from "@/stores/admin";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -40,8 +37,6 @@ export function LojaLeadsTab({ lojaId }: { lojaId?: string }) {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
-  const [activeTab, setActiveTab] = useState<"leads" | "espera">("leads");
-  const waitlistEntries = useWaitlist((s) => s.entries);
   
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -104,41 +99,12 @@ export function LojaLeadsTab({ lojaId }: { lojaId?: string }) {
 
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto pb-10">
-      {/* SELETOR DE SUB-ABAS */}
-      <div className="flex items-center gap-2 border-b pb-3">
-        <Button
-          variant={activeTab === "leads" ? "default" : "outline"}
-          onClick={() => setActiveTab("leads")}
-          className={`font-bold text-sm gap-2 h-10 px-5 ${activeTab === "leads" ? "shadow-xs" : "text-slate-600 hover:text-slate-900 bg-white"}`}
-        >
-          <Megaphone className="w-4 h-4" />
-          Newsletter & Leads
-        </Button>
-        <Button
-          variant={activeTab === "espera" ? "default" : "outline"}
-          onClick={() => setActiveTab("espera")}
-          className={`font-bold text-sm gap-2 h-10 px-5 relative ${activeTab === "espera" ? "shadow-xs" : "text-slate-600 hover:text-slate-900 bg-white"}`}
-        >
-          <Clock className="w-4 h-4" />
-          Lista de espera
-          {waitlistEntries.filter(e => (lojaId ? e.lojaId === lojaId : true) && e.status === "pendente").length > 0 && (
-            <Badge className="ml-1.5 bg-amber-500 text-white hover:bg-amber-600 text-[10px] px-1.5 py-0 h-4">
-              {waitlistEntries.filter(e => (lojaId ? e.lojaId === lojaId : true) && e.status === "pendente").length}
-            </Badge>
-          )}
-        </Button>
-      </div>
-
-      {activeTab === "espera" ? (
-        <ListaEsperaTab lojaId={lojaId} isGlobalAdmin={!lojaId} />
-      ) : (
-        <>
-          {/* HEADER */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <Megaphone className="h-6 w-6 text-primary" /> Leads da Newsletter
-              </h1>
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Megaphone className="h-6 w-6 text-primary" /> Leads da Newsletter
+          </h1>
               <p className="text-muted-foreground text-sm mt-1">
                 Gerencie os clientes que deixaram o email em sua newsletter, rodapé ou popups.
               </p>
@@ -298,8 +264,6 @@ export function LojaLeadsTab({ lojaId }: { lojaId?: string }) {
           </table>
         </div>
       </div>
-        </>
-      )}
       
       <ConfirmDialog
         isOpen={confirmOpen}
