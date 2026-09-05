@@ -99,10 +99,6 @@ export const productImage = (p: any) => {
     return "/produtos/caneta-emagrecedora.webp";
   }
 
-  if (name.includes("energy") || name.includes("energia") || name.includes("energético") || name.includes("baly") || name.includes("monster") || name.includes("red bull")) {
-    return "/produtos/energy.webp";
-  }
-
   const isGenerico = checkIsGenerico(p);
 
   if (isGenerico) {

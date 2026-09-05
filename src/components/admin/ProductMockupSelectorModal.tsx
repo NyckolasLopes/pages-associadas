@@ -142,16 +142,6 @@ export const PRODUCT_MOCKUPS: MockupOption[] = [
     descricao: "Canetas preenchidas injetáveis (insulinas, semaglutida, etc.).",
     badge: "Caneta Injetável",
     badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-300"
-  },
-  {
-    id: "energy",
-    nome: "Bebida Energética / Lata",
-    categoria: "outros",
-    categoriaNome: "Conveniência & Outros",
-    url: "/produtos/energy.webp",
-    descricao: "Bebidas energéticas, refrigerantes e produtos em embalagem de lata.",
-    badge: "Lata / Bebida",
-    badgeColor: "bg-purple-100 text-purple-800 border-purple-300"
   }
 ];
 
@@ -170,10 +160,6 @@ export function getRecommendedMockup(product: Partial<Produto>): MockupOption {
   
   if (name.includes("caneta") || name.includes("ozempic") || name.includes("saxenda") || name.includes("wegovy") || name.includes("mounjaro")) {
     return PRODUCT_MOCKUPS.find(m => m.id === "caneta-emagrecedora")!;
-  }
-
-  if (name.includes("energy") || name.includes("energia") || name.includes("energético") || name.includes("baly") || name.includes("monster") || name.includes("red bull")) {
-    return PRODUCT_MOCKUPS.find(m => m.id === "energy")!;
   }
 
   const isGenerico = checkIsGenerico(product);
