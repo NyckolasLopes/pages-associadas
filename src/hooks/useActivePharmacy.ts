@@ -118,7 +118,9 @@ export function useActivePharmacy() {
 
     // 2. Última loja visitada
     try {
-      const lastSlug = sessionStorage.getItem('fa-last-store-slug');
+      const lastSlug = typeof window !== 'undefined' && typeof sessionStorage !== 'undefined'
+        ? sessionStorage.getItem('fa-last-store-slug')
+        : null;
       if (lastSlug) {
         const normalizedLast = safeSlugify(lastSlug);
         const lowerLast = lastSlug.toLowerCase();
