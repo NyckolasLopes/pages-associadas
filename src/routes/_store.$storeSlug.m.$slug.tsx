@@ -51,14 +51,25 @@ export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
     const brandName = marca ? marca.nome : params.slug.toUpperCase().replace(/-/g, " ");
     
     // 4. Buscar produtos da marca com o contexto da loja
-    const produtos = await catalog.productsByBrand(brandName, { page: 0, pageSize: 24 }, lojaId);
+    const { useAdmin } = await import("@/stores/admin");
+    const adminState = useAdmin.getState();
+    const pharmacies = adminState.pharmacies || [];
+    const cleanStoreSlug = (storeSlug || "").toLowerCase();
+    const loja = pharmacies.find((ph: any) =>
+      (ph.slug || "").toLowerCase() === cleanStoreSlug ||
+      String(ph.id).toLowerCase() === cleanStoreSlug ||
+      (ph.slug && ph.slug.toLowerCase().includes(cleanStoreSlug))
+    ) || pharmacies[0];
+
+    const produtos = await catalog.productsByBrand(brandName, { page: 0, pageSize: 24 }, loja?.id || lojaId);
     
     return { 
       slug: params.slug, 
       produtos, 
       fallbackBrandName: brandName,
-      lojaId,
-      storeSlug 
+      lojaId: loja?.id || lojaId,
+      storeSlug,
+      loja
     };
   },
   head: ({ loaderData, params }: any) => {
@@ -76,10 +87,17 @@ export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
       (m.seoUrl && safeSlugify(m.seoUrl) === cleanSlugNorm) ||
       (m.nome && safeSlugify(m.nome) === cleanSlugNorm)
     );
+    const loja = loaderData.loja;
     const storeSlug = params?.storeSlug || "loja-padrao";
     const brandName = marca ? marca.nome : loaderData.fallbackBrandName;
-    const desc = marca?.descricao || `Compre produtos da marca ${brandName} com os melhores preços na Farmácias Associadas.`;
+    const desc = marca?.descricao || `Compre produtos da marca ${brandName} com os melhores preços na Farmácias Associadas${loja?.cidade ? ` em ${loja.cidade}` : ''}.`;
     const brandUrl = `https://farmaciasassociadas.com.br/${storeSlug}/m/${loaderData.slug}`;
+
+    const geoRegion = loja?.uf ? `BR-${loja.uf.toUpperCase()}` : "BR-RS";
+    const geoPlacename = [loja?.bairro, loja?.cidade, loja?.uf].filter(Boolean).join(", ") || (loja?.cidade ? `${loja.cidade}, Brasil` : "Rio Grande do Sul, Brasil");
+    const hasGeo = loja?.latitude && loja?.longitude;
+    const geoPosition = hasGeo ? `${loja.latitude};${loja.longitude}` : undefined;
+    const icbm = hasGeo ? `${loja.latitude}, ${loja.longitude}` : undefined;
 
     return {
       links: [
@@ -94,10 +112,16 @@ export const Route = createFileRoute("/_store/$storeSlug/m/$slug")({
         { property: "og:url", content: brandUrl },
         { property: "og:type", content: "website" },
         { property: "og:site_name", content: "Farmácias Associadas" },
-        ...(marca?.logo ? [{ property: "og:image", content: marca.logo }] : []),
-        { name: "twitter:card", content: "summary" },
+        ...(marca?.logo ? [{ property: "og:image", content: marca.logo }, { name: "twitter:image", content: marca.logo }] : []),
+        { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: `${brandName} — Farmácias Associadas` },
         { name: "twitter:description", content: desc },
+        ...(loja ? [
+          { name: "geo.region", content: geoRegion },
+          { name: "geo.placename", content: geoPlacename },
+          ...(geoPosition ? [{ name: "geo.position", content: geoPosition }] : []),
+          ...(icbm ? [{ name: "ICBM", content: icbm }] : []),
+        ] : []),
       ],
     };
   },
@@ -169,6 +193,41 @@ function BrandPage() {
           "position": 2,
           "name": brand,
           "item": brandUrl
+        }
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": `Linha de produtos ${brand}`,
+      "numberOfItems": productsList.slice(0, 12).length,
+      "itemListElement": productsList.slice(0, 12).map((p: any, idx: number) => ({
+        "@type": "ListItem",
+        "position": idx + 1,
+        "name": p.nome,
+        "url": `https://farmaciasassociadas.com.br/${effectiveStoreSlug}/produto/${p.url || p.slug || p.id}`
+      }))
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "@id": `${brandUrl}#faq`,
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": `Onde comprar produtos originais da marca ${brand}?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `Você pode comprar a linha completa e original de produtos da marca ${brand} nas Farmácias Associadas, com procedência garantida, ofertas exclusivas e opções de tele-entrega ou retirada em loja.`
+          }
+        },
+        {
+          "@type": "Question",
+          "name": `Como funciona a entrega de produtos ${brand} nas Farmácias Associadas?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `A tele-entrega é realizada diretamente pela farmácia associada mais próxima do seu CEP, garantindo agilidade e segurança na entrega dos produtos ${brand}.`
+          }
         }
       ]
     }

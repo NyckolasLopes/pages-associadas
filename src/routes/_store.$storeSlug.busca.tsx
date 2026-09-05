@@ -15,15 +15,40 @@ import { useCart } from "@/stores/cart";
 import { useSearchHistory } from "@/stores/searchHistory";
 
 export const Route = createFileRoute("/_store/$storeSlug/busca")({
-  validateSearch: zodValidator(
-    z.object({
-      q: z.string().optional().default(""),
-      marcas: z.array(z.string()).optional(),
-      minPrice: z.number().optional(),
-      maxPrice: z.number().optional(),
-      dinamicos: z.record(z.array(z.string())).optional(),
-    })
-  ),
+    validateSearch: zodValidator(
+      z.object({
+        q: z.string().optional().default(""),
+        marcas: z.array(z.string()).optional(),
+        minPrice: z.number().optional(),
+        maxPrice: z.number().optional(),
+        dinamicos: z.record(z.array(z.string())).optional(),
+      })
+    ),
+    head: ({ search, params }: any) => {
+    const q = search?.q || "";
+    const storeSlug = params?.storeSlug || "loja-padrao";
+    const title = q ? `Busca: "${q}" — Farmácias Associadas` : `Buscar Produtos — Farmácias Associadas`;
+    const desc = q 
+      ? `Resultados de busca para "${q}" nas Farmácias Associadas. Encontre medicamentos, vitaminas, dermocosméticos e muito mais.`
+      : "Busque medicamentos, cosméticos e produtos de saúde e bem-estar na rede Farmácias Associadas.";
+    const searchUrl = `https://farmaciasassociadas.com.br/${storeSlug}/busca${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+
+    return {
+      links: [
+        { rel: "canonical", href: searchUrl },
+      ],
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { name: "robots", content: "noindex, follow" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+        { property: "og:url", content: searchUrl },
+        { property: "og:type", content: "website" },
+        { property: "og:site_name", content: "Farmácias Associadas" },
+      ],
+    };
+  },
   component: SearchPage,
 });
 

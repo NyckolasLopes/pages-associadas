@@ -102,6 +102,12 @@ export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
     const prodUrl = `https://farmaciasassociadas.com.br/${storeSlug}/produto/${p.url || p.slug || p.id}`;
     const priceAmount = (p.precoPor || p.precoDe || 0).toString();
 
+    const geoRegion = loja?.uf ? `BR-${loja.uf.toUpperCase()}` : "BR-RS";
+    const geoPlacename = [loja?.bairro, loja?.cidade, loja?.uf].filter(Boolean).join(", ") || (loja?.cidade ? `${loja.cidade}, Brasil` : "Rio Grande do Sul, Brasil");
+    const hasGeo = loja?.latitude && loja?.longitude;
+    const geoPosition = hasGeo ? `${loja.latitude};${loja.longitude}` : undefined;
+    const icbm = hasGeo ? `${loja.latitude}, ${loja.longitude}` : undefined;
+
     return {
       links: [
         { rel: "canonical", href: prodUrl },
@@ -118,10 +124,20 @@ export const Route = createFileRoute("/_store/$storeSlug/produto/$slug")({
         { property: "og:site_name", content: "Farmácias Associadas" },
         { property: "product:price:amount", content: priceAmount },
         { property: "product:price:currency", content: "BRL" },
+        { property: "product:brand", content: p.marca || "Farmácias Associadas" },
+        { property: "product:retailer_item_id", content: String(p.id) },
+        { property: "product:condition", content: "new" },
+        { property: "product:availability", content: (p.estoque > 0 || p.tipoProduto === "servico") ? "in stock" : "out of stock" },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: desc },
         { name: "twitter:image", content: img },
+        ...(loja ? [
+          { name: "geo.region", content: geoRegion },
+          { name: "geo.placename", content: geoPlacename },
+          ...(geoPosition ? [{ name: "geo.position", content: geoPosition }] : []),
+          ...(icbm ? [{ name: "ICBM", content: icbm }] : []),
+        ] : []),
       ],
     };
   },
@@ -1263,6 +1279,47 @@ function PDP() {
           "position": (cat ? (subcat ? 4 : 3) : 2),
           "name": p.nome,
           "item": productUrl
+        }
+      ]
+    },
+    {
+      "@context": "https://schema.org/",
+      "@type": "FAQPage",
+      "@id": `${productUrl}#faq`,
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": `Para que serve ${p.nome}?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": p.descricaoBreve || p.descricao || `${p.nome} é indicado para cuidados de saúde e bem-estar, com garantia e procedência das Farmácias Associadas.`
+          }
+        },
+        ...(isMedication ? [{
+          "@type": "Question",
+          "name": `${p.nome} precisa de receita médica?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": p.retemReceita 
+              ? `Sim, ${p.nome} exige retenção de receita médica no momento da entrega ou retirada conforme legislação da ANVISA.`
+              : `Não, ${p.nome} é um medicamento de venda livre (MIP) e não exige retenção de receita médica.`
+          }
+        }] : []),
+        ...(Array.isArray(p.principiosAtivos) && p.principiosAtivos.length > 0 ? [{
+          "@type": "Question",
+          "name": `Qual a composição e princípio ativo de ${p.nome}?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `Composição principal: ${p.principiosAtivos.map((pa: any) => typeof pa === "string" ? pa : pa.nome).filter(Boolean).join(", ")}. Marca / Laboratório: ${p.marca || "Farmácias Associadas"}.`
+          }
+        }] : []),
+        {
+          "@type": "Question",
+          "name": `Como comprar ${p.nome} online com entrega rápida?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `Você pode adicionar ${p.nome} à sua cesta nas Farmácias Associadas, informar seu CEP para entrega rápida via motoboy ou selecionar a opção de retirada gratuita na farmácia mais próxima de você.`
+          }
         }
       ]
     }

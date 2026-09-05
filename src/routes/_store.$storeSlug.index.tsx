@@ -941,8 +941,7 @@ function StoreHome() {
         });
       }
 
-      return {
-        "@context": "https://schema.org",
+      const pharmacyEntity: any = {
         "@type": ["Pharmacy", "MedicalBusiness", "LocalBusiness"],
         "@id": `https://farmaciasassociadas.com.br/${storeSlug}#pharmacy`,
         "name": loja.nome || "Farmácias Associadas",
@@ -955,6 +954,15 @@ function StoreHome() {
         "priceRange": "$$",
         "currenciesAccepted": "BRL",
         "paymentAccepted": "Cartão de Crédito, Cartão de Débito, PIX, Dinheiro",
+        "knowsAbout": [
+          "Medicamentos e Medicamentos Genéricos",
+          "Dermocosméticos",
+          "Suplementos Alimentares e Vitaminas",
+          "Higiene Pessoal e Cuidados Diários",
+          "Aferição de Pressão Arterial",
+          "Teste de Glicemia",
+          "Aplicação de Injetáveis"
+        ],
         "address": {
           "@type": "PostalAddress",
           "streetAddress": `${loja.endereco || ""}, ${loja.numero || ""}${loja.complemento ? ` - ${loja.complemento}` : ""}`.trim(),
@@ -978,6 +986,42 @@ function StoreHome() {
           "target": `https://farmaciasassociadas.com.br/${storeSlug}/busca?q={search_term_string}`,
           "query-input": "required name=search_term_string"
         }
+      };
+
+      const faqEntity: any = {
+        "@type": "FAQPage",
+        "@id": `https://farmaciasassociadas.com.br/${storeSlug}#faq`,
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": `Como comprar medicamentos online na unidade de ${loja.cidade || "minha região"}?`,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": `Você pode navegar pelos produtos no site, adicionar ao carrinho e finalizar o pedido selecionando tele-entrega rápida para ${[loja.bairro, loja.cidade].filter(Boolean).join(", ") || "sua localidade"} ou retirada física no balcão da loja.`
+            }
+          },
+          {
+            "@type": "Question",
+            "name": `A unidade ${loja.nome || "Farmácias Associadas"} realiza tele-entrega em domicílio?`,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": `Sim! A loja ${loja.nome || "Farmácias Associadas"} oferece tele-entrega ágil para ${loja.cidade || "sua localidade"}. Você também pode solicitar pedidos e tirar dúvidas via telefone ou WhatsApp ${loja.telefone || loja.whatsapp || ""}.`
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Como funciona a entrega de medicamentos com receita controlada?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Medicamentos com retenção de receita podem ser consultados e reservados online. A entrega ou retirada exige a apresentação e validação da receita original válida pelo farmacêutico responsável, em conformidade com as diretrizes da ANVISA."
+            }
+          }
+        ]
+      };
+
+      return {
+        "@context": "https://schema.org",
+        "@graph": [pharmacyEntity, faqEntity]
       };
     }
 

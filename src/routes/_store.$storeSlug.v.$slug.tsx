@@ -30,8 +30,18 @@ export const Route = createFileRoute("/_store/$storeSlug/v/$slug")({
   ),
   loaderDeps: ({ search }) => search,
   loader: async ({ params, deps }) => {
-    // In loader we can access the state directly
-    const lojaId = useCart.getState().selectedPharmacyId;
+    const storeSlug = params.storeSlug;
+    const { useAdmin } = await import("@/stores/admin");
+    const adminState = useAdmin.getState();
+    const pharmacies = adminState.pharmacies || [];
+    const cleanStoreSlug = (storeSlug || "").toLowerCase();
+    const loja = pharmacies.find((ph: any) =>
+      (ph.slug || "").toLowerCase() === cleanStoreSlug ||
+      String(ph.id).toLowerCase() === cleanStoreSlug ||
+      (ph.slug && ph.slug.toLowerCase().includes(cleanStoreSlug))
+    ) || pharmacies[0];
+
+    const lojaId = loja?.id || useCart.getState().selectedPharmacyId;
     const vitrines = useAdminProducts.getState().getStoreVitrines(lojaId);
     const vitrine = vitrines.find(v => {
       if (v.lojaVinculadaId && v.lojaVinculadaId !== lojaId) return false;
@@ -53,23 +63,45 @@ export const Route = createFileRoute("/_store/$storeSlug/v/$slug")({
       lojaId
     );
 
-    return { vitrine, unfilteredProducts: filteredProducts, filteredProducts };
+    return { vitrine, unfilteredProducts: filteredProducts, filteredProducts, loja, storeSlug };
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }: any) => {
     if (!loaderData) return {};
-    const { vitrine } = loaderData;
+    const { vitrine, loja } = loaderData;
+    const storeSlug = params?.storeSlug || "loja-padrao";
+    const vitrineSlug = vitrine.linkSeo || vitrine.nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const vitrineUrl = `https://farmaciasassociadas.com.br/${storeSlug}/v/${vitrineSlug}`;
     const title = vitrine.tituloSeo || `${vitrine.nome} | Farmácias Associadas`;
-    const desc = vitrine.descricaoSeo || `Confira as melhores ofertas de ${vitrine.nome} online nas Farmácias Associadas com os melhores preços. Entrega rápida e segura para toda a família.`;
+    const desc = vitrine.descricaoSeo || `Confira as melhores ofertas de ${vitrine.nome} online nas Farmácias Associadas com os melhores preços. Entrega rápida e segura para toda a família${loja?.cidade ? ` em ${loja.cidade}` : ''}.`;
+
+    const geoRegion = loja?.uf ? `BR-${loja.uf.toUpperCase()}` : "BR-RS";
+    const geoPlacename = [loja?.bairro, loja?.cidade, loja?.uf].filter(Boolean).join(", ") || (loja?.cidade ? `${loja.cidade}, Brasil` : "Rio Grande do Sul, Brasil");
+    const hasGeo = loja?.latitude && loja?.longitude;
+    const geoPosition = hasGeo ? `${loja.latitude};${loja.longitude}` : undefined;
+    const icbm = hasGeo ? `${loja.latitude}, ${loja.longitude}` : undefined;
+
     return {
+      links: [
+        { rel: "canonical", href: vitrineUrl },
+      ],
       meta: [
         { title },
         { name: "description", content: desc },
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1" },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
+        { property: "og:url", content: vitrineUrl },
         { property: "og:type", content: "website" },
-        { name: "twitter:card", content: "summary" },
+        { property: "og:site_name", content: "Farmácias Associadas" },
+        { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: desc },
+        ...(loja ? [
+          { name: "geo.region", content: geoRegion },
+          { name: "geo.placename", content: geoPlacename },
+          ...(geoPosition ? [{ name: "geo.position", content: geoPosition }] : []),
+          ...(icbm ? [{ name: "ICBM", content: icbm }] : []),
+        ] : []),
       ],
     };
   },
@@ -103,12 +135,56 @@ function VitrinePage() {
     });
   };
 
-  const schemaOrg = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": vitrine.nome,
-    "description": vitrine.descricaoSeo || `Produtos em destaque: ${vitrine.nome}`,
-  };
+  const effectiveStoreSlug = storeSlug || "loja-padrao";
+  const vitrineSlug = vitrine.linkSeo || vitrine.nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const vitrineUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}/v/${vitrineSlug}`;
+  const storeUrl = `https://farmaciasassociadas.com.br/${effectiveStoreSlug}`;
+
+  const schemaOrg = [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "@id": `${vitrineUrl}#collection`,
+      "name": vitrine.nome,
+      "description": vitrine.descricaoSeo || `Produtos em destaque: ${vitrine.nome}`,
+      "url": vitrineUrl,
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Farmácias Associadas",
+        "url": "https://farmaciasassociadas.com.br"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Início",
+          "item": storeUrl
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": vitrine.nome,
+          "item": vitrineUrl
+        }
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": vitrine.nome,
+      "numberOfItems": displayedProducts.slice(0, 12).length,
+      "itemListElement": displayedProducts.slice(0, 12).map((p: any, idx: number) => ({
+        "@type": "ListItem",
+        "position": idx + 1,
+        "name": p.nome,
+        "url": `https://farmaciasassociadas.com.br/${effectiveStoreSlug}/produto/${p.url || p.slug || p.id}`
+      }))
+    }
+  ];
 
   const IconComponent = vitrine.icone ? VITRINE_ICONS[vitrine.icone] || Sparkles : Sparkles;
 

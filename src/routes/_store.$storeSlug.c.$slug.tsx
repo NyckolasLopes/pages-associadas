@@ -32,23 +32,42 @@ export const Route = createFileRoute("/_store/$storeSlug/c/$slug")({
   ),
   loaderDeps: ({ search }) => search,
   loader: async ({ params, deps }) => {
+    const storeSlug = params.storeSlug;
+    const { useAdmin } = await import("@/stores/admin");
+    const adminState = useAdmin.getState();
+    const pharmacies = adminState.pharmacies || [];
+    const cleanStoreSlug = (storeSlug || "").toLowerCase();
+    const loja = pharmacies.find((ph: any) =>
+      (ph.slug || "").toLowerCase() === cleanStoreSlug ||
+      String(ph.id).toLowerCase() === cleanStoreSlug ||
+      (ph.slug && ph.slug.toLowerCase().includes(cleanStoreSlug))
+    ) || pharmacies[0];
+
     const cat = await catalog.getCategoryBySlug(params.slug);
     if (!cat) throw notFound();
     
     const [initialProducts, subs] = await Promise.all([
-      catalog.productsByCategory(cat.id, { ...deps, page: 0, pageSize: 24 }),
+      catalog.productsByCategory(cat.id, { ...deps, page: 0, pageSize: 24 }, loja?.id),
       catalog.listSubcategories(cat.id),
     ]);
     
-    return { cat, unfilteredProducts: initialProducts, filteredProducts: initialProducts, subs };
+    return { cat, unfilteredProducts: initialProducts, filteredProducts: initialProducts, subs, loja };
   },
   head: ({ loaderData, params }: any) => {
     if (!loaderData) return {};
     const cat = loaderData.cat;
+    const loja = loaderData.loja;
     const storeSlug = params?.storeSlug || "loja-padrao";
     const catUrl = `https://farmaciasassociadas.com.br/${storeSlug}/c/${cat.slug}`;
     const title = cat.metaTitle || `${cat.nome} — Farmácias Associadas`;
-    const desc = cat.metaDescription || `Compre produtos de ${cat.nome} online nas Farmácias Associadas com os melhores preços e entrega rápida.`;
+    const desc = cat.metaDescription || `Compre produtos de ${cat.nome} online nas Farmácias Associadas com os melhores preços e entrega rápida${loja?.cidade ? ` em ${loja.cidade}` : ''}.`;
+
+    const geoRegion = loja?.uf ? `BR-${loja.uf.toUpperCase()}` : "BR-RS";
+    const geoPlacename = [loja?.bairro, loja?.cidade, loja?.uf].filter(Boolean).join(", ") || (loja?.cidade ? `${loja.cidade}, Brasil` : "Rio Grande do Sul, Brasil");
+    const hasGeo = loja?.latitude && loja?.longitude;
+    const geoPosition = hasGeo ? `${loja.latitude};${loja.longitude}` : undefined;
+    const icbm = hasGeo ? `${loja.latitude}, ${loja.longitude}` : undefined;
+
     return {
       links: [
         { rel: "canonical", href: catUrl },
@@ -62,9 +81,15 @@ export const Route = createFileRoute("/_store/$storeSlug/c/$slug")({
         { property: "og:url", content: catUrl },
         { property: "og:type", content: "website" },
         { property: "og:site_name", content: "Farmácias Associadas" },
-        { name: "twitter:card", content: "summary" },
+        { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: desc },
+        ...(loja ? [
+          { name: "geo.region", content: geoRegion },
+          { name: "geo.placename", content: geoPlacename },
+          ...(geoPosition ? [{ name: "geo.position", content: geoPosition }] : []),
+          ...(icbm ? [{ name: "ICBM", content: icbm }] : []),
+        ] : []),
       ],
     };
   },
@@ -179,6 +204,41 @@ function CategoryPage() {
           "position": 2,
           "name": cat.nome,
           "item": catUrl
+        }
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": `Produtos em ${cat.nome}`,
+      "numberOfItems": products.slice(0, 12).length,
+      "itemListElement": products.slice(0, 12).map((p, idx) => ({
+        "@type": "ListItem",
+        "position": idx + 1,
+        "name": p.nome,
+        "url": `https://farmaciasassociadas.com.br/${effectiveStoreSlug}/produto/${p.url || p.slug || p.id}`
+      }))
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "@id": `${catUrl}#faq`,
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": `O que você encontra na categoria ${cat.nome} nas Farmácias Associadas?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `Na categoria ${cat.nome} das Farmácias Associadas, você encontra uma ampla variedade de produtos originais com procedência garantida, preços competitivos e ofertas exclusivas para compra online e entrega rápida.`
+          }
+        },
+        {
+          "@type": "Question",
+          "name": `Como comprar produtos de ${cat.nome} com tele-entrega rápida?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `Basta navegar pelos itens de ${cat.nome}, adicionar os produtos desejados à sua cesta de compras, informar o CEP do seu endereço para escolher a farmácia associada mais próxima e finalizar o pedido com segurança via Pix ou cartão de crédito.`
+          }
         }
       ]
     }
